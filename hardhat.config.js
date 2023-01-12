@@ -7,6 +7,8 @@ require("hardhat-gas-reporter");
 require('hardhat-contract-sizer');
 require("solidity-coverage");
 require("xdeployer");
+require("@nomiclabs/hardhat-ethers");
+require("hardhat-etherscan-abi");
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
@@ -38,19 +40,26 @@ module.exports = {
     contractSizer: {
         alphaSort: false,
         disambiguatePaths: false,
-        runOnCompile: true,
+        runOnCompile: false,
         strict: false
     },
     networks: {
-    // hardhat: {
-        //     forking: {
-        //       chainId: process.env.PRODUCTION === "true" ?  56 : 97,
-        //       url: process.env.BSC_RPC_URL,
-        //     }
-        // }
+        hardhat: {
+            chainId: 1,
+            forking: {
+                enabled: true,
+                url: "https://mainnet.infura.io/v3/59a5debd441b4793a52b5ec69ba1ac23"
+            }
+        }
+    },
+    etherscan: {
+        apiKey: "7PVFUDTW44QBP8Y7CU5WKX6DXJMHSBTWNW"
     },
     gasReporter: {
-        enabled: true,
+        enabled: false,
         currency: "USD",
+    },
+    mocha: {
+        timeout: 100000000
     }
 };

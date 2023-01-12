@@ -4,6 +4,8 @@
 pragma solidity ^0.8.14;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
 import {IStateHandler} from "./interface/layerzero/IStateHandler.sol";
 import {IController} from "./interface/ISource.sol";
 import {IDestination} from "./interface/IDestination.sol";
@@ -11,7 +13,7 @@ import {IDestination} from "./interface/IDestination.sol";
 import {StateReq, InitData, StateData, TransactionType, CallbackType} from "./types/lzTypes.sol";
 import {LiqRequest} from "./types/socketTypes.sol";
 
-contract RouterPatch {
+contract RouterPatch is ERC1155Holder {
     address public constant ROUTER_ADDRESS =
         0xfF3aFb7d847AeD8f2540f7b5042F693242e01ebD;
     address public constant STATE_ADDRESS =
@@ -64,7 +66,7 @@ contract RouterPatch {
             address(this),
             _stateData.vaultIds,
             _stateData.amounts,
-            ""
+            "0x"
         );
 
         totalTransactions++;

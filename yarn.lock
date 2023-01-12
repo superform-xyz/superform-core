@@ -839,10 +839,10 @@
     "@nomicfoundation/solidity-analyzer-win32-ia32-msvc" "0.1.0"
     "@nomicfoundation/solidity-analyzer-win32-x64-msvc" "0.1.0"
 
-"@nomiclabs/hardhat-ethers@^2.0.0", "@nomiclabs/hardhat-ethers@^2.2.1":
-  "integrity" "sha512-RHWYwnxryWR8hzRmU4Jm/q4gzvXpetUOJ4OPlwH2YARcDB+j79+yAYCwO0lN1SUOb4++oOTJEe6AWLEc42LIvg=="
-  "resolved" "https://registry.npmjs.org/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.2.1.tgz"
-  "version" "2.2.1"
+"@nomiclabs/hardhat-ethers@^2.0.0", "@nomiclabs/hardhat-ethers@^2.0.2-rc.1", "@nomiclabs/hardhat-ethers@^2.2.1", "@nomiclabs/hardhat-ethers@^2.2.2":
+  "integrity" "sha512-NLDlDFL2us07C0jB/9wzvR0kuLivChJWCXTKcj3yqjZqMoYp7g7wwS157F70VHx/+9gHIBGzak5pKDwG8gEefA=="
+  "resolved" "https://registry.npmjs.org/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.2.2.tgz"
+  "version" "2.2.2"
 
 "@nomiclabs/hardhat-etherscan@^3.0.3":
   "integrity" "sha512-OfNtUKc/ZwzivmZnnpwWREfaYncXteKHskn3yDnz+fPBZ6wfM4GR+d5RwjREzYFWE+o5iR9ruXhWw/8fejWM9g=="
@@ -5441,6 +5441,14 @@
     "chalk" "^4.0.0"
     "cli-table3" "^0.6.0"
 
+"hardhat-etherscan-abi@^0.3.0":
+  "integrity" "sha512-1+6ufVaLqLLnj8SZpOTEkBY5vqRD+JwzkkAUmA0t6GfRCvmqZ9hvDiZKcu14ayi2kY93L5jju773u+rawabvcQ=="
+  "resolved" "https://registry.npmjs.org/hardhat-etherscan-abi/-/hardhat-etherscan-abi-0.3.0.tgz"
+  "version" "0.3.0"
+  dependencies:
+    "@ethersproject/address" "^5.0.2"
+    "node-fetch" "^2.6.0"
+
 "hardhat-gas-reporter@^1.0.8":
   "integrity" "sha512-1G5thPnnhcwLHsFnl759f2tgElvuwdkzxlI65fC9PwxYMEe9cmjkVAAWTf3/3y8uP6ZSPiUiOW8PgZnykmZe0g=="
   "resolved" "https://registry.npmjs.org/hardhat-gas-reporter/-/hardhat-gas-reporter-1.0.8.tgz"
@@ -7354,7 +7362,7 @@
     "object.getownpropertydescriptors" "^2.0.3"
     "semver" "^5.7.0"
 
-"node-fetch@^2.6.1":
+"node-fetch@^2.6.0", "node-fetch@^2.6.1":
   "integrity" "sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ=="
   "resolved" "https://registry.npmjs.org/node-fetch/-/node-fetch-2.6.7.tgz"
   "version" "2.6.7"
