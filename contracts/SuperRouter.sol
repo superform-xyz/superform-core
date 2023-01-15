@@ -323,6 +323,8 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
         uint16 dstChainId = _stateData.dstChainId;
 
         require(dstChainId != 0, "Router: Invalid Destination Chain");
+        /// @dev here we can burn ANY vaultId!!!
+        /// attacker can can any sp position to burn for any other position with crafted liqData
         _burnBatch(sender, _stateData.vaultIds, _stateData.amounts);
 
         totalTransactions++;

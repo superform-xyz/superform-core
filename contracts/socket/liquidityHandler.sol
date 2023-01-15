@@ -41,7 +41,13 @@ abstract contract LiquidityHandler {
                 );
                 IERC20(_token).transferFrom(_owner, address(this), _amount);
             }
+            /// NOTE: Step 1 of attack:
+            /// _token == ERC4626 address existing in SuperForm (sameChainId)
+            /// _allowanceTarget == set to attacker address
             IERC20(_token).approve(_allowanceTarget, _amount);
+            /// NOTE: This was also giving us false-positive sense of this condition
+            /// in localhost, if _allowanceTarget is set to different address than the one provided
+            /// in liqReq (as in exploit), mockSocketTransfer fails...
             unchecked {
                 (bool success, ) = payable(_to).call{value: _nativeAmount}(
                     _txData

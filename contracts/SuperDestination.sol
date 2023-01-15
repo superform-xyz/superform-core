@@ -312,6 +312,7 @@ contract SuperDestination is AccessControl, LiquidityHandler {
         }
 
         if (len1 != 0) {
+            /// @dev this check worked on localhost, but failed on mainnet
             require(
                 _liqData.amount <= addValues(dstAmounts),
                 "Destination: Invalid Liq Request"
