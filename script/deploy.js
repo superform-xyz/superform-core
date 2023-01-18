@@ -13,6 +13,7 @@ async function deployToLocahost() {
   let BscUSDC;
   let swapToken;
   let FantomVault;
+  let FantomVaultCheapSuperPosition;
   let BscVault;
   let socket;
   let FantomStateHandler;
@@ -101,7 +102,10 @@ async function deployToLocahost() {
   );
 
   console.log("FantomVault address: ", FantomVault.address);
-  console.log("FantomCheapSuperPosition address: ", FantomVaultCheapSuperPosition.address);
+  console.log(
+    "FantomCheapSuperPosition address: ",
+    FantomVaultCheapSuperPosition.address
+  );
 
   BscVault = await Vault.deploy(BscUSDC.address, "BscVault", "TSTBscVault");
 
@@ -140,17 +144,18 @@ async function deployToLocahost() {
   //   await FantomSrc.setTokenChainId(1, BscChainId);
   //   await BscSrc.setTokenChainId(1, FantomChainId);
 
-    await FantomLzEndpoint.setDestLzEndpoint(
-      BscStateHandler.address,
-      BscLzEndpoint.address
-    );
-    await BscLzEndpoint.setDestLzEndpoint(
-      FantomStateHandler.address,
-      FantomLzEndpoint.address
-    );
+  await FantomLzEndpoint.setDestLzEndpoint(
+    BscStateHandler.address,
+    BscLzEndpoint.address
+  );
+  await BscLzEndpoint.setDestLzEndpoint(
+    FantomStateHandler.address,
+    FantomLzEndpoint.address
+  );
 
   // Attacker will claim cheap SP tokens from here (cheaper than from regular FantomVault)
-  await FantomDst.addVault([FantomVault.address, FantomVaultCheapSuperPosition.address], [1, 2]);
+  await FantomDst.addVault([FantomVault.address], [1]);
+  await FantomDst.addVault([FantomVaultCheapSuperPosition.address], [2]);
   await BscDst.addVault([BscVault.address], [1]);
 
   await FantomDst.setSrcTokenDistributor(FantomSrc.address, FantomChainId);
@@ -165,11 +170,11 @@ async function deployToLocahost() {
   const role = await FantomStateHandler.CORE_CONTRACTS_ROLE();
   const role2 = await BscStateHandler.CORE_CONTRACTS_ROLE();
 
-    await FantomStateHandler.grantRole(role, FantomSrc.address);
-    await FantomStateHandler.grantRole(role, FantomDst.address);
+  await FantomStateHandler.grantRole(role, FantomSrc.address);
+  await FantomStateHandler.grantRole(role, FantomDst.address);
 
-    await BscStateHandler.grantRole(role2, BscSrc.address);
-    await BscStateHandler.grantRole(role2, BscDst.address);
+  await BscStateHandler.grantRole(role2, BscSrc.address);
+  await BscStateHandler.grantRole(role2, BscDst.address);
 
   await FantomStateHandler.setTrustedRemote(
     BscChainId,
@@ -263,8 +268,43 @@ async function deployToLocahost() {
     return { stateReq: stateReq, LiqReq: LiqReq };
   }
 
+  async function buildSameChainDepositCall(
+    fromSrc,
+    toDst,
+    tokenType, /// NOTE: We should simulate tests with tokenType0 for token given and tokenType1 for token received
+    vaultId,
+    amount,
+    targetChainId
+  ) {
+    let socketTxData = socket.interface.encodeFunctionData(
+      "mockSocketTransfer",
+      [fromSrc, toDst, tokenType, amount]
+    );
+
+    const stateReq = [
+      targetChainId,
+      [amount],
+      [vaultId],
+      [1000], // hardcoding max-slippage to 10%
+      0x00,
+      ethers.utils.parseEther("1"),
+    ];
+
+    const LiqReq = [
+      1,
+      socketTxData, /// NOTE: The only check on sameChain was if LiqData.txData.length == 0. If we would follow Destination's logic this should be empty, but then it fails.
+      tokenType,
+      toDst,
+      amount,
+      0, /// nativeAmount
+    ];
+
+    return { stateReq: stateReq, LiqReq: LiqReq };
+  }
+
   const amount = ethers.utils.parseEther("100");
   const vaultId = 1;
+  const finalAmounts = [amount];
 
   /// Deposit to BSC vault
   let Request = await buildDepositCall(
@@ -285,44 +325,88 @@ async function deployToLocahost() {
     amount
   );
 
+  ++BscStateHandlerCounter;
+  await BscStateHandler.updateState(BscStateHandlerCounter, [amount]);
+  await BscStateHandler.processPayload(BscStateHandlerCounter, "0x", {
+    value: ethers.utils.parseEther("1"),
+  });
+
+  ++FantomStateHandlerCounter;
+  await FantomStateHandler.processPayload(FantomStateHandlerCounter, "0x", {
+    value: ethers.utils.parseEther("1"),
+  });
+
   /// Deposit to Fantom vault
-  Request = await buildDepositCall(
-    BscSrc.address,
-    FantomDst.address,
-    FantomUSDC.address,
-    vaultId,
-    amount,
-    FantomChainId
-  );
+  // Request = await buildDepositCall(
+  //   BscSrc.address,
+  //   FantomDst.address,
+  //   FantomUSDC.address,
+  //   vaultId,
+  //   amount,
+  //   FantomChainId
+  // );
 
-  await depositToVault(
-    FantomUSDC,
-    BscSrc,
-    FantomDst,
-    Request.stateReq,
-    Request.LiqReq,
-    amount
-  );
+  // await depositToVault(
+  //   FantomUSDC,
+  //   BscSrc,
+  //   FantomDst,
+  //   Request.stateReq,
+  //   Request.LiqReq,
+  //   amount
+  // );
 
-  /// Deposit to Cheap SP vault
-  Request = await buildDepositCall(
-    BscSrc.address,
-    FantomDst.address,
-    FantomUSDC.address,
-    2,
-    amount, /// Get big amount of SP shares from here
-    FantomChainId
-  );
+  // ++FantomStateHandlerCounter;
+  // await FantomStateHandler.updateState(FantomStateHandlerCounter, [amount]);
+  // await FantomStateHandler.processPayload(FantomStateHandlerCounter, {
+  //     value: ethers.utils.parseEther("1"),
+  // });
 
-  await depositToVault(
-    FantomUSDC,
-    BscSrc,
-    FantomDst,
-    Request.stateReq,
-    Request.LiqReq,
-    amount
-  );
+  // /// Deposit to Cheap SP vault
+  // Request = await buildDepositCall(
+  //   BscSrc.address,
+  //   FantomDst.address,
+  //   FantomUSDC.address,
+  //   2,
+  //   amount, /// Get big amount of SP shares from here
+  //   FantomChainId
+  // );
 
+  // await depositToVault(
+  //   FantomUSDC,
+  //   BscSrc,
+  //   FantomDst,
+  //   Request.stateReq,
+  //   Request.LiqReq,
+  //   amount
+  // );
+
+  // ++BscStateHandlerCounter;
+  // await BscStateHandler.updateState(FantomStateHandlerCounter, [amount]);
+  // await BscStateHandler.processPayload(FantomStateHandlerCounter, {
+  //     value: ethers.utils.parseEther("1"),
+  // });
+
+  // /// Deposit to sameChain Fantom Vault
+  // /// Built to use dispatchTokens() - as mainnet is doing
+  // Request = await buildSameChainDepositCall(
+  //   FantomSrc.address,
+  //   FantomDst.address,
+  //   FantomUSDC.address,
+  //   1,
+  //   amount, /// Get big amount of SP shares from here
+  //   FantomChainId
+  // );
+
+  // await depositToVault(
+  //   FantomUSDC,
+  //   FantomSrc,
+  //   FantomDst,
+  //   Request.stateReq,
+  //   Request.LiqReq,
+  //   amount
+  // );
+
+  /// PROCESS PAYLOADS BRO
 }
 
 deployToLocahost();

@@ -15,6 +15,8 @@ import {StateData, TransactionType, CallbackType, InitData, ReturnData} from "./
 import {LiqRequest} from "./types/socketTypes.sol";
 import {IStateHandler} from "./interface/layerzero/IStateHandler.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title Super Destination
  * @author Zeropoint Labs.
@@ -241,7 +243,13 @@ contract SuperDestination is AccessControl, LiquidityHandler {
             .balanceOf(address(this));
 
         /// note: handle the collateral token transfers.
+        /// NOTE: Leaky check here. Manipulated LiqData can be sent to execute either in sameChain or crossChain context
+        /// NOTE: This also led to reliance on _allowanceTarget argument to pass tokens between Router and Destination
+        console.log("LiqData Length: ", liqData.txData.length);
         if (liqData.txData.length == 0) {
+            console.log("allowance", IERC20(liqData.token).allowance(srcSender, address(this)));
+            console.log("liqData.amount", liqData.amount);
+            /// NOTE: Probably code was failing here b4, that's why decission was to route through dispatch()
             require(
                 IERC20(liqData.token).allowance(srcSender, address(this)) >=
                     liqData.amount,
