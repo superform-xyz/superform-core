@@ -219,8 +219,14 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
         StateData memory stored = txHistory[returnData.txId];
         InitData memory initData = abi.decode(stored.params, (InitData));
 
-        require(returnData.srcChainId == initData.srcChainId, "Router: Source Chain Ids Mismatch");
-        require(returnData.dstChainId == initData.dstChainId, "Router: Dst Chain Ids Mismatch");
+        require(
+            returnData.srcChainId == initData.srcChainId,
+            "Router: Source Chain Ids Mismatch"
+        );
+        require(
+            returnData.dstChainId == initData.dstChainId,
+            "Router: Dst Chain Ids Mismatch"
+        );
 
         if (data.txType == TransactionType.DEPOSIT) {
             require(returnData.status, "Router: Invalid Payload Status");
@@ -247,7 +253,8 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
      * Function to support Metadata hosting in Opensea.
      */
     function tokenURI(uint256 id) public view returns (string memory) {
-        return string(abi.encodePacked(dynamicURI, Strings.toString(id), ".json"));
+        return
+            string(abi.encodePacked(dynamicURI, Strings.toString(id), ".json"));
     }
 
     /* ================ Internal Functions =================== */
