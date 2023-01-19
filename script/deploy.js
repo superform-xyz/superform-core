@@ -337,55 +337,65 @@ async function deployToLocahost() {
   });
 
   /// Deposit to Fantom vault
-  // Request = await buildDepositCall(
-  //   BscSrc.address,
-  //   FantomDst.address,
-  //   FantomUSDC.address,
-  //   vaultId,
-  //   amount,
-  //   FantomChainId
-  // );
+  Request = await buildDepositCall(
+    BscSrc.address,
+    FantomDst.address,
+    FantomUSDC.address,
+    vaultId,
+    amount,
+    FantomChainId
+  );
 
-  // await depositToVault(
-  //   FantomUSDC,
-  //   BscSrc,
-  //   FantomDst,
-  //   Request.stateReq,
-  //   Request.LiqReq,
-  //   amount
-  // );
+  await depositToVault(
+    FantomUSDC,
+    BscSrc,
+    FantomDst,
+    Request.stateReq,
+    Request.LiqReq,
+    amount
+  );
 
-  // ++FantomStateHandlerCounter;
-  // await FantomStateHandler.updateState(FantomStateHandlerCounter, [amount]);
-  // await FantomStateHandler.processPayload(FantomStateHandlerCounter, {
-  //     value: ethers.utils.parseEther("1"),
-  // });
+  ++FantomStateHandlerCounter;
+  await FantomStateHandler.updateState(FantomStateHandlerCounter, [amount]);
+  await FantomStateHandler.processPayload(FantomStateHandlerCounter, "0x", {
+      value: ethers.utils.parseEther("1"),
+  });
+
+  ++BscStateHandlerCounter;
+  await BscStateHandler.processPayload(BscStateHandlerCounter, "0x", {
+    value: ethers.utils.parseEther("1"),
+  });
 
   // /// Deposit to Cheap SP vault
-  // Request = await buildDepositCall(
-  //   BscSrc.address,
-  //   FantomDst.address,
-  //   FantomUSDC.address,
-  //   2,
-  //   amount, /// Get big amount of SP shares from here
-  //   FantomChainId
-  // );
+  Request = await buildDepositCall(
+    BscSrc.address,
+    FantomDst.address,
+    FantomUSDC.address,
+    2,
+    amount, /// Get big amount of SP shares from here
+    FantomChainId
+  );
 
-  // await depositToVault(
-  //   FantomUSDC,
-  //   BscSrc,
-  //   FantomDst,
-  //   Request.stateReq,
-  //   Request.LiqReq,
-  //   amount
-  // );
+  await depositToVault(
+    FantomUSDC,
+    BscSrc,
+    FantomDst,
+    Request.stateReq,
+    Request.LiqReq,
+    amount
+  );
 
-  // ++BscStateHandlerCounter;
-  // await BscStateHandler.updateState(FantomStateHandlerCounter, [amount]);
-  // await BscStateHandler.processPayload(FantomStateHandlerCounter, {
-  //     value: ethers.utils.parseEther("1"),
-  // });
+  ++FantomStateHandlerCounter;
+  await FantomStateHandler.updateState(FantomStateHandlerCounter, [amount]);
+  await FantomStateHandler.processPayload(FantomStateHandlerCounter, "0x", {
+      value: ethers.utils.parseEther("1"),
+  });
 
+  ++BscStateHandlerCounter;
+  await BscStateHandler.processPayload(BscStateHandlerCounter, "0x", {
+    value: ethers.utils.parseEther("1"),
+  });
+  
   // /// Deposit to sameChain Fantom Vault
   // /// Built to use dispatchTokens() - as mainnet is doing
   // Request = await buildSameChainDepositCall(
