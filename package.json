@@ -3,7 +3,9 @@
   "scripts": {
     "lint": "npx prettier '**/*.{json,sol,md}' --write",
     "deploy": "npx hardhat run script/deploy.js --network localhost",
-    "test": "npx hardhat test test/main/**.js"
+    "test": "npx hardhat test test/**.js",
+    "test-recovery": "npx hardhat test test/recovery.test.js",
+    "test-main": "npx hardhat test test/main.test.js"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-network-helpers": "1.0.4",
