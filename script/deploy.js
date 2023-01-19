@@ -395,7 +395,7 @@ async function deployToLocahost() {
   await BscStateHandler.processPayload(BscStateHandlerCounter, "0x", {
     value: ethers.utils.parseEther("1"),
   });
-  
+
   // /// Deposit to sameChain Fantom Vault
   // /// Built to use dispatchTokens() - as mainnet is doing
   // Request = await buildSameChainDepositCall(
@@ -416,7 +416,6 @@ async function deployToLocahost() {
   //   amount
   // );
 
-  /// PROCESS PAYLOADS BRO
 }
 
 deployToLocahost();
