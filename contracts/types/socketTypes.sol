@@ -2,11 +2,11 @@
 pragma solidity ^0.8.14;
 
 struct LiqRequest {
-    uint8 bridgeId;
-    bytes txData;
-    address token;
+    uint8 bridgeId; /// @dev what bridge to use to move tokens
+    bytes txData; /// @dev socket generated data
+    address token; /// @dev what token to move from src to dst
     address allowanceTarget; /// @dev should check with socket.
-    uint256 amount;
+    uint256 amount; /// @dev in what amount token is bridged
     uint256 nativeAmount;
 }
 
