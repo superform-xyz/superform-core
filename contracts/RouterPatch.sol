@@ -36,10 +36,12 @@ contract RouterPatch is ERC1155Holder {
         totalTransactions = IController(ROUTER_ADDRESS).totalTransactions();
     }
 
+    receive() external payable {}
+
     function withdraw(
         StateReq[] calldata _stateReq,
         LiqRequest[] calldata _liqReq
-    ) external {
+    ) external payable {
         address sender = msg.sender;
         uint256 l1 = _stateReq.length;
         uint256 l2 = _liqReq.length;
@@ -52,6 +54,9 @@ contract RouterPatch is ERC1155Holder {
         } else {
             singleWithdrawal(_stateReq[0], sender);
         }
+
+        // refunding any unused gas fees.
+        payable(sender).transfer(address(this).balance);
     }
 
     function singleWithdrawal(StateReq calldata _stateData, address sender)

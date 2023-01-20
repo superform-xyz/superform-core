@@ -28,6 +28,12 @@ struct StateReq {
     uint256 msgValue;
 }
 
+// [["106", ["8720"], ["4311413"], ["1000"], "0x000100000000000000000000000000000000000000000000000000000000004c4b40", "1548277010953360"]]
+// [["0", "0x", "0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000", "0", "0"]]
+
+// ["0xbb906bc787fbc9207e254ff87be398f4e86ea39f"]["0xA36c9FEB786A79E60E5583622D1Fb42294003411"] = true
+// [{operator: "0xA36c9FEB786A79E60E5583622D1Fb42294003411"}]
+
 /// Created during deposit by contract from Liq+StateReqs
 /// @dev using this for communication between src & dst transfers
 struct StateData {
