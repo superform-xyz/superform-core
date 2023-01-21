@@ -252,12 +252,7 @@ describe("interchain base tests:", async() => {
               BscStateHandler.address,
               BscDst.address
             );
-          
-            // Setting up required initial parameters
-            /// @dev why do we need to do it ourselves? we really shouldn't
-            //   await FantomSrc.setTokenChainId(1, BscChainId);
-            //   await BscSrc.setTokenChainId(1, FantomChainId);
-          
+                    
             await FantomLzEndpoint.setDestLzEndpoint(
               BscStateHandler.address,
               BscLzEndpoint.address

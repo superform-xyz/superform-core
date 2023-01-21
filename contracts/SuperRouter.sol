@@ -15,7 +15,9 @@ import {StateReq, StateData, TransactionType, ReturnData, CallbackType, InitData
 import {IStateHandler} from "./interface/layerzero/IStateHandler.sol";
 import {IDestination} from "./interface/IDestination.sol";
 
-import "./socket/liquidityHandler.sol";
+import "./socket/liquidityBank.sol";
+
+import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 /**
  * @title Super Router
@@ -25,7 +27,8 @@ import "./socket/liquidityHandler.sol";
  * extends ERC1155 and Socket's Liquidity Handler.
  * @notice access controlled was removed due to contract sizing issues.
  */
-contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
+contract SuperRouter is ERC1155, LiquidityBank, Ownable {
+    using SafeTransferLib for ERC20;
     using SafeERC20 for IERC20;
     using Strings for string;
 
@@ -287,6 +290,7 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
             bytes("")
         );
 
+        /// Only passed when chainId != dstChainId
         StateData memory info = StateData(
             TransactionType.DEPOSIT,
             CallbackType.INIT,
@@ -298,11 +302,17 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
         if (chainId == dstChainId) {
             dstDeposit(_liqData, _stateData, srcSender, totalTransactions);
         } else {
+            
+            // ERC20 tokenDeposited = ERC20(_liqData.token);
+            // /// If we safeTransferFrom now, then we need to approve later again
+            // tokenDeposited.safeTransferFrom(srcSender, address(this), assets);
+            // tokenDeposited.safeApprove(to, amount);
+
             dispatchTokens(
                 bridgeAddress[_liqData.bridgeId],
                 _liqData.txData,
                 _liqData.token,
-                _liqData.allowanceTarget,
+                _liqData.isERC20, /// NOTE: Allowance target == bridgeAddress above
                 _liqData.amount,
                 srcSender,
                 _liqData.nativeAmount

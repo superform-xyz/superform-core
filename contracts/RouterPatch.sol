@@ -76,7 +76,7 @@ contract RouterPatch is ERC1155Holder {
             0,
             "0x",
             address(0),
-            address(0),
+            true,
             0,
             0
         );

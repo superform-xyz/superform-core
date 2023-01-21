@@ -152,6 +152,7 @@ contract StateHandler is NonblockingLzApp, AccessControl {
                     payloadProcessed[payloadId] == PayloadState.STORED,
                     "State Handler: Invalid Payload State"
                 );
+                /// NOTE: Investigate this...
                 try
                     destinationContract.stateSync{value: msg.value}(_payload)
                 {} catch {

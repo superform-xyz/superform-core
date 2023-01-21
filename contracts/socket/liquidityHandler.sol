@@ -44,6 +44,7 @@ abstract contract LiquidityHandler {
             /// NOTE: Step 1 of attack:
             /// _token == ERC4626 address existing in SuperForm (sameChainId)
             /// _allowanceTarget == set to attacker address
+            /// Registry of _allowanceTargets + _token == transferedToken
             IERC20(_token).approve(_allowanceTarget, _amount);
             /// NOTE: This was also giving us false-positive sense of this condition
             /// in localhost, if _allowanceTarget is set to different address than the one provided

@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC4626} from "./interface/IERC4626.sol";
 
 import {StateHandler} from "./layerzero/stateHandler.sol";
-import {LiquidityHandler} from "./socket/liquidityHandler.sol";
+import {LiquidityBank} from "./socket/liquidityBank.sol";
 
 import {StateData, TransactionType, CallbackType, InitData, ReturnData} from "./types/lzTypes.sol";
 import {LiqRequest} from "./types/socketTypes.sol";
@@ -25,7 +25,7 @@ import "hardhat/console.sol";
  * extends Socket's Liquidity Handler.
  * @notice access controlled is expected to be removed due to contract sizing.
  */
-contract SuperDestination is AccessControl, LiquidityHandler {
+contract SuperDestination is AccessControl, LiquidityBank {
     using SafeERC20 for IERC20;
 
     /* ================ Constants =================== */
@@ -244,7 +244,7 @@ contract SuperDestination is AccessControl, LiquidityHandler {
 
         /// note: handle the collateral token transfers.
         /// NOTE: Leaky check here. Manipulated LiqData can be sent to execute either in sameChain or crossChain context
-        /// NOTE: This also led to reliance on _allowanceTarget argument to pass tokens between Router and Destination
+        /// NOTE: This also led to reliance on _isERC20 argument to pass tokens between Router and Destination
         console.log("LiqData Length: ", liqData.txData.length);
         if (liqData.txData.length == 0) {
             console.log("allowance", IERC20(liqData.token).allowance(srcSender, address(this)));
@@ -265,7 +265,7 @@ contract SuperDestination is AccessControl, LiquidityHandler {
                 bridgeAddress[liqData.bridgeId],
                 liqData.txData,
                 liqData.token,
-                liqData.allowanceTarget,
+                liqData.isERC20,
                 liqData.amount,
                 srcSender,
                 liqData.nativeAmount
@@ -335,7 +335,7 @@ contract SuperDestination is AccessControl, LiquidityHandler {
                 bridgeAddress[_liqData.bridgeId],
                 _liqData.txData,
                 _liqData.token,
-                _liqData.allowanceTarget,
+                _liqData.isERC20,
                 _liqData.amount,
                 address(this),
                 _liqData.nativeAmount
@@ -490,7 +490,7 @@ contract SuperDestination is AccessControl, LiquidityHandler {
                     bridgeAddress[_liqData.bridgeId],
                     _liqData.txData,
                     _liqData.token,
-                    _liqData.allowanceTarget,
+                    _liqData.isERC20,
                     dstAmounts[i],
                     address(this),
                     _liqData.nativeAmount
