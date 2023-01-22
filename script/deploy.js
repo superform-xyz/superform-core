@@ -260,7 +260,7 @@ async function deployToLocahost() {
       1,
       socketTxData,
       tokenType,
-      socket.address,
+      true, 
       amount,
       0, /// nativeAmount
     ];

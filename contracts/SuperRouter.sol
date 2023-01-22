@@ -15,7 +15,7 @@ import {StateReq, StateData, TransactionType, ReturnData, CallbackType, InitData
 import {IStateHandler} from "./interface/layerzero/IStateHandler.sol";
 import {IDestination} from "./interface/IDestination.sol";
 
-import "./socket/liquidityBank.sol";
+import "./socket/liquidityHandler.sol";
 
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
@@ -27,7 +27,7 @@ import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.s
  * extends ERC1155 and Socket's Liquidity Handler.
  * @notice access controlled was removed due to contract sizing issues.
  */
-contract SuperRouter is ERC1155, LiquidityBank, Ownable {
+contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
     using SafeTransferLib for ERC20;
     using SafeERC20 for IERC20;
     using Strings for string;
@@ -303,11 +303,11 @@ contract SuperRouter is ERC1155, LiquidityBank, Ownable {
             dstDeposit(_liqData, _stateData, srcSender, totalTransactions);
         } else {
             
-            // ERC20 tokenDeposited = ERC20(_liqData.token);
-            // /// If we safeTransferFrom now, then we need to approve later again
-            // tokenDeposited.safeTransferFrom(srcSender, address(this), assets);
-            // tokenDeposited.safeApprove(to, amount);
-
+            /// NOTE: How do we validate that _liqData.amount is >= stateData.amounts
+            /// We can't pass uniqueId with liqData to match against stateData on dst...
+            /// To test: Attacker listens for deposit event and makes an optimistic call to reach dst before the user.
+            /// Attacker hopes to use user's liquidity to fill his stateData.amounts request
+            /// NOTE: Old SUP-633 Related. Issue on both Router & Destination.
             dispatchTokens(
                 bridgeAddress[_liqData.bridgeId],
                 _liqData.txData,
@@ -340,8 +340,8 @@ contract SuperRouter is ERC1155, LiquidityBank, Ownable {
         uint16 dstChainId = _stateData.dstChainId;
 
         require(dstChainId != 0, "Router: Invalid Destination Chain");
-        /// @dev here we can burn ANY vaultId!!!
-        /// attacker can can any sp position to burn for any other position with crafted liqData
+        /// NOTE: Here we can burn ANY vaultId!!!
+        /// attacker can use any sp position in burn for any other position with crafted liqData
         _burnBatch(sender, _stateData.vaultIds, _stateData.amounts);
 
         totalTransactions++;

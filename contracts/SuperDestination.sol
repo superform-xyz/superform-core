@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC4626} from "./interface/IERC4626.sol";
 
 import {StateHandler} from "./layerzero/stateHandler.sol";
-import {LiquidityBank} from "./socket/liquidityBank.sol";
+import {LiquidityHandler} from "./socket/liquidityHandler.sol";
 
 import {StateData, TransactionType, CallbackType, InitData, ReturnData} from "./types/lzTypes.sol";
 import {LiqRequest} from "./types/socketTypes.sol";
@@ -25,7 +25,7 @@ import "hardhat/console.sol";
  * extends Socket's Liquidity Handler.
  * @notice access controlled is expected to be removed due to contract sizing.
  */
-contract SuperDestination is AccessControl, LiquidityBank {
+contract SuperDestination is AccessControl, LiquidityHandler {
     using SafeERC20 for IERC20;
 
     /* ================ Constants =================== */
@@ -103,6 +103,7 @@ contract SuperDestination is AccessControl, LiquidityBank {
 
         for (uint256 i = 0; i < data.vaultIds.length; i++) {
             if (stateData.txType == TransactionType.DEPOSIT) {
+                /// NOTE: Validate that this are payload sender tokens
                 if (
                     IERC20(vault[data.vaultIds[i]].asset()).balanceOf(
                         address(this)
@@ -235,6 +236,7 @@ contract SuperDestination is AccessControl, LiquidityBank {
         onlyRole(ROUTER_ROLE)
         returns (uint256[] memory dstAmounts)
     {
+        /// NOTE: Why do we loop here? singleDeposit already happens in a loop?
         uint256 loopLength = _vaultIds.length;
         uint256 expAmount = addValues(_amounts);
 
@@ -430,6 +432,8 @@ contract SuperDestination is AccessControl, LiquidityBank {
         for (uint256 i = 0; i < data.vaultIds.length; i++) {
             IERC4626 v = vault[data.vaultIds[i]];
 
+            /// NOTE: How do we validate that _liqData.amount is >= stateData.amounts
+            /// NOTE: Old SUP-633
             dstAmounts[i] = v.deposit(data.amounts[i], address(this));
             /// @notice dstAmounts is equal to POSITIONS returned by v(ault)'s deposit while data.amounts is equal to ASSETS (tokens) bridged
             emit Processed(

@@ -325,4 +325,8 @@ describe("interchain base tests:", async() => {
         expect(await BscDst.chainId()).to.equals(2);
     });
 
+    it("ChainId1 => ChainId2: deposit() => singleDeposit()", async function() {});
+
+    it("ChainId1 => ChainId1: deposit() => singleDeposit() | Multiple vaultIds", async function() {});
+
 });
