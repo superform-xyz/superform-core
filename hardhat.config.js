@@ -88,8 +88,8 @@ module.exports = {
         }
     },
     etherscan: {
-        apiKey: "IM7UXVG9WDD55Q52UYE81GCIQXFMZ1YYDC"
-    }, // KAMQ757XAFTMJVYZ66NPN233ZNK9M6DQJ8
+        apiKey: "7PVFUDTW44QBP8Y7CU5WKX6DXJMHSBTWNW"
+    },
     gasReporter: {
         enabled: false,
         currency: "USD",

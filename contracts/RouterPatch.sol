@@ -79,7 +79,7 @@ contract RouterPatch is ERC1155Holder {
         /// generating a dummy request - that will override user's inbound req
         LiqRequest memory data = LiqRequest(
             0,
-            "0x",
+            "",
             address(0),
             address(0),
             0,
