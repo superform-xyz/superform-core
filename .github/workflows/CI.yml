@@ -1,0 +1,35 @@
+name: CI
+
+ on:
+   push:
+     branches: [main, develop]
+   pull_request:
+     branches: [main, develop]
+
+ jobs:
+   build:
+     runs-on: ubuntu-latest
+
+     strategy:
+       matrix:
+         node-version: [18.13.0]
+
+     steps:
+       - uses: actions/checkout@v2
+       - name: Use Node.js ${{ matrix.node-version }}
+         uses: actions/setup-node@v2
+       - name: Install dependencies
+         run: npm i
+       - name: Run Tests
+         run: npm run test
+         env:
+          BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+          ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+          FANTOM_TESTNET_URL: ${{ secrets.FANTOM_TESTNET_URL }}
+          FUJI_RPC_URL: ${{ secrets.FUJI_RPC_URL }}
+          MUMBAI_RPC_URL: ${{ secrets.MUMBAI_RPC_URL }}
+          PRODUCTION: ${{ secrets.PRODUCTION }}
+          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
+          OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
