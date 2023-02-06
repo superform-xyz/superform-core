@@ -1,7 +1,7 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable prettier/prettier */
-const { expect } = require("chai")
 const { ethers } = require("hardhat")
-const USDC_ABI = require("./ABI/usdc.json")
+const USDC_ABI = require("../ABI/usdc.json")
 
 describe("Router Patch Unit Testing", () => {
     let routerPatch
@@ -12,9 +12,6 @@ describe("Router Patch Unit Testing", () => {
     let multisig
     let whale
     let usdc
-    let balanceSharesBefore
-    let balanceUSDCAfter
-    let balanceSharesAfter
 
     async function buildWithdrawCall(
         vaultId,
