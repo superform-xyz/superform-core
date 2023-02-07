@@ -19,11 +19,10 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "yarn"
       - name: Install dependencies
-        run: yarn install
+        run: npm install --legacy-peer-deps  
       - name: Run Tests
-        run: yarn test
+        run: npm run test
         env:
           BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
