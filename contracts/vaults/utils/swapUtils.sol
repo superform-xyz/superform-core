@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.17;
 
 import {SafeTransferLib} from "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";

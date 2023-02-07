@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.17;
 
 // Aave lending pool interface
 // Documentation: https://docs.aave.com/developers/the-core-protocol/lendingpool/ilendingpool

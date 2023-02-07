@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "../lzApp/NonblockingLzApp.sol";
+import "./layerzero/NonblockingLzApp.sol";
 
-import {IController} from "../interface/ISource.sol";
-import {StateData, CallbackType, PayloadState, TransactionType, InitData, ReturnData} from "../types/lzTypes.sol";
+import {IController} from "../interfaces/ISource.sol";
+import {StateData, CallbackType, PayloadState, TransactionType, InitData, ReturnData} from "../types/DataTypes.sol";
 
 /**
  * @title State Handler

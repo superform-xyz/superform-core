@@ -1,7 +1,7 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  */
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -9,13 +9,13 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import {LiqRequest} from "./types/socketTypes.sol";
-import {StateReq, StateData, TransactionType, ReturnData, CallbackType, InitData} from "./types/lzTypes.sol";
+import {LiqRequest} from "./types/LiquidityTypes.sol";
+import {StateReq, StateData, TransactionType, ReturnData, CallbackType, InitData} from "./types/DataTypes.sol";
 
-import {IStateHandler} from "./interface/layerzero/IStateHandler.sol";
-import {IDestination} from "./interface/IDestination.sol";
+import {IStateHandler} from "./interfaces/IStateHandler.sol";
+import {IDestination} from "./interfaces/IDestination.sol";
 
-import "./socket/liquidityHandler.sol";
+import "./crosschain-liquidity/LiquidityHandler.sol";
 
 /**
  * @title Super Router

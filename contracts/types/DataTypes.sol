@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.17;
 
 /// @notice We should optimize those types more
 enum TransactionType {

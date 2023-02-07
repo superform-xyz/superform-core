@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.17;
 
 interface ILayerZeroReceiver {
     // @notice LayerZero endpoint will invoke this function to deliver the message on the destination

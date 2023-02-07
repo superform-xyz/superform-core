@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.17;
 
-import {LiqRequest} from "../types/socketTypes.sol";
+import {LiqRequest} from "../types/LiquidityTypes.sol";
 
 interface IDestination {
     function directDeposit(

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.17;
 pragma abicoder v2;
 
-import "../interface/ILayerZeroReceiver.sol";
-import "../interface/ILayerZeroEndpoint.sol";
+import "../crosschain-data/layerzero/interface/ILayerZeroReceiver.sol";
+import "../crosschain-data/layerzero/interface/ILayerZeroEndpoint.sol";
 
 /*
 mocking multi endpoint connection.

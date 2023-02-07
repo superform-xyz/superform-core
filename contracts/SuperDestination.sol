@@ -1,19 +1,19 @@
 /**
  * SPDX-License-Identifier: Apache-2.0
  */
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC4626} from "./interface/IERC4626.sol";
+import {IERC4626} from "./interfaces/IERC4626.sol";
 
-import {StateHandler} from "./layerzero/stateHandler.sol";
-import {LiquidityHandler} from "./socket/liquidityHandler.sol";
+import {StateHandler} from "./crosschain-data/StateHandler.sol";
+import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 
-import {StateData, TransactionType, CallbackType, InitData, ReturnData} from "./types/lzTypes.sol";
-import {LiqRequest} from "./types/socketTypes.sol";
-import {IStateHandler} from "./interface/layerzero/IStateHandler.sol";
+import {StateData, TransactionType, CallbackType, InitData, ReturnData} from "./types/DataTypes.sol";
+import {LiqRequest} from "./types/LiquidityTypes.sol";
+import {IStateHandler} from "./interfaces/IStateHandler.sol";
 
 /**
  * @title Super Destination
