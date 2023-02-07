@@ -1,8 +1,10 @@
-const { expect, assert } = require("chai");
+/* eslint-disable no-unused-vars */
+/* eslint-disable prettier/prettier */
+const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BigNumber } = require("ethers");
 
-describe("interchain base tests:", async() => {
+describe("samechainId base tests:", async() => {
     let FantomSrc;
     let BscSrc;
     let FantomLzEndpoint;
@@ -12,20 +14,18 @@ describe("interchain base tests:", async() => {
     let accounts;
     let FantomUSDC;
     let BscUSDC;
+    let swapToken;
     let FantomVault;
     let BscVault;
     let socket;
     let FantomStateHandler;
     let BscStateHandler;
 
-    let FantomChainId = 1;
-    let BscChainId = 2;
+    const FantomChainId = 1;
+    const BscChainId = 2;
 
-    let ThousandTokensE18 = ethers.utils.parseEther("1000");
-    let MilionTokensE18 = ethers.utils.parseEther("1000000");
-
-    var BscStateHandlerCounter = 0;
-    var FantomStateHandlerCounter = 0;
+    const ThousandTokensE18 = ethers.utils.parseEther("1000");
+    const MilionTokensE18 = ethers.utils.parseEther("1000000");
 
     let mockEstimatedNativeFee;
     let mockEstimatedZroFee;
@@ -38,48 +38,44 @@ describe("interchain base tests:", async() => {
         liqReq,
         amountToDeposit
     ) {
-        await tokenType.approve(targetSource.address, amountToDeposit);
+        // console.log("stateReq", stateReq, "liq", liqReq)
+        await tokenType.approve(targetDst.address, amountToDeposit);
 
         // Mocking gas fee airdrop (native) from layerzero
         await accounts[1].sendTransaction({
             to: targetDst.address,
-            value: ethers.utils.parseEther("2"),
+            value: ethers.utils.parseEther("1"),
         });
 
         /// Value == fee paid to relayer. API call in our design
-        try {
-            console.log("log reqs");
-            console.log([liqReq], [stateReq]);
-            await targetSource.deposit([liqReq], [stateReq], {
-                value: ethers.utils.parseEther("1"),
-            });
-        } catch (e) {
-            console.log("err here");
-            console.log(e);
-        }
-
+        await targetSource.deposit([liqReq], [stateReq], {
+            value: ethers.utils.parseEther("1"),
+        });
     }
 
-    async function depositToVaultMulti(
+    async function buildWithdrawCall(
+        fromSrc,
+        toDst,
         tokenType,
-        targetSource,
-        targetDst,
-        stateReq,
-        liqReq,
-        amountToDeposit
+        vaultId,
+        amount,
+        targetChainId
     ) {
-        await tokenType.approve(targetSource.address, amountToDeposit);
+        const socketTxData = socket.interface.encodeFunctionData(
+            "mockSocketTransfer", [fromSrc, accounts[0].address, tokenType, amount]
+        );
 
-        // Mocking gas fee airdrop (native) from layerzero
-        await accounts[1].sendTransaction({
-            to: targetDst.address,
-            value: ethers.utils.parseEther("1"),
-        });
+        const stateReq = [
+            targetChainId, [amount],
+            [vaultId],
+            [1000], /// hardcoding slippages to 10%
+            0x00,
+            ethers.utils.parseEther("0.5"),
+        ];
 
-        /// Value == fee paid to relayer. API call in our design
-        await targetSource.deposit(liqReq, stateReq, {
-            value: ethers.utils.parseEther("1"),
-        });
+        const LiqReq = [1, socketTxData, tokenType, socket.address, amount, 0];
+
+        return { stateReq: stateReq, LiqReq: LiqReq };
     }
 
     async function buildDepositCall(
@@ -90,60 +86,19 @@ describe("interchain base tests:", async() => {
         amount,
         targetChainId
     ) {
-        let socketTxData = socket.interface.encodeFunctionData(
-            "mockSocketTransfer", [fromSrc, toDst, tokenType, amount]
+        const socketTxData = socket.interface.encodeFunctionData(
+            "mockSocketTransfer", [toDst, toDst, tokenType, amount]
         );
 
         const stateReq = [
             targetChainId, [amount],
             [vaultId],
-            [1000], // hardcoding max-slippage to 10%
+            [1000], /// hardcoding slippages to 10%
             0x00,
-            ethers.utils.parseEther("1"),
+            ethers.utils.parseEther("0.5"),
         ];
 
-        const LiqReq = [
-            1,
-            socketTxData,
-            tokenType,
-            socket.address,
-            amount,
-            0 /// nativeAmount
-        ];
-
-        return { stateReq: stateReq, LiqReq: LiqReq };
-    }
-
-    async function buildWithdrawCall(
-        fromSrc,
-        toDst,
-        tokenType,
-        vaultId,
-        tokenAmount, /// == shares before withdraw, ERR!
-        sharesAmount,
-        targetChainId
-    ) {
-        let socketTxData = socket.interface.encodeFunctionData(
-            "mockSocketTransfer", [fromSrc, toDst, tokenType, tokenAmount]
-        );
-
-        /// iterates vaultIds and calls vault.redeem()
-        const stateReq = [
-            targetChainId, [sharesAmount], /// amount is irrelevant on processWithdraw, err?
-            [vaultId],
-            [1000], // hardcoding slippage to 10%
-            0x00,
-            ethers.utils.parseEther("1"),
-        ];
-
-        /// withdraw uses this to sent tokens
-        const LiqReq = [
-            1,
-            socketTxData,
-            tokenType,
-            socket.address,
-            tokenAmount,
-        ];
+        const LiqReq = [1, socketTxData, tokenType, socket.address, amount, 0];
 
         return { stateReq: stateReq, LiqReq: LiqReq };
     }
@@ -195,6 +150,14 @@ describe("interchain base tests:", async() => {
                 MilionTokensE18
             );
 
+            const SwapToken = await ethers.getContractFactory("ERC20Mock");
+            swapToken = await SwapToken.deploy(
+                "Swap",
+                "SWP",
+                accounts[0].address,
+                MilionTokensE18
+            );
+
             // Deploying Mock Vault
             const Vault = await ethers.getContractFactory("VaultMock");
             FantomVault = await Vault.deploy(
@@ -232,11 +195,6 @@ describe("interchain base tests:", async() => {
                 BscDst.address
             );
 
-            // Setting up required initial parameters
-            /// @dev why do we need to do it ourselves? we really shouldn't
-            await FantomSrc.setTokenChainId(1, BscChainId);
-            await BscSrc.setTokenChainId(1, FantomChainId);
-
             await FantomLzEndpoint.setDestLzEndpoint(
                 BscStateHandler.address,
                 BscLzEndpoint.address
@@ -246,8 +204,8 @@ describe("interchain base tests:", async() => {
                 FantomLzEndpoint.address
             );
 
-            await FantomDst.addVault(FantomVault.address, 1);
-            await BscDst.addVault(BscVault.address, 1);
+            await FantomDst.addVault([FantomVault.address], [1]);
+            await BscDst.addVault([BscVault.address], [1]);
 
             await FantomDst.setSrcTokenDistributor(FantomSrc.address, FantomChainId);
             await BscDst.setSrcTokenDistributor(BscSrc.address, BscChainId);
@@ -256,7 +214,10 @@ describe("interchain base tests:", async() => {
                 FantomSrc.address,
                 FantomDst.address
             );
-            await BscStateHandler.setHandlerController(BscSrc.address, BscDst.address);
+            await BscStateHandler.setHandlerController(
+                BscSrc.address,
+                BscDst.address
+            );
 
             const role = await FantomStateHandler.CORE_CONTRACTS_ROLE();
             const role2 = await BscStateHandler.CORE_CONTRACTS_ROLE();
@@ -276,17 +237,24 @@ describe("interchain base tests:", async() => {
                 FantomStateHandler.address
             );
 
-            await FantomSrc.setBridgeAddress(1, socket.address);
-            await BscSrc.setBridgeAddress(1, socket.address);
-            await BscDst.setBridgeAddress(1, socket.address);
-            await FantomDst.setBridgeAddress(1, socket.address);
+            await FantomSrc.setBridgeAddress([1], [socket.address]);
+            await BscSrc.setBridgeAddress([1], [socket.address]);
+            await BscDst.setBridgeAddress([1], [socket.address]);
+            await FantomDst.setBridgeAddress([1], [socket.address]);
 
-            const PROCESSOR_CONTRACT_ROLE = await FantomStateHandler.PROCESSOR_CONTRACTS_ROLE()
+            const PROCESSOR_CONTRACT_ROLE =
+                await FantomStateHandler.PROCESSOR_CONTRACTS_ROLE();
 
-            await FantomStateHandler.grantRole(PROCESSOR_CONTRACT_ROLE, accounts[0].address)
-            await BscStateHandler.grantRole(PROCESSOR_CONTRACT_ROLE, accounts[0].address)
+            await FantomStateHandler.grantRole(
+                PROCESSOR_CONTRACT_ROLE,
+                accounts[0].address
+            );
+            await BscStateHandler.grantRole(
+                PROCESSOR_CONTRACT_ROLE,
+                accounts[0].address
+            );
         } catch (err) {
-            console.log(err)
+            console.log(err);
         }
     });
 
@@ -298,4 +266,68 @@ describe("interchain base tests:", async() => {
         expect(await BscDst.chainId()).to.equals(2);
     });
 
+    it("FTM=>FTM: SAMECHAIN deposit()", async function() {
+        const amount = ThousandTokensE18;
+        const vaultId = 1;
+
+        const Request = await buildDepositCall(
+            FantomSrc.address,
+            FantomDst.address,
+            FantomUSDC.address,
+            vaultId,
+            amount,
+            FantomChainId
+        );
+
+        // Expect Initial Token Balance To Be Zero
+        expect(await FantomUSDC.balanceOf(FantomDst.address)).to.equal(0);
+
+        // Depositing To Vault Id 1 On Destination
+        await depositToVault(
+            FantomUSDC,
+            FantomSrc,
+            FantomDst,
+            Request.stateReq,
+            Request.LiqReq,
+            amount
+        );
+
+        expect(await FantomSrc.balanceOf(accounts[0].address, 1)).to.equal(amount);
+        expect(await FantomVault.balanceOf(FantomDst.address)).to.equal(amount);
+    });
+
+    it("FTM<=FTM: SAMECHAIN withdraw()", async function() {
+        const amount = ThousandTokensE18;
+        const vaultId = 1;
+
+        const sharesBalanceBeforeWithdraw = await FantomSrc.balanceOf(
+            accounts[0].address,
+            1
+        );
+
+        const Request = await buildWithdrawCall(
+            FantomDst.address,
+            accounts[0].address,
+            FantomUSDC.address,
+            vaultId,
+            amount,
+            FantomChainId
+        );
+
+        await FantomSrc.withdraw([Request.stateReq], [Request.LiqReq], {
+            value: ethers.utils.parseEther("1"),
+        });
+
+        const tokenBalanceAfterWithdraw = await FantomUSDC.balanceOf(
+            accounts[0].address
+        );
+        const sharesBalanceAfterWithdraw = await FantomSrc.balanceOf(
+            accounts[0].address,
+            1
+        );
+
+        // expect(tokenBalanceAfterWithdraw).to.equal(amount);
+        expect(sharesBalanceBeforeWithdraw).to.equal(amount); /// This is true only because Mock Vaults are empty and it's theirs first deposit! TEST
+        expect(sharesBalanceAfterWithdraw).to.equal(0);
+    });
 });

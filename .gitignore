@@ -7,3 +7,16 @@ typechain
 #Hardhat files
 cache
 artifacts
+
+
+# Ignore all vscode settings
+.vscode/
+
+# Ignore flattened files
+flattened.txt
+
+broadcast
+
+# Ignore local misc files
+.DS_Store
+*.pem

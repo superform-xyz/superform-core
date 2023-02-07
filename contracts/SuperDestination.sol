@@ -142,8 +142,9 @@ contract SuperDestination is AccessControl, LiquidityHandler {
             uint256 id = _vaultId[i];
             vault[id] = _vaultAddress[i];
 
-            uint256 currentAllowance = IERC20(_vaultAddress[i].asset()).allowance(address(this), address(_vaultAddress[i]));
-            if(currentAllowance == 0) {
+            uint256 currentAllowance = IERC20(_vaultAddress[i].asset())
+                .allowance(address(this), address(_vaultAddress[i]));
+            if (currentAllowance == 0) {
                 ///@dev pre-approve, only one type of asset is needed anyway
                 IERC20(_vaultAddress[i].asset()).safeApprove(
                     address(_vaultAddress[i]),
@@ -237,8 +238,7 @@ contract SuperDestination is AccessControl, LiquidityHandler {
 
         /// note: checking balance
         address collateral = IERC4626(vault[_vaultIds[0]]).asset();
-        uint256 balanceBefore = IERC20(collateral)
-            .balanceOf(address(this));
+        uint256 balanceBefore = IERC20(collateral).balanceOf(address(this));
 
         /// note: handle the collateral token transfers.
         if (liqData.txData.length == 0) {
@@ -264,8 +264,7 @@ contract SuperDestination is AccessControl, LiquidityHandler {
             );
         }
 
-        uint256 balanceAfter = IERC20(collateral)
-            .balanceOf(address(this));
+        uint256 balanceAfter = IERC20(collateral).balanceOf(address(this));
         require(
             balanceAfter - balanceBefore >= expAmount,
             "Destination: Invalid State & Liq Data"
@@ -275,7 +274,10 @@ contract SuperDestination is AccessControl, LiquidityHandler {
 
         for (uint256 i = 0; i < loopLength; i++) {
             IERC4626 v = vault[_vaultIds[i]];
-            require(v.asset() == address(collateral), "Destination: Invalid Collateral");
+            require(
+                v.asset() == address(collateral),
+                "Destination: Invalid Collateral"
+            );
             dstAmounts[i] = v.deposit(_amounts[i], address(this));
         }
     }
@@ -302,12 +304,15 @@ contract SuperDestination is AccessControl, LiquidityHandler {
         uint256 len1 = _liqData.txData.length;
         address receiver = len1 == 0 ? address(_user) : address(this);
         dstAmounts = new uint256[](_vaultIds.length);
-        
+
         address collateral = IERC4626(vault[_vaultIds[0]]).asset();
 
         for (uint256 i = 0; i < _vaultIds.length; i++) {
             IERC4626 v = vault[_vaultIds[i]];
-            require(v.asset() == address(collateral), "Destination: Invalid Collateral");
+            require(
+                v.asset() == address(collateral),
+                "Destination: Invalid Collateral"
+            );
             dstAmounts[i] = v.redeem(_amounts[i], receiver, address(this));
         }
 
@@ -433,7 +438,15 @@ contract SuperDestination is AccessControl, LiquidityHandler {
                 StateData(
                     TransactionType.DEPOSIT,
                     CallbackType.RETURN,
-                    abi.encode(ReturnData(true, data.srcChainId, chainId, data.txId, dstAmounts))
+                    abi.encode(
+                        ReturnData(
+                            true,
+                            data.srcChainId,
+                            chainId,
+                            data.txId,
+                            dstAmounts
+                        )
+                    )
                 )
             ),
             safeGasParam
@@ -447,7 +460,7 @@ contract SuperDestination is AccessControl, LiquidityHandler {
     function processWithdrawal(InitData memory data) internal {
         uint256[] memory dstAmounts = new uint256[](data.vaultIds.length);
         LiqRequest memory _liqData = abi.decode(data.liqData, (LiqRequest));
-        
+
         for (uint256 i = 0; i < data.vaultIds.length; i++) {
             if (_liqData.txData.length != 0) {
                 IERC4626 v = vault[data.vaultIds[i]];

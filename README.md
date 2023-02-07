@@ -75,7 +75,6 @@ It makes our project structure easily scannable:
 - `types` is where all re-used types are written and used across different smart contracts. [/contract/types](./contracts/types)
 - `lzApp` is where all layezero contracts are done. [/contracts/lzApp](./contracts/lzApp)
 
-
 ### Sorting Your Imports
 
 I sort imports in this order:
