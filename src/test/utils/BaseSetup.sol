@@ -2,31 +2,18 @@
 pragma solidity ^0.8.14;
 
 import "@std/Test.sol";
-
 import "@ds-test/test.sol";
-
 import {FixedPointMathLib} from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
-
 import {LZEndpointMock} from "contracts/mocks/LZEndpointMock.sol";
-
 import {SocketRouterMock} from "contracts/mocks/SocketRouterMock.sol";
-
 import {VaultMock} from "contracts/mocks/VaultMock.sol";
-
 import {IStateHandler} from "contracts/interface/layerzero/IStateHandler.sol";
-
 import {StateHandler} from "contracts/layerzero/StateHandler.sol";
-
 import {IController} from "contracts/interface/ISource.sol";
-
 import {IDestination} from "contracts/interface/IDestination.sol";
-
 import {IERC4626} from "contracts/interface/IERC4626.sol";
-
 import {SuperRouter} from "contracts/SuperRouter.sol";
-
 import {SuperDestination} from "contracts/SuperDestination.sol";
-
 import {MockERC20} from "../mocks/MockERC20.sol";
 
 abstract contract BaseSetup is DSTest, Test {
@@ -45,28 +32,23 @@ abstract contract BaseSetup is DSTest, Test {
     uint8[] bridgeIds;
     address[] bridgeAddresses;
 
-    // chainIds
-    uint16 FTM = 250;
-    uint16 BSC = 56;
-
-    // insert here the two chain ids to create contracts for
-    uint16[2] chainIds = [FTM, BSC];
-
-    string FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL");
-    string BSC_RPC_URL = vm.envString("BSC_RPC_URL");
-
     uint256 mockEstimatedNativeFee = 1000000000000000; // 0.001 Native Tokens
     uint256 mockEstimatedZroFee = 250000000000000; // 0.00025 Native Tokens
-    uint256 milionTokensE18 = 1000000000000000000000000;
+    uint256 public milionTokensE18 = 1000000000000000000000000;
 
-    function setUp() public virtual {
+    function setUp(
+        string memory RPC_URL_0,
+        string memory RPC_URL_1,
+        uint16 chainId0,
+        uint16 chainId1
+    ) public virtual {
         address lzEndpoint;
         address socketRouter;
         address superDestination;
         address stateHandler;
         address USDC;
         uint16 chainId;
-        uint16 destChainId;
+        uint16 dstChainId;
         uint256 fork;
 
         address srcSuperRouter;
@@ -74,8 +56,11 @@ abstract contract BaseSetup is DSTest, Test {
         address srcSuperDestination;
         address destStateHandler;
         address destSuperDestination;
-        forks[FTM] = vm.createFork(FANTOM_RPC_URL);
-        forks[BSC] = vm.createFork(BSC_RPC_URL);
+
+        uint16[2] memory chainIds = [chainId0, chainId1];
+
+        forks[chainId0] = vm.createFork(RPC_URL_0);
+        forks[chainId1] = vm.createFork(RPC_URL_1);
 
         bridgeIds.push(1);
 
@@ -120,7 +105,7 @@ abstract contract BaseSetup is DSTest, Test {
             address vault = address(
                 new VaultMock(MockERC20(USDC), "USDCVault", "USDCVault")
             );
-            contracts[chainId][bytes32(bytes("USDC"))] = vault;
+            contracts[chainId][bytes32(bytes("USDCVault"))] = vault;
 
             vaults[chainId].push(IERC4626(vault));
             vaultIds[chainId].push(1);
@@ -146,21 +131,20 @@ abstract contract BaseSetup is DSTest, Test {
             );
         }
 
-        /// @dev - Set RBAC and relevant addresses
         for (uint256 i = 0; i < chainIds.length; i++) {
             chainId = chainIds[i];
             fork = forks[chainId];
             vm.selectFork(fork);
 
-            destChainId = chainId == FTM ? BSC : FTM;
+            dstChainId = chainId == chainId0 ? chainId1 : chainId0;
             lzEndpoint = getContract(chainId, "LZEndpointMock");
 
             srcStateHandler = getContract(chainId, "StateHandler");
             srcSuperRouter = getContract(chainId, "SuperRouter");
             srcSuperDestination = getContract(chainId, "SuperDestination");
 
-            destStateHandler = getContract(destChainId, "StateHandler");
-            destSuperDestination = getContract(destChainId, "SuperDestination");
+            destStateHandler = getContract(dstChainId, "StateHandler");
+            destSuperDestination = getContract(dstChainId, "SuperDestination");
 
             /// @dev - Set LZ dst endpoints on source
             LZEndpointMock(lzEndpoint).setDestLzEndpoint(
@@ -194,7 +178,7 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             StateHandler(payable(srcStateHandler)).setTrustedRemote(
-                destChainId,
+                dstChainId,
                 abi.encodePacked(destStateHandler)
             );
 
