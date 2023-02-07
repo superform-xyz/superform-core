@@ -20,3 +20,8 @@ broadcast
 # Ignore local misc files
 .DS_Store
 *.pem
+
+# foundry
+forge-cache/
+out/
+artifacts_forge
