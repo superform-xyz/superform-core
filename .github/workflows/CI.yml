@@ -1,28 +1,29 @@
 name: CI
 
- on:
-   push:
-     branches: [main, develop]
-   pull_request:
-     branches: [main, develop]
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
 
- jobs:
-   build:
-     runs-on: ubuntu-latest
-
-     strategy:
-       matrix:
-         node-version: [18.13.0]
-
-     steps:
-       - uses: actions/checkout@v2
-       - name: Use Node.js ${{ matrix.node-version }}
-         uses: actions/setup-node@v2
-       - name: Install dependencies
-         run: npm i
-       - name: Run Tests
-         run: npm run test
-         env:
+jobs:
+  tests:
+    name: Hardhat Testing
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.13.0]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps  
+      - name: Run Tests
+        run: npm run test
+        env:
           BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
           ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
           ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
