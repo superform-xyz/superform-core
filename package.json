@@ -9,9 +9,10 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@nomicfoundation/hardhat-network-helpers": "1.0.7",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.5",
+    "@nomicfoundation/hardhat-network-helpers": "1.0.7",
     "@nomicfoundation/hardhat-toolbox": "2.0.1",
+    "@nomiclabs/hardhat-ethers": "^2.2.2",
     "@openzeppelin/contracts": "^4.8.0",
     "@openzeppelin/contracts-upgradeable": "^4.8.0",
     "@rari-capital/solmate": "github:Rari-Capital/solmate",
