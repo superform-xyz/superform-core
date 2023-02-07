@@ -1,11 +1,9 @@
 /* eslint-disable prettier/prettier */
 require("dotenv").config();
 
-require("@nomiclabs/hardhat-etherscan");
-require("@nomiclabs/hardhat-waffle");
-require("hardhat-gas-reporter");
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-contract-sizer");
-require("solidity-coverage");
 // require("xdeployer"); UNCOMMENT FOR TESTING &  COMMENT DURING VERIFICATION
 require("@nomiclabs/hardhat-ethers");
 require("hardhat-etherscan-abi");
