@@ -1,6 +1,6 @@
 pragma solidity ^0.8.17;
 
-interface IController {
+interface ICoreContract {
     function chainId() external returns (uint16);
 
     function totalTransactions() external returns (uint256);
