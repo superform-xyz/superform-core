@@ -5,7 +5,7 @@ import "@std/Test.sol";
 import "@ds-test/test.sol";
 import "forge-std/console.sol";
 import {FixedPointMathLib} from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
-import {LZEndpointMock} from "../../../contracts/mocks/LZEndpointMock.sol";
+import {LZEndpointMock} from "@contracts/mocks/LZEndpointMock.sol";
 import {SocketRouterMock} from "../../../contracts/mocks/SocketRouterMock.sol";
 import {VaultMock} from "../../../contracts/mocks/VaultMock.sol";
 import {IStateHandler} from "../../../contracts/interface/layerzero/IStateHandler.sol";

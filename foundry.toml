@@ -10,7 +10,7 @@ remappings = [
   '@pigeon=lib/pigeon/src/',
   '@ds-test=lib/ds-test/src/',
   '@std=lib/forge-std/src/',
-  'contracts/=contracts/'
+  '@contracts/=contracts/'
 ]
 src = 'contracts'
 test = 'src/test'
