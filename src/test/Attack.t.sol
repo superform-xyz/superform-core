@@ -2,7 +2,7 @@
 pragma solidity ^0.8.14;
 
 // Contracts
-import {Attack} from "contracts/attack/Attack.sol";
+import {Attack} from "../../contracts/attack/Attack.sol";
 
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
