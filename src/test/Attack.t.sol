@@ -2,7 +2,9 @@
 pragma solidity ^0.8.14;
 
 // Contracts
-import {Attack} from "../../contracts/attack/Attack.sol";
+import {Attack} from "contracts/attack/Attack.sol";
+import "contracts/types/socketTypes.sol";
+import "contracts/types/lzTypes.sol";
 
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
@@ -26,6 +28,7 @@ contract AttackTest is BaseSetup {
     function setUp() public override {
         super.setUp();
 
+        /// @dev Call deploy protocol with intended src and dst chains for simulation
         _deployProtocol(FANTOM_RPC_URL, BSC_RPC_URL, FTM, BSC);
 
         /// @dev deploy contract on source chain
@@ -87,5 +90,41 @@ contract AttackTest is BaseSetup {
                         Unit tests: Attack
     //////////////////////////////////////////////////////////////*/
 
-    function test_attack() public {}
+    function test_attack() public {
+        uint256 victimVault = 1; // should correspond to DAI vault
+        uint256 amountsToDeposit = 1000;
+        uint256 msgValue = 1e18;
+        address underlyingDstToken = getContract(BSC, "DAI");
+        address payable fromSrc = payable(getContract(FTM, "SuperRouter"));
+        address toDst = getContract(BSC, "SuperDestination");
+
+        /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
+        (
+            StateReq memory stateReq,
+            LiqRequest memory liqReq
+        ) = _buildDepositCallData(
+                fromSrc,
+                toDst,
+                underlyingDstToken,
+                victimVault,
+                amountsToDeposit,
+                msgValue,
+                BSC
+            );
+        MockERC20 BSC_DAI = MockERC20(underlyingDstToken);
+        assertEq(BSC_DAI.balanceOf(getContract(BSC, "SuperDestination")), 0);
+
+        for (uint256 i = 0; i < users.length; i++) {
+            _depositToVault(
+                underlyingDstToken,
+                fromSrc,
+                toDst,
+                stateReq,
+                liqReq,
+                amountsToDeposit,
+                i
+            );
+        }
+        assertEq(BSC_DAI.balanceOf(toDst), amountsToDeposit * users.length);
+    }
 }

@@ -16,6 +16,8 @@ import {IERC4626} from "contracts/interface/IERC4626.sol";
 import {SuperRouter} from "contracts/SuperRouter.sol";
 import {SuperDestination} from "contracts/SuperDestination.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
+import "contracts/types/socketTypes.sol";
+import "contracts/types/lzTypes.sol";
 
 struct SetupVars {
     address lzEndpoint;
@@ -35,6 +37,8 @@ struct SetupVars {
     uint16[2] chainIds;
 }
 
+error ETH_TRANSFER_FAILED();
+
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
 
@@ -53,13 +57,42 @@ abstract contract BaseSetup is DSTest, Test {
 
     uint256 mockEstimatedNativeFee = 1000000000000000; // 0.001 Native Tokens
     uint256 mockEstimatedZroFee = 250000000000000; // 0.00025 Native Tokens
-    uint256 public milionTokensE18 = 1000000000000000000000000;
+    uint256 public milionTokensE18 = 1 ether;
 
-    address public deployer = address(0x1);
+    address public deployer = address(777);
+    address[] public users;
 
     function setUp() public virtual {
+        vm.deal(deployer, 1000 ether);
+
         /// @dev setup bridges and other high level info
         bridgeIds.push(1);
+
+        for (uint256 i = 0; i < 10; i++) {
+            /// @dev foundry does not allow conversion of uint256 to address
+            vm.deal(address(0), 1000 ether);
+
+            users.push(address(0));
+            vm.deal(address(1), 1000 ether);
+
+            users.push(address(1));
+            vm.deal(address(2), 1000 ether);
+            users.push(address(2));
+            vm.deal(address(3), 1000 ether);
+            users.push(address(3));
+            vm.deal(address(4), 1000 ether);
+            users.push(address(4));
+            vm.deal(address(5), 1000 ether);
+            users.push(address(5));
+            vm.deal(address(6), 1000 ether);
+            users.push(address(6));
+            vm.deal(address(7), 1000 ether);
+            users.push(address(7));
+            vm.deal(address(8), 1000 ether);
+            users.push(address(8));
+            vm.deal(address(9), 1000 ether);
+            users.push(address(9));
+        }
     }
 
     function getContract(uint16 chainId, string memory _name)
@@ -217,5 +250,85 @@ abstract contract BaseSetup is DSTest, Test {
             );
         }
         vm.stopPrank();
+    }
+
+    function _buildDepositCallData(
+        address fromSrc,
+        address toDst,
+        address underlyingDstToken,
+        uint256 targetVaultId,
+        uint256 amount,
+        uint256 msgValue,
+        uint16 targetChainId
+    )
+        internal
+        view
+        returns (StateReq memory stateReq, LiqRequest memory liqReq)
+    {
+        /// @dev set to empty bytes for now
+        bytes memory adapterParam;
+
+        /// @dev only testing 1 vault at a time for now
+        uint256[] memory amountsToDeposit = new uint256[](1);
+        uint256[] memory targetVaultIds = new uint256[](1);
+        uint256[] memory slippage = new uint256[](1);
+
+        amountsToDeposit[0] = amount;
+        targetVaultIds[0] = targetVaultId;
+        slippage[0] = 1000;
+
+        stateReq = StateReq(
+            targetChainId,
+            amountsToDeposit,
+            targetVaultIds,
+            slippage,
+            adapterParam,
+            msgValue
+        );
+
+        bytes memory socketTxData = abi.encodeWithSignature(
+            "mockSocketTransfer(address,address,address,uint256)",
+            fromSrc,
+            toDst,
+            targetChainId,
+            amount
+        );
+
+        liqReq = LiqRequest(
+            1,
+            socketTxData,
+            underlyingDstToken,
+            getContract(targetChainId, "SocketRouterMock"),
+            amount,
+            0
+        );
+    }
+
+    function _depositToVault(
+        address underlyingDstToken,
+        address payable fromSrc, // SuperRouter
+        address toDst, // SuperDestination
+        StateReq memory stateReq,
+        LiqRequest memory liqReq,
+        uint256 amount,
+        uint256 userIndex
+    ) internal {
+        vm.prank(users[userIndex]);
+        MockERC20(underlyingDstToken).approve(fromSrc, amount);
+
+        /// @dev Mocking gas fee airdrop (native) from layerzero
+        vm.prank(deployer);
+        (bool success, ) = toDst.call{value: 1e18}(new bytes(0));
+        if (!success) revert ETH_TRANSFER_FAILED();
+
+        StateReq[] memory stateReqs = new StateReq[](1);
+        LiqRequest[] memory liqReqs = new LiqRequest[](1);
+
+        stateReqs[0] = stateReq;
+        liqReqs[0] = liqReq;
+
+        /// @dev Value == fee paid to relayer. API call in our design
+        vm.prank(users[userIndex]);
+        SuperRouter(fromSrc).deposit{value: 2 ether}(liqReqs, stateReqs);
     }
 }
