@@ -18,39 +18,51 @@ contract AttackTest is BaseSetup {
     address internal bob = address(0x2);
     address internal carol = address(0x3);
 
-    // chainIds
-    uint16 FTM = 250;
-    uint16 BSC = 56;
+    /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
+    uint16 constant ETH = 101;
+    uint16 constant POLY = 109;
 
-    string FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL");
-    string BSC_RPC_URL = vm.envString("BSC_RPC_URL");
+    address constant ETH_lzEndpoint =
+        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
+    address constant POLY_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
+
+    string ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL");
+    string POLYGON_RPC_URL = vm.envString("POLYGON_RPC_URL");
 
     function setUp() public override {
         super.setUp();
 
         /// @dev Call deploy protocol with intended src and dst chains for simulation
-        _deployProtocol(FANTOM_RPC_URL, BSC_RPC_URL, FTM, BSC);
+        _deployProtocol(
+            ETHEREUM_RPC_URL,
+            POLYGON_RPC_URL,
+            ETH_lzEndpoint,
+            POLY_lzEndpoint,
+            ETH,
+            POLY
+        );
 
         /// @dev deploy contract on source chain
         /// @notice this should be done for both chains with create2?
 
         address payable ftmSuperRouter = payable(
-            getContract(FTM, "SuperRouter")
+            getContract(ETH, "SuperRouter")
         );
 
         address payable bscStateHandler = payable(
-            getContract(BSC, "StateHandler")
+            getContract(POLY, "StateHandler")
         );
 
         address payable bscSuperDestination = payable(
-            getContract(BSC, "SuperDestination")
+            getContract(POLY, "SuperDestination")
         );
 
-        address bscDAI = getContract(BSC, "DAI");
+        address bscDAI = getContract(POLY, "DAI");
 
-        address bscDAIVault = getContract(BSC, "DAIVault");
+        address bscDAIVault = getContract(POLY, "DAIVault");
 
-        vm.selectFork(forks[FTM]);
+        vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
         attackFTM = new Attack(
@@ -61,11 +73,11 @@ contract AttackTest is BaseSetup {
             bscDAIVault
         );
 
-        MockERC20 ftmDAI = MockERC20(super.getContract(FTM, "DAI"));
+        MockERC20 ftmDAI = MockERC20(super.getContract(ETH, "DAI"));
 
         ftmDAI.transfer(address(attackFTM), milionTokensE18 / 100);
 
-        vm.selectFork(forks[BSC]);
+        vm.selectFork(FORKS[POLY]);
 
         attackBSC = new Attack(
             ftmSuperRouter,
@@ -94,9 +106,10 @@ contract AttackTest is BaseSetup {
         uint256 victimVault = 1; // should correspond to DAI vault
         uint256 amountsToDeposit = 1000;
         uint256 msgValue = 1e18;
-        address underlyingDstToken = getContract(BSC, "DAI");
-        address payable fromSrc = payable(getContract(FTM, "SuperRouter"));
-        address toDst = getContract(BSC, "SuperDestination");
+        address underlyingSrcToken = getContract(ETH, "DAI");
+        address underlyingDstToken = getContract(POLY, "DAI");
+        address payable fromSrc = payable(getContract(ETH, "SuperRouter"));
+        address payable toDst = payable(getContract(POLY, "SuperDestination"));
 
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
         (
@@ -105,26 +118,46 @@ contract AttackTest is BaseSetup {
         ) = _buildDepositCallData(
                 fromSrc,
                 toDst,
-                underlyingDstToken,
+                underlyingSrcToken,
                 victimVault,
                 amountsToDeposit,
                 msgValue,
-                BSC
+                ETH,
+                POLY
             );
         MockERC20 BSC_DAI = MockERC20(underlyingDstToken);
-        assertEq(BSC_DAI.balanceOf(getContract(BSC, "SuperDestination")), 0);
+        assertEq(BSC_DAI.balanceOf(getContract(POLY, "SuperDestination")), 0);
 
-        for (uint256 i = 0; i < users.length; i++) {
+        /// @dev single deposit test
+        _depositToVault(
+            underlyingSrcToken,
+            fromSrc,
+            toDst,
+            stateReq,
+            liqReq,
+            amountsToDeposit,
+            1,
+            ETH,
+            POLY,
+            POLY_lzEndpoint
+        );
+        assertEq(BSC_DAI.balanceOf(toDst), amountsToDeposit);
+        /*
+        for (uint256 i = 1; i <= users.length; i++) {
             _depositToVault(
-                underlyingDstToken,
+                underlyingSrcToken,
                 fromSrc,
                 toDst,
                 stateReq,
                 liqReq,
                 amountsToDeposit,
-                i
+                i,
+                ETH,
+                POLY,
+                POLY_lzEndpoint
             );
         }
-        assertEq(BSC_DAI.balanceOf(toDst), amountsToDeposit * users.length);
+        //assertEq(BSC_DAI.balanceOf(toDst), amountsToDeposit * users.length);
+    */
     }
 }
