@@ -3,6 +3,7 @@ pragma solidity ^0.8.14;
 
 // Contracts
 import {Attack} from "contracts/attack/Attack.sol";
+
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
@@ -22,34 +23,69 @@ contract AttackTest is BaseSetup {
     string FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL");
     string BSC_RPC_URL = vm.envString("BSC_RPC_URL");
 
-    function setUp(
-        string memory RPC_URL_0,
-        string memory RPC_URL_1,
-        uint16 chainId0,
-        uint16 chainId1
-    ) public override {
-        super.setUp(FANTOM_RPC_URL, BSC_RPC_URL, FTM, BSC);
+    function setUp() public override {
+        super.setUp();
+
+        _deployProtocol(FANTOM_RPC_URL, BSC_RPC_URL, FTM, BSC);
 
         /// @dev deploy contract on source chain
         /// @notice this should be done for both chains with create2?
-        vm.selectFork(forks[chainId0]);
+
+        address payable ftmSuperRouter = payable(
+            getContract(FTM, "SuperRouter")
+        );
+
+        address payable bscStateHandler = payable(
+            getContract(BSC, "StateHandler")
+        );
+
+        address payable bscSuperDestination = payable(
+            getContract(BSC, "SuperDestination")
+        );
+
+        address bscDAI = getContract(BSC, "DAI");
+
+        address bscDAIVault = getContract(BSC, "DAIVault");
+
+        vm.selectFork(forks[FTM]);
+        vm.startPrank(deployer);
 
         attackFTM = new Attack(
-            payable(super.getContract(FTM, "SuperRouter")),
-            payable(super.getContract(BSC, "StateHandler")),
-            payable(super.getContract(BSC, "SuperDestination")),
-            super.getContract(BSC, "USDC"),
-            super.getContract(BSC, "USDCVault")
+            ftmSuperRouter,
+            bscStateHandler,
+            bscSuperDestination,
+            bscDAI,
+            bscDAIVault
         );
-        MockERC20(super.getContract(FTM, "USDC")).transfer(
-            address(attackFTM),
-            milionTokensE18 / 100
+
+        MockERC20 ftmDAI = MockERC20(super.getContract(FTM, "DAI"));
+
+        ftmDAI.transfer(address(attackFTM), milionTokensE18 / 100);
+
+        vm.selectFork(forks[BSC]);
+
+        attackBSC = new Attack(
+            ftmSuperRouter,
+            bscStateHandler,
+            bscSuperDestination,
+            bscDAI,
+            bscDAIVault
         );
+
+        vm.stopPrank();
     }
 
     /*///////////////////////////////////////////////////////////////
-                        Unit tests: Postgame posting
+                        Unit tests: Same address deployment
     //////////////////////////////////////////////////////////////*/
 
-    function test_revert_end_match_invalid_root() public {}
+    function test_attack_contract_same_address() public {
+        assertEq(address(attackFTM), address(attackBSC));
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        Unit tests: Attack
+    //////////////////////////////////////////////////////////////*/
+
+    function test_attack() public {}
 }

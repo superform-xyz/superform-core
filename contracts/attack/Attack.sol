@@ -31,15 +31,22 @@ contract Attack is Ownable, ERC1155Holder {
         address victimVault_
     ) {
         superRouterSource = superRouterSource_;
+
         stateHandlerDestination = stateHandlerDestination_;
+
         superDestination = superDestination_;
+
         victimUnderlyingAsset = victimUnderlyingAsset_;
+
         victimVault = victimVault_;
-        /// @dev pre approve the deposit
+
+        /// @dev TODO - Verify where to do the approve
+        /*
         IERC20(victimUnderlyingAsset).approve(
             superRouterSource,
             type(uint256).max
         );
+        */
     }
 
     receive() external payable {
