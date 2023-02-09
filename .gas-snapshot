@@ -1,2 +1,2 @@
-AttackTest:test_attack() (gas: 186)
-AttackTest:test_attack_contract_same_address() (gas: 4582)
+AttackTest:test_attack() (gas: 942548)
+AttackTest:test_attack_contract_same_address() (gas: 4493)

@@ -102,12 +102,13 @@ contract AttackTest is BaseSetup {
                         Unit tests: Attack
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev This is a test of an end to end possibçe attack. Testing individual parts (unit tests) can be taken from here
     function test_attack() public {
         uint256 victimVault = 1; // should correspond to DAI vault
         uint256 amountsToDeposit = 1000;
-        uint256 msgValue = 1e18;
+        uint256 ETH_PAYLOAD_ID;
+        uint256 POLY_PAYLOAD_ID;
         address underlyingSrcToken = getContract(ETH, "DAI");
-        address underlyingDstToken = getContract(POLY, "DAI");
         address payable fromSrc = payable(getContract(ETH, "SuperRouter"));
         address payable toDst = payable(getContract(POLY, "SuperDestination"));
 
@@ -121,43 +122,61 @@ contract AttackTest is BaseSetup {
                 underlyingSrcToken,
                 victimVault,
                 amountsToDeposit,
-                msgValue,
+                1 ether,
                 ETH,
                 POLY
             );
-        MockERC20 BSC_DAI = MockERC20(underlyingDstToken);
-        assertEq(BSC_DAI.balanceOf(getContract(POLY, "SuperDestination")), 0);
+        MockERC20 POLY_DAI = MockERC20(getContract(POLY, "DAI"));
+        vm.selectFork(FORKS[POLY]);
+        assertEq(POLY_DAI.balanceOf(getContract(POLY, "SuperDestination")), 0);
 
-        /// @dev single deposit test
-        _depositToVault(
-            underlyingSrcToken,
-            fromSrc,
-            toDst,
-            stateReq,
-            liqReq,
-            amountsToDeposit,
-            1,
-            ETH,
-            POLY,
-            POLY_lzEndpoint
-        );
-        assertEq(BSC_DAI.balanceOf(toDst), amountsToDeposit);
-        /*
-        for (uint256 i = 1; i <= users.length; i++) {
-            _depositToVault(
-                underlyingSrcToken,
-                fromSrc,
-                toDst,
-                stateReq,
-                liqReq,
-                amountsToDeposit,
-                i,
-                ETH,
-                POLY,
-                POLY_lzEndpoint
+        /// @dev fund the vault with 10000 DAI
+        for (uint256 i = 0; i < users.length; i++) {
+            _depositToVaultMultiple(
+                DepositMultipleArgs(
+                    underlyingSrcToken,
+                    fromSrc,
+                    toDst,
+                    stateReq,
+                    liqReq,
+                    amountsToDeposit,
+                    i,
+                    ETH,
+                    POLY,
+                    POLY_lzEndpoint
+                )
             );
         }
-        //assertEq(BSC_DAI.balanceOf(toDst), amountsToDeposit * users.length);
-    */
+
+        vm.selectFork(FORKS[POLY]);
+        assertEq(POLY_DAI.balanceOf(toDst), amountsToDeposit * users.length);
+
+        /// @dev Update state on src and dst and process payload on dst
+        /// @notice this will mint to the users the super positions
+        for (uint256 i = 0; i < users.length; i++) {
+            unchecked {
+                POLY_PAYLOAD_ID++;
+            }
+            _updateState(POLY_PAYLOAD_ID, amountsToDeposit, POLY);
+
+            vm.recordLogs();
+            _processPayload(POLY_PAYLOAD_ID, POLY);
+
+            /*
+            Vm.Log[] memory logs = vm.getRecordedLogs();
+            LayerZeroHelper(getContract(POLY, "LayerZeroHelper")).help(
+                ETH_lzEndpoint,
+                1500000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                FORKS[ETH],
+                logs
+            );
+
+            unchecked {
+                ETH_PAYLOAD_ID++;
+            }
+
+            _processPayload(ETH_PAYLOAD_ID, ETH);
+            */
+        }
     }
 }

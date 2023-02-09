@@ -8,7 +8,6 @@ import "forge-std/console.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
 import {FixedPointMathLib} from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
 import {LZEndpointMock} from "contracts/mocks/LzEndpointMock.sol";
-import {SocketRouterMock} from "contracts/mocks/SocketRouterMock.sol";
 import {VaultMock} from "contracts/mocks/VaultMock.sol";
 import {IStateHandler} from "contracts/interface/layerzero/IStateHandler.sol";
 import {StateHandler} from "contracts/layerzero/stateHandler.sol";
@@ -17,6 +16,7 @@ import {IDestination} from "contracts/interface/IDestination.sol";
 import {IERC4626} from "contracts/interface/IERC4626.sol";
 import {SuperRouter} from "contracts/SuperRouter.sol";
 import {SuperDestination} from "contracts/SuperDestination.sol";
+import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import "contracts/types/socketTypes.sol";
 import "contracts/types/lzTypes.sol";
@@ -39,6 +39,19 @@ struct SetupVars {
     address srcSuperDestination;
     address destStateHandler;
     address destSuperDestination;
+}
+
+struct DepositMultipleArgs {
+    address underlyingSrcToken;
+    address payable fromSrc; // SuperRouter
+    address payable toDst; // SuperDestination
+    StateReq stateReq;
+    LiqRequest liqReq;
+    uint256 amount;
+    uint256 userIndex;
+    uint16 srcChainId;
+    uint16 toChainId;
+    address toLzEndpoint;
 }
 
 error ETH_TRANSFER_FAILED();
@@ -160,42 +173,29 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars
                 .lzHelper;
 
-            /// @dev 1- deploy LZ Mock
-            /*
-            vars.lzEndpoint = address(new LZEndpointMock(vars.chainId));
-            contracts[vars.chainId][bytes32(bytes("LZEndpointMock"))] = vars
-                .lzEndpoint;
-            */
-
-            /// @dev 2- deploy StateHandler pointing to lzHelper
+            /// @dev 2- deploy StateHandler pointing to lzEndpoints (constants)
             vars.stateHandler = address(new StateHandler(vars.lzEndpoints[i]));
             contracts[vars.chainId][bytes32(bytes("StateHandler"))] = vars
                 .stateHandler;
 
-            /// @dev 3- deploy SocketRouterMock
-            vars.socketRouter = address(new SocketRouterMock());
-            contracts[vars.chainId][bytes32(bytes("SocketRouterMock"))] = vars
-                .socketRouter;
+            /// @dev 3- deploy SocketRouterMockFork
+            vars.socketRouter = address(new SocketRouterMockFork());
+            contracts[vars.chainId][
+                bytes32(bytes("SocketRouterMockFork"))
+            ] = vars.socketRouter;
+            vm.allowCheatcodes(vars.socketRouter);
 
             if (i == 0) {
                 bridgeAddresses.push(vars.socketRouter);
             }
 
-            /*
-            /// @dev 4- Set estimated fees on LZ Mock
-            /// @notice this is subject to change using pigeon
-            LZEndpointMock(vars.lzEndpoint).setEstimatedFees(
-                mockEstimatedNativeFee,
-                mockEstimatedZroFee
-            );
-            */
-            /// @dev 5 - Deploy mock DAI with 18 decimals
+            /// @dev 4 - Deploy mock DAI with 18 decimals
             vars.DAI = address(
                 new MockERC20("DAI", "DAI", 18, deployer, milionTokensE18)
             );
             contracts[vars.chainId][bytes32(bytes("DAI"))] = vars.DAI;
 
-            /// @dev 6 - Deploy mock Vault
+            /// @dev 5 - Deploy mock Vault
             vars.vault = address(
                 new VaultMock(MockERC20(vars.DAI), "DAIVault", "DAIVault")
             );
@@ -203,7 +203,8 @@ abstract contract BaseSetup is DSTest, Test {
 
             vaults[vars.chainId].push(IERC4626(vars.vault));
             vaultIds[vars.chainId].push(1);
-            /// @dev 7 - Deploy SuperDestination
+
+            /// @dev 6 - Deploy SuperDestination
             vars.superDestination = address(
                 new SuperDestination(
                     vars.chainId,
@@ -213,7 +214,7 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperDestination"))] = vars
                 .superDestination;
 
-            /// @dev 8 - Deploy SuperRouter
+            /// @dev 7 - Deploy SuperRouter
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = address(
                 new SuperRouter(
                     vars.chainId,
@@ -232,7 +233,6 @@ abstract contract BaseSetup is DSTest, Test {
             vm.selectFork(vars.fork);
 
             vars.dstChainId = vars.chainId == ID_0 ? ID_1 : ID_0;
-            // vars.lzEndpoint = getContract(vars.chainId, "LZEndpointMock");
 
             vars.srcStateHandler = getContract(vars.chainId, "StateHandler");
             vars.srcSuperRouter = getContract(vars.chainId, "SuperRouter");
@@ -250,19 +250,16 @@ abstract contract BaseSetup is DSTest, Test {
                 "SuperDestination"
             );
 
-            /*
-            /// @dev - Set LZ dst endpoints on source
-            LZEndpointMock(vars.lzEndpoint).setDestLzEndpoint(
-                vars.destStateHandler,
-                vars.destSuperDestination
-            );
-            */
-
             /// @dev - Add vaults to super destination
             SuperDestination(payable(vars.srcSuperDestination)).addVault(
                 vaults[vars.chainId],
                 vaultIds[vars.chainId]
             );
+
+            uint16 version = 1;
+            uint256 gasLimit = 1000000;
+            SuperDestination(payable(vars.srcSuperDestination))
+                .updateSafeGasParam(abi.encodePacked(version, gasLimit));
 
             /// @dev - RBAC
             StateHandler(payable(vars.srcStateHandler)).setHandlerController(
@@ -313,6 +310,12 @@ abstract contract BaseSetup is DSTest, Test {
     {
         /// @dev set to empty bytes for now
         bytes memory adapterParam;
+        /*
+            uint16 version = 1;
+            uint256 gasLimit = 1000000;
+
+            adapterParam = abi.encodePacked(version, gasLimit);
+        */
 
         /// @dev only testing 1 vault at a time for now
         uint256[] memory amountsToDeposit = new uint256[](1);
@@ -332,72 +335,129 @@ abstract contract BaseSetup is DSTest, Test {
             msgValue
         );
 
+        /// @dev build socket tx data - this won't work if we validate the function signature (toChainId present)
         bytes memory socketTxData = abi.encodeWithSignature(
-            "mockSocketTransfer(address,address,address,uint256)",
+            "mockSocketTransfer(address,address,address,uint256,uint256)",
             fromSrc,
             toDst,
             underlyingSrcToken,
-            amount
+            amount,
+            FORKS[toChainId]
         );
+
+        console.log("socket", getContract(srcChainId, "SocketRouterMockFork"));
 
         liqReq = LiqRequest(
             1,
             socketTxData,
             underlyingSrcToken,
-            getContract(srcChainId, "SocketRouterMock"),
+            getContract(srcChainId, "SocketRouterMockFork"),
             amount,
             0
         );
     }
 
-    function _depositToVault(
-        address underlyingSrcToken,
-        address payable fromSrc, // SuperRouter
-        address payable toDst, // SuperDestination
-        StateReq memory stateReq,
-        LiqRequest memory liqReq,
-        uint256 amount,
-        uint256 userIndex,
-        uint16 srcChainId,
-        uint16 toChainId,
-        address toLzEndpoint
-    ) internal {
-        vm.selectFork(FORKS[srcChainId]);
+    function _depositToVaultMultiple(DepositMultipleArgs memory A) internal {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[A.srcChainId]);
 
-        vm.prank(users[userIndex]);
-        MockERC20(underlyingSrcToken).approve(fromSrc, amount);
+        vm.prank(users[A.userIndex]);
+        MockERC20(A.underlyingSrcToken).approve(A.fromSrc, A.amount);
 
-        vm.selectFork(FORKS[toChainId]);
+        vm.selectFork(FORKS[A.toChainId]);
         /// @dev Mocking gas fee airdrop (native) from layerzero
+        /// @dev This value can be lower
         vm.prank(deployer);
-        (bool success, ) = toDst.call{value: 1 ether}(new bytes(0));
+        (bool success, ) = A.toDst.call{value: 1 ether}(new bytes(0));
         if (!success) revert ETH_TRANSFER_FAILED();
-
-        assertEq(toDst.balance, 1 ether);
 
         StateReq[] memory stateReqs = new StateReq[](1);
         LiqRequest[] memory liqReqs = new LiqRequest[](1);
 
-        stateReqs[0] = stateReq;
-        liqReqs[0] = liqReq;
+        stateReqs[0] = A.stateReq;
+        liqReqs[0] = A.liqReq;
 
-        vm.selectFork(FORKS[srcChainId]);
+        vm.selectFork(FORKS[A.srcChainId]);
 
-        vm.prank(users[userIndex]);
-
+        vm.prank(users[A.userIndex]);
         /// @dev see pigeon for this implementation
         vm.recordLogs();
-
         /// @dev Value == fee paid to relayer. API call in our design
-        SuperRouter(fromSrc).deposit{value: 2 ether}(liqReqs, stateReqs);
+        SuperRouter(A.fromSrc).deposit{value: 2 ether}(liqReqs, stateReqs);
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
-        address lzHelper = getContract(srcChainId, "LayerZeroHelper");
-        LayerZeroHelper(lzHelper).help(
-            toLzEndpoint,
-            100000,
-            FORKS[toChainId],
+        LayerZeroHelper(getContract(A.srcChainId, "LayerZeroHelper")).help(
+            A.toLzEndpoint,
+            1500000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+            FORKS[A.toChainId],
             logs
         );
+
+        /// @dev - assert the payload reached destination state handler
+        InitData memory expectedInitData = InitData(
+            A.srcChainId,
+            A.toChainId,
+            users[A.userIndex],
+            A.stateReq.vaultIds,
+            A.stateReq.amounts,
+            A.stateReq.maxSlippage,
+            SuperRouter(A.fromSrc).totalTransactions(),
+            bytes("")
+        );
+        vm.selectFork(FORKS[A.toChainId]);
+
+        StateHandler stateHandler = StateHandler(
+            payable(getContract(A.toChainId, "StateHandler"))
+        );
+
+        StateData memory data = abi.decode(
+            stateHandler.payload(stateHandler.totalPayloads()),
+            (StateData)
+        );
+        InitData memory receivedInitData = abi.decode(data.params, (InitData));
+
+        assertEq(receivedInitData.srcChainId, expectedInitData.srcChainId);
+        assertEq(receivedInitData.dstChainId, expectedInitData.dstChainId);
+        assertEq(receivedInitData.user, expectedInitData.user);
+        assertEq(receivedInitData.vaultIds[0], expectedInitData.vaultIds[0]);
+        assertEq(receivedInitData.amounts[0], expectedInitData.amounts[0]);
+        assertEq(
+            receivedInitData.maxSlippage[0],
+            expectedInitData.maxSlippage[0]
+        );
+        assertEq(receivedInitData.txId, expectedInitData.txId);
+
+        vm.selectFork(initialFork);
+    }
+
+    function _updateState(
+        uint256 payloadId,
+        uint256 finalAmount,
+        uint16 targetChainId
+    ) internal {
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[targetChainId]);
+        uint256[] memory finalAmounts = new uint256[](1);
+        finalAmounts[0] = finalAmount;
+
+        vm.prank(deployer);
+        StateHandler(payable(getContract(targetChainId, "StateHandler")))
+            .updateState(payloadId, finalAmounts);
+
+        vm.selectFork(initialFork);
+    }
+
+    function _processPayload(uint256 payloadId, uint16 targetChainId) internal {
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[targetChainId]);
+
+        bytes memory hashZero;
+        vm.prank(deployer);
+        StateHandler(payable(getContract(targetChainId, "StateHandler")))
+            .processPayload{value: 1 ether}(payloadId, hashZero);
+
+        vm.selectFork(initialFork);
     }
 }

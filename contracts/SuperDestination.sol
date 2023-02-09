@@ -14,6 +14,7 @@ import {LiquidityHandler} from "./socket/liquidityHandler.sol";
 import {StateData, TransactionType, CallbackType, InitData, ReturnData} from "./types/lzTypes.sol";
 import {LiqRequest} from "./types/socketTypes.sol";
 import {IStateHandler} from "./interface/layerzero/IStateHandler.sol";
+import "forge-std/console.sol";
 
 /**
  * @title Super Destination
@@ -431,6 +432,11 @@ contract SuperDestination is AccessControl, LiquidityHandler {
                 data.vaultIds[i]
             );
         }
+        console.log("ETH BALANCE", address(this).balance);
+
+        console.log("MSG.VALUE", msg.value);
+        console.log("data.srcChainId", data.srcChainId);
+
         /// Note Step-4: Send Data to Source to issue superform positions.
         stateHandler.dispatchState{value: msg.value}(
             data.srcChainId,
