@@ -11,8 +11,8 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
 contract AttackTest is BaseSetup {
-    Attack internal attackFTM;
-    Attack internal attackBSC;
+    Attack internal attackETH;
+    Attack internal attackPOLY;
 
     address internal alice = address(0x1);
     address internal bob = address(0x2);
@@ -43,48 +43,46 @@ contract AttackTest is BaseSetup {
             POLY
         );
 
-        /// @dev deploy contract on source chain
-        /// @notice this should be done for both chains with create2?
-
-        address payable ftmSuperRouter = payable(
+        /// @dev deploy attacking contract on src and dst chain
+        address payable ethSuperRouter = payable(
             getContract(ETH, "SuperRouter")
         );
 
-        address payable bscStateHandler = payable(
+        address payable polyStateHandler = payable(
             getContract(POLY, "StateHandler")
         );
 
-        address payable bscSuperDestination = payable(
+        address payable polySuperDestination = payable(
             getContract(POLY, "SuperDestination")
         );
 
-        address bscDAI = getContract(POLY, "DAI");
+        address polyDAI = getContract(POLY, "DAI");
 
-        address bscDAIVault = getContract(POLY, "DAIVault");
+        address polyDAIVault = getContract(POLY, "DAIVault");
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        attackFTM = new Attack(
-            ftmSuperRouter,
-            bscStateHandler,
-            bscSuperDestination,
-            bscDAI,
-            bscDAIVault
+        attackETH = new Attack(
+            ethSuperRouter,
+            polyStateHandler,
+            polySuperDestination,
+            polyDAI,
+            polyDAIVault
         );
 
-        MockERC20 ftmDAI = MockERC20(super.getContract(ETH, "DAI"));
+        MockERC20 ethDAI = MockERC20(super.getContract(ETH, "DAI"));
 
-        ftmDAI.transfer(address(attackFTM), milionTokensE18 / 100);
+        ethDAI.transfer(address(attackETH), milionTokensE18 / 100);
 
         vm.selectFork(FORKS[POLY]);
 
-        attackBSC = new Attack(
-            ftmSuperRouter,
-            bscStateHandler,
-            bscSuperDestination,
-            bscDAI,
-            bscDAIVault
+        attackPOLY = new Attack(
+            ethSuperRouter,
+            polyStateHandler,
+            polySuperDestination,
+            polyDAI,
+            polyDAIVault
         );
 
         vm.stopPrank();
@@ -95,7 +93,7 @@ contract AttackTest is BaseSetup {
     //////////////////////////////////////////////////////////////*/
 
     function test_attack_contract_same_address() public {
-        assertEq(address(attackFTM), address(attackBSC));
+        assertEq(address(attackETH), address(attackPOLY));
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -162,21 +160,69 @@ contract AttackTest is BaseSetup {
             vm.recordLogs();
             _processPayload(POLY_PAYLOAD_ID, POLY);
 
-            /*
             Vm.Log[] memory logs = vm.getRecordedLogs();
-            LayerZeroHelper(getContract(POLY, "LayerZeroHelper")).help(
-                ETH_lzEndpoint,
-                1500000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                FORKS[ETH],
-                logs
-            );
+            LayerZeroHelper(getContract(POLY, "LayerZeroHelper"))
+                .helpWithEstimates(
+                    ETH_lzEndpoint,
+                    1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                    FORKS[ETH],
+                    logs
+                );
 
             unchecked {
                 ETH_PAYLOAD_ID++;
             }
 
             _processPayload(ETH_PAYLOAD_ID, ETH);
-            */
+
+            vm.selectFork(FORKS[ETH]);
+            assertEq(
+                SuperRouter(fromSrc).balanceOf(users[i], 1),
+                amountsToDeposit
+            );
         }
+
+        address vaultMock = getContract(POLY, "DAIVault");
+        vm.selectFork(FORKS[POLY]);
+        assertEq(
+            VaultMock(vaultMock).balanceOf(toDst),
+            amountsToDeposit * users.length
+        );
+
+        /// @dev Step 1 - deposit from the source attacker contract
+        /// @dev Attack starts from the attacking contract which is the 'user'
+        /// @dev Notice no parameters are changed here from the same kind of requests the other users did
+        StateReq[] memory stateReqs = new StateReq[](1);
+        LiqRequest[] memory liqReqs = new LiqRequest[](1);
+
+        stateReqs[0] = stateReq;
+        liqReqs[0] = liqReq;
+
+        vm.selectFork(FORKS[ETH]);
+        vm.prank(deployer);
+        attackETH.depositIntoRouter{value: 2 ether}(liqReqs, stateReqs);
+
+        POLY_PAYLOAD_ID++;
+        _updateState(POLY_PAYLOAD_ID, amountsToDeposit, POLY);
+
+        /*
+        _processPayload(POLY_PAYLOAD_ID, POLY);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        LayerZeroHelper(getContract(POLY, "LayerZeroHelper")).helpWithEstimates(
+                ETH_lzEndpoint,
+                1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                FORKS[ETH],
+                logs
+            );
+
+        ETH_PAYLOAD_ID++;
+        _processPayload(ETH_PAYLOAD_ID, ETH);
+
+        assertEq(
+            SuperRouter(fromSrc).balanceOf(address(attackETH), 1),
+            amountsToDeposit
+        );
+        */
     }
 }

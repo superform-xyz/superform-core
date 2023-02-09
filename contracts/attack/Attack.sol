@@ -41,12 +41,11 @@ contract Attack is Ownable, ERC1155Holder {
         victimVault = victimVault_;
 
         /// @dev TODO - Verify where to do the approve
-        /*
+
         IERC20(victimUnderlyingAsset).approve(
             superRouterSource,
             type(uint256).max
         );
-        */
     }
 
     receive() external payable {
