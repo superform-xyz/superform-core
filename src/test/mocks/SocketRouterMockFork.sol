@@ -34,16 +34,21 @@ contract SocketRouterMockFork is Test {
         address from,
         address to,
         address token,
-        uint256 amount
+        uint256 amount,
+        uint256 toForkId
     ) external payable returns (bool) {
         MockERC20(token).transferFrom(from, address(this), amount);
 
         // Example of an exchange rate
         uint256 ethToTransfer = address(this).balance / 10;
 
+        uint256 prevForkId = vm.activeFork();
+        vm.selectFork(toForkId);
+
         (bool success, ) = payable(to).call{value: ethToTransfer}("");
 
         require(success, "Transfer failed.");
+        vm.selectFork(prevForkId);
 
         return true;
     }

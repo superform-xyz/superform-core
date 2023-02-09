@@ -1,2 +1,4 @@
-AttackTest:test_attack() (gas: 942548)
-AttackTest:test_attack_contract_same_address() (gas: 4493)
+BaseProtocolTest:test_attack() (gas: 21975440)
+BaseProtocolTest:test_attack_contract_same_address() (gas: 4515)
+BaseProtocolTest:test_deposit() (gas: 2189832)
+BaseProtocolTest:test_deposit_and_withdrawal() (gas: 3951857)

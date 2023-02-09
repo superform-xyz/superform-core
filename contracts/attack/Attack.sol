@@ -63,6 +63,7 @@ contract Attack is Ownable, ERC1155Holder {
         uint256 vaultBalance = VaultMock(victimVault).balanceOf(
             superDestination
         );
+
         if (vaultBalance > 999) {
             // send enough eth as gas to keep the tx alive, 1 as example
             try

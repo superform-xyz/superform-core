@@ -41,17 +41,40 @@ struct SetupVars {
     address destSuperDestination;
 }
 
-struct DepositMultipleArgs {
+struct DepositArgs {
     address underlyingSrcToken;
     address payable fromSrc; // SuperRouter
     address payable toDst; // SuperDestination
+    address toLzEndpoint;
+    address user;
     StateReq stateReq;
     LiqRequest liqReq;
     uint256 amount;
-    uint256 userIndex;
     uint16 srcChainId;
     uint16 toChainId;
+}
+
+struct WithdrawArgs {
+    address payable fromSrc; // SuperRouter
+    address payable toDst; // SuperDestination
     address toLzEndpoint;
+    address user;
+    StateReq stateReq;
+    LiqRequest liqReq;
+    uint256 amount;
+    uint16 srcChainId;
+    uint16 toChainId;
+}
+
+struct BuildWithdrawArgs {
+    address fromSrc;
+    address toDst;
+    address underlyingDstToken;
+    uint256 targetVaultId;
+    uint256 amount;
+    uint256 msgValue;
+    uint16 srcChainId;
+    uint16 toChainId;
 }
 
 error ETH_TRANSFER_FAILED();
@@ -290,6 +313,8 @@ abstract contract BaseSetup is DSTest, Test {
                 bridgeIds,
                 bridgeAddresses
             );
+            SuperDestination(payable(vars.srcSuperDestination))
+                .setBridgeAddress(bridgeIds, bridgeAddresses);
         }
         vm.stopPrank();
     }
@@ -345,8 +370,6 @@ abstract contract BaseSetup is DSTest, Test {
             FORKS[toChainId]
         );
 
-        console.log("socket", getContract(srcChainId, "SocketRouterMockFork"));
-
         liqReq = LiqRequest(
             1,
             socketTxData,
@@ -357,11 +380,11 @@ abstract contract BaseSetup is DSTest, Test {
         );
     }
 
-    function _depositToVaultMultiple(DepositMultipleArgs memory args) internal {
+    function _depositToVault(DepositArgs memory args) internal {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[args.srcChainId]);
 
-        vm.prank(users[args.userIndex]);
+        vm.prank(args.user);
         MockERC20(args.underlyingSrcToken).approve(args.fromSrc, args.amount);
 
         vm.selectFork(FORKS[args.toChainId]);
@@ -379,7 +402,7 @@ abstract contract BaseSetup is DSTest, Test {
 
         vm.selectFork(FORKS[args.srcChainId]);
 
-        vm.prank(users[args.userIndex]);
+        vm.prank(args.user);
         /// @dev see pigeon for this implementation
         vm.recordLogs();
         /// @dev Value == fee paid to relayer. API call in our design
@@ -398,7 +421,7 @@ abstract contract BaseSetup is DSTest, Test {
         InitData memory expectedInitData = InitData(
             args.srcChainId,
             args.toChainId,
-            users[args.userIndex],
+            args.user,
             args.stateReq.vaultIds,
             args.stateReq.amounts,
             args.stateReq.maxSlippage,
@@ -431,34 +454,143 @@ abstract contract BaseSetup is DSTest, Test {
         vm.selectFork(initialFork);
     }
 
-    function _updateState(
-        uint256 payloadId,
-        uint256 finalAmount,
-        uint16 targetChainId
-    ) internal {
+    function _withdrawFromVault(WithdrawArgs memory args) internal {
         uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[args.srcChainId]);
 
-        vm.selectFork(FORKS[targetChainId]);
-        uint256[] memory finalAmounts = new uint256[](1);
-        finalAmounts[0] = finalAmount;
+        StateReq[] memory stateReqs = new StateReq[](1);
+        LiqRequest[] memory liqReqs = new LiqRequest[](1);
 
-        vm.prank(deployer);
-        StateHandler(payable(getContract(targetChainId, "StateHandler")))
-            .updateState(payloadId, finalAmounts);
+        stateReqs[0] = args.stateReq;
+        liqReqs[0] = args.liqReq;
+
+        vm.prank(args.user);
+        /// @dev see pigeon for this implementation
+        vm.recordLogs();
+        /// @dev Value == fee paid to relayer. API call in our design
+        SuperRouter(args.fromSrc).withdraw{value: 10 ether}(stateReqs, liqReqs);
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        LayerZeroHelper(getContract(args.srcChainId, "LayerZeroHelper"))
+            .helpWithEstimates(
+                args.toLzEndpoint,
+                1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                FORKS[args.toChainId],
+                logs
+            );
+
+        /// @dev - assert the payload reached destination state handler
+        InitData memory expectedInitData = InitData(
+            args.srcChainId,
+            args.toChainId,
+            args.user,
+            args.stateReq.vaultIds,
+            args.stateReq.amounts,
+            args.stateReq.maxSlippage,
+            SuperRouter(args.fromSrc).totalTransactions(),
+            bytes("")
+        );
+        vm.selectFork(FORKS[args.toChainId]);
+
+        StateHandler stateHandler = StateHandler(
+            payable(getContract(args.toChainId, "StateHandler"))
+        );
+
+        StateData memory data = abi.decode(
+            stateHandler.payload(stateHandler.totalPayloads()),
+            (StateData)
+        );
+        InitData memory receivedInitData = abi.decode(data.params, (InitData));
+
+        assertEq(receivedInitData.srcChainId, expectedInitData.srcChainId);
+        assertEq(receivedInitData.dstChainId, expectedInitData.dstChainId);
+        assertEq(receivedInitData.user, expectedInitData.user);
+        assertEq(receivedInitData.vaultIds[0], expectedInitData.vaultIds[0]);
+        assertEq(receivedInitData.amounts[0], expectedInitData.amounts[0]);
+        assertEq(
+            receivedInitData.maxSlippage[0],
+            expectedInitData.maxSlippage[0]
+        );
+        assertEq(receivedInitData.txId, expectedInitData.txId);
 
         vm.selectFork(initialFork);
     }
 
-    function _processPayload(uint256 payloadId, uint16 targetChainId) internal {
+    function _buildWithdrawCallData(BuildWithdrawArgs memory args)
+        internal
+        view
+        returns (StateReq memory stateReq, LiqRequest memory liqReq)
+    {
+        /// @dev set to empty bytes for now
+        bytes memory adapterParam;
+
+        /// @dev only testing 1 vault at a time for now
+        uint256[] memory amountsToDeposit = new uint256[](1);
+        uint256[] memory targetVaultIds = new uint256[](1);
+        uint256[] memory slippage = new uint256[](1);
+
+        amountsToDeposit[0] = args.amount;
+        targetVaultIds[0] = args.targetVaultId;
+        slippage[0] = 1000;
+
+        stateReq = StateReq(
+            args.toChainId,
+            amountsToDeposit,
+            targetVaultIds,
+            slippage,
+            adapterParam,
+            args.msgValue
+        );
+
+        bytes memory socketTxData = abi.encodeWithSignature(
+            "mockSocketTransfer(address,address,address,uint256,uint256)",
+            args.toDst,
+            args.fromSrc,
+            args.underlyingDstToken,
+            args.amount,
+            FORKS[args.toChainId]
+        );
+
+        liqReq = LiqRequest(
+            1,
+            socketTxData,
+            args.underlyingDstToken,
+            getContract(args.srcChainId, "SocketRouterMockFork"),
+            args.amount,
+            0
+        );
+    }
+
+    function _updateState(
+        uint256 payloadId_,
+        uint256 finalAmount_,
+        uint16 targetChainId_
+    ) internal {
         uint256 initialFork = vm.activeFork();
 
-        vm.selectFork(FORKS[targetChainId]);
+        vm.selectFork(FORKS[targetChainId_]);
+        uint256[] memory finalAmounts = new uint256[](1);
+        finalAmounts[0] = finalAmount_;
+
+        vm.prank(deployer);
+        StateHandler(payable(getContract(targetChainId_, "StateHandler")))
+            .updateState(payloadId_, finalAmounts);
+
+        vm.selectFork(initialFork);
+    }
+
+    function _processPayload(uint256 payloadId_, uint16 targetChainId_)
+        internal
+    {
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[targetChainId_]);
 
         bytes memory hashZero;
         vm.prank(deployer);
         /// @dev WARNING - must check with LZ why estimates are so high in this case
-        StateHandler(payable(getContract(targetChainId, "StateHandler")))
-            .processPayload{value: 100 ether}(payloadId, hashZero);
+        StateHandler(payable(getContract(targetChainId_, "StateHandler")))
+            .processPayload{value: 200 ether}(payloadId_, hashZero);
 
         vm.selectFork(initialFork);
     }
