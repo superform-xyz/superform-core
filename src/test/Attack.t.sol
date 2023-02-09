@@ -100,44 +100,64 @@ contract AttackTest is BaseSetup {
                         Unit tests: Attack
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev This is a test of an end to end possibçe attack. Testing individual parts (unit tests) can be taken from here
-    function test_attack() public {
-        uint256 victimVault = 1; // should correspond to DAI vault
-        uint256 amountsToDeposit = 1000;
+    struct TestAttackVars {
+        Vm.Log[] logs;
+        StateReq[] stateReqs;
+        LiqRequest[] liqReqs;
+        StateReq stateReq;
+        LiqRequest liqReq;
+        MockERC20 VICTIM_VAULT;
+        uint256 victimVault;
+        uint256 amountsToDeposit;
         uint256 ETH_PAYLOAD_ID;
         uint256 POLY_PAYLOAD_ID;
-        address underlyingSrcToken = getContract(ETH, "DAI");
-        address payable fromSrc = payable(getContract(ETH, "SuperRouter"));
-        address payable toDst = payable(getContract(POLY, "SuperDestination"));
+        address vaultMock;
+        address underlyingSrcToken;
+        address payable fromSrc;
+        address payable toDst;
+    }
+
+    /// @dev This is a test of an end to end possibçe attack. Testing individual parts (unit tests) can be taken from here
+    function test_attack() public {
+        TestAttackVars memory vars;
+
+        vars.victimVault = 1; // should correspond to DAI vault
+        vars.amountsToDeposit = 1000;
+        vars.ETH_PAYLOAD_ID;
+        vars.POLY_PAYLOAD_ID;
+        vars.underlyingSrcToken = getContract(ETH, "DAI");
+        vars.fromSrc = payable(getContract(ETH, "SuperRouter"));
+        vars.toDst = payable(getContract(POLY, "SuperDestination"));
 
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
-        (
-            StateReq memory stateReq,
-            LiqRequest memory liqReq
-        ) = _buildDepositCallData(
-                fromSrc,
-                toDst,
-                underlyingSrcToken,
-                victimVault,
-                amountsToDeposit,
-                1 ether,
-                ETH,
-                POLY
-            );
-        MockERC20 POLY_DAI = MockERC20(getContract(POLY, "DAI"));
+        (vars.stateReq, vars.liqReq) = _buildDepositCallData(
+            vars.fromSrc,
+            vars.toDst,
+            vars.underlyingSrcToken,
+            vars.victimVault,
+            vars.amountsToDeposit,
+            1 ether,
+            ETH,
+            POLY
+        );
+
+        vars.VICTIM_VAULT = MockERC20(getContract(POLY, "DAI"));
         vm.selectFork(FORKS[POLY]);
-        assertEq(POLY_DAI.balanceOf(getContract(POLY, "SuperDestination")), 0);
+        assertEq(
+            vars.VICTIM_VAULT.balanceOf(getContract(POLY, "SuperDestination")),
+            0
+        );
 
         /// @dev fund the vault with 10000 DAI
         for (uint256 i = 0; i < users.length; i++) {
             _depositToVaultMultiple(
                 DepositMultipleArgs(
-                    underlyingSrcToken,
-                    fromSrc,
-                    toDst,
-                    stateReq,
-                    liqReq,
-                    amountsToDeposit,
+                    vars.underlyingSrcToken,
+                    vars.fromSrc,
+                    vars.toDst,
+                    vars.stateReq,
+                    vars.liqReq,
+                    vars.amountsToDeposit,
                     i,
                     ETH,
                     POLY,
@@ -147,82 +167,93 @@ contract AttackTest is BaseSetup {
         }
 
         vm.selectFork(FORKS[POLY]);
-        assertEq(POLY_DAI.balanceOf(toDst), amountsToDeposit * users.length);
+        assertEq(
+            vars.VICTIM_VAULT.balanceOf(vars.toDst),
+            vars.amountsToDeposit * users.length
+        );
 
         /// @dev Update state on src and dst and process payload on dst
         /// @notice this will mint to the users the super positions
         for (uint256 i = 0; i < users.length; i++) {
             unchecked {
-                POLY_PAYLOAD_ID++;
+                vars.POLY_PAYLOAD_ID++;
             }
-            _updateState(POLY_PAYLOAD_ID, amountsToDeposit, POLY);
+            _updateState(vars.POLY_PAYLOAD_ID, vars.amountsToDeposit, POLY);
 
             vm.recordLogs();
-            _processPayload(POLY_PAYLOAD_ID, POLY);
+            _processPayload(vars.POLY_PAYLOAD_ID, POLY);
 
-            Vm.Log[] memory logs = vm.getRecordedLogs();
+            vars.logs = vm.getRecordedLogs();
             LayerZeroHelper(getContract(POLY, "LayerZeroHelper"))
                 .helpWithEstimates(
                     ETH_lzEndpoint,
                     1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
                     FORKS[ETH],
-                    logs
+                    vars.logs
                 );
 
             unchecked {
-                ETH_PAYLOAD_ID++;
+                vars.ETH_PAYLOAD_ID++;
             }
 
-            _processPayload(ETH_PAYLOAD_ID, ETH);
+            _processPayload(vars.ETH_PAYLOAD_ID, ETH);
 
             vm.selectFork(FORKS[ETH]);
             assertEq(
-                SuperRouter(fromSrc).balanceOf(users[i], 1),
-                amountsToDeposit
+                SuperRouter(vars.fromSrc).balanceOf(users[i], 1),
+                vars.amountsToDeposit
             );
         }
 
-        address vaultMock = getContract(POLY, "DAIVault");
+        vars.vaultMock = getContract(POLY, "DAIVault");
         vm.selectFork(FORKS[POLY]);
         assertEq(
-            VaultMock(vaultMock).balanceOf(toDst),
-            amountsToDeposit * users.length
+            VaultMock(vars.vaultMock).balanceOf(vars.toDst),
+            vars.amountsToDeposit * users.length
         );
 
         /// @dev Step 1 - deposit from the source attacker contract
         /// @dev Attack starts from the attacking contract which is the 'user'
         /// @dev Notice no parameters are changed here from the same kind of requests the other users did
-        StateReq[] memory stateReqs = new StateReq[](1);
-        LiqRequest[] memory liqReqs = new LiqRequest[](1);
+        vars.stateReqs = new StateReq[](1);
+        vars.liqReqs = new LiqRequest[](1);
 
-        stateReqs[0] = stateReq;
-        liqReqs[0] = liqReq;
+        vars.stateReqs[0] = vars.stateReq;
+        vars.liqReqs[0] = vars.liqReq;
 
         vm.selectFork(FORKS[ETH]);
         vm.prank(deployer);
-        attackETH.depositIntoRouter{value: 2 ether}(liqReqs, stateReqs);
+        attackETH.depositIntoRouter{value: 2 ether}(
+            vars.liqReqs,
+            vars.stateReqs
+        );
+        vars.logs = vm.getRecordedLogs();
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            POLY_lzEndpoint,
+            1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+            FORKS[POLY],
+            vars.logs
+        );
 
-        POLY_PAYLOAD_ID++;
-        _updateState(POLY_PAYLOAD_ID, amountsToDeposit, POLY);
+        vars.POLY_PAYLOAD_ID++;
+        _updateState(vars.POLY_PAYLOAD_ID, vars.amountsToDeposit, POLY);
 
-        /*
-        _processPayload(POLY_PAYLOAD_ID, POLY);
+        _processPayload(vars.POLY_PAYLOAD_ID, POLY);
 
-        Vm.Log[] memory logs = vm.getRecordedLogs();
+        vars.logs = vm.getRecordedLogs();
         LayerZeroHelper(getContract(POLY, "LayerZeroHelper")).helpWithEstimates(
                 ETH_lzEndpoint,
                 1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
                 FORKS[ETH],
-                logs
+                vars.logs
             );
 
-        ETH_PAYLOAD_ID++;
-        _processPayload(ETH_PAYLOAD_ID, ETH);
+        vars.ETH_PAYLOAD_ID++;
+        _processPayload(vars.ETH_PAYLOAD_ID, ETH);
 
         assertEq(
-            SuperRouter(fromSrc).balanceOf(address(attackETH), 1),
-            amountsToDeposit
+            SuperRouter(vars.fromSrc).balanceOf(address(attackETH), 1),
+            vars.amountsToDeposit
         );
-        */
     }
 }
