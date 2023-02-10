@@ -10,6 +10,35 @@ import "contracts/types/lzTypes.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
+/*//////////////////////////////////////////////////////////////
+                        MAIN TEST VARS
+//////////////////////////////////////////////////////////////*/
+
+struct TestProtocolVars {
+    Vm.Log[] logs;
+    StateReq[] stateReqs;
+    LiqRequest[] liqReqs;
+    StateReq stateReq;
+    LiqRequest liqReq;
+    MockERC20 TARGET_VAULT;
+    uint256 vault;
+    uint256 amountsToDeposit;
+    uint256 CHAIN_0_PAYLOAD_ID;
+    uint256 CHAIN_1_PAYLOAD_ID;
+    uint256 sharesBalanceBeforeWithdraw;
+    uint256 amountsToWithdraw;
+    address user;
+    address vaultMock;
+    address underlyingSrcToken;
+    address underlyingDstToken;
+    address payable fromSrc;
+    address payable toDst;
+}
+
+/*//////////////////////////////////////////////////////////////
+            VARS FOR THE ATTACK SPECIFIC PURPOSE
+//////////////////////////////////////////////////////////////*/
+
 struct BuildAttackArgs {
     address attackingContract;
     address fromSrc;
@@ -22,27 +51,6 @@ struct BuildAttackArgs {
     uint16 toChainId;
 }
 
-struct TestProtocolVars {
-    Vm.Log[] logs;
-    StateReq[] stateReqs;
-    LiqRequest[] liqReqs;
-    StateReq stateReq;
-    LiqRequest liqReq;
-    MockERC20 TARGET_VAULT;
-    uint256 vault;
-    uint256 amountsToDeposit;
-    uint256 ETH_PAYLOAD_ID;
-    uint256 POLY_PAYLOAD_ID;
-    uint256 sharesBalanceBeforeWithdraw;
-    uint256 amountsToWithdraw;
-    address user;
-    address vaultMock;
-    address underlyingSrcToken;
-    address underlyingDstToken;
-    address payable fromSrc;
-    address payable toDst;
-}
-
 struct TestAttackVars {
     Vm.Log[] logs;
     StateReq[] stateReqs;
@@ -52,8 +60,8 @@ struct TestAttackVars {
     MockERC20 VICTIM_VAULT;
     uint256 victimVault;
     uint256 amountsToDeposit;
-    uint256 ETH_PAYLOAD_ID;
-    uint256 POLY_PAYLOAD_ID;
+    uint256 CHAIN_0_PAYLOAD_ID;
+    uint256 CHAIN_1_PAYLOAD_ID;
     uint256 sharesBalanceBeforeWithdraw;
     uint256 assetsToStealEachLoop;
     address vaultMock;
@@ -64,78 +72,126 @@ struct TestAttackVars {
 }
 
 contract BaseProtocolTest is BaseSetup {
-    Attack internal attackETH;
-    Attack internal attackPOLY;
+    Attack internal attackCHAIN_0;
+    Attack internal attackCHAIN_1;
 
-    address internal alice = address(0x1);
-    address internal bob = address(0x2);
-    address internal carol = address(0x3);
+    string UNDERLYING_TOKEN;
+    string VAULT_NAME;
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 constant ETH = 101;
+    uint16 constant BNB = 102;
+    uint16 constant AVAX = 106;
     uint16 constant POLY = 109;
+    uint16 constant ARBI = 110;
+    uint16 constant OP = 111;
+    uint16 constant FTM = 112;
 
     address constant ETH_lzEndpoint =
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
+    address constant BNB_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
+    address constant AVAX_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
     address constant POLY_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
+    address constant ARBI_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
+    address constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
+    address constant FTM_lzEndpoint =
         0x3c2269811836af69497E5F486A85D7316753cf62;
 
     string ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL");
+    string BSC_RPC_URL = vm.envString("BSC_RPC_URL");
+    string AVALANCHE_RPC_URL = vm.envString("AVALANCHE_RPC_URL");
     string POLYGON_RPC_URL = vm.envString("POLYGON_RPC_URL");
+    string ARBITRUM_RPC_URL = vm.envString("ARBITRUM_RPC_URL");
+    string OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL");
+    string FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL");
+
+    address lzEndpoint_0;
+    address lzEndpoint_1;
+    uint16 CHAIN_0;
+    uint16 CHAIN_1;
+    string RPC_URL0;
+    string RPC_URL1;
 
     function setUp() public override {
         super.setUp();
+        /*//////////////////////////////////////////////////////////////
+                    !! WARNING !!  DEFINE TEST SETTINGS HERE
+        //////////////////////////////////////////////////////////////*/
+
+        UNDERLYING_TOKEN = "DAI";
+        VAULT_NAME = string.concat(UNDERLYING_TOKEN, "Vault");
+        lzEndpoint_0 = ETH_lzEndpoint;
+        lzEndpoint_1 = POLY_lzEndpoint;
+        CHAIN_0 = ETH;
+        CHAIN_1 = POLY;
+        RPC_URL0 = ETHEREUM_RPC_URL;
+        RPC_URL1 = POLYGON_RPC_URL;
+
+        /*//////////////////////////////////////////////////////////////
+                    !! WARNING !!  PROTOCOL DEPLOYMENT
+        //////////////////////////////////////////////////////////////*/
 
         /// @dev Call deploy protocol with intended src and dst chains for simulation
         _deployProtocol(
-            ETHEREUM_RPC_URL,
-            POLYGON_RPC_URL,
-            ETH_lzEndpoint,
-            POLY_lzEndpoint,
-            ETH,
-            POLY
+            RPC_URL0,
+            RPC_URL1,
+            lzEndpoint_0,
+            lzEndpoint_1,
+            CHAIN_0,
+            CHAIN_1,
+            UNDERLYING_TOKEN
         );
+
+        /*//////////////////////////////////////////////////////////////
+                        REMAINDER OF YOUR TEST CASES
+        //////////////////////////////////////////////////////////////*/
 
         /// @dev deploy attacking contract on src and dst chain
-        address payable ethSuperRouter = payable(
-            getContract(ETH, "SuperRouter")
+        address payable chain0_SuperRouter = payable(
+            getContract(CHAIN_0, "SuperRouter")
         );
 
-        address payable polyStateHandler = payable(
-            getContract(POLY, "StateHandler")
+        address payable chain1_StateHandler = payable(
+            getContract(CHAIN_1, "StateHandler")
         );
 
-        address payable polySuperDestination = payable(
-            getContract(POLY, "SuperDestination")
+        address payable chain1_SuperDestination = payable(
+            getContract(CHAIN_1, "SuperDestination")
         );
 
-        address polyDAI = getContract(POLY, "DAI");
+        address chain1_TOKEN = getContract(CHAIN_1, UNDERLYING_TOKEN);
 
-        address polyDAIVault = getContract(POLY, "DAIVault");
+        address chain1_TOKENVault = getContract(CHAIN_1, VAULT_NAME);
 
-        vm.selectFork(FORKS[ETH]);
+        vm.selectFork(FORKS[CHAIN_0]);
         vm.startPrank(deployer);
 
-        attackETH = new Attack(
-            ethSuperRouter,
-            polyStateHandler,
-            polySuperDestination,
-            polyDAI,
-            polyDAIVault
+        attackCHAIN_0 = new Attack(
+            chain0_SuperRouter,
+            chain1_StateHandler,
+            chain1_SuperDestination,
+            chain1_TOKEN,
+            chain1_TOKENVault
         );
 
-        MockERC20 ethDAI = MockERC20(super.getContract(ETH, "DAI"));
+        MockERC20 chain0_TOKEN = MockERC20(
+            super.getContract(CHAIN_0, UNDERLYING_TOKEN)
+        );
 
-        ethDAI.transfer(address(attackETH), milionTokensE18 / 100);
+        chain0_TOKEN.transfer(address(attackCHAIN_0), milionTokensE18 / 100);
 
-        vm.selectFork(FORKS[POLY]);
+        vm.selectFork(FORKS[CHAIN_1]);
 
-        attackPOLY = new Attack(
-            ethSuperRouter,
-            polyStateHandler,
-            polySuperDestination,
-            polyDAI,
-            polyDAIVault
+        attackCHAIN_1 = new Attack(
+            chain0_SuperRouter,
+            chain1_StateHandler,
+            chain1_SuperDestination,
+            chain1_TOKEN,
+            chain1_TOKENVault
         );
 
         vm.stopPrank();
@@ -148,16 +204,16 @@ contract BaseProtocolTest is BaseSetup {
     function test_deposit() public {
         TestProtocolVars memory vars;
 
-        vars.vault = 1; // should correspond to DAI vault
+        vars.vault = 1; // should correspond to UNDERLYING_TOKEN vault
         vars.amountsToDeposit = 1000;
-        vars.ETH_PAYLOAD_ID;
-        vars.POLY_PAYLOAD_ID;
-        vars.underlyingSrcToken = getContract(ETH, "DAI");
-        vars.underlyingDstToken = getContract(POLY, "DAI");
+        vars.CHAIN_0_PAYLOAD_ID;
+        vars.CHAIN_1_PAYLOAD_ID;
+        vars.underlyingSrcToken = getContract(CHAIN_0, UNDERLYING_TOKEN);
+        vars.underlyingDstToken = getContract(CHAIN_1, UNDERLYING_TOKEN);
         vars.user = users[0];
 
-        vars.fromSrc = payable(getContract(ETH, "SuperRouter"));
-        vars.toDst = payable(getContract(POLY, "SuperDestination"));
+        vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
+        vars.toDst = payable(getContract(CHAIN_1, "SuperDestination"));
 
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
         (vars.stateReq, vars.liqReq) = _buildDepositCallData(
@@ -167,14 +223,16 @@ contract BaseProtocolTest is BaseSetup {
             vars.vault,
             vars.amountsToDeposit,
             1 ether,
-            ETH,
-            POLY
+            CHAIN_0,
+            CHAIN_1
         );
 
-        vars.TARGET_VAULT = MockERC20(getContract(POLY, "DAI"));
-        vm.selectFork(FORKS[POLY]);
+        vars.TARGET_VAULT = MockERC20(getContract(CHAIN_1, UNDERLYING_TOKEN));
+        vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
-            vars.TARGET_VAULT.balanceOf(getContract(POLY, "SuperDestination")),
+            vars.TARGET_VAULT.balanceOf(
+                getContract(CHAIN_1, "SuperDestination")
+            ),
             0
         );
 
@@ -183,17 +241,17 @@ contract BaseProtocolTest is BaseSetup {
                 vars.underlyingSrcToken,
                 vars.fromSrc,
                 vars.toDst,
-                POLY_lzEndpoint,
+                lzEndpoint_1,
                 vars.user,
                 vars.stateReq,
                 vars.liqReq,
                 vars.amountsToDeposit,
-                ETH,
-                POLY
+                CHAIN_0,
+                CHAIN_1
             )
         );
 
-        vm.selectFork(FORKS[POLY]);
+        vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
             vars.TARGET_VAULT.balanceOf(vars.toDst),
             vars.amountsToDeposit
@@ -202,36 +260,40 @@ contract BaseProtocolTest is BaseSetup {
         /// @dev code block for updating state and syncing messages
         {
             unchecked {
-                vars.POLY_PAYLOAD_ID++;
+                vars.CHAIN_1_PAYLOAD_ID++;
             }
-            _updateState(vars.POLY_PAYLOAD_ID, vars.amountsToDeposit, POLY);
+            _updateState(
+                vars.CHAIN_1_PAYLOAD_ID,
+                vars.amountsToDeposit,
+                CHAIN_1
+            );
 
             vm.recordLogs();
-            _processPayload(vars.POLY_PAYLOAD_ID, POLY);
+            _processPayload(vars.CHAIN_1_PAYLOAD_ID, CHAIN_1);
 
             vars.logs = vm.getRecordedLogs();
-            LayerZeroHelper(getContract(POLY, "LayerZeroHelper"))
+            LayerZeroHelper(getContract(CHAIN_1, "LayerZeroHelper"))
                 .helpWithEstimates(
-                    ETH_lzEndpoint,
+                    lzEndpoint_0,
                     1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                    FORKS[ETH],
+                    FORKS[CHAIN_0],
                     vars.logs
                 );
 
             unchecked {
-                vars.ETH_PAYLOAD_ID++;
+                vars.CHAIN_0_PAYLOAD_ID++;
             }
-            _processPayload(vars.ETH_PAYLOAD_ID, ETH);
+            _processPayload(vars.CHAIN_0_PAYLOAD_ID, CHAIN_0);
         }
 
-        vm.selectFork(FORKS[ETH]);
+        vm.selectFork(FORKS[CHAIN_0]);
         assertEq(
             SuperRouter(vars.fromSrc).balanceOf(vars.user, 1),
             vars.amountsToDeposit
         );
 
-        vars.vaultMock = getContract(POLY, "DAIVault");
-        vm.selectFork(FORKS[POLY]);
+        vars.vaultMock = getContract(CHAIN_1, VAULT_NAME);
+        vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
             VaultMock(vars.vaultMock).balanceOf(vars.toDst),
             vars.amountsToDeposit
@@ -241,16 +303,16 @@ contract BaseProtocolTest is BaseSetup {
     function test_deposit_and_withdrawal() public {
         TestProtocolVars memory vars;
 
-        vars.vault = 1; // should correspond to DAI vault
+        vars.vault = 1; // should correspond to TOKEN vault
         vars.amountsToDeposit = 1000;
-        vars.ETH_PAYLOAD_ID;
-        vars.POLY_PAYLOAD_ID;
-        vars.underlyingSrcToken = getContract(ETH, "DAI");
-        vars.underlyingDstToken = getContract(POLY, "DAI");
+        vars.CHAIN_0_PAYLOAD_ID;
+        vars.CHAIN_1_PAYLOAD_ID;
+        vars.underlyingSrcToken = getContract(CHAIN_0, UNDERLYING_TOKEN);
+        vars.underlyingDstToken = getContract(CHAIN_1, UNDERLYING_TOKEN);
         vars.user = users[0];
 
-        vars.fromSrc = payable(getContract(ETH, "SuperRouter"));
-        vars.toDst = payable(getContract(POLY, "SuperDestination"));
+        vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
+        vars.toDst = payable(getContract(CHAIN_1, "SuperDestination"));
 
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
         (vars.stateReq, vars.liqReq) = _buildDepositCallData(
@@ -260,14 +322,16 @@ contract BaseProtocolTest is BaseSetup {
             vars.vault,
             vars.amountsToDeposit,
             1 ether,
-            ETH,
-            POLY
+            CHAIN_0,
+            CHAIN_1
         );
 
-        vars.TARGET_VAULT = MockERC20(getContract(POLY, "DAI"));
-        vm.selectFork(FORKS[POLY]);
+        vars.TARGET_VAULT = MockERC20(getContract(CHAIN_1, UNDERLYING_TOKEN));
+        vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
-            vars.TARGET_VAULT.balanceOf(getContract(POLY, "SuperDestination")),
+            vars.TARGET_VAULT.balanceOf(
+                getContract(CHAIN_1, "SuperDestination")
+            ),
             0
         );
 
@@ -276,17 +340,17 @@ contract BaseProtocolTest is BaseSetup {
                 vars.underlyingSrcToken,
                 vars.fromSrc,
                 vars.toDst,
-                POLY_lzEndpoint,
+                lzEndpoint_1,
                 vars.user,
                 vars.stateReq,
                 vars.liqReq,
                 vars.amountsToDeposit,
-                ETH,
-                POLY
+                CHAIN_0,
+                CHAIN_1
             )
         );
 
-        vm.selectFork(FORKS[POLY]);
+        vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
             vars.TARGET_VAULT.balanceOf(vars.toDst),
             vars.amountsToDeposit
@@ -295,49 +359,53 @@ contract BaseProtocolTest is BaseSetup {
         /// @dev code block for updating state and syncing messages
         {
             unchecked {
-                vars.POLY_PAYLOAD_ID++;
+                vars.CHAIN_1_PAYLOAD_ID++;
             }
-            _updateState(vars.POLY_PAYLOAD_ID, vars.amountsToDeposit, POLY);
+            _updateState(
+                vars.CHAIN_1_PAYLOAD_ID,
+                vars.amountsToDeposit,
+                CHAIN_1
+            );
 
             vm.recordLogs();
-            _processPayload(vars.POLY_PAYLOAD_ID, POLY);
+            _processPayload(vars.CHAIN_1_PAYLOAD_ID, CHAIN_1);
 
             vars.logs = vm.getRecordedLogs();
-            LayerZeroHelper(getContract(POLY, "LayerZeroHelper"))
+            LayerZeroHelper(getContract(CHAIN_1, "LayerZeroHelper"))
                 .helpWithEstimates(
-                    ETH_lzEndpoint,
+                    lzEndpoint_0,
                     1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                    FORKS[ETH],
+                    FORKS[CHAIN_0],
                     vars.logs
                 );
 
             unchecked {
-                vars.ETH_PAYLOAD_ID++;
+                vars.CHAIN_0_PAYLOAD_ID++;
             }
-            _processPayload(vars.ETH_PAYLOAD_ID, ETH);
+            _processPayload(vars.CHAIN_0_PAYLOAD_ID, CHAIN_0);
         }
 
-        vm.selectFork(FORKS[ETH]);
+        vm.selectFork(FORKS[CHAIN_0]);
         assertEq(
             SuperRouter(vars.fromSrc).balanceOf(vars.user, 1),
             vars.amountsToDeposit
         );
 
-        vars.vaultMock = getContract(POLY, "DAIVault");
-        vm.selectFork(FORKS[POLY]);
+        vars.vaultMock = getContract(CHAIN_1, VAULT_NAME);
+        vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
             VaultMock(vars.vaultMock).balanceOf(vars.toDst),
             vars.amountsToDeposit
         );
 
         /// @dev Withdrawal -------------------------
-        vm.selectFork(FORKS[ETH]);
+        vm.selectFork(FORKS[CHAIN_0]);
 
         vars.sharesBalanceBeforeWithdraw = SuperRouter(vars.fromSrc).balanceOf(
             vars.user,
             1
         );
-        vm.selectFork(FORKS[POLY]);
+        vm.selectFork(FORKS[CHAIN_1]);
 
         vars.amountsToWithdraw = VaultMock(vars.vaultMock).previewRedeem(
             vars.sharesBalanceBeforeWithdraw
@@ -351,8 +419,8 @@ contract BaseProtocolTest is BaseSetup {
                 vars.vault,
                 vars.amountsToWithdraw,
                 10 ether,
-                ETH,
-                POLY
+                CHAIN_0,
+                CHAIN_1
             )
         );
 
@@ -360,22 +428,22 @@ contract BaseProtocolTest is BaseSetup {
             WithdrawArgs(
                 vars.fromSrc,
                 vars.toDst,
-                POLY_lzEndpoint,
+                lzEndpoint_1,
                 vars.user,
                 vars.stateReq,
                 vars.liqReq,
                 vars.amountsToWithdraw,
-                ETH,
-                POLY
+                CHAIN_0,
+                CHAIN_1
             )
         );
 
-        vars.POLY_PAYLOAD_ID++;
-        _processPayload(vars.POLY_PAYLOAD_ID, POLY);
+        vars.CHAIN_1_PAYLOAD_ID++;
+        _processPayload(vars.CHAIN_1_PAYLOAD_ID, CHAIN_1);
     }
 
     function test_attack_contract_same_address() public {
-        assertEq(address(attackETH), address(attackPOLY));
+        assertEq(address(attackCHAIN_0), address(attackCHAIN_1));
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -386,15 +454,15 @@ contract BaseProtocolTest is BaseSetup {
     function test_attack() public {
         TestAttackVars memory vars;
 
-        vars.victimVault = 1; // should correspond to DAI vault
+        vars.victimVault = 1; // should correspond to TOKEN vault
         vars.amountsToDeposit = 1000;
-        vars.ETH_PAYLOAD_ID;
-        vars.POLY_PAYLOAD_ID;
-        vars.underlyingSrcToken = getContract(ETH, "DAI");
-        vars.underlyingDstToken = getContract(POLY, "DAI");
+        vars.CHAIN_0_PAYLOAD_ID;
+        vars.CHAIN_1_PAYLOAD_ID;
+        vars.underlyingSrcToken = getContract(CHAIN_0, UNDERLYING_TOKEN);
+        vars.underlyingDstToken = getContract(CHAIN_1, UNDERLYING_TOKEN);
 
-        vars.fromSrc = payable(getContract(ETH, "SuperRouter"));
-        vars.toDst = payable(getContract(POLY, "SuperDestination"));
+        vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
+        vars.toDst = payable(getContract(CHAIN_1, "SuperDestination"));
 
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
         (vars.stateReq, vars.liqReq) = _buildDepositCallData(
@@ -404,36 +472,38 @@ contract BaseProtocolTest is BaseSetup {
             vars.victimVault,
             vars.amountsToDeposit,
             1 ether,
-            ETH,
-            POLY
+            CHAIN_0,
+            CHAIN_1
         );
 
-        vars.VICTIM_VAULT = MockERC20(getContract(POLY, "DAI"));
-        vm.selectFork(FORKS[POLY]);
+        vars.VICTIM_VAULT = MockERC20(getContract(CHAIN_1, UNDERLYING_TOKEN));
+        vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
-            vars.VICTIM_VAULT.balanceOf(getContract(POLY, "SuperDestination")),
+            vars.VICTIM_VAULT.balanceOf(
+                getContract(CHAIN_1, "SuperDestination")
+            ),
             0
         );
 
-        /// @dev fund the vault with 10000 DAI
+        /// @dev fund the vault with 10000 TOKEN
         for (uint256 i = 0; i < users.length; i++) {
             _depositToVault(
                 DepositArgs(
                     vars.underlyingSrcToken,
                     vars.fromSrc,
                     vars.toDst,
-                    POLY_lzEndpoint,
+                    lzEndpoint_1,
                     users[i],
                     vars.stateReq,
                     vars.liqReq,
                     vars.amountsToDeposit,
-                    ETH,
-                    POLY
+                    CHAIN_0,
+                    CHAIN_1
                 )
             );
         }
 
-        vm.selectFork(FORKS[POLY]);
+        vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
             vars.VICTIM_VAULT.balanceOf(vars.toDst),
             vars.amountsToDeposit * users.length
@@ -443,37 +513,41 @@ contract BaseProtocolTest is BaseSetup {
         /// @notice this will mint to the users the super positions
         for (uint256 i = 0; i < users.length; i++) {
             unchecked {
-                vars.POLY_PAYLOAD_ID++;
+                vars.CHAIN_1_PAYLOAD_ID++;
             }
-            _updateState(vars.POLY_PAYLOAD_ID, vars.amountsToDeposit, POLY);
+            _updateState(
+                vars.CHAIN_1_PAYLOAD_ID,
+                vars.amountsToDeposit,
+                CHAIN_1
+            );
 
             vm.recordLogs();
-            _processPayload(vars.POLY_PAYLOAD_ID, POLY);
+            _processPayload(vars.CHAIN_1_PAYLOAD_ID, CHAIN_1);
 
             vars.logs = vm.getRecordedLogs();
-            LayerZeroHelper(getContract(POLY, "LayerZeroHelper"))
+            LayerZeroHelper(getContract(CHAIN_1, "LayerZeroHelper"))
                 .helpWithEstimates(
-                    ETH_lzEndpoint,
+                    lzEndpoint_0,
                     1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                    FORKS[ETH],
+                    FORKS[CHAIN_0],
                     vars.logs
                 );
 
             unchecked {
-                vars.ETH_PAYLOAD_ID++;
+                vars.CHAIN_0_PAYLOAD_ID++;
             }
 
-            _processPayload(vars.ETH_PAYLOAD_ID, ETH);
+            _processPayload(vars.CHAIN_0_PAYLOAD_ID, CHAIN_0);
 
-            vm.selectFork(FORKS[ETH]);
+            vm.selectFork(FORKS[CHAIN_0]);
             assertEq(
                 SuperRouter(vars.fromSrc).balanceOf(users[i], 1),
                 vars.amountsToDeposit
             );
         }
 
-        vars.vaultMock = getContract(POLY, "DAIVault");
-        vm.selectFork(FORKS[POLY]);
+        vars.vaultMock = getContract(CHAIN_1, VAULT_NAME);
+        vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
             VaultMock(vars.vaultMock).balanceOf(vars.toDst),
             vars.amountsToDeposit * users.length
@@ -488,37 +562,39 @@ contract BaseProtocolTest is BaseSetup {
         vars.stateReqs[0] = vars.stateReq;
         vars.liqReqs[0] = vars.liqReq;
 
-        vm.selectFork(FORKS[ETH]);
+        vm.selectFork(FORKS[CHAIN_0]);
         vm.prank(deployer);
-        attackETH.depositIntoRouter{value: 2 ether}(
+        attackCHAIN_0.depositIntoRouter{value: 2 ether}(
             vars.liqReqs,
             vars.stateReqs
         );
         vars.logs = vm.getRecordedLogs();
-        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
-            POLY_lzEndpoint,
-            1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-            FORKS[POLY],
-            vars.logs
-        );
-
-        vars.POLY_PAYLOAD_ID++;
-        _updateState(vars.POLY_PAYLOAD_ID, vars.amountsToDeposit, POLY);
-
-        _processPayload(vars.POLY_PAYLOAD_ID, POLY);
-
-        vars.logs = vm.getRecordedLogs();
-        LayerZeroHelper(getContract(POLY, "LayerZeroHelper")).helpWithEstimates(
-                ETH_lzEndpoint,
+        LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
+            .helpWithEstimates(
+                lzEndpoint_1,
                 1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                FORKS[ETH],
+                FORKS[CHAIN_1],
                 vars.logs
             );
 
-        vars.ETH_PAYLOAD_ID++;
-        _processPayload(vars.ETH_PAYLOAD_ID, ETH);
+        vars.CHAIN_1_PAYLOAD_ID++;
+        _updateState(vars.CHAIN_1_PAYLOAD_ID, vars.amountsToDeposit, CHAIN_1);
+
+        _processPayload(vars.CHAIN_1_PAYLOAD_ID, CHAIN_1);
+
+        vars.logs = vm.getRecordedLogs();
+        LayerZeroHelper(getContract(CHAIN_1, "LayerZeroHelper"))
+            .helpWithEstimates(
+                lzEndpoint_0,
+                1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                FORKS[CHAIN_0],
+                vars.logs
+            );
+
+        vars.CHAIN_0_PAYLOAD_ID++;
+        _processPayload(vars.CHAIN_0_PAYLOAD_ID, CHAIN_0);
         vars.sharesBalanceBeforeWithdraw = SuperRouter(vars.fromSrc).balanceOf(
-            address(attackETH),
+            address(attackCHAIN_0),
             1
         );
         assertEq(vars.sharesBalanceBeforeWithdraw, vars.amountsToDeposit);
@@ -526,7 +602,7 @@ contract BaseProtocolTest is BaseSetup {
         /// @dev Step 2 - Attacker previews how many assets he will be stealing from the vault in each reentrancy
         // Specifically he could choose to do  BscVaultBalanceAtBeginningOfAttack/sharesBalanceBeforeWithdraw (rounded down) reentrancies
 
-        vm.selectFork(FORKS[POLY]);
+        vm.selectFork(FORKS[CHAIN_1]);
 
         vars.assetsToStealEachLoop = VaultMock(vars.vaultMock).previewRedeem(
             vars.sharesBalanceBeforeWithdraw
@@ -535,54 +611,63 @@ contract BaseProtocolTest is BaseSetup {
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
         (vars.stateReq, vars.liqReq) = _buildWithdrawAttackCallData(
             BuildAttackArgs(
-                address(attackPOLY),
+                address(attackCHAIN_1),
                 vars.fromSrc,
                 vars.toDst,
                 vars.underlyingSrcToken,
                 vars.victimVault,
                 vars.amountsToDeposit,
                 10 ether,
-                ETH,
-                POLY
+                CHAIN_0,
+                CHAIN_1
             )
         );
         vars.stateReqs[0] = vars.stateReq;
         vars.liqReqs[0] = vars.liqReq;
-        /// @dev airdrop 99 ETH to socket in both chain
+        /// @dev airdrop 99 Native tokens to socket in both chain
         vm.startPrank(deployer);
 
-        vm.selectFork(FORKS[ETH]);
-        payable(getContract(ETH, "SocketRouterMockFork")).transfer(99 ether);
+        vm.selectFork(FORKS[CHAIN_0]);
+        payable(getContract(CHAIN_0, "SocketRouterMockFork")).transfer(
+            99 ether
+        );
 
-        vm.selectFork(FORKS[POLY]);
-        payable(getContract(POLY, "SocketRouterMockFork")).transfer(99 ether);
+        vm.selectFork(FORKS[CHAIN_1]);
+        payable(getContract(CHAIN_1, "SocketRouterMockFork")).transfer(
+            99 ether
+        );
 
         vm.stopPrank();
 
         /// @dev Step 3 - A normal withdrawal from the SourceChain is inititated by the attacker contract
         /// @dev This chain is where the SuperPositions are stored
-        vm.selectFork(FORKS[ETH]);
+        vm.selectFork(FORKS[CHAIN_0]);
         vm.prank(deployer);
-        attackETH.withdrawFromRouter{value: 10 ether}(
+        attackCHAIN_0.withdrawFromRouter{value: 10 ether}(
             vars.liqReqs,
             vars.stateReqs
         );
         vars.logs = vm.getRecordedLogs();
-        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
-            POLY_lzEndpoint,
-            1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-            FORKS[POLY],
-            vars.logs
-        );
+        LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
+            .helpWithEstimates(
+                lzEndpoint_1,
+                1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                FORKS[CHAIN_1],
+                vars.logs
+            );
 
         /// @dev Step 4 - Reentrancy
-        vars.POLY_PAYLOAD_ID++;
-        _processPayload(vars.POLY_PAYLOAD_ID, POLY);
+        vars.CHAIN_1_PAYLOAD_ID++;
+        _processPayload(vars.CHAIN_1_PAYLOAD_ID, CHAIN_1);
 
-        vm.selectFork(FORKS[POLY]);
-        /// @dev WARNING - Asserts vault in polygon has been drained
+        vm.selectFork(FORKS[CHAIN_1]);
+        /// @dev WARNING - Asserts vault in chain1 has been drained
         assertEq(VaultMock(vars.vaultMock).balanceOf(vars.toDst), 0);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                        HELPER FUNCTION
+    //////////////////////////////////////////////////////////////*/
 
     function _buildWithdrawAttackCallData(BuildAttackArgs memory args)
         internal

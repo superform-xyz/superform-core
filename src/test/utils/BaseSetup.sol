@@ -4,7 +4,6 @@ pragma solidity ^0.8.14;
 import "@std/Test.sol";
 import "@ds-test/test.sol";
 import "forge-std/console.sol";
-
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
 import {FixedPointMathLib} from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
 import {LZEndpointMock} from "contracts/mocks/LzEndpointMock.sol";
@@ -24,15 +23,15 @@ import "contracts/types/lzTypes.sol";
 struct SetupVars {
     uint16[2] chainIds;
     address[2] lzEndpoints;
-    uint256 fork;
     uint16 chainId;
     uint16 dstChainId;
+    uint256 fork;
     address lzEndpoint;
     address lzHelper;
     address socketRouter;
     address superDestination;
     address stateHandler;
-    address DAI;
+    address UNDERLYING_TOKEN;
     address vault;
     address srcSuperRouter;
     address srcStateHandler;
@@ -78,6 +77,7 @@ struct BuildWithdrawArgs {
 }
 
 error ETH_TRANSFER_FAILED();
+error INVALID_UNDERLYING_TOKEN_NAME();
 
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
@@ -95,6 +95,10 @@ abstract contract BaseSetup is DSTest, Test {
     uint8[] bridgeIds;
     address[] bridgeAddresses;
 
+    /// @dev safe gas params for LZ
+    uint16 constant version = 1;
+    uint256 constant gasLimit = 1000000;
+
     uint256 constant mockEstimatedNativeFee = 1000000000000000; // 0.001 Native Tokens
     uint256 constant mockEstimatedZroFee = 250000000000000; // 0.00025 Native Tokens
     uint256 public constant milionTokensE18 = 1 ether;
@@ -103,7 +107,7 @@ abstract contract BaseSetup is DSTest, Test {
     address[] public users;
 
     function setUp() public virtual {
-        /// @dev setup bridges and other high level info
+        /// @dev setup bridges. Only bridgeId 1 available for tests (Socket)
         bridgeIds.push(1);
 
         /// @dev setup users
@@ -127,42 +131,9 @@ abstract contract BaseSetup is DSTest, Test {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
-    function _fundNativeTokens(uint16[2] memory chainIds) internal {
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            vm.selectFork(FORKS[chainIds[i]]);
-            vm.deal(deployer, 100000 ether);
-
-            vm.deal(address(1), 1000 ether);
-            vm.deal(address(2), 1000 ether);
-            vm.deal(address(3), 1000 ether);
-            vm.deal(address(4), 1000 ether);
-            vm.deal(address(5), 1000 ether);
-            vm.deal(address(6), 1000 ether);
-            vm.deal(address(7), 1000 ether);
-            vm.deal(address(8), 1000 ether);
-            vm.deal(address(9), 1000 ether);
-            vm.deal(address(10), 1000 ether);
-        }
-    }
-
-    function _fundUnderlyingTokens(uint16[2] memory chainIds, uint256 amount)
-        internal
-    {
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            vm.selectFork(FORKS[chainIds[i]]);
-            address dai = getContract(chainIds[i], "DAI");
-            deal(dai, address(1), 1 ether * amount);
-            deal(dai, address(2), 1 ether * amount);
-            deal(dai, address(3), 1 ether * amount);
-            deal(dai, address(4), 1 ether * amount);
-            deal(dai, address(5), 1 ether * amount);
-            deal(dai, address(6), 1 ether * amount);
-            deal(dai, address(7), 1 ether * amount);
-            deal(dai, address(8), 1 ether * amount);
-            deal(dai, address(9), 1 ether * amount);
-            deal(dai, address(10), 1 ether * amount);
-        }
-    }
+    /*//////////////////////////////////////////////////////////////
+                        PROTOCOL DEPLOYMENT
+    //////////////////////////////////////////////////////////////*/
 
     function _deployProtocol(
         string memory RPC_URL_0,
@@ -170,7 +141,8 @@ abstract contract BaseSetup is DSTest, Test {
         address lzEndpoint_1,
         address lzEndpoint_2,
         uint16 ID_0,
-        uint16 ID_1
+        uint16 ID_1,
+        string memory underlyingTokenName
     ) internal {
         SetupVars memory vars;
 
@@ -212,17 +184,30 @@ abstract contract BaseSetup is DSTest, Test {
                 bridgeAddresses.push(vars.socketRouter);
             }
 
-            /// @dev 4 - Deploy mock DAI with 18 decimals
-            vars.DAI = address(
-                new MockERC20("DAI", "DAI", 18, deployer, milionTokensE18)
+            /// @dev 4 - Deploy mock UNDERLYING_TOKEN with 18 decimals
+            vars.UNDERLYING_TOKEN = address(
+                new MockERC20(
+                    underlyingTokenName,
+                    underlyingTokenName,
+                    18,
+                    deployer,
+                    milionTokensE18
+                )
             );
-            contracts[vars.chainId][bytes32(bytes("DAI"))] = vars.DAI;
+            contracts[vars.chainId][bytes32(bytes(underlyingTokenName))] = vars
+                .UNDERLYING_TOKEN;
 
             /// @dev 5 - Deploy mock Vault
             vars.vault = address(
-                new VaultMock(MockERC20(vars.DAI), "DAIVault", "DAIVault")
+                new VaultMock(
+                    MockERC20(vars.UNDERLYING_TOKEN),
+                    string.concat(underlyingTokenName, "Vault"),
+                    string.concat(underlyingTokenName, "Vault")
+                )
             );
-            contracts[vars.chainId][bytes32(bytes("DAIVault"))] = vars.vault;
+            contracts[vars.chainId][
+                bytes32(bytes(string.concat(underlyingTokenName, "Vault")))
+            ] = vars.vault;
 
             vaults[vars.chainId].push(IERC4626(vars.vault));
             vaultIds[vars.chainId].push(1);
@@ -248,7 +233,7 @@ abstract contract BaseSetup is DSTest, Test {
             );
         }
 
-        _fundUnderlyingTokens(vars.chainIds, 1);
+        _fundUnderlyingTokens(vars.chainIds, 1, underlyingTokenName);
 
         for (uint256 i = 0; i < vars.chainIds.length; i++) {
             vars.chainId = vars.chainIds[i];
@@ -279,8 +264,6 @@ abstract contract BaseSetup is DSTest, Test {
                 vaultIds[vars.chainId]
             );
 
-            uint16 version = 1;
-            uint256 gasLimit = 1000000;
             SuperDestination(payable(vars.srcSuperDestination))
                 .updateSafeGasParam(abi.encodePacked(version, gasLimit));
 
@@ -336,9 +319,6 @@ abstract contract BaseSetup is DSTest, Test {
         /// @dev set to empty bytes for now
         bytes memory adapterParam;
         /*
-            uint16 version = 1;
-            uint256 gasLimit = 1000000;
-
             adapterParam = abi.encodePacked(version, gasLimit);
         */
 
@@ -360,7 +340,7 @@ abstract contract BaseSetup is DSTest, Test {
             msgValue
         );
 
-        /// @dev build socket tx data - this won't work if we validate the function signature (toChainId present)
+        /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
         bytes memory socketTxData = abi.encodeWithSignature(
             "mockSocketTransfer(address,address,address,uint256,uint256)",
             fromSrc,
@@ -380,19 +360,26 @@ abstract contract BaseSetup is DSTest, Test {
         );
     }
 
+    /*//////////////////////////////////////////////////////////////
+                    PROTOCOL INTERACTION HELPERS
+    //////////////////////////////////////////////////////////////*/
+
     function _depositToVault(DepositArgs memory args) internal {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[args.srcChainId]);
 
+        /// @dev - APPROVE transfer to SuperRouter
         vm.prank(args.user);
         MockERC20(args.underlyingSrcToken).approve(args.fromSrc, args.amount);
 
         vm.selectFork(FORKS[args.toChainId]);
         /// @dev Mocking gas fee airdrop (native) from layerzero
         /// @dev This value can be lower
+        /*
         vm.prank(deployer);
         (bool success, ) = args.toDst.call{value: 1 ether}(new bytes(0));
         if (!success) revert ETH_TRANSFER_FAILED();
+        */
 
         StateReq[] memory stateReqs = new StateReq[](1);
         LiqRequest[] memory liqReqs = new LiqRequest[](1);
@@ -402,13 +389,14 @@ abstract contract BaseSetup is DSTest, Test {
 
         vm.selectFork(FORKS[args.srcChainId]);
 
+        /// @dev - DEPOSIT to super router
         vm.prank(args.user);
         /// @dev see pigeon for this implementation
         vm.recordLogs();
         /// @dev Value == fee paid to relayer. API call in our design
         SuperRouter(args.fromSrc).deposit{value: 2 ether}(liqReqs, stateReqs);
         Vm.Log[] memory logs = vm.getRecordedLogs();
-
+        /// @dev see pigeon for this implementation
         LayerZeroHelper(getContract(args.srcChainId, "LayerZeroHelper"))
             .helpWithEstimates(
                 args.toLzEndpoint,
@@ -464,11 +452,12 @@ abstract contract BaseSetup is DSTest, Test {
         stateReqs[0] = args.stateReq;
         liqReqs[0] = args.liqReq;
 
+        /// @dev - WITHDRAW from super router
         vm.prank(args.user);
         /// @dev see pigeon for this implementation
         vm.recordLogs();
         /// @dev Value == fee paid to relayer. API call in our design
-        SuperRouter(args.fromSrc).withdraw{value: 10 ether}(stateReqs, liqReqs);
+        SuperRouter(args.fromSrc).withdraw{value: 2 ether}(stateReqs, liqReqs);
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
         LayerZeroHelper(getContract(args.srcChainId, "LayerZeroHelper"))
@@ -590,8 +579,54 @@ abstract contract BaseSetup is DSTest, Test {
         vm.prank(deployer);
         /// @dev WARNING - must check with LZ why estimates are so high in this case
         StateHandler(payable(getContract(targetChainId_, "StateHandler")))
-            .processPayload{value: 200 ether}(payloadId_, hashZero);
+            .processPayload{value: 100 ether}(payloadId_, hashZero);
 
         vm.selectFork(initialFork);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function _fundNativeTokens(uint16[2] memory chainIds) internal {
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vm.selectFork(FORKS[chainIds[i]]);
+            vm.deal(deployer, 100000 ether);
+
+            vm.deal(address(1), 1000 ether);
+            vm.deal(address(2), 1000 ether);
+            vm.deal(address(3), 1000 ether);
+            vm.deal(address(4), 1000 ether);
+            vm.deal(address(5), 1000 ether);
+            vm.deal(address(6), 1000 ether);
+            vm.deal(address(7), 1000 ether);
+            vm.deal(address(8), 1000 ether);
+            vm.deal(address(9), 1000 ether);
+            vm.deal(address(10), 1000 ether);
+        }
+    }
+
+    function _fundUnderlyingTokens(
+        uint16[2] memory chainIds,
+        uint256 amount,
+        string memory underlyingTokenName
+    ) internal {
+        if (getContract(chainIds[0], underlyingTokenName) == address(0))
+            revert INVALID_UNDERLYING_TOKEN_NAME();
+
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vm.selectFork(FORKS[chainIds[i]]);
+            address token = getContract(chainIds[i], underlyingTokenName);
+            deal(token, address(1), 1 ether * amount);
+            deal(token, address(2), 1 ether * amount);
+            deal(token, address(3), 1 ether * amount);
+            deal(token, address(4), 1 ether * amount);
+            deal(token, address(5), 1 ether * amount);
+            deal(token, address(6), 1 ether * amount);
+            deal(token, address(7), 1 ether * amount);
+            deal(token, address(8), 1 ether * amount);
+            deal(token, address(9), 1 ether * amount);
+            deal(token, address(10), 1 ether * amount);
+        }
     }
 }
