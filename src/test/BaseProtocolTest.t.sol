@@ -46,7 +46,6 @@ struct BuildAttackArgs {
     address underlyingDstToken;
     uint256 targetVaultId;
     uint256 amount;
-    uint256 msgValue;
     uint16 srcChainId;
     uint16 toChainId;
 }
@@ -75,79 +74,23 @@ contract BaseProtocolTest is BaseSetup {
     Attack internal attackCHAIN_0;
     Attack internal attackCHAIN_1;
 
-    string UNDERLYING_TOKEN;
-    string VAULT_NAME;
-
-    /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
-    uint16 constant ETH = 101;
-    uint16 constant BNB = 102;
-    uint16 constant AVAX = 106;
-    uint16 constant POLY = 109;
-    uint16 constant ARBI = 110;
-    uint16 constant OP = 111;
-    uint16 constant FTM = 112;
-
-    address constant ETH_lzEndpoint =
-        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
-    address constant BNB_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-    address constant AVAX_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-    address constant POLY_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-    address constant ARBI_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-    address constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
-    address constant FTM_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-
-    string ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL");
-    string BSC_RPC_URL = vm.envString("BSC_RPC_URL");
-    string AVALANCHE_RPC_URL = vm.envString("AVALANCHE_RPC_URL");
-    string POLYGON_RPC_URL = vm.envString("POLYGON_RPC_URL");
-    string ARBITRUM_RPC_URL = vm.envString("ARBITRUM_RPC_URL");
-    string OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL");
-    string FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL");
-
-    address lzEndpoint_0;
-    address lzEndpoint_1;
-    uint16 CHAIN_0;
-    uint16 CHAIN_1;
-    string RPC_URL0;
-    string RPC_URL1;
-
     function setUp() public override {
-        super.setUp();
         /*//////////////////////////////////////////////////////////////
                     !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
 
         UNDERLYING_TOKEN = "DAI";
-        VAULT_NAME = string.concat(UNDERLYING_TOKEN, "Vault");
-        lzEndpoint_0 = ETH_lzEndpoint;
-        lzEndpoint_1 = POLY_lzEndpoint;
-        CHAIN_0 = ETH;
-        CHAIN_1 = POLY;
-        RPC_URL0 = ETHEREUM_RPC_URL;
-        RPC_URL1 = POLYGON_RPC_URL;
+        CHAIN_0 = FTM;
+        CHAIN_1 = POLY; // issue with FTM reverts
 
         /*//////////////////////////////////////////////////////////////
-                    !! WARNING !!  PROTOCOL DEPLOYMENT
+                    !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
 
-        /// @dev Call deploy protocol with intended src and dst chains for simulation
-        _deployProtocol(
-            RPC_URL0,
-            RPC_URL1,
-            lzEndpoint_0,
-            lzEndpoint_1,
-            CHAIN_0,
-            CHAIN_1,
-            UNDERLYING_TOKEN
-        );
+        super.setUp();
 
         /*//////////////////////////////////////////////////////////////
-                        REMAINDER OF YOUR TEST CASES
+                    REMAINDER OF YOUR TEST SETTINGS
         //////////////////////////////////////////////////////////////*/
 
         /// @dev deploy attacking contract on src and dst chain
@@ -217,14 +160,15 @@ contract BaseProtocolTest is BaseSetup {
 
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
         (vars.stateReq, vars.liqReq) = _buildDepositCallData(
-            vars.fromSrc,
-            vars.toDst,
-            vars.underlyingSrcToken,
-            vars.vault,
-            vars.amountsToDeposit,
-            1 ether,
-            CHAIN_0,
-            CHAIN_1
+            BuildDepositArgs(
+                vars.fromSrc,
+                vars.toDst,
+                vars.underlyingSrcToken,
+                vars.vault,
+                vars.amountsToDeposit,
+                CHAIN_0,
+                CHAIN_1
+            )
         );
 
         vars.TARGET_VAULT = MockERC20(getContract(CHAIN_1, UNDERLYING_TOKEN));
@@ -316,14 +260,15 @@ contract BaseProtocolTest is BaseSetup {
 
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
         (vars.stateReq, vars.liqReq) = _buildDepositCallData(
-            vars.fromSrc,
-            vars.toDst,
-            vars.underlyingSrcToken,
-            vars.vault,
-            vars.amountsToDeposit,
-            1 ether,
-            CHAIN_0,
-            CHAIN_1
+            BuildDepositArgs(
+                vars.fromSrc,
+                vars.toDst,
+                vars.underlyingSrcToken,
+                vars.vault,
+                vars.amountsToDeposit,
+                CHAIN_0,
+                CHAIN_1
+            )
         );
 
         vars.TARGET_VAULT = MockERC20(getContract(CHAIN_1, UNDERLYING_TOKEN));
@@ -418,7 +363,6 @@ contract BaseProtocolTest is BaseSetup {
                 vars.underlyingSrcToken,
                 vars.vault,
                 vars.amountsToWithdraw,
-                10 ether,
                 CHAIN_0,
                 CHAIN_1
             )
@@ -466,14 +410,15 @@ contract BaseProtocolTest is BaseSetup {
 
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
         (vars.stateReq, vars.liqReq) = _buildDepositCallData(
-            vars.fromSrc,
-            vars.toDst,
-            vars.underlyingSrcToken,
-            vars.victimVault,
-            vars.amountsToDeposit,
-            1 ether,
-            CHAIN_0,
-            CHAIN_1
+            BuildDepositArgs(
+                vars.fromSrc,
+                vars.toDst,
+                vars.underlyingSrcToken,
+                vars.victimVault,
+                vars.amountsToDeposit,
+                CHAIN_0,
+                CHAIN_1
+            )
         );
 
         vars.VICTIM_VAULT = MockERC20(getContract(CHAIN_1, UNDERLYING_TOKEN));
@@ -562,9 +507,11 @@ contract BaseProtocolTest is BaseSetup {
         vars.stateReqs[0] = vars.stateReq;
         vars.liqReqs[0] = vars.liqReq;
 
+        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+
         vm.selectFork(FORKS[CHAIN_0]);
         vm.prank(deployer);
-        attackCHAIN_0.depositIntoRouter{value: 2 ether}(
+        attackCHAIN_0.depositIntoRouter{value: msgValue}(
             vars.liqReqs,
             vars.stateReqs
         );
@@ -617,7 +564,6 @@ contract BaseProtocolTest is BaseSetup {
                 vars.underlyingSrcToken,
                 vars.victimVault,
                 vars.amountsToDeposit,
-                10 ether,
                 CHAIN_0,
                 CHAIN_1
             )
@@ -641,9 +587,11 @@ contract BaseProtocolTest is BaseSetup {
 
         /// @dev Step 3 - A normal withdrawal from the SourceChain is inititated by the attacker contract
         /// @dev This chain is where the SuperPositions are stored
+        msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+
         vm.selectFork(FORKS[CHAIN_0]);
         vm.prank(deployer);
-        attackCHAIN_0.withdrawFromRouter{value: 10 ether}(
+        attackCHAIN_0.withdrawFromRouter{value: msgValue}(
             vars.liqReqs,
             vars.stateReqs
         );
@@ -671,7 +619,6 @@ contract BaseProtocolTest is BaseSetup {
 
     function _buildWithdrawAttackCallData(BuildAttackArgs memory args)
         internal
-        view
         returns (StateReq memory stateReq, LiqRequest memory liqReq)
     {
         /// @dev set to empty bytes for now
@@ -685,6 +632,7 @@ contract BaseProtocolTest is BaseSetup {
         amountsToDeposit[0] = args.amount;
         targetVaultIds[0] = args.targetVaultId;
         slippage[0] = 1000;
+        uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;
 
         stateReq = StateReq(
             args.toChainId,
@@ -692,7 +640,7 @@ contract BaseProtocolTest is BaseSetup {
             targetVaultIds,
             slippage,
             adapterParam,
-            args.msgValue
+            msgValue
         );
 
         /// @dev ! Notice - A new mock functon mockSocketTransferNative was added to the socket contract to allow this
