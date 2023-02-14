@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.14;
 
+/// @dev lib imports
 import "@std/Test.sol";
 import "@ds-test/test.sol";
 import "forge-std/console.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
 import {FixedPointMathLib} from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
+
+/// @dev src imports
+
 import {LZEndpointMock} from "contracts/mocks/LzEndpointMock.sol";
 import {VaultMock} from "contracts/mocks/VaultMock.sol";
 import {IStateHandler} from "contracts/interface/layerzero/IStateHandler.sol";
@@ -15,78 +19,12 @@ import {IDestination} from "contracts/interface/IDestination.sol";
 import {IERC4626} from "contracts/interface/IERC4626.sol";
 import {SuperRouter} from "contracts/SuperRouter.sol";
 import {SuperDestination} from "contracts/SuperDestination.sol";
+
+/// @dev local test imports
 import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
-import "contracts/types/socketTypes.sol";
-import "contracts/types/lzTypes.sol";
-
-struct SetupVars {
-    uint16[2] chainIds;
-    address[2] lzEndpoints;
-    uint16 chainId;
-    uint16 dstChainId;
-    uint256 fork;
-    address lzEndpoint;
-    address lzHelper;
-    address socketRouter;
-    address superDestination;
-    address stateHandler;
-    address UNDERLYING_TOKEN;
-    address vault;
-    address srcSuperRouter;
-    address srcStateHandler;
-    address srcSuperDestination;
-    address destStateHandler;
-}
-
-struct DepositArgs {
-    address underlyingSrcToken;
-    address payable fromSrc; // SuperRouter
-    address payable toDst; // SuperDestination
-    address toLzEndpoint;
-    address user;
-    StateReq stateReq;
-    LiqRequest liqReq;
-    uint256 amount;
-    uint16 srcChainId;
-    uint16 toChainId;
-}
-
-struct WithdrawArgs {
-    address payable fromSrc; // SuperRouter
-    address payable toDst; // SuperDestination
-    address toLzEndpoint;
-    address user;
-    StateReq stateReq;
-    LiqRequest liqReq;
-    uint256 amount;
-    uint16 srcChainId;
-    uint16 toChainId;
-}
-
-struct BuildDepositArgs {
-    address fromSrc;
-    address toDst;
-    address underlyingSrcToken;
-    uint256 targetVaultId;
-    uint256 amount;
-    uint16 srcChainId;
-    uint16 toChainId;
-}
-
-struct BuildWithdrawArgs {
-    address fromSrc;
-    address toDst;
-    address underlyingDstToken;
-    uint256 targetVaultId;
-    uint256 amount;
-    uint16 srcChainId;
-    uint16 toChainId;
-}
-
-error ETH_TRANSFER_FAILED();
-error INVALID_UNDERLYING_TOKEN_NAME();
+import "./TestTypes.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
@@ -113,6 +51,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     mapping(uint16 => IERC4626[]) vaults;
     mapping(uint16 => uint256[]) vaultIds;
+    mapping(uint16 => uint256) PAYLOAD_ID; // chaindId => payloadId
 
     uint8[] bridgeIds;
     address[] bridgeAddresses;
@@ -138,6 +77,16 @@ abstract contract BaseSetup is DSTest, Test {
     address public constant FTM_lzEndpoint =
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
+    address[7] public lzEndpoints = [
+        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
+    ];
+
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant ETH = 101;
     uint16 public constant BSC = 102;
@@ -146,6 +95,8 @@ abstract contract BaseSetup is DSTest, Test {
     uint16 public constant ARBI = 110;
     uint16 public constant OP = 111;
     uint16 public constant FTM = 112;
+
+    uint16[7] public chainIds = [101, 102, 106, 109, 110, 111, 112];
 
     uint16 public constant version = 1;
     uint256 public constant gasLimit = 1000000;
@@ -186,18 +137,149 @@ abstract contract BaseSetup is DSTest, Test {
     string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: FTM
 
     /*//////////////////////////////////////////////////////////////
-                        TESTS SELECTION VARIABLES
+                    PUBLIC FUNCTIONS FOR TESTS
+            THESE FUNCTIONS SHOULD BE USED WHENEVER POSSIBLE
     //////////////////////////////////////////////////////////////*/
-
-    address public lzEndpoint_0;
-    address public lzEndpoint_1;
-    uint16 public CHAIN_0;
-    uint16 public CHAIN_1;
 
     function setUp() public virtual {
         _preDeploymentSetup();
 
+        _fundNativeTokens();
+
         _deployProtocol();
+
+        _fundUnderlyingTokens(100);
+    }
+
+    function deposit(TestAction memory action, ActionLocalVars memory vars)
+        public
+    {
+        /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
+        (vars.stateReq, vars.liqReq) = _buildDepositCallData(
+            BuildDepositArgs(
+                vars.fromSrc,
+                vars.toDst,
+                vars.underlyingSrcToken,
+                action.vault,
+                action.amount,
+                action.CHAIN_0,
+                action.CHAIN_1
+            )
+        );
+
+        vm.selectFork(FORKS[action.CHAIN_1]);
+        assertEq(
+            vars.TARGET_VAULT.balanceOf(
+                getContract(action.CHAIN_1, "SuperDestination")
+            ),
+            0
+        );
+
+        _depositToVault(
+            DepositArgs(
+                vars.underlyingSrcToken,
+                vars.fromSrc,
+                vars.toDst,
+                vars.lzEndpoint_1,
+                action.user,
+                vars.stateReq,
+                vars.liqReq,
+                action.amount,
+                action.CHAIN_0,
+                action.CHAIN_1
+            )
+        );
+
+        vm.selectFork(FORKS[action.CHAIN_1]);
+        assertEq(vars.TARGET_VAULT.balanceOf(vars.toDst), action.amount);
+
+        /// @dev code block for updating state and syncing messages
+        {
+            unchecked {
+                PAYLOAD_ID[action.CHAIN_1]++;
+            }
+            _updateState(
+                PAYLOAD_ID[action.CHAIN_1],
+                action.amount,
+                action.CHAIN_1
+            );
+
+            vm.recordLogs();
+            _processPayload(PAYLOAD_ID[action.CHAIN_1], action.CHAIN_1);
+
+            vars.logs = vm.getRecordedLogs();
+            LayerZeroHelper(getContract(action.CHAIN_1, "LayerZeroHelper"))
+                .helpWithEstimates(
+                    vars.lzEndpoint_0,
+                    1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                    FORKS[action.CHAIN_0],
+                    vars.logs
+                );
+
+            unchecked {
+                PAYLOAD_ID[action.CHAIN_0]++;
+            }
+            _processPayload(PAYLOAD_ID[action.CHAIN_0], action.CHAIN_0);
+        }
+
+        vm.selectFork(FORKS[action.CHAIN_0]);
+        assertEq(
+            SuperRouter(vars.fromSrc).balanceOf(action.user, 1),
+            action.amount
+        );
+
+        vm.selectFork(FORKS[action.CHAIN_1]);
+        assertEq(
+            VaultMock(vars.vaultMock).balanceOf(vars.toDst),
+            action.amount
+        );
+    }
+
+    function withdraw(TestAction memory action, ActionLocalVars memory vars)
+        public
+    {
+        vm.selectFork(FORKS[action.CHAIN_0]);
+
+        vars.sharesBalanceBeforeWithdraw = SuperRouter(vars.fromSrc).balanceOf(
+            action.user,
+            1
+        );
+        vm.selectFork(FORKS[action.CHAIN_1]);
+
+        vars.amountsToWithdraw = VaultMock(vars.vaultMock).previewRedeem(
+            vars.sharesBalanceBeforeWithdraw
+        );
+
+        (vars.stateReq, vars.liqReq) = _buildWithdrawCallData(
+            BuildWithdrawArgs(
+                vars.fromSrc,
+                vars.toDst,
+                vars.underlyingSrcToken,
+                action.vault,
+                vars.amountsToWithdraw,
+                action.CHAIN_0,
+                action.CHAIN_1
+            )
+        );
+
+        _withdrawFromVault(
+            WithdrawArgs(
+                vars.fromSrc,
+                vars.toDst,
+                vars.lzEndpoint_1,
+                action.user,
+                vars.stateReq,
+                vars.liqReq,
+                vars.amountsToWithdraw,
+                action.CHAIN_0,
+                action.CHAIN_1
+            )
+        );
+
+        PAYLOAD_ID[action.CHAIN_1]++;
+        _processPayload(PAYLOAD_ID[action.CHAIN_1], action.CHAIN_1);
+
+        /// @dev missing asserts
     }
 
     function getContract(uint16 chainId, string memory _name)
@@ -209,20 +291,16 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /*//////////////////////////////////////////////////////////////
-                        PROTOCOL DEPLOYMENT
+                    INTERNAL HELPERS: DEPLOY
     //////////////////////////////////////////////////////////////*/
 
     function _deployProtocol() internal {
         SetupVars memory vars;
 
-        vars.chainIds = [CHAIN_0, CHAIN_1];
-        vars.lzEndpoints = [lzEndpoint_0, lzEndpoint_1];
-        _fundNativeTokens(vars.chainIds);
-
         vm.startPrank(deployer);
         /// @dev deployments
-        for (uint256 i = 0; i < vars.chainIds.length; i++) {
-            vars.chainId = vars.chainIds[i];
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vars.chainId = chainIds[i];
             vars.fork = FORKS[vars.chainId];
             vm.selectFork(vars.fork);
 
@@ -234,7 +312,7 @@ abstract contract BaseSetup is DSTest, Test {
                 .lzHelper;
 
             /// @dev 2- deploy StateHandler pointing to lzEndpoints (constants)
-            vars.stateHandler = address(new StateHandler(vars.lzEndpoints[i]));
+            vars.stateHandler = address(new StateHandler(lzEndpoints[i]));
             contracts[vars.chainId][bytes32(bytes("StateHandler"))] = vars
                 .stateHandler;
 
@@ -297,25 +375,17 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
         }
-        _fundUnderlyingTokens(vars.chainIds, 1);
 
-        for (uint256 i = 0; i < vars.chainIds.length; i++) {
-            vars.chainId = vars.chainIds[i];
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vars.chainId = chainIds[i];
             vars.fork = FORKS[vars.chainId];
             vm.selectFork(vars.fork);
-
-            vars.dstChainId = vars.chainId == CHAIN_0 ? CHAIN_1 : CHAIN_0;
 
             vars.srcStateHandler = getContract(vars.chainId, "StateHandler");
             vars.srcSuperRouter = getContract(vars.chainId, "SuperRouter");
             vars.srcSuperDestination = getContract(
                 vars.chainId,
                 "SuperDestination"
-            );
-
-            vars.destStateHandler = getContract(
-                vars.dstChainId,
-                "StateHandler"
             );
 
             /// @dev - Add vaults to super destination
@@ -346,10 +416,24 @@ abstract contract BaseSetup is DSTest, Test {
                 deployer
             );
 
-            StateHandler(payable(vars.srcStateHandler)).setTrustedRemote(
-                vars.dstChainId,
-                abi.encodePacked(vars.srcStateHandler, vars.destStateHandler)
-            );
+            /// @dev Set all trusted remotes for each chain
+            for (uint256 j = 0; j < chainIds.length; j++) {
+                if (j != i) {
+                    vars.dstChainId = chainIds[j];
+                    vars.dstStateHandler = getContract(
+                        vars.dstChainId,
+                        "StateHandler"
+                    );
+                    StateHandler(payable(vars.srcStateHandler))
+                        .setTrustedRemote(
+                            vars.dstChainId,
+                            abi.encodePacked(
+                                vars.srcStateHandler,
+                                vars.dstStateHandler
+                            )
+                        );
+                }
+            }
 
             /// @dev - Set bridge addresses
             SuperRouter(payable(vars.srcSuperRouter)).setBridgeAddress(
@@ -363,7 +447,8 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /*//////////////////////////////////////////////////////////////
-                    PROTOCOL INTERACTION HELPERS
+                INTERNAL HELPERS: DEPOSIT & WITHDRAW 
+            (ADVANCED DIRECT USAGE ALLOWED (see Attack.t.sol))
     //////////////////////////////////////////////////////////////*/
 
     function _depositToVault(DepositArgs memory args) internal {
@@ -634,11 +719,23 @@ abstract contract BaseSetup is DSTest, Test {
         vm.selectFork(initialFork);
     }
 
+    function _resetPayloadIDs() internal {
+        mapping(uint16 => uint256) storage payloadID = PAYLOAD_ID; // chaindId => payloadId
+
+        payloadID[ETH] = 0;
+        payloadID[BSC] = 0;
+        payloadID[AVAX] = 0;
+        payloadID[POLY] = 0;
+        payloadID[ARBI] = 0;
+        payloadID[OP] = 0;
+        payloadID[FTM] = 0;
+    }
+
     /*//////////////////////////////////////////////////////////////
-                        HELPER FUNCTIONS
+                        MISC. HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _preDeploymentSetup() internal {
+    function _preDeploymentSetup() private {
         mapping(uint16 => uint256) storage forks = FORKS;
         forks[ETH] = vm.createFork(ETHEREUM_RPC_URL);
         forks[BSC] = vm.createFork(BSC_RPC_URL);
@@ -665,9 +762,6 @@ abstract contract BaseSetup is DSTest, Test {
         lzEndpointsStorage[ARBI] = ARBI_lzEndpoint;
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         lzEndpointsStorage[FTM] = FTM_lzEndpoint;
-
-        lzEndpoint_0 = lzEndpointsStorage[CHAIN_0];
-        lzEndpoint_1 = lzEndpointsStorage[CHAIN_1];
 
         mapping(uint16 => address) storage priceFeeds = PRICE_FEEDS;
         priceFeeds[ETH] = ETHEREUM_ETH_USD_FEED;
@@ -696,7 +790,7 @@ abstract contract BaseSetup is DSTest, Test {
         users.push(address(10));
     }
 
-    function _fundNativeTokens(uint16[2] memory chainIds) internal {
+    function _fundNativeTokens() private {
         for (uint256 i = 0; i < chainIds.length; i++) {
             vm.selectFork(FORKS[chainIds[i]]);
 
@@ -770,9 +864,7 @@ abstract contract BaseSetup is DSTest, Test {
         return price;
     }
 
-    function _fundUnderlyingTokens(uint16[2] memory chainIds, uint256 amount)
-        internal
-    {
+    function _fundUnderlyingTokens(uint256 amount) private {
         if (getContract(chainIds[0], UNDERLYING_TOKEN) == address(0))
             revert INVALID_UNDERLYING_TOKEN_NAME();
 
