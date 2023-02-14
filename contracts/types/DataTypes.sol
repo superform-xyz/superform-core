@@ -50,8 +50,8 @@ struct InitData {
 
 struct ReturnData {
     bool status;
-    uint16 srcChainId;
-    uint16 dstChainId;
+    uint256 srcChainId;
+    uint256 dstChainId;
     uint256 txId;
     uint256[] amounts;
 }
