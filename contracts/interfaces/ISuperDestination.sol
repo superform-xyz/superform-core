@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 
-interface IDestination {
+interface ISuperDestination {
     function directDeposit(
         address srcSender,
         LiqRequest memory liqData,

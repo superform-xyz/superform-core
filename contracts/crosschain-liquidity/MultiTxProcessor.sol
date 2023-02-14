@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IMultiTxProcessor} from "./interfaces/IMultiTxProcessor.sol";
+import {IMultiTxProcessor} from "../interfaces/IMultiTxProcessor.sol";
 
 /// @title MultiTxProcessor
 /// @author Zeropoint Labs.

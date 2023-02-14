@@ -6,20 +6,18 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {StateReq, StateData, TransactionType, ReturnData, CallbackType, InitData} from "./types/DataTypes.sol";
-
 import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
-import {IDestination} from "./interfaces/IDestination.sol";
-
+import {ISuperDestination} from "./interfaces/ISuperDestination.sol";
+import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 
 /// @title Super Router
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and deposit information to a remote execution chain.
 /// extends ERC1155 and Socket's Liquidity Handler.
-contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
+contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     using SafeERC20 for IERC20;
     using Strings for string;
 
@@ -43,7 +41,7 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
 
     /// @notice same chain deposits are processed in one atomic transaction flow.
     /// @dev allows to store same chain destination contract addresses.
-    IDestination public immutable srcSuperDestination;
+    ISuperDestination public immutable srcSuperDestination;
 
     /// @notice history of state sent across chains are used for debugging.
     /// @dev maps all transaction data routed through the smart contract.
@@ -62,7 +60,7 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
         uint16 chainId_,
         string memory baseUri_,
         IStateRegistry stateRegistry_,
-        IDestination srcSuperDestination_
+        ISuperDestination srcSuperDestination_
     ) ERC1155(baseUri_) {
         srcSuperDestination = srcSuperDestination_;
         stateRegistry = stateRegistry_;
@@ -77,56 +75,61 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
     /// @dev socket.tech fails without a native receive function.
     receive() external payable {}
 
- 
+     /// @dev allows users to mint vault tokens and receive vault positions in return.
+    /// @param liqData_      represents the data required to move tokens from user wallet to destination contract.
+    /// @param stateData_    represents the state information including destination vault ids and amounts to be deposited to such vaults.
+    /// note: Just use single type not arr and delegate to SuperFormRouter?
     function deposit(
-        LiqRequest[] calldata _liqData,
-        StateReq[] calldata _stateData
-    ) external payable {
+        LiqRequest[] calldata liqData_,
+        StateReq[] calldata stateData_
+    ) external payable override {
         address srcSender = _msgSender();
-        uint256 l1 = _liqData.length;
-        uint256 l2 = _stateData.length;
+        uint256 l1 = liqData_.length;
+        uint256 l2 = stateData_.length;
         require(l1 == l2, "Router: Input Data Length Mismatch"); ///@dev ENG NOTE: but we may want to split single token deposit to multiple vaults on dst! this block it
         if (l1 > 1) {
             for (uint256 i = 0; i < l1; ++i) {
-                singleDeposit(_liqData[i], _stateData[i], srcSender);
+                singleDeposit(liqData_[i], stateData_[i], srcSender);
             }
         } else {
-            singleDeposit(_liqData[0], _stateData[0], srcSender);
+            singleDeposit(liqData_[0], stateData_[0], srcSender);
         }
     }
 
-
+    /// @dev burns users superpositions and dispatch a withdrawal request to the destination chain.
+    /// @param liqData_         represents the bridge data for underlying to be moved from destination chain.
+    /// @param stateData_       represents the state data required for withdrawal of funds from the vaults.
+    /// @dev API NOTE: This function can be called by anybody
+    /// @dev ENG NOTE: Amounts is abstracted. 1:1 of positions on DESTINATION, but user can't query ie. previewWithdraw() cross-chain
     function withdraw(
-        StateReq[] calldata _stateReq,
-        LiqRequest[] calldata _liqReq /// @dev Allow [] because user can request multiple tokens (as long as bridge has them - Needs check!)
-    ) external payable {
+        LiqRequest[] calldata liqData_, /// @dev Allow [] because user can request multiple tokens (as long as bridge has them - Needs check!)
+        StateReq[] calldata stateData_
+    ) external payable override {
         address sender = _msgSender();
-        uint256 l1 = _stateReq.length;
-        uint256 l2 = _liqReq.length;
+        uint256 l1 = stateData_.length;
+        uint256 l2 = liqData_.length;
 
         require(l1 == l2, "Router: Invalid Input Length");
         if (l1 > 1) {
             for (uint256 i = 0; i < l1; ++i) {
-                singleWithdrawal(_liqReq[i], _stateReq[i], sender);
+                singleWithdrawal(liqData_[i], stateData_[i], sender);
             }
         } else {
-            singleWithdrawal(_liqReq[0], _stateReq[0], sender);
+            singleWithdrawal(liqData_[0], stateData_[0], sender);
         }
     }
 
-    /**
-     * PREVILAGED admin ONLY FUNCTION.
-     * @dev allows admin to set the bridge address for an bridge id.
-     * @param _bridgeId         represents the bridge unqiue identifier.
-     * @param _bridgeAddress    represents the bridge address.
-     */
+    /// @dev PREVILAGED admin ONLY FUNCTION.
+    /// @dev allows admin to set the bridge address for an bridge id.
+    /// @param bridgeId_         represents the bridge unqiue identifier.
+    /// @param bridgeAddress_    represents the bridge address.
     function setBridgeAddress(
-        uint8[] memory _bridgeId,
-        address[] memory _bridgeAddress
-    ) external onlyOwner {
-        for (uint256 i = 0; i < _bridgeId.length; i++) {
-            address x = _bridgeAddress[i];
-            uint8 y = _bridgeId[i];
+        uint8[] memory bridgeId_,
+        address[] memory bridgeAddress_
+    ) external override onlyOwner {
+        for (uint256 i = 0; i < bridgeId_.length; i++) {
+            address x = bridgeAddress_[i];
+            uint8 y = bridgeId_[i];
             require(x != address(0), "Router: Zero Bridge Address");
 
             bridgeAddress[y] = x;
@@ -134,42 +137,12 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
         }
     }
 
-    /* ================ Development Only Functions =================== */
-
-    /**
-     * PREVILAGED admin ONLY FUNCTION.
-     * @notice should be removed after end-to-end testing.
-     * @dev allows admin to withdraw lost tokens in the smart contract.
-     */
-    function withdrawToken(
-        address _tokenContract,
-        uint256 _amount
-    ) external onlyOwner {
-        IERC20 tokenContract = IERC20(_tokenContract);
-
-        // transfer the token from address of this contract
-        // to address of the user (executing the withdrawToken() function)
-        tokenContract.safeTransfer(owner(), _amount);
-    }
-
-    /**
-     * PREVILAGED admin ONLY FUNCTION.
-     * @dev allows admin to withdraw lost native tokens in the smart contract.
-     */
-    function withdrawNativeToken(uint256 _amount) external onlyOwner {
-        payable(owner()).transfer(_amount);
-    }
-
-    /**
-     * ANYONE CAN CALL THE FUNCTION.
-     *
-     * @dev processes state channel messages from destination chain post successful deposit to a vault.
-     * @param _payload  represents internal transactionId associated with every deposit/withdrawal transaction.
-     */
-    function stateSync(bytes memory _payload) external payable {
+    /// @dev allows registry contract to send payload for processing to the router contract.
+    /// @param payload_ is the received information to be processed.
+    function stateSync(bytes memory payload_) external payable override {
         require(msg.sender == address(stateRegistry), "Router: Request Denied");
 
-        StateData memory data = abi.decode(_payload, (StateData));
+        StateData memory data = abi.decode(payload_, (StateData));
         require(data.flag == CallbackType.RETURN, "Router: Invalid Payload");
 
         ReturnData memory returnData = abi.decode(data.params, (ReturnData));
@@ -207,40 +180,66 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
         emit Completed(returnData.txId);
     }
 
-    /**
-     * Function to support Metadata hosting in Opensea.
-     */
-    function tokenURI(uint256 id) public view returns (string memory) {
+    /*///////////////////////////////////////////////////////////////
+                            Developmental Functions
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev PREVILAGED admin ONLY FUNCTION.
+    /// @notice should be removed after end-to-end testing.
+    /// @dev allows admin to withdraw lost tokens in the smart contract.
+    function withdrawToken(
+        address _tokenContract,
+        uint256 _amount
+    ) external onlyOwner {
+        IERC20 tokenContract = IERC20(_tokenContract);
+
+        /// note: transfer the token from address of this contract
+        /// note: to address of the user (executing the withdrawToken() function)
+        tokenContract.safeTransfer(owner(), _amount);
+    }
+
+    /// @dev PREVILAGED admin ONLY FUNCTION.
+    /// @dev allows admin to withdraw lost native tokens in the smart contract.
+    function withdrawNativeToken(uint256 _amount) external onlyOwner {
+        payable(owner()).transfer(_amount);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            Read Only Functions
+    //////////////////////////////////////////////////////////////*/
+    
+    /// @dev returns the off-chain metadata URI for each ERC1155 super position.
+    /// @param id_ is the unique identifier of the ERC1155 super position aka the vault id.
+    /// @return string pointing to the off-chain metadata of the 1155 super position.
+    function tokenURI(uint256 id_) public view override returns (string memory) {
         return
-            string(abi.encodePacked(dynamicURI, Strings.toString(id), ".json"));
+            string(abi.encodePacked(dynamicURI, Strings.toString(id_), ".json"));
     }
 
     /* ================ Internal Functions =================== */
 
-    /**
-     * @notice validates input and call state handler & liquidity handler to move
-     * tokens and state messages to the destination chain.
-     */
+    /// @notice validates input and call state handler & liquidity handler to move
+    /// tokens and state messages to the destination chain.
     function singleDeposit(
-        LiqRequest calldata _liqData,
-        StateReq calldata _stateData,
-        address srcSender
+        LiqRequest calldata liqData_,
+        StateReq calldata stateData_,
+        address srcSender_
     ) internal {
         totalTransactions++;
-        uint256 dstChainId = _stateData.dstChainId;
+        uint256 dstChainId = stateData_.dstChainId;
 
         require(
-            validateSlippage(_stateData.maxSlippage),
+            validateSlippage(stateData_.maxSlippage),
             "Super Router: Invalid Slippage"
         );
 
         InitData memory initData = InitData(
             chainId,
             dstChainId,
-            srcSender,
-            _stateData.vaultIds,
-            _stateData.amounts,
-            _stateData.maxSlippage,
+            srcSender_,
+            stateData_.vaultIds,
+            stateData_.amounts,
+            stateData_.maxSlippage,
             totalTransactions,
             bytes("")
         );
@@ -254,54 +253,52 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
         txHistory[totalTransactions] = info;
 
         if (chainId == dstChainId) {
-            dstDeposit(_liqData, _stateData, srcSender, totalTransactions);
+            dstDeposit(liqData_, stateData_, srcSender_, totalTransactions);
         } else {
             dispatchTokens(
-                bridgeAddress[_liqData.bridgeId],
-                _liqData.txData,
-                _liqData.token,
-                _liqData.allowanceTarget,
-                _liqData.amount,
-                srcSender,
-                _liqData.nativeAmount
+                bridgeAddress[liqData_.bridgeId],
+                liqData_.txData,
+                liqData_.token,
+                liqData_.allowanceTarget,
+                liqData_.amount,
+                srcSender_,
+                liqData_.nativeAmount
             );
 
             /// @dev LayerZero endpoint
-            stateRegistry.dispatchPayload{value: _stateData.msgValue}(
-                _stateData.bridgeId,
+            stateRegistry.dispatchPayload{value: stateData_.msgValue}(
+                stateData_.bridgeId,
                 dstChainId,
                 abi.encode(info),
-                _stateData.adapterParam
+                stateData_.adapterParam
             );
         }
 
-        emit Initiated(totalTransactions, _liqData.token, _liqData.amount);
+        emit Initiated(totalTransactions, liqData_.token, liqData_.amount);
     }
 
-    /**
-     * @notice validates input and initiates withdrawal process
-     */
+    /// @notice validates input and initiates withdrawal process
     function singleWithdrawal(
-        LiqRequest calldata _liqData,
-        StateReq calldata _stateData,
+        LiqRequest calldata liqData_,
+        StateReq calldata stateData_,
         address sender
     ) internal {
-        uint256 dstChainId = _stateData.dstChainId;
+        uint256 dstChainId = stateData_.dstChainId;
 
         require(dstChainId != 0, "Router: Invalid Destination Chain");
-        _burnBatch(sender, _stateData.vaultIds, _stateData.amounts);
+        _burnBatch(sender, stateData_.vaultIds, stateData_.amounts);
 
         totalTransactions++;
 
         InitData memory initData = InitData(
             chainId,
-            _stateData.dstChainId,
+            stateData_.dstChainId,
             sender,
-            _stateData.vaultIds,
-            _stateData.amounts,
-            _stateData.maxSlippage,
+            stateData_.vaultIds,
+            stateData_.amounts,
+            stateData_.maxSlippage,
             totalTransactions,
-            abi.encode(_liqData)
+            abi.encode(liqData_)
         );
 
         StateData memory info = StateData(
@@ -312,15 +309,15 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
 
         txHistory[totalTransactions] = info;
 
-        LiqRequest memory data = _liqData;
+        LiqRequest memory data = liqData_;
 
         if (chainId == dstChainId) {
             /// @dev srcSuperDestination can only transfer tokens back to this SuperRouter
             /// @dev to allow bridging somewhere else requires arch change
             srcSuperDestination.directWithdraw{value: msg.value}(
                 sender,
-                _stateData.vaultIds,
-                _stateData.amounts,
+                stateData_.vaultIds,
+                stateData_.amounts,
                 data
             );
 
@@ -330,61 +327,59 @@ contract SuperRouter is ERC1155, LiquidityHandler, Ownable {
             /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
             /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
             /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
-            stateRegistry.dispatchPayload{value: _stateData.msgValue}(
-                _stateData.bridgeId,
+            stateRegistry.dispatchPayload{value: stateData_.msgValue}(
+                stateData_.bridgeId,
                 dstChainId,
                 abi.encode(info),
-                _stateData.adapterParam
+                stateData_.adapterParam
             );
         }
 
-        emit Initiated(totalTransactions, _liqData.token, _liqData.amount);
+        emit Initiated(totalTransactions, liqData_.token, liqData_.amount);
     }
 
-    /**
-     * @notice deposit() to vaults existing on the same chain as SuperRouter
-     * @dev Optimistic transfer & call
-     */
+    /// @notice deposit() to vaults existing on the same chain as SuperRouter
+    /// @dev Optimistic transfer & call
     function dstDeposit(
-        LiqRequest calldata _liqData,
-        StateReq calldata _stateData,
-        address srcSender,
-        uint256 txId
+        LiqRequest calldata liqData_,
+        StateReq calldata stateData_,
+        address srcSender_,
+        uint256 txId_
     ) internal {
         /// @dev deposits collateral to a given vault and mint vault positions.
         uint256[] memory dstAmounts = srcSuperDestination.directDeposit{
             value: msg.value
-        }(srcSender, _liqData, _stateData.vaultIds, _stateData.amounts);
+        }(srcSender_, liqData_, stateData_.vaultIds, stateData_.amounts);
 
         /// @dev TEST-CASE: _msgSender() to whom we mint. use passed `admin` arg?
-        _mintBatch(srcSender, _stateData.vaultIds, dstAmounts, "");
-        emit Completed(txId);
+        _mintBatch(srcSender_, stateData_.vaultIds, dstAmounts, "");
+        emit Completed(txId_);
     }
 
-    /**
-     * @dev validates slippage parameter;
-     * slippages should always be within 0 - 100
-     * decimal is handles in the form of 10s
-     * for eg. 0.05 = 5
-     *         100 = 10000
-     */
+    /// @dev validates slippage parameter;
+    /// slippages should always be within 0 - 100
+    /// decimal is handles in the form of 10s
+    /// for eg. 0.05 = 5
+    ///       100 = 10000
     function validateSlippage(
-        uint256[] calldata slippages
+        uint256[] calldata slippages_
     ) internal pure returns (bool) {
-        for (uint256 i = 0; i < slippages.length; i++) {
-            if (slippages[i] < 0 || slippages[i] > 10000) {
+        for (uint256 i = 0; i < slippages_.length; i++) {
+            if (slippages_[i] < 0 || slippages_[i] > 10000) {
                 return false;
             }
         }
         return true;
     }
 
+    /// @dev returns the sum of an array.
+    /// @param amounts_ represents an array of inputs.
     function addValues(
-        uint256[] calldata amounts
+        uint256[] calldata amounts_
     ) internal pure returns (uint256) {
         uint256 total;
-        for (uint256 i = 0; i < amounts.length; i++) {
-            total += amounts[i];
+        for (uint256 i = 0; i < amounts_.length; i++) {
+            total += amounts_[i];
         }
         return total;
     }

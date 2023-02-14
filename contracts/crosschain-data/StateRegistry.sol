@@ -4,7 +4,8 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {IBridgeImpl} from "../interfaces/IBridgeImpl.sol";
-import {ICoreContract} from "../interfaces/ICoreContract.sol";
+import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ISuperDestination} from "../interfaces/ISuperDestination.sol";
 import {StateData, PayloadState, TransactionType, CallbackType, InitData, ReturnData} from "../types/DataTypes.sol";
 
 /// @title Cross-Chain Messaging Bridge Aggregator
@@ -223,22 +224,6 @@ contract StateRegistry is IStateRegistry, AccessControl {
             revert InvalidPayloadState();
         }
 
-        ReturnData memory returnData = ReturnData(
-            false, /// destination status
-            initData.srcChainId,
-            initData.dstChainId,
-            initData.txId,
-            initData.amounts
-        );
-
-        StateData memory data = StateData(
-            payloadInfo.txType,
-            CallbackType.RETURN,
-            abi.encode(returnData)
-        );
-
-        /// Silencing warning in here.
-        data;
         /// NOTE: Send `data` back to source based on BridgeID to revert the state.
         /// NOTE: chain_ids conflict should be addresses here.
         // bridge[bridgeId_].dipatchPayload(initData.dstChainId_, message_, extraData_);
@@ -254,11 +239,11 @@ contract StateRegistry is IStateRegistry, AccessControl {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (payloadInfo_.flag == CallbackType.INIT) {
-            ICoreContract(destinationContract).stateSync{value: msg.value}(
+            ISuperDestination(destinationContract).stateSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {
-            ICoreContract(routerContract).stateSync{value: msg.value}(
+            ISuperRouter(routerContract).stateSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         }
@@ -274,7 +259,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ICoreContract(destinationContract).stateSync{value: msg.value}(
+            ISuperDestination(destinationContract).stateSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {
@@ -283,7 +268,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ICoreContract(routerContract).stateSync{value: msg.value}(
+            ISuperRouter(routerContract).stateSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         }

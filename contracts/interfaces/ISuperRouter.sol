@@ -31,7 +31,7 @@ interface ISuperRouter {
     function deposit(
         LiqRequest[] calldata liqData_,
         StateReq[] calldata stateData_
-    ) external;
+    ) external payable;
 
     /// @dev burns users superpositions and dispatch a withdrawal request to the destination chain.
     /// @param liqData_         represents the bridge data for underlying to be moved from destination chain.
@@ -41,11 +41,33 @@ interface ISuperRouter {
     function withdraw(
         LiqRequest[] calldata liqData_, /// @dev Allow [] because user can request multiple tokens (as long as bridge has them - Needs check!)
         StateReq[] calldata stateData_
+    ) external payable;
+
+    /// @dev PREVILAGED admin ONLY FUNCTION.
+    /// @dev allows admin to set the bridge address for an bridge id.
+    /// @param bridgeId_         represents the bridge unqiue identifier.
+    /// @param bridgeAddress_    represents the bridge address.
+    function setBridgeAddress(
+        uint8[] memory bridgeId_,
+        address[] memory bridgeAddress_
     ) external;
 
-    function chainId() external returns (uint16);
+    /// @dev allows registry contract to send payload for processing to the router contract.
+    /// @param payload_ is the received information to be processed.
+    function stateSync(bytes memory payload_) external payable;
 
-    function totalTransactions() external returns (uint256);
+    /*///////////////////////////////////////////////////////////////
+                        External View Functions
+    //////////////////////////////////////////////////////////////*/
 
-    function stateSync(bytes memory _payload) external payable;
+    /// @dev returns the chain id of the router contract
+    function chainId() external view returns (uint256);
+
+    /// @dev returns the total individual vault transactions made through the router.
+    function totalTransactions() external view returns (uint256);
+
+    /// @dev returns the off-chain metadata URI for each ERC1155 super position.
+    /// @param id_ is the unique identifier of the ERC1155 super position aka the vault id.
+    /// @return string pointing to the off-chain metadata of the 1155 super position.
+    function tokenURI(uint256 id_) external view returns (string memory);
 }
