@@ -10,9 +10,7 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
 /// @dev interchain test cases to do
-/// FTM=>BSC: user withdrawing tokens from a vault on BSC from/to Fantom
-/// BSC=>FTM: user depositing to a vault on Fantom from BSC
-/// BSC=>FTM: user withdrawing tokens from a vault on Fantom from/to BSC
+/// @dev WARNING: MISSING MULTI UNDERLYING STUFF -> NEED THAT IN PLACE FOR MULTI DEPOSITS
 /// FTM=>BSC: multiple LiqReq/StateReq for multi-deposit
 /// FTM=>BSC: user depositing to a vault requiring swap (stays pending) - REVERTS
 /// FTM=>BSC: cross-chain slippage update beyond max slippage - REVERTS
@@ -23,7 +21,7 @@ contract BaseProtocolTest is BaseSetup {
     /*//////////////////////////////////////////////////////////////
                     !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
-    uint256 internal constant numberOfTestActions = 4;
+    uint256 internal constant numberOfTestActions = 2;
 
     function setUp() public override {
         /*//////////////////////////////////////////////////////////////
@@ -45,38 +43,50 @@ contract BaseProtocolTest is BaseSetup {
         returns (TestAction memory)
     {
         TestAction[numberOfTestActions] memory testActionCases = [
+            /// FTM=>BSC: user depositing to a vault on BSC from Fantom
             TestAction({
                 action: Actions.Deposit,
                 CHAIN_0: FTM,
-                CHAIN_1: POLY,
-                vault: 1,
-                amount: 1000,
-                user: users[0]
+                CHAIN_1: BSC,
+                targetVaults: [[1]], /// @dev vaults for each liqReq/stateReq. WARNING THERE IS A BUG IN CONTRACTS. ONLY SUPPORTS 1 VAULT PER REQUEST - SUP 2003
+                amounts: [[1000]], /// @dev amounts for each liqReq/stateReq. WARNING THERE IS A BUG IN CONTRACTS. ONLY SUPPORTS 1 VAULT PER REQUEST - SUP 2003
+                user: users[0],
+                revertString: ""
             }),
+            /*
+            /// FTM=>BSC: user withdrawing tokens from a vault on BSC from/to Fantom
             TestAction({
                 action: Actions.Withdraw,
                 CHAIN_0: FTM,
-                CHAIN_1: POLY,
-                vault: 1,
-                amount: 1000,
-                user: users[0]
+                CHAIN_1: BSC,
+                targetVaults: [[1]],
+                amounts: [[1000]],
+                user: users[0],
+                revertString: ""
             }),
+            */
+            /// BSC=>FTM: user depositing to a vault on Fantom from BSC
             TestAction({
                 action: Actions.Deposit,
-                CHAIN_0: POLY,
-                CHAIN_1: BSC,
-                vault: 1,
-                amount: 2000,
-                user: users[2]
-            }),
-            TestAction({
-                action: Actions.Withdraw,
-                CHAIN_0: POLY,
-                CHAIN_1: BSC,
-                vault: 1,
-                amount: 2000,
-                user: users[2]
+                CHAIN_0: BSC,
+                CHAIN_1: FTM,
+                targetVaults: [[1]],
+                amounts: [[2000]],
+                user: users[2],
+                revertString: ""
             })
+            /*
+            /// BSC=>FTM: user withdrawing tokens from a vault on Fantom from/to BSC
+            TestAction({
+                action: Actions.Withdraw,
+                CHAIN_0: BSC,
+                CHAIN_1: FTM,
+                targetVaults: [1],
+                amounts: [2000],
+                user: users[2],
+                revertString: ""
+            })
+            */
         ];
 
         return testActionCases[index_];

@@ -38,9 +38,10 @@ struct TestAction {
     Actions action;
     uint16 CHAIN_0;
     uint16 CHAIN_1;
-    uint256 vault;
-    uint256 amount;
+    uint256[][] targetVaults;
+    uint256[][] amounts;
     address user;
+    bytes revertString;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -70,49 +71,39 @@ struct SetupVars {
                     HELPER TYPES
 //////////////////////////////////////////////////////////////*/
 
-struct DepositArgs {
+struct BuildDepositCallDataArgs {
+    address user;
+    address fromSrc;
+    address toDst;
+    address underlyingToken;
+    uint256[] targetVaultIds;
+    uint256[] amounts;
+    uint16 srcChainId;
+    uint16 toChainId;
+}
+
+struct BuildWithdrawCallDataArgs {
+    address user;
+    address fromSrc;
+    address toDst;
+    address underlyingToken;
+    address vaultMock;
+    uint256[] targetVaultIds;
+    uint16 srcChainId;
+    uint16 toChainId;
+}
+
+struct InternalActionArgs {
     address underlyingSrcToken;
     address payable fromSrc; // SuperRouter
     address payable toDst; // SuperDestination
     address toLzEndpoint;
     address user;
-    StateReq stateReq;
-    LiqRequest liqReq;
-    uint256 amount;
+    StateReq[] stateReqs;
+    LiqRequest[] liqReqs;
     uint16 srcChainId;
     uint16 toChainId;
-}
-
-struct WithdrawArgs {
-    address payable fromSrc; // SuperRouter
-    address payable toDst; // SuperDestination
-    address toLzEndpoint;
-    address user;
-    StateReq stateReq;
-    LiqRequest liqReq;
-    uint256 amount;
-    uint16 srcChainId;
-    uint16 toChainId;
-}
-
-struct BuildDepositArgs {
-    address fromSrc;
-    address toDst;
-    address underlyingSrcToken;
-    uint256 targetVaultId;
-    uint256 amount;
-    uint16 srcChainId;
-    uint16 toChainId;
-}
-
-struct BuildWithdrawArgs {
-    address fromSrc;
-    address toDst;
-    address underlyingDstToken;
-    uint256 targetVaultId;
-    uint256 amount;
-    uint16 srcChainId;
-    uint16 toChainId;
+    bytes revertString;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -121,3 +112,4 @@ struct BuildWithdrawArgs {
 
 error ETH_TRANSFER_FAILED();
 error INVALID_UNDERLYING_TOKEN_NAME();
+error LEN_MISMATCH();
