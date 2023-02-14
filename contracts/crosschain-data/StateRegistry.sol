@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {IBridgeImpl} from "../interfaces/IBridgeImpl.sol";
 import {ICoreContract} from "../interfaces/ICoreContract.sol";
-import {StateData, PayloadState, TransactionType, CallbackType, InitData} from "../types/DataTypes.sol";
+import {StateData, PayloadState, TransactionType, CallbackType, InitData, ReturnData} from "../types/DataTypes.sol";
 
 /// @title Cross-Chain Messaging Bridge Aggregator
 /// @author Zeropoint Labs
@@ -19,7 +19,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     bytes32 public constant IMPLEMENTATION_CONTRACTS_ROLE =
         keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
     bytes32 public constant PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
-    bytes32 public constant UPDATER_ROLE = keccak256("PROCESSOR_ROLE");
+    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                     State Variables
@@ -102,6 +102,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         external
         virtual
         override
+        onlyRole(IMPLEMENTATION_CONTRACTS_ROLE)
     {
         ++payloadsCount;
         payload[payloadsCount] = message_;
@@ -117,6 +118,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         external
         virtual
         override
+        onlyRole(UPDATER_ROLE)
     {
         if (payloadId_ > payloadsCount) {
             revert InvalidPayloadId();
@@ -180,6 +182,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         payable
         virtual
         override
+        onlyRole(PROCESSOR_ROLE)
     {
         if (payloadId_ > payloadsCount) {
             revert InvalidPayloadId();
@@ -201,14 +204,53 @@ contract StateRegistry is IStateRegistry, AccessControl {
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to revert payload that fail to revert state changes on source chain.
     /// @param payloadId_ is the identifier of the cross-chain payload.
+    /// @param bridgeId_ is the identifier of the cross-chain bridge to be used to send the acknowledgement.
     /// @param extraData_ is any message bridge specific override information.
     /// NOTE: function can only process failing payloads.
-    function revertPayload(uint256 payloadId_, bytes memory extraData_)
+    function revertPayload(uint256 payloadId_, uint256 bridgeId_, bytes memory extraData_)
         external
         payable
         virtual
         override
-    {}
+        onlyRole(PROCESSOR_ROLE)
+    {
+        if (payloadId_ > payloadsCount) {
+            revert InvalidPayloadId();
+        }
+
+        if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
+            revert InvalidPayloadState();
+        }
+
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+        StateData memory payloadInfo = abi.decode(payload[payloadId_], (StateData));
+        InitData memory initData = abi.decode(payloadInfo.params, (InitData));
+
+        if(initData.dstChainId != chainId) {
+            revert InvalidPayloadState();
+        }
+
+        ReturnData memory returnData = ReturnData(
+            false, /// destination status
+            initData.srcChainId,
+            initData.dstChainId,
+            initData.txId,
+            initData.amounts
+        );
+
+        StateData memory data = StateData(
+            payloadInfo.txType,
+            CallbackType.RETURN,
+            abi.encode(returnData)
+        );
+
+        /// Silencing warning in here.
+        data;
+        /// NOTE: Send `data` back to source based on BridgeID to revert the state.
+        /// NOTE: chain_ids conflict should be addresses here.
+        // bridge[bridgeId_].dipatchPayload(initData.dstChainId_, message_, extraData_);
+    }
 
     /*///////////////////////////////////////////////////////////////
                     Internal Functions

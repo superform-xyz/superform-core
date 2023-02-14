@@ -19,8 +19,8 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
 
-    mapping(uint256 => uint16) public propreitoryChainIds;
-    mapping(uint16 => uint256) public protocolChainId;
+    mapping(uint256 => uint16) public ambChainId;
+    mapping(uint16 => uint256) public superChainId;
 
     /*///////////////////////////////////////////////////////////////
                     Constructor
@@ -53,7 +53,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
         }
 
         _lzSend(
-            propreitoryChainIds[dstChainId_],
+            ambChainId[dstChainId_],
             message_,
             payable(msg.sender),
             address(0x0),
@@ -75,7 +75,10 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
             revert DuplicatePayload();
         }
 
+        /// NOTE: changing state earlier to prevent re-entrancy.
+        isValid[_srcChainId][_nonce] = true;
+
         /// NOTE: add _srcAddress validation
-        registry.receivePayload(protocolChainId[_srcChainId], _payload);
+        registry.receivePayload(superChainId[_srcChainId], _payload);
     }
 }

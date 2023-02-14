@@ -88,9 +88,10 @@ interface IStateRegistry {
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to revert payload that fail to revert state changes on source chain.
     /// @param payloadId_ is the identifier of the cross-chain payload.
+    /// @param bridgeId_ is the identifier of the cross-chain bridge to be used to send the acknowledgement.
     /// @param extraData_ is any message bridge specific override information.
     /// NOTE: function can only process failing payloads.
-    function revertPayload(uint256 payloadId_, bytes memory extraData_)
+    function revertPayload(uint256 payloadId_, uint256 bridgeId_, bytes memory extraData_)
         external
         payable;
 }
