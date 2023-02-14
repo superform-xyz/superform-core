@@ -85,10 +85,9 @@ interface ILendingPool {
      * @return The state of the reserve
      *
      */
-    function getReserveData(address asset)
-        external
-        view
-        returns (ReserveData memory);
+    function getReserveData(
+        address asset
+    ) external view returns (ReserveData memory);
 
     function paused() external view returns (bool);
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.17;
 
+/// @dev contains all the common struct used for interchain token transfers.
 struct LiqRequest {
     uint8 bridgeId;
     bytes txData;

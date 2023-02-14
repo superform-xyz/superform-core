@@ -22,11 +22,7 @@ contract ERC20Mock is ERC20 {
         _burn(account, amount);
     }
 
-    function transferInternal(
-        address from,
-        address to,
-        uint256 value
-    ) public {
+    function transferInternal(address from, address to, uint256 value) public {
         _transfer(from, to, value);
     }
 

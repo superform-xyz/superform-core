@@ -10,11 +10,10 @@ import {ICERC20} from "./ICERC20.sol";
 library LibCompound {
     using FixedPointMathLib for uint256;
 
-    function viewUnderlyingBalanceOf(ICERC20 cToken, address user)
-        internal
-        view
-        returns (uint256)
-    {
+    function viewUnderlyingBalanceOf(
+        ICERC20 cToken,
+        address user
+    ) internal view returns (uint256) {
         return cToken.balanceOf(user).mulWadDown(viewExchangeRate(cToken));
     }
 

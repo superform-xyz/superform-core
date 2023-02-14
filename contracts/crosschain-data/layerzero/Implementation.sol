@@ -25,9 +25,12 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
     /*///////////////////////////////////////////////////////////////
                     Constructor
     //////////////////////////////////////////////////////////////*/
-   
+
     /// @param endpoint_ is the layer zero endpoint for respective chain.
-    constructor(address endpoint_, IStateRegistry registry_) NonblockingLzApp(endpoint_) { 
+    constructor(
+        address endpoint_,
+        IStateRegistry registry_
+    ) NonblockingLzApp(endpoint_) {
         registry = registry_;
     }
 
@@ -35,8 +38,8 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
                     External Functions
     //////////////////////////////////////////////////////////////*/
 
-     /// @notice receive enables processing native token transfers into the smart contract.
-     /// @dev socket.tech fails without a native receive function.
+    /// @notice receive enables processing native token transfers into the smart contract.
+    /// @dev socket.tech fails without a native receive function.
     receive() external payable {}
 
     /// @dev allows state registry to send message via implementation.
@@ -47,8 +50,8 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
         uint256 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) virtual external payable override {
-        if(msg.sender != address(registry)) {
+    ) external payable virtual override {
+        if (msg.sender != address(registry)) {
             revert InvalidCaller();
         }
 
@@ -71,7 +74,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
         uint64 _nonce,
         bytes memory _payload
     ) internal override {
-        if(isValid[_srcChainId][_nonce] == true) {
+        if (isValid[_srcChainId][_nonce] == true) {
             revert DuplicatePayload();
         }
 

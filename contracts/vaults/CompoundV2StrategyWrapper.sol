@@ -88,11 +88,7 @@ contract CompoundV2StrategyWrapper is ERC4626 {
     /// Compound liquidity mining
     /// -----------------------------------------------------------------------
 
-    function setRoute(
-        address token,
-        address pair1,
-        address pair2
-    ) external {
+    function setRoute(address token, address pair1, address pair2) external {
         require(msg.sender == manager, "onlyOwner");
         SwapInfo = swapInfo(token, pair1, pair2);
         ERC20(reward).approve(SwapInfo.pair1, type(uint256).max); /// max approve
@@ -210,21 +206,15 @@ contract CompoundV2StrategyWrapper is ERC4626 {
     /// ERC20 metadata generation
     /// -----------------------------------------------------------------------
 
-    function _vaultName(ERC20 asset_)
-        internal
-        view
-        virtual
-        returns (string memory vaultName)
-    {
+    function _vaultName(
+        ERC20 asset_
+    ) internal view virtual returns (string memory vaultName) {
         vaultName = string.concat("CompStratERC4626- ", asset_.symbol());
     }
 
-    function _vaultSymbol(ERC20 asset_)
-        internal
-        view
-        virtual
-        returns (string memory vaultSymbol)
-    {
+    function _vaultSymbol(
+        ERC20 asset_
+    ) internal view virtual returns (string memory vaultSymbol) {
         vaultSymbol = string.concat("cS-", asset_.symbol());
     }
 }

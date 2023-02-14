@@ -71,15 +71,19 @@ interface IStateRegistry {
     /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
     /// @param srcChainId_ is the internal chainId from which the data is sent.
     /// @param message_ is the crosschain data received.
-    function receivePayload(uint256 srcChainId_, bytes memory message_)
-        external;
+    function receivePayload(
+        uint256 srcChainId_,
+        bytes memory message_
+    ) external;
 
     /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(uint256 payloadId_, uint256[] calldata finalAmounts_)
-        external;
+    function updatePayload(
+        uint256 payloadId_,
+        uint256[] calldata finalAmounts_
+    ) external;
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
@@ -91,7 +95,9 @@ interface IStateRegistry {
     /// @param bridgeId_ is the identifier of the cross-chain bridge to be used to send the acknowledgement.
     /// @param extraData_ is any message bridge specific override information.
     /// NOTE: function can only process failing payloads.
-    function revertPayload(uint256 payloadId_, uint256 bridgeId_, bytes memory extraData_)
-        external
-        payable;
+    function revertPayload(
+        uint256 payloadId_,
+        uint256 bridgeId_,
+        bytes memory extraData_
+    ) external payable;
 }

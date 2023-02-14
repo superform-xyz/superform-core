@@ -111,30 +111,28 @@ abstract contract LzApp is
         lzEndpoint.setReceiveVersion(_version);
     }
 
-    function forceResumeReceive(uint16 _srcChainId, bytes calldata _srcAddress)
-        external
-        override
-        onlyOwner
-    {
+    function forceResumeReceive(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) external override onlyOwner {
         lzEndpoint.forceResumeReceive(_srcChainId, _srcAddress);
     }
 
     // allow owner to set it multiple times.
-    function setTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress)
-        external
-        onlyOwner
-    {
+    function setTrustedRemote(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) external onlyOwner {
         trustedRemoteLookup[_srcChainId] = _srcAddress;
         emit SetTrustedRemote(_srcChainId, _srcAddress);
     }
 
     //--------------------------- VIEW FUNCTION ----------------------------------------
 
-    function isTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress)
-        external
-        view
-        returns (bool)
-    {
+    function isTrustedRemote(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) external view returns (bool) {
         bytes memory trustedSource = trustedRemoteLookup[_srcChainId];
         return keccak256(trustedSource) == keccak256(_srcAddress);
     }

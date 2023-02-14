@@ -79,11 +79,7 @@ contract AaveV2StrategyWrapper is ERC4626 {
     /// AAVE-Fork Rewards Module
     /// -----------------------------------------------------------------------
 
-    function setRoute(
-        address token,
-        address pair1,
-        address pair2
-    ) external {
+    function setRoute(address token, address pair1, address pair2) external {
         require(msg.sender == manager, "onlyOwner");
         SwapInfo = swapInfo(token, pair1, pair2);
         ERC20(rewardToken).approve(SwapInfo.pair1, type(uint256).max); /// max approves address
@@ -207,13 +203,9 @@ contract AaveV2StrategyWrapper is ERC4626 {
         lendingPool.deposit(address(asset), assets, address(this), 0);
     }
 
-    function maxDeposit(address)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function maxDeposit(
+        address
+    ) public view virtual override returns (uint256) {
         // check if pool is paused
         if (lendingPool.paused()) {
             return 0;
@@ -249,13 +241,9 @@ contract AaveV2StrategyWrapper is ERC4626 {
         return type(uint256).max;
     }
 
-    function maxWithdraw(address owner)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function maxWithdraw(
+        address owner
+    ) public view virtual override returns (uint256) {
         // check if pool is paused
         if (lendingPool.paused()) {
             return 0;
@@ -275,13 +263,9 @@ contract AaveV2StrategyWrapper is ERC4626 {
         return cash < assetsBalance ? cash : assetsBalance;
     }
 
-    function maxRedeem(address owner)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function maxRedeem(
+        address owner
+    ) public view virtual override returns (uint256) {
         // check if pool is paused
         if (lendingPool.paused()) {
             return 0;
@@ -306,21 +290,15 @@ contract AaveV2StrategyWrapper is ERC4626 {
     /// ERC20 metadata generation
     /// -----------------------------------------------------------------------
 
-    function _vaultName(ERC20 asset_)
-        internal
-        view
-        virtual
-        returns (string memory vaultName)
-    {
+    function _vaultName(
+        ERC20 asset_
+    ) internal view virtual returns (string memory vaultName) {
         vaultName = string.concat("AaveStratERC4626 ", asset_.symbol());
     }
 
-    function _vaultSymbol(ERC20 asset_)
-        internal
-        view
-        virtual
-        returns (string memory vaultSymbol)
-    {
+    function _vaultSymbol(
+        ERC20 asset_
+    ) internal view virtual returns (string memory vaultSymbol) {
         vaultSymbol = string.concat("aS-", asset_.symbol());
     }
 

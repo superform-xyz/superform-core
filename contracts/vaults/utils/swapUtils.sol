@@ -8,11 +8,7 @@ interface IPair {
     function getReserves()
         external
         view
-        returns (
-            uint112 reserve0,
-            uint112 reserve1,
-            uint32 blockTimestampLast
-        );
+        returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
 
     function swap(
         uint256 amount0Out,
@@ -78,11 +74,10 @@ library DexSwap {
      * @param tokenB address
      * @return sorted tokens
      */
-    function sortTokens(address tokenA, address tokenB)
-        internal
-        pure
-        returns (address, address)
-    {
+    function sortTokens(
+        address tokenA,
+        address tokenB
+    ) internal pure returns (address, address) {
         return tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
     }
 }
