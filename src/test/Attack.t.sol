@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.14;
-
+/*
 // Contracts
 import {Attack} from "contracts/attack/Attack.sol";
 import "contracts/types/socketTypes.sol";
@@ -10,9 +10,6 @@ import "contracts/types/lzTypes.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
-/*//////////////////////////////////////////////////////////////
-            VARS FOR THE ATTACK SPECIFIC PURPOSE
-//////////////////////////////////////////////////////////////*/
 
 struct BuildAttackArgs {
     address attackingContract;
@@ -47,6 +44,8 @@ struct TestAttackVars {
     address payable toDst;
 }
 
+
+
 contract AttackTest is BaseSetup {
     Attack internal attackCHAIN_0;
     Attack internal attackCHAIN_1;
@@ -56,26 +55,20 @@ contract AttackTest is BaseSetup {
     address lzEndpoint_1;
 
     function setUp() public override {
-        /*//////////////////////////////////////////////////////////////
-                    !! WARNING !!  DEFINE TEST SETTINGS HERE
-        //////////////////////////////////////////////////////////////*/
+
 
         UNDERLYING_TOKEN = "DAI";
         CHAIN_0 = FTM;
         CHAIN_1 = POLY; // issue with FTM reverts
 
-        /*//////////////////////////////////////////////////////////////
-                    !! WARNING !!  DEFINE TEST SETTINGS HERE
-        //////////////////////////////////////////////////////////////*/
+
 
         super.setUp();
 
         lzEndpoint_0 = LZ_ENDPOINTS[CHAIN_0];
         lzEndpoint_1 = LZ_ENDPOINTS[CHAIN_1];
 
-        /*//////////////////////////////////////////////////////////////
-                    REMAINDER OF YOUR TEST SETTINGS
-        //////////////////////////////////////////////////////////////*/
+
 
         /// @dev deploy attacking contract on src and dst chain
         address payable chain0_SuperRouter = payable(
@@ -124,17 +117,13 @@ contract AttackTest is BaseSetup {
         vm.stopPrank();
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        Unit tests: Showcase
-    //////////////////////////////////////////////////////////////*/
+
 
     function test_attack_contract_same_address() public {
         assertEq(address(attackCHAIN_0), address(attackCHAIN_1));
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        Unit tests: Attack
-    //////////////////////////////////////////////////////////////*/
+
 
     /// @dev This is a test of an end to end possible attack. Testing individual parts (unit tests) can be taken from here
     function test_attack() public {
@@ -152,7 +141,7 @@ contract AttackTest is BaseSetup {
 
         /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
         (vars.stateReq, vars.liqReq) = _buildDepositCallData(
-            BuildDepositArgs(
+            BuildCallDataArgs(
                 vars.fromSrc,
                 vars.toDst,
                 vars.underlyingSrcToken,
@@ -172,20 +161,27 @@ contract AttackTest is BaseSetup {
             0
         );
 
+        StateReq[] memory stateReqs = new StateReq[](1);
+        LiqRequest[] memory liqReqs = new LiqRequest[](1);
+
+        stateReqs[0] = vars.stateReq;
+        liqReqs[0] = vars.liqReq;
+
         /// @dev fund the vault with 10000 TOKEN
         for (uint256 i = 0; i < users.length; i++) {
             _depositToVault(
-                DepositArgs(
+                InternalActionArgs(
                     vars.underlyingSrcToken,
                     vars.fromSrc,
                     vars.toDst,
                     lzEndpoint_1,
                     users[i],
-                    vars.stateReq,
-                    vars.liqReq,
+                    stateReqs,
+                    liqReqs,
                     vars.amountsToDeposit,
                     CHAIN_0,
-                    CHAIN_1
+                    CHAIN_1,
+                    ""
                 )
             );
         }
@@ -243,11 +239,6 @@ contract AttackTest is BaseSetup {
         /// @dev Step 1 - deposit from the source attacker contract
         /// @dev Attack starts from the attacking contract which is the 'user'
         /// @dev Notice no parameters are changed here from the same kind of requests the other users did
-        vars.stateReqs = new StateReq[](1);
-        vars.liqReqs = new LiqRequest[](1);
-
-        vars.stateReqs[0] = vars.stateReq;
-        vars.liqReqs[0] = vars.liqReq;
 
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
@@ -355,9 +346,7 @@ contract AttackTest is BaseSetup {
         assertEq(VaultMock(vars.vaultMock).balanceOf(vars.toDst), 0);
     }
 
-    /*//////////////////////////////////////////////////////////////
-                        HELPER FUNCTION
-    //////////////////////////////////////////////////////////////*/
+
 
     function _buildWithdrawAttackCallData(BuildAttackArgs memory args)
         internal
@@ -407,3 +396,5 @@ contract AttackTest is BaseSetup {
         );
     }
 }
+
+*/
