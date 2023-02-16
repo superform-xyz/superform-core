@@ -46,6 +46,10 @@ abstract contract BaseSetup is DSTest, Test {
     bytes32 public constant PROCESSOR_CONTRACTS_ROLE =
         keccak256("PROCESSOR_CONTRACTS_ROLE");
 
+    /// @dev one vault per request at the moment - do not change for now
+    uint256 internal constant allowedNumberOfVaultsPerRequest = 1;
+
+    /// @dev we should fork these instead of mocking
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
     string[] public VAULT_NAMES;
 
@@ -125,6 +129,7 @@ abstract contract BaseSetup is DSTest, Test {
                         RPC VARIABLES
     //////////////////////////////////////////////////////////////*/
 
+    // chainID => FORK
     mapping(uint16 => uint256) public FORKS;
     mapping(uint16 => string) public RPC_URLS;
 
@@ -154,22 +159,23 @@ abstract contract BaseSetup is DSTest, Test {
     function deposit(TestAction memory action, ActionLocalVars memory vars)
         public
     {
-        uint256 lenRequests = vars.amounts.length;
+        TestAssertionVars memory aV;
+        aV.lenRequests = vars.amounts.length;
 
-        if (vars.targetVaults.length != lenRequests || lenRequests == 0)
+        if (vars.targetVaultIds.length != aV.lenRequests || aV.lenRequests == 0)
             revert LEN_MISMATCH();
 
-        vars.stateReqs = new StateReq[](lenRequests);
-        vars.liqReqs = new LiqRequest[](lenRequests);
+        vars.stateReqs = new StateReq[](aV.lenRequests);
+        vars.liqReqs = new LiqRequest[](aV.lenRequests);
 
-        for (uint256 i = 0; i < lenRequests; i++) {
+        for (uint256 i = 0; i < aV.lenRequests; i++) {
             (vars.stateReqs[i], vars.liqReqs[i]) = _buildDepositCallData(
                 BuildDepositCallDataArgs(
                     action.user,
                     vars.fromSrc,
                     vars.toDst,
                     vars.underlyingSrcToken[i], ///!!!WARNING !!! @dev we probably need to create liq request with both src and dst tokens
-                    vars.targetVaults[i],
+                    vars.targetVaultIds[i],
                     vars.amounts[i],
                     action.CHAIN_0,
                     action.CHAIN_1
@@ -177,16 +183,33 @@ abstract contract BaseSetup is DSTest, Test {
             );
         }
 
-        vm.selectFork(FORKS[action.CHAIN_1]);
+        /// @dev calculate amounts before deposit
 
-        /// @dev needs switch to loop
-        /*
-        uint256 initialVaultBalance = vars.TARGET_VAULT.balanceOf(
-            getContract(action.CHAIN_1, "SuperDestination")
-        );
-        */
+        aV.superPositionsAmountBefore = new uint256[][](aV.lenRequests);
+        aV.destinationSharesBefore = new uint256[][](aV.lenRequests);
 
-        _depositToVault(
+        for (uint256 i = 0; i < aV.lenRequests; i++) {
+            aV.tSPAmtBefore = new uint256[](allowedNumberOfVaultsPerRequest);
+            aV.tDestinationSharesAmtBefore = new uint256[](
+                allowedNumberOfVaultsPerRequest
+            );
+            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
+                vm.selectFork(FORKS[action.CHAIN_0]);
+                aV.tSPAmtBefore[j] = SuperRouter(vars.fromSrc).balanceOf(
+                    action.user,
+                    vars.targetVaultIds[i][j]
+                );
+
+                vm.selectFork(FORKS[action.CHAIN_1]);
+                aV.tDestinationSharesAmtBefore[j] = VaultMock(
+                    vars.vaultMock[i][j]
+                ).balanceOf(getContract(action.CHAIN_1, "SuperDestination"));
+            }
+            aV.superPositionsAmountBefore[i] = aV.tSPAmtBefore;
+            aV.destinationSharesBefore[i] = aV.tDestinationSharesAmtBefore;
+        }
+        /// @dev deposit happens here
+        _actionToSuperRouter(
             InternalActionArgs(
                 vars.fromSrc,
                 vars.toDst,
@@ -196,11 +219,12 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.liqReqs,
                 action.CHAIN_0,
                 action.CHAIN_1,
+                action.action,
                 action.revertString
             )
         );
 
-        for (uint256 i = 0; i < lenRequests; i++) {
+        for (uint256 i = 0; i < aV.lenRequests; i++) {
             unchecked {
                 PAYLOAD_ID[action.CHAIN_1]++;
             }
@@ -228,29 +252,44 @@ abstract contract BaseSetup is DSTest, Test {
             _processPayload(PAYLOAD_ID[action.CHAIN_0], action.CHAIN_0);
         }
 
-        /*
-        vm.selectFork(FORKS[action.CHAIN_0]);
-        assertEq(
-            SuperRouter(vars.fromSrc).balanceOf(action.user, 1),
-            totalAmount
-        );
+        /// @dev asserts for verification
+        for (uint256 i = 0; i < aV.lenRequests; i++) {
+            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
+                vm.selectFork(FORKS[action.CHAIN_0]);
 
-        vm.selectFork(FORKS[action.CHAIN_1]);
-        assertEq(VaultMock(vars.vaultMock).balanceOf(vars.toDst), totalAmount);
-        */
+                assertEq(
+                    SuperRouter(vars.fromSrc).balanceOf(
+                        action.user,
+                        vars.targetVaultIds[i][j]
+                    ),
+                    aV.superPositionsAmountBefore[i][j] + vars.amounts[i][j]
+                );
+
+                vm.selectFork(FORKS[action.CHAIN_1]);
+
+                assertEq(
+                    VaultMock(vars.vaultMock[i][j]).balanceOf(
+                        getContract(action.CHAIN_1, "SuperDestination")
+                    ),
+                    aV.destinationSharesBefore[i][j] + vars.amounts[i][j]
+                );
+            }
+        }
     }
 
     function withdraw(TestAction memory action, ActionLocalVars memory vars)
         public
     {
-        uint256 lenWithdraws = vars.amounts.length;
-        if (vars.targetVaults.length != lenWithdraws && lenWithdraws == 0)
+        TestAssertionVars memory aV;
+
+        aV.lenRequests = vars.amounts.length;
+        if (vars.targetVaultIds.length != aV.lenRequests && aV.lenRequests == 0)
             revert LEN_MISMATCH();
 
-        vars.stateReqs = new StateReq[](lenWithdraws);
-        vars.liqReqs = new LiqRequest[](lenWithdraws);
+        vars.stateReqs = new StateReq[](aV.lenRequests);
+        vars.liqReqs = new LiqRequest[](aV.lenRequests);
 
-        for (uint256 i = 0; i < lenWithdraws; i++) {
+        for (uint256 i = 0; i < aV.lenRequests; i++) {
             (vars.stateReqs[i], vars.liqReqs[i]) = _buildWithdrawCallData(
                 BuildWithdrawCallDataArgs(
                     action.user,
@@ -258,14 +297,41 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.toDst,
                     vars.underlyingSrcToken[i], /// @dev we probably need to create liq request with both src and dst tokens
                     vars.vaultMock[i],
-                    vars.targetVaults[i],
+                    vars.targetVaultIds[i],
+                    vars.amounts[i],
+                    action.kind,
                     action.CHAIN_0,
                     action.CHAIN_1
                 )
             );
         }
 
-        _withdrawFromVault(
+        /// @dev calculate amounts before withdraw
+        aV.superPositionsAmountBefore = new uint256[][](aV.lenRequests);
+        aV.destinationSharesBefore = new uint256[][](aV.lenRequests);
+
+        for (uint256 i = 0; i < aV.lenRequests; i++) {
+            aV.tSPAmtBefore = new uint256[](allowedNumberOfVaultsPerRequest);
+            aV.tDestinationSharesAmtBefore = new uint256[](
+                allowedNumberOfVaultsPerRequest
+            );
+            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
+                vm.selectFork(FORKS[action.CHAIN_0]);
+                aV.tSPAmtBefore[j] = SuperRouter(vars.fromSrc).balanceOf(
+                    action.user,
+                    vars.targetVaultIds[i][j]
+                );
+
+                vm.selectFork(FORKS[action.CHAIN_1]);
+                aV.tDestinationSharesAmtBefore[j] = VaultMock(
+                    vars.vaultMock[i][j]
+                ).balanceOf(getContract(action.CHAIN_1, "SuperDestination"));
+            }
+            aV.superPositionsAmountBefore[i] = aV.tSPAmtBefore;
+            aV.destinationSharesBefore[i] = aV.tDestinationSharesAmtBefore;
+        }
+
+        _actionToSuperRouter(
             InternalActionArgs(
                 vars.fromSrc,
                 vars.toDst,
@@ -275,15 +341,38 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.liqReqs,
                 action.CHAIN_0,
                 action.CHAIN_1,
+                action.action,
                 action.revertString
             )
         );
-        for (uint256 i = 0; i < lenWithdraws; i++) {
+        for (uint256 i = 0; i < aV.lenRequests; i++) {
             PAYLOAD_ID[action.CHAIN_1]++;
             _processPayload(PAYLOAD_ID[action.CHAIN_1], action.CHAIN_1);
         }
 
-        /// @dev missing asserts
+        /// @dev asserts for verification
+        for (uint256 i = 0; i < aV.lenRequests; i++) {
+            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
+                vm.selectFork(FORKS[action.CHAIN_0]);
+
+                assertEq(
+                    SuperRouter(vars.fromSrc).balanceOf(
+                        action.user,
+                        vars.targetVaultIds[i][j]
+                    ),
+                    aV.superPositionsAmountBefore[i][j] - vars.amounts[i][j]
+                );
+
+                vm.selectFork(FORKS[action.CHAIN_1]);
+
+                assertEq(
+                    VaultMock(vars.vaultMock[i][j]).balanceOf(
+                        getContract(action.CHAIN_1, "SuperDestination")
+                    ),
+                    aV.destinationSharesBefore[i][j] - vars.amounts[i][j]
+                );
+            }
+        }
     }
 
     function getContract(uint16 chainId, string memory _name)
@@ -465,77 +554,115 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /*//////////////////////////////////////////////////////////////
-                INTERNAL HELPERS: DEPOSIT & WITHDRAW 
+                            INTERNAL HELPERS:
             (ADVANCED DIRECT USAGE ALLOWED (see Attack.t.sol))
     //////////////////////////////////////////////////////////////*/
 
-    function _depositToVault(InternalActionArgs memory args) internal {
-        uint256 initialFork = vm.activeFork();
-        vm.selectFork(FORKS[args.srcChainId]);
+    function _actionToSuperRouter(InternalActionArgs memory args) internal {
+        InternalActionVars memory vars;
+        vars.initialFork = vm.activeFork();
 
-        /// @dev - DEPOSIT to super router
-        uint256 msgValue = 5 * _getPriceMultiplier(args.srcChainId) * 1e18;
+        vars.msgValue = 5 * _getPriceMultiplier(args.srcChainId) * 1e18;
+
+        StateHandler stateHandler = StateHandler(
+            payable(getContract(args.toChainId, "StateHandler"))
+        );
+        SuperRouter superRouter = SuperRouter(args.fromSrc);
+
+        vm.selectFork(FORKS[args.srcChainId]);
+        vars.txIdBefore = superRouter.totalTransactions();
+
         if (args.revertString.length == 0) {
             vm.prank(args.user);
             /// @dev see pigeon for this implementation
             vm.recordLogs();
             /// @dev Value == fee paid to relayer. API call in our design
-            SuperRouter(args.fromSrc).deposit{value: msgValue}(
-                args.liqReqs,
-                args.stateReqs
-            );
-            Vm.Log[] memory logs = vm.getRecordedLogs();
+            if (args.action == Actions.Deposit) {
+                superRouter.deposit{value: vars.msgValue}(
+                    args.liqReqs,
+                    args.stateReqs
+                );
+            } else if (args.action == Actions.Withdraw) {
+                superRouter.withdraw{value: vars.msgValue}(
+                    args.stateReqs,
+                    args.liqReqs
+                );
+            }
+            vars.logs = vm.getRecordedLogs();
             /// @dev see pigeon for this implementation
             LayerZeroHelper(getContract(args.srcChainId, "LayerZeroHelper"))
                 .helpWithEstimates(
                     args.toLzEndpoint,
                     1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
                     FORKS[args.toChainId],
-                    logs
+                    vars.logs
                 );
 
-            /*
-            /// @dev - assert the payload reached destination state handler
-            InitData memory expectedInitData = InitData(
-                args.srcChainId,
-                args.toChainId,
-                args.user,
-                args.stateReq.vaultIds,
-                args.stateReq.amounts,
-                args.stateReq.maxSlippage,
-                SuperRouter(args.fromSrc).totalTransactions(),
-                bytes("")
-            );
             vm.selectFork(FORKS[args.toChainId]);
 
-            StateHandler stateHandler = StateHandler(
-                payable(getContract(args.toChainId, "StateHandler"))
-            );
+            vars.payloadNumberBefore = stateHandler.totalPayloads();
 
-            StateData memory data = abi.decode(
-                stateHandler.payload(stateHandler.totalPayloads()),
-                (StateData)
-            );
-            InitData memory receivedInitData = abi.decode(
-                data.params,
-                (InitData)
-            );
+            vars.lenRequests = args.liqReqs.length;
 
-            assertEq(receivedInitData.srcChainId, expectedInitData.srcChainId);
-            assertEq(receivedInitData.dstChainId, expectedInitData.dstChainId);
-            assertEq(receivedInitData.user, expectedInitData.user);
-            assertEq(
-                receivedInitData.vaultIds[0],
-                expectedInitData.vaultIds[0]
-            );
-            assertEq(receivedInitData.amounts[0], expectedInitData.amounts[0]);
-            assertEq(
-                receivedInitData.maxSlippage[0],
-                expectedInitData.maxSlippage[0]
-            );
-            assertEq(receivedInitData.txId, expectedInitData.txId);
-            */
+            /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
+            for (uint256 i = 0; i < vars.lenRequests; i++) {
+                /// @dev - assert the payload reached destination state handler
+                vars.expectedInitData = InitData(
+                    args.srcChainId,
+                    args.toChainId,
+                    args.user,
+                    args.stateReqs[i].vaultIds,
+                    args.stateReqs[i].amounts,
+                    args.stateReqs[i].maxSlippage,
+                    vars.txIdBefore + i + 1,
+                    bytes("")
+                );
+
+                vars.data = abi.decode(
+                    stateHandler.payload(
+                        vars.payloadNumberBefore + 1 - vars.lenRequests + i
+                    ),
+                    (StateData)
+                );
+                vars.receivedInitData = abi.decode(
+                    vars.data.params,
+                    (InitData)
+                );
+
+                assertEq(
+                    vars.receivedInitData.srcChainId,
+                    vars.expectedInitData.srcChainId
+                );
+                assertEq(
+                    vars.receivedInitData.dstChainId,
+                    vars.expectedInitData.dstChainId
+                );
+                assertEq(
+                    vars.receivedInitData.user,
+                    vars.expectedInitData.user
+                );
+
+                assertEq(
+                    vars.receivedInitData.vaultIds,
+                    vars.expectedInitData.vaultIds
+                );
+
+                assertEq(
+                    vars.receivedInitData.amounts,
+                    vars.expectedInitData.amounts
+                );
+                assertEq(
+                    vars.receivedInitData.maxSlippage,
+                    vars.expectedInitData.maxSlippage
+                );
+
+                assertEq(
+                    vars.receivedInitData.txId,
+                    vars.expectedInitData.txId
+                );
+            }
         } else {
+            /*
             vm.prank(args.user);
             vm.expectRevert(args.revertString);
             /// @dev Value == fee paid to relayer. API call in our design
@@ -543,72 +670,120 @@ abstract contract BaseSetup is DSTest, Test {
                 args.liqReqs,
                 args.stateReqs
             );
+            */
         }
 
-        vm.selectFork(initialFork);
+        vm.selectFork(vars.initialFork);
     }
 
     function _withdrawFromVault(InternalActionArgs memory args) internal {
-        uint256 initialFork = vm.activeFork();
-        vm.selectFork(FORKS[args.srcChainId]);
+        InternalActionVars memory vars;
 
-        /// @dev - WITHDRAW from super router
-        uint256 msgValue = 5 * _getPriceMultiplier(args.srcChainId) * 1e18;
-        vm.prank(args.user);
-        /// @dev see pigeon for this implementation
-        vm.recordLogs();
-        /// @dev Value == fee paid to relayer. API call in our design
-        SuperRouter(args.fromSrc).withdraw{value: msgValue}(
-            args.stateReqs,
-            args.liqReqs
-        );
-        Vm.Log[] memory logs = vm.getRecordedLogs();
+        vars.initialFork = vm.activeFork();
 
-        LayerZeroHelper(getContract(args.srcChainId, "LayerZeroHelper"))
-            .helpWithEstimates(
-                args.toLzEndpoint,
-                1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                FORKS[args.toChainId],
-                logs
-            );
-
-        /*
-        /// @dev - assert the payload reached destination state handler
-        InitData memory expectedInitData = InitData(
-            args.srcChainId,
-            args.toChainId,
-            args.user,
-            args.stateReq.vaultIds,
-            args.stateReq.amounts,
-            args.stateReq.maxSlippage,
-            SuperRouter(args.fromSrc).totalTransactions(),
-            bytes("")
-        );
-        vm.selectFork(FORKS[args.toChainId]);
+        vars.msgValue = 5 * _getPriceMultiplier(args.srcChainId) * 1e18;
 
         StateHandler stateHandler = StateHandler(
             payable(getContract(args.toChainId, "StateHandler"))
         );
+        SuperRouter superRouter = SuperRouter(args.fromSrc);
 
-        StateData memory data = abi.decode(
-            stateHandler.payload(stateHandler.totalPayloads()),
-            (StateData)
-        );
-        InitData memory receivedInitData = abi.decode(data.params, (InitData));
+        vm.selectFork(FORKS[args.srcChainId]);
+        vars.txIdBefore = superRouter.totalTransactions();
 
-        assertEq(receivedInitData.srcChainId, expectedInitData.srcChainId);
-        assertEq(receivedInitData.dstChainId, expectedInitData.dstChainId);
-        assertEq(receivedInitData.user, expectedInitData.user);
-        assertEq(receivedInitData.vaultIds[0], expectedInitData.vaultIds[0]);
-        assertEq(receivedInitData.amounts[0], expectedInitData.amounts[0]);
-        assertEq(
-            receivedInitData.maxSlippage[0],
-            expectedInitData.maxSlippage[0]
-        );
-        assertEq(receivedInitData.txId, expectedInitData.txId);
-        */
+        if (args.revertString.length == 0) {
+            /// @dev - WITHDRAW from super router
+            vm.prank(args.user);
+            /// @dev see pigeon for this implementation
+            vm.recordLogs();
+            /// @dev Value == fee paid to relayer. API call in our design
+            superRouter.withdraw{value: vars.msgValue}(
+                args.stateReqs,
+                args.liqReqs
+            );
+            vars.logs = vm.getRecordedLogs();
+            /// @dev see pigeon for this implementation
+            LayerZeroHelper(getContract(args.srcChainId, "LayerZeroHelper"))
+                .helpWithEstimates(
+                    args.toLzEndpoint,
+                    1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                    FORKS[args.toChainId],
+                    vars.logs
+                );
 
-        vm.selectFork(initialFork);
+            vm.selectFork(FORKS[args.toChainId]);
+
+            vars.payloadNumberBefore = stateHandler.totalPayloads();
+
+            vars.lenRequests = args.liqReqs.length;
+
+            /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
+            for (uint256 i = 0; i < vars.lenRequests; i++) {
+                /// @dev - assert the payload reached destination state handler
+                vars.expectedInitData = InitData(
+                    args.srcChainId,
+                    args.toChainId,
+                    args.user,
+                    args.stateReqs[i].vaultIds,
+                    args.stateReqs[i].amounts,
+                    args.stateReqs[i].maxSlippage,
+                    vars.txIdBefore + i + 1,
+                    bytes("")
+                );
+
+                vars.data = abi.decode(
+                    stateHandler.payload(
+                        vars.payloadNumberBefore + 1 - vars.lenRequests
+                    ),
+                    (StateData)
+                );
+                vars.receivedInitData = abi.decode(
+                    vars.data.params,
+                    (InitData)
+                );
+
+                assertEq(
+                    vars.receivedInitData.srcChainId,
+                    vars.expectedInitData.srcChainId
+                );
+                assertEq(
+                    vars.receivedInitData.dstChainId,
+                    vars.expectedInitData.dstChainId
+                );
+                assertEq(
+                    vars.receivedInitData.user,
+                    vars.expectedInitData.user
+                );
+                assertEq(
+                    vars.receivedInitData.vaultIds,
+                    vars.expectedInitData.vaultIds
+                );
+                assertEq(
+                    vars.receivedInitData.amounts,
+                    vars.expectedInitData.amounts
+                );
+                assertEq(
+                    vars.receivedInitData.maxSlippage,
+                    vars.expectedInitData.maxSlippage
+                );
+                assertEq(
+                    vars.receivedInitData.txId,
+                    vars.expectedInitData.txId
+                );
+            }
+        } else {
+            /*
+            vm.prank(args.user);
+            vm.expectRevert(args.revertString);
+            /// @dev Value == fee paid to relayer. API call in our design
+            SuperRouter(args.fromSrc).deposit{value: msgValue}(
+                args.liqReqs,
+                args.stateReqs
+            );
+            */
+        }
+
+        vm.selectFork(vars.initialFork);
     }
 
     function _buildDepositCallData(BuildDepositCallDataArgs memory args)
@@ -691,21 +866,22 @@ abstract contract BaseSetup is DSTest, Test {
         uint256[] memory slippage = new uint256[](lenWithdraws);
         uint256[] memory amountsToWithdraw = new uint256[](lenWithdraws);
 
-        uint256 sharesBalanceBeforeWithdraw;
-        for (uint256 i = 0; i < lenWithdraws; i++) {
-            slippage[i] = 1000;
+        if (args.kind == Kind.Full) {
+            uint256 sharesBalanceBeforeWithdraw;
+            for (uint256 i = 0; i < lenWithdraws; i++) {
+                slippage[i] = 1000;
+                vm.selectFork(FORKS[args.srcChainId]);
 
-            vm.selectFork(FORKS[args.srcChainId]);
+                sharesBalanceBeforeWithdraw = SuperRouter(args.fromSrc)
+                    .balanceOf(args.user, args.targetVaultIds[i]);
 
-            sharesBalanceBeforeWithdraw = SuperRouter(args.fromSrc).balanceOf(
-                args.user,
-                args.targetVaultIds[i]
-            );
-            vm.selectFork(FORKS[args.toChainId]);
+                vm.selectFork(FORKS[args.toChainId]);
 
-            amountsToWithdraw[i] = VaultMock(args.vaultMock[i]).previewRedeem(
-                sharesBalanceBeforeWithdraw
-            );
+                amountsToWithdraw[i] = VaultMock(args.vaultMock[i])
+                    .previewRedeem(sharesBalanceBeforeWithdraw);
+            }
+        } else {
+            amountsToWithdraw = args.amounts;
         }
 
         uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;

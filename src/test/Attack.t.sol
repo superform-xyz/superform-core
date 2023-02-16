@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.14;
 /*
+pragma solidity ^0.8.14;
+
 // Contracts
 import {Attack} from "contracts/attack/Attack.sol";
 import "contracts/types/socketTypes.sol";
@@ -396,5 +397,4 @@ contract AttackTest is BaseSetup {
         );
     }
 }
-
 */

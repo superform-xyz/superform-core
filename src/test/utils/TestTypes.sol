@@ -27,7 +27,7 @@ struct ActionLocalVars {
     LiqRequest[] liqReqs;
     StateReq stateReq;
     LiqRequest liqReq;
-    MockERC20[][] TARGET_VAULT;
+    MockERC20[][] TARGET_VAULTS;
     uint256 sharesBalanceBeforeWithdraw; // 0
     uint256 amountsToWithdraw; // 0
     address[][] vaultMock;
@@ -36,7 +36,7 @@ struct ActionLocalVars {
     address[][] underlyingSrcToken;
     address payable fromSrc;
     address payable toDst;
-    uint256[][] targetVaults;
+    uint256[][] targetVaultIds;
     uint256[][] amounts;
 }
 
@@ -53,6 +53,14 @@ struct TestAction {
     uint16 CHAIN_1;
     address user;
     bytes revertString;
+}
+
+struct TestAssertionVars {
+    uint256 lenRequests;
+    uint256[][] superPositionsAmountBefore;
+    uint256[][] destinationSharesBefore;
+    uint256[] tSPAmtBefore;
+    uint256[] tDestinationSharesAmtBefore;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -100,6 +108,8 @@ struct BuildWithdrawCallDataArgs {
     address[] underlyingToken;
     address[] vaultMock;
     uint256[] targetVaultIds;
+    uint256[] amounts;
+    Kind kind;
     uint16 srcChainId;
     uint16 toChainId;
 }
@@ -113,7 +123,20 @@ struct InternalActionArgs {
     LiqRequest[] liqReqs;
     uint16 srcChainId;
     uint16 toChainId;
+    Actions action;
     bytes revertString;
+}
+
+struct InternalActionVars {
+    uint256 initialFork;
+    uint256 msgValue;
+    uint256 txIdBefore;
+    uint256 payloadNumberBefore;
+    uint256 lenRequests;
+    Vm.Log[] logs;
+    InitData expectedInitData;
+    InitData receivedInitData;
+    StateData data;
 }
 
 /*//////////////////////////////////////////////////////////////

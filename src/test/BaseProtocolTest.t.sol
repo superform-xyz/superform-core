@@ -11,22 +11,20 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
 /// @dev interchain test cases to do
-/// @dev WARNING: MISSING MULTI UNDERLYING STUFF -> NEED THAT IN PLACE FOR MULTI DEPOSITS
 /// FTM=>BSC: user depositing to a vault requiring swap (stays pending) - REVERTS
 /// FTM=>BSC: cross-chain slippage update beyond max slippage - REVERTS
 /// FTM=>BSC: cross-chain slippage update above received value - REVERTS
 /// FTM=>BSC: cross-chain slippage update from unauthorized wallet - REVERTS
 
 contract BaseProtocolTest is BaseSetup {
-    /*//////////////////////////////////////////////////////////////
-                    !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
-    uint256 internal constant numberOfTestActions = 4;
-    /// @dev one vault per request at the moment - do not change for now
-    uint256 internal constant allowedNumberOfVaults = 1;
-
     mapping(uint256 => uint256[]) internal VAULTS_ACTIONS;
     mapping(uint256 => mapping(Kind => uint256[])) internal AMOUNTS_ACTIONS;
+
+    /*//////////////////////////////////////////////////////////////
+                !! WARNING !!  DEFINE TEST SETTINGS HERE
+    //////////////////////////////////////////////////////////////*/
+
+    uint256 internal constant numberOfTestActions = 4; /// @dev <- change this whenever you add/remove test cases
 
     function setUp() public override {
         super.setUp();
@@ -37,6 +35,7 @@ contract BaseProtocolTest is BaseSetup {
         /// @dev Define Vault-Amount pairs for each type of test case you want to test
         /// @dev These have been done with state variables for direct inline input
         /// @dev You can modify the amounts/vaults at will and create more kinds
+        /// @dev Kind partial vs full are only defined for cosmetic purposes in the test for now
         /// !! WARNING - only 3 vaults/underlyings exist, Ids 1,2,3 !!
 
         // Type 0 - Single Vault x One StateReq/LiqReq
@@ -44,10 +43,11 @@ contract BaseProtocolTest is BaseSetup {
         AMOUNTS_ACTIONS[0][Kind.Full] = [uint256(1000)];
 
         // Type 1 - Single Vault x Two StateReq/LiqReq
-        VAULTS_ACTIONS[1] = [uint256(1), 2];
-        AMOUNTS_ACTIONS[1][Kind.Full] = [uint256(1000), 2000];
+        VAULTS_ACTIONS[1] = [uint256(1), 3];
+        // With Full withdrawal (note, deposits are always full)
+        AMOUNTS_ACTIONS[1][Kind.Full] = [uint256(1000), 5000];
         // With Partial withdrawal
-        AMOUNTS_ACTIONS[1][Kind.Partial] = [uint256(500), 1000];
+        AMOUNTS_ACTIONS[1][Kind.Partial] = [uint256(500), 2000];
     }
 
     function _getTestAction(uint256 index_)
@@ -126,10 +126,10 @@ contract BaseProtocolTest is BaseSetup {
             );
 
             (
-                vars.targetVaults,
+                vars.targetVaultIds,
                 vars.underlyingSrcToken,
                 vars.vaultMock,
-                vars.TARGET_VAULT
+                vars.TARGET_VAULTS
             ) = _targetVaults(action.testType, action.CHAIN_0, action.CHAIN_1);
             vars.amounts = _amounts(action.testType, action.kind);
 
@@ -142,6 +142,11 @@ contract BaseProtocolTest is BaseSetup {
         _resetPayloadIDs();
     }
 
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL HELPERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev this function is used to build the 2D arrays in the best way possible
     function _targetVaults(
         uint256 action,
         uint16 chain0,
@@ -166,16 +171,20 @@ contract BaseProtocolTest is BaseSetup {
         TARGET_VAULTSMem = new MockERC20[][](len);
 
         for (uint256 i = 0; i < len; i++) {
-            uint256[] memory tVaults = new uint256[](allowedNumberOfVaults);
-            address[] memory tUnderlyingSrcTokens = new address[](
-                allowedNumberOfVaults
+            uint256[] memory tVaults = new uint256[](
+                allowedNumberOfVaultsPerRequest
             );
-            address[] memory tVaultMocks = new address[](allowedNumberOfVaults);
+            address[] memory tUnderlyingSrcTokens = new address[](
+                allowedNumberOfVaultsPerRequest
+            );
+            address[] memory tVaultMocks = new address[](
+                allowedNumberOfVaultsPerRequest
+            );
             MockERC20[] memory tTARGET_VAULTS = new MockERC20[](
-                allowedNumberOfVaults
+                allowedNumberOfVaultsPerRequest
             );
 
-            for (uint256 j = 0; j < allowedNumberOfVaults; j++) {
+            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
                 tVaults[j] = vaultIdsTemp[i];
                 string memory underlyingToken = UNDERLYING_TOKENS[
                     vaultIdsTemp[i] - 1
@@ -196,6 +205,7 @@ contract BaseProtocolTest is BaseSetup {
         }
     }
 
+    /// @dev this function is used to build the 2D arrays in the best way possible
     function _amounts(uint256 action, Kind kind)
         internal
         view
@@ -208,9 +218,11 @@ contract BaseProtocolTest is BaseSetup {
         targetAmountsMem = new uint256[][](len);
 
         for (uint256 i = 0; i < len; i++) {
-            uint256[] memory tAmounts = new uint256[](allowedNumberOfVaults);
+            uint256[] memory tAmounts = new uint256[](
+                allowedNumberOfVaultsPerRequest
+            );
 
-            for (uint256 j = 0; j < allowedNumberOfVaults; j++) {
+            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
                 tAmounts[j] = amountsTemp[i];
             }
             targetAmountsMem[i] = tAmounts;
