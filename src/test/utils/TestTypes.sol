@@ -16,9 +16,16 @@ enum Actions {
     Withdraw
 }
 
-enum Kind {
+enum LiquidityChange {
     Full,
     Partial
+}
+
+enum TestType {
+    Pass,
+    RevertMainAction,
+    RevertProcessPayload,
+    RevertUpdateState
 }
 
 struct ActionLocalVars {
@@ -47,11 +54,12 @@ struct VaultsAmounts {
 
 struct TestAction {
     Actions action;
-    uint16 testType;
-    Kind kind;
+    uint16 actionType;
+    LiquidityChange actionKind;
     uint16 CHAIN_0;
     uint16 CHAIN_1;
     address user;
+    TestType testType;
     bytes revertString;
 }
 
@@ -109,7 +117,7 @@ struct BuildWithdrawCallDataArgs {
     address[] vaultMock;
     uint256[] targetVaultIds;
     uint256[] amounts;
-    Kind kind;
+    LiquidityChange actionKind;
     uint16 srcChainId;
     uint16 toChainId;
 }
@@ -124,6 +132,7 @@ struct InternalActionArgs {
     uint16 srcChainId;
     uint16 toChainId;
     Actions action;
+    TestType testType;
     bytes revertString;
 }
 
@@ -148,3 +157,4 @@ error INVALID_UNDERLYING_TOKEN_NAME();
 error LEN_MISMATCH();
 error LEN_AMOUNTS_ZERO();
 error LEN_VAULTS_ZERO();
+error MISMATCH_TEST_TYPE();

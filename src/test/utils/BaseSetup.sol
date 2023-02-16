@@ -158,6 +158,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     function deposit(TestAction memory action, ActionLocalVars memory vars)
         public
+        returns (bool)
     {
         TestAssertionVars memory aV;
         aV.lenRequests = vars.amounts.length;
@@ -220,36 +221,57 @@ abstract contract BaseSetup is DSTest, Test {
                 action.CHAIN_0,
                 action.CHAIN_1,
                 action.action,
+                action.testType,
                 action.revertString
             )
         );
-
+        bool success;
         for (uint256 i = 0; i < aV.lenRequests; i++) {
             unchecked {
                 PAYLOAD_ID[action.CHAIN_1]++;
             }
-            _updateState(
-                PAYLOAD_ID[action.CHAIN_1],
-                vars.amounts[i],
-                action.CHAIN_1
-            );
-
-            vm.recordLogs();
-            _processPayload(PAYLOAD_ID[action.CHAIN_1], action.CHAIN_1);
-
-            vars.logs = vm.getRecordedLogs();
-            LayerZeroHelper(getContract(action.CHAIN_1, "LayerZeroHelper"))
-                .helpWithEstimates(
-                    vars.lzEndpoint_0,
-                    1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                    FORKS[action.CHAIN_0],
-                    vars.logs
+            if (action.testType == TestType.Pass) {
+                _updateState(
+                    PAYLOAD_ID[action.CHAIN_1],
+                    vars.amounts[i],
+                    action.CHAIN_1
+                );
+                vm.recordLogs();
+                _processPayload(
+                    PAYLOAD_ID[action.CHAIN_1],
+                    action.CHAIN_1,
+                    action.revertString,
+                    action.testType
                 );
 
-            unchecked {
-                PAYLOAD_ID[action.CHAIN_0]++;
+                vars.logs = vm.getRecordedLogs();
+                LayerZeroHelper(getContract(action.CHAIN_1, "LayerZeroHelper"))
+                    .helpWithEstimates(
+                        vars.lzEndpoint_0,
+                        1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                        FORKS[action.CHAIN_0],
+                        vars.logs
+                    );
+                unchecked {
+                    PAYLOAD_ID[action.CHAIN_0]++;
+                }
+                _processPayload(
+                    PAYLOAD_ID[action.CHAIN_0],
+                    action.CHAIN_0,
+                    action.revertString,
+                    action.testType
+                );
+            } else if (action.testType == TestType.RevertProcessPayload) {
+                success = _processPayload(
+                    PAYLOAD_ID[action.CHAIN_1],
+                    action.CHAIN_1,
+                    action.revertString,
+                    action.testType
+                );
+                if (!success) {
+                    return false;
+                }
             }
-            _processPayload(PAYLOAD_ID[action.CHAIN_0], action.CHAIN_0);
         }
 
         /// @dev asserts for verification
@@ -275,10 +297,13 @@ abstract contract BaseSetup is DSTest, Test {
                 );
             }
         }
+
+        return true;
     }
 
     function withdraw(TestAction memory action, ActionLocalVars memory vars)
         public
+        returns (bool)
     {
         TestAssertionVars memory aV;
 
@@ -299,7 +324,7 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.vaultMock[i],
                     vars.targetVaultIds[i],
                     vars.amounts[i],
-                    action.kind,
+                    action.actionKind,
                     action.CHAIN_0,
                     action.CHAIN_1
                 )
@@ -342,12 +367,18 @@ abstract contract BaseSetup is DSTest, Test {
                 action.CHAIN_0,
                 action.CHAIN_1,
                 action.action,
+                action.testType,
                 action.revertString
             )
         );
         for (uint256 i = 0; i < aV.lenRequests; i++) {
             PAYLOAD_ID[action.CHAIN_1]++;
-            _processPayload(PAYLOAD_ID[action.CHAIN_1], action.CHAIN_1);
+            _processPayload(
+                PAYLOAD_ID[action.CHAIN_1],
+                action.CHAIN_1,
+                action.revertString,
+                action.testType
+            );
         }
 
         /// @dev asserts for verification
@@ -373,6 +404,8 @@ abstract contract BaseSetup is DSTest, Test {
                 );
             }
         }
+
+        return true;
     }
 
     function getContract(uint16 chainId, string memory _name)
@@ -471,15 +504,9 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
 
-            /// @dev 8 - Deploy token with no associated vault with 18 decimals
-            contracts[vars.chainId][bytes32(bytes("TEST TOKEN"))] = address(
-                new MockERC20(
-                    "TEST TOKEN",
-                    "TEST",
-                    18,
-                    deployer,
-                    milionTokensE18
-                )
+            /// @dev 8 - Deploy SWAP token with no associated vault with 18 decimals
+            contracts[vars.chainId][bytes32(bytes("Swap"))] = address(
+                new MockERC20("Swap", "SWP", 18, deployer, milionTokensE18)
             );
         }
 
@@ -572,7 +599,7 @@ abstract contract BaseSetup is DSTest, Test {
         vm.selectFork(FORKS[args.srcChainId]);
         vars.txIdBefore = superRouter.totalTransactions();
 
-        if (args.revertString.length == 0) {
+        if (args.testType != TestType.RevertMainAction) {
             vm.prank(args.user);
             /// @dev see pigeon for this implementation
             vm.recordLogs();
@@ -662,125 +689,7 @@ abstract contract BaseSetup is DSTest, Test {
                 );
             }
         } else {
-            /*
-            vm.prank(args.user);
-            vm.expectRevert(args.revertString);
-            /// @dev Value == fee paid to relayer. API call in our design
-            SuperRouter(args.fromSrc).deposit{value: msgValue}(
-                args.liqReqs,
-                args.stateReqs
-            );
-            */
-        }
-
-        vm.selectFork(vars.initialFork);
-    }
-
-    function _withdrawFromVault(InternalActionArgs memory args) internal {
-        InternalActionVars memory vars;
-
-        vars.initialFork = vm.activeFork();
-
-        vars.msgValue = 5 * _getPriceMultiplier(args.srcChainId) * 1e18;
-
-        StateHandler stateHandler = StateHandler(
-            payable(getContract(args.toChainId, "StateHandler"))
-        );
-        SuperRouter superRouter = SuperRouter(args.fromSrc);
-
-        vm.selectFork(FORKS[args.srcChainId]);
-        vars.txIdBefore = superRouter.totalTransactions();
-
-        if (args.revertString.length == 0) {
-            /// @dev - WITHDRAW from super router
-            vm.prank(args.user);
-            /// @dev see pigeon for this implementation
-            vm.recordLogs();
-            /// @dev Value == fee paid to relayer. API call in our design
-            superRouter.withdraw{value: vars.msgValue}(
-                args.stateReqs,
-                args.liqReqs
-            );
-            vars.logs = vm.getRecordedLogs();
-            /// @dev see pigeon for this implementation
-            LayerZeroHelper(getContract(args.srcChainId, "LayerZeroHelper"))
-                .helpWithEstimates(
-                    args.toLzEndpoint,
-                    1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                    FORKS[args.toChainId],
-                    vars.logs
-                );
-
-            vm.selectFork(FORKS[args.toChainId]);
-
-            vars.payloadNumberBefore = stateHandler.totalPayloads();
-
-            vars.lenRequests = args.liqReqs.length;
-
-            /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
-            for (uint256 i = 0; i < vars.lenRequests; i++) {
-                /// @dev - assert the payload reached destination state handler
-                vars.expectedInitData = InitData(
-                    args.srcChainId,
-                    args.toChainId,
-                    args.user,
-                    args.stateReqs[i].vaultIds,
-                    args.stateReqs[i].amounts,
-                    args.stateReqs[i].maxSlippage,
-                    vars.txIdBefore + i + 1,
-                    bytes("")
-                );
-
-                vars.data = abi.decode(
-                    stateHandler.payload(
-                        vars.payloadNumberBefore + 1 - vars.lenRequests
-                    ),
-                    (StateData)
-                );
-                vars.receivedInitData = abi.decode(
-                    vars.data.params,
-                    (InitData)
-                );
-
-                assertEq(
-                    vars.receivedInitData.srcChainId,
-                    vars.expectedInitData.srcChainId
-                );
-                assertEq(
-                    vars.receivedInitData.dstChainId,
-                    vars.expectedInitData.dstChainId
-                );
-                assertEq(
-                    vars.receivedInitData.user,
-                    vars.expectedInitData.user
-                );
-                assertEq(
-                    vars.receivedInitData.vaultIds,
-                    vars.expectedInitData.vaultIds
-                );
-                assertEq(
-                    vars.receivedInitData.amounts,
-                    vars.expectedInitData.amounts
-                );
-                assertEq(
-                    vars.receivedInitData.maxSlippage,
-                    vars.expectedInitData.maxSlippage
-                );
-                assertEq(
-                    vars.receivedInitData.txId,
-                    vars.expectedInitData.txId
-                );
-            }
-        } else {
-            /*
-            vm.prank(args.user);
-            vm.expectRevert(args.revertString);
-            /// @dev Value == fee paid to relayer. API call in our design
-            SuperRouter(args.fromSrc).deposit{value: msgValue}(
-                args.liqReqs,
-                args.stateReqs
-            );
-            */
+            /// @dev empty for now
         }
 
         vm.selectFork(vars.initialFork);
@@ -799,6 +708,7 @@ abstract contract BaseSetup is DSTest, Test {
 
         if (args.targetVaultIds.length != lenDeposits || lenDeposits == 0)
             revert LEN_MISMATCH();
+        /// @dev Build State req
 
         uint256[] memory slippage = new uint256[](lenDeposits);
 
@@ -817,6 +727,8 @@ abstract contract BaseSetup is DSTest, Test {
             msgValue
         );
 
+        /// @dev Build Liq request
+
         // !! WARNING !! - sending single amount here - todo change
         // !! WARNING !! - if collateral is the same we can actually send multi vault
 
@@ -826,7 +738,7 @@ abstract contract BaseSetup is DSTest, Test {
             "mockSocketTransfer(address,address,address,uint256,uint256)",
             args.fromSrc,
             args.toDst,
-            args.underlyingToken[0], /// @dev - needs fix
+            args.underlyingToken[0], /// @dev - needs fix because it should have an array of underlying like state req
             args.amounts[0], /// @dev - 1 amount is sent, not testing sum of amounts (different vaults)
             FORKS[args.toChainId]
         );
@@ -834,11 +746,12 @@ abstract contract BaseSetup is DSTest, Test {
         liqReq = LiqRequest(
             1,
             socketTxData,
-            args.underlyingToken[0],
+            args.underlyingToken[0], /// @dev - needs fix because it should have an array of underlying like state req
             getContract(args.srcChainId, "SocketRouterMockFork"),
             args.amounts[0], /// @dev - 1 amount is sent, not testing sum of amounts (different vaults)
             0
         );
+
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[args.srcChainId]);
@@ -866,7 +779,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256[] memory slippage = new uint256[](lenWithdraws);
         uint256[] memory amountsToWithdraw = new uint256[](lenWithdraws);
 
-        if (args.kind == Kind.Full) {
+        if (args.actionKind == LiquidityChange.Full) {
             uint256 sharesBalanceBeforeWithdraw;
             for (uint256 i = 0; i < lenWithdraws; i++) {
                 slippage[i] = 1000;
@@ -880,7 +793,7 @@ abstract contract BaseSetup is DSTest, Test {
                 amountsToWithdraw[i] = VaultMock(args.vaultMock[i])
                     .previewRedeem(sharesBalanceBeforeWithdraw);
             }
-        } else {
+        } else if (args.actionKind == LiquidityChange.Partial) {
             amountsToWithdraw = args.amounts;
         }
 
@@ -933,9 +846,12 @@ abstract contract BaseSetup is DSTest, Test {
         vm.selectFork(initialFork);
     }
 
-    function _processPayload(uint256 payloadId_, uint16 targetChainId_)
-        internal
-    {
+    function _processPayload(
+        uint256 payloadId_,
+        uint16 targetChainId_,
+        bytes memory revertString,
+        TestType testType
+    ) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[targetChainId_]);
@@ -944,10 +860,20 @@ abstract contract BaseSetup is DSTest, Test {
 
         bytes memory hashZero;
         vm.prank(deployer);
-        StateHandler(payable(getContract(targetChainId_, "StateHandler")))
-            .processPayload{value: msgValue}(payloadId_, hashZero);
+        if (testType == TestType.Pass) {
+            StateHandler(payable(getContract(targetChainId_, "StateHandler")))
+                .processPayload{value: msgValue}(payloadId_, hashZero);
+        } else if (testType == TestType.RevertProcessPayload) {
+            vm.expectRevert(revertString);
+
+            StateHandler(payable(getContract(targetChainId_, "StateHandler")))
+                .processPayload{value: msgValue}(payloadId_, hashZero);
+
+            return false;
+        }
 
         vm.selectFork(initialFork);
+        return true;
     }
 
     function _resetPayloadIDs() internal {
@@ -1037,13 +963,6 @@ abstract contract BaseSetup is DSTest, Test {
             vm.deal(address(1), amountUSER);
             vm.deal(address(2), amountUSER);
             vm.deal(address(3), amountUSER);
-            vm.deal(address(4), amountUSER);
-            vm.deal(address(5), amountUSER);
-            vm.deal(address(6), amountUSER);
-            vm.deal(address(7), amountUSER);
-            vm.deal(address(8), amountUSER);
-            vm.deal(address(9), amountUSER);
-            vm.deal(address(10), amountUSER);
         }
     }
 
@@ -1108,13 +1027,11 @@ abstract contract BaseSetup is DSTest, Test {
                 deal(token, address(1), 1 ether * amount);
                 deal(token, address(2), 1 ether * amount);
                 deal(token, address(3), 1 ether * amount);
-                deal(token, address(4), 1 ether * amount);
-                deal(token, address(5), 1 ether * amount);
-                deal(token, address(6), 1 ether * amount);
-                deal(token, address(7), 1 ether * amount);
-                deal(token, address(8), 1 ether * amount);
-                deal(token, address(9), 1 ether * amount);
-                deal(token, address(10), 1 ether * amount);
+
+                address swap = getContract(chainIds[i], "Swap");
+                deal(swap, address(1), 1 ether * amount);
+                deal(swap, address(2), 1 ether * amount);
+                deal(swap, address(3), 1 ether * amount);
             }
         }
     }
