@@ -25,7 +25,8 @@ enum TestType {
     Pass,
     RevertMainAction,
     RevertProcessPayload,
-    RevertUpdateState
+    RevertUpdateStateSlippage,
+    RevertUpdateStateRBAC
 }
 
 struct ActionLocalVars {
@@ -61,6 +62,8 @@ struct TestAction {
     address user;
     TestType testType;
     bytes revertString;
+    uint256 maxSlippage;
+    int256 slippage;
 }
 
 struct TestAssertionVars {
@@ -69,6 +72,7 @@ struct TestAssertionVars {
     uint256[][] destinationSharesBefore;
     uint256[] tSPAmtBefore;
     uint256[] tDestinationSharesAmtBefore;
+    bool success;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -105,6 +109,7 @@ struct BuildDepositCallDataArgs {
     address[] underlyingToken;
     uint256[] targetVaultIds;
     uint256[] amounts;
+    uint256 maxSlippage;
     uint16 srcChainId;
     uint16 toChainId;
 }
@@ -117,6 +122,7 @@ struct BuildWithdrawCallDataArgs {
     address[] vaultMock;
     uint256[] targetVaultIds;
     uint256[] amounts;
+    uint256 maxSlippage;
     LiquidityChange actionKind;
     uint16 srcChainId;
     uint16 toChainId;

