@@ -996,7 +996,9 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     function _processMultiTx(uint16 targetChainId_, address underlyingToken_, uint256 amount_) internal {
+        uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
+
         vm.prank(deployer);
         /// @dev builds the data to be processed by the keeper contract.
         /// @dev at this point the tokens are delivered to the multi-tx processor on the destination chain.
@@ -1011,12 +1013,13 @@ abstract contract BaseSetup is DSTest, Test {
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor")))
             .processTx(
-                1,
+                bridgeIds[0],
                 socketTxData,
                 underlyingToken_,
                 getContract(targetChainId_, "SocketRouterMockFork"),
                 amount_
             );
+        vm.selectFork(initialFork);
     }
 
     function _resetPayloadIDs() internal {
