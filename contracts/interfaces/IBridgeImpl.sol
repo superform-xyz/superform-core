@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.18;
 
 /// @title IBridgeImpl
 /// @author ZeroPoint Labs
 /// @dev interface for arbitrary message bridge implementation
 interface IBridgeImpl {
-    error InvalidCaller();
+    error INVALID_CALLER();
 
-    error DuplicatePayload();
+    error DUPLICATE_PAYLOAD();
 
     /// @dev allows state registry to send message via implementation.
     /// @param dstChainId_ is the identifier of the destination chain

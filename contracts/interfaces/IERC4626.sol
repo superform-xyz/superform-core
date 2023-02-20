@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.18;
 
 import {ERC20} from "@rari-capital/solmate/src/tokens/ERC20.sol";
 
@@ -10,22 +10,22 @@ abstract contract IERC4626 is ERC20 {
                       Events
     ////////////////////////////////////////////////////////*/
 
-    /// @notice `sender` has exchanged `assets` for `positions`,
-    /// and transferred those `positions` to `receiver`.
+    /// @notice `sender_` has exchanged `assets_` for `positions_`,
+    /// and transferred those `positions_` to `receiver_`.
     event Deposit(
-        address indexed sender,
-        address indexed receiver,
-        uint256 assets,
-        uint256 positions
+        address indexed sender_,
+        address indexed receiver_,
+        uint256 assets_,
+        uint256 positions_
     );
 
-    /// @notice `sender` has exchanged `positions` for `assets`,
-    /// and transferred those `assets` to `receiver`.
+    /// @notice `sender_` has exchanged `positions_` for `assets_`,
+    /// and transferred those `assets_` to `receiver_`.
     event Withdraw(
-        address indexed sender,
-        address indexed receiver,
-        uint256 assets,
-        uint256 positions
+        address indexed sender_,
+        address indexed receiver_,
+        uint256 assets_,
+        uint256 positions_
     );
 
     /*////////////////////////////////////////////////////////
@@ -38,114 +38,114 @@ abstract contract IERC4626 is ERC20 {
 
     /// @notice Total amount of the underlying asset that
     /// is "managed" by Vault.
-    function totalAssets() external view virtual returns (uint256 totalAssets);
+    function totalassets_() external view virtual returns (uint256 totalassets_);
 
     /*////////////////////////////////////////////////////////
                       Deposit/Withdrawal Logic
     ////////////////////////////////////////////////////////*/
 
-    /// @notice Mints `positions` Vault positions to `receiver` by
-    /// depositing exactly `assets` of underlying tokens.
+    /// @notice Mints `positions_` Vault positions_ to `receiver_` by
+    /// depositing exactly `assets_` of underlying tokens.
     function deposit(
-        uint256 assets,
-        address receiver
-    ) external virtual returns (uint256 positions);
+        uint256 assets_,
+        address receiver_
+    ) external virtual returns (uint256 positions_);
 
-    /// @notice Mints exactly `positions` Vault positions to `receiver`
-    /// by depositing `assets` of underlying tokens.
+    /// @notice Mints exactly `positions_` Vault positions_ to `receiver_`
+    /// by depositing `assets_` of underlying tokens.
     function mint(
-        uint256 positions,
-        address receiver
-    ) external virtual returns (uint256 assets);
+        uint256 positions_,
+        address receiver_
+    ) external virtual returns (uint256 assets_);
 
-    /// @notice Redeems `positions` from `owner` and sends `assets`
-    /// of underlying tokens to `receiver`.
+    /// @notice Redeems `positions_` from `owner_` and sends `assets_`
+    /// of underlying tokens to `receiver_`.
     function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) external virtual returns (uint256 positions);
+        uint256 assets_,
+        address receiver_,
+        address owner_
+    ) external virtual returns (uint256 positions_);
 
-    /// @notice Redeems `positions` from `owner` and sends `assets`
-    /// of underlying tokens to `receiver`.
+    /// @notice Redeems `positions_` from `owner_` and sends `assets_`
+    /// of underlying tokens to `receiver_`.
     function redeem(
-        uint256 positions,
-        address receiver,
-        address owner
-    ) external virtual returns (uint256 assets);
+        uint256 positions_,
+        address receiver_,
+        address owner_
+    ) external virtual returns (uint256 assets_);
 
     /*////////////////////////////////////////////////////////
                       Vault Accounting Logic
     ////////////////////////////////////////////////////////*/
 
-    /// @notice The amount of positions that the vault would
-    /// exchange for the amount of assets provided, in an
+    /// @notice The amount of positions_ that the vault would
+    /// exchange for the amount of assets_ provided, in an
     /// ideal scenario where all the conditions are met.
     function convertToShares(
-        uint256 assets
-    ) external view virtual returns (uint256 positions);
+        uint256 assets_
+    ) external view virtual returns (uint256 positions_);
 
-    /// @notice The amount of assets that the vault would
-    /// exchange for the amount of positions provided, in an
+    /// @notice The amount of assets_ that the vault would
+    /// exchange for the amount of positions_ provided, in an
     /// ideal scenario where all the conditions are met.
-    function convertToAssets(
-        uint256 positions
-    ) external view virtual returns (uint256 assets);
+    function convertToassets_(
+        uint256 positions_
+    ) external view virtual returns (uint256 assets_);
 
-    /// @notice Total number of underlying assets that can
-    /// be deposited by `owner` into the Vault, where `owner`
-    /// corresponds to the input parameter `receiver` of a
+    /// @notice Total number of underlying assets_ that can
+    /// be deposited by `owner_` into the Vault, where `owner_`
+    /// corresponds to the input parameter `receiver_` of a
     /// `deposit` call.
     function maxDeposit(
-        address owner
-    ) external view virtual returns (uint256 maxAssets);
+        address owner_
+    ) external view virtual returns (uint256 maxassets_);
 
     /// @notice Allows an on-chain or off-chain user to simulate
     /// the effects of their deposit at the current block, given
     /// current on-chain conditions.
     function previewDeposit(
-        uint256 assets
-    ) external view virtual returns (uint256 positions);
+        uint256 assets_
+    ) external view virtual returns (uint256 positions_);
 
-    /// @notice Total number of underlying positions that can be minted
-    /// for `owner`, where `owner` corresponds to the input
-    /// parameter `receiver` of a `mint` call.
+    /// @notice Total number of underlying positions_ that can be minted
+    /// for `owner_`, where `owner_` corresponds to the input
+    /// parameter `receiver_` of a `mint` call.
     function maxMint(
-        address owner
-    ) external view virtual returns (uint256 maxPositions);
+        address owner_
+    ) external view virtual returns (uint256 maxpositions_);
 
     /// @notice Allows an on-chain or off-chain user to simulate
     /// the effects of their mint at the current block, given
     /// current on-chain conditions.
     function previewMint(
-        uint256 positions
-    ) external view virtual returns (uint256 assets);
+        uint256 positions_
+    ) external view virtual returns (uint256 assets_);
 
-    /// @notice Total number of underlying assets that can be
-    /// withdrawn from the Vault by `owner`, where `owner`
+    /// @notice Total number of underlying assets_ that can be
+    /// withdrawn from the Vault by `owner_`, where `owner_`
     /// corresponds to the input parameter of a `withdraw` call.
     function maxWithdraw(
-        address owner
-    ) external view virtual returns (uint256 maxAssets);
+        address owner_
+    ) external view virtual returns (uint256 maxassets_);
 
     /// @notice Allows an on-chain or off-chain user to simulate
     /// the effects of their withdrawal at the current block,
     /// given current on-chain conditions.
     function previewWithdraw(
-        uint256 assets
-    ) external view virtual returns (uint256 positions);
+        uint256 assets_
+    ) external view virtual returns (uint256 positions_);
 
-    /// @notice Total number of underlying positions that can be
-    /// redeemed from the Vault by `owner`, where `owner` corresponds
+    /// @notice Total number of underlying positions_ that can be
+    /// redeemed from the Vault by `owner_`, where `owner_` corresponds
     /// to the input parameter of a `redeem` call.
     function maxRedeem(
-        address owner
-    ) external view virtual returns (uint256 maxPositions);
+        address owner_
+    ) external view virtual returns (uint256 maxpositions_);
 
     /// @notice Allows an on-chain or off-chain user to simulate
     /// the effects of their redeemption at the current block,
     /// given current on-chain conditions.
     function previewRedeem(
-        uint256 positions
-    ) external view virtual returns (uint256 assets);
+        uint256 positions_
+    ) external view virtual returns (uint256 assets_);
 }

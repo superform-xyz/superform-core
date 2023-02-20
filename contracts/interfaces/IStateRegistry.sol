@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.18;
 
 /// @title IStateRegistry
 /// @author ZeroPoint Labs
@@ -8,23 +8,23 @@ interface IStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 Errors
     //////////////////////////////////////////////////////////////*/
-    error InvalidBridgeId();
+    error INVALID_BRIDGE_ID();
 
-    error InvalidBridgeAddress();
+    error INVALID_BRIDGE_ADDRESS();
 
-    error InvalidPayloadId();
+    error INVALID_PAYLOAD_ID();
 
-    error InvalidPayloadState();
+    error INVALID_PAYLOAD_STATE();
 
-    error InvalidPayloadUpdateRequest();
+    error INVALID_PAYLOAD_UPDATE_REQUEST();
 
-    error InvalidArrayLength();
+    error INVALID_ARR_LENGTH();
 
-    error NegativeSlippage();
+    error NEGATIVE_SLIPPAGE();
 
-    error SlippageOutOfBounds();
+    error SLIPPAGE_OUT_OF_BOUNDS();
 
-    error PayloadNotUpdated();
+    error PAYLOAD_NOT_UPDATED();
 
     /*///////////////////////////////////////////////////////////////
                                 Events

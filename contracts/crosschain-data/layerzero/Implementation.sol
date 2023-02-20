@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.18;
 
 import "./NonblockingLzApp.sol";
 import {IStateRegistry} from "../../interfaces/IStateRegistry.sol";
@@ -52,7 +52,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
         bytes memory extraData_
     ) external payable virtual override {
         if (msg.sender != address(registry)) {
-            revert InvalidCaller();
+            revert INVALID_CALLER();
         }
 
         _lzSend(
@@ -75,7 +75,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
         bytes memory _payload
     ) internal override {
         if (isValid[_srcChainId][_nonce] == true) {
-            revert DuplicatePayload();
+            revert DUPLICATE_PAYLOAD();
         }
 
         /// NOTE: changing state earlier to prevent re-entrancy.

@@ -1,33 +1,32 @@
 // SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.18;
 
 interface ILayerZeroUserApplicationConfig {
     // @notice set the configuration of the LayerZero messaging library of the specified version
-    // @param _version - messaging library version
-    // @param _chainId - the chainId for the pending config change
-    // @param _configType - type of configuration. every messaging library has its own convention.
-    // @param _config - configuration in the bytes. can encode arbitrary content.
+    // @param version_ - messaging library version
+    // @param chainId_ - the chainId for the pending config change
+    // @param configType_ - type of configuration. every messaging library has its own convention.
+    // @param config_ - configuration in the bytes. can encode arbitrary content.
     function setConfig(
-        uint16 _version,
-        uint16 _chainId,
-        uint256 _configType,
-        bytes calldata _config
+        uint16 version_,
+        uint16 chainId_,
+        uint256 configType_,
+        bytes calldata config_
     ) external;
 
-    // @notice set the send() LayerZero messaging library version to _version
-    // @param _version - new messaging library version
-    function setSendVersion(uint16 _version) external;
+    // @notice set the send() LayerZero messaging library version to version_
+    // @param version_ - new messaging library version
+    function setSendVersion(uint16 version_) external;
 
-    // @notice set the lzReceive() LayerZero messaging library version to _version
-    // @param _version - new messaging library version
-    function setReceiveVersion(uint16 _version) external;
+    // @notice set the lzReceive() LayerZero messaging library version to version_
+    // @param version_ - new messaging library version
+    function setReceiveVersion(uint16 version_) external;
 
     // @notice Only when the UA needs to resume the message flow in blocking mode and clear the stored payload
-    // @param _srcChainId - the chainId of the source chain
-    // @param _srcAddress - the contract address of the source contract at the source chain
+    // @param srcChainId_ - the chainId of the source chain
+    // @param srcAddress_ - the contract address of the source contract at the source chain
     function forceResumeReceive(
-        uint16 _srcChainId,
-        bytes calldata _srcAddress
+        uint16 srcChainId_,
+        bytes calldata srcAddress_
     ) external;
 }

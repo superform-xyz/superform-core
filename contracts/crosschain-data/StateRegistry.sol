@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
@@ -62,11 +62,11 @@ contract StateRegistry is IStateRegistry, AccessControl {
         address bridgeImpl_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bridgeId_ == 0) {
-            revert InvalidBridgeId();
+            revert INVALID_BRIDGE_ID();
         }
 
         if (bridgeImpl_ == address(0)) {
-            revert InvalidBridgeAddress();
+            revert INVALID_BRIDGE_ADDRESS();
         }
 
         bridge[bridgeId_] = IBridgeImpl(bridgeImpl_);
@@ -88,7 +88,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         IBridgeImpl bridgeImpl = bridge[bridgeId_];
 
         if (address(bridgeImpl) == address(0)) {
-            revert InvalidBridgeId();
+            revert INVALID_BRIDGE_ID();
         }
 
         bridgeImpl.dipatchPayload(dstChainId_, message_, extraData_);
@@ -117,7 +117,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         uint256[] calldata finalAmounts_
     ) external virtual override onlyRole(UPDATER_ROLE) {
         if (payloadId_ > payloadsCount) {
-            revert InvalidPayloadId();
+            revert INVALID_PAYLOAD_ID();
         }
 
         StateData memory payloadInfo = abi.decode(
@@ -129,11 +129,11 @@ contract StateRegistry is IStateRegistry, AccessControl {
             payloadInfo.txType != TransactionType.DEPOSIT &&
             payloadInfo.flag != CallbackType.INIT
         ) {
-            revert InvalidPayloadUpdateRequest();
+            revert INVALID_PAYLOAD_UPDATE_REQUEST();
         }
 
         if (payloadTracking[payloadId_] != PayloadState.STORED) {
-            revert InvalidPayloadState();
+            revert INVALID_PAYLOAD_STATE();
         }
 
         InitData memory data = abi.decode(payloadInfo.params, (InitData));
@@ -142,7 +142,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         uint256 l2 = finalAmounts_.length;
 
         if (l1 != l2) {
-            revert InvalidArrayLength();
+            revert INVALID_ARR_LENGTH();
         }
 
         for (uint256 i = 0; i < l1; i++) {
@@ -150,14 +150,14 @@ contract StateRegistry is IStateRegistry, AccessControl {
             uint256 maxAmount = data.amounts[i];
 
             if (newAmount > maxAmount) {
-                revert NegativeSlippage();
+                revert NEGATIVE_SLIPPAGE();
             }
 
             uint256 minAmount = (maxAmount * (10000 - data.maxSlippage[i])) /
                 10000;
 
             if (newAmount < minAmount) {
-                revert SlippageOutOfBounds();
+                revert SLIPPAGE_OUT_OF_BOUNDS();
             }
         }
 
@@ -177,11 +177,11 @@ contract StateRegistry is IStateRegistry, AccessControl {
         uint256 payloadId_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         if (payloadId_ > payloadsCount) {
-            revert InvalidPayloadId();
+            revert INVALID_PAYLOAD_ID();
         }
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert InvalidPayloadState();
+            revert INVALID_PAYLOAD_STATE();
         }
 
         bytes memory _payload = payload[payloadId_];
@@ -205,11 +205,11 @@ contract StateRegistry is IStateRegistry, AccessControl {
         bytes memory extraData_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         if (payloadId_ > payloadsCount) {
-            revert InvalidPayloadId();
+            revert INVALID_PAYLOAD_ID();
         }
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert InvalidPayloadState();
+            revert INVALID_PAYLOAD_STATE();
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
@@ -221,7 +221,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         InitData memory initData = abi.decode(payloadInfo.params, (InitData));
 
         if (initData.dstChainId != chainId) {
-            revert InvalidPayloadState();
+            revert INVALID_PAYLOAD_STATE();
         }
 
         /// NOTE: Send `data` back to source based on BridgeID to revert the state.
@@ -255,7 +255,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     ) internal {
         if (payloadInfo_.flag == CallbackType.INIT) {
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
-                revert PayloadNotUpdated();
+                revert PAYLOAD_NOT_UPDATED();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
@@ -264,7 +264,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
             );
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
-                revert InvalidPayloadState();
+                revert INVALID_PAYLOAD_STATE();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
