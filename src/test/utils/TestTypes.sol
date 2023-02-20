@@ -64,6 +64,7 @@ struct TestAction {
     bytes revertString;
     uint256 maxSlippage;
     int256 slippage;
+    bool multiTx;
 }
 
 struct TestAssertionVars {
@@ -96,6 +97,7 @@ struct SetupVars {
     address srcStateHandler;
     address srcSuperDestination;
     address dstStateHandler;
+    address srcMultiTxProcessor;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -112,6 +114,7 @@ struct BuildDepositCallDataArgs {
     uint256 maxSlippage;
     uint16 srcChainId;
     uint16 toChainId;
+    bool multiTx;
 }
 
 struct BuildWithdrawCallDataArgs {
@@ -140,6 +143,7 @@ struct InternalActionArgs {
     Actions action;
     TestType testType;
     bytes revertString;
+    bool multiTx;
 }
 
 struct InternalActionVars {
