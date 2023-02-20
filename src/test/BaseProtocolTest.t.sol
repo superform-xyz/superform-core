@@ -19,7 +19,7 @@ contract BaseProtocolTest is BaseSetup {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint256 internal constant numberOfTestActions = 10; /// @dev <- change this whenever you add/remove test cases
+    uint256 internal constant numberOfTestActions = 11; /// @dev <- change this whenever you add/remove test cases
 
     function setUp() public override {
         super.setUp();
@@ -45,11 +45,9 @@ contract BaseProtocolTest is BaseSetup {
         AMOUNTS_ACTIONS[1][LiquidityChange.Partial] = [uint256(500), 2000];
     }
 
-    function _getTestAction(uint256 index_)
-        internal
-        view
-        returns (TestAction memory)
-    {
+    function _getTestAction(
+        uint256 index_
+    ) internal view returns (TestAction memory) {
         /*//////////////////////////////////////////////////////////////
                     !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
@@ -65,7 +63,8 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.Pass,
                 revertString: "",
                 maxSlippage: 1000, // 10%,
-                slippage: 0 // 0% <- if we are testing a pass this must be below maxSlippage
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
+                multiTx: false
             }),
             /// FTM=>BSC: user withdrawing tokens from a vault on BSC from/to Fantom
             TestAction({
@@ -78,7 +77,22 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.Pass,
                 revertString: "",
                 maxSlippage: 1000, // 10%,
-                slippage: 0 // 0% <- if we are testing a pass this must be below maxSlippage
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
+                multiTx: false
+            }),
+            /// FTM=>BSC: user depositing to a vault on BSC from Fantom with MultiTx
+            TestAction({
+               action: Actions.Deposit,
+               actionType: 0,
+               actionKind: LiquidityChange.Full,
+               CHAIN_0: FTM,
+               CHAIN_1: BSC,
+               user: users[0],
+               testType: TestType.Pass,
+               revertString: "",
+               maxSlippage: 1000, // 10%,
+               slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
+               multiTx: true
             }),
             /// BSC=>FTM: multiple LiqReq/StateReq for multi-deposit
             /// BSC=>FTM: user depositing to a vault on Fantom from BSC
@@ -92,7 +106,8 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.Pass,
                 revertString: "",
                 maxSlippage: 1000, // 10%,
-                slippage: 0 // 0% <- if we are testing a pass this must be below maxSlippage
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
+                multiTx: false
             }),
             /// BSC=>FTM: multiple LiqReq/StateReq for multi-deposit
             /// BSC=>FTM: partial withdraw tokens from a vault on Fantom from/to BSC
@@ -106,7 +121,8 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.Pass,
                 revertString: "",
                 maxSlippage: 1000, // 10%,
-                slippage: 0 // 0% <- if we are testing a pass this must be below maxSlippage
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
+                multiTx: false
             }),
             /// FTM=>BSC: user depositing to a vault requiring swap (stays pending)
             TestAction({
@@ -119,7 +135,8 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.RevertProcessPayload,
                 revertString: "State Handler: Invalid Payload State",
                 maxSlippage: 1000, // 10%,
-                slippage: 0 // 0% <- if we are testing a pass this must be below maxSlippage
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
+                multiTx: false
             }),
             /// FTM=>BSC: cross-chain slippage update beyond max slippage
             TestAction({
@@ -132,7 +149,8 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.RevertUpdateStateSlippage,
                 revertString: "State Handler: Slippage Out Of Bounds",
                 maxSlippage: 1000, // 10%,
-                slippage: 1200 // 12%
+                slippage: 1200, // 12%
+                multiTx: false
             }),
             /// ARBI=>OP: cross-chain slippage update above received value
             TestAction({
@@ -145,7 +163,8 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.RevertUpdateStateSlippage,
                 revertString: "State Handler: Negative Slippage",
                 maxSlippage: 1000, // 10%,
-                slippage: -100
+                slippage: -100,
+                multiTx: false
             }),
             /// OP=>AVAX: cross-chain slippage update from unauthorized wallet
             TestAction({
@@ -158,7 +177,8 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.RevertUpdateStateRBAC,
                 revertString: "AccessControl: account 0x0000000000000000000000000000000000000003 is missing role 0x2030565476ef23eb21f6c1f68075f5a89b325631df98f5793acd3297f9b80123",
                 maxSlippage: 1000, // 10%,
-                slippage: 0
+                slippage: 0,
+                multiTx: false
             }),
             /// POLY=>POLY: SAMECHAIN deposit()
             /// @dev NOTE: this is being made with non native assets
@@ -173,7 +193,8 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.Pass,
                 revertString: "",
                 maxSlippage: 1000, // 10%,
-                slippage: 100
+                slippage: 100,
+                multiTx: false
             }),
             /// POLY=>POLY: SAMECHAIN withdraw()
             /// @dev NOTE: this is being made with non native assets
@@ -187,7 +208,8 @@ contract BaseProtocolTest is BaseSetup {
                 testType: TestType.Pass,
                 revertString: "",
                 maxSlippage: 1000, // 10%,
-                slippage: 200
+                slippage: 200,
+                multiTx: false
             })
         ];
 
@@ -305,11 +327,10 @@ contract BaseProtocolTest is BaseSetup {
     }
 
     /// @dev this function is used to build the 2D arrays in the best way possible
-    function _amounts(uint256 action, LiquidityChange actionKind)
-        internal
-        view
-        returns (uint256[][] memory targetAmountsMem)
-    {
+    function _amounts(
+        uint256 action,
+        LiquidityChange actionKind
+    ) internal view returns (uint256[][] memory targetAmountsMem) {
         uint256[] memory amountsTemp = AMOUNTS_ACTIONS[action][actionKind];
         uint256 len = amountsTemp.length;
         if (len == 0) revert LEN_AMOUNTS_ZERO();

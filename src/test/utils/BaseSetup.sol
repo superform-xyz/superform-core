@@ -19,6 +19,7 @@ import {IDestination} from "contracts/interface/IDestination.sol";
 import {IERC4626} from "contracts/interface/IERC4626.sol";
 import {SuperRouter} from "contracts/SuperRouter.sol";
 import {SuperDestination} from "contracts/SuperDestination.sol";
+import {MultiTxProcessor} from "contracts/MultiTxProcessor.sol";
 
 /// @dev local test imports
 import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
@@ -40,11 +41,13 @@ abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
-
+    
+    bytes32 public constant SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
     bytes32 public constant CORE_CONTRACTS_ROLE =
         keccak256("CORE_CONTRACTS_ROLE");
     bytes32 public constant PROCESSOR_CONTRACTS_ROLE =
         keccak256("PROCESSOR_CONTRACTS_ROLE");
+
 
     /// @dev one vault per request at the moment - do not change for now
     uint256 internal constant allowedNumberOfVaultsPerRequest = 1;
@@ -156,10 +159,10 @@ abstract contract BaseSetup is DSTest, Test {
         _fundUnderlyingTokens(100);
     }
 
-    function deposit(TestAction memory action, ActionLocalVars memory vars)
-        public
-        returns (bool)
-    {
+    function deposit(
+        TestAction memory action,
+        ActionLocalVars memory vars
+    ) public returns (bool) {
         TestAssertionVars memory aV;
         aV.lenRequests = vars.amounts.length;
 
@@ -180,7 +183,8 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.amounts[i],
                     action.maxSlippage,
                     action.CHAIN_0,
-                    action.CHAIN_1
+                    action.CHAIN_1,
+                    action.multiTx
                 )
             );
         }
@@ -223,7 +227,8 @@ abstract contract BaseSetup is DSTest, Test {
                 action.CHAIN_1,
                 action.action,
                 action.testType,
-                action.revertString
+                action.revertString,
+                action.multiTx
             )
         );
 
@@ -233,6 +238,14 @@ abstract contract BaseSetup is DSTest, Test {
                     PAYLOAD_ID[action.CHAIN_1]++;
                 }
                 if (action.testType == TestType.Pass) {
+                    if(action.multiTx) {
+                        _processMultiTx(
+                          action.CHAIN_1,
+                          vars.underlyingSrcToken[i][0],    /// @dev should be made to support multiple tokens
+                          vars.amounts[i][0]                /// @dev should be made to support multiple tokens
+                        );
+                    }
+
                     _updateState(
                         PAYLOAD_ID[action.CHAIN_1],
                         vars.amounts[i],
@@ -323,10 +336,10 @@ abstract contract BaseSetup is DSTest, Test {
         return true;
     }
 
-    function withdraw(TestAction memory action, ActionLocalVars memory vars)
-        public
-        returns (bool)
-    {
+    function withdraw(
+        TestAction memory action,
+        ActionLocalVars memory vars
+    ) public returns (bool) {
         TestAssertionVars memory aV;
 
         aV.lenRequests = vars.amounts.length;
@@ -391,7 +404,8 @@ abstract contract BaseSetup is DSTest, Test {
                 action.CHAIN_1,
                 action.action,
                 action.testType,
-                action.revertString
+                action.revertString,
+                action.multiTx
             )
         );
 
@@ -434,11 +448,10 @@ abstract contract BaseSetup is DSTest, Test {
         return true;
     }
 
-    function getContract(uint16 chainId, string memory _name)
-        public
-        view
-        returns (address)
-    {
+    function getContract(
+        uint16 chainId,
+        string memory _name
+    ) public view returns (address) {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
@@ -530,7 +543,12 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
 
-            /// @dev 8 - Deploy SWAP token with no associated vault with 18 decimals
+            /// @dev 8 - Deploy MultiTx Processor
+            contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = address(
+                new MultiTxProcessor()
+            );
+
+            /// @dev 9 - Deploy SWAP token with no associated vault with 18 decimals
             contracts[vars.chainId][bytes32(bytes("Swap"))] = address(
                 new MockERC20("Swap", "SWP", 18, deployer, milionTokensE18)
             );
@@ -546,6 +564,10 @@ abstract contract BaseSetup is DSTest, Test {
             vars.srcSuperDestination = getContract(
                 vars.chainId,
                 "SuperDestination"
+            );
+            vars.srcMultiTxProcessor = getContract(
+                vars.chainId,
+                "MultiTxProcessor"
             );
 
             /// @dev - Add vaults to super destination
@@ -577,6 +599,10 @@ abstract contract BaseSetup is DSTest, Test {
                 PROCESSOR_CONTRACTS_ROLE,
                 deployer
             );
+            MultiTxProcessor(payable(vars.srcMultiTxProcessor)).grantRole(
+                SWAPPER_ROLE,
+                deployer
+            );
 
             /// @dev Set all trusted remotes for each chain
             for (uint256 j = 0; j < chainIds.length; j++) {
@@ -603,6 +629,8 @@ abstract contract BaseSetup is DSTest, Test {
                 bridgeAddresses
             );
             SuperDestination(payable(vars.srcSuperDestination))
+                .setBridgeAddress(bridgeIds, bridgeAddresses);
+            MultiTxProcessor(payable(vars.srcMultiTxProcessor))
                 .setBridgeAddress(bridgeIds, bridgeAddresses);
         }
         vm.stopPrank();
@@ -732,10 +760,9 @@ abstract contract BaseSetup is DSTest, Test {
         vm.selectFork(vars.initialFork);
     }
 
-    function _buildDepositCallData(BuildDepositCallDataArgs memory args)
-        internal
-        returns (StateReq memory stateReq, LiqRequest memory liqReq)
-    {
+    function _buildDepositCallData(
+        BuildDepositCallDataArgs memory args
+    ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
         /// @dev set to empty bytes for now
         bytes memory adapterParam;
         /*
@@ -779,7 +806,7 @@ abstract contract BaseSetup is DSTest, Test {
         bytes memory socketTxData = abi.encodeWithSignature(
             "mockSocketTransfer(address,address,address,uint256,uint256)",
             from,
-            args.toDst,
+            args.multiTx ? getContract(args.toChainId, "MultiTxProcessor") : args.toDst,
             args.underlyingToken[0], /// @dev - needs fix because it should have an array of underlying like state req
             args.amounts[0], /// @dev - 1 amount is sent, not testing sum of amounts (different vaults)
             FORKS[args.toChainId]
@@ -810,10 +837,9 @@ abstract contract BaseSetup is DSTest, Test {
         vm.selectFork(initialFork);
     }
 
-    function _buildWithdrawCallData(BuildWithdrawCallDataArgs memory args)
-        internal
-        returns (StateReq memory stateReq, LiqRequest memory liqReq)
-    {
+    function _buildWithdrawCallData(
+        BuildWithdrawCallDataArgs memory args
+    ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
         /// @dev set to empty bytes for now
         bytes memory adapterParam;
 
@@ -969,6 +995,30 @@ abstract contract BaseSetup is DSTest, Test {
         return true;
     }
 
+    function _processMultiTx(uint16 targetChainId_, address underlyingToken_, uint256 amount_) internal {
+        vm.selectFork(FORKS[targetChainId_]);
+        vm.prank(deployer);
+        /// @dev builds the data to be processed by the keeper contract.
+        /// @dev at this point the tokens are delivered to the multi-tx processor on the destination chain.
+        bytes memory socketTxData = abi.encodeWithSignature(
+            "mockSocketTransfer(address,address,address,uint256,uint256)",
+            getContract(targetChainId_, "MultiTxProcessor"),
+            getContract(targetChainId_, "SuperDestination"),
+            underlyingToken_, /// @dev - needs fix because it should have an array of underlying like state req
+            amount_, /// @dev - 1 amount is sent, not testing sum of amounts (different vaults)
+            FORKS[targetChainId_]
+        );
+
+        MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor")))
+            .processTx(
+                1,
+                socketTxData,
+                underlyingToken_,
+                getContract(targetChainId_, "SocketRouterMockFork"),
+                amount_
+            );
+    }
+
     function _resetPayloadIDs() internal {
         mapping(uint16 => uint256) storage payloadID = PAYLOAD_ID; // chaindId => payloadId
 
@@ -1053,10 +1103,9 @@ abstract contract BaseSetup is DSTest, Test {
         }
     }
 
-    function _getPriceMultiplier(uint16 targetChainId_)
-        internal
-        returns (uint256)
-    {
+    function _getPriceMultiplier(
+        uint16 targetChainId_
+    ) internal returns (uint256) {
         uint256 multiplier;
 
         if (
@@ -1087,11 +1136,9 @@ abstract contract BaseSetup is DSTest, Test {
         return multiplier;
     }
 
-    function _getLatestPrice(address priceFeed_)
-        internal
-        view
-        returns (int256)
-    {
+    function _getLatestPrice(
+        address priceFeed_
+    ) internal view returns (int256) {
         // prettier-ignore
         (
             /* uint80 roundID */,
