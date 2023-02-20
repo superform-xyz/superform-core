@@ -16,3 +16,4 @@ src = 'contracts'
 test = 'src/test'
 verbosity = 0
 ffi = true
+libs = ["node_modules", "lib"]
