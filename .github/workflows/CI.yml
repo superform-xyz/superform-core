@@ -91,9 +91,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: crytic/slither-action@v0.3.0
-        continue-on-error: true
+      - name: Run Slither
+        uses: crytic/slither-action@v0.3.0
         id: slither
         with: 
           slither-args: '--exclude-low --exclude-medium --no-fail-pedantic --exclude-optimization --exclude-informational --filter-paths mock,interfaces --json-types console,detectors'
-
