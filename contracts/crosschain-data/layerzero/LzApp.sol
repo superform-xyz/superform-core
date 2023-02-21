@@ -67,6 +67,7 @@ abstract contract LzApp is
             trustedRemote.length != 0,
             "LzApp: destination chain is not a trusted source"
         );
+
         lzEndpoint.send{value: msg.value}(
             _dstChainId,
             trustedRemote,

@@ -45,25 +45,29 @@ module.exports = {
         polygon: {
             chainId: process.env.PRODUCTION === "true" ? 137 : 80001,
             url: process.env.PRODUCTION === "true" ?
-                process.env.POLYGON_RPC_URL : process.env.MUMBAI_RPC_URL,
+                process.env.POLYGON_RPC_URL :
+                process.env.MUMBAI_RPC_URL,
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
         },
         avalanche: {
             chainId: process.env.PRODUCTION === "true" ? 43114 : 43113,
             url: process.env.PRODUCTION === "true" ?
-                process.env.AVALANCHE_RPC_URL : process.env.FUJI_RPC_URL,
+                process.env.AVALANCHE_RPC_URL :
+                process.env.FUJI_RPC_URL,
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
         },
         fantom: {
             chainId: process.env.PRODUCTION === "true" ? 250 : 4002,
             url: process.env.PRODUCTION === "true" ?
-                process.env.FANTOM_RPC_URL : process.env.FANTOM_TESTNET_URL,
+                process.env.FANTOM_RPC_URL :
+                process.env.FANTOM_TESTNET_URL,
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
         },
         bsc: {
             chainId: process.env.PRODUCTION === "true" ? 56 : 97,
             url: process.env.PRODUCTION === "true" ?
-                process.env.BSC_RPC_URL : process.env.BSC_RPC_URL,
+                process.env.BSC_RPC_URL :
+                process.env.BSC_RPC_URL,
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
         },
         optimism: {
@@ -85,7 +89,7 @@ module.exports = {
             chainId: 1,
             forking: {
                 enabled: false,
-                url: process.env.ETH_RPC_URL,
+                url: process.env.ETHEREUM_RPC_URL,
             },
         },
     },

@@ -7,10 +7,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// Types Imports
 import {UserRequest} from "../types/LiquidityTypes.sol";
 
-import "hardhat/console.sol";
-
 /// @title Socket Router Mock
 contract SocketRouterMock {
+    receive() external payable {}
+
     function mockSocketTransfer(
         address from,
         address to,
