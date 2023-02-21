@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.18;
 
 /// NPM Imports
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// Types Imports
-import {UserRequest} from "../types/socketTypes.sol";
+import {UserRequest} from "../types/LiquidityTypes.sol";
 
 /// @title Socket Router Mock
 contract SocketRouterMock {

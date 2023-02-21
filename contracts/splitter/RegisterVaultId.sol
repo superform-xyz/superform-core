@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.18;
 
-import {IPositionsSplitter} from "./IPositionsSplitter.sol";
+import {IPositionsSplitter} from "../interfaces/IPositionsSplitter.sol";
 
 /// @title Positions Splitter
 /// @dev Implementation of managment logic inside of SuperRouter, causes it to go over contract size limit.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -49,9 +49,10 @@ contract PositionsSplitter is AccessControl, IERC1155Receiver {
 
     /// @notice Use ERC1155 BatchTransfer to wrap multiple ERC1155 ids into separate ERC20
     /// Easier to wrap than to wrapBack because of ERC1155 beauty!
-    function wrapBatch(uint256[] memory vaultIds, uint256[] memory amounts)
-        external
-    {
+    function wrapBatch(
+        uint256[] memory vaultIds,
+        uint256[] memory amounts
+    ) external {
         require(
             sERC1155.isApprovedForAll(_msgSender(), address(this)),
             "Error: Insufficient Approval"
@@ -139,11 +140,7 @@ contract PositionsSplitter is AccessControl, IERC1155Receiver {
         emit Wrapped(_msgSender(), vaultId, amount);
     }
 
-    function wrapFor(
-        uint256 vaultId,
-        address user,
-        uint256 amount
-    ) external {
+    function wrapFor(uint256 vaultId, address user, uint256 amount) external {
         require(
             sERC1155.isApprovedForAll(_msgSender(), address(this)),
             "Error: Insufficient Approval"
@@ -188,11 +185,7 @@ contract PositionsSplitter is AccessControl, IERC1155Receiver {
         emit Unwrapped(_msgSender(), vaultId, amount);
     }
 
-    function unwrapFor(
-        uint256 vaultId,
-        address user,
-        uint256 amount
-    ) external {
+    function unwrapFor(uint256 vaultId, address user, uint256 amount) external {
         sERC20 token = synthethicTokenId[vaultId];
         require(
             token.allowance(user, address(this)) >= amount,

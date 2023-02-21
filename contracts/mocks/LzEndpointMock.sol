@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.14;
+pragma solidity ^0.8.18;
 pragma abicoder v2;
 
-import "../interface/ILayerZeroReceiver.sol";
-import "../interface/ILayerZeroEndpoint.sol";
+import "../crosschain-data/layerzero/interface/ILayerZeroReceiver.sol";
+import "../crosschain-data/layerzero/interface/ILayerZeroEndpoint.sol";
 
 /*
 mocking multi endpoint connection.
@@ -80,9 +80,10 @@ contract LZEndpointMock is ILayerZeroEndpoint {
         return mockChainId;
     }
 
-    function setDestLzEndpoint(address destAddr, address lzEndpointAddr)
-        external
-    {
+    function setDestLzEndpoint(
+        address destAddr,
+        address lzEndpointAddr
+    ) external {
         lzEndpointLookup[destAddr] = lzEndpointAddr;
     }
 
@@ -147,7 +148,7 @@ contract LZEndpointMock is ILayerZeroEndpoint {
         bytes calldata _srcAddress,
         address _dstAddress,
         uint64 _nonce,
-        uint256, /*_gasLimit*/
+        uint256 /*_gasLimit*/,
         bytes calldata _payload
     ) external override {
         StoredPayload storage sp = storedPayload[_srcChainId][_srcAddress];
@@ -218,11 +219,10 @@ contract LZEndpointMock is ILayerZeroEndpoint {
         nextMsgBLocked = true;
     }
 
-    function getLengthOfQueue(uint16 _srcChainId, bytes calldata _srcAddress)
-        external
-        view
-        returns (uint256)
-    {
+    function getLengthOfQueue(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) external view returns (uint256) {
         return msgsToDeliver[_srcChainId][_srcAddress].length;
     }
 
@@ -244,11 +244,9 @@ contract LZEndpointMock is ILayerZeroEndpoint {
     }
 
     // give 20 bytes, return the decoded address
-    function packedBytesToAddr(bytes calldata _b)
-        public
-        pure
-        returns (address)
-    {
+    function packedBytesToAddr(
+        bytes calldata _b
+    ) public pure returns (address) {
         address addr;
         assembly {
             let ptr := mload(0x40)
@@ -265,28 +263,24 @@ contract LZEndpointMock is ILayerZeroEndpoint {
     }
 
     function setConfig(
-        uint16, /*_version*/
-        uint16, /*_chainId*/
-        uint256, /*_configType*/
+        uint16 /*_version*/,
+        uint16 /*_chainId*/,
+        uint256 /*_configType*/,
         bytes memory /*_config*/
     ) external override {}
 
     function getConfig(
-        uint16, /*_version*/
-        uint16, /*_chainId*/
-        address, /*_ua*/
+        uint16 /*_version*/,
+        uint16 /*_chainId*/,
+        address /*_ua*/,
         uint256 /*_configType*/
     ) external pure override returns (bytes memory) {
         return "";
     }
 
-    function setSendVersion(
-        uint16 /*version*/
-    ) external override {}
+    function setSendVersion(uint16 /*version*/) external override {}
 
-    function setReceiveVersion(
-        uint16 /*version*/
-    ) external override {}
+    function setReceiveVersion(uint16 /*version*/) external override {}
 
     function getSendVersion(
         address /*_userApplication*/
@@ -300,28 +294,25 @@ contract LZEndpointMock is ILayerZeroEndpoint {
         return 1;
     }
 
-    function getInboundNonce(uint16 _chainID, bytes calldata _srcAddress)
-        external
-        view
-        override
-        returns (uint64)
-    {
+    function getInboundNonce(
+        uint16 _chainID,
+        bytes calldata _srcAddress
+    ) external view override returns (uint64) {
         return inboundNonce[_chainID][_srcAddress];
     }
 
-    function getOutboundNonce(uint16 _chainID, address _srcAddress)
-        external
-        view
-        override
-        returns (uint64)
-    {
+    function getOutboundNonce(
+        uint16 _chainID,
+        address _srcAddress
+    ) external view override returns (uint64) {
         return outboundNonce[_chainID][_srcAddress];
     }
 
     // simulates the relayer pushing through the rest of the msgs that got delayed due to the stored payload
-    function _clearMsgQue(uint16 _srcChainId, bytes calldata _srcAddress)
-        internal
-    {
+    function _clearMsgQue(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) internal {
         QueuedPayload[] storage msgs = msgsToDeliver[_srcChainId][_srcAddress];
 
         // warning, might run into gas issues trying to forward through a bunch of queued msgs
@@ -337,10 +328,10 @@ contract LZEndpointMock is ILayerZeroEndpoint {
         }
     }
 
-    function forceResumeReceive(uint16 _srcChainId, bytes calldata _srcAddress)
-        external
-        override
-    {
+    function forceResumeReceive(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) external override {
         StoredPayload storage sp = storedPayload[_srcChainId][_srcAddress];
         // revert if no messages are cached. safeguard malicious UA behaviour
         require(sp.payloadHash != bytes32(0), "LayerZero: no stored payload");
@@ -387,12 +378,10 @@ contract LZEndpointMock is ILayerZeroEndpoint {
         emit PayloadCleared(_srcChainId, _srcAddress, nonce, dstAddress);
     }
 
-    function hasStoredPayload(uint16 _srcChainId, bytes calldata _srcAddress)
-        external
-        view
-        override
-        returns (bool)
-    {
+    function hasStoredPayload(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) external view override returns (bool) {
         StoredPayload storage sp = storedPayload[_srcChainId][_srcAddress];
         return sp.payloadHash != bytes32(0);
     }
@@ -405,21 +394,15 @@ contract LZEndpointMock is ILayerZeroEndpoint {
         return false;
     }
 
-    function getSendLibraryAddress(address)
-        external
-        view
-        override
-        returns (address)
-    {
+    function getSendLibraryAddress(
+        address
+    ) external view override returns (address) {
         return address(this);
     }
 
-    function getReceiveLibraryAddress(address)
-        external
-        view
-        override
-        returns (address)
-    {
+    function getReceiveLibraryAddress(
+        address
+    ) external view override returns (address) {
         return address(this);
     }
 }
