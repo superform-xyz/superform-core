@@ -2,7 +2,7 @@
 pragma solidity ^0.8.14;
 import "forge-std/Test.sol";
 /// Types Imports
-import {UserRequest} from "contracts/types/socketTypes.sol";
+import {UserRequest} from "contracts/types/LiquidityTypes.sol";
 
 import "./MockERC20.sol";
 

@@ -4,8 +4,8 @@ pragma solidity ^0.8.14;
 
 // Contracts
 import {Attack} from "contracts/attack/Attack.sol";
-import "contracts/types/socketTypes.sol";
-import "contracts/types/lzTypes.sol";
+import "contracts/types/LiquidityTypes.sol";
+import "contracts/types/DataTypes.sol";
 
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
@@ -425,6 +425,7 @@ contract AttackTest is BaseSetup {
         uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;
 
         stateReq = StateReq(
+            1,
             args.toChainId,
             amountsToDeposit,
             targetVaultIds,

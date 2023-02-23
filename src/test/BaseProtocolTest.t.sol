@@ -2,8 +2,8 @@
 pragma solidity ^0.8.14;
 
 // Contracts
-import "contracts/types/socketTypes.sol";
-import "contracts/types/lzTypes.sol";
+import "contracts/types/LiquidityTypes.sol";
+import "contracts/types/DataTypes.sol";
 import "forge-std/console.sol";
 
 // Test Utils

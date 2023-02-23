@@ -2,9 +2,9 @@
 pragma solidity ^0.8.14;
 import "@std/Test.sol";
 
-import "contracts/types/socketTypes.sol";
+import "contracts/types/LiquidityTypes.sol";
 
-import "contracts/types/lzTypes.sol";
+import "contracts/types/DataTypes.sol";
 
 import {MockERC20} from "../mocks/MockERC20.sol";
 
@@ -90,13 +90,13 @@ struct SetupVars {
     address lzHelper;
     address socketRouter;
     address superDestination;
-    address stateHandler;
+    address stateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address srcSuperRouter;
-    address srcStateHandler;
+    address srcStateRegistry;
     address srcSuperDestination;
-    address dstStateHandler;
+    address dstStateRegistry;
     address srcMultiTxProcessor;
 }
 

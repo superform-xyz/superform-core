@@ -44,8 +44,8 @@ contract StateRegistry is IStateRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(address defaultAdmin_, uint256 chainId_) {
-        _setupRole(DEFAULT_ADMIN_ROLE, defaultAdmin_);
+    constructor(uint256 chainId_) {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         chainId = chainId_;
     }
 
