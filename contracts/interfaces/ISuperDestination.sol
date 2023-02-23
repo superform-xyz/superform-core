@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {IERC4626} from "../interfaces/IERC4626.sol";
+
 interface ISuperDestination {
     /*///////////////////////////////////////////////////////////////
                     Events
@@ -26,14 +27,13 @@ interface ISuperDestination {
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(uint256 bridgeId, address bridgeAddress);
 
-        /*///////////////////////////////////////////////////////////////
+    /*///////////////////////////////////////////////////////////////
                         External Write Functions
-    //////////////////////////////////////////////////////////////*/ 
+    //////////////////////////////////////////////////////////////*/
 
     /// @dev allows state registry contract to send payload for processing to the destination contract.
     /// @param payload_ is the received information to be processed.
     function stateSync(bytes memory payload_) external payable;
-
 
     /// @dev allows admin to add new vaults to the destination contract.
     /// @notice only added vaults can be used to deposit/withdraw from by users.
@@ -46,9 +46,7 @@ interface ISuperDestination {
 
     /// @dev adds the gas overrides for layerzero.
     /// @param param_    represents adapterParams V2.0 of layerzero
-    function updateSafeGasParam(
-        bytes memory param_
-    ) external;
+    function updateSafeGasParam(bytes memory param_) external;
 
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @param bridgeId_         represents the bridge unqiue identifier.
@@ -69,11 +67,8 @@ interface ISuperDestination {
         LiqRequest calldata liqData_,
         uint256[] memory vaultIds_,
         uint256[] memory amounts_
-    )
-        external
-        payable
-        returns (uint256[] memory dstAmounts);
-    
+    ) external payable returns (uint256[] memory dstAmounts);
+
     /// @dev PREVILAGED router ONLY FUNCTION.
     /// @dev process withdrawal of collateral from a vault
     /// @param user_     represents address of the depositing user.
@@ -85,10 +80,7 @@ interface ISuperDestination {
         uint256[] memory vaultIds_,
         uint256[] memory amounts_,
         LiqRequest memory liqData_
-    )
-        external
-        payable
-        returns (uint256[] memory dstAmounts);
+    ) external payable returns (uint256[] memory dstAmounts);
 
     /*///////////////////////////////////////////////////////////////
                             ERC4626 View Functions

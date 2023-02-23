@@ -88,6 +88,7 @@ struct SetupVars {
     uint256 fork;
     address lzEndpoint;
     address lzHelper;
+    address lzImplementation;
     address socketRouter;
     address superDestination;
     address stateRegistry;
@@ -95,6 +96,8 @@ struct SetupVars {
     address vault;
     address srcSuperRouter;
     address srcStateRegistry;
+    address srcLzImplementation;
+    address dstLzImplementation;
     address srcSuperDestination;
     address dstStateRegistry;
     address srcMultiTxProcessor;

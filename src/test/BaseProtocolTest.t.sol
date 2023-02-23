@@ -82,17 +82,17 @@ contract BaseProtocolTest is BaseSetup {
             }),
             /// FTM=>BSC: user depositing to a vault on BSC from Fantom with MultiTx
             TestAction({
-               action: Actions.Deposit,
-               actionType: 0,
-               actionKind: LiquidityChange.Full,
-               CHAIN_0: FTM,
-               CHAIN_1: BSC,
-               user: users[0],
-               testType: TestType.Pass,
-               revertString: "",
-               maxSlippage: 1000, // 10%,
-               slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
-               multiTx: true
+                action: Actions.Deposit,
+                actionType: 0,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: FTM,
+                CHAIN_1: BSC,
+                user: users[0],
+                testType: TestType.Pass,
+                revertString: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
+                multiTx: true
             }),
             /// BSC=>FTM: multiple LiqReq/StateReq for multi-deposit
             /// BSC=>FTM: user depositing to a vault on Fantom from BSC

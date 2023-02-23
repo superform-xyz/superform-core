@@ -10,10 +10,10 @@ interface ISuperRouter {
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
-    
+
     /// @dev is emitted when a cross-chain transaction is initiated.
     event Initiated(uint256 txId, address fromToken, uint256 fromAmount);
-    
+
     /// @dev is emitted when a cross-chain transaction is completed.
     event Completed(uint256 txId);
 

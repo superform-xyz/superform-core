@@ -70,12 +70,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
-    
+
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @dev socket.tech fails without a native receive function.
     receive() external payable {}
 
-     /// @dev allows users to mint vault tokens and receive vault positions in return.
+    /// @dev allows users to mint vault tokens and receive vault positions in return.
     /// @param liqData_      represents the data required to move tokens from user wallet to destination contract.
     /// @param stateData_    represents the state information including destination vault ids and amounts to be deposited to such vaults.
     /// note: Just use single type not arr and delegate to SuperFormRouter?
@@ -207,13 +207,17 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /*///////////////////////////////////////////////////////////////
                             Read Only Functions
     //////////////////////////////////////////////////////////////*/
-    
+
     /// @dev returns the off-chain metadata URI for each ERC1155 super position.
     /// @param id_ is the unique identifier of the ERC1155 super position aka the vault id.
     /// @return string pointing to the off-chain metadata of the 1155 super position.
-    function tokenURI(uint256 id_) public view override returns (string memory) {
+    function tokenURI(
+        uint256 id_
+    ) public view override returns (string memory) {
         return
-            string(abi.encodePacked(dynamicURI, Strings.toString(id_), ".json"));
+            string(
+                abi.encodePacked(dynamicURI, Strings.toString(id_), ".json")
+            );
     }
 
     /* ================ Internal Functions =================== */

@@ -91,7 +91,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
             revert INVALID_BRIDGE_ID();
         }
 
-        bridgeImpl.dipatchPayload(dstChainId_, message_, extraData_);
+        bridgeImpl.dipatchPayload{value:msg.value}(dstChainId_, message_, extraData_);
     }
 
     /// @dev allows state registry to receive messages from bridge implementations.

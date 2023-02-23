@@ -38,7 +38,11 @@ abstract contract IERC4626 is ERC20 {
 
     /// @notice Total amount of the underlying asset that
     /// is "managed" by Vault.
-    function totalassets_() external view virtual returns (uint256 totalassets_);
+    function totalassets_()
+        external
+        view
+        virtual
+        returns (uint256 totalassets_);
 
     /*////////////////////////////////////////////////////////
                       Deposit/Withdrawal Logic

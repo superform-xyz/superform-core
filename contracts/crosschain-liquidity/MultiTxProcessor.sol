@@ -15,7 +15,7 @@ contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
     //////////////////////////////////////////////////////////////*/
     bytes32 public constant SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
 
-     /*///////////////////////////////////////////////////////////////
+    /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
     /// @dev maps all the bridges to their address.
@@ -32,7 +32,6 @@ contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @dev socket.tech fails without a native receive function.
     receive() external payable {}
-
 
     function setBridgeAddress(
         uint8[] memory bridgeId_,
@@ -73,17 +72,16 @@ contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
         }
     }
 
-
     /*///////////////////////////////////////////////////////////////
                             Developmental Functions
     //////////////////////////////////////////////////////////////*/
     /// @dev PREVILAGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function withdrawToken(address _tokenContract, uint256 _amount)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function withdrawToken(
+        address _tokenContract,
+        uint256 _amount
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         IERC20 tokenContract = IERC20(_tokenContract);
 
         /// note: transfer the token from address of this contract
@@ -93,10 +91,9 @@ contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
 
     /// @dev PREVILAGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function withdrawNativeToken(uint256 _amount)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function withdrawNativeToken(
+        uint256 _amount
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         payable(msg.sender).transfer(_amount);
     }
 }

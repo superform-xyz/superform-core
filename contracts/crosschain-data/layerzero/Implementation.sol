@@ -64,6 +64,12 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
         );
     }
 
+    /// @notice to add access based controls over here
+    function setChainId(uint256 superChainId_, uint16 ambChainId_) external {
+        ambChainId[superChainId_] = ambChainId_;
+        superChainId[ambChainId_] = superChainId_;
+    }
+
     /*///////////////////////////////////////////////////////////////
                     Internal Functions
     //////////////////////////////////////////////////////////////*/

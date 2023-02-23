@@ -21,6 +21,8 @@ import {SuperRouter} from "contracts/SuperRouter.sol";
 import {SuperDestination} from "contracts/SuperDestination.sol";
 import {MultiTxProcessor} from "contracts/crosschain-liquidity/MultiTxProcessor.sol";
 
+import {LayerzeroImplementation} from "contracts/crosschain-data/layerzero/Implementation.sol";
+
 /// @dev local test imports
 import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
@@ -41,13 +43,14 @@ abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
-    
+
     bytes32 public constant SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
     bytes32 public constant CORE_CONTRACTS_ROLE =
         keccak256("CORE_CONTRACTS_ROLE");
-    bytes32 public constant PROCESSOR_ROLE =
-        keccak256("PROCESSOR_ROLE");
-
+    bytes32 public constant IMPLEMENTATION_CONTRACTS_ROLE =
+        keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
+    bytes32 public constant PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
+    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
 
     /// @dev one vault per request at the moment - do not change for now
     uint256 internal constant allowedNumberOfVaultsPerRequest = 1;
@@ -238,11 +241,11 @@ abstract contract BaseSetup is DSTest, Test {
                     PAYLOAD_ID[action.CHAIN_1]++;
                 }
                 if (action.testType == TestType.Pass) {
-                    if(action.multiTx) {
+                    if (action.multiTx) {
                         _processMultiTx(
-                          action.CHAIN_1,
-                          vars.underlyingSrcToken[i][0],    /// @dev should be made to support multiple tokens
-                          vars.amounts[i][0]                /// @dev should be made to support multiple tokens
+                            action.CHAIN_1,
+                            vars.underlyingSrcToken[i][0], /// @dev should be made to support multiple tokens
+                            vars.amounts[i][0] /// @dev should be made to support multiple tokens
                         );
                     }
 
@@ -477,9 +480,21 @@ abstract contract BaseSetup is DSTest, Test {
                 .lzHelper;
 
             /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
-            vars.stateRegistry = address(new StateRegistry(uint256(chainIds[i])));
+            vars.stateRegistry = address(
+                new StateRegistry(uint256(chainIds[i]))
+            );
             contracts[vars.chainId][bytes32(bytes("StateRegistry"))] = vars
                 .stateRegistry;
+
+            /// @dev 2.1 - deployed Layerzero Implementation
+            vars.lzImplementation = address(
+                new LayerzeroImplementation(
+                    lzEndpoints[i],
+                    IStateRegistry(vars.stateRegistry)
+                )
+            );
+            contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
+                .lzImplementation;
 
             /// @dev 3- deploy SocketRouterMockFork
             vars.socketRouter = address(new SocketRouterMockFork());
@@ -544,9 +559,9 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev 8 - Deploy MultiTx Processor
-            contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = address(
-                new MultiTxProcessor()
-            );
+            contracts[vars.chainId][
+                bytes32(bytes("MultiTxProcessor"))
+            ] = address(new MultiTxProcessor());
 
             /// @dev 9 - Deploy SWAP token with no associated vault with 18 decimals
             contracts[vars.chainId][bytes32(bytes("Swap"))] = address(
@@ -560,6 +575,7 @@ abstract contract BaseSetup is DSTest, Test {
             vm.selectFork(vars.fork);
 
             vars.srcStateRegistry = getContract(vars.chainId, "StateRegistry");
+            vars.srcLzImplementation = getContract(vars.chainId, "LzImplementation");
             vars.srcSuperRouter = getContract(vars.chainId, "SuperRouter");
             vars.srcSuperDestination = getContract(
                 vars.chainId,
@@ -591,30 +607,50 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.srcSuperDestination
             );
             StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+                IMPLEMENTATION_CONTRACTS_ROLE,
+                vars.lzImplementation
+            );
+            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
                 PROCESSOR_ROLE,
                 deployer
             );
+            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+                UPDATER_ROLE,
+                deployer
+            );
+
             MultiTxProcessor(payable(vars.srcMultiTxProcessor)).grantRole(
                 SWAPPER_ROLE,
                 deployer
             );
 
-            /// @dev Set all trusted remotes for each chain
+            /// @dev configures lzImplementation to state registry
+            StateRegistry(payable(vars.srcStateRegistry)).configureBridge(
+                1,
+                vars.lzImplementation
+            );
+
+            /// @dev Set all trusted remotes for each chain & configure amb chains ids
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (j != i) {
                     vars.dstChainId = chainIds[j];
-                    vars.dstStateRegistry = getContract(
+                    vars.dstLzImplementation = getContract(
                         vars.dstChainId,
-                        "StateRegistry"
+                        "LzImplementation"
                     );
-                    // StateRegistry(payable(vars.srcStateRegistry))
-                    //     .setTrustedRemote(
-                    //         vars.dstChainId,
-                    //         abi.encodePacked(
-                    //             vars.srcStateRegistry,
-                    //             vars.dstStateRegistry
-                    //         )
-                    //     );
+                    LayerzeroImplementation(payable(vars.srcLzImplementation))
+                        .setTrustedRemote(
+                            vars.dstChainId,
+                            abi.encodePacked(
+                                vars.srcLzImplementation,
+                                vars.dstLzImplementation
+                            )
+                        );
+                    LayerzeroImplementation(payable(vars.srcLzImplementation))
+                        .setChainId(
+                            uint256(vars.dstChainId),
+                            vars.dstChainId
+                        );
                 }
             }
 
@@ -802,7 +838,9 @@ abstract contract BaseSetup is DSTest, Test {
         bytes memory socketTxData = abi.encodeWithSignature(
             "mockSocketTransfer(address,address,address,uint256,uint256)",
             from,
-            args.multiTx ? getContract(args.toChainId, "MultiTxProcessor") : args.toDst,
+            args.multiTx
+                ? getContract(args.toChainId, "MultiTxProcessor")
+                : args.toDst,
             args.underlyingToken[0], /// @dev - needs fix because it should have an array of underlying like state req
             args.amounts[0], /// @dev - 1 amount is sent, not testing sum of amounts (different vaults)
             FORKS[args.toChainId]
@@ -867,7 +905,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;
 
         stateReq = StateReq(
-            1, 
+            1,
             args.toChainId,
             amountsToWithdraw,
             args.targetVaultIds,
@@ -992,7 +1030,11 @@ abstract contract BaseSetup is DSTest, Test {
         return true;
     }
 
-    function _processMultiTx(uint16 targetChainId_, address underlyingToken_, uint256 amount_) internal {
+    function _processMultiTx(
+        uint16 targetChainId_,
+        address underlyingToken_,
+        uint256 amount_
+    ) internal {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
 
@@ -1008,8 +1050,9 @@ abstract contract BaseSetup is DSTest, Test {
             FORKS[targetChainId_]
         );
 
-        MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor")))
-            .processTx(
+        MultiTxProcessor(
+            payable(getContract(targetChainId_, "MultiTxProcessor"))
+        ).processTx(
                 bridgeIds[0],
                 socketTxData,
                 underlyingToken_,

@@ -15,7 +15,11 @@ import {ISuperDestination} from "./interfaces/ISuperDestination.sol";
 /// @dev Deposits/Withdraw users funds from an input valid vault.
 /// extends Socket's Liquidity Handler.
 /// @notice access controlled is expected to be removed due to contract sizing.
-contract SuperDestination is ISuperDestination, AccessControl, LiquidityHandler {
+contract SuperDestination is
+    ISuperDestination,
+    AccessControl,
+    LiquidityHandler
+{
     using SafeERC20 for IERC20;
 
     /*///////////////////////////////////////////////////////////////
@@ -28,13 +32,13 @@ contract SuperDestination is ISuperDestination, AccessControl, LiquidityHandler 
     //////////////////////////////////////////////////////////////*/
 
     /// @notice state variable are all declared public to avoid creating functions to expose.
-    
+
     /// @dev stateRegistry points to the state handler interface deployed in the respective chain.
     IStateRegistry public stateRegistry;
 
     /// @dev safeGasParam is used while sending layerzero message from destination to router.
     bytes public safeGasParam;
-    
+
     /// @dev chainId represents the layerzero chain id of the specific chain.
     uint256 public chainId;
 
@@ -46,8 +50,6 @@ contract SuperDestination is ISuperDestination, AccessControl, LiquidityHandler 
 
     /// @dev maps a vault id to its address.
     mapping(uint256 => IERC4626) public vault;
-
-
 
     /// @notice deploy stateRegistry before SuperDestination
     /// @param chainId_              Layerzero chain id
@@ -61,7 +63,7 @@ contract SuperDestination is ISuperDestination, AccessControl, LiquidityHandler 
 
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
-    //////////////////////////////////////////////////////////////*/    
+    //////////////////////////////////////////////////////////////*/
     receive() external payable {}
 
     /// @dev handles the state when received from the source chain.
@@ -299,7 +301,9 @@ contract SuperDestination is ISuperDestination, AccessControl, LiquidityHandler 
 
     /// @dev PREVILAGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function withdrawNativeToken(uint256 _amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawNativeToken(
+        uint256 _amount
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         payable(msg.sender).transfer(_amount);
     }
 
@@ -347,7 +351,7 @@ contract SuperDestination is ISuperDestination, AccessControl, LiquidityHandler 
     /*///////////////////////////////////////////////////////////////
                             Internal Functions
     //////////////////////////////////////////////////////////////*/
-    
+
     /// @dev process valid deposit data and deposit collateral.
     /// @dev What if vault.asset() isn't the same as bridged token?
     /// @param data_     represents state data from router of another chain

