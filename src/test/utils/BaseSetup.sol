@@ -497,7 +497,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
             vars.stateRegistry = address(
-                new StateRegistry(uint256(chainIds[i]))
+                new StateRegistry(vars.chainId)
             );
             contracts[vars.chainId][bytes32(bytes("StateRegistry"))] = vars
                 .stateRegistry;
@@ -652,7 +652,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev configures lzImplementation to state registry
             StateRegistry(payable(vars.srcStateRegistry)).configureBridge(
-                1,
+                ambBridgeIds[0],
                 vars.lzImplementation
             );
 
@@ -840,7 +840,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;
 
         stateReq = StateReq(
-            1,
+            ambBridgeIds[0],
             args.toChainId,
             args.amounts,
             args.targetVaultIds,
