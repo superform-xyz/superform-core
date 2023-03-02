@@ -1,19 +1,17 @@
 [profile.default]
-solc-version = "0.8.18"
+solc-version = "0.8.19"
 gas_reports = ["SuperRouter", "SuperDestination", "MultiTxProcessor"]
 libraries = []
 optimizer = true
 optimizer_runs = 200
 remappings = [
   '@openzeppelin=lib/openzeppelin-contracts/',
-  '@rari-capital=lib/',
   '@pigeon=lib/pigeon/src/',
   '@ds-test=lib/ds-test/src/',
   '@std=lib/forge-std/src/',
-  'contracts/=contracts/'
+  '@solmate=lib/solmate/src/'
 ]
-src = 'contracts'
 test = 'src/test'
 verbosity = 0
 ffi = true
-libs = ["node_modules", "lib"]
+libs = ["lib"]

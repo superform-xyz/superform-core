@@ -6,23 +6,22 @@ import "@std/Test.sol";
 import "@ds-test/test.sol";
 import "forge-std/console.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
-import {FixedPointMathLib} from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
+import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @dev src imports
 
-import {LZEndpointMock} from "contracts/mocks/LzEndpointMock.sol";
-import {VaultMock} from "contracts/mocks/VaultMock.sol";
-import {IStateRegistry} from "contracts/interfaces/IStateRegistry.sol";
-import {StateRegistry} from "contracts/crosschain-data/StateRegistry.sol";
-import {ISuperRouter} from "contracts/interfaces/ISuperRouter.sol";
-import {ISuperDestination} from "contracts/interfaces/ISuperDestination.sol";
-import {IERC4626} from "contracts/interfaces/IERC4626.sol";
-import {SuperRouter} from "contracts/SuperRouter.sol";
-import {SuperDestination} from "contracts/SuperDestination.sol";
-import {MultiTxProcessor} from "contracts/crosschain-liquidity/MultiTxProcessor.sol";
-
-import {LayerzeroImplementation} from "contracts/crosschain-data/layerzero/Implementation.sol";
+import {LZEndpointMock} from "../../mocks/LzEndpointMock.sol";
+import {VaultMock} from "../../mocks/VaultMock.sol";
+import {IStateRegistry} from "../../interfaces/IStateRegistry.sol";
+import {StateRegistry} from "../../crosschain-data/StateRegistry.sol";
+import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
+import {ISuperDestination} from "../../interfaces/ISuperDestination.sol";
+import {IERC4626} from "../../interfaces/IERC4626.sol";
+import {SuperRouter} from "../../SuperRouter.sol";
+import {SuperDestination} from "../../SuperDestination.sol";
+import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
+import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 
 /// @dev local test imports
 import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
@@ -169,10 +168,10 @@ abstract contract BaseSetup is DSTest, Test {
         _fundUnderlyingTokens(100);
     }
 
-    function deposit(
-        TestAction memory action,
-        ActionLocalVars memory vars
-    ) public returns (bool) {
+    function deposit(TestAction memory action, ActionLocalVars memory vars)
+        public
+        returns (bool)
+    {
         TestAssertionVars memory aV;
         aV.lenRequests = vars.amounts.length;
 
@@ -237,7 +236,7 @@ abstract contract BaseSetup is DSTest, Test {
                 action.CHAIN_1,
                 action.action,
                 action.testType,
-                action.revertString,
+                action.revertError,
                 action.multiTx
             )
         );
@@ -262,14 +261,15 @@ abstract contract BaseSetup is DSTest, Test {
                         action.slippage,
                         action.CHAIN_1,
                         action.testType,
-                        action.revertString
+                        action.revertError,
+                        action.revertRole
                     );
                     vm.recordLogs();
                     _processPayload(
                         PAYLOAD_ID[action.CHAIN_1],
                         action.CHAIN_1,
                         action.testType,
-                        action.revertString
+                        action.revertError
                     );
 
                     vars.logs = vm.getRecordedLogs();
@@ -288,14 +288,14 @@ abstract contract BaseSetup is DSTest, Test {
                         PAYLOAD_ID[action.CHAIN_0],
                         action.CHAIN_0,
                         action.testType,
-                        action.revertString
+                        action.revertError
                     );
                 } else if (action.testType == TestType.RevertProcessPayload) {
                     aV.success = _processPayload(
                         PAYLOAD_ID[action.CHAIN_1],
                         action.CHAIN_1,
                         action.testType,
-                        action.revertString
+                        action.revertError
                     );
                     if (!aV.success) {
                         return false;
@@ -310,7 +310,8 @@ abstract contract BaseSetup is DSTest, Test {
                         action.slippage,
                         action.CHAIN_1,
                         action.testType,
-                        action.revertString
+                        action.revertError,
+                        action.revertRole
                     );
                     if (!aV.success) {
                         return false;
@@ -346,10 +347,10 @@ abstract contract BaseSetup is DSTest, Test {
         return true;
     }
 
-    function withdraw(
-        TestAction memory action,
-        ActionLocalVars memory vars
-    ) public returns (bool) {
+    function withdraw(TestAction memory action, ActionLocalVars memory vars)
+        public
+        returns (bool)
+    {
         TestAssertionVars memory aV;
 
         aV.lenRequests = vars.amounts.length;
@@ -414,7 +415,7 @@ abstract contract BaseSetup is DSTest, Test {
                 action.CHAIN_1,
                 action.action,
                 action.testType,
-                action.revertString,
+                action.revertError,
                 action.multiTx
             )
         );
@@ -426,7 +427,7 @@ abstract contract BaseSetup is DSTest, Test {
                     PAYLOAD_ID[action.CHAIN_1],
                     action.CHAIN_1,
                     action.testType,
-                    action.revertString
+                    action.revertError
                 );
             }
         }
@@ -458,21 +459,26 @@ abstract contract BaseSetup is DSTest, Test {
         return true;
     }
 
-    function getContract(
-        uint16 chainId,
-        string memory _name
-    ) public view returns (address) {
+    function getContract(uint16 chainId, string memory _name)
+        public
+        view
+        returns (address)
+    {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
-    function getAccessControlErrorMsg(address _addr, bytes32 _role) public pure returns (bytes memory errorMsg) {
+    function getAccessControlErrorMsg(address _addr, bytes32 _role)
+        public
+        pure
+        returns (bytes memory errorMsg)
+    {
         errorMsg = abi.encodePacked(
             "AccessControl: account ",
             Strings.toHexString(uint160(_addr), 20),
             " is missing role ",
             Strings.toHexString(uint256(_role), 32)
         );
-    }   
+    }
 
     /*//////////////////////////////////////////////////////////////
                     INTERNAL HELPERS: DEPLOY
@@ -496,9 +502,7 @@ abstract contract BaseSetup is DSTest, Test {
                 .lzHelper;
 
             /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
-            vars.stateRegistry = address(
-                new StateRegistry(vars.chainId)
-            );
+            vars.stateRegistry = address(new StateRegistry(vars.chainId));
             contracts[vars.chainId][bytes32(bytes("StateRegistry"))] = vars
                 .stateRegistry;
 
@@ -591,7 +595,10 @@ abstract contract BaseSetup is DSTest, Test {
             vm.selectFork(vars.fork);
 
             vars.srcStateRegistry = getContract(vars.chainId, "StateRegistry");
-            vars.srcLzImplementation = getContract(vars.chainId, "LzImplementation");
+            vars.srcLzImplementation = getContract(
+                vars.chainId,
+                "LzImplementation"
+            );
             vars.srcSuperRouter = getContract(vars.chainId, "SuperRouter");
             vars.srcSuperDestination = getContract(
                 vars.chainId,
@@ -673,10 +680,7 @@ abstract contract BaseSetup is DSTest, Test {
                             )
                         );
                     LayerzeroImplementation(payable(vars.srcLzImplementation))
-                        .setChainId(
-                            uint256(vars.dstChainId),
-                            vars.dstChainId
-                        );
+                        .setChainId(uint256(vars.dstChainId), vars.dstChainId);
                 }
             }
 
@@ -817,10 +821,10 @@ abstract contract BaseSetup is DSTest, Test {
         vm.selectFork(vars.initialFork);
     }
 
-    function _buildDepositCallData(
-        BuildDepositCallDataArgs memory args
-    ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
-
+    function _buildDepositCallData(BuildDepositCallDataArgs memory args)
+        internal
+        returns (StateReq memory stateReq, LiqRequest memory liqReq)
+    {
         bytes memory adapterParam;
         /*
             adapterParam = abi.encodePacked(version, gasLimit);
@@ -897,9 +901,10 @@ abstract contract BaseSetup is DSTest, Test {
         vm.selectFork(initialFork);
     }
 
-    function _buildWithdrawCallData(
-        BuildWithdrawCallDataArgs memory args
-    ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
+    function _buildWithdrawCallData(BuildWithdrawCallDataArgs memory args)
+        internal
+        returns (StateReq memory stateReq, LiqRequest memory liqReq)
+    {
         /// @dev set to empty bytes for now
         bytes memory adapterParam;
 
@@ -974,7 +979,8 @@ abstract contract BaseSetup is DSTest, Test {
         int256 slippage,
         uint16 targetChainId_,
         TestType testType,
-        bytes4 revertString
+        bytes4 revertError,
+        bytes32 revertRole
     ) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
 
@@ -1004,7 +1010,7 @@ abstract contract BaseSetup is DSTest, Test {
         } else if (testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
-            vm.expectRevert(revertString); /// @dev removed string here: come to this later
+            vm.expectRevert(revertError); /// @dev removed string here: come to this later
 
             StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .updatePayload(payloadId_, finalAmounts);
@@ -1012,8 +1018,11 @@ abstract contract BaseSetup is DSTest, Test {
             return false;
         } else if (testType == TestType.RevertUpdateStateRBAC) {
             vm.prank(users[2]);
-
-            vm.expectRevert(revertString);
+            bytes memory errorMsg = getAccessControlErrorMsg(
+                users[2],
+                revertRole
+            );
+            vm.expectRevert(errorMsg);
 
             StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .updatePayload(payloadId_, finalAmounts);
@@ -1030,7 +1039,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 payloadId_,
         uint16 targetChainId_,
         TestType testType,
-        bytes4 revertString
+        bytes4 revertError
     ) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
 
@@ -1105,13 +1114,13 @@ abstract contract BaseSetup is DSTest, Test {
 
     function _preDeploymentSetup() private {
         mapping(uint16 => uint256) storage forks = FORKS;
-        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL);
-        forks[BSC] = vm.createFork(BSC_RPC_URL);
-        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL);
-        forks[POLY] = vm.createFork(POLYGON_RPC_URL);
-        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL);
-        forks[OP] = vm.createFork(OPTIMISM_RPC_URL);
-        forks[FTM] = vm.createFork(FANTOM_RPC_URL);
+        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 16742187);
+        forks[BSC] = vm.createFork(BSC_RPC_URL, 26121321);
+        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 26933006);
+        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 39887036);
+        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 66125184);
+        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 78219242);
+        forks[FTM] = vm.createFork(FANTOM_RPC_URL, 56806404);
 
         mapping(uint16 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
@@ -1174,9 +1183,10 @@ abstract contract BaseSetup is DSTest, Test {
         }
     }
 
-    function _getPriceMultiplier(
-        uint16 targetChainId_
-    ) internal returns (uint256) {
+    function _getPriceMultiplier(uint16 targetChainId_)
+        internal
+        returns (uint256)
+    {
         uint256 multiplier;
 
         if (
@@ -1207,9 +1217,11 @@ abstract contract BaseSetup is DSTest, Test {
         return multiplier;
     }
 
-    function _getLatestPrice(
-        address priceFeed_
-    ) internal view returns (int256) {
+    function _getLatestPrice(address priceFeed_)
+        internal
+        view
+        returns (int256)
+    {
         // prettier-ignore
         (
             /* uint80 roundID */,
