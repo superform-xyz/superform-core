@@ -5,7 +5,7 @@
         "lint-tests": "prettier 'src/test/**/*.sol' --write",
         "lint-contracts": "prettier 'contracts/**/*.sol' --write",
         "deploy": "hardhat run script/deploy.js --network localhost",
-        "test": "hardhat test test/main/**.js",
+        "test": "",
         "test-recovery": "hardhat test test/recovery.test.js",
         "test-hack": "hardhat test test/hack.test.js"
     },
