@@ -7,6 +7,7 @@ import {IBridgeImpl} from "../interfaces/IBridgeImpl.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ISuperDestination} from "../interfaces/ISuperDestination.sol";
 import {StateData, PayloadState, TransactionType, CallbackType, InitData, ReturnData} from "../types/DataTypes.sol";
+import "hardhat/console.sol";
 
 /// @title Cross-Chain Messaging Bridge Aggregator
 /// @author Zeropoint Labs
@@ -71,6 +72,11 @@ contract StateRegistry is IStateRegistry, AccessControl {
 
         bridge[bridgeId_] = IBridgeImpl(bridgeImpl_);
         emit BridgeConfigured(bridgeId_, bridgeImpl_);
+    }
+
+    function setHandlerController(address routerContract_, address destinationContract_) external {
+        routerContract = routerContract_;
+        destinationContract = destinationContract_;
     }
 
     /// @dev allows core contracts to send data to a destination chain.

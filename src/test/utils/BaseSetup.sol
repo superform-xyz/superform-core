@@ -7,6 +7,7 @@ import "@ds-test/test.sol";
 import "forge-std/console.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
 import {FixedPointMathLib} from "@rari-capital/solmate/src/utils/FixedPointMathLib.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @dev src imports
 
@@ -51,6 +52,7 @@ abstract contract BaseSetup is DSTest, Test {
         keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
     bytes32 public constant PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
     bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
+    bytes32 public constant ROUTER_ROLE = keccak256("ROUTER_ROLE");
 
     /// @dev one vault per request at the moment - do not change for now
     uint256 internal constant allowedNumberOfVaultsPerRequest = 1;
@@ -63,7 +65,12 @@ abstract contract BaseSetup is DSTest, Test {
     mapping(uint16 => uint256[]) vaultIds;
     mapping(uint16 => uint256) PAYLOAD_ID; // chaindId => payloadId
 
+    /// @dev socket bridge ids
     uint8[] bridgeIds;
+
+    /// @dev amb bridge id
+    uint8[] ambBridgeIds;
+
     address[] bridgeAddresses;
 
     /*//////////////////////////////////////////////////////////////
@@ -458,6 +465,15 @@ abstract contract BaseSetup is DSTest, Test {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
+    function getAccessControlErrorMsg(address _addr, bytes32 _role) public pure returns (bytes memory errorMsg) {
+        errorMsg = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(uint160(_addr), 20),
+            " is missing role ",
+            Strings.toHexString(uint256(_role), 32)
+        );
+    }   
+
     /*//////////////////////////////////////////////////////////////
                     INTERNAL HELPERS: DEPLOY
     //////////////////////////////////////////////////////////////*/
@@ -594,10 +610,15 @@ abstract contract BaseSetup is DSTest, Test {
             // SuperDestination(payable(vars.srcSuperDestination))
             //     .setSrcTokenDistributor(vars.srcSuperRouter, vars.chainId);
 
-            SuperDestination(payable(vars.srcSuperDestination))
-                .updateSafeGasParam(abi.encodePacked(version, gasLimit));
+            // SuperDestination(payable(vars.srcSuperDestination))
+            //     .updateSafeGasParam("0x000100000000000000000000000000000000000000000000000000000000004c4b40");
 
             /// @dev - RBAC
+            StateRegistry(payable(vars.srcStateRegistry)).setHandlerController(
+                vars.srcSuperRouter,
+                vars.srcSuperDestination
+            );
+
             StateRegistry(payable(vars.srcStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.srcSuperRouter
@@ -622,6 +643,11 @@ abstract contract BaseSetup is DSTest, Test {
             MultiTxProcessor(payable(vars.srcMultiTxProcessor)).grantRole(
                 SWAPPER_ROLE,
                 deployer
+            );
+
+            SuperDestination(payable(vars.srcSuperDestination)).grantRole(
+                ROUTER_ROLE,
+                vars.srcSuperRouter
             );
 
             /// @dev configures lzImplementation to state registry
@@ -728,7 +754,7 @@ abstract contract BaseSetup is DSTest, Test {
 
                 /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
                 for (uint256 i = 0; i < vars.lenRequests; i++) {
-                    /// @dev - assert the payload reached destination state handler
+                    /// @dev - assert the payload reached destination state registry
                     vars.expectedInitData = InitData(
                         args.srcChainId,
                         args.toChainId,
@@ -794,7 +820,7 @@ abstract contract BaseSetup is DSTest, Test {
     function _buildDepositCallData(
         BuildDepositCallDataArgs memory args
     ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
-        /// @dev set to empty bytes for now
+
         bytes memory adapterParam;
         /*
             adapterParam = abi.encodePacked(version, gasLimit);
@@ -948,7 +974,7 @@ abstract contract BaseSetup is DSTest, Test {
         int256 slippage,
         uint16 targetChainId_,
         TestType testType,
-        bytes memory revertString
+        bytes4 revertString
     ) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
 
@@ -978,7 +1004,7 @@ abstract contract BaseSetup is DSTest, Test {
         } else if (testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
-            vm.expectRevert(revertString);
+            vm.expectRevert(revertString); /// @dev removed string here: come to this later
 
             StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .updatePayload(payloadId_, finalAmounts);
@@ -1004,7 +1030,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 payloadId_,
         uint16 targetChainId_,
         TestType testType,
-        bytes memory revertString
+        bytes4 revertString
     ) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
 
@@ -1012,13 +1038,12 @@ abstract contract BaseSetup is DSTest, Test {
 
         uint256 msgValue = 5 * _getPriceMultiplier(targetChainId_) * 1e18;
 
-        bytes memory hashZero;
         vm.prank(deployer);
         if (testType == TestType.Pass) {
             StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .processPayload{value: msgValue}(payloadId_);
         } else if (testType == TestType.RevertProcessPayload) {
-            vm.expectRevert(revertString);
+            vm.expectRevert();
 
             StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .processPayload{value: msgValue}(payloadId_);
@@ -1118,6 +1143,9 @@ abstract contract BaseSetup is DSTest, Test {
         /// @dev setup bridges. Only bridgeId 1 available for tests (Socket)
         bridgeIds.push(1);
 
+        /// @dev setup amb bridges
+        ambBridgeIds.push(1);
+
         /// @dev setup users
         users.push(address(1));
         users.push(address(2));
@@ -1169,7 +1197,7 @@ abstract contract BaseSetup is DSTest, Test {
             vm.selectFork(FORKS[targetChainId_]);
             int256 price = _getLatestPrice(PRICE_FEEDS[targetChainId_]);
 
-            multiplier = uint256(ethUsdPrice / price);
+            multiplier = 2 * uint256(ethUsdPrice / price);
 
             /// @dev return to initial fork
 

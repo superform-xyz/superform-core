@@ -37,7 +37,7 @@ describe("Router Patch Unit Testing", () => {
             0,
         ];
 
-        return { stateReq: stateReq, LiqReq: LiqReq };
+        return { stateReq, LiqReq };
     }
 
     // Doing some setup in here
@@ -99,7 +99,7 @@ describe("Router Patch Unit Testing", () => {
             .connect(multisig)
             .grantRole(await destination.ROUTER_ROLE(), routerPatch.address);
 
-        /// 2. Adding PROCESSOR_ROLE in state handler.
+        /// 2. Adding PROCESSOR_ROLE in state registry.
         await stateHandler
             .connect(multisig)
             .grantRole(

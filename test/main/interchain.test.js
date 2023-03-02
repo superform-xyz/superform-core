@@ -98,7 +98,7 @@ describe("interchain base tests:", async() => {
 
         const LiqReq = [1, socketTxData, tokenType, socket.address, amount, 0];
 
-        return { stateReq: stateReq, LiqReq: LiqReq };
+        return { stateReq, LiqReq };
     }
 
     async function buildWithdrawCall(
@@ -126,7 +126,7 @@ describe("interchain base tests:", async() => {
         /// withdraw uses this to sent tokens
         const LiqReq = [1, socketTxData, tokenType, socket.address, tokenAmount, 0];
 
-        return { stateReq: stateReq, LiqReq: LiqReq };
+        return { stateReq, LiqReq };
     }
 
     before("deploying router and dsc", async function() {
@@ -614,7 +614,7 @@ describe("interchain base tests:", async() => {
             assert.include(
                 err.message,
                 "revert",
-                "State Handler: Slippage Out Of Bounds"
+                "State Registry: Slippage Out Of Bounds"
             );
         }
     });
@@ -654,7 +654,7 @@ describe("interchain base tests:", async() => {
         } catch (err) {
             /// should error;
             console.log(err);
-            assert.include(err.message, "revert", "State Handler: Negative Slippage");
+            assert.include(err.message, "revert", "State Registry: Negative Slippage");
         }
     });
 

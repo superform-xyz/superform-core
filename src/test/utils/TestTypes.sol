@@ -61,7 +61,7 @@ struct TestAction {
     uint16 CHAIN_1;
     address user;
     TestType testType;
-    bytes revertString;
+    bytes4 revertString;
     uint256 maxSlippage;
     int256 slippage;
     bool multiTx;
@@ -145,7 +145,7 @@ struct InternalActionArgs {
     uint16 toChainId;
     Actions action;
     TestType testType;
-    bytes revertString;
+    bytes4 revertString;
     bool multiTx;
 }
 

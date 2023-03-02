@@ -30,7 +30,7 @@ describe("Router Patch Unit Testing", () => {
         /// withdraw uses this to sent tokens
         const LiqReq = [1, "0x", ethers.constants.AddressZero, ethers.constants.AddressZero, 0, 0];
 
-        return { stateReq: stateReq, LiqReq: LiqReq };
+        return { stateReq, LiqReq };
     }
 
     // Doing some setup in here
@@ -62,7 +62,7 @@ describe("Router Patch Unit Testing", () => {
         /// 1. Adding ROUTER_ROLE in destination.
         await destination.connect(multisig).grantRole(await destination.ROUTER_ROLE(), routerPatch.address)
 
-        /// 2. Adding PROCESSOR_ROLE in state handler.
+        /// 2. Adding PROCESSOR_ROLE in state registry.
         await stateHandler.connect(multisig).grantRole(await stateHandler.PROCESSOR_CONTRACTS_ROLE(), routerPatch.address)
     })
 

@@ -33,7 +33,7 @@ contract SuperDestination is
 
     /// @notice state variable are all declared public to avoid creating functions to expose.
 
-    /// @dev stateRegistry points to the state handler interface deployed in the respective chain.
+    /// @dev stateRegistry points to the state registry interface deployed in the respective chain.
     IStateRegistry public stateRegistry;
 
     /// @dev safeGasParam is used while sending layerzero message from destination to router.
@@ -53,7 +53,7 @@ contract SuperDestination is
 
     /// @notice deploy stateRegistry before SuperDestination
     /// @param chainId_              Layerzero chain id
-    /// @param stateRegistry_         State handler address deployed
+    /// @param stateRegistry_         State Registry address deployed
     /// @dev sets caller as the admin of the contract.
     constructor(uint256 chainId_, IStateRegistry stateRegistry_) {
         chainId = chainId_;

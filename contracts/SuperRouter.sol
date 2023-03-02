@@ -54,7 +54,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @notice deploy StateRegistry and SuperDestination before SuperRouter
     /// @param chainId_              Layerzero chain id
     /// @param baseUri_              URL for external metadata of ERC1155 SuperPositions
-    /// @param stateRegistry_         State handler address deployed
+    /// @param stateRegistry_         State registry address deployed
     /// @param srcSuperDestination_  Destination address deployed on same chain
     constructor(
         uint16 chainId_,
@@ -222,7 +222,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     /* ================ Internal Functions =================== */
 
-    /// @notice validates input and call state handler & liquidity handler to move
+    /// @notice validates input and call state registry & liquidity handler to move
     /// tokens and state messages to the destination chain.
     function singleDeposit(
         LiqRequest calldata liqData_,
