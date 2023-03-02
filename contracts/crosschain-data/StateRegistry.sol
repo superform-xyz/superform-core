@@ -7,7 +7,6 @@ import {IBridgeImpl} from "../interfaces/IBridgeImpl.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ISuperDestination} from "../interfaces/ISuperDestination.sol";
 import {StateData, PayloadState, TransactionType, CallbackType, InitData, ReturnData} from "../types/DataTypes.sol";
-import "hardhat/console.sol";
 
 /// @title Cross-Chain Messaging Bridge Aggregator
 /// @author Zeropoint Labs
