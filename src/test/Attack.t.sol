@@ -3,9 +3,9 @@
 pragma solidity ^0.8.14;
 
 // Contracts
-import {Attack} from "contracts/attack/Attack.sol";
-import "contracts/types/LiquidityTypes.sol";
-import "contracts/types/DataTypes.sol";
+import {Attack} from "../attack/Attack.sol";
+import "../types/LiquidityTypes.sol";
+import "../types/DataTypes.sol";
 
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
@@ -33,7 +33,7 @@ struct TestAttackVars {
     address[] underlyings;
     uint256[] victimVaults;
     uint256[] amountsToDeposit;
-    bytes4 revertString;
+    bytes4 revertError;
     uint16 CHAIN_0;
     uint16 CHAIN_1;
     uint256 victimVault;
@@ -135,7 +135,7 @@ contract AttackTest is BaseSetup {
         vars.toDst = payable(getContract(CHAIN_1, "SuperDestination"));
         vars.action = Actions.Deposit;
         vars.testType = TestType.Pass;
-        vars.revertString = "";
+        vars.revertError = "";
 
         vars.VICTIM_VAULT = MockERC20(getContract(CHAIN_1, underlyingToken));
         vm.selectFork(FORKS[CHAIN_1]);
@@ -188,7 +188,7 @@ contract AttackTest is BaseSetup {
                     CHAIN_1,
                     vars.action,
                     vars.testType,
-                    vars.revertString,
+                    vars.revertError,
                     false
                 )
             );
@@ -212,7 +212,8 @@ contract AttackTest is BaseSetup {
                 0,
                 CHAIN_1,
                 vars.testType,
-                vars.revertString
+                vars.revertError,
+                ""
             );
 
             vm.recordLogs();
@@ -220,7 +221,7 @@ contract AttackTest is BaseSetup {
                 vars.CHAIN_1_PAYLOAD_ID,
                 CHAIN_1,
                 vars.testType,
-                vars.revertString
+                vars.revertError
             );
 
             vars.logs = vm.getRecordedLogs();
@@ -240,7 +241,7 @@ contract AttackTest is BaseSetup {
                 vars.CHAIN_0_PAYLOAD_ID,
                 CHAIN_0,
                 vars.testType,
-                vars.revertString
+                vars.revertError
             );
 
             vm.selectFork(FORKS[CHAIN_0]);
@@ -304,14 +305,15 @@ contract AttackTest is BaseSetup {
             0,
             CHAIN_1,
             vars.testType,
-            vars.revertString
+            vars.revertError,
+            ""
         );
 
         _processPayload(
             vars.CHAIN_1_PAYLOAD_ID,
             CHAIN_1,
             vars.testType,
-            vars.revertString
+            vars.revertError
         );
 
         vars.logs = vm.getRecordedLogs();
@@ -328,7 +330,7 @@ contract AttackTest is BaseSetup {
             vars.CHAIN_0_PAYLOAD_ID,
             CHAIN_0,
             vars.testType,
-            vars.revertString
+            vars.revertError
         );
         vars.sharesBalanceBeforeWithdraw = SuperRouter(vars.fromSrc).balanceOf(
             address(attackCHAIN_0),
@@ -393,7 +395,7 @@ contract AttackTest is BaseSetup {
                 FORKS[CHAIN_1],
                 vars.logs
             );
-        
+
         /// @dev Step 4 - Reentrancy
         /// @notice attack not possible due to updated way of message processing
         vars.CHAIN_1_PAYLOAD_ID++;
@@ -401,7 +403,7 @@ contract AttackTest is BaseSetup {
             vars.CHAIN_1_PAYLOAD_ID,
             CHAIN_1,
             TestType.Pass,
-            vars.revertString
+            vars.revertError
         );
 
         vm.selectFork(FORKS[CHAIN_1]);
@@ -410,9 +412,10 @@ contract AttackTest is BaseSetup {
         assertEq(VaultMock(vars.vaultMock).balanceOf(vars.toDst), 3000);
     }
 
-    function _buildWithdrawAttackCallData(
-        BuildAttackArgs memory args
-    ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
+    function _buildWithdrawAttackCallData(BuildAttackArgs memory args)
+        internal
+        returns (StateReq memory stateReq, LiqRequest memory liqReq)
+    {
         /// @dev set to empty bytes for now
         bytes memory adapterParam;
 

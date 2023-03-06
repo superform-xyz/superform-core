@@ -2,9 +2,9 @@
 pragma solidity ^0.8.14;
 import "@std/Test.sol";
 
-import "contracts/types/LiquidityTypes.sol";
+import "../../types/LiquidityTypes.sol";
 
-import "contracts/types/DataTypes.sol";
+import "../../types/DataTypes.sol";
 
 import {MockERC20} from "../mocks/MockERC20.sol";
 
@@ -61,7 +61,8 @@ struct TestAction {
     uint16 CHAIN_1;
     address user;
     TestType testType;
-    bytes4 revertString;
+    bytes4 revertError;
+    bytes32 revertRole; // temporary until errors are added to RBAC libraries
     uint256 maxSlippage;
     int256 slippage;
     bool multiTx;
@@ -145,7 +146,7 @@ struct InternalActionArgs {
     uint16 toChainId;
     Actions action;
     TestType testType;
-    bytes4 revertString;
+    bytes4 revertError;
     bool multiTx;
 }
 
@@ -171,3 +172,4 @@ error LEN_MISMATCH();
 error LEN_AMOUNTS_ZERO();
 error LEN_VAULTS_ZERO();
 error MISMATCH_TEST_TYPE();
+error MISMATCH_RBAC_TEST();
