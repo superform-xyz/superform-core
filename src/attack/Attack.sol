@@ -11,7 +11,7 @@ import {StateReq} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {StateRegistry} from "../crosschain-data/StateRegistry.sol";
 import {SuperRouter} from "../SuperRouter.sol";
-import {VaultMock} from "../mocks/VaultMock.sol";
+import {VaultMock} from "../test/mocks/VaultMock.sol";
 
 // https://solidity-by-example.org/call/
 

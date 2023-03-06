@@ -2,7 +2,7 @@
 
 ![Coverage](https://img.shields.io/badge/coverage-100-success) [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
 
-This repository contains the core protocolsmart contracts of [Superform](https://app.superform.xyz/).
+This repository contains the core protocol smart contracts of [Superform](https://app.superform.xyz/).
 
 ### Table of contents
 

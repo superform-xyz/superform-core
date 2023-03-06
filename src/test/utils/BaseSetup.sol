@@ -10,9 +10,7 @@ import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @dev src imports
-
-import {LZEndpointMock} from "../../mocks/LzEndpointMock.sol";
-import {VaultMock} from "../../mocks/VaultMock.sol";
+import {VaultMock} from "../mocks/VaultMock.sol";
 import {IStateRegistry} from "../../interfaces/IStateRegistry.sol";
 import {StateRegistry} from "../../crosschain-data/StateRegistry.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
