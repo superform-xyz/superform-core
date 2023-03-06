@@ -18,4 +18,9 @@ interface IBridgeImpl {
         bytes memory message_,
         bytes memory extraData_
     ) external payable;
+
+    /// @dev allows admin to add new chain ids in future
+    /// @param superChainId_ is the identifier of the chain within superform protocol
+    /// @param ambChainId_ is the identifier of the chain given by the AMB
+    function setChainId(uint256 superChainId_, uint16 ambChainId_) external;
 }

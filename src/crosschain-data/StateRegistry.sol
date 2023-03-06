@@ -74,12 +74,17 @@ contract StateRegistry is IStateRegistry, AccessControl {
         emit BridgeConfigured(bridgeId_, bridgeImpl_);
     }
 
-    function setHandlerController(
+    /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
+    /// @param routerContract_ is the address of the router
+    /// @param destinationContract_ is the address of the destination
+    function setCoreContracts(
         address routerContract_,
         address destinationContract_
-    ) external {
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         routerContract = routerContract_;
         destinationContract = destinationContract_;
+
+        emit CoreContractsUpdated(routerContract_, destinationContract_);
     }
 
     /// @dev allows core contracts to send data to a destination chain.

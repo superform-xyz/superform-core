@@ -45,6 +45,9 @@ interface IStateRegistry {
     /// @dev is emitted when a payload gets processed.
     event PayloadProcessed(uint256 payloadId);
 
+    /// @dev is emitted when core contracts are updated
+    event CoreContractsUpdated(address routerContract, address destinationContract);
+
     /*///////////////////////////////////////////////////////////////
                             External Functions
     //////////////////////////////////////////////////////////////*/
@@ -96,4 +99,12 @@ interface IStateRegistry {
         uint256 bridgeId_,
         bytes memory extraData_
     ) external payable;
+
+    /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
+    /// @param routerContract_ is the address of the router
+    /// @param destinationContract_ is the address of the destination
+    function setCoreContracts(
+        address routerContract_,
+        address destinationContract_
+    ) external;
 }

@@ -621,7 +621,7 @@ abstract contract BaseSetup is DSTest, Test {
             //     .updateSafeGasParam("0x000100000000000000000000000000000000000000000000000000000000004c4b40");
 
             /// @dev - RBAC
-            StateRegistry(payable(vars.srcStateRegistry)).setHandlerController(
+            StateRegistry(payable(vars.srcStateRegistry)).setCoreContracts(
                 vars.srcSuperRouter,
                 vars.srcSuperDestination
             );

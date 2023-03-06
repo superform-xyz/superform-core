@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "./NonblockingLzApp.sol";
 import {IStateRegistry} from "../../interfaces/IStateRegistry.sol";
 import {IBridgeImpl} from "../../interfaces/IBridgeImpl.sol";
-
 import {StateData, InitData, CallbackType} from "../../types/DataTypes.sol";
 
 /// @title Layerzero implementation contract
@@ -64,7 +63,10 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
     }
 
     /// @notice to add access based controls over here
-    function setChainId(uint256 superChainId_, uint16 ambChainId_) external {
+    /// @dev allows admin to add new chain ids in future
+    /// @param superChainId_ is the identifier of the chain within superform protocol
+    /// @param ambChainId_ is the identifier of the chain given by the AMB
+    function setChainId(uint256 superChainId_, uint16 ambChainId_) external override onlyOwner {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
     }
