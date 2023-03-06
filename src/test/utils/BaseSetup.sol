@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.14;
+/// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.19;
 
 /// @dev lib imports
 import "@std/Test.sol";
@@ -934,7 +934,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;
 
         stateReq = StateReq(
-            1,
+            ambBridgeIds[0],
             args.toChainId,
             amountsToWithdraw,
             args.targetVaultIds,

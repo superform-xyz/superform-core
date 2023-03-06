@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.14;
+/// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.19;
 
 // Contracts
 import "../types/LiquidityTypes.sol";
