@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.14;
+pragma solidity 0.8.19;
 import "@std/Test.sol";
 
-import "contracts/types/socketTypes.sol";
+import "../../types/LiquidityTypes.sol";
 
-import "contracts/types/lzTypes.sol";
+import "../../types/DataTypes.sol";
 
 import {MockERC20} from "../mocks/MockERC20.sol";
 
@@ -61,7 +61,8 @@ struct TestAction {
     uint16 CHAIN_1;
     address user;
     TestType testType;
-    bytes revertString;
+    bytes4 revertError;
+    bytes32 revertRole; // temporary until errors are added to RBAC libraries
     uint256 maxSlippage;
     int256 slippage;
     bool multiTx;
@@ -88,15 +89,18 @@ struct SetupVars {
     uint256 fork;
     address lzEndpoint;
     address lzHelper;
+    address lzImplementation;
     address socketRouter;
     address superDestination;
-    address stateHandler;
+    address stateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address srcSuperRouter;
-    address srcStateHandler;
+    address srcStateRegistry;
+    address srcLzImplementation;
+    address dstLzImplementation;
     address srcSuperDestination;
-    address dstStateHandler;
+    address dstStateRegistry;
     address srcMultiTxProcessor;
 }
 
@@ -142,7 +146,7 @@ struct InternalActionArgs {
     uint16 toChainId;
     Actions action;
     TestType testType;
-    bytes revertString;
+    bytes4 revertError;
     bool multiTx;
 }
 
@@ -168,3 +172,4 @@ error LEN_MISMATCH();
 error LEN_AMOUNTS_ZERO();
 error LEN_VAULTS_ZERO();
 error MISMATCH_TEST_TYPE();
+error MISMATCH_RBAC_TEST();
