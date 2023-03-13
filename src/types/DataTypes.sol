@@ -59,13 +59,14 @@ struct FormData {
 
 struct FormCommonData {
     address srcSender;
-    address[] vaults;
+    uint256[] superFormIds;
     uint256[] amounts;
     bytes liqData;
 }
 
 struct FormXChainData {
     uint256 txId;
+    uint256[] maxSlippage;
 }
 
 struct XChainActionArgs {

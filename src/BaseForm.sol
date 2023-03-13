@@ -63,6 +63,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         chainId = chainId_;
         stateRegistry = stateRegistry_;
         factory = factory_;
+        /// TODO: add tokenBank also for superRouter role for deposit and withdraw
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
@@ -135,7 +136,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         if (data.srcChainId == chainId) {
             dstAmounts = _directDepositIntoVault(
                 data.commonData,
-                data.extraData
+                data.extraFormData
             );
         } else {
             /// @dev NOTE: not returning anything YET
@@ -170,7 +171,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         if (data.srcChainId == chainId) {
             dstAmounts = _directWithdrawFromVault(
                 data.commonData,
-                data.extraData
+                data.extraFormData
             );
         } else {
             /// @dev NOTE: not returning anything YET
