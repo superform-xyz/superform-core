@@ -63,6 +63,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         chainId = chainId_;
         stateRegistry = stateRegistry_;
         factory = factory_;
+        /// TODO: add tokenBank also for superRouter role for deposit and withdraw
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 

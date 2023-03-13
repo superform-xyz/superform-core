@@ -80,8 +80,8 @@ contract SuperDestination is
         //     data.xChainData,
         //     (FormXChainData)
         // );
-        for (uint256 i = 0; i < commonData.vaults.length; i++) {
-            (address vault_,address formId_, ) = superFormFactory.getSuperForm(commonData.vaults[i]);
+        for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
+            (address vault_,address formId_, ) = superFormFactory.getSuperForm(commonData.superFormIds[i]);
             if (stateData.txType == TransactionType.DEPOSIT) {
                 if (
                     /// TODO: generalise a way to check for balance for all types of formIds, for now works for ERC4626 and ERC20's
