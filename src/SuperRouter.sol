@@ -9,7 +9,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {StateReq, StateData, TransactionType, ReturnData, CallbackType, InitData} from "./types/DataTypes.sol";
 import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
-import {ISuperDestination} from "./interfaces/ISuperDestination.sol";
+
+import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
+
+import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 
@@ -41,7 +44,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     /// @notice same chain deposits are processed in one atomic transaction flow.
     /// @dev allows to store same chain destination contract addresses.
-    ISuperDestination public immutable srcSuperDestination;
+    IBaseForm public immutable srcForm;
+
+    ISuperFormFactory public immutable factory;
 
     /// @notice history of state sent across chains are used for debugging.
     /// @dev maps all transaction data routed through the smart contract.
@@ -51,7 +56,6 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev maps all the bridges to their address.
     mapping(uint8 => address) public bridgeAddress;
 
-    /// @notice deploy StateRegistry and SuperDestination before SuperRouter
     /// @param chainId_              Layerzero chain id
     /// @param baseUri_              URL for external metadata of ERC1155 SuperPositions
     /// @param stateRegistry_         State registry address deployed
@@ -60,10 +64,11 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         uint16 chainId_,
         string memory baseUri_,
         IStateRegistry stateRegistry_,
-        ISuperDestination srcSuperDestination_
+        ISuperFormFactory factory_
     ) ERC1155(baseUri_) {
         srcSuperDestination = srcSuperDestination_;
         stateRegistry = stateRegistry_;
+        factory = factory_;
         chainId = chainId_;
     }
 
@@ -187,10 +192,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev PREVILAGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function withdrawToken(address _tokenContract, uint256 _amount)
-        external
-        onlyOwner
-    {
+    function withdrawToken(
+        address _tokenContract,
+        uint256 _amount
+    ) external onlyOwner {
         IERC20 tokenContract = IERC20(_tokenContract);
 
         /// note: transfer the token from address of this contract
@@ -211,12 +216,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev returns the off-chain metadata URI for each ERC1155 super position.
     /// @param id_ is the unique identifier of the ERC1155 super position aka the vault id.
     /// @return string pointing to the off-chain metadata of the 1155 super position.
-    function tokenURI(uint256 id_)
-        public
-        view
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 id_
+    ) public view override returns (string memory) {
         return
             string(
                 abi.encodePacked(dynamicURI, Strings.toString(id_), ".json")
@@ -239,28 +241,48 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             validateSlippage(stateData_.maxSlippage),
             "Super Router: Invalid Slippage"
         );
+        /// @dev TODO Form Data Validatioooonnnn here
 
-        InitData memory initData = InitData(
+        /// @dev decode superforms
+        /// @dev FIXME only one vault and form id are being returned currently!!!
+        (address[] memory vaults_, uint256[] memory formIds_, ) = factory
+            .getSuperForms(stateData_.superFormIds);
+
+        FormCommonData memory formCommonData = FormCommonData(
+            srcSender_,
+            vaults_,
+            stateData_.amounts,
+            abi.encode(liqData_)
+        );
+
+        FormXChainData memory formXChainData = FormXChainData(
+            totalTransactions
+        );
+
+        FormData memory formData = FormData(
             chainId,
             dstChainId,
-            srcSender_,
-            stateData_.vaultIds,
-            stateData_.amounts,
-            stateData_.maxSlippage,
-            totalTransactions,
-            bytes("")
+            abi.encode(formCommonData),
+            chainId == dstChainId ? bytes("") : abi.encode(formXChainData),
+            stateData_.extraFormData
         );
+
+        bytes memory formDataEncoded = abi.encode(formData);
 
         StateData memory info = StateData(
             TransactionType.DEPOSIT,
             CallbackType.INIT,
-            abi.encode(initData)
+            formDataEncoded
         );
 
+        /// @dev an optimization could be to separate entry points for direct and cross chain interaction (saves gas?)
         txHistory[totalTransactions] = info;
 
         if (chainId == dstChainId) {
-            dstDeposit(liqData_, stateData_, srcSender_, totalTransactions);
+            /// @dev FIXME only one form id is being used here!
+            address form = factory.getForm(formIds_[0]);
+
+            dstDeposit(form, formDataEncoded);
         } else {
             dispatchTokens(
                 bridgeAddress[liqData_.bridgeId],
@@ -288,45 +310,55 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function singleWithdrawal(
         LiqRequest calldata liqData_,
         StateReq calldata stateData_,
-        address sender
+        address srcSender_
     ) internal {
         uint256 dstChainId = stateData_.dstChainId;
 
         require(dstChainId != 0, "Router: Invalid Destination Chain");
-        _burnBatch(sender, stateData_.vaultIds, stateData_.amounts);
+        _burnBatch(srcSender_, stateData_.vaultIds, stateData_.amounts);
 
         totalTransactions++;
 
-        InitData memory initData = InitData(
-            chainId,
-            stateData_.dstChainId,
-            sender,
-            stateData_.vaultIds,
+        /// @dev decode superforms
+        (address[] memory vaults_, uint256[] memory formIds_, ) = factory
+            .getSuperForms(stateData_.superFormIds);
+
+        FormCommonData memory formCommonData = FormCommonData(
+            srcSender_,
+            vaults_,
             stateData_.amounts,
-            stateData_.maxSlippage,
-            totalTransactions,
             abi.encode(liqData_)
         );
+
+        FormXChainData memory formXChainData = FormXChainData(
+            totalTransactions
+        );
+
+        FormData memory formData = FormData(
+            chainId,
+            dstChainId,
+            abi.encode(formCommonData),
+            chainId == dstChainId ? bytes("") : abi.encode(formXChainData),
+            stateData_.extraFormData
+        );
+
+        bytes memory formDataEncoded = abi.encode(formData);
 
         StateData memory info = StateData(
             TransactionType.WITHDRAW,
             CallbackType.INIT,
-            abi.encode(initData)
+            formDataEncoded
         );
 
         txHistory[totalTransactions] = info;
 
-        LiqRequest memory data = liqData_;
-
         if (chainId == dstChainId) {
-            /// @dev srcSuperDestination can only transfer tokens back to this SuperRouter
+            /// @dev FIXME only one form id is being used here!
+            /// @dev srcForm can only transfer tokens back to this SuperRouter
             /// @dev to allow bridging somewhere else requires arch change
-            srcSuperDestination.directWithdraw{value: msg.value}(
-                sender,
-                stateData_.vaultIds,
-                stateData_.amounts,
-                data
-            );
+            IBaseForm(factory.getForm(formIds_[0])).withdrawFromVault{
+                value: msg.value
+            }(formDataEncoded);
 
             emit Completed(totalTransactions);
         } else {
@@ -347,16 +379,11 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     /// @notice deposit() to vaults existing on the same chain as SuperRouter
     /// @dev Optimistic transfer & call
-    function dstDeposit(
-        LiqRequest calldata liqData_,
-        StateReq calldata stateData_,
-        address srcSender_,
-        uint256 txId_
-    ) internal {
+    function dstDeposit(address form, bytes memory formData) internal {
         /// @dev deposits collateral to a given vault and mint vault positions.
-        uint256[] memory dstAmounts = srcSuperDestination.directDeposit{
+        uint256[] memory dstAmounts = IBaseForm(form).depositIntoVault{
             value: msg.value
-        }(srcSender_, liqData_, stateData_.vaultIds, stateData_.amounts);
+        }(formData);
 
         /// @dev TEST-CASE: _msgSender() to whom we mint. use passed `admin` arg?
         _mintBatch(srcSender_, stateData_.vaultIds, dstAmounts, "");
@@ -368,11 +395,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// decimal is handles in the form of 10s
     /// for eg. 0.05 = 5
     ///       100 = 10000
-    function validateSlippage(uint256[] calldata slippages_)
-        internal
-        pure
-        returns (bool)
-    {
+    function validateSlippage(
+        uint256[] calldata slippages_
+    ) internal pure returns (bool) {
         for (uint256 i = 0; i < slippages_.length; i++) {
             if (slippages_[i] < 0 || slippages_[i] > 10000) {
                 return false;
@@ -383,11 +408,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     /// @dev returns the sum of an array.
     /// @param amounts_ represents an array of inputs.
-    function addValues(uint256[] calldata amounts_)
-        internal
-        pure
-        returns (uint256)
-    {
+    function addValues(
+        uint256[] calldata amounts_
+    ) internal pure returns (uint256) {
         uint256 total;
         for (uint256 i = 0; i < amounts_.length; i++) {
             total += amounts_[i];

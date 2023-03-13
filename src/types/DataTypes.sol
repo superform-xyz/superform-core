@@ -24,9 +24,10 @@ struct StateReq {
     uint8 bridgeId;
     uint256 dstChainId;
     uint256[] amounts;
-    uint256[] vaultIds;
+    uint256[] superFormIds;
     uint256[] maxSlippage;
     bytes adapterParam;
+    bytes extraFormData;
     uint256 msgValue;
 }
 
@@ -46,6 +47,33 @@ struct InitData {
     uint256[] maxSlippage;
     uint256 txId;
     bytes liqData;
+}
+
+struct FormData {
+    uint256 srcChainId;
+    uint256 dstChainId;
+    bytes commonData;
+    bytes xChainData;
+    bytes extraFormData;
+}
+
+struct FormCommonData {
+    address srcSender;
+    address[] vaults;
+    uint256[] amounts;
+    bytes liqData;
+}
+
+struct FormXChainData {
+    uint256 txId;
+}
+
+struct XChainActionArgs {
+    uint256 srcChainId;
+    uint256 dstChainId;
+    bytes commonData;
+    bytes xChainData;
+    bytes adapterParam;
 }
 
 struct ReturnData {
