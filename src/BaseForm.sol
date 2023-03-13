@@ -135,7 +135,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         if (data.srcChainId == chainId) {
             dstAmounts = _directDepositIntoVault(
                 data.commonData,
-                data.extraData
+                data.extraFormData
             );
         } else {
             /// @dev NOTE: not returning anything YET
@@ -170,7 +170,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         if (data.srcChainId == chainId) {
             dstAmounts = _directWithdrawFromVault(
                 data.commonData,
-                data.extraData
+                data.extraFormData
             );
         } else {
             /// @dev NOTE: not returning anything YET

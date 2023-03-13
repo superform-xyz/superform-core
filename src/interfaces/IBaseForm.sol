@@ -5,6 +5,8 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {InitData} from "../types/DataTypes.sol";
 import {IERC4626} from "./IERC4626.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+
 
 interface IBaseForm is IERC165 {
     /*///////////////////////////////////////////////////////////////
@@ -63,4 +65,6 @@ interface IBaseForm is IERC165 {
     function withdrawFromVault(
         bytes memory formData_
     ) external payable returns (uint256[] memory dstAmounts);
+
+    function getUnderlyingOfVault(address vault) external view returns (ERC20);
 }
