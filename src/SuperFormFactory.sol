@@ -16,8 +16,6 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
     /// @dev chainId represents the superform chain id.
     uint80 public chainId;
-    /// @dev sequential id system for form implementations
-    uint16 public totalForms;
 
     address[] public forms;
 
@@ -47,26 +45,34 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
     /// @dev allows an admin to add a form to the factory
     /// @param form_ is the address of a form
-    /// @return formId_ is the id of the form
+    /// @param formId_ is the id of the form
     function addForm(
-        address form_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) returns (uint256 formId_) {
+        address form_,
+        uint256 formId_
+    ) public override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (form_ == address(0)) revert ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(form_)) revert ERC165_UNSUPPORTED();
         if (
             !ERC165Checker.supportsInterface(form_, type(IBaseForm).interfaceId)
         ) revert FORM_INTERFACE_UNSUPPORTED();
 
-        /// @dev will revert if overflows on max forms (uint16)
-        totalForms++;
-
-        formId_ = uint256(totalForms);
-
         form[formId_] = form_;
 
         forms.push(form_);
 
         emit FormCreated(form_, formId_);
+    }
+
+    /// @dev allows an admin to add a form to the factory
+    /// @param forms_ are the address of a form
+    /// @param formIds_ are the id of the form
+    function addForms(
+        address[] memory forms_,
+        uint256[] memory formIds_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        for (uint256 i = 0; i < forms_.length; i++) {
+            addForm(forms_[i], formIds_[i]);
+        }
     }
 
     // 5. Forms should exist based on (everything else, including deposit/withdraw/tvl etc could be done in implementations above it)
@@ -78,6 +84,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /// @param formId_ is the formId we want to attach the vault to
     /// @param vault_ is the address of a vault
     /// @return superFormId_ is the id of the superform
+    /// @dev TODO: add array version of thi
     function createSuperForm(
         uint256 formId_,
         address vault_

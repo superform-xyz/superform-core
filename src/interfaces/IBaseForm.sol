@@ -3,14 +3,12 @@ pragma solidity 0.8.19;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
-import {InitData} from "../types/DataTypes.sol";
 import {IERC4626} from "./IERC4626.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
-
 interface IBaseForm is IERC165 {
     /*///////////////////////////////////////////////////////////////
-                    Events
+                                EVENTS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev is emitted when a new vault is added by the admin.
@@ -32,7 +30,14 @@ interface IBaseForm is IERC165 {
     event SetBridgeAddress(uint256 bridgeId, address bridgeAddress);
 
     /*///////////////////////////////////////////////////////////////
-                        External Write Functions
+                                ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev is emitted when the chain id brought in the cross chain message is invalid
+    error INVALID_CHAIN_ID();
+
+    /*///////////////////////////////////////////////////////////////
+                        EXTERNAL WRITE FUNCTONS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev adds the gas overrides for layerzero.
@@ -50,19 +55,38 @@ interface IBaseForm is IERC165 {
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
-    /// @param formData_  A struct containing all the data required to make a form action
+    /// @param formData_  A bytes representation containing all the data required to make a form action
     /// @return dstAmounts  The amount of tokens deposited in same chain action
     /// @dev NOTE: Should this function return?
-    function depositIntoVault(
+    function directDepositIntoVault(
+        bytes calldata formData_
+    ) external payable returns (uint256[] memory dstAmounts);
+
+    /// @dev PREVILEGED router ONLY FUNCTION.
+    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
+    /// @dev process same chain id deposits
+    /// @param formData_  A bytes representation containing all the data required to make a form action
+    /// @return dstAmounts  The amount of tokens deposited in same chain action
+    /// @dev NOTE: Should this function return?
+    function xChainDepositIntoVault(
+        bytes calldata formData_
+    ) external payable returns (uint256[] memory dstAmounts);
+
+    /// @dev PREVILEGED router ONLY FUNCTION.
+    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
+    /// @dev process withdrawal of collateral from a vault
+    /// @param formData_  A bytes representation containing all the data required to make a form action
+    /// @return dstAmounts  The amount of tokens withdrawn in same chain action
+    function directWithdrawFromVault(
         bytes memory formData_
     ) external payable returns (uint256[] memory dstAmounts);
 
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
-    /// @param formData_  A struct containing all the data required to make a form action
+    /// @param formData_  A bytes representation containing all the data required to make a form action
     /// @return dstAmounts  The amount of tokens withdrawn in same chain action
-    function withdrawFromVault(
+    function xChainWithdrawFromVault(
         bytes memory formData_
     ) external payable returns (uint256[] memory dstAmounts);
 

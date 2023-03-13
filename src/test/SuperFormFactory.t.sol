@@ -48,18 +48,20 @@ contract SuperFormFactoryTest is Utilities {
 
     function test_revert_addForm_addressZero() public {
         address form = address(0);
+        uint256 formId = 1;
 
         vm.prank(admin);
         vm.expectRevert(ISuperFormFactory.ZERO_ADDRESS.selector);
-        superFormFactory.addForm(form);
+        superFormFactory.addForm(form, formId);
     }
 
     function test_revert_addForm_interfaceUnsupported() public {
         address form = address(0x1);
+        uint256 formId = 1;
 
         vm.prank(admin);
         vm.expectRevert(ISuperFormFactory.ERC165_UNSUPPORTED.selector);
-        superFormFactory.addForm(form);
+        superFormFactory.addForm(form, formId);
     }
 
     function test_addForm() public {
@@ -67,10 +69,11 @@ contract SuperFormFactoryTest is Utilities {
         address form = address(
             new ERC4626Form(chainId, mockStateRegistry, superFormFactory)
         );
+        uint256 formId = 1;
 
         vm.expectEmit(true, true, true, true, address(superFormFactory));
         emit FormCreated(form, 1);
-        uint256 formId = superFormFactory.addForm(form);
+        superFormFactory.addForm(form, formId);
 
         assertEq(formId, 1);
     }
@@ -80,7 +83,9 @@ contract SuperFormFactoryTest is Utilities {
         address form = address(
             new ERC4626Form(chainId, mockStateRegistry, superFormFactory)
         );
-        uint256 formId = superFormFactory.addForm(form);
+        uint256 formId = 1;
+
+        superFormFactory.addForm(form, formId);
 
         /// @dev as you can see we are not testing if the vaults are eoas or actual compliant contracts
         address vault1 = address(0x2);

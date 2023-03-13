@@ -44,7 +44,7 @@ struct ActionLocalVars {
     address[][] underlyingSrcToken;
     address payable fromSrc;
     address payable toDst;
-    uint256[][] targetVaultIds;
+    uint256[][] targetSuperFormIds;
     uint256[][] amounts;
 }
 
@@ -87,19 +87,22 @@ struct SetupVars {
     uint16 chainId;
     uint16 dstChainId;
     uint256 fork;
+    address factory;
     address lzEndpoint;
     address lzHelper;
     address lzImplementation;
     address socketRouter;
-    address superDestination;
+    address erc4626Form;
     address stateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
+    address srcTokenBank;
     address srcSuperRouter;
     address srcStateRegistry;
+    address srcSuperFormFactory;
+    address srcErc4626Form;
     address srcLzImplementation;
     address dstLzImplementation;
-    address srcSuperDestination;
     address dstStateRegistry;
     address srcMultiTxProcessor;
 }
@@ -113,7 +116,7 @@ struct BuildDepositCallDataArgs {
     address fromSrc;
     address toDst;
     address[] underlyingToken;
-    uint256[] targetVaultIds;
+    uint256[] targetSuperFormIds;
     uint256[] amounts;
     uint256 maxSlippage;
     uint16 srcChainId;
@@ -127,7 +130,7 @@ struct BuildWithdrawCallDataArgs {
     address toDst;
     address[] underlyingToken;
     address[] vaultMock;
-    uint256[] targetVaultIds;
+    uint256[] targetSuperFormIds;
     uint256[] amounts;
     uint256 maxSlippage;
     LiquidityChange actionKind;
@@ -157,8 +160,12 @@ struct InternalActionVars {
     uint256 payloadNumberBefore;
     uint256 lenRequests;
     Vm.Log[] logs;
-    InitData expectedInitData;
-    InitData receivedInitData;
+    FormData expectedFormData;
+    FormCommonData expectedFormCommonData;
+    FormXChainData expectedFormXChainData;
+    FormData receivedFormData;
+    FormCommonData receivedFormCommonData;
+    FormXChainData receivedFormXChainData;
     StateData data;
 }
 

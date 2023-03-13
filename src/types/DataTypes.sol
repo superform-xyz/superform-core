@@ -38,17 +38,6 @@ struct StateData {
     bytes params;
 }
 
-struct InitData {
-    uint256 srcChainId;
-    uint256 dstChainId;
-    address user;
-    uint256[] vaultIds;
-    uint256[] amounts;
-    uint256[] maxSlippage;
-    uint256 txId;
-    bytes liqData;
-}
-
 struct FormData {
     uint256 srcChainId;
     uint256 dstChainId;

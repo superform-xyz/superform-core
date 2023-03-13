@@ -6,7 +6,7 @@ import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
-import {StateData, TransactionType, CallbackType, InitData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData} from "../types/DataTypes.sol";
+import {StateData, TransactionType, CallbackType, FormData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
@@ -111,11 +111,12 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
-        bytes memory commonData_,
-        bytes memory extraFormData_ // unused for now
+        bytes calldata formData
     ) internal virtual override returns (uint256[] memory dstAmounts) {
+        FormData memory data = abi.decode(formData, (FormData));
+
         FormCommonData memory commonData = abi.decode(
-            commonData_,
+            data.commonData,
             (FormCommonData)
         );
 
@@ -124,11 +125,15 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             (LiqRequest)
         );
 
-        uint256 loopLength = commonData.vaults.length;
+        uint256 loopLength = commonData.superFormIds.length;
         uint256 expAmount = _addValues(commonData.amounts);
 
         /// note: checking balance
-        address collateral = address(ERC4626(commonData.vaults[0]).asset());
+        (address[] memory vaults, , ) = factory.getSuperForms(
+            commonData.superFormIds
+        );
+
+        address collateral = address(ERC4626(vaults[0]).asset());
         uint256 balanceBefore = ERC20(collateral).balanceOf(address(this));
 
         /// note: handle the collateral token transfers.
@@ -166,7 +171,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         dstAmounts = new uint256[](loopLength);
 
         for (uint256 i = 0; i < loopLength; i++) {
-            ERC4626 v = ERC4626(commonData.vaults[i]);
+            ERC4626 v = ERC4626(vaults[i]);
             require(
                 address(v.asset()) == collateral,
                 "Destination: Invalid Collateral"
@@ -177,11 +182,12 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function _directWithdrawFromVault(
-        bytes memory commonData_,
-        bytes memory extraFormData_ // unused for now
+        bytes calldata formData
     ) internal virtual override returns (uint256[] memory dstAmounts) {
+        FormData memory data = abi.decode(formData, (FormData));
+
         FormCommonData memory commonData = abi.decode(
-            commonData_,
+            data.commonData,
             (FormCommonData)
         );
 
@@ -194,13 +200,18 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         address receiver = len1 == 0
             ? address(commonData.srcSender)
             : address(this);
-        uint256 lenVaults = commonData.vaults.length;
-        dstAmounts = new uint256[](lenVaults);
 
-        address collateral = address(ERC4626(commonData.vaults[0]).asset());
+        uint256 loopLength = commonData.superFormIds.length;
+        dstAmounts = new uint256[](loopLength);
 
-        for (uint256 i = 0; i < lenVaults; i++) {
-            ERC4626 v = ERC4626(commonData.vaults[i]);
+        (address[] memory vaults, , ) = factory.getSuperForms(
+            commonData.superFormIds
+        );
+
+        address collateral = address(ERC4626(vaults[0]).asset());
+
+        for (uint256 i = 0; i < loopLength; i++) {
+            ERC4626 v = ERC4626(vaults[i]);
             require(
                 address(v.asset()) == collateral,
                 "Destination: Invalid Collateral"
@@ -233,6 +244,8 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     function _xChainDepositIntoVault(
         XChainActionArgs memory args_
     ) internal virtual override {
+        /// @dev TODO: Fix remove loops!!!!! See TokenBank.sol
+
         FormCommonData memory commonData = abi.decode(
             args_.commonData,
             (FormCommonData)
@@ -244,10 +257,15 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         );
 
         /// @dev Ordering dependency vaultIds need to match dstAmounts (shadow matched to user)
-        uint256 len = commonData.vaults.length;
+
+        uint256 len = commonData.superFormIds.length;
+        (address[] memory vaults, , ) = factory.getSuperForms(
+            commonData.superFormIds
+        );
+
         uint256[] memory dstAmounts = new uint256[](len);
         for (uint256 i = 0; i < len; i++) {
-            ERC4626 v = ERC4626(commonData.vaults[i]);
+            ERC4626 v = ERC4626(vaults[i]);
 
             dstAmounts[i] = v.deposit(commonData.amounts[i], address(this));
             /// @notice dstAmounts is equal to POSITIONS returned by v(ault)'s deposit while data.amounts is equal to ASSETS (tokens) bridged
@@ -256,7 +274,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 args_.dstChainId,
                 xChainData.txId,
                 commonData.amounts[i],
-                commonData.vaults[i]
+                vaults[i]
             );
         }
 
@@ -287,6 +305,8 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     function _xChainWithdrawFromVault(
         XChainActionArgs memory args_
     ) internal virtual override {
+        /// @dev TODO: Fix remove loops!!!!! See TokenBank.sol
+
         FormCommonData memory commonData = abi.decode(
             args_.commonData,
             (FormCommonData)
@@ -302,11 +322,15 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             (FormXChainData)
         );
 
-        uint256 len = commonData.vaults.length;
+        uint256 len = commonData.superFormIds.length;
+
+        (address[] memory vaults, , ) = factory.getSuperForms(
+            commonData.superFormIds
+        );
         uint256[] memory dstAmounts = new uint256[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            ERC4626 v = ERC4626(commonData.vaults[i]);
+            ERC4626 v = ERC4626(vaults[i]);
             if (liqData.txData.length != 0) {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
                 dstAmounts[i] = v.redeem(
@@ -353,7 +377,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 args_.dstChainId,
                 xChainData.txId,
                 dstAmounts[i],
-                commonData.vaults[i]
+                vaults[i]
             );
         }
     }

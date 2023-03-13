@@ -46,7 +46,10 @@ interface IStateRegistry {
     event PayloadProcessed(uint256 payloadId);
 
     /// @dev is emitted when core contracts are updated
-    event CoreContractsUpdated(address routerContract, address destinationContract);
+    event CoreContractsUpdated(
+        address routerContract,
+        address tokenBankContract
+    );
 
     /*///////////////////////////////////////////////////////////////
                             External Functions
@@ -74,15 +77,19 @@ interface IStateRegistry {
     /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
     /// @param srcChainId_ is the internal chainId from which the data is sent.
     /// @param message_ is the crosschain data received.
-    function receivePayload(uint256 srcChainId_, bytes memory message_)
-        external;
+    function receivePayload(
+        uint256 srcChainId_,
+        bytes memory message_
+    ) external;
 
     /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(uint256 payloadId_, uint256[] calldata finalAmounts_)
-        external;
+    function updatePayload(
+        uint256 payloadId_,
+        uint256[] calldata finalAmounts_
+    ) external;
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
@@ -102,9 +109,9 @@ interface IStateRegistry {
 
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
     /// @param routerContract_ is the address of the router
-    /// @param destinationContract_ is the address of the destination
+    /// @param tokenBankContract_ is the address of the token bank
     function setCoreContracts(
         address routerContract_,
-        address destinationContract_
+        address tokenBankContract_
     ) external;
 }

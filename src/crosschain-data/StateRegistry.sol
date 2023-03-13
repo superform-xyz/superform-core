@@ -5,15 +5,15 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {IBridgeImpl} from "../interfaces/IBridgeImpl.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
-import {ISuperDestination} from "../interfaces/ISuperDestination.sol";
-import {StateData, PayloadState, TransactionType, CallbackType, InitData, ReturnData} from "../types/DataTypes.sol";
+import {ITokenBank} from "../interfaces/ITokenBank.sol";
+import {StateData, PayloadState, TransactionType, CallbackType, ReturnData, FormData, FormCommonData, FormXChainData} from "../types/DataTypes.sol";
 
 /// @title Cross-Chain Messaging Bridge Aggregator
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging bridges.
 contract StateRegistry is IStateRegistry, AccessControl {
     /*///////////////////////////////////////////////////////////////
-                    Access Control Role Constants
+                    ACCESS CONTROL ROLE CONSTANTS
     //////////////////////////////////////////////////////////////*/
     bytes32 public constant CORE_CONTRACTS_ROLE =
         keccak256("CORE_CONTRACTS_ROLE");
@@ -23,13 +23,13 @@ contract StateRegistry is IStateRegistry, AccessControl {
     bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
-                    State Variables
+                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     uint256 public immutable chainId;
     uint256 public payloadsCount;
 
     address public routerContract;
-    address public destinationContract;
+    address public tokenBankContract;
 
     mapping(uint8 => IBridgeImpl) public bridge;
 
@@ -40,7 +40,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     mapping(uint256 => PayloadState) public payloadTracking;
 
     /*///////////////////////////////////////////////////////////////
-                    Constructor
+                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
@@ -50,18 +50,17 @@ contract StateRegistry is IStateRegistry, AccessControl {
     }
 
     /*///////////////////////////////////////////////////////////////
-                    External Functions
+                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     receive() external payable {}
 
     /// @dev allows admin to update bridge implementations.
     /// @param bridgeId_ is the propreitory bridge id.
     /// @param bridgeImpl_ is the implementation address.
-    function configureBridge(uint8 bridgeId_, address bridgeImpl_)
-        external
-        override
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function configureBridge(
+        uint8 bridgeId_,
+        address bridgeImpl_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (bridgeId_ == 0) {
             revert INVALID_BRIDGE_ID();
         }
@@ -76,15 +75,15 @@ contract StateRegistry is IStateRegistry, AccessControl {
 
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
     /// @param routerContract_ is the address of the router
-    /// @param destinationContract_ is the address of the destination
+    /// @param tokenBankContract_ is the address of the token bank
     function setCoreContracts(
         address routerContract_,
-        address destinationContract_
+        address tokenBankContract_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         routerContract = routerContract_;
-        destinationContract = destinationContract_;
+        tokenBankContract = tokenBankContract_;
 
-        emit CoreContractsUpdated(routerContract_, destinationContract_);
+        emit CoreContractsUpdated(routerContract_, tokenBankContract_);
     }
 
     /// @dev allows core contracts to send data to a destination chain.
@@ -116,12 +115,10 @@ contract StateRegistry is IStateRegistry, AccessControl {
     /// @param srcChainId_ is the internal chainId from which the data is sent.
     /// @param message_ is the crosschain data received.
     /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
-    function receivePayload(uint256 srcChainId_, bytes memory message_)
-        external
-        virtual
-        override
-        onlyRole(IMPLEMENTATION_CONTRACTS_ROLE)
-    {
+    function receivePayload(
+        uint256 srcChainId_,
+        bytes memory message_
+    ) external virtual override onlyRole(IMPLEMENTATION_CONTRACTS_ROLE) {
         ++payloadsCount;
         payload[payloadsCount] = message_;
 
@@ -132,12 +129,10 @@ contract StateRegistry is IStateRegistry, AccessControl {
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(uint256 payloadId_, uint256[] calldata finalAmounts_)
-        external
-        virtual
-        override
-        onlyRole(UPDATER_ROLE)
-    {
+    function updatePayload(
+        uint256 payloadId_,
+        uint256[] calldata finalAmounts_
+    ) external virtual override onlyRole(UPDATER_ROLE) {
         if (payloadId_ > payloadsCount) {
             revert INVALID_PAYLOAD_ID();
         }
@@ -158,9 +153,17 @@ contract StateRegistry is IStateRegistry, AccessControl {
             revert INVALID_PAYLOAD_STATE();
         }
 
-        InitData memory data = abi.decode(payloadInfo.params, (InitData));
+        FormData memory formData = abi.decode(payloadInfo.params, (FormData));
+        FormCommonData memory formCommonData = abi.decode(
+            formData.commonData,
+            (FormCommonData)
+        );
+        FormXChainData memory formXChainData = abi.decode(
+            formData.xChainData,
+            (FormXChainData)
+        );
 
-        uint256 l1 = data.amounts.length;
+        uint256 l1 = formCommonData.amounts.length;
         uint256 l2 = finalAmounts_.length;
 
         if (l1 != l2) {
@@ -169,22 +172,31 @@ contract StateRegistry is IStateRegistry, AccessControl {
 
         for (uint256 i = 0; i < l1; i++) {
             uint256 newAmount = finalAmounts_[i];
-            uint256 maxAmount = data.amounts[i];
+            uint256 maxAmount = formCommonData.amounts[i];
 
             if (newAmount > maxAmount) {
                 revert NEGATIVE_SLIPPAGE();
             }
 
-            uint256 minAmount = (maxAmount * (10000 - data.maxSlippage[i])) /
-                10000;
+            uint256 minAmount = (maxAmount *
+                (10000 - formXChainData.maxSlippage[i])) / 10000;
 
             if (newAmount < minAmount) {
                 revert SLIPPAGE_OUT_OF_BOUNDS();
             }
         }
 
-        data.amounts = finalAmounts_;
-        payloadInfo.params = abi.encode(data);
+        formCommonData.amounts = finalAmounts_;
+
+        FormData memory updatedFormData = FormData(
+            formData.srcChainId,
+            formData.dstChainId,
+            abi.encode(formCommonData),
+            formData.xChainData,
+            formData.extraFormData
+        );
+
+        payloadInfo.params = abi.encode(updatedFormData);
 
         payload[payloadId_] = abi.encode(payloadInfo);
         payloadTracking[payloadId_] = PayloadState.UPDATED;
@@ -195,13 +207,9 @@ contract StateRegistry is IStateRegistry, AccessControl {
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// NOTE: function can only process successful payloads.
-    function processPayload(uint256 payloadId_)
-        external
-        payable
-        virtual
-        override
-        onlyRole(PROCESSOR_ROLE)
-    {
+    function processPayload(
+        uint256 payloadId_
+    ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         if (payloadId_ > payloadsCount) {
             revert INVALID_PAYLOAD_ID();
         }
@@ -214,9 +222,9 @@ contract StateRegistry is IStateRegistry, AccessControl {
         StateData memory payloadInfo = abi.decode(_payload, (StateData));
 
         if (payloadInfo.txType == TransactionType.WITHDRAW) {
-            processWithdrawal(payloadId_, payloadInfo);
+            _processWithdrawal(payloadId_, payloadInfo);
         } else {
-            processDeposit(payloadId_, payloadInfo);
+            _processDeposit(payloadId_, payloadInfo);
         }
     }
 
@@ -244,28 +252,28 @@ contract StateRegistry is IStateRegistry, AccessControl {
             payload[payloadId_],
             (StateData)
         );
-        InitData memory initData = abi.decode(payloadInfo.params, (InitData));
+        FormData memory formData = abi.decode(payloadInfo.params, (FormData));
 
-        if (initData.dstChainId != chainId) {
+        if (formData.dstChainId != chainId) {
             revert INVALID_PAYLOAD_STATE();
         }
 
         /// NOTE: Send `data` back to source based on BridgeID to revert the state.
         /// NOTE: chain_ids conflict should be addresses here.
-        // bridge[bridgeId_].dipatchPayload(initData.dstChainId_, message_, extraData_);
+        // bridge[bridgeId_].dipatchPayload(formData.dstChainId_, message_, extraData_);
     }
 
     /*///////////////////////////////////////////////////////////////
-                    Internal Functions
+                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function processWithdrawal(
+    function _processWithdrawal(
         uint256 payloadId_,
         StateData memory payloadInfo_
     ) internal {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (payloadInfo_.flag == CallbackType.INIT) {
-            ISuperDestination(destinationContract).stateSync{value: msg.value}(
+            ITokenBank(tokenBankContract).stateSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {
@@ -275,16 +283,17 @@ contract StateRegistry is IStateRegistry, AccessControl {
         }
     }
 
-    function processDeposit(uint256 payloadId_, StateData memory payloadInfo_)
-        internal
-    {
+    function _processDeposit(
+        uint256 payloadId_,
+        StateData memory payloadInfo_
+    ) internal {
         if (payloadInfo_.flag == CallbackType.INIT) {
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
                 revert PAYLOAD_NOT_UPDATED();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperDestination(destinationContract).stateSync{value: msg.value}(
+            ITokenBank(tokenBankContract).stateSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {

@@ -11,7 +11,7 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
 contract BaseProtocolTest is BaseSetup {
-    mapping(uint256 => uint256[]) internal VAULTS_ACTIONS;
+    mapping(uint256 => uint256[]) internal SUPERFORMS_ACTIONS;
     mapping(uint256 => mapping(LiquidityChange => uint256[]))
         internal AMOUNTS_ACTIONS;
 
@@ -33,23 +33,23 @@ contract BaseProtocolTest is BaseSetup {
         /// @dev LiquidityChange partial vs full are only defined for cosmetic purposes in the test for now
         /// !! WARNING - only 3 vaults/underlyings exist, Ids 1,2,3 !!
 
-        // Type 0 - Single Vault x One StateReq/LiqReq
-        VAULTS_ACTIONS[0] = [uint256(1)];
+        /// Type 0 - Single Vault x One StateReq/LiqReq
+        /// @dev FIXME: not working, just a test
+        /// @dev TODO: make chain ids the new superform chain ids?
+        SUPERFORMS_ACTIONS[0] = [_superFormId("DAI", 1, FTM)];
         AMOUNTS_ACTIONS[0][LiquidityChange.Full] = [uint256(1000)];
 
         // Type 1 - Single Vault x Two StateReq/LiqReq
-        VAULTS_ACTIONS[1] = [uint256(1), 3];
+        SUPERFORMS_ACTIONS[1] = [uint256(1), 3];
         // With Full withdrawal (note, deposits are always full)
         AMOUNTS_ACTIONS[1][LiquidityChange.Full] = [uint256(1000), 5000];
         // With Partial withdrawal
         AMOUNTS_ACTIONS[1][LiquidityChange.Partial] = [uint256(500), 2000];
     }
 
-    function _getTestAction(uint256 index_)
-        internal
-        view
-        returns (TestAction memory)
-    {
+    function _getTestAction(
+        uint256 index_
+    ) internal view returns (TestAction memory) {
         /*//////////////////////////////////////////////////////////////
                     !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
@@ -262,7 +262,7 @@ contract BaseProtocolTest is BaseSetup {
             );
 
             (
-                vars.targetVaultIds,
+                vars.targetSuperFormIds,
                 vars.underlyingSrcToken,
                 vars.vaultMock,
                 vars.TARGET_VAULTS
@@ -295,23 +295,23 @@ contract BaseProtocolTest is BaseSetup {
         internal
         view
         returns (
-            uint256[][] memory targetVaultsMem,
+            uint256[][] memory targetSuperFormsMem,
             address[][] memory underlyingSrcTokensMem,
             address[][] memory vaultMocksMem,
             MockERC20[][] memory TARGET_VAULTSMem
         )
     {
-        uint256[] memory vaultIdsTemp = VAULTS_ACTIONS[action];
-        uint256 len = vaultIdsTemp.length;
+        uint256[] memory superFormIdsTemp = SUPERFORMS_ACTIONS[action];
+        uint256 len = superFormIdsTemp.length;
         if (len == 0) revert LEN_VAULTS_ZERO();
 
-        targetVaultsMem = new uint256[][](len);
+        targetSuperFormsMem = new uint256[][](len);
         underlyingSrcTokensMem = new address[][](len);
         vaultMocksMem = new address[][](len);
         TARGET_VAULTSMem = new MockERC20[][](len);
 
         for (uint256 i = 0; i < len; i++) {
-            uint256[] memory tVaults = new uint256[](
+            uint256[] memory tSuperForms = new uint256[](
                 allowedNumberOfVaultsPerRequest
             );
             address[] memory tUnderlyingSrcTokens = new address[](
@@ -325,20 +325,20 @@ contract BaseProtocolTest is BaseSetup {
             );
 
             for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
-                tVaults[j] = vaultIdsTemp[i];
+                tSuperForms[j] = superFormIdsTemp[i];
                 string memory underlyingToken = UNDERLYING_TOKENS[
-                    vaultIdsTemp[i] - 1
+                    superFormIdsTemp[i] - 1
                 ];
                 tUnderlyingSrcTokens[j] = getContract(chain0, underlyingToken);
                 tVaultMocks[j] = getContract(
                     chain1,
-                    VAULT_NAMES[vaultIdsTemp[i] - 1]
+                    VAULT_NAMES[superFormIdsTemp[i] - 1]
                 );
                 tTARGET_VAULTS[j] = MockERC20(
                     getContract(chain1, underlyingToken)
                 );
             }
-            targetVaultsMem[i] = tVaults;
+            targetSuperFormsMem[i] = tSuperForms;
             underlyingSrcTokensMem[i] = tUnderlyingSrcTokens;
             vaultMocksMem[i] = tVaultMocks;
             TARGET_VAULTSMem[i] = tTARGET_VAULTS;
@@ -346,11 +346,10 @@ contract BaseProtocolTest is BaseSetup {
     }
 
     /// @dev this function is used to build the 2D arrays in the best way possible
-    function _amounts(uint256 action, LiquidityChange actionKind)
-        internal
-        view
-        returns (uint256[][] memory targetAmountsMem)
-    {
+    function _amounts(
+        uint256 action,
+        LiquidityChange actionKind
+    ) internal view returns (uint256[][] memory targetAmountsMem) {
         uint256[] memory amountsTemp = AMOUNTS_ACTIONS[action][actionKind];
         uint256 len = amountsTemp.length;
         if (len == 0) revert LEN_AMOUNTS_ZERO();
@@ -367,5 +366,20 @@ contract BaseProtocolTest is BaseSetup {
             }
             targetAmountsMem[i] = tAmounts;
         }
+    }
+
+    function _superFormId(
+        string memory tokenName,
+        uint256 formId_,
+        uint16 chainId_
+    ) internal view returns (uint256 superFormId_) {
+        address vault = getContract(
+            chainId_,
+            string.concat(tokenName, "Vault")
+        );
+
+        superFormId_ = uint256(uint160(vault));
+        superFormId_ |= formId_ << 160;
+        superFormId_ |= uint256(chainId_) << 176;
     }
 }

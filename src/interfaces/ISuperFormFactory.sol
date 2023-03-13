@@ -52,8 +52,16 @@ interface ISuperFormFactory {
 
     /// @dev allows an admin to enter a form to the factory
     /// @param form_ is the address of a form
-    /// @return formId_ is the id of the form
-    function addForm(address form_) external returns (uint256 formId_);
+    /// @param formId_ is the id of the form
+    function addForm(address form_, uint256 formId_) external;
+
+    /// @dev allows an admin to add a form to the factory
+    /// @param forms_ are the address of a form
+    /// @param formIds_ are the id of the form
+    function addForms(
+        address[] memory forms_,
+        uint256[] memory formIds_
+    ) external;
 
     /// @dev To add new vaults to Form implementations, fusing them together into SuperForms
     /// @param formId_ is the formId we want to attach the vault to
