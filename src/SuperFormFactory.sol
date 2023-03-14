@@ -152,17 +152,18 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         public
         pure
         override
-        returns (
-            address[] memory vaults_,
-            uint256[] memory formIds_,
-            uint256[] memory chainIds_
-        )
+        returns (address[] memory, uint256[] memory, uint256[] memory)
     {
+        address[] memory vaults_ = new address[](superFormIds_.length);
+        uint256[] memory formIds_ = new uint256[](superFormIds_.length);
+        uint256[] memory chainIds_ = new uint256[](superFormIds_.length);
         for (uint256 i = 0; i < superFormIds_.length; i++) {
             (vaults_[i], formIds_[i], chainIds_[i]) = getSuperForm(
                 superFormIds_[i]
             );
         }
+
+        return (vaults_, formIds_, chainIds_);
     }
 
     /*///////////////////////////////////////////////////////////////

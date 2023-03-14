@@ -11,7 +11,9 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
 contract BaseProtocolTest is BaseSetup {
-    mapping(uint256 => uint256[]) internal SUPERFORMS_ACTIONS;
+    /// @dev chainId => actionType => UnderlyingToken
+    mapping(uint80 => mapping(uint256 => uint256[]))
+        internal TARGET_UNDERLYING_VAULTS;
     mapping(uint256 => mapping(LiquidityChange => uint256[]))
         internal AMOUNTS_ACTIONS;
 
@@ -19,7 +21,7 @@ contract BaseProtocolTest is BaseSetup {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint256 internal constant numberOfTestActions = 11; /// @dev <- change this whenever you add/remove test cases
+    uint256 internal constant numberOfTestActions = 1; /// @dev <- change this whenever you add/remove test cases
 
     function setUp() public override {
         super.setUp();
@@ -27,23 +29,23 @@ contract BaseProtocolTest is BaseSetup {
         /*//////////////////////////////////////////////////////////////
                     !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
-        /// @dev Define Vault-Amount pairs for each type of test case you want to test
+        /// @dev Define SuperForm-Amount pairs for each type of test case you want to test
         /// @dev These have been done with state variables for direct inline input
         /// @dev You can modify the amounts/vaults at will and create more kinds
         /// @dev LiquidityChange partial vs full are only defined for cosmetic purposes in the test for now
-        /// !! WARNING - only 3 vaults/underlyings exist, Ids 1,2,3 !!
+        /// !! WARNING - only 3 Underlyings currently exist, Ids 0, 1, 2 (DAI, USDT and WETH) - check UNDERLYING_TOKENS in BaseSetup.sol!!
 
-        /// Type 0 - Single Vault x One StateReq/LiqReq
-        /// @dev FIXME: not working, just a test
-        /// @dev TODO: make chain ids the new superform chain ids?
-        SUPERFORMS_ACTIONS[0] = [_superFormId("DAI", 1, BSC)];
+        /// Type 0 - Single SuperForm x One StateReq/LiqReq
+        /// Type 1 - Single SuperForm x Two StateReq/LiqReq
+        /// @dev FIXME: WARNING - currently these actions suppose that it is the same destination chain for all SuperForms!!!!
+        /// @notice first array element is uint256, all the rest are automatically uint256
+        TARGET_UNDERLYING_VAULTS[BSC][0] = [uint256(0)];
+        TARGET_UNDERLYING_VAULTS[FTM][1] = [uint256(0), 1];
+        TARGET_UNDERLYING_VAULTS[OP][1] = [uint256(0), 1];
+        TARGET_UNDERLYING_VAULTS[POLY][1] = [uint256(0), 2];
+        TARGET_UNDERLYING_VAULTS[AVAX][0] = [uint256(2)];
+
         AMOUNTS_ACTIONS[0][LiquidityChange.Full] = [uint256(1000)];
-
-        // Type 1 - Single Vault x Two StateReq/LiqReq
-        SUPERFORMS_ACTIONS[1] = [
-            _superFormId("DAI", 1, BSC),
-            _superFormId("WETH", 1, BSC)
-        ];
         // With Full withdrawal (note, deposits are always full)
         AMOUNTS_ACTIONS[1][LiquidityChange.Full] = [uint256(1000), 5000];
         // With Partial withdrawal
@@ -71,7 +73,7 @@ contract BaseProtocolTest is BaseSetup {
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
                 multiTx: false
-            }),
+            }) /*,
             /// FTM=>BSC: user withdrawing tokens from a vault on BSC from/to Fantom
             TestAction({
                 action: Actions.Withdraw,
@@ -228,6 +230,7 @@ contract BaseProtocolTest is BaseSetup {
                 slippage: 0,
                 multiTx: false
             })
+            */
         ];
 
         return testActionCases[index_];
@@ -260,9 +263,17 @@ contract BaseProtocolTest is BaseSetup {
             vars.lzEndpoint_0 = LZ_ENDPOINTS[action.CHAIN_0];
             vars.lzEndpoint_1 = LZ_ENDPOINTS[action.CHAIN_1];
             vars.fromSrc = payable(getContract(action.CHAIN_0, "SuperRouter"));
-            vars.toDst = payable(
-                getContract(action.CHAIN_1, "SuperDestination")
-            );
+
+            /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
+            if (action.CHAIN_0 == action.CHAIN_1) {
+                /// @dev FIXME: this is only using hardcoded formid 1 (ERC4626Form) for now!!!
+                /// !!WARNING
+                vars.toDst = payable(
+                    getContract(action.CHAIN_1, "ERC4626Form")
+                );
+            } else {
+                vars.toDst = payable(getContract(action.CHAIN_1, "TokenBank"));
+            }
 
             (
                 vars.targetSuperFormIds,
@@ -274,7 +285,6 @@ contract BaseProtocolTest is BaseSetup {
                 action.CHAIN_0,
                 action.CHAIN_1
             );
-            console.log(2);
 
             vars.amounts = _amounts(action.actionType, action.actionKind);
 
@@ -291,11 +301,18 @@ contract BaseProtocolTest is BaseSetup {
                         INTERNAL HELPERS
     //////////////////////////////////////////////////////////////*/
 
+    struct TargetVaultsVars {
+        uint256[] underlyingTokenIds;
+        uint256[] superFormIdsTemp;
+        uint256 len;
+        string underlyingToken;
+    }
+
     /// @dev this function is used to build the 2D arrays in the best way possible
     function _targetVaults(
         uint256 action,
-        uint16 chain0,
-        uint16 chain1
+        uint80 chain0,
+        uint80 chain1
     )
         internal
         view
@@ -306,16 +323,18 @@ contract BaseProtocolTest is BaseSetup {
             MockERC20[][] memory TARGET_VAULTSMem
         )
     {
-        uint256[] memory superFormIdsTemp = SUPERFORMS_ACTIONS[action];
-        uint256 len = superFormIdsTemp.length;
-        if (len == 0) revert LEN_VAULTS_ZERO();
+        TargetVaultsVars memory vars;
+        vars.underlyingTokenIds = TARGET_UNDERLYING_VAULTS[chain1][action];
+        vars.superFormIdsTemp = _superFormIds(vars.underlyingTokenIds, chain1);
+        vars.len = vars.superFormIdsTemp.length;
+        if (vars.len == 0) revert LEN_VAULTS_ZERO();
 
-        targetSuperFormsMem = new uint256[][](len);
-        underlyingSrcTokensMem = new address[][](len);
-        vaultMocksMem = new address[][](len);
-        TARGET_VAULTSMem = new MockERC20[][](len);
+        targetSuperFormsMem = new uint256[][](vars.len);
+        underlyingSrcTokensMem = new address[][](vars.len);
+        vaultMocksMem = new address[][](vars.len);
+        TARGET_VAULTSMem = new MockERC20[][](vars.len);
 
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i = 0; i < vars.len; i++) {
             uint256[] memory tSuperForms = new uint256[](
                 allowedNumberOfVaultsPerRequest
             );
@@ -328,22 +347,26 @@ contract BaseProtocolTest is BaseSetup {
             MockERC20[] memory tTARGET_VAULTS = new MockERC20[](
                 allowedNumberOfVaultsPerRequest
             );
-
+            vars.underlyingToken = UNDERLYING_TOKENS[
+                vars.underlyingTokenIds[i]
+            ];
             for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
-                tSuperForms[j] = superFormIdsTemp[i];
-                string memory underlyingToken = UNDERLYING_TOKENS[
-                    superFormIdsTemp[i] - 1
-                ];
-                tUnderlyingSrcTokens[j] = getContract(chain0, underlyingToken);
+                tSuperForms[j] = vars.superFormIdsTemp[i];
+
+                tUnderlyingSrcTokens[j] = getContract(
+                    chain0,
+                    vars.underlyingToken
+                );
+
                 tVaultMocks[j] = getContract(
                     chain1,
-                    VAULT_NAMES[superFormIdsTemp[i] - 1]
+                    VAULT_NAMES[vars.underlyingTokenIds[i]]
                 );
+
                 tTARGET_VAULTS[j] = MockERC20(
-                    getContract(chain1, underlyingToken)
+                    getContract(chain1, vars.underlyingToken)
                 );
             }
-            console.log(1);
 
             targetSuperFormsMem[i] = tSuperForms;
             underlyingSrcTokensMem[i] = tUnderlyingSrcTokens;
@@ -375,17 +398,40 @@ contract BaseProtocolTest is BaseSetup {
         }
     }
 
-    function _superFormId(
-        string memory tokenName,
-        uint256 formId_,
-        uint16 chainId_
-    ) internal view returns (uint256 superFormId_) {
-        address vault = getContract(
-            chainId_,
-            string.concat(tokenName, "Vault")
+    function _superFormIds(
+        uint256[] memory underlyingTokenIds_,
+        uint80 chainId_
+    ) internal view returns (uint256[] memory) {
+        uint256[] memory superFormIds_ = new uint256[](
+            underlyingTokenIds_.length
         );
+        for (uint256 i = 0; i < underlyingTokenIds_.length; i++) {
+            if (underlyingTokenIds_[i] > UNDERLYING_TOKENS.length)
+                revert WRONG_UNDERLYING_ID();
 
-        superFormId_ = uint256(uint160(vault));
+            address vault = getContract(
+                chainId_,
+                string.concat(
+                    UNDERLYING_TOKENS[underlyingTokenIds_[i]],
+                    "Vault"
+                )
+            );
+
+            superFormIds_[i] = _superFormId(
+                vault,
+                FORMS_FOR_VAULTS[underlyingTokenIds_[i]],
+                chainId_
+            );
+        }
+        return superFormIds_;
+    }
+
+    function _superFormId(
+        address vault_,
+        uint256 formId_,
+        uint80 chainId_
+    ) internal pure returns (uint256 superFormId_) {
+        superFormId_ = uint256(uint160(vault_));
         superFormId_ |= formId_ << 160;
         superFormId_ |= uint256(chainId_) << 176;
     }

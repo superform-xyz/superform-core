@@ -57,8 +57,8 @@ struct TestAction {
     Actions action;
     uint16 actionType;
     LiquidityChange actionKind;
-    uint16 CHAIN_0;
-    uint16 CHAIN_1;
+    uint80 CHAIN_0;
+    uint80 CHAIN_1;
     address user;
     TestType testType;
     bytes4 revertError;
@@ -82,10 +82,11 @@ struct TestAssertionVars {
 //////////////////////////////////////////////////////////////*/
 
 struct SetupVars {
-    uint16[2] chainIds;
+    uint80[2] chainIds;
     address[2] lzEndpoints;
-    uint16 chainId;
-    uint16 dstChainId;
+    uint80 chainId;
+    uint80 dstChainId;
+    uint16 dstAmbChainId;
     uint256 fork;
     address factory;
     address lzEndpoint;
@@ -119,8 +120,8 @@ struct BuildDepositCallDataArgs {
     uint256[] targetSuperFormIds;
     uint256[] amounts;
     uint256 maxSlippage;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint80 srcChainId;
+    uint80 toChainId;
     bool multiTx;
 }
 
@@ -134,19 +135,18 @@ struct BuildWithdrawCallDataArgs {
     uint256[] amounts;
     uint256 maxSlippage;
     LiquidityChange actionKind;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint80 srcChainId;
+    uint80 toChainId;
 }
 
 struct InternalActionArgs {
     address payable fromSrc; // SuperRouter
-    address payable toDst; // SuperDestination
     address toLzEndpoint;
     address user;
     StateReq[] stateReqs;
     LiqRequest[] liqReqs;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint80 srcChainId;
+    uint80 toChainId;
     Actions action;
     TestType testType;
     bytes4 revertError;
@@ -180,3 +180,4 @@ error LEN_AMOUNTS_ZERO();
 error LEN_VAULTS_ZERO();
 error MISMATCH_TEST_TYPE();
 error MISMATCH_RBAC_TEST();
+error WRONG_UNDERLYING_ID();

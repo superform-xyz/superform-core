@@ -18,7 +18,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
     constructor(
-        uint256 chainId_,
+        uint80 chainId_,
         IStateRegistry stateRegistry_,
         ISuperFormFactory superformfactory_
     ) ERC20Form(chainId_, stateRegistry_, superformfactory_) {}

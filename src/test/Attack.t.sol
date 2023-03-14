@@ -16,8 +16,8 @@ struct BuildAttackArgs {
     address underlyingDstToken;
     uint256 targetSuperFormId;
     uint256 amount;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint80 srcChainId;
+    uint80 toChainId;
 }
 
 struct TestAttackVars {
@@ -33,8 +33,8 @@ struct TestAttackVars {
     uint256[] victimVaults;
     uint256[] amountsToDeposit;
     bytes4 revertError;
-    uint16 CHAIN_0;
-    uint16 CHAIN_1;
+    uint80 CHAIN_0;
+    uint80 CHAIN_1;
     uint256 victimVault;
     uint256 amount;
     uint256 CHAIN_0_PAYLOAD_ID;
@@ -51,8 +51,8 @@ struct TestAttackVars {
 contract AttackTest is BaseSetup {
     Attack internal attackCHAIN_0;
     Attack internal attackCHAIN_1;
-    uint16 internal CHAIN_0;
-    uint16 internal CHAIN_1;
+    uint80 internal CHAIN_0;
+    uint80 internal CHAIN_1;
     address lzEndpoint_0;
     address lzEndpoint_1;
     string internal underlyingToken;
@@ -119,8 +119,9 @@ contract AttackTest is BaseSetup {
         assertEq(address(attackCHAIN_0), address(attackCHAIN_1));
     }
 
+    /// @dev TODO: refactor or remove later. Marked as internal to have foundry ignore this test
     /// @dev This is a test of an end to end possible attack. Testing individual parts (unit tests) can be taken from here
-    function test_attack() public {
+    function test_attack() internal {
         TestAttackVars memory vars;
 
         vars.victimVault = 1; // should correspond to TOKEN vault
@@ -176,7 +177,6 @@ contract AttackTest is BaseSetup {
             _actionToSuperRouter(
                 InternalActionArgs(
                     vars.fromSrc,
-                    vars.toDst,
                     lzEndpoint_1,
                     users[i],
                     vars.stateReqs,

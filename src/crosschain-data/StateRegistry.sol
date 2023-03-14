@@ -3,14 +3,14 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
-import {IBridgeImpl} from "../interfaces/IBridgeImpl.sol";
+import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {StateData, PayloadState, TransactionType, CallbackType, ReturnData, FormData, FormCommonData, FormXChainData} from "../types/DataTypes.sol";
 
-/// @title Cross-Chain Messaging Bridge Aggregator
+/// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
-/// @notice stores, sends & process message sent via various messaging bridges.
+/// @notice stores, sends & process message sent via various messaging ambs.
 contract StateRegistry is IStateRegistry, AccessControl {
     /*///////////////////////////////////////////////////////////////
                     ACCESS CONTROL ROLE CONSTANTS
@@ -25,13 +25,14 @@ contract StateRegistry is IStateRegistry, AccessControl {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    uint256 public immutable chainId;
+    /// @dev superformChainid
+    uint80 public immutable chainId;
     uint256 public payloadsCount;
 
     address public routerContract;
     address public tokenBankContract;
 
-    mapping(uint8 => IBridgeImpl) public bridge;
+    mapping(uint8 => IAmbImplementation) public amb;
 
     /// @dev stores all received payloads after assigning them an unique identifier upon receiving.
     mapping(uint256 => bytes) public payload;
@@ -44,7 +45,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint256 chainId_) {
+    constructor(uint80 chainId_) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         chainId = chainId_;
     }
@@ -54,23 +55,23 @@ contract StateRegistry is IStateRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
     receive() external payable {}
 
-    /// @dev allows admin to update bridge implementations.
-    /// @param bridgeId_ is the propreitory bridge id.
-    /// @param bridgeImpl_ is the implementation address.
-    function configureBridge(
-        uint8 bridgeId_,
-        address bridgeImpl_
+    /// @dev allows admin to update amb implementations.
+    /// @param ambId_ is the propreitory amb id.
+    /// @param ambImplementation_ is the implementation address.
+    function configureAmb(
+        uint8 ambId_,
+        address ambImplementation_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (bridgeId_ == 0) {
+        if (ambId_ == 0) {
             revert INVALID_BRIDGE_ID();
         }
 
-        if (bridgeImpl_ == address(0)) {
+        if (ambImplementation_ == address(0)) {
             revert INVALID_BRIDGE_ADDRESS();
         }
 
-        bridge[bridgeId_] = IBridgeImpl(bridgeImpl_);
-        emit BridgeConfigured(bridgeId_, bridgeImpl_);
+        amb[ambId_] = IAmbImplementation(ambImplementation_);
+        emit AmbConfigured(ambId_, ambImplementation_);
     }
 
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
@@ -87,36 +88,36 @@ contract StateRegistry is IStateRegistry, AccessControl {
     }
 
     /// @dev allows core contracts to send data to a destination chain.
-    /// @param bridgeId_ is the identifier of the message bridge to be used.
+    /// @param ambId_ is the identifier of the message amb to be used.
     /// @param dstChainId_ is the internal chainId used throughtout the protocol.
     /// @param message_ is the crosschain data to be sent.
-    /// @param extraData_ defines all the message bridge specific information.
-    /// NOTE: dstChainId maps with the message bridge's propreitory chain Id.
+    /// @param extraData_ defines all the message amb specific information.
+    /// NOTE: dstChainId maps with the message amb's propreitory chain Id.
     function dispatchPayload(
-        uint8 bridgeId_,
-        uint256 dstChainId_,
+        uint8 ambId_,
+        uint80 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
-        IBridgeImpl bridgeImpl = bridge[bridgeId_];
+        IAmbImplementation ambImplementation = amb[ambId_];
 
-        if (address(bridgeImpl) == address(0)) {
+        if (address(ambImplementation) == address(0)) {
             revert INVALID_BRIDGE_ID();
         }
 
-        bridgeImpl.dipatchPayload{value: msg.value}(
+        ambImplementation.dipatchPayload{value: msg.value}(
             dstChainId_,
             message_,
             extraData_
         );
     }
 
-    /// @dev allows state registry to receive messages from bridge implementations.
+    /// @dev allows state registry to receive messages from amb implementations.
     /// @param srcChainId_ is the internal chainId from which the data is sent.
     /// @param message_ is the crosschain data received.
     /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
     function receivePayload(
-        uint256 srcChainId_,
+        uint80 srcChainId_,
         bytes memory message_
     ) external virtual override onlyRole(IMPLEMENTATION_CONTRACTS_ROLE) {
         ++payloadsCount;
@@ -230,12 +231,12 @@ contract StateRegistry is IStateRegistry, AccessControl {
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to revert payload that fail to revert state changes on source chain.
     /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @param bridgeId_ is the identifier of the cross-chain bridge to be used to send the acknowledgement.
-    /// @param extraData_ is any message bridge specific override information.
+    /// @param ambId_ is the identifier of the cross-chain amb to be used to send the acknowledgement.
+    /// @param extraData_ is any message amb specific override information.
     /// NOTE: function can only process failing payloads.
     function revertPayload(
         uint256 payloadId_,
-        uint256 bridgeId_,
+        uint256 ambId_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         if (payloadId_ > payloadsCount) {
@@ -258,9 +259,9 @@ contract StateRegistry is IStateRegistry, AccessControl {
             revert INVALID_PAYLOAD_STATE();
         }
 
-        /// NOTE: Send `data` back to source based on BridgeID to revert the state.
+        /// NOTE: Send `data` back to source based on AmbID to revert the state.
         /// NOTE: chain_ids conflict should be addresses here.
-        // bridge[bridgeId_].dipatchPayload(formData.dstChainId_, message_, extraData_);
+        // amb[ambId_].dipatchPayload(formData.dstChainId_, message_, extraData_);
     }
 
     /*///////////////////////////////////////////////////////////////

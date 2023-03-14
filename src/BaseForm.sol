@@ -44,7 +44,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     bytes public safeGasParam;
 
     /// @dev chainId represents the superform chain id of the specific chain.
-    uint256 public chainId;
+    uint80 public chainId;
 
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 => address) public bridgeAddress;
@@ -58,7 +58,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev sets caller as the admin of the contract.
     /// @dev FIXME: missing means for admin to change implementations
     constructor(
-        uint256 chainId_,
+        uint80 chainId_,
         IStateRegistry stateRegistry_,
         ISuperFormFactory superFormFactory_
     ) {

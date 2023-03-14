@@ -30,21 +30,21 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @dev stateRegistry points to the state registry interface deployed in the respective chain.
     address public stateRegistry;
 
-    /// @dev chainId represents the layerzero chain id of the specific chain.
-    uint256 public chainId;
+    /// @dev chainId represents the superform chain id of the specific chain.
+    uint80 public chainId;
 
     /// @dev superFormFactory address is used to query for forms based on Id received in the state sync data.
     ISuperFormFactory public superFormFactory;
 
     /// TODO: add bridge id to bridge address mapping
     /// @notice deploy stateRegistry before SuperDestination
-    /// @param chainId_              Layerzero chain id
+    /// @param chainId_              Superform chain id
     /// @param stateRegistry_         State Registry address deployed
     /// @param superFormFactory_     SuperFormFactory address deployed
     /// @dev sets caller as the admin of the contract.
     /// @dev FIXME: missing means for admin to change implementations
     constructor(
-        uint256 chainId_,
+        uint80 chainId_,
         address stateRegistry_,
         ISuperFormFactory superFormFactory_
     ) {
@@ -79,11 +79,10 @@ contract TokenBank is ITokenBank, AccessControl {
             );
             address form = superFormFactory.getForm(formId_);
             if (stateData.txType == TransactionType.DEPOSIT) {
+                ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
                 if (
                     /// @dev TODO: generalise a way to check for balance for all types of formIds, for now works for ERC4626 and ERC20's
-                    IBaseForm(form).getUnderlyingOfVault(vault_).balanceOf(
-                        address(this)
-                    ) >= commonData.amounts[i]
+                    underlying.balanceOf(address(this)) >= commonData.amounts[i]
                 ) {
                     /// @dev this means it currently only supports single vault deposit as we are checking for balance of the first vault
                     /// @dev TODO: we have to optimize this flow for multi-vault deposits that would need changes to baseForms and how they handle deposits/withdraws in loop.

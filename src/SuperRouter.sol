@@ -38,7 +38,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     /// @notice chainId represents unique chain id for each chains.
     /// @dev maybe should be constant or immutable
-    uint256 public chainId;
+    uint80 public chainId;
     /// @dev totalTransactions keeps track of overall routed transactions.
     uint256 public totalTransactions;
 
@@ -52,12 +52,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev maps all the bridges to their address.
     mapping(uint8 => address) public bridgeAddress;
 
-    /// @param chainId_              Layerzero chain id
+    /// @param chainId_              SuperForm chain id
     /// @param baseUri_              URL for external metadata of ERC1155 SuperPositions
     /// @param stateRegistry_         State registry address deployed
     /// @param superFormFactory_         SuperFormFactory address deployed
     constructor(
-        uint16 chainId_,
+        uint80 chainId_,
         string memory baseUri_,
         IStateRegistry stateRegistry_,
         ISuperFormFactory superFormFactory_
@@ -272,7 +272,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         /// @dev LayerZero endpoint
         stateRegistry.dispatchPayload{value: stateData_.msgValue}(
-            stateData_.bridgeId,
+            stateData_.ambId,
             stateData_.dstChainId,
             abi.encode(info),
             stateData_.adapterParam
@@ -396,7 +396,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
         /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
         stateRegistry.dispatchPayload{value: stateData_.msgValue}(
-            stateData_.bridgeId,
+            stateData_.ambId,
             stateData_.dstChainId,
             abi.encode(info),
             stateData_.adapterParam

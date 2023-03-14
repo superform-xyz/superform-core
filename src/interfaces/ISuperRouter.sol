@@ -100,7 +100,7 @@ interface ISuperRouter {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev returns the chain id of the router contract
-    function chainId() external view returns (uint256);
+    function chainId() external view returns (uint80);
 
     /// @dev returns the total individual vault transactions made through the router.
     function totalTransactions() external view returns (uint256);

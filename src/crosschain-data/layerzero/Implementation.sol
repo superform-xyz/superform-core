@@ -3,13 +3,13 @@ pragma solidity 0.8.19;
 
 import "./NonblockingLzApp.sol";
 import {IStateRegistry} from "../../interfaces/IStateRegistry.sol";
-import {IBridgeImpl} from "../../interfaces/IBridgeImpl.sol";
+import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {StateData, CallbackType} from "../../types/DataTypes.sol";
 
 /// @title Layerzero implementation contract
 /// @author Zeropoint Labs.
 /// @dev interacts with Layerzero AMB.
-contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
+contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
@@ -18,8 +18,8 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
 
-    mapping(uint256 => uint16) public ambChainId;
-    mapping(uint16 => uint256) public superChainId;
+    mapping(uint80 => uint16) public ambChainId;
+    mapping(uint16 => uint80) public superChainId;
 
     /*///////////////////////////////////////////////////////////////
                     Constructor
@@ -44,9 +44,9 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
     /// @dev allows state registry to send message via implementation.
     /// @param dstChainId_ is the identifier of the destination chain
     /// @param message_ is the cross-chain message to be sent
-    /// @param extraData_ is message bridge specific override information
+    /// @param extraData_ is message amb specific override information
     function dipatchPayload(
-        uint256 dstChainId_,
+        uint80 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
@@ -68,7 +68,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IBridgeImpl {
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     function setChainId(
-        uint256 superChainId_,
+        uint80 superChainId_,
         uint16 ambChainId_
     ) external override onlyOwner {
         ambChainId[superChainId_] = ambChainId_;
