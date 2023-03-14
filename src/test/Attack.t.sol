@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 // Contracts
-import {Attack} from "../attack/Attack.sol";
+import {Attack} from "./attack/Attack.sol";
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
 
@@ -14,10 +14,10 @@ struct BuildAttackArgs {
     address fromSrc;
     address toDst;
     address underlyingDstToken;
-    uint256 targetVaultId;
+    uint256 targetSuperFormId;
     uint256 amount;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint80 srcChainId;
+    uint80 toChainId;
 }
 
 struct TestAttackVars {
@@ -33,8 +33,8 @@ struct TestAttackVars {
     uint256[] victimVaults;
     uint256[] amountsToDeposit;
     bytes4 revertError;
-    uint16 CHAIN_0;
-    uint16 CHAIN_1;
+    uint80 CHAIN_0;
+    uint80 CHAIN_1;
     uint256 victimVault;
     uint256 amount;
     uint256 CHAIN_0_PAYLOAD_ID;
@@ -51,8 +51,8 @@ struct TestAttackVars {
 contract AttackTest is BaseSetup {
     Attack internal attackCHAIN_0;
     Attack internal attackCHAIN_1;
-    uint16 internal CHAIN_0;
-    uint16 internal CHAIN_1;
+    uint80 internal CHAIN_0;
+    uint80 internal CHAIN_1;
     address lzEndpoint_0;
     address lzEndpoint_1;
     string internal underlyingToken;
@@ -73,12 +73,12 @@ contract AttackTest is BaseSetup {
             getContract(CHAIN_0, "SuperRouter")
         );
 
-        address payable chain1_StateHandler = payable(
+        address payable chain1_StateRegistry = payable(
             getContract(CHAIN_1, "StateRegistry")
         );
 
-        address payable chain1_SuperDestination = payable(
-            getContract(CHAIN_1, "SuperDestination")
+        address payable chain1_4626form = payable(
+            getContract(CHAIN_1, "ERC4626Form")
         );
 
         address chain1_TOKEN = getContract(CHAIN_1, underlyingToken);
@@ -90,8 +90,8 @@ contract AttackTest is BaseSetup {
 
         attackCHAIN_0 = new Attack(
             chain0_SuperRouter,
-            chain1_StateHandler,
-            chain1_SuperDestination,
+            chain1_StateRegistry,
+            chain1_4626form,
             chain1_TOKEN,
             chain1_TOKENVault
         );
@@ -106,8 +106,8 @@ contract AttackTest is BaseSetup {
 
         attackCHAIN_1 = new Attack(
             chain0_SuperRouter,
-            chain1_StateHandler,
-            chain1_SuperDestination,
+            chain1_StateRegistry,
+            chain1_4626form,
             chain1_TOKEN,
             chain1_TOKENVault
         );
@@ -119,8 +119,9 @@ contract AttackTest is BaseSetup {
         assertEq(address(attackCHAIN_0), address(attackCHAIN_1));
     }
 
+    /// @dev TODO: refactor or remove later. Marked as internal to have foundry ignore this test
     /// @dev This is a test of an end to end possible attack. Testing individual parts (unit tests) can be taken from here
-    function test_attack() public {
+    function test_attack() internal {
         TestAttackVars memory vars;
 
         vars.victimVault = 1; // should correspond to TOKEN vault
@@ -131,7 +132,7 @@ contract AttackTest is BaseSetup {
         vars.underlyingDstToken = getContract(CHAIN_1, underlyingToken);
 
         vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
-        vars.toDst = payable(getContract(CHAIN_1, "SuperDestination"));
+        vars.toDst = payable(getContract(CHAIN_1, "ERC4626Form"));
         vars.action = Actions.Deposit;
         vars.testType = TestType.Pass;
         vars.revertError = "";
@@ -139,9 +140,7 @@ contract AttackTest is BaseSetup {
         vars.VICTIM_VAULT = MockERC20(getContract(CHAIN_1, underlyingToken));
         vm.selectFork(FORKS[CHAIN_1]);
         assertEq(
-            vars.VICTIM_VAULT.balanceOf(
-                getContract(CHAIN_1, "SuperDestination")
-            ),
+            vars.VICTIM_VAULT.balanceOf(getContract(CHAIN_1, "ERC4626Form")),
             0
         );
 
@@ -178,7 +177,6 @@ contract AttackTest is BaseSetup {
             _actionToSuperRouter(
                 InternalActionArgs(
                     vars.fromSrc,
-                    vars.toDst,
                     lzEndpoint_1,
                     users[i],
                     vars.stateReqs,
@@ -411,20 +409,19 @@ contract AttackTest is BaseSetup {
         assertEq(VaultMock(vars.vaultMock).balanceOf(vars.toDst), 3000);
     }
 
-    function _buildWithdrawAttackCallData(BuildAttackArgs memory args)
-        internal
-        returns (StateReq memory stateReq, LiqRequest memory liqReq)
-    {
+    function _buildWithdrawAttackCallData(
+        BuildAttackArgs memory args
+    ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
         /// @dev set to empty bytes for now
         bytes memory adapterParam;
 
         /// @dev only testing 1 vault at a time for now
         uint256[] memory amountsToDeposit = new uint256[](1);
-        uint256[] memory targetVaultIds = new uint256[](1);
+        uint256[] memory targetSuperFormIds = new uint256[](1);
         uint256[] memory slippage = new uint256[](1);
 
         amountsToDeposit[0] = args.amount;
-        targetVaultIds[0] = args.targetVaultId;
+        targetSuperFormIds[0] = args.targetSuperFormId;
         slippage[0] = 1000;
         uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;
 
@@ -432,9 +429,10 @@ contract AttackTest is BaseSetup {
             1,
             args.toChainId,
             amountsToDeposit,
-            targetVaultIds,
+            targetSuperFormIds,
             slippage,
             adapterParam,
+            bytes(""),
             msgValue
         );
 

@@ -21,12 +21,13 @@ enum PayloadState {
 }
 
 struct StateReq {
-    uint8 bridgeId;
-    uint256 dstChainId;
+    uint8 ambId;
+    uint80 dstChainId;
     uint256[] amounts;
-    uint256[] vaultIds;
+    uint256[] superFormIds;
     uint256[] maxSlippage;
     bytes adapterParam;
+    bytes extraFormData;
     uint256 msgValue;
 }
 
@@ -37,21 +38,38 @@ struct StateData {
     bytes params;
 }
 
-struct InitData {
-    uint256 srcChainId;
-    uint256 dstChainId;
-    address user;
-    uint256[] vaultIds;
+struct FormData {
+    uint80 srcChainId;
+    uint80 dstChainId;
+    bytes commonData;
+    bytes xChainData;
+    bytes extraFormData;
+}
+
+struct FormCommonData {
+    address srcSender;
+    uint256[] superFormIds;
     uint256[] amounts;
-    uint256[] maxSlippage;
-    uint256 txId;
     bytes liqData;
+}
+
+struct FormXChainData {
+    uint256 txId;
+    uint256[] maxSlippage;
+}
+
+struct XChainActionArgs {
+    uint80 srcChainId;
+    uint80 dstChainId;
+    bytes commonData;
+    bytes xChainData;
+    bytes adapterParam;
 }
 
 struct ReturnData {
     bool status;
-    uint256 srcChainId;
-    uint256 dstChainId;
+    uint80 srcChainId;
+    uint80 dstChainId;
     uint256 txId;
     uint256[] amounts;
 }

@@ -8,7 +8,7 @@ import {StateReq} from "../types/DataTypes.sol";
 /// @author Zeropoint Labs.
 interface ISuperRouter {
     /*///////////////////////////////////////////////////////////////
-                                Events
+                                EVENTS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev is emitted when a cross-chain transaction is initiated.
@@ -21,7 +21,14 @@ interface ISuperRouter {
     event SetBridgeAddress(uint256 bridgeId, address bridgeAddress);
 
     /*///////////////////////////////////////////////////////////////
-                        External Write Functions
+                                ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev is emitted when the chain id input is invalid.
+    error INVALID_INPUT_CHAIN_ID();
+
+    /*///////////////////////////////////////////////////////////////
+                        EXTERNAL WRITE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev allows users to mint vault tokens and receive vault positions in return.
@@ -43,6 +50,38 @@ interface ISuperRouter {
         StateReq[] calldata stateData_
     ) external payable;
 
+    /// @dev allows users to mint vault tokens and receive vault positions in return.
+    /// @param liqData_      represents the data required to move tokens from user wallet to destination contract.
+    /// @param stateData_    represents the state information including destination vault ids and amounts to be deposited to such vaults.
+    function singleDirectDeposit(
+        LiqRequest calldata liqData_,
+        StateReq calldata stateData_
+    ) external payable;
+
+    /// @dev allows users to mint vault tokens and receive vault positions in return.
+    /// @param liqData_      represents the data required to move tokens from user wallet to destination contract.
+    /// @param stateData_    represents the state information including destination vault ids and amounts to be deposited to such vaults.
+    function singleXChainDeposit(
+        LiqRequest calldata liqData_,
+        StateReq calldata stateData_
+    ) external payable;
+
+    /// @dev burns users superpositions and dispatch a withdrawal request to the destination chain.
+    /// @param liqData_         represents the bridge data for underlying to be moved from destination chain.
+    /// @param stateData_       represents the state data required for withdrawal of funds from the vaults.
+    function singleDirectWithdraw(
+        LiqRequest calldata liqData_,
+        StateReq calldata stateData_
+    ) external payable;
+
+    /// @dev burns users superpositions and dispatch a withdrawal request to the destination chain.
+    /// @param liqData_         represents the bridge data for underlying to be moved from destination chain.
+    /// @param stateData_       represents the state data required for withdrawal of funds from the vaults.
+    function singleXChainWithdraw(
+        LiqRequest calldata liqData_,
+        StateReq calldata stateData_
+    ) external payable;
+
     /// @dev PREVILAGED admin ONLY FUNCTION.
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @param bridgeId_         represents the bridge unqiue identifier.
@@ -61,7 +100,7 @@ interface ISuperRouter {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev returns the chain id of the router contract
-    function chainId() external view returns (uint256);
+    function chainId() external view returns (uint80);
 
     /// @dev returns the total individual vault transactions made through the router.
     function totalTransactions() external view returns (uint256);
