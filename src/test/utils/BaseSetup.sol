@@ -925,6 +925,7 @@ abstract contract BaseSetup is DSTest, Test {
 
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is Form
+            /// @dev FIXME: this likely needs to be TOKENBANK now
             from = args.toDst;
         }
         /// @dev check this from down here when contracts are fixed for multi vault

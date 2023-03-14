@@ -42,7 +42,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev totalTransactions keeps track of overall routed transactions.
     uint256 public totalTransactions;
 
-    ISuperFormFactory public immutable factory;
+    ISuperFormFactory public immutable superFormFactory;
 
     /// @notice history of state sent across chains are used for debugging.
     /// @dev maps all transaction data routed through the smart contract.
@@ -55,18 +55,18 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @param chainId_              Layerzero chain id
     /// @param baseUri_              URL for external metadata of ERC1155 SuperPositions
     /// @param stateRegistry_         State registry address deployed
-    /// @param factory_         SuperFormFactory address deployed
+    /// @param superFormFactory_         SuperFormFactory address deployed
     constructor(
         uint16 chainId_,
         string memory baseUri_,
         IStateRegistry stateRegistry_,
-        ISuperFormFactory factory_
+        ISuperFormFactory superFormFactory_
     ) ERC1155(baseUri_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         stateRegistry = stateRegistry_;
-        factory = factory_;
+        superFormFactory = superFormFactory_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -189,14 +189,15 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         /// @dev decode superforms
         /// @dev FIXME only one vault and form id are being returned currently!!!
-        (, uint256[] memory formIds_, ) = factory.getSuperForms(
+        (, uint256[] memory formIds_, ) = superFormFactory.getSuperForms(
             stateData_.superFormIds
         );
 
         /// @dev deposits collateral to a given vault and mint vault positions.
         /// @dev FIXME: only one form id is being used here!
-        uint256[] memory dstAmounts = IBaseForm(factory.getForm(formIds_[0]))
-            .directDepositIntoVault{value: msg.value}(formDataEncoded);
+        uint256[] memory dstAmounts = IBaseForm(
+            superFormFactory.getForm(formIds_[0])
+        ).directDepositIntoVault{value: msg.value}(formDataEncoded);
 
         /// @dev TEST-CASE: _msgSender() to whom we mint. use passed `admin` arg?
         _mintBatch(srcSender, stateData_.superFormIds, dstAmounts, "");
@@ -326,15 +327,14 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         txHistory[currentTotalTransactions] = info;
 
         /// @dev decode superforms
-        (, uint256[] memory formIds_, ) = factory.getSuperForms(
+        (, uint256[] memory formIds_, ) = superFormFactory.getSuperForms(
             stateData_.superFormIds
         );
 
         /// @dev FIXME only one form id is being used here!
         /// @dev to allow bridging somewhere else requires arch change
-        IBaseForm(factory.getForm(formIds_[0])).directWithdrawFromVault{
-            value: msg.value
-        }(formDataEncoded);
+        IBaseForm(superFormFactory.getForm(formIds_[0]))
+            .directWithdrawFromVault{value: msg.value}(formDataEncoded);
 
         /// @dev doesn't seem relevant to emit these two events for direct actions. Delete?
         emit Completed(currentTotalTransactions);

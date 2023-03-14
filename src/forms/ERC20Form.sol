@@ -12,8 +12,8 @@ abstract contract ERC20Form is BaseForm {
     constructor(
         uint256 chainId_,
         IStateRegistry stateRegistry_,
-        ISuperFormFactory factory_
-    ) BaseForm(chainId_, stateRegistry_, factory_) {}
+        ISuperFormFactory superFormFactory_
+    ) BaseForm(chainId_, stateRegistry_, superFormFactory_) {}
 
     /*///////////////////////////////////////////////////////////////
                             OVERRIDES

@@ -37,8 +37,8 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev stateRegistry points to the state registry interface deployed in the respective chain.
     IStateRegistry public stateRegistry;
 
-    /// @dev The factory address is used to create new SuperForms
-    ISuperFormFactory public immutable factory;
+    /// @dev The superFormFactory address is used to create new SuperForms
+    ISuperFormFactory public immutable superFormFactory;
 
     /// @dev safeGasParam is used while sending layerzero message from destination to router.
     bytes public safeGasParam;
@@ -60,11 +60,11 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     constructor(
         uint256 chainId_,
         IStateRegistry stateRegistry_,
-        ISuperFormFactory factory_
+        ISuperFormFactory superFormFactory_
     ) {
         chainId = chainId_;
         stateRegistry = stateRegistry_;
-        factory = factory_;
+        superFormFactory = superFormFactory_;
         /// TODO: add tokenBank also for superRouter role for deposit and withdraw
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }

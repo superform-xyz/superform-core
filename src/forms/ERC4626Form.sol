@@ -20,8 +20,8 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     constructor(
         uint256 chainId_,
         IStateRegistry stateRegistry_,
-        ISuperFormFactory factory_
-    ) ERC20Form(chainId_, stateRegistry_, factory_) {}
+        ISuperFormFactory superformfactory_
+    ) ERC20Form(chainId_, stateRegistry_, superformfactory_) {}
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
@@ -129,7 +129,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         uint256 expAmount = _addValues(commonData.amounts);
 
         /// note: checking balance
-        (address[] memory vaults, , ) = factory.getSuperForms(
+        (address[] memory vaults, , ) = superFormFactory.getSuperForms(
             commonData.superFormIds
         );
 
@@ -204,7 +204,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         uint256 loopLength = commonData.superFormIds.length;
         dstAmounts = new uint256[](loopLength);
 
-        (address[] memory vaults, , ) = factory.getSuperForms(
+        (address[] memory vaults, , ) = superFormFactory.getSuperForms(
             commonData.superFormIds
         );
 
@@ -259,7 +259,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         /// @dev Ordering dependency vaultIds need to match dstAmounts (shadow matched to user)
 
         uint256 len = commonData.superFormIds.length;
-        (address[] memory vaults, , ) = factory.getSuperForms(
+        (address[] memory vaults, , ) = superFormFactory.getSuperForms(
             commonData.superFormIds
         );
 
@@ -324,7 +324,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         uint256 len = commonData.superFormIds.length;
 
-        (address[] memory vaults, , ) = factory.getSuperForms(
+        (address[] memory vaults, , ) = superFormFactory.getSuperForms(
             commonData.superFormIds
         );
         uint256[] memory dstAmounts = new uint256[](len);

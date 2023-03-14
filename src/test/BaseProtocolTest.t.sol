@@ -36,11 +36,14 @@ contract BaseProtocolTest is BaseSetup {
         /// Type 0 - Single Vault x One StateReq/LiqReq
         /// @dev FIXME: not working, just a test
         /// @dev TODO: make chain ids the new superform chain ids?
-        SUPERFORMS_ACTIONS[0] = [_superFormId("DAI", 1, FTM)];
+        SUPERFORMS_ACTIONS[0] = [_superFormId("DAI", 1, BSC)];
         AMOUNTS_ACTIONS[0][LiquidityChange.Full] = [uint256(1000)];
 
         // Type 1 - Single Vault x Two StateReq/LiqReq
-        SUPERFORMS_ACTIONS[1] = [uint256(1), 3];
+        SUPERFORMS_ACTIONS[1] = [
+            _superFormId("DAI", 1, BSC),
+            _superFormId("WETH", 1, BSC)
+        ];
         // With Full withdrawal (note, deposits are always full)
         AMOUNTS_ACTIONS[1][LiquidityChange.Full] = [uint256(1000), 5000];
         // With Partial withdrawal
@@ -271,6 +274,8 @@ contract BaseProtocolTest is BaseSetup {
                 action.CHAIN_0,
                 action.CHAIN_1
             );
+            console.log(2);
+
             vars.amounts = _amounts(action.actionType, action.actionKind);
 
             if (action.action == Actions.Deposit) {
@@ -338,6 +343,8 @@ contract BaseProtocolTest is BaseSetup {
                     getContract(chain1, underlyingToken)
                 );
             }
+            console.log(1);
+
             targetSuperFormsMem[i] = tSuperForms;
             underlyingSrcTokensMem[i] = tUnderlyingSrcTokens;
             vaultMocksMem[i] = tVaultMocks;
