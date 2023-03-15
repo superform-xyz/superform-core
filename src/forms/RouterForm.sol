@@ -14,7 +14,7 @@ import {ERC20Form} from "./ERC20Form.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for ERC4626 vaults
-contract ERC4626Form is ERC20Form, LiquidityHandler {
+contract ERC4626RouterForm is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
     /*///////////////////////////////////////////////////////////////

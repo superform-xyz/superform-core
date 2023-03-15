@@ -74,6 +74,89 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     //////////////////////////////////////////////////////////////*/
     receive() external payable {}
 
+    // function depositSync(
+    //     bytes memory payload_
+    // ) external payable onlyRole(STATE_REGISTRY_ROLE) {
+    //     StateData memory stateData = abi.decode(payload_, (StateData));
+    //     FormData memory data = abi.decode(stateData.params, (FormData));
+    //     FormCommonData memory commonData = abi.decode(
+    //         data.commonData,
+    //         (FormCommonData)
+    //     );
+
+    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
+    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
+    //             commonData.superFormIds[i]
+    //         );
+    //         address form = superFormFactory.getForm(formId_);
+    //         if (stateData.txType == TransactionType.DEPOSIT) {
+    //             ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
+    //             if (
+    //                 underlying.balanceOf(address(this)) >= commonData.amounts[i]
+    //             ) {
+    //                 directDepositToVault(stateData.params);
+    //             } else {
+    //                 revert BRIDGE_TOKENS_PENDING();
+    //             }
+    //         }
+    //     }
+    // }
+
+    // function withdrawSync(
+    //     bytes memory payload_
+    // ) external payable onlyRole(STATE_REGISTRY_ROLE) {
+    //     StateData memory stateData = abi.decode(payload_, (StateData));
+    //     FormData memory data = abi.decode(stateData.params, (FormData));
+    //     FormCommonData memory commonData = abi.decode(
+    //         data.commonData,
+    //         (FormCommonData)
+    //     );
+
+    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
+    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
+    //             commonData.superFormIds[i]
+    //         );
+    //         address form = superFormFactory.getForm(formId_);
+    //         if (stateData.txType == TransactionType.WITHDRAW) {
+    //             directWithdrawFromVault(stateData.params);
+    //         }
+    //     }
+    // }
+
+    // function stateSync(
+    //     bytes memory payload_
+    // ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
+    //     StateData memory stateData = abi.decode(payload_, (StateData));
+    //     FormData memory data = abi.decode(stateData.params, (FormData));
+    //     /// @dev This has address srcSender;
+    //     FormCommonData memory commonData = abi.decode(
+    //         data.commonData,
+    //         (FormCommonData)
+    //     );
+
+    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
+    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
+    //             commonData.superFormIds[i]
+    //         );
+    //         address form = superFormFactory.getForm(formId_);
+    //         if (stateData.txType == TransactionType.DEPOSIT) {
+    //             ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
+    //             if (
+    //                 /// @dev TODO: generalise a way to check for balance for all types of formIds, for now works for ERC4626 and ERC20's
+    //                 underlying.balanceOf(address(this)) >= commonData.amounts[i]
+    //             ) {
+    //                 /// @dev this means it currently only supports single vault deposit as we are checking for balance of the first vault
+    //                 /// @dev TODO: we have to optimize this flow for multi-vault deposits that would need changes to baseForms and how they handle deposits/withdraws in loop.
+    //                 xChainDepositIntoVault(stateData.params);
+    //             } else {
+    //                 revert BRIDGE_TOKENS_PENDING();
+    //             }
+    //         } else {
+    //             xChainWithdrawFromVault(stateData.params);
+    //         }
+    //     }
+    // }
+
     function supportsInterface(
         bytes4 interfaceId
     )
@@ -137,6 +220,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         dstAmounts = _directDepositIntoVault(formData_);
     }
 
+    /// NOTE: Why do we need it? This Form is already on xChain, sameChain deposit happens on SuperRouter?
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
@@ -153,9 +237,6 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         returns (uint256[] memory dstAmounts)
     {
         FormData memory data = abi.decode(formData_, (FormData));
-
-        /// @dev Validation
-        if (data.srcChainId == chainId) revert INVALID_CHAIN_ID();
 
         /// @dev NOTE: not returning anything
         _xChainDepositIntoVault(
@@ -186,6 +267,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         dstAmounts = _directWithdrawFromVault(formData_);
     }
 
+    /// NOTE: Why do we need it? This Form is already on xChain, sameChain withdraw happens on SuperRouter?
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault

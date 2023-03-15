@@ -60,14 +60,18 @@ contract TokenBank is ITokenBank, AccessControl {
     //////////////////////////////////////////////////////////////*/
     receive() external payable {}
 
+    
+
     /// @dev handles the state when received from the source chain.
     /// @param payload_     represents the payload id associated with the transaction.
     /// note: called by external keepers when state is ready.
+    /// NOTE: If this is to be called by external keepers, then we block it with the state registry role.
     function stateSync(
         bytes memory payload_
     ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
         StateData memory stateData = abi.decode(payload_, (StateData));
         FormData memory data = abi.decode(stateData.params, (FormData));
+        /// @dev This has address srcSender;
         FormCommonData memory commonData = abi.decode(
             data.commonData,
             (FormCommonData)

@@ -4,9 +4,9 @@ pragma solidity 0.8.19;
 /// @dev lib imports
 import "@std/Test.sol";
 import "@ds-test/test.sol";
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
-import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @dev src imports
@@ -584,6 +584,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.erc4626Form = address(
                 new ERC4626Form(
                     vars.chainId,
+                    /// NOTE: If each Form uses centralized stateRegistry, then this stateRegistry shouldn't have access to every single form?
                     IStateRegistry(payable(vars.stateRegistry)),
                     ISuperFormFactory(vars.factory)
                 )
@@ -639,6 +640,12 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.chainId,
                 "SuperFormFactory"
             );
+
+            vars.dstSuperFormFactory = getContract(
+                vars.chainId,
+                "SuperFormFactory"
+            );
+    
             vars.srcTokenBank = getContract(vars.chainId, "TokenBank");
             vars.srcErc4626Form = getContract(vars.chainId, "ERC4626Form");
             vars.srcMultiTxProcessor = getContract(
@@ -664,7 +671,8 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev - RBAC
             StateRegistry(payable(vars.srcStateRegistry)).setCoreContracts(
                 vars.srcSuperRouter,
-                vars.srcTokenBank
+                vars.srcTokenBank,
+                vars.dstSuperFormFactory
             );
 
             StateRegistry(payable(vars.srcStateRegistry)).grantRole(
@@ -947,7 +955,7 @@ abstract contract BaseSetup is DSTest, Test {
             from,
             args.multiTx
                 ? getContract(args.toChainId, "MultiTxProcessor")
-                : args.toDst,
+                : args.toDst, /// NOTE: TokenBank address / Form address???
             args.underlyingToken[0], /// @dev - needs fix because it should have an array of underlying like state req
             args.amounts[0], /// @dev - 1 amount is sent, not testing sum of amounts (different vaults)
             FORKS[args.toChainId]

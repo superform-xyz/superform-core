@@ -109,6 +109,7 @@ interface IStateRegistry {
     /// @param tokenBankContract_ is the address of the token bank
     function setCoreContracts(
         address routerContract_,
-        address tokenBankContract_
+        address tokenBankContract_,
+        address superFormFactory_
     ) external;
 }

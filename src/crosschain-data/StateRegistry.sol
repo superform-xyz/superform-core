@@ -8,10 +8,22 @@ import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {StateData, PayloadState, TransactionType, CallbackType, ReturnData, FormData, FormCommonData, FormXChainData} from "../types/DataTypes.sol";
 
+import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
+import {IBaseForm} from "../interfaces/IBaseForm.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging ambs.
 contract StateRegistry is IStateRegistry, AccessControl {
+
+    /*///////////////////////////////////////////////////////////////
+                                ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev error thrown when the bridge tokens haven't arrived to destination
+    error BRIDGE_TOKENS_PENDING();
+
     /*///////////////////////////////////////////////////////////////
                     ACCESS CONTROL ROLE CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -30,7 +42,11 @@ contract StateRegistry is IStateRegistry, AccessControl {
     uint256 public payloadsCount;
 
     address public routerContract;
+
+    /// NOTE: Shouldnt we use multiple tokenBanks to benefit from using them?
     address public tokenBankContract;
+
+    ISuperFormFactory public superFormFactory;
 
     mapping(uint8 => IAmbImplementation) public amb;
 
@@ -79,11 +95,12 @@ contract StateRegistry is IStateRegistry, AccessControl {
     /// @param tokenBankContract_ is the address of the token bank
     function setCoreContracts(
         address routerContract_,
-        address tokenBankContract_
+        address tokenBankContract_,
+        address superFormFactory_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         routerContract = routerContract_;
         tokenBankContract = tokenBankContract_;
-
+        superFormFactory = ISuperFormFactory(superFormFactory_);
         emit CoreContractsUpdated(routerContract_, tokenBankContract_);
     }
 
@@ -222,10 +239,52 @@ contract StateRegistry is IStateRegistry, AccessControl {
         bytes memory _payload = payload[payloadId_];
         StateData memory payloadInfo = abi.decode(_payload, (StateData));
 
-        if (payloadInfo.txType == TransactionType.WITHDRAW) {
-            _processWithdrawal(payloadId_, payloadInfo);
-        } else {
-            _processDeposit(payloadId_, payloadInfo);
+        /// NOTE: moved from TokenBank
+        FormData memory data = abi.decode(payloadInfo.params, (FormData));
+        FormCommonData memory commonData = abi.decode(
+            data.commonData,
+            (FormCommonData)
+        );
+
+        for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
+            (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
+                commonData.superFormIds[i]
+            );
+
+            address form = superFormFactory.getForm(formId_);
+
+            if (payloadInfo.txType == TransactionType.DEPOSIT) {
+                if (payloadInfo.flag == CallbackType.INIT) {
+                    if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
+                        revert PAYLOAD_NOT_UPDATED();
+                    }
+                    payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+                        IBaseForm(form).depositSync(
+                            payloadInfo.params
+                        );
+
+                } else {
+                    if (payloadTracking[payloadId_] != PayloadState.STORED) {
+                        revert INVALID_PAYLOAD_STATE();
+                    }
+                    payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+                    ISuperRouter(routerContract).stateSync{value: msg.value}(
+                        abi.encode(payloadInfo)
+                    );
+                }
+            } else {
+                payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+                if (payloadInfo.flag == CallbackType.INIT) {
+                    IBaseForm(form).withdrawSync(payloadInfo.params);
+                } else {
+                    ISuperRouter(routerContract).stateSync{value: msg.value}(
+                        abi.encode(payloadInfo)
+                    );
+                }
+            }
         }
     }
 
@@ -267,45 +326,45 @@ contract StateRegistry is IStateRegistry, AccessControl {
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function _processWithdrawal(
-        uint256 payloadId_,
-        StateData memory payloadInfo_
-    ) internal {
-        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+    // function _processWithdrawal(
+    //     uint256 payloadId_,
+    //     StateData memory payloadInfo_
+    // ) internal {
+    //     payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-        if (payloadInfo_.flag == CallbackType.INIT) {
-            ITokenBank(tokenBankContract).stateSync{value: msg.value}(
-                abi.encode(payloadInfo_)
-            );
-        } else {
-            ISuperRouter(routerContract).stateSync{value: msg.value}(
-                abi.encode(payloadInfo_)
-            );
-        }
-    }
+    //     if (payloadInfo_.flag == CallbackType.INIT) {
+    //         ITokenBank(tokenBankContract).stateSync{value: msg.value}(
+    //             abi.encode(payloadInfo_)
+    //         );
+    //     } else {
+    //         ISuperRouter(routerContract).stateSync{value: msg.value}(
+    //             abi.encode(payloadInfo_)
+    //         );
+    //     }
+    // }
 
-    function _processDeposit(
-        uint256 payloadId_,
-        StateData memory payloadInfo_
-    ) internal {
-        if (payloadInfo_.flag == CallbackType.INIT) {
-            if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
-                revert PAYLOAD_NOT_UPDATED();
-            }
-            payloadTracking[payloadId_] = PayloadState.PROCESSED;
+    // function _processDeposit(
+    //     uint256 payloadId_,
+    //     StateData memory payloadInfo_
+    // ) internal {
+    //     if (payloadInfo_.flag == CallbackType.INIT) {
+    //         if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
+    //             revert PAYLOAD_NOT_UPDATED();
+    //         }
+    //         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ITokenBank(tokenBankContract).stateSync{value: msg.value}(
-                abi.encode(payloadInfo_)
-            );
-        } else {
-            if (payloadTracking[payloadId_] != PayloadState.STORED) {
-                revert INVALID_PAYLOAD_STATE();
-            }
-            payloadTracking[payloadId_] = PayloadState.PROCESSED;
+    //         ITokenBank(tokenBankContract).stateSync{value: msg.value}(
+    //             abi.encode(payloadInfo_)
+    //         );
+    //     } else {
+    //         if (payloadTracking[payloadId_] != PayloadState.STORED) {
+    //             revert INVALID_PAYLOAD_STATE();
+    //         }
+    //         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperRouter(routerContract).stateSync{value: msg.value}(
-                abi.encode(payloadInfo_)
-            );
-        }
-    }
+    //         ISuperRouter(routerContract).stateSync{value: msg.value}(
+    //             abi.encode(payloadInfo_)
+    //         );
+    //     }
+    // }
 }
