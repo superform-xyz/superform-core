@@ -5,7 +5,7 @@ import {Utilities} from "./utils/Utilities.sol";
 import "forge-std/console.sol";
 
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
-import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {SuperFormFactory} from "../SuperFormFactory.sol";
 import {ERC4626Form} from "../forms/ERC4626Form.sol";
 
@@ -27,7 +27,7 @@ contract SuperFormFactoryTest is Utilities {
 
     address payable[] internal users;
 
-    IStateRegistry internal mockStateRegistry;
+    IBaseStateRegistry internal mockStateRegistry;
     SuperFormFactory internal superFormFactory;
     uint80 internal chainId;
     address payable internal admin;
@@ -37,7 +37,7 @@ contract SuperFormFactoryTest is Utilities {
         admin = users[0];
         vm.label(admin, "Admin");
         chainId = uint80(block.chainid);
-        mockStateRegistry = IStateRegistry(address(10));
+        mockStateRegistry = IBaseStateRegistry(address(10));
         vm.prank(admin);
         superFormFactory = new SuperFormFactory(chainId);
     }

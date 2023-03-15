@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {StateData, TransactionType, CallbackType, FormData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
@@ -19,7 +19,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
     constructor(
         uint80 chainId_,
-        IStateRegistry stateRegistry_,
+        IBaseStateRegistry stateRegistry_,
         ISuperFormFactory superformfactory_
     ) ERC20Form(chainId_, stateRegistry_, superformfactory_) {}
 

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-/// @title IStateRegistry
+/// @title IBaseStateRegistry
 /// @author ZeroPoint Labs
 /// @dev stores, updates & process cross-chain payloads
-interface IStateRegistry {
+interface IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 Errors
     //////////////////////////////////////////////////////////////*/
@@ -44,12 +44,6 @@ interface IStateRegistry {
 
     /// @dev is emitted when a payload gets processed.
     event PayloadProcessed(uint256 payloadId);
-
-    /// @dev is emitted when core contracts are updated
-    event CoreContractsUpdated(
-        address routerContract,
-        address tokenBankContract
-    );
 
     /*///////////////////////////////////////////////////////////////
                             External Functions
@@ -103,12 +97,4 @@ interface IStateRegistry {
         uint256 ambId_,
         bytes memory extraData_
     ) external payable;
-
-    /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
-    /// @param routerContract_ is the address of the router
-    /// @param tokenBankContract_ is the address of the token bank
-    function setCoreContracts(
-        address routerContract_,
-        address tokenBankContract_
-    ) external;
 }

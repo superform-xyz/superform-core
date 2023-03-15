@@ -145,7 +145,7 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: BSC,
                 user: users[1],
                 testType: TestType.RevertProcessPayload,
-                revertError: IStateRegistry.INVALID_PAYLOAD_STATE.selector, // @dev to a find how to use reverts here
+                revertError: IBaseStateRegistry.INVALID_PAYLOAD_STATE.selector, // @dev to a find how to use reverts here
                 revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
@@ -160,7 +160,7 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: BSC,
                 user: users[0],
                 testType: TestType.RevertUpdateStateSlippage,
-                revertError: IStateRegistry.SLIPPAGE_OUT_OF_BOUNDS.selector, // @dev to a find how to use reverts here
+                revertError: IBaseStateRegistry.SLIPPAGE_OUT_OF_BOUNDS.selector, // @dev to a find how to use reverts here
                 revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 1200, // 12%
@@ -175,7 +175,7 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: OP,
                 user: users[2],
                 testType: TestType.RevertUpdateStateSlippage,
-                revertError: IStateRegistry.NEGATIVE_SLIPPAGE.selector, // @dev to a find how to use reverts here
+                revertError: IBaseStateRegistry.NEGATIVE_SLIPPAGE.selector, // @dev to a find how to use reverts here
                 revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: -100,

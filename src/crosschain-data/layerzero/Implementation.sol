@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "./NonblockingLzApp.sol";
-import {IStateRegistry} from "../../interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {StateData, CallbackType} from "../../types/DataTypes.sol";
 
@@ -13,7 +13,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
-    IStateRegistry public immutable registry;
+    IBaseStateRegistry public immutable registry;
 
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
@@ -28,7 +28,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     /// @param endpoint_ is the layer zero endpoint for respective chain.
     constructor(
         address endpoint_,
-        IStateRegistry registry_
+        IBaseStateRegistry registry_
     ) NonblockingLzApp(endpoint_) {
         registry = registry_;
     }

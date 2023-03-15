@@ -4,7 +4,7 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {StateData, FormData, FormCommonData, TransactionType} from "./types/DataTypes.sol";
-import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {ITokenBank} from "./interfaces/ITokenBank.sol";

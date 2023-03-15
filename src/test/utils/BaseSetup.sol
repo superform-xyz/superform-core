@@ -11,8 +11,8 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @dev src imports
 import {VaultMock} from "../mocks/VaultMock.sol";
-import {IStateRegistry} from "../../interfaces/IStateRegistry.sol";
-import {StateRegistry} from "../../crosschain-data/StateRegistry.sol";
+import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
+import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "../../interfaces/IERC4626.sol";
@@ -518,7 +518,7 @@ abstract contract BaseSetup is DSTest, Test {
                 .lzHelper;
 
             /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
-            vars.stateRegistry = address(new StateRegistry(vars.chainId));
+            vars.stateRegistry = address(new CoreStateRegistry(vars.chainId));
             contracts[vars.chainId][bytes32(bytes("StateRegistry"))] = vars
                 .stateRegistry;
 
@@ -526,7 +526,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
-                    IStateRegistry(vars.stateRegistry)
+                    IBaseStateRegistry(vars.stateRegistry)
                 )
             );
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
@@ -584,7 +584,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.erc4626Form = address(
                 new ERC4626Form(
                     vars.chainId,
-                    IStateRegistry(payable(vars.stateRegistry)),
+                    IBaseStateRegistry(payable(vars.stateRegistry)),
                     ISuperFormFactory(vars.factory)
                 )
             );
@@ -608,7 +608,7 @@ abstract contract BaseSetup is DSTest, Test {
                 new SuperRouter(
                     vars.chainId,
                     "test.com/",
-                    IStateRegistry(payable(vars.stateRegistry)),
+                    IBaseStateRegistry(payable(vars.stateRegistry)),
                     ISuperFormFactory(vars.factory)
                 )
             );
@@ -662,30 +662,30 @@ abstract contract BaseSetup is DSTest, Test {
             //     .updateSafeGasParam("0x000100000000000000000000000000000000000000000000000000000000004c4b40");
 
             /// @dev - RBAC
-            StateRegistry(payable(vars.srcStateRegistry)).setCoreContracts(
+            CoreStateRegistry(payable(vars.srcStateRegistry)).setCoreContracts(
                 vars.srcSuperRouter,
                 vars.srcTokenBank
             );
 
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.srcSuperRouter
             );
 
             /// @dev TODO: for each form , add it to the core_contracts_role. Just 1 for now
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.srcErc4626Form
             );
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
                 IMPLEMENTATION_CONTRACTS_ROLE,
                 vars.lzImplementation
             );
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
                 PROCESSOR_ROLE,
                 deployer
             );
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
                 UPDATER_ROLE,
                 deployer
             );
@@ -706,7 +706,7 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev configures lzImplementation to state registry
-            StateRegistry(payable(vars.srcStateRegistry)).configureAmb(
+            CoreStateRegistry(payable(vars.srcStateRegistry)).configureAmb(
                 ambIds[0],
                 vars.lzImplementation
             );
@@ -772,7 +772,7 @@ abstract contract BaseSetup is DSTest, Test {
                 1e18;
         }
 
-        StateRegistry stateRegistry = StateRegistry(
+        CoreStateRegistry stateRegistry = CoreStateRegistry(
             payable(getContract(args.toChainId, "StateRegistry"))
         );
         SuperRouter superRouter = SuperRouter(args.fromSrc);
@@ -1082,14 +1082,14 @@ abstract contract BaseSetup is DSTest, Test {
         if (testType == TestType.Pass) {
             vm.prank(deployer);
 
-            StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
+            CoreStateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .updatePayload(payloadId_, finalAmounts);
         } else if (testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
             vm.expectRevert(revertError); /// @dev removed string here: come to this later
 
-            StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
+            CoreStateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .updatePayload(payloadId_, finalAmounts);
 
             return false;
@@ -1101,7 +1101,7 @@ abstract contract BaseSetup is DSTest, Test {
             );
             vm.expectRevert(errorMsg);
 
-            StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
+            CoreStateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .updatePayload(payloadId_, finalAmounts);
 
             return false;
@@ -1126,12 +1126,12 @@ abstract contract BaseSetup is DSTest, Test {
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {
-            StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
+            CoreStateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .processPayload{value: msgValue}(payloadId_);
         } else if (testType == TestType.RevertProcessPayload) {
             vm.expectRevert();
 
-            StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
+            CoreStateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
                 .processPayload{value: msgValue}(payloadId_);
 
             return false;

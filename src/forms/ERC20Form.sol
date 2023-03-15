@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
-import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {BaseForm} from "../BaseForm.sol";
 
@@ -11,7 +11,7 @@ import {BaseForm} from "../BaseForm.sol";
 abstract contract ERC20Form is BaseForm {
     constructor(
         uint80 chainId_,
-        IStateRegistry stateRegistry_,
+        IBaseStateRegistry stateRegistry_,
         ISuperFormFactory superFormFactory_
     ) BaseForm(chainId_, stateRegistry_, superFormFactory_) {}
 

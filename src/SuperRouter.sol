@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {StateReq, StateData, TransactionType, ReturnData, CallbackType, FormData, FormCommonData, FormXChainData} from "./types/DataTypes.sol";
-import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 
@@ -34,7 +34,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @notice state = information about destination chain & vault id.
     /// @notice  stateRegistry accepts requests from whitelisted addresses.
     /// @dev stateRegistry integrates with interblockchain messaging protocols.
-    IStateRegistry public stateRegistry;
+    IBaseStateRegistry public stateRegistry;
 
     /// @notice chainId represents unique chain id for each chains.
     /// @dev maybe should be constant or immutable
@@ -59,7 +59,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     constructor(
         uint80 chainId_,
         string memory baseUri_,
-        IStateRegistry stateRegistry_,
+        IBaseStateRegistry stateRegistry_,
         ISuperFormFactory superFormFactory_
     ) ERC1155(baseUri_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();

@@ -7,7 +7,7 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {StateData, FormData, FormCommonData, FormXChainData, XChainActionArgs} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
-import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 
@@ -35,7 +35,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @notice state variable are all declared public to avoid creating functions to expose.
 
     /// @dev stateRegistry points to the state registry interface deployed in the respective chain.
-    IStateRegistry public stateRegistry;
+    IBaseStateRegistry public stateRegistry;
 
     /// @dev The superFormFactory address is used to create new SuperForms
     ISuperFormFactory public immutable superFormFactory;
@@ -59,7 +59,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev FIXME: missing means for admin to change implementations
     constructor(
         uint80 chainId_,
-        IStateRegistry stateRegistry_,
+        IBaseStateRegistry stateRegistry_,
         ISuperFormFactory superFormFactory_
     ) {
         chainId = chainId_;
