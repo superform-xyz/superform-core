@@ -39,14 +39,21 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @notice chainId represents unique chain id for each chains.
     /// @dev maybe should be constant or immutable
     uint80 public chainId;
+
     /// @dev totalTransactions keeps track of overall routed transactions.
     uint256 public totalTransactions;
+
+    uint80 public totalTransactionsUint80;
 
     ISuperFormFactory public immutable superFormFactory;
 
     /// @notice history of state sent across chains are used for debugging.
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint256 => StateData) public txHistory;
+
+    /// @notice history of state sent across chains are used for debugging.
+    /// @dev maps all transaction data routed through the smart contract.
+    mapping(uint80 => AMBMessage) public ambMessagesHistory;
 
     /// @notice bridge id is mapped to its execution address.
     /// @dev maps all the bridges to their address.
@@ -76,6 +83,164 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @dev socket.tech fails without a native receive function.
     receive() external payable {}
+
+    //; Liq Data: 0 (chainId 1) => [LiqData (SfData1)] | 1 (chainId 2) => [LiqData (SfData3 + SfData4)] | 2 (chainId 3) => [LiqData (SfData5) | 3 (chainId 3) => [LiqData (SfData6)]
+    struct SuperFormsData {
+        // superFormids must have same destination. Can have different different underlyings
+        uint256[] superFormIds;
+        uint256[] amounts;
+        uint256[] maxSlippage;
+        LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
+        bytes extraFormData; // extraFormData
+    }
+    struct MultiXChainStateReq {
+        uint8 primaryAmbId;
+        uint8[] secondaryAmbIds;
+        uint16[] dstChainIds;
+        SuperFormsData[] superFormsData;
+        bytes adapterParam;
+        uint256 msgValue;
+    }
+
+    struct AMBInitData {
+        uint256 txData; // <- tight packing of (address srcSender (160 bits), srcChainId(uint16), txId (80bits)) -> must be 0 when being sent in the state req
+        uint256[] superFormIds;
+        uint256[] amounts;
+        uint256[] maxSlippage;
+        bytes extraFormData; // extraFormData
+        bytes liqData; // <- liqData
+    }
+    struct AMBMessage {
+        uint256 txInfo; // tight packing of  TransactionType txType and CallbackType flag; // <- 2
+        bytes params; // abi.encode (AMBInitData)
+    }
+
+    event InitiatedXChain(uint256 indexed txId);
+    error INVALID_AMB_IDS();
+    error INVALID_SUPERFORMS_DATA();
+
+    struct LocalActionVars {
+        AMBMessage ambMessage;
+        AMBInitData ambData;
+        LiqRequest liqRequest;
+        uint16 srcChainId;
+        uint16 dstChainId;
+        uint80 currentTotalTransactions;
+        address srcSender;
+        uint256 liqRequestsLen;
+        uint256 txData;
+        uint256 txInfo;
+        uint256[] formIds;
+        uint256[] dstAmounts;
+    }
+
+    function multiXChainDeposit(
+        MultiXChainStateReq calldata req
+    ) external payable {
+        LocalActionVars memory vars;
+        vars.srcSender = _msgSender();
+        /// @dev FIXME
+        vars.srcChainId = uint16(chainId);
+        if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
+            revert INVALID_AMB_IDS();
+
+        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
+            vars.dstChainId = req.dstChainIds[i];
+            totalTransactionsUint80++;
+            vars.currentTotalTransactions = totalTransactionsUint80;
+
+            /// @dev validate superFormsData
+
+            if (
+                !_validateSuperFormsData(vars.dstChainId, req.superFormsData[i])
+            ) revert INVALID_SUPERFORMS_DATA();
+
+            /// @dev write packed txData
+            vars.txData = uint256(uint160(vars.srcSender));
+            vars.txData |= vars.srcChainId << 160;
+            vars.txData |= uint256(vars.currentTotalTransactions) << 176;
+
+            vars.ambData = AMBInitData(
+                vars.txData,
+                req.superFormsData[i].superFormIds,
+                req.superFormsData[i].amounts,
+                req.superFormsData[i].maxSlippage,
+                req.superFormsData[i].extraFormData,
+                ""
+            );
+
+            /// @dev write packed txInfo
+            vars.txInfo = uint256(uint128(TransactionType.DEPOSIT));
+            vars.txInfo |= uint256(uint128(CallbackType.INIT)) << 128;
+
+            /// @dev write amb message
+            vars.ambMessage = AMBMessage(vars.txInfo, abi.encode(vars.ambData));
+
+            /// @dev same chain action
+            /// @dev FIXME chainId should be 16 bits
+            if (uint16(vars.srcChainId) == vars.dstChainId) {
+                /// @dev decode superforms
+                /// @dev FIXME only one vault and form id are being returned currently!!!
+                (, vars.formIds, ) = superFormFactory.getSuperForms(
+                    vars.ambData.superFormIds
+                );
+
+                /// @dev include liqData for direct deposit
+                /// @dev TODO: can we encode an array like this?
+                vars.ambData.liqData = abi.encode(
+                    req.superFormsData[i].liqRequests
+                );
+
+                /// @dev deposits collateral to a given vault and mint vault positions.
+                /// @dev FIXME: only one form id is being used here!
+                vars.dstAmounts = IBaseForm(
+                    superFormFactory.getForm(vars.formIds[0])
+                ).directDepositIntoVault{value: msg.value}(
+                    abi.encode(vars.ambData)
+                );
+
+                /// @dev TEST-CASE: _msgSender() to whom we mint. use passed `admin` arg?
+                _mintBatch(
+                    vars.srcSender,
+                    vars.ambData.superFormIds,
+                    vars.dstAmounts,
+                    ""
+                );
+
+                emit Completed(vars.currentTotalTransactions);
+            } else {
+                vars.liqRequestsLen = req.superFormsData[i].liqRequests.length;
+
+                /// @dev this loop is what allows to deposit to >1 different underlying on destination
+                /// @dev if a loop fails in a validation the whole chain should be reverted
+                for (uint256 j = 0; j < vars.liqRequestsLen; j++) {
+                    vars.liqRequest = req.superFormsData[i].liqRequests[j];
+                    /// @dev dispatch liquidity data
+                    dispatchTokens(
+                        bridgeAddress[vars.liqRequest.bridgeId],
+                        vars.liqRequest.txData,
+                        vars.liqRequest.token,
+                        vars.liqRequest.allowanceTarget, /// to be removed
+                        vars.liqRequest.amount,
+                        vars.srcSender,
+                        vars.liqRequest.nativeAmount
+                    );
+                }
+
+                stateRegistry.dispatchPayload{value: req.msgValue}(
+                    req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+                    vars.dstChainId,
+                    abi.encode(vars.ambMessage),
+                    req.adapterParam
+                );
+
+                ambMessagesHistory[vars.currentTotalTransactions] = vars
+                    .ambMessage;
+
+                emit InitiatedXChain(vars.currentTotalTransactions);
+            }
+        }
+    }
 
     /// @dev allows users to mint vault tokens and receive vault positions in return.
     /// @param liqData_      represents the data required to move tokens from user wallet to destination contract.
@@ -532,5 +697,66 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             }
         }
         return true;
+    }
+
+    function _validateAmbs(
+        uint8 primaryAmbId,
+        uint8[] memory secondaryAmbIds
+    ) internal pure returns (bool) {
+        for (uint256 i = 0; i < secondaryAmbIds.length; i++) {
+            if (primaryAmbId == secondaryAmbIds[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function _validateSuperFormsData(
+        uint16 dstChainId_,
+        SuperFormsData memory superFormsData_
+    ) internal pure returns (bool) {
+        uint256 len = superFormsData_.amounts.length;
+        uint256 liqRequestsLen = superFormsData_.liqRequests.length;
+        uint256 sumAmounts;
+        /// @dev size validation
+        if (
+            !(superFormsData_.superFormIds.length ==
+                superFormsData_.amounts.length &&
+                superFormsData_.superFormIds.length ==
+                superFormsData_.maxSlippage.length)
+        ) {
+            return false;
+        }
+
+        for (uint256 i = 0; i < len; i++) {
+            if (
+                dstChainId_ !=
+                uint256(uint80(superFormsData_.superFormIds[i] >> 176))
+            ) return false;
+
+            if (
+                superFormsData_.maxSlippage[i] < 0 ||
+                superFormsData_.maxSlippage[i] > 10000
+            ) return false;
+
+            sumAmounts += superFormsData_.amounts[i];
+        }
+
+        /// @dev if length = 1; amount = sum of superFormsData amount
+        if (
+            liqRequestsLen == 1 &&
+            superFormsData_.liqRequests[0].amount != sumAmounts
+        ) {
+            return false;
+            /// @dev else, length must be equal to the number of superForms sent in this request
+        } else if (liqRequestsLen > 1) {
+            return false;
+
+            /// @dev TODO validate token correspond to superForms' underlying?
+        }
+
+        /// @dev TODO validate TxData to avoid exploits
+
+        return false;
     }
 }
