@@ -46,7 +46,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev totalTransactions keeps track of overall routed transactions.
     uint256 public totalTransactions;
 
-    uint80 public dstTotalTransactions;
+    uint80 public totalTxs;
 
     ISuperFormFactory public immutable superFormFactory;
 
@@ -140,14 +140,15 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         ActionLocalVars memory vars;
         AMBInitMultiVaultData memory ambData;
         vars.srcSender = _msgSender();
+
         /// @dev FIXME
         vars.srcChainId = uint16(chainId);
         if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
             revert INVALID_AMB_IDS();
 
         vars.dstChainId = req.dstChainId;
-        dstTotalTransactions++;
-        vars.currentTotalTransactions = dstTotalTransactions;
+        totalTxs++;
+        vars.currentTotalTransactions = totalTxs;
 
         /// @dev validate superFormsData
 
@@ -264,8 +265,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             revert INVALID_CHAIN_IDS();
 
         vars.dstChainId = req.dstChainId;
-        dstTotalTransactions++;
-        vars.currentTotalTransactions = dstTotalTransactions;
+        totalTxs++;
+        vars.currentTotalTransactions = totalTxs;
 
         /// @dev validate superFormsData
 
@@ -331,8 +332,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             revert INVALID_CHAIN_IDS();
 
         vars.dstChainId = req.dstChainId;
-        dstTotalTransactions++;
-        vars.currentTotalTransactions = dstTotalTransactions;
+        totalTxs++;
+        vars.currentTotalTransactions = totalTxs;
 
         /// @dev validate superFormsData
 
@@ -726,7 +727,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         /// @dev TODO validate TxData to avoid exploits
 
-        return false;
+        return true;
     }
 
     function _validateSuperFormsData(
@@ -758,6 +759,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             ) return false;
 
             sumAmounts += superFormsData_.amounts[i];
+
+            /// @dev TODO validate token correspond to superForms' underlying?
+            /// @dev TODO validate TxData to avoid exploits
         }
 
         /// @dev if length = 1; amount = sum of superFormsData amount
@@ -768,14 +772,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             return false;
             /// @dev else, length must be equal to the number of superForms sent in this request
         } else if (liqRequestsLen > 1) {
-            return false;
-
-            /// @dev TODO validate token correspond to superForms' underlying?
+            if (liqRequestsLen != len) {
+                return false;
+            }
         }
 
-        /// @dev TODO validate TxData to avoid exploits
-
-        return false;
+        return true;
     }
 
     function _packTxData(
