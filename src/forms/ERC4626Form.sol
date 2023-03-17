@@ -7,6 +7,7 @@ import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {StateData, TransactionType, CallbackType, FormData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData} from "../types/DataTypes.sol";
+import {DirectActionData} from "../types/NewDataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
@@ -108,6 +109,61 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc BaseForm
+    function _directSingleDepositIntoVault(
+        bytes calldata actionData_
+    ) internal virtual override returns (uint256 dstAmount) {
+        DirectActionData memory data = abi.decode(
+            actionData_,
+            (DirectActionData)
+        );
+
+        LiqRequest memory liqData = abi.decode(data.liqData, (LiqRequest));
+
+        /// note: checking balance
+        (address vault, , ) = superFormFactory.getSuperForm(data.superFormId);
+        ERC4626 v = ERC4626(vault);
+        address collateral = address(v.asset());
+        uint256 balanceBefore = ERC20(collateral).balanceOf(address(this));
+        address srcSender = address(uint160(data.txData));
+
+        /// note: handle the collateral token transfers.
+        if (liqData.txData.length == 0) {
+            require(
+                ERC20(liqData.token).allowance(srcSender, address(this)) >=
+                    liqData.amount,
+                "Destination: Insufficient Allowance"
+            );
+            ERC20(liqData.token).safeTransferFrom(
+                srcSender,
+                address(this),
+                liqData.amount
+            );
+        } else {
+            dispatchTokens(
+                bridgeAddress[liqData.bridgeId],
+                liqData.txData,
+                liqData.token,
+                liqData.allowanceTarget,
+                liqData.amount,
+                srcSender, // srcSender
+                liqData.nativeAmount
+            );
+        }
+
+        uint256 balanceAfter = ERC20(collateral).balanceOf(address(this));
+        require(
+            balanceAfter - balanceBefore >= data.amount,
+            "Destination: Invalid State & Liq Data"
+        );
+
+        require(
+            address(v.asset()) == collateral,
+            "Destination: Invalid Collateral"
+        );
+        dstAmount = v.deposit(data.amount, address(this));
+    }
 
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(

@@ -140,6 +140,24 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
+    /// @param actionData_  A bytes representation containing all the data required to make a form action
+    /// @return dstAmount  The amount of tokens deposited in same chain action
+    /// @dev NOTE: Should this function return?
+    function directSingleDepositIntoVault(
+        bytes calldata actionData_
+    )
+        external
+        payable
+        override
+        onlyRole(SUPER_ROUTER_ROLE)
+        returns (uint256 dstAmount)
+    {
+        dstAmount = _directSingleDepositIntoVault(actionData_);
+    }
+
+    /// @dev PREVILEGED router ONLY FUNCTION.
+    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
+    /// @dev process same chain id deposits
     /// @param formData_  A bytes representation containing all the data required to make a form action
     /// @return dstAmounts  The amount of tokens deposited in same chain action
     /// @dev NOTE: Should this function return?
@@ -317,6 +335,10 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     function _directDepositIntoVault(
         bytes calldata formData_
     ) internal virtual returns (uint256[] memory dstAmounts);
+
+    function _directSingleDepositIntoVault(
+        bytes calldata actionData_
+    ) internal virtual returns (uint256 dstAmount);
 
     /// @dev Withdraws underlying tokens from a vault
     function _directWithdrawFromVault(
