@@ -11,6 +11,8 @@ import {StateData, PayloadState, TransactionType, CallbackType, ReturnData, Form
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging ambs.
 contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
+    uint256 public constant REQUIRED_QUORUM = 1;
+
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -141,6 +143,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         bytes memory _payload = payload[payloadId_];
+        bytes memory _proof = abi.encode(keccak256(_payload));
+
+        if(messageQuorum[_proof] < REQUIRED_QUORUM) {
+            revert QUORUM_NOT_REACHED(); 
+        }
+
         StateData memory payloadInfo = abi.decode(_payload, (StateData));
 
         if (payloadInfo.txType == TransactionType.WITHDRAW) {
@@ -184,6 +192,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// NOTE: chain_ids conflict should be addresses here.
         // amb[ambId_].dipatchPayload(formData.dstChainId_, message_, extraData_);
     }
+    
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS

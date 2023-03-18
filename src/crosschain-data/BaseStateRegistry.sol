@@ -29,6 +29,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     uint256 public payloadsCount;
 
     mapping(uint8 => IAmbImplementation) public amb;
+    mapping(bytes => uint256) public messageQuorum;
 
     /// @dev stores all received payloads after assigning them an unique identifier upon receiving.
     mapping(uint256 => bytes) public payload;
@@ -79,6 +80,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     /// NOTE: dstChainId maps with the message amb's propreitory chain Id.
     function dispatchPayload(
         uint8 ambId_,
+        uint8[] memory secAmbId_,
         uint80 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
@@ -94,6 +96,23 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             message_,
             extraData_
         );
+
+        bytes memory proof = abi.encode(keccak256(message_));
+        
+        for(uint8 i=0; i<secAmbId_.length; i++) {
+            IAmbImplementation tempImpl = amb[secAmbId_[i]];
+
+            if (address(tempImpl) == address(0)) {
+                revert INVALID_BRIDGE_ID();
+            }
+
+            /// @dev should figure out how to split message costs
+            tempImpl.dipatchPayload{value: msg.value}(
+                dstChainId_,
+                proof,
+                extraData_
+            );
+        }
     }
 
     /// @dev allows state registry to receive messages from amb implementations.
@@ -106,10 +125,18 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         override
         onlyRole(IMPLEMENTATION_CONTRACTS_ROLE)
     {
-        ++payloadsCount;
-        payload[payloadsCount] = message_;
+        if(message_.length == 32) {
+            /// assuming 32 bytes length is always proof 
+            /// @dev should validate this later
+            messageQuorum[message_] += 1;
 
-        emit PayloadReceived(srcChainId_, chainId, payloadsCount);
+            emit ProofReceived(message_);
+        } else {
+            ++payloadsCount;
+            payload[payloadsCount] = message_;
+            
+            emit PayloadReceived(srcChainId_, chainId, payloadsCount);
+        }
     }
 
     /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.

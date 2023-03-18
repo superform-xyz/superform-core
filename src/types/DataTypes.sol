@@ -22,6 +22,7 @@ enum PayloadState {
 
 struct StateReq {
     uint8 ambId;
+    uint8[] proofAmbId;
     uint80 dstChainId;
     uint256[] amounts;
     uint256[] superFormIds;
