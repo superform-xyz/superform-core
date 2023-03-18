@@ -233,6 +233,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     )
         external
         payable
+        virtual
         override
         onlyRole(TOKEN_BANK_ROLE)
         returns (uint256[] memory dstAmounts)

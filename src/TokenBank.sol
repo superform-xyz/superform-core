@@ -92,12 +92,13 @@ contract TokenBank is ITokenBank, AccessControl {
                     underlying.balanceOf(address(this)) >= commonData.amounts[i]
                 ) {
                     underlying.transfer(form, commonData.amounts[i]);
-                    IBaseForm(form).directDepositIntoVault(stateData.params);
+                    console.log("msg.value", msg.value);
+                    IBaseForm(form).xChainDepositIntoVault{value: msg.value}(stateData.params);
                 } else {
                     revert BRIDGE_TOKENS_PENDING();
                 }
             } else {
-                IBaseForm(form).directWithdrawFromVault(stateData.params);
+                IBaseForm(form).xChainWithdrawFromVault(stateData.params);
             }
         }
     }

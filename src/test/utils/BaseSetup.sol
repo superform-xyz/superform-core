@@ -1130,7 +1130,7 @@ abstract contract BaseSetup is DSTest, Test {
 
         vm.selectFork(FORKS[targetChainId_]);
 
-        uint256 msgValue = 5 * _getPriceMultiplier(targetChainId_) * 1e18;
+        uint256 msgValue = 10 * _getPriceMultiplier(targetChainId_) * 1e18;
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {

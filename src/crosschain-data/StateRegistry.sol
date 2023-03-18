@@ -262,7 +262,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
                     payloadTracking[payloadId_] = PayloadState.PROCESSED;
                     
                     console.log("tokenBank");
-                    tokenBankContract.stateSync(
+                    tokenBankContract.stateSync{value: msg.value}(
                             _payload
                         );
 

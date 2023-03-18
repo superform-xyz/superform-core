@@ -12,6 +12,7 @@ import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
+import "forge-std/console.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for ERC4626 vaults
@@ -122,58 +123,6 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
 
-    // function depositSync(
-    //     bytes memory payload_
-    // ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
-    //     StateData memory stateData = abi.decode(payload_, (StateData));
-    //     FormData memory data = abi.decode(stateData.params, (FormData));
-    //     FormCommonData memory commonData = abi.decode(
-    //         data.commonData,
-    //         (FormCommonData)
-    //     );
-
-    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
-    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
-    //             commonData.superFormIds[i]
-    //         );
-    //         address form = superFormFactory.getForm(formId_);
-    //         if (stateData.txType == TransactionType.DEPOSIT) {
-    //             ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
-    //             if (
-    //                 underlying.balanceOf(address(this)) >= commonData.amounts[i]
-    //             ) {
-    //                 underlying.approve(vault_, commonData.amounts[i]);
-    //                 _directDepositIntoVault(data);
-    //             } else {
-    //                 revert BRIDGE_TOKENS_PENDING();
-    //             }
-    //         }
-    //     }
-    // }
-
-    // function withdrawSync(
-    //     bytes memory payload_
-    // ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
-
-    //     StateData memory stateData = abi.decode(payload_, (StateData));
-    //     FormData memory data = abi.decode(stateData.params, (FormData));
-    //     FormCommonData memory commonData = abi.decode(
-    //         data.commonData,
-    //         (FormCommonData)
-    //     );
-
-    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
-    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
-    //             commonData.superFormIds[i]
-    //         );
-            
-    //         address form = superFormFactory.getForm(formId_);
-    //         if (stateData.txType == TransactionType.WITHDRAW) {
-    //             _directWithdrawFromVault(data);
-    //         }
-    //     }
-    // }
-
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
         bytes calldata formData
@@ -276,6 +225,30 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         }
     }
 
+    function xChainDepositIntoVault(
+        bytes calldata formData_
+    )
+        external
+        payable
+        virtual
+        override
+        onlyRole(TOKEN_BANK_ROLE)
+        returns (uint256[] memory dstAmounts)
+    {
+        FormData memory data = abi.decode(formData_, (FormData));
+        console.log("msg.value", msg.value);
+
+        _xChainDepositIntoVault(
+            XChainActionArgs(
+                data.srcChainId,
+                data.dstChainId,
+                data.commonData,
+                data.xChainData,
+                data.extraFormData
+            )
+        );
+    }
+
     function _xChainDepositIntoVault(
         XChainActionArgs memory args_
     ) internal virtual override {
@@ -302,6 +275,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         for (uint256 i = 0; i < len; i++) {
             ERC4626 v = ERC4626(vaults[i]);
 
+            ERC20(v.asset()).approve(vaults[i], commonData.amounts[i]);
             dstAmounts[i] = v.deposit(commonData.amounts[i], address(this));
             /// @notice dstAmounts is equal to POSITIONS returned by v(ault)'s deposit while data.amounts is equal to ASSETS (tokens) bridged
             emit Processed(
@@ -312,7 +286,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 vaults[i]
             );
         }
-
+        console.log("msg.value", msg.value);
         /// Note Step-4: Send Data to Source to issue superform positions.
         stateRegistry.dispatchPayload{value: msg.value}(
             1, /// @dev come to this later to accept any bridge id
