@@ -40,18 +40,18 @@ interface IBaseForm is IERC165 {
                         EXTERNAL WRITE FUNCTONS
     //////////////////////////////////////////////////////////////*/
 
-    function withdrawSync(
-        bytes memory payload_
-    ) external payable;
+    // function withdrawSync(
+    //     bytes memory payload_
+    // ) external payable;
 
-    function depositSync(
-        bytes memory payload_
-    ) external payable;
+    // function depositSync(
+    //     bytes memory payload_
+    // ) external payable;
 
-    /// @notice move tokens received from socket 
-    function stateSync(
-        bytes memory payload_
-    ) external payable;
+    // /// @notice move tokens received from socket 
+    // function stateSync(
+    //     bytes memory payload_
+    // ) external payable;
 
     /// @dev adds the gas overrides for layerzero.
     /// @param param_    represents adapterParams V2.0 of layerzero

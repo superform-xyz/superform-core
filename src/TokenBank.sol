@@ -9,6 +9,8 @@ import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {ITokenBank} from "./interfaces/ITokenBank.sol";
 
+import "forge-std/console.sol";
+
 /// @title Token Bank
 /// @author Zeropoint Labs.
 /// @dev Temporary area for underlying tokens to wait until they are ready to be sent to the form vault
@@ -77,6 +79,8 @@ contract TokenBank is ITokenBank, AccessControl {
             (FormCommonData)
         );
 
+        console.log("loop");
+        
         for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
             (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
                 commonData.superFormIds[i]
@@ -85,17 +89,15 @@ contract TokenBank is ITokenBank, AccessControl {
             if (stateData.txType == TransactionType.DEPOSIT) {
                 ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
                 if (
-                    /// @dev TODO: generalise a way to check for balance for all types of formIds, for now works for ERC4626 and ERC20's
                     underlying.balanceOf(address(this)) >= commonData.amounts[i]
                 ) {
-                    /// @dev this means it currently only supports single vault deposit as we are checking for balance of the first vault
-                    /// @dev TODO: we have to optimize this flow for multi-vault deposits that would need changes to baseForms and how they handle deposits/withdraws in loop.
-                    IBaseForm(form).xChainDepositIntoVault(stateData.params);
+                    underlying.transfer(form, commonData.amounts[i]);
+                    IBaseForm(form).directDepositIntoVault(stateData.params);
                 } else {
                     revert BRIDGE_TOKENS_PENDING();
                 }
             } else {
-                IBaseForm(form).xChainWithdrawFromVault(stateData.params);
+                IBaseForm(form).directWithdrawFromVault(stateData.params);
             }
         }
     }

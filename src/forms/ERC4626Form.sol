@@ -11,6 +11,7 @@ import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ERC20Form} from "./ERC20Form.sol";
+import {ITokenBank} from "../interfaces/ITokenBank.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for ERC4626 vaults
@@ -121,54 +122,57 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
 
-    function depositSync(
-        bytes memory payload_
-    ) external payable onlyRole(STATE_REGISTRY_ROLE) {
-        StateData memory stateData = abi.decode(payload_, (StateData));
-        FormData memory data = abi.decode(stateData.params, (FormData));
-        FormCommonData memory commonData = abi.decode(
-            data.commonData,
-            (FormCommonData)
-        );
+    // function depositSync(
+    //     bytes memory payload_
+    // ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
+    //     StateData memory stateData = abi.decode(payload_, (StateData));
+    //     FormData memory data = abi.decode(stateData.params, (FormData));
+    //     FormCommonData memory commonData = abi.decode(
+    //         data.commonData,
+    //         (FormCommonData)
+    //     );
 
-        for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
-            (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
-                commonData.superFormIds[i]
-            );
-            address form = superFormFactory.getForm(formId_);
-            if (stateData.txType == TransactionType.DEPOSIT) {
-                ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
-                if (
-                    underlying.balanceOf(address(this)) >= commonData.amounts[i]
-                ) {
-                    _directDepositIntoVault(data);
-                } else {
-                    revert BRIDGE_TOKENS_PENDING();
-                }
-            }
-        }
-    }
+    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
+    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
+    //             commonData.superFormIds[i]
+    //         );
+    //         address form = superFormFactory.getForm(formId_);
+    //         if (stateData.txType == TransactionType.DEPOSIT) {
+    //             ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
+    //             if (
+    //                 underlying.balanceOf(address(this)) >= commonData.amounts[i]
+    //             ) {
+    //                 underlying.approve(vault_, commonData.amounts[i]);
+    //                 _directDepositIntoVault(data);
+    //             } else {
+    //                 revert BRIDGE_TOKENS_PENDING();
+    //             }
+    //         }
+    //     }
+    // }
 
-    function withdrawSync(
-        bytes memory payload_
-    ) external payable onlyRole(STATE_REGISTRY_ROLE) {
-        StateData memory stateData = abi.decode(payload_, (StateData));
-        FormData memory data = abi.decode(stateData.params, (FormData));
-        FormCommonData memory commonData = abi.decode(
-            data.commonData,
-            (FormCommonData)
-        );
+    // function withdrawSync(
+    //     bytes memory payload_
+    // ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
 
-        for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
-            (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
-                commonData.superFormIds[i]
-            );
-            address form = superFormFactory.getForm(formId_);
-            if (stateData.txType == TransactionType.WITHDRAW) {
-                _directWithdrawFromVault(data);
-            }
-        }
-    }
+    //     StateData memory stateData = abi.decode(payload_, (StateData));
+    //     FormData memory data = abi.decode(stateData.params, (FormData));
+    //     FormCommonData memory commonData = abi.decode(
+    //         data.commonData,
+    //         (FormCommonData)
+    //     );
+
+    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
+    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
+    //             commonData.superFormIds[i]
+    //         );
+            
+    //         address form = superFormFactory.getForm(formId_);
+    //         if (stateData.txType == TransactionType.WITHDRAW) {
+    //             _directWithdrawFromVault(data);
+    //         }
+    //     }
+    // }
 
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
@@ -195,39 +199,8 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         );
 
         address collateral = address(ERC4626(vaults[0]).asset());
+        ERC20 collateral_ = ERC20(collateral);
         uint256 balanceBefore = ERC20(collateral).balanceOf(address(this));
-
-        /// note: handle the collateral token transfers.
-        if (liqData.txData.length == 0) {
-            require(
-                ERC20(liqData.token).allowance(
-                    commonData.srcSender,
-                    address(this)
-                ) >= liqData.amount,
-                "Destination: Insufficient Allowance"
-            );
-            ERC20(liqData.token).safeTransferFrom(
-                commonData.srcSender,
-                address(this),
-                liqData.amount
-            );
-        } else {
-            dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
-                liqData.txData,
-                liqData.token,
-                liqData.allowanceTarget,
-                liqData.amount,
-                commonData.srcSender,
-                liqData.nativeAmount
-            );
-        }
-
-        uint256 balanceAfter = ERC20(collateral).balanceOf(address(this));
-        require(
-            balanceAfter - balanceBefore >= expAmount,
-            "Destination: Invalid State & Liq Data"
-        );
 
         dstAmounts = new uint256[](loopLength);
 
@@ -237,6 +210,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 address(v.asset()) == collateral,
                 "Destination: Invalid Collateral"
             );
+            collateral_.approve(vaults[i], commonData.amounts[i]);
             dstAmounts[i] = v.deposit(commonData.amounts[i], address(this));
         }
     }

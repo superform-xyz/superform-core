@@ -76,7 +76,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
 
     // function depositSync(
     //     bytes memory payload_
-    // ) external payable onlyRole(STATE_REGISTRY_ROLE) {
+    // ) external payable virtual override onlyRole(STATE_REGISTRY_ROLE) {
     //     StateData memory stateData = abi.decode(payload_, (StateData));
     //     FormData memory data = abi.decode(stateData.params, (FormData));
     //     FormCommonData memory commonData = abi.decode(
@@ -94,6 +94,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     //             if (
     //                 underlying.balanceOf(address(this)) >= commonData.amounts[i]
     //             ) {
+                    
     //                 directDepositToVault(stateData.params);
     //             } else {
     //                 revert BRIDGE_TOKENS_PENDING();
@@ -104,7 +105,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
 
     // function withdrawSync(
     //     bytes memory payload_
-    // ) external payable onlyRole(STATE_REGISTRY_ROLE) {
+    // ) external payable virtual override onlyRole(STATE_REGISTRY_ROLE) {
     //     StateData memory stateData = abi.decode(payload_, (StateData));
     //     FormData memory data = abi.decode(stateData.params, (FormData));
     //     FormCommonData memory commonData = abi.decode(
@@ -214,7 +215,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         external
         payable
         override
-        onlyRole(SUPER_ROUTER_ROLE)
+        onlyRole(TOKEN_BANK_ROLE)
         returns (uint256[] memory dstAmounts)
     {
         dstAmounts = _directDepositIntoVault(formData_);

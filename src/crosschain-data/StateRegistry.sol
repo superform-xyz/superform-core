@@ -12,6 +12,8 @@ import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "../interfaces/IBaseForm.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 
+import "forge-std/console.sol";
+
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging ambs.
@@ -44,7 +46,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     address public routerContract;
 
     /// NOTE: Shouldnt we use multiple tokenBanks to benefit from using them?
-    address public tokenBankContract;
+    ITokenBank public tokenBankContract;
 
     ISuperFormFactory public superFormFactory;
 
@@ -91,7 +93,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     }
 
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
-    /// @param routerContract_ is the address of the router
+    /// @param routerContract_ is the address of the router`
     /// @param tokenBankContract_ is the address of the token bank
     function setCoreContracts(
         address routerContract_,
@@ -99,7 +101,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         address superFormFactory_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         routerContract = routerContract_;
-        tokenBankContract = tokenBankContract_;
+        tokenBankContract = ITokenBank(tokenBankContract_);
         superFormFactory = ISuperFormFactory(superFormFactory_);
         emit CoreContractsUpdated(routerContract_, tokenBankContract_);
     }
@@ -189,7 +191,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         }
 
         for (uint256 i = 0; i < l1; i++) {
-            uint256 newAmount = finalAmounts_[i];
+            uint256 newAmount = finalAmounts_[i]; /// backend fed amounts of socket tokens expected
             uint256 maxAmount = formCommonData.amounts[i];
 
             if (newAmount > maxAmount) {
@@ -239,7 +241,6 @@ contract StateRegistry is IStateRegistry, AccessControl {
         bytes memory _payload = payload[payloadId_];
         StateData memory payloadInfo = abi.decode(_payload, (StateData));
 
-        /// NOTE: moved from TokenBank
         FormData memory data = abi.decode(payloadInfo.params, (FormData));
         FormCommonData memory commonData = abi.decode(
             data.commonData,
@@ -259,9 +260,10 @@ contract StateRegistry is IStateRegistry, AccessControl {
                         revert PAYLOAD_NOT_UPDATED();
                     }
                     payloadTracking[payloadId_] = PayloadState.PROCESSED;
-
-                        IBaseForm(form).depositSync(
-                            payloadInfo.params
+                    
+                    console.log("tokenBank");
+                    tokenBankContract.stateSync(
+                            _payload
                         );
 
                 } else {
@@ -278,7 +280,9 @@ contract StateRegistry is IStateRegistry, AccessControl {
                 payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
                 if (payloadInfo.flag == CallbackType.INIT) {
-                    IBaseForm(form).withdrawSync(payloadInfo.params);
+                    tokenBankContract.stateSync(
+                            _payload
+                        );
                 } else {
                     ISuperRouter(routerContract).stateSync{value: msg.value}(
                         abi.encode(payloadInfo)
