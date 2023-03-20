@@ -6,10 +6,19 @@ pragma solidity 0.8.19;
 /// @dev interface for arbitrary message bridge implementation
 interface IAmbImplementation {
     error INVALID_SENDER();
-
     error INVALID_CALLER();
-
     error DUPLICATE_PAYLOAD();
+    error INVALID_CHAIN_ID();
+    error ZERO_ADDRESS();
+
+     /*///////////////////////////////////////////////////////////////
+                    Events
+    //////////////////////////////////////////////////////////////*/
+    event ChainAdded(uint80 superChainId);
+
+    /*///////////////////////////////////////////////////////////////
+                    External Functions
+    //////////////////////////////////////////////////////////////*/
 
     /// @dev allows state registry to send message via implementation.
     /// @param dstChainId_ is the identifier of the destination chain

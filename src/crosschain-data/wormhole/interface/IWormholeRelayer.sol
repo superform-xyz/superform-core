@@ -1,7 +1,11 @@
-// SPDX-License-Identifier: Apache 2
+// SPDX-License-Identifier: Apache-2.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.19;
 
+/// @dev are inherited contract interfaces for wormhole bridge
+///
+/// @dev see https://github.com/wormhole-foundation/trustless-generic-relayer/blob/main/ethereum/contracts/interfaces/IWormhole.sol
+/// for more information
 interface IWormholeRelayer {
     /**
      * @title IWormholeRelayer

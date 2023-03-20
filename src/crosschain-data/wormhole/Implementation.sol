@@ -15,14 +15,20 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 ///
 /// @notice https://book.wormhole.com/wormhole/3_coreLayerContracts.html#multicasting
 /// this contract uses multi-casting feature from wormhole
-contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, AccessControl {
+contract WormholeImplementation is
+    IAmbImplementation,
+    IWormholeReceiver,
+    AccessControl
+{
     struct ExtraData {
         uint256 messageFee;
         uint256 relayerFee;
         uint256 airdrop;
     }
 
-    bytes32 public constant WORMHOLE_RELAYER_ROLE = bytes32("WORMHOLE_RELAYER_ROLE");
+    /// @dev users with WORMHOLE_RELAYER_ROLE can only deliver messages
+    bytes32 public constant WORMHOLE_RELAYER_ROLE =
+        bytes32("WORMHOLE_RELAYER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                     State Variables
@@ -31,6 +37,8 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
 
     IWormhole public immutable bridge;
     IBaseStateRegistry public immutable registry;
+
+    /// @dev relayer will forward published wormhole messages
     IWormholeRelayer public relayer;
 
     mapping(uint80 => uint16) public ambChainId;
@@ -42,7 +50,11 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
     //////////////////////////////////////////////////////////////*/
 
     /// @param bridge_ is the wormhole implementation for respective chain.
-    constructor(IWormhole bridge_, IBaseStateRegistry registry_, address relayer_) {
+    constructor(
+        IWormhole bridge_,
+        IBaseStateRegistry registry_,
+        address relayer_
+    ) {
         bridge = bridge_;
         registry = registry_;
 
@@ -88,7 +100,12 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
         /// @note refund and delivery always fail if CREATE3 / CREATE2 is not used
 
         relayer.send{value: eData.relayerFee}(
-            ambChainId[dstChainId_], castAddr(address(this)), castAddr(address(this)), eData.relayerFee, eData.airdrop, nonce
+            ambChainId[dstChainId_],
+            castAddr(address(this)),
+            castAddr(address(this)),
+            eData.relayerFee,
+            eData.airdrop,
+            nonce
         );
     }
 
@@ -98,8 +115,8 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
         override
         onlyRole(WORMHOLE_RELAYER_ROLE)
     {
-        (IWormhole.VM memory vm, bool valid, string memory reason) =
-        bridge.parseAndVerifyVM(whMessages[0]);
+        (IWormhole.VM memory vm, bool valid, string memory reason) = bridge
+            .parseAndVerifyVM(whMessages[0]);
 
         require(valid, reason);
 
@@ -108,7 +125,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
 
         /// @notice sender validation
         /// @note validation always fail if CREATE3 / CREATE2 is not used
-        if(vm.emitterAddress != castAddr(address(this))) {
+        if (vm.emitterAddress != castAddr(address(this))) {
             revert INVALID_CALLER();
         }
 
@@ -116,7 +133,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
         if (processedMessages[vm.hash]) {
             revert DUPLICATE_PAYLOAD();
         }
-        
+
         processedMessages[vm.hash] = true;
         registry.receivePayload(superChainId[vm.emitterChainId], vm.payload);
     }
@@ -130,25 +147,36 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
         override
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
+        if (superChainId_ == 0 || ambChainId_ == 0) {
+            revert INVALID_CHAIN_ID();
+        }
+
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
+
+        emit ChainAdded(superChainId_);
     }
 
-    /// @notice to set the core relayer contract
+    /// @notice relayer contracts are used to forward messages
     /// @dev allows admin to set the core relayer
     /// @param relayer_ is the identifier of the relayer address
     function setRelayer(IWormholeRelayer relayer_)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
+        if (relayer_ == address(0)) {
+            revert ZERO_ADDRESS();
+        }
+
         relayer = relayer_;
     }
 
     /*///////////////////////////////////////////////////////////////
                     Internal Functions
     //////////////////////////////////////////////////////////////*/
+
     /// @dev converts address to bytes32
-    function castAddr(address addr_) internal pure returns(bytes32) {
+    function castAddr(address addr_) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(addr_)) << 96);
     }
 }
