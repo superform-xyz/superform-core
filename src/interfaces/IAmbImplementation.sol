@@ -5,6 +5,8 @@ pragma solidity 0.8.19;
 /// @author ZeroPoint Labs
 /// @dev interface for arbitrary message bridge implementation
 interface IAmbImplementation {
+    error INVALID_SENDER();
+
     error INVALID_CALLER();
 
     error DUPLICATE_PAYLOAD();

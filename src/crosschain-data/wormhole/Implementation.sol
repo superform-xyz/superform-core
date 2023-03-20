@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-
 import {IWormhole} from "./interface/IWormhole.sol";
+import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {StateData, CallbackType} from "../../types/DataTypes.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title Wormhole implementation contract
 /// @author Zeropoint Labs.
@@ -14,7 +14,9 @@ import {StateData, CallbackType} from "../../types/DataTypes.sol";
 ///
 /// @notice https://book.wormhole.com/wormhole/3_coreLayerContracts.html#multicasting
 /// this contract uses multi-casting feature from wormhole
-contract WormholeImplementation is IAmbImplementation, Ownable {
+contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, AccessControl {
+    bytes32 public constant WORMHOLE_RELAYER_ROLE = bytes32("WORMHOLE_RELAYER_ROLE");
+
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
@@ -25,15 +27,19 @@ contract WormholeImplementation is IAmbImplementation, Ownable {
 
     mapping(uint80 => uint16) public ambChainId;
     mapping(uint16 => uint80) public superChainId;
+    mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
                     Constructor
     //////////////////////////////////////////////////////////////*/
 
     /// @param bridge_ is the wormhole implementation for respective chain.
-    constructor(IWormhole bridge_, IBaseStateRegistry registry_) {
+    constructor(IWormhole bridge_, IBaseStateRegistry registry_, address relayer_) {
         bridge = bridge_;
         registry = registry_;
+
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(WORMHOLE_RELAYER_ROLE, relayer_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -67,6 +73,37 @@ contract WormholeImplementation is IAmbImplementation, Ownable {
             payload,
             CONSISTENCY_LEVEL
         );
+
+        /// @dev can validate and send the message costs alongside the transaction
+    }
+
+    function receiveWormholeMessages(bytes[] memory whMessages, bytes[] memory)
+        public
+        payable
+        override
+        onlyRole(WORMHOLE_RELAYER_ROLE)
+    {
+        (IWormhole.VM memory vm, bool valid, string memory reason) =
+        bridge.parseAndVerifyVM(whMessages[0]);
+
+        require(valid, reason);
+
+        /// @dev 1.should validate sender
+        /// @dev 2.should validate message uniqueness
+
+        /// @notice sender validation
+        /// @note validation always fail if CREATE3 / CREATE2 is not used
+        if(vm.emitterAddress != castAddr(address(this))) {
+            revert INVALID_CALLER();
+        }
+
+        /// @notice uniqueness validation
+        if (processedMessages[vm.hash]) {
+            revert DUPLICATE_PAYLOAD();
+        }
+        
+        processedMessages[vm.hash] = true;
+        registry.receivePayload(superChainId[vm.emitterChainId], vm.payload);
     }
 
     /// @notice to add access based controls over here
@@ -76,7 +113,7 @@ contract WormholeImplementation is IAmbImplementation, Ownable {
     function setChainId(uint80 superChainId_, uint16 ambChainId_)
         external
         override
-        onlyOwner
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
@@ -85,4 +122,8 @@ contract WormholeImplementation is IAmbImplementation, Ownable {
     /*///////////////////////////////////////////////////////////////
                     Internal Functions
     //////////////////////////////////////////////////////////////*/
+    /// @dev converts address to bytes32
+    function castAddr(address addr_) internal pure returns(bytes32) {
+        return bytes32(uint256(uint160(addr_)) << 96);
+    }
 }
