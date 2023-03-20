@@ -1,17 +1,20 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.14;
+/// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.19;
 
 // Contracts
-import "contracts/types/socketTypes.sol";
-import "contracts/types/lzTypes.sol";
-import "forge-std/console.sol";
+import "../types/LiquidityTypes.sol";
+import "../types/DataTypes.sol";
+// import "forge-std/console.sol";
 
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
+/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 contract BaseProtocolTest is BaseSetup {
-    mapping(uint256 => uint256[]) internal VAULTS_ACTIONS;
+    /// @dev chainId => actionType => UnderlyingToken
+    mapping(uint80 => mapping(uint256 => uint256[]))
+        internal TARGET_UNDERLYING_VAULTS;
     mapping(uint256 => mapping(LiquidityChange => uint256[]))
         internal AMOUNTS_ACTIONS;
 
@@ -27,18 +30,23 @@ contract BaseProtocolTest is BaseSetup {
         /*//////////////////////////////////////////////////////////////
                     !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
-        /// @dev Define Vault-Amount pairs for each type of test case you want to test
+        /// @dev Define SuperForm-Amount pairs for each type of test case you want to test
         /// @dev These have been done with state variables for direct inline input
         /// @dev You can modify the amounts/vaults at will and create more kinds
         /// @dev LiquidityChange partial vs full are only defined for cosmetic purposes in the test for now
-        /// !! WARNING - only 3 vaults/underlyings exist, Ids 1,2,3 !!
+        /// !! WARNING - only 3 Underlyings currently exist, Ids 0, 1, 2 (DAI, USDT and WETH) - check UNDERLYING_TOKENS in BaseSetup.sol!!
 
-        // Type 0 - Single Vault x One StateReq/LiqReq
-        VAULTS_ACTIONS[0] = [uint256(1)];
+        /// Type 0 - Single SuperForm x One StateReq/LiqReq
+        /// Type 1 - Single SuperForm x Two StateReq/LiqReq
+        /// @dev FIXME: WARNING - currently these actions suppose that it is the same destination chain for all SuperForms!!!!
+        /// @notice first array element is uint256, all the rest are automatically uint256
+        TARGET_UNDERLYING_VAULTS[BSC][0] = [uint256(0)];
+        TARGET_UNDERLYING_VAULTS[FTM][1] = [uint256(0), 1];
+        TARGET_UNDERLYING_VAULTS[OP][1] = [uint256(0), 1];
+        TARGET_UNDERLYING_VAULTS[POLY][1] = [uint256(0), 2];
+        TARGET_UNDERLYING_VAULTS[AVAX][0] = [uint256(2)];
+
         AMOUNTS_ACTIONS[0][LiquidityChange.Full] = [uint256(1000)];
-
-        // Type 1 - Single Vault x Two StateReq/LiqReq
-        VAULTS_ACTIONS[1] = [uint256(1), 3];
         // With Full withdrawal (note, deposits are always full)
         AMOUNTS_ACTIONS[1][LiquidityChange.Full] = [uint256(1000), 5000];
         // With Partial withdrawal
@@ -61,7 +69,8 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: BSC,
                 user: users[0],
                 testType: TestType.Pass,
-                revertString: "",
+                revertError: "",
+                revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
                 multiTx: false
@@ -75,24 +84,26 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: BSC,
                 user: users[0],
                 testType: TestType.Pass,
-                revertString: "",
+                revertError: "",
+                revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
                 multiTx: false
             }),
             /// FTM=>BSC: user depositing to a vault on BSC from Fantom with MultiTx
             TestAction({
-               action: Actions.Deposit,
-               actionType: 0,
-               actionKind: LiquidityChange.Full,
-               CHAIN_0: FTM,
-               CHAIN_1: BSC,
-               user: users[0],
-               testType: TestType.Pass,
-               revertString: "",
-               maxSlippage: 1000, // 10%,
-               slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
-               multiTx: true
+                action: Actions.Deposit,
+                actionType: 0,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: FTM,
+                CHAIN_1: BSC,
+                user: users[0],
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
+                multiTx: true
             }),
             /// BSC=>FTM: multiple LiqReq/StateReq for multi-deposit
             /// BSC=>FTM: user depositing to a vault on Fantom from BSC
@@ -104,7 +115,8 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: FTM,
                 user: users[2],
                 testType: TestType.Pass,
-                revertString: "",
+                revertError: "",
+                revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
                 multiTx: false
@@ -119,7 +131,8 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: FTM,
                 user: users[2],
                 testType: TestType.Pass,
-                revertString: "",
+                revertError: "",
+                revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
                 multiTx: false
@@ -133,7 +146,8 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: BSC,
                 user: users[1],
                 testType: TestType.RevertProcessPayload,
-                revertString: "State Handler: Invalid Payload State",
+                revertError: IStateRegistry.INVALID_PAYLOAD_STATE.selector, // @dev to a find how to use reverts here
+                revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
                 multiTx: false
@@ -147,7 +161,8 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: BSC,
                 user: users[0],
                 testType: TestType.RevertUpdateStateSlippage,
-                revertString: "State Handler: Slippage Out Of Bounds",
+                revertError: IStateRegistry.SLIPPAGE_OUT_OF_BOUNDS.selector, // @dev to a find how to use reverts here
+                revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 1200, // 12%
                 multiTx: false
@@ -161,23 +176,10 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: OP,
                 user: users[2],
                 testType: TestType.RevertUpdateStateSlippage,
-                revertString: "State Handler: Negative Slippage",
+                revertError: IStateRegistry.NEGATIVE_SLIPPAGE.selector, // @dev to a find how to use reverts here
+                revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: -100,
-                multiTx: false
-            }),
-            /// OP=>AVAX: cross-chain slippage update from unauthorized wallet
-            TestAction({
-                action: Actions.Deposit,
-                actionType: 0,
-                actionKind: LiquidityChange.Full,
-                CHAIN_0: OP,
-                CHAIN_1: AVAX,
-                user: users[1],
-                testType: TestType.RevertUpdateStateRBAC,
-                revertString: "AccessControl: account 0x0000000000000000000000000000000000000003 is missing role 0x2030565476ef23eb21f6c1f68075f5a89b325631df98f5793acd3297f9b80123",
-                maxSlippage: 1000, // 10%,
-                slippage: 0,
                 multiTx: false
             }),
             /// POLY=>POLY: SAMECHAIN deposit()
@@ -191,7 +193,8 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: POLY,
                 user: users[0],
                 testType: TestType.Pass,
-                revertString: "",
+                revertError: "",
+                revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 100,
                 multiTx: false
@@ -206,9 +209,26 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: POLY,
                 user: users[0],
                 testType: TestType.Pass,
-                revertString: "",
+                revertError: "",
+                revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 200,
+                multiTx: false
+            }),
+            /// OP=>AVAX: cross-chain slippage update from unauthorized wallet
+            //revertError: "AccessControl: account 0x0000000000000000000000000000000000000003 is missing role 0x2030565476ef23eb21f6c1f68075f5a89b325631df98f5793acd3297f9b80123",
+            TestAction({
+                action: Actions.Deposit,
+                actionType: 0,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: OP,
+                CHAIN_1: AVAX,
+                user: users[1],
+                testType: TestType.RevertUpdateStateRBAC,
+                revertError: "",
+                revertRole: keccak256("UPDATER_ROLE"),
+                maxSlippage: 1000, // 10%,
+                slippage: 0,
                 multiTx: false
             })
         ];
@@ -227,23 +247,41 @@ contract BaseProtocolTest is BaseSetup {
             TestAction memory action = _getTestAction(i);
 
             if (
-                (action.revertString.length == 0 &&
-                    !(action.testType == TestType.Pass)) ||
-                (action.revertString.length > 0 &&
-                    action.testType == TestType.Pass)
+                action.revertError != bytes4(0) &&
+                action.testType == TestType.Pass
             ) revert MISMATCH_TEST_TYPE();
+
+            if (
+                (action.testType != TestType.RevertUpdateStateRBAC &&
+                    action.revertRole != bytes32(0)) ||
+                (action.testType == TestType.RevertUpdateStateRBAC &&
+                    action.revertRole == bytes32(0))
+            ) revert MISMATCH_RBAC_TEST();
 
             ActionLocalVars memory vars;
 
             vars.lzEndpoint_0 = LZ_ENDPOINTS[action.CHAIN_0];
             vars.lzEndpoint_1 = LZ_ENDPOINTS[action.CHAIN_1];
             vars.fromSrc = payable(getContract(action.CHAIN_0, "SuperRouter"));
-            vars.toDst = payable(
-                getContract(action.CHAIN_1, "SuperDestination")
-            );
+
+            /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
+            /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
+            if (
+                action.CHAIN_0 == action.CHAIN_1 ||
+                (action.action == Actions.Withdraw &&
+                    action.CHAIN_0 != action.CHAIN_1)
+            ) {
+                /// @dev FIXME: this is only using hardcoded formid 1 (ERC4626Form) for now!!!
+                /// !!WARNING
+                vars.toDst = payable(
+                    getContract(action.CHAIN_1, "ERC4626Form")
+                );
+            } else {
+                vars.toDst = payable(getContract(action.CHAIN_1, "TokenBank"));
+            }
 
             (
-                vars.targetVaultIds,
+                vars.targetSuperFormIds,
                 vars.underlyingSrcToken,
                 vars.vaultMock,
                 vars.TARGET_VAULTS
@@ -252,6 +290,7 @@ contract BaseProtocolTest is BaseSetup {
                 action.CHAIN_0,
                 action.CHAIN_1
             );
+
             vars.amounts = _amounts(action.actionType, action.actionKind);
 
             if (action.action == Actions.Deposit) {
@@ -267,32 +306,41 @@ contract BaseProtocolTest is BaseSetup {
                         INTERNAL HELPERS
     //////////////////////////////////////////////////////////////*/
 
+    struct TargetVaultsVars {
+        uint256[] underlyingTokenIds;
+        uint256[] superFormIdsTemp;
+        uint256 len;
+        string underlyingToken;
+    }
+
     /// @dev this function is used to build the 2D arrays in the best way possible
     function _targetVaults(
         uint256 action,
-        uint16 chain0,
-        uint16 chain1
+        uint80 chain0,
+        uint80 chain1
     )
         internal
         view
         returns (
-            uint256[][] memory targetVaultsMem,
+            uint256[][] memory targetSuperFormsMem,
             address[][] memory underlyingSrcTokensMem,
             address[][] memory vaultMocksMem,
             MockERC20[][] memory TARGET_VAULTSMem
         )
     {
-        uint256[] memory vaultIdsTemp = VAULTS_ACTIONS[action];
-        uint256 len = vaultIdsTemp.length;
-        if (len == 0) revert LEN_VAULTS_ZERO();
+        TargetVaultsVars memory vars;
+        vars.underlyingTokenIds = TARGET_UNDERLYING_VAULTS[chain1][action];
+        vars.superFormIdsTemp = _superFormIds(vars.underlyingTokenIds, chain1);
+        vars.len = vars.superFormIdsTemp.length;
+        if (vars.len == 0) revert LEN_VAULTS_ZERO();
 
-        targetVaultsMem = new uint256[][](len);
-        underlyingSrcTokensMem = new address[][](len);
-        vaultMocksMem = new address[][](len);
-        TARGET_VAULTSMem = new MockERC20[][](len);
+        targetSuperFormsMem = new uint256[][](vars.len);
+        underlyingSrcTokensMem = new address[][](vars.len);
+        vaultMocksMem = new address[][](vars.len);
+        TARGET_VAULTSMem = new MockERC20[][](vars.len);
 
-        for (uint256 i = 0; i < len; i++) {
-            uint256[] memory tVaults = new uint256[](
+        for (uint256 i = 0; i < vars.len; i++) {
+            uint256[] memory tSuperForms = new uint256[](
                 allowedNumberOfVaultsPerRequest
             );
             address[] memory tUnderlyingSrcTokens = new address[](
@@ -304,22 +352,28 @@ contract BaseProtocolTest is BaseSetup {
             MockERC20[] memory tTARGET_VAULTS = new MockERC20[](
                 allowedNumberOfVaultsPerRequest
             );
-
+            vars.underlyingToken = UNDERLYING_TOKENS[
+                vars.underlyingTokenIds[i]
+            ];
             for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
-                tVaults[j] = vaultIdsTemp[i];
-                string memory underlyingToken = UNDERLYING_TOKENS[
-                    vaultIdsTemp[i] - 1
-                ];
-                tUnderlyingSrcTokens[j] = getContract(chain0, underlyingToken);
+                tSuperForms[j] = vars.superFormIdsTemp[i];
+
+                tUnderlyingSrcTokens[j] = getContract(
+                    chain0,
+                    vars.underlyingToken
+                );
+
                 tVaultMocks[j] = getContract(
                     chain1,
-                    VAULT_NAMES[vaultIdsTemp[i] - 1]
+                    VAULT_NAMES[vars.underlyingTokenIds[i]]
                 );
+
                 tTARGET_VAULTS[j] = MockERC20(
-                    getContract(chain1, underlyingToken)
+                    getContract(chain1, vars.underlyingToken)
                 );
             }
-            targetVaultsMem[i] = tVaults;
+
+            targetSuperFormsMem[i] = tSuperForms;
             underlyingSrcTokensMem[i] = tUnderlyingSrcTokens;
             vaultMocksMem[i] = tVaultMocks;
             TARGET_VAULTSMem[i] = tTARGET_VAULTS;
@@ -347,5 +401,43 @@ contract BaseProtocolTest is BaseSetup {
             }
             targetAmountsMem[i] = tAmounts;
         }
+    }
+
+    function _superFormIds(
+        uint256[] memory underlyingTokenIds_,
+        uint80 chainId_
+    ) internal view returns (uint256[] memory) {
+        uint256[] memory superFormIds_ = new uint256[](
+            underlyingTokenIds_.length
+        );
+        for (uint256 i = 0; i < underlyingTokenIds_.length; i++) {
+            if (underlyingTokenIds_[i] > UNDERLYING_TOKENS.length)
+                revert WRONG_UNDERLYING_ID();
+
+            address vault = getContract(
+                chainId_,
+                string.concat(
+                    UNDERLYING_TOKENS[underlyingTokenIds_[i]],
+                    "Vault"
+                )
+            );
+
+            superFormIds_[i] = _superFormId(
+                vault,
+                FORMS_FOR_VAULTS[underlyingTokenIds_[i]],
+                chainId_
+            );
+        }
+        return superFormIds_;
+    }
+
+    function _superFormId(
+        address vault_,
+        uint256 formId_,
+        uint80 chainId_
+    ) internal pure returns (uint256 superFormId_) {
+        superFormId_ = uint256(uint160(vault_));
+        superFormId_ |= formId_ << 160;
+        superFormId_ |= uint256(chainId_) << 176;
     }
 }

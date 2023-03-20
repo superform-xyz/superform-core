@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.14;
+pragma solidity 0.8.19;
 import "@std/Test.sol";
 
-import "contracts/types/socketTypes.sol";
+import "../../types/LiquidityTypes.sol";
 
-import "contracts/types/lzTypes.sol";
+import "../../types/DataTypes.sol";
 
 import {MockERC20} from "../mocks/MockERC20.sol";
 
@@ -44,7 +44,7 @@ struct ActionLocalVars {
     address[][] underlyingSrcToken;
     address payable fromSrc;
     address payable toDst;
-    uint256[][] targetVaultIds;
+    uint256[][] targetSuperFormIds;
     uint256[][] amounts;
 }
 
@@ -57,11 +57,12 @@ struct TestAction {
     Actions action;
     uint16 actionType;
     LiquidityChange actionKind;
-    uint16 CHAIN_0;
-    uint16 CHAIN_1;
+    uint80 CHAIN_0;
+    uint80 CHAIN_1;
     address user;
     TestType testType;
-    bytes revertString;
+    bytes4 revertError;
+    bytes32 revertRole; // temporary until errors are added to RBAC libraries
     uint256 maxSlippage;
     int256 slippage;
     bool multiTx;
@@ -81,22 +82,30 @@ struct TestAssertionVars {
 //////////////////////////////////////////////////////////////*/
 
 struct SetupVars {
-    uint16[2] chainIds;
+    uint80[2] chainIds;
     address[2] lzEndpoints;
-    uint16 chainId;
-    uint16 dstChainId;
+    uint80 chainId;
+    uint80 dstChainId;
+    uint16 dstAmbChainId;
     uint256 fork;
+    address factory;
     address lzEndpoint;
     address lzHelper;
+    address lzImplementation;
     address socketRouter;
-    address superDestination;
-    address stateHandler;
+    address erc4626Form;
+    address stateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
+    address srcTokenBank;
     address srcSuperRouter;
-    address srcStateHandler;
-    address srcSuperDestination;
-    address dstStateHandler;
+    address srcStateRegistry;
+    address srcSuperFormFactory;
+    address dstSuperFormFactory;
+    address srcErc4626Form;
+    address srcLzImplementation;
+    address dstLzImplementation;
+    address dstStateRegistry;
     address srcMultiTxProcessor;
 }
 
@@ -109,11 +118,11 @@ struct BuildDepositCallDataArgs {
     address fromSrc;
     address toDst;
     address[] underlyingToken;
-    uint256[] targetVaultIds;
+    uint256[] targetSuperFormIds;
     uint256[] amounts;
     uint256 maxSlippage;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint80 srcChainId;
+    uint80 toChainId;
     bool multiTx;
 }
 
@@ -123,26 +132,25 @@ struct BuildWithdrawCallDataArgs {
     address toDst;
     address[] underlyingToken;
     address[] vaultMock;
-    uint256[] targetVaultIds;
+    uint256[] targetSuperFormIds;
     uint256[] amounts;
     uint256 maxSlippage;
     LiquidityChange actionKind;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint80 srcChainId;
+    uint80 toChainId;
 }
 
 struct InternalActionArgs {
     address payable fromSrc; // SuperRouter
-    address payable toDst; // SuperDestination
     address toLzEndpoint;
     address user;
     StateReq[] stateReqs;
     LiqRequest[] liqReqs;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint80 srcChainId;
+    uint80 toChainId;
     Actions action;
     TestType testType;
-    bytes revertString;
+    bytes4 revertError;
     bool multiTx;
 }
 
@@ -153,8 +161,12 @@ struct InternalActionVars {
     uint256 payloadNumberBefore;
     uint256 lenRequests;
     Vm.Log[] logs;
-    InitData expectedInitData;
-    InitData receivedInitData;
+    FormData expectedFormData;
+    FormCommonData expectedFormCommonData;
+    FormXChainData expectedFormXChainData;
+    FormData receivedFormData;
+    FormCommonData receivedFormCommonData;
+    FormXChainData receivedFormXChainData;
     StateData data;
 }
 
@@ -168,3 +180,5 @@ error LEN_MISMATCH();
 error LEN_AMOUNTS_ZERO();
 error LEN_VAULTS_ZERO();
 error MISMATCH_TEST_TYPE();
+error MISMATCH_RBAC_TEST();
+error WRONG_UNDERLYING_ID();
