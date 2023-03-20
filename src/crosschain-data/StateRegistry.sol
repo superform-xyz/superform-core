@@ -8,10 +8,21 @@ import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {StateData, PayloadState, TransactionType, CallbackType, ReturnData, FormData, FormCommonData, FormXChainData} from "../types/DataTypes.sol";
 
+import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
+import {IBaseForm} from "../interfaces/IBaseForm.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging ambs.
 contract StateRegistry is IStateRegistry, AccessControl {
+    /*///////////////////////////////////////////////////////////////
+                                ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev error thrown when the bridge tokens haven't arrived to destination
+    error BRIDGE_TOKENS_PENDING();
+
     /*///////////////////////////////////////////////////////////////
                     ACCESS CONTROL ROLE CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -30,7 +41,11 @@ contract StateRegistry is IStateRegistry, AccessControl {
     uint256 public payloadsCount;
 
     address public routerContract;
-    address public tokenBankContract;
+
+    /// NOTE: Shouldnt we use multiple tokenBanks to benefit from using them?
+    ITokenBank public tokenBankContract;
+
+    ISuperFormFactory public superFormFactory;
 
     mapping(uint8 => IAmbImplementation) public amb;
 
@@ -75,15 +90,16 @@ contract StateRegistry is IStateRegistry, AccessControl {
     }
 
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
-    /// @param routerContract_ is the address of the router
+    /// @param routerContract_ is the address of the router`
     /// @param tokenBankContract_ is the address of the token bank
     function setCoreContracts(
         address routerContract_,
-        address tokenBankContract_
+        address tokenBankContract_,
+        address superFormFactory_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         routerContract = routerContract_;
-        tokenBankContract = tokenBankContract_;
-
+        tokenBankContract = ITokenBank(tokenBankContract_);
+        superFormFactory = ISuperFormFactory(superFormFactory_);
         emit CoreContractsUpdated(routerContract_, tokenBankContract_);
     }
 
@@ -172,7 +188,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         }
 
         for (uint256 i = 0; i < l1; i++) {
-            uint256 newAmount = finalAmounts_[i];
+            uint256 newAmount = finalAmounts_[i]; /// backend fed amounts of socket tokens expected
             uint256 maxAmount = formCommonData.amounts[i];
 
             if (newAmount > maxAmount) {
@@ -274,7 +290,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (payloadInfo_.flag == CallbackType.INIT) {
-            ITokenBank(tokenBankContract).stateSync{value: msg.value}(
+            tokenBankContract.stateSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {
@@ -294,7 +310,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ITokenBank(tokenBankContract).stateSync{value: msg.value}(
+            tokenBankContract.stateSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {
