@@ -2,4 +2,4 @@
 @pigeon=lib/pigeon/src/
 @ds-test=lib/ds-test/src/
 @std=lib/forge-std/src/
-solmate=lib/solmate/src/
+@solmate=lib/solmate/src/

@@ -10,6 +10,7 @@ import "../types/DataTypes.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
+/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 contract BaseProtocolTest is BaseSetup {
     /// @dev chainId => actionType => UnderlyingToken
     mapping(uint80 => mapping(uint256 => uint256[]))
@@ -21,7 +22,7 @@ contract BaseProtocolTest is BaseSetup {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint256 internal constant numberOfTestActions = 1; /// @dev <- change this whenever you add/remove test cases
+    uint256 internal constant numberOfTestActions = 11; /// @dev <- change this whenever you add/remove test cases
 
     function setUp() public override {
         super.setUp();
@@ -73,7 +74,163 @@ contract BaseProtocolTest is BaseSetup {
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
                 multiTx: false
-            }) 
+            }),
+            /// FTM=>BSC: user withdrawing tokens from a vault on BSC from/to Fantom
+            TestAction({
+                action: Actions.Withdraw,
+                actionType: 0,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: FTM,
+                CHAIN_1: BSC,
+                user: users[0],
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
+                multiTx: false
+            }),
+            /// FTM=>BSC: user depositing to a vault on BSC from Fantom with MultiTx
+            TestAction({
+                action: Actions.Deposit,
+                actionType: 0,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: FTM,
+                CHAIN_1: BSC,
+                user: users[0],
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
+                multiTx: true
+            }),
+            /// BSC=>FTM: multiple LiqReq/StateReq for multi-deposit
+            /// BSC=>FTM: user depositing to a vault on Fantom from BSC
+            TestAction({
+                action: Actions.Deposit,
+                actionType: 1,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: BSC,
+                CHAIN_1: FTM,
+                user: users[2],
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
+                multiTx: false
+            }),
+            /// BSC=>FTM: multiple LiqReq/StateReq for multi-deposit
+            /// BSC=>FTM: partial withdraw tokens from a vault on Fantom from/to BSC
+            TestAction({
+                action: Actions.Withdraw,
+                actionType: 1,
+                actionKind: LiquidityChange.Partial,
+                CHAIN_0: BSC,
+                CHAIN_1: FTM,
+                user: users[2],
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
+                multiTx: false
+            }),
+            /// FTM=>BSC: user depositing to a vault requiring swap (stays pending)
+            TestAction({
+                action: Actions.Deposit,
+                actionType: 0,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: FTM,
+                CHAIN_1: BSC,
+                user: users[1],
+                testType: TestType.RevertProcessPayload,
+                revertError: IStateRegistry.INVALID_PAYLOAD_STATE.selector, // @dev to a find how to use reverts here
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
+                multiTx: false
+            }),
+            /// FTM=>BSC: cross-chain slippage update beyond max slippage
+            TestAction({
+                action: Actions.Deposit,
+                actionType: 0,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: FTM,
+                CHAIN_1: BSC,
+                user: users[0],
+                testType: TestType.RevertUpdateStateSlippage,
+                revertError: IStateRegistry.SLIPPAGE_OUT_OF_BOUNDS.selector, // @dev to a find how to use reverts here
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 1200, // 12%
+                multiTx: false
+            }),
+            /// ARBI=>OP: cross-chain slippage update above received value
+            TestAction({
+                action: Actions.Deposit,
+                actionType: 1,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: ARBI,
+                CHAIN_1: OP,
+                user: users[2],
+                testType: TestType.RevertUpdateStateSlippage,
+                revertError: IStateRegistry.NEGATIVE_SLIPPAGE.selector, // @dev to a find how to use reverts here
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: -100,
+                multiTx: false
+            }),
+            /// POLY=>POLY: SAMECHAIN deposit()
+            /// @dev NOTE: this is being made with non native assets
+            /// @dev NOTE: untested edge case: if doing a native token vault deposit (sent as msg.value) multiple state requests do not work
+            TestAction({
+                action: Actions.Deposit,
+                actionType: 1,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: POLY,
+                CHAIN_1: POLY,
+                user: users[0],
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 100,
+                multiTx: false
+            }),
+            /// POLY=>POLY: SAMECHAIN withdraw()
+            /// @dev NOTE: this is being made with non native assets
+            TestAction({
+                action: Actions.Withdraw,
+                actionType: 1,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: POLY,
+                CHAIN_1: POLY,
+                user: users[0],
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                maxSlippage: 1000, // 10%,
+                slippage: 200,
+                multiTx: false
+            }),
+            /// OP=>AVAX: cross-chain slippage update from unauthorized wallet
+            //revertError: "AccessControl: account 0x0000000000000000000000000000000000000003 is missing role 0x2030565476ef23eb21f6c1f68075f5a89b325631df98f5793acd3297f9b80123",
+            TestAction({
+                action: Actions.Deposit,
+                actionType: 0,
+                actionKind: LiquidityChange.Full,
+                CHAIN_0: OP,
+                CHAIN_1: AVAX,
+                user: users[1],
+                testType: TestType.RevertUpdateStateRBAC,
+                revertError: "",
+                revertRole: keccak256("UPDATER_ROLE"),
+                maxSlippage: 1000, // 10%,
+                slippage: 0,
+                multiTx: false
+            })
         ];
 
         return testActionCases[index_];
@@ -108,7 +265,12 @@ contract BaseProtocolTest is BaseSetup {
             vars.fromSrc = payable(getContract(action.CHAIN_0, "SuperRouter"));
 
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
-            if (action.CHAIN_0 == action.CHAIN_1) {
+            /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
+            if (
+                action.CHAIN_0 == action.CHAIN_1 ||
+                (action.action == Actions.Withdraw &&
+                    action.CHAIN_0 != action.CHAIN_1)
+            ) {
                 /// @dev FIXME: this is only using hardcoded formid 1 (ERC4626Form) for now!!!
                 /// !!WARNING
                 vars.toDst = payable(

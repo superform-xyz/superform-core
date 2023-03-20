@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {StateData, FormData, FormCommonData, FormXChainData, XChainActionArgs} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
@@ -94,7 +94,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     //             if (
     //                 underlying.balanceOf(address(this)) >= commonData.amounts[i]
     //             ) {
-                    
+
     //                 directDepositToVault(stateData.params);
     //             } else {
     //                 revert BRIDGE_TOKENS_PENDING();
@@ -215,7 +215,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         external
         payable
         override
-        onlyRole(TOKEN_BANK_ROLE)
+        onlyRole(SUPER_ROUTER_ROLE)
         returns (uint256[] memory dstAmounts)
     {
         dstAmounts = _directDepositIntoVault(formData_);

@@ -1,15 +1,13 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {StateData, FormData, FormCommonData, TransactionType} from "./types/DataTypes.sol";
 import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {ITokenBank} from "./interfaces/ITokenBank.sol";
-
-import "forge-std/console.sol";
 
 /// @title Token Bank
 /// @author Zeropoint Labs.
@@ -62,8 +60,6 @@ contract TokenBank is ITokenBank, AccessControl {
     //////////////////////////////////////////////////////////////*/
     receive() external payable {}
 
-    
-
     /// @dev handles the state when received from the source chain.
     /// @param payload_     represents the payload id associated with the transaction.
     /// note: called by external keepers when state is ready.
@@ -79,8 +75,6 @@ contract TokenBank is ITokenBank, AccessControl {
             (FormCommonData)
         );
 
-        console.log("loop");
-        
         for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
             (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
                 commonData.superFormIds[i]
@@ -92,8 +86,9 @@ contract TokenBank is ITokenBank, AccessControl {
                     underlying.balanceOf(address(this)) >= commonData.amounts[i]
                 ) {
                     underlying.transfer(form, commonData.amounts[i]);
-                    console.log("msg.value", msg.value);
-                    IBaseForm(form).xChainDepositIntoVault{value: msg.value}(stateData.params);
+                    IBaseForm(form).xChainDepositIntoVault{value: msg.value}(
+                        stateData.params
+                    );
                 } else {
                     revert BRIDGE_TOKENS_PENDING();
                 }

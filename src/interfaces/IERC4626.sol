@@ -50,17 +50,17 @@ abstract contract IERC4626 is ERC20 {
 
     /// @notice Mints `positions_` Vault positions_ to `receiver_` by
     /// depositing exactly `assets_` of underlying tokens.
-    function deposit(uint256 assets_, address receiver_)
-        external
-        virtual
-        returns (uint256 positions_);
+    function deposit(
+        uint256 assets_,
+        address receiver_
+    ) external virtual returns (uint256 positions_);
 
     /// @notice Mints exactly `positions_` Vault positions_ to `receiver_`
     /// by depositing `assets_` of underlying tokens.
-    function mint(uint256 positions_, address receiver_)
-        external
-        virtual
-        returns (uint256 assets_);
+    function mint(
+        uint256 positions_,
+        address receiver_
+    ) external virtual returns (uint256 assets_);
 
     /// @notice Redeems `positions_` from `owner_` and sends `assets_`
     /// of underlying tokens to `receiver_`.
@@ -85,91 +85,71 @@ abstract contract IERC4626 is ERC20 {
     /// @notice The amount of positions_ that the vault would
     /// exchange for the amount of assets_ provided, in an
     /// ideal scenario where all the conditions are met.
-    function convertToShares(uint256 assets_)
-        external
-        view
-        virtual
-        returns (uint256 positions_);
+    function convertToShares(
+        uint256 assets_
+    ) external view virtual returns (uint256 positions_);
 
     /// @notice The amount of assets_ that the vault would
     /// exchange for the amount of positions_ provided, in an
     /// ideal scenario where all the conditions are met.
-    function convertToassets_(uint256 positions_)
-        external
-        view
-        virtual
-        returns (uint256 assets_);
+    function convertToassets_(
+        uint256 positions_
+    ) external view virtual returns (uint256 assets_);
 
     /// @notice Total number of underlying assets_ that can
     /// be deposited by `owner_` into the Vault, where `owner_`
     /// corresponds to the input parameter `receiver_` of a
     /// `deposit` call.
-    function maxDeposit(address owner_)
-        external
-        view
-        virtual
-        returns (uint256 maxassets_);
+    function maxDeposit(
+        address owner_
+    ) external view virtual returns (uint256 maxassets_);
 
     /// @notice Allows an on-chain or off-chain user to simulate
     /// the effects of their deposit at the current block, given
     /// current on-chain conditions.
-    function previewDeposit(uint256 assets_)
-        external
-        view
-        virtual
-        returns (uint256 positions_);
+    function previewDeposit(
+        uint256 assets_
+    ) external view virtual returns (uint256 positions_);
 
     /// @notice Total number of underlying positions_ that can be minted
     /// for `owner_`, where `owner_` corresponds to the input
     /// parameter `receiver_` of a `mint` call.
-    function maxMint(address owner_)
-        external
-        view
-        virtual
-        returns (uint256 maxpositions_);
+    function maxMint(
+        address owner_
+    ) external view virtual returns (uint256 maxpositions_);
 
     /// @notice Allows an on-chain or off-chain user to simulate
     /// the effects of their mint at the current block, given
     /// current on-chain conditions.
-    function previewMint(uint256 positions_)
-        external
-        view
-        virtual
-        returns (uint256 assets_);
+    function previewMint(
+        uint256 positions_
+    ) external view virtual returns (uint256 assets_);
 
     /// @notice Total number of underlying assets_ that can be
     /// withdrawn from the Vault by `owner_`, where `owner_`
     /// corresponds to the input parameter of a `withdraw` call.
-    function maxWithdraw(address owner_)
-        external
-        view
-        virtual
-        returns (uint256 maxassets_);
+    function maxWithdraw(
+        address owner_
+    ) external view virtual returns (uint256 maxassets_);
 
     /// @notice Allows an on-chain or off-chain user to simulate
     /// the effects of their withdrawal at the current block,
     /// given current on-chain conditions.
-    function previewWithdraw(uint256 assets_)
-        external
-        view
-        virtual
-        returns (uint256 positions_);
+    function previewWithdraw(
+        uint256 assets_
+    ) external view virtual returns (uint256 positions_);
 
     /// @notice Total number of underlying positions_ that can be
     /// redeemed from the Vault by `owner_`, where `owner_` corresponds
     /// to the input parameter of a `redeem` call.
-    function maxRedeem(address owner_)
-        external
-        view
-        virtual
-        returns (uint256 maxpositions_);
+    function maxRedeem(
+        address owner_
+    ) external view virtual returns (uint256 maxpositions_);
 
     /// @notice Allows an on-chain or off-chain user to simulate
     /// the effects of their redeemption at the current block,
     /// given current on-chain conditions.
-    function previewRedeem(uint256 positions_)
-        external
-        view
-        virtual
-        returns (uint256 assets_);
+    function previewRedeem(
+        uint256 positions_
+    ) external view virtual returns (uint256 assets_);
 }

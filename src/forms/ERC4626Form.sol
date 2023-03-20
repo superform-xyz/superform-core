@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {ERC4626} from "solmate/mixins/ERC4626.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {ERC4626} from "@solmate/mixins/ERC4626.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {StateData, TransactionType, CallbackType, FormData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData} from "../types/DataTypes.sol";
@@ -12,7 +12,6 @@ import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
-import "forge-std/console.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for ERC4626 vaults
@@ -151,6 +150,38 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         ERC20 collateral_ = ERC20(collateral);
         uint256 balanceBefore = ERC20(collateral).balanceOf(address(this));
 
+        /// note: handle the collateral token transfers.
+        if (liqData.txData.length == 0) {
+            require(
+                ERC20(liqData.token).allowance(
+                    commonData.srcSender,
+                    address(this)
+                ) >= liqData.amount,
+                "Destination: Insufficient Allowance"
+            );
+            ERC20(liqData.token).safeTransferFrom(
+                commonData.srcSender,
+                address(this),
+                liqData.amount
+            );
+        } else {
+            dispatchTokens(
+                bridgeAddress[liqData.bridgeId],
+                liqData.txData,
+                liqData.token,
+                liqData.allowanceTarget,
+                liqData.amount,
+                commonData.srcSender,
+                liqData.nativeAmount
+            );
+        }
+
+        uint256 balanceAfter = ERC20(collateral).balanceOf(address(this));
+        require(
+            balanceAfter - balanceBefore >= expAmount,
+            "Destination: Invalid State & Liq Data"
+        );
+
         dstAmounts = new uint256[](loopLength);
 
         for (uint256 i = 0; i < loopLength; i++) {
@@ -225,30 +256,6 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         }
     }
 
-    function xChainDepositIntoVault(
-        bytes calldata formData_
-    )
-        external
-        payable
-        virtual
-        override
-        onlyRole(TOKEN_BANK_ROLE)
-        returns (uint256[] memory dstAmounts)
-    {
-        FormData memory data = abi.decode(formData_, (FormData));
-        console.log("msg.value", msg.value);
-
-        _xChainDepositIntoVault(
-            XChainActionArgs(
-                data.srcChainId,
-                data.dstChainId,
-                data.commonData,
-                data.xChainData,
-                data.extraFormData
-            )
-        );
-    }
-
     function _xChainDepositIntoVault(
         XChainActionArgs memory args_
     ) internal virtual override {
@@ -286,7 +293,6 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 vaults[i]
             );
         }
-        console.log("msg.value", msg.value);
         /// Note Step-4: Send Data to Source to issue superform positions.
         stateRegistry.dispatchPayload{value: msg.value}(
             1, /// @dev come to this later to accept any bridge id
