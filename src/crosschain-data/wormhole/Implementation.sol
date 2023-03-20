@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {IWormhole} from "./interface/IWormhole.sol";
 import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
+import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {StateData, CallbackType} from "../../types/DataTypes.sol";
@@ -15,6 +16,12 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 /// @notice https://book.wormhole.com/wormhole/3_coreLayerContracts.html#multicasting
 /// this contract uses multi-casting feature from wormhole
 contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, AccessControl {
+    struct ExtraData {
+        uint256 messageFee;
+        uint256 relayerFee;
+        uint256 airdrop;
+    }
+
     bytes32 public constant WORMHOLE_RELAYER_ROLE = bytes32("WORMHOLE_RELAYER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
@@ -24,6 +31,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
 
     IWormhole public immutable bridge;
     IBaseStateRegistry public immutable registry;
+    IWormholeRelayer public relayer;
 
     mapping(uint80 => uint16) public ambChainId;
     mapping(uint16 => uint80) public superChainId;
@@ -39,6 +47,8 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
         registry = registry_;
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+
+        /// @dev receiving relayer
         _setupRole(WORMHOLE_RELAYER_ROLE, relayer_);
     }
 
@@ -62,19 +72,24 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
         if (msg.sender != address(registry)) {
             revert INVALID_CALLER();
         }
-
         bytes memory payload = abi.encode(msg.sender, dstChainId_, message_);
+        ExtraData memory eData = abi.decode(extraData_, (ExtraData));
 
         /// FIXME: nonce is externally generated. can also be moved inside our contracts
         uint32 nonce = abi.decode(extraData_, (uint32));
 
-        bridge.publishMessage{value: msg.value}(
+        bridge.publishMessage{value: eData.messageFee}(
             nonce,
             payload,
             CONSISTENCY_LEVEL
         );
 
-        /// @dev can validate and send the message costs alongside the transaction
+        /// @dev call relayers to publish the message
+        /// @note refund and delivery always fail if CREATE3 / CREATE2 is not used
+
+        relayer.send{value: eData.relayerFee}(
+            ambChainId[dstChainId_], castAddr(address(this)), castAddr(address(this)), eData.relayerFee, eData.airdrop, nonce
+        );
     }
 
     function receiveWormholeMessages(bytes[] memory whMessages, bytes[] memory)
@@ -117,6 +132,16 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver, Access
     {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
+    }
+
+    /// @notice to set the core relayer contract
+    /// @dev allows admin to set the core relayer
+    /// @param relayer_ is the identifier of the relayer address
+    function setRelayer(IWormholeRelayer relayer_)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        relayer = relayer_;
     }
 
     /*///////////////////////////////////////////////////////////////
