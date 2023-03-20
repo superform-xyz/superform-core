@@ -290,7 +290,8 @@ contract StateRegistry is IStateRegistry, AccessControl {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (payloadInfo_.flag == CallbackType.INIT) {
-            tokenBankContract.stateSync{value: msg.value}(
+            
+            tokenBankContract.withdrawSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {
@@ -310,7 +311,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            tokenBankContract.stateSync{value: msg.value}(
+            tokenBankContract.depositSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {

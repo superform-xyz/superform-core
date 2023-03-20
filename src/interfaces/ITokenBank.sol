@@ -16,7 +16,15 @@ interface ITokenBank {
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
 
+    function withdrawSync(
+        bytes memory payload_
+    ) external payable;
+
+    function depositSync(
+        bytes memory payload_
+    ) external payable;
+
     /// @dev allows state registry contract to send payload for processing to the form contract.
     /// @param payload_ is the received information to be processed.
-    function stateSync(bytes memory payload_) external payable;
+    // function stateSync(bytes memory payload_) external payable;
 }
