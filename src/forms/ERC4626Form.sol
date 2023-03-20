@@ -7,7 +7,7 @@ import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {StateData, TransactionType, CallbackType, FormData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData} from "../types/DataTypes.sol";
-import {DirectActionData} from "../types/NewDataTypes.sol";
+import {InitSingleVaultData} from "../types/NewDataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
@@ -114,9 +114,9 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     function _directSingleDepositIntoVault(
         bytes calldata actionData_
     ) internal virtual override returns (uint256 dstAmount) {
-        DirectActionData memory data = abi.decode(
+        InitSingleVaultData memory data = abi.decode(
             actionData_,
-            (DirectActionData)
+            (InitSingleVaultData)
         );
 
         LiqRequest memory liqData = abi.decode(data.liqData, (LiqRequest));
@@ -163,6 +163,46 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             "Destination: Invalid Collateral"
         );
         dstAmount = v.deposit(data.amount, address(this));
+    }
+
+    /// @inheritdoc BaseForm
+    function _directSingleWithdrawIntoVault(
+        bytes calldata formData
+    ) internal virtual override returns (uint256 dstAmount) {
+        InitSingleVaultData memory data = abi.decode(
+            formData,
+            (InitSingleVaultData)
+        );
+
+        LiqRequest memory liqData = abi.decode(data.liqData, (LiqRequest));
+
+        uint256 len1 = liqData.txData.length;
+        address srcSender = address(uint160(data.txData));
+
+        address receiver = len1 == 0 ? srcSender : address(this);
+
+        (address vault, , ) = superFormFactory.getSuperForm(data.superFormId);
+
+        ERC4626 v = ERC4626(vault);
+
+        dstAmount = v.redeem(data.amount, receiver, address(this));
+
+        if (len1 != 0) {
+            require(
+                liqData.amount <= dstAmount,
+                "Destination: Invalid Liq Request"
+            );
+
+            dispatchTokens(
+                bridgeAddress[liqData.bridgeId],
+                liqData.txData,
+                liqData.token,
+                liqData.allowanceTarget,
+                liqData.amount,
+                address(this),
+                liqData.nativeAmount
+            );
+        }
     }
 
     /// @inheritdoc BaseForm

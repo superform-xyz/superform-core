@@ -31,22 +31,6 @@ interface ISuperRouter {
                         EXTERNAL WRITE FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev burns users superpositions and dispatch a withdrawal request to the destination chain.
-    /// @param liqData_         represents the bridge data for underlying to be moved from destination chain.
-    /// @param stateData_       represents the state data required for withdrawal of funds from the vaults.
-    function singleDirectWithdraw(
-        LiqRequest calldata liqData_,
-        StateReq calldata stateData_
-    ) external payable;
-
-    /// @dev burns users superpositions and dispatch a withdrawal request to the destination chain.
-    /// @param liqData_         represents the bridge data for underlying to be moved from destination chain.
-    /// @param stateData_       represents the state data required for withdrawal of funds from the vaults.
-    function singleXChainWithdraw(
-        LiqRequest calldata liqData_,
-        StateReq calldata stateData_
-    ) external payable;
-
     /// @dev PREVILAGED admin ONLY FUNCTION.
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @param bridgeId_         represents the bridge unqiue identifier.

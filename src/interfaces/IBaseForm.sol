@@ -93,6 +93,16 @@ interface IBaseForm is IERC165 {
 
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
+    /// @dev process same chain id deposits
+    /// @param actionData_  A bytes representation containing all the data required to make a form action
+    /// @return dstAmount  The amount of tokens deposited in same chain action
+    /// @dev NOTE: Should this function return?
+    function directSingleWithdrawIntoVault(
+        bytes calldata actionData_
+    ) external payable returns (uint256 dstAmount);
+
+    /// @dev PREVILEGED router ONLY FUNCTION.
+    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
     /// @param formData_  A bytes representation containing all the data required to make a form action
     /// @return dstAmounts  The amount of tokens withdrawn in same chain action

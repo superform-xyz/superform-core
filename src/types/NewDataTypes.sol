@@ -52,19 +52,19 @@ struct SingleXChainSingleVaultStateReq {
     uint8 primaryAmbId;
     uint8[] secondaryAmbIds;
     uint16 dstChainId;
-    SingleVaultSFData superFormsData;
+    SingleVaultSFData superFormData;
     bytes adapterParam;
     uint256 msgValue;
 }
 
 struct SingleDirectSingleVaultStateReq {
     uint16 dstChainId;
-    SingleVaultSFData superFormsData;
+    SingleVaultSFData superFormData;
     bytes adapterParam;
     uint256 msgValue;
 }
 
-struct AMBInitMultiVaultData {
+struct InitMultiVaultData {
     uint256 txData; // <- tight packing of (address srcSender (160 bits), srcChainId(uint16), txId (80bits))
     uint256[] superFormIds;
     uint256[] amounts;
@@ -73,7 +73,7 @@ struct AMBInitMultiVaultData {
     bytes liqData;
 }
 
-struct AMBInitSingleVaultData {
+struct InitSingleVaultData {
     uint256 txData; // <- tight packing of (address srcSender (160 bits), srcChainId(uint16), txId (80bits))
     uint256 superFormId;
     uint256 amount;
@@ -82,14 +82,6 @@ struct AMBInitSingleVaultData {
     bytes liqData;
 }
 
-struct DirectActionData {
-    uint256 txData; // <- tight packing of (address srcSender (160 bits), srcChainId(uint16), txId (80bits))
-    uint256 superFormId;
-    uint256 amount;
-    uint256 maxSlippage;
-    bytes extraFormData;
-    bytes liqData;
-}
 struct AMBMessage {
     uint256 txInfo; // tight packing of  TransactionType txType and CallbackType flag;
     bytes params; // abi.encode (AMBInitData)
