@@ -26,6 +26,8 @@ interface IBaseStateRegistry {
 
     error PAYLOAD_NOT_UPDATED();
 
+    error QUORUM_NOT_REACHED();
+
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
@@ -38,6 +40,9 @@ interface IBaseStateRegistry {
         uint80 dstChainId,
         uint256 payloadId
     );
+
+    /// @dev is emitted when a cross-chain proof is received in the state registry.
+    event ProofReceived(bytes proof);
 
     /// @dev is emitted when a payload gets updated.
     event PayloadUpdated(uint256 payloadId);
@@ -56,12 +61,14 @@ interface IBaseStateRegistry {
 
     /// @dev allows core contracts to send data to a destination chain.
     /// @param ambId_ is the identifier of the message amb to be used.
+    /// @param secAmbId_ is the identifiers for the proof amb to be used.
     /// @param dstChainId_ is the internal chainId used throughtout the protocol.
     /// @param message_ is the crosschain data to be sent.
     /// @param extraData_ defines all the message amb specific information.
     /// NOTE: dstChainId maps with the message amb's propreitory chain Id.
     function dispatchPayload(
         uint8 ambId_,
+        uint8[] memory secAmbId_,
         uint80 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
@@ -77,10 +84,8 @@ interface IBaseStateRegistry {
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(
-        uint256 payloadId_,
-        uint256[] calldata finalAmounts_
-    ) external;
+    function updatePayload(uint256 payloadId_, uint256[] calldata finalAmounts_)
+        external;
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
