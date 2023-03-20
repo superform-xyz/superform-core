@@ -6,8 +6,7 @@ import {ERC4626} from "@solmate/mixins/ERC4626.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
-import {StateData, TransactionType, CallbackType, FormData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData} from "../types/DataTypes.sol";
-import {InitSingleVaultData} from "../types/NewDataTypes.sol";
+import {StateData, TransactionType, CallbackType, FormData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData, InitSingleVaultData} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
@@ -389,6 +388,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 vaults[i]
             );
         }
+
         /// Note Step-4: Send Data to Source to issue superform positions.
         stateRegistry.dispatchPayload{value: msg.value}(
             1, /// @dev come to this later to accept any bridge id
@@ -399,10 +399,12 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                     CallbackType.RETURN,
                     abi.encode(
                         ReturnData(
-                            true,
-                            args_.srcChainId,
-                            chainId,
-                            xChainData.txId,
+                            _packReturnTxInfo(
+                                true,
+                                args_.srcChainId,
+                                chainId,
+                                xChainData.txId
+                            ),
                             dstAmounts
                         )
                     )
@@ -538,5 +540,18 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             total += amounts_[i];
         }
         return total;
+    }
+
+    /// @dev TODO: pass to single contract
+    function _packReturnTxInfo(
+        bool status_,
+        uint16 srcChainId_,
+        uint16 dstChainId_,
+        uint80 txId_
+    ) internal pure returns (uint256 returnTxInfo) {
+        returnTxInfo = uint256(uint8(status_));
+        returnTxInfo |= uint256(srcChainId_) << 8;
+        returnTxInfo |= uint256(dstChainId_) << 24;
+        returnTxInfo |= uint256(txId_) << 40;
     }
 }

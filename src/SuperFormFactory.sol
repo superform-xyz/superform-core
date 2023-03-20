@@ -12,10 +12,10 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
-    uint256 constant MAX_FORM_ID = 2 ** 16 - 1;
+    uint256 constant MAX_FORM_ID = 2 ** 80 - 1;
 
     /// @dev chainId represents the superform chain id.
-    uint80 public chainId;
+    uint16 public chainId;
 
     address[] public forms;
 
@@ -34,7 +34,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
     /// @dev sets caller as the admin of the contract.
     /// @param chainId_ the superform? chain id this factory is deployed on
-    constructor(uint80 chainId_) {
+    constructor(uint16 chainId_) {
         chainId = chainId_;
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
@@ -95,7 +95,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
         superFormId_ = uint256(uint160(vault_));
         superFormId_ |= formId_ << 160;
-        superFormId_ |= uint256(chainId) << 176;
+        superFormId_ |= uint256(chainId) << 240;
 
         if (superFormToVault[superFormId_] != address(0))
             revert SUPERFORM_ALREADY_EXISTS();
@@ -137,8 +137,8 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         returns (address vault_, uint256 formId_, uint256 chainId_)
     {
         vault_ = address(uint160(superFormId_));
-        formId_ = uint256(uint16(superFormId_ >> 160));
-        chainId_ = uint256(uint80(superFormId_ >> 176));
+        formId_ = uint256(uint80(superFormId_ >> 160));
+        chainId_ = uint256(uint16(superFormId_ >> 240));
     }
 
     /// @dev returns the vault-form-chain pair of an array of superforms

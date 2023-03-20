@@ -1,18 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-
-import {LiqRequest} from "../types/LiquidityTypes.sol";
-import {StateReq} from "../types/DataTypes.sol";
+import {LiqRequest, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, AMBMessage} from "../types/DataTypes.sol";
 
 /// @title ISuperRouter
 /// @author Zeropoint Labs.
 interface ISuperRouter {
     /*///////////////////////////////////////////////////////////////
+                                STRUCTS
+    //////////////////////////////////////////////////////////////*/
+    struct ActionLocalVars {
+        AMBMessage ambMessage;
+        LiqRequest liqRequest;
+        uint16 srcChainId;
+        uint16 dstChainId;
+        uint80 currentTotalTransactions;
+        address srcSender;
+        uint256 liqRequestsLen;
+    }
+    /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev is emitted when a cross-chain transaction is initiated.
+    /// @dev FIXME: to remove? - is emitted when a cross-chain transaction is initiated.
     event Initiated(uint256 txId, address fromToken, uint256 fromAmount);
+
+    /// @dev is emitted when a cross-chain transaction is initiated.
+    event CrossChainInitiated(uint80 indexed txId);
 
     /// @dev is emitted when a cross-chain transaction is completed.
     event Completed(uint256 txId);
@@ -27,8 +40,80 @@ interface ISuperRouter {
     /// @dev is emitted when the chain id input is invalid.
     error INVALID_INPUT_CHAIN_ID();
 
+    /// @dev is emitted when the amb ids input is invalid.
+    error INVALID_AMB_IDS();
+
+    /// @dev is emitted when the vaults data is invalid
+    error INVALID_SUPERFORMS_DATA();
+
+    /// @dev is emitted when the chain ids data is invalid
+    error INVALID_CHAIN_IDS();
+
+    /// @dev is emitted if anything other than state Registry calls stateSync
+    error REQUEST_DENIED();
+
+    /// @dev is emitted when the payload is invalid
+    error INVALID_PAYLOAD();
+
+    /// @dev is emitted if srchain ids mismatch in state sync
+    error SRC_CHAIN_IDS_MISMATCH();
+
+    /// @dev is emitted if dsthain ids mismatch in state sync
+    error DST_CHAIN_IDS_MISMATCH();
+
+    /// @dev is emitted if the payload status is invalid
+    error INVALID_PAYLOAD_STATUS();
+
     /*///////////////////////////////////////////////////////////////
-                        EXTERNAL WRITE FUNCTIONS
+                        EXTERNAL DEPOSIT FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function multiDstMultiVaultDeposit(
+        MultiDstMultiVaultsStateReq calldata req
+    ) external payable;
+
+    function singleDstMultiVaultDeposit(
+        SingleDstMultiVaultsStateReq memory req
+    ) external payable;
+
+    function multiDstSingleVaultDeposit(
+        MultiDstSingleVaultStateReq calldata req
+    ) external payable;
+
+    function singleXChainSingleVaultDeposit(
+        SingleXChainSingleVaultStateReq memory req
+    ) external payable;
+
+    function singleDirectSingleVaultDeposit(
+        SingleDirectSingleVaultStateReq memory req
+    ) external payable;
+
+    /*///////////////////////////////////////////////////////////////
+                        EXTERNAL WITHDRAW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function multiDstMultiVaultWithdraw(
+        MultiDstMultiVaultsStateReq calldata req
+    ) external payable;
+
+    function singleDstMultiVaultWithdraw(
+        SingleDstMultiVaultsStateReq memory req
+    ) external payable;
+
+    function multiDstSingleVaultWithdraw(
+        MultiDstSingleVaultStateReq calldata req
+    ) external payable;
+
+    function singleXChainSingleVaultWithdraw(
+        SingleXChainSingleVaultStateReq memory req
+    ) external payable;
+
+    function singleDirectSingleVaultWithdraw(
+        SingleDirectSingleVaultStateReq memory req
+    ) external payable;
+
+    /*///////////////////////////////////////////////////////////////
+                        OTHER EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev PREVILAGED admin ONLY FUNCTION.

@@ -11,6 +11,7 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
+/// @dev FIXME - using unoptimized multiDstMultivault function
 contract BaseProtocolTest is BaseSetup {
     /// @dev chainId => actionType => UnderlyingToken
     mapping(uint80 => mapping(uint256 => uint256[]))
@@ -40,11 +41,11 @@ contract BaseProtocolTest is BaseSetup {
         /// Type 1 - Single SuperForm x Two StateReq/LiqReq
         /// @dev FIXME: WARNING - currently these actions suppose that it is the same destination chain for all SuperForms!!!!
         /// @notice first array element is uint256, all the rest are automatically uint256
-        TARGET_UNDERLYING_VAULTS[BSC][0] = [uint256(0)];
-        TARGET_UNDERLYING_VAULTS[FTM][1] = [uint256(0), 1];
-        TARGET_UNDERLYING_VAULTS[OP][1] = [uint256(0), 1];
-        TARGET_UNDERLYING_VAULTS[POLY][1] = [uint256(0), 2];
-        TARGET_UNDERLYING_VAULTS[AVAX][0] = [uint256(2)];
+        TARGET_UNDERLYING_VAULTS[BSC][0] = [uint256(0)]; /// @dev TODO should use singleXChainSingleVault
+        TARGET_UNDERLYING_VAULTS[FTM][1] = [uint256(0), 1]; /// @dev TODO should use singleXChainMultiVault
+        TARGET_UNDERLYING_VAULTS[OP][1] = [uint256(0), 1]; /// @dev TODO should use singleXChainMultiVault
+        TARGET_UNDERLYING_VAULTS[POLY][1] = [uint256(0), 2]; /// @dev TODO should use singleXChainMultiVault
+        TARGET_UNDERLYING_VAULTS[AVAX][0] = [uint256(2)]; /// @dev TODO should use singleXChainSingleVault
 
         AMOUNTS_ACTIONS[0][LiquidityChange.Full] = [uint256(1000)];
         // With Full withdrawal (note, deposits are always full)
@@ -316,8 +317,8 @@ contract BaseProtocolTest is BaseSetup {
     /// @dev this function is used to build the 2D arrays in the best way possible
     function _targetVaults(
         uint256 action,
-        uint80 chain0,
-        uint80 chain1
+        uint16 chain0,
+        uint16 chain1
     )
         internal
         view
@@ -405,7 +406,7 @@ contract BaseProtocolTest is BaseSetup {
 
     function _superFormIds(
         uint256[] memory underlyingTokenIds_,
-        uint80 chainId_
+        uint16 chainId_
     ) internal view returns (uint256[] memory) {
         uint256[] memory superFormIds_ = new uint256[](
             underlyingTokenIds_.length

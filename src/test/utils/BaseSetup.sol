@@ -39,7 +39,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     address public deployer = address(777);
     address[] public users;
-    mapping(uint80 => mapping(bytes32 => address)) public contracts;
+    mapping(uint16 => mapping(bytes32 => address)) public contracts;
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
@@ -65,9 +65,9 @@ abstract contract BaseSetup is DSTest, Test {
     uint256[] public FORMS_FOR_VAULTS = [uint256(1), 1, 1];
     string[] public VAULT_NAMES;
 
-    mapping(uint80 => IERC4626[]) public vaults;
-    mapping(uint80 => uint256[]) vaultIds;
-    mapping(uint80 => uint256) PAYLOAD_ID; // chaindId => payloadId
+    mapping(uint16 => IERC4626[]) public vaults;
+    mapping(uint16 => uint256[]) vaultIds;
+    mapping(uint16 => uint256) PAYLOAD_ID; // chaindId => payloadId
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -78,10 +78,10 @@ abstract contract BaseSetup is DSTest, Test {
     uint8[] ambIds;
 
     /*//////////////////////////////////////////////////////////////
-                        LAYER ZERO VARIABLES
+                        AMB VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint80 => address) public LZ_ENDPOINTS;
+    mapping(uint16 => address) public LZ_ENDPOINTS;
 
     address public constant ETH_lzEndpoint =
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
@@ -108,15 +108,16 @@ abstract contract BaseSetup is DSTest, Test {
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
     ];
 
-    uint80 public constant ETH = 1;
-    uint80 public constant BSC = 2;
-    uint80 public constant AVAX = 3;
-    uint80 public constant POLY = 4;
-    uint80 public constant ARBI = 5;
-    uint80 public constant OP = 6;
-    uint80 public constant FTM = 7;
+    /// @dev these are the superform chain Ids (to be defined)
+    uint16 public constant ETH = 1;
+    uint16 public constant BSC = 2;
+    uint16 public constant AVAX = 3;
+    uint16 public constant POLY = 4;
+    uint16 public constant ARBI = 5;
+    uint16 public constant OP = 6;
+    uint16 public constant FTM = 7;
 
-    uint80[7] public chainIds = [1, 2, 3, 4, 5, 6, 7];
+    uint16[7] public chainIds = [1, 2, 3, 4, 5, 6, 7];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -139,7 +140,7 @@ abstract contract BaseSetup is DSTest, Test {
                         CHAINLINK VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint80 => address) public PRICE_FEEDS;
+    mapping(uint16 => address) public PRICE_FEEDS;
 
     address public constant ETHEREUM_ETH_USD_FEED =
         0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
@@ -157,8 +158,8 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     // chainID => FORK
-    mapping(uint80 => uint256) public FORKS;
-    mapping(uint80 => string) public RPC_URLS;
+    mapping(uint16 => uint256) public FORKS;
+    mapping(uint16 => string) public RPC_URLS;
 
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
@@ -478,7 +479,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     function getContract(
-        uint80 chainId,
+        uint16 chainId,
         string memory _name
     ) public view returns (address) {
         return contracts[chainId][bytes32(bytes(_name))];
@@ -1056,7 +1057,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 payloadId_,
         uint256[] memory amounts_,
         int256 slippage,
-        uint80 targetChainId_,
+        uint16 targetChainId_,
         TestType testType,
         bytes4 revertError,
         bytes32 revertRole
@@ -1116,7 +1117,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     function _processPayload(
         uint256 payloadId_,
-        uint80 targetChainId_,
+        uint16 targetChainId_,
         TestType testType,
         bytes4 revertError
     ) internal returns (bool) {
@@ -1144,7 +1145,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     function _processMultiTx(
-        uint80 targetChainId_,
+        uint16 targetChainId_,
         address underlyingToken_,
         uint256 amount_
     ) internal {
@@ -1176,7 +1177,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     function _resetPayloadIDs() internal {
-        mapping(uint80 => uint256) storage payloadID = PAYLOAD_ID; // chaindId => payloadId
+        mapping(uint16 => uint256) storage payloadID = PAYLOAD_ID; // chaindId => payloadId
 
         payloadID[ETH] = 0;
         payloadID[BSC] = 0;
@@ -1192,7 +1193,7 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     function _preDeploymentSetup() private {
-        mapping(uint80 => uint256) storage forks = FORKS;
+        mapping(uint16 => uint256) storage forks = FORKS;
         forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 16742187);
         forks[BSC] = vm.createFork(BSC_RPC_URL, 26121321);
         forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 26933006);
@@ -1201,7 +1202,7 @@ abstract contract BaseSetup is DSTest, Test {
         forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 78219242);
         forks[FTM] = vm.createFork(FANTOM_RPC_URL, 56806404);
 
-        mapping(uint80 => string) storage rpcURLs = RPC_URLS;
+        mapping(uint16 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
         rpcURLs[BSC] = BSC_RPC_URL;
         rpcURLs[AVAX] = AVALANCHE_RPC_URL;
@@ -1210,7 +1211,7 @@ abstract contract BaseSetup is DSTest, Test {
         rpcURLs[OP] = OPTIMISM_RPC_URL;
         rpcURLs[FTM] = FANTOM_RPC_URL;
 
-        mapping(uint80 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
+        mapping(uint16 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
         lzEndpointsStorage[BSC] = BSC_lzEndpoint;
         lzEndpointsStorage[AVAX] = AVAX_lzEndpoint;
@@ -1219,7 +1220,7 @@ abstract contract BaseSetup is DSTest, Test {
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         lzEndpointsStorage[FTM] = FTM_lzEndpoint;
 
-        mapping(uint80 => address) storage priceFeeds = PRICE_FEEDS;
+        mapping(uint16 => address) storage priceFeeds = PRICE_FEEDS;
         priceFeeds[ETH] = ETHEREUM_ETH_USD_FEED;
         priceFeeds[BSC] = BSC_BNB_USD_FEED;
         priceFeeds[AVAX] = AVALANCHE_AVAX_USD_FEED;
@@ -1263,7 +1264,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     function _getPriceMultiplier(
-        uint80 targetChainId_
+        uint16 targetChainId_
     ) internal returns (uint256) {
         uint256 multiplier;
 

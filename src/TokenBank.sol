@@ -63,13 +63,13 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @dev handles the state when received from the source chain.
     /// @param payload_     represents the payload id associated with the transaction.
     /// note: called by external keepers when state is ready.
-    /// NOTE: If this is to be called by external keepers, then we block it with the state registry role.
-    function stateSync(
+    /// note: state registry sorts by deposit/withdraw txType before calling this function.
+    function depositSync(
         bytes memory payload_
     ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
+        
         StateData memory stateData = abi.decode(payload_, (StateData));
         FormData memory data = abi.decode(stateData.params, (FormData));
-        /// @dev This has address srcSender;
         FormCommonData memory commonData = abi.decode(
             data.commonData,
             (FormCommonData)
@@ -80,21 +80,43 @@ contract TokenBank is ITokenBank, AccessControl {
                 commonData.superFormIds[i]
             );
             address form = superFormFactory.getForm(formId_);
-            if (stateData.txType == TransactionType.DEPOSIT) {
-                ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
-                if (
-                    underlying.balanceOf(address(this)) >= commonData.amounts[i]
-                ) {
-                    underlying.transfer(form, commonData.amounts[i]);
-                    IBaseForm(form).xChainDepositIntoVault{value: msg.value}(
-                        stateData.params
-                    );
-                } else {
-                    revert BRIDGE_TOKENS_PENDING();
-                }
+            ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
+
+            /// @dev This will revert ALL of the transactions if one of them fails.
+            if (underlying.balanceOf(address(this)) >= commonData.amounts[i]) {
+                
+                underlying.transfer(form, commonData.amounts[i]);
+                IBaseForm(form).xChainDepositIntoVault{value: msg.value}(
+                    stateData.params
+                
+                );
             } else {
-                IBaseForm(form).xChainWithdrawFromVault(stateData.params);
+                revert BRIDGE_TOKENS_PENDING();
             }
+        }
+    }
+
+    /// @dev handles the state when received from the source chain.
+    /// @param payload_     represents the payload id associated with the transaction.
+    /// note: called by external keepers when state is ready.
+    /// note: state registry sorts by deposit/withdraw txType before calling this function.
+    function withdrawSync(
+        bytes memory payload_
+    ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
+        StateData memory stateData = abi.decode(payload_, (StateData));
+        FormData memory data = abi.decode(stateData.params, (FormData));
+        FormCommonData memory commonData = abi.decode(
+            data.commonData,
+            (FormCommonData)
+        );
+
+        /// @dev This will revert ALL of the transactions if one of them fails.
+        for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
+            (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
+                commonData.superFormIds[i]
+            );
+            address form = superFormFactory.getForm(formId_);
+            IBaseForm(form).xChainWithdrawFromVault(stateData.params);
         }
     }
 }

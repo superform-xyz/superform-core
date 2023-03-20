@@ -29,14 +29,14 @@ contract SuperFormFactoryTest is Utilities {
 
     IStateRegistry internal mockStateRegistry;
     SuperFormFactory internal superFormFactory;
-    uint80 internal chainId;
+    uint16 internal chainId;
     address payable internal admin;
 
     function setUp() public {
         users = createUsers(5);
         admin = users[0];
         vm.label(admin, "Admin");
-        chainId = uint80(block.chainid);
+        chainId = uint16(block.chainid);
         mockStateRegistry = IStateRegistry(address(10));
         vm.prank(admin);
         superFormFactory = new SuperFormFactory(chainId);
