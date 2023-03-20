@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 /// @dev lib imports
 import "@std/Test.sol";
 import "@ds-test/test.sol";
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -584,6 +584,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.erc4626Form = address(
                 new ERC4626Form(
                     vars.chainId,
+                    /// NOTE: If each Form uses centralized stateRegistry, then this stateRegistry shouldn't have access to every single form?
                     IStateRegistry(payable(vars.stateRegistry)),
                     ISuperFormFactory(vars.factory)
                 )
@@ -639,6 +640,12 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.chainId,
                 "SuperFormFactory"
             );
+
+            vars.dstSuperFormFactory = getContract(
+                vars.chainId,
+                "SuperFormFactory"
+            );
+
             vars.srcTokenBank = getContract(vars.chainId, "TokenBank");
             vars.srcErc4626Form = getContract(vars.chainId, "ERC4626Form");
             vars.srcMultiTxProcessor = getContract(
@@ -664,7 +671,8 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev - RBAC
             StateRegistry(payable(vars.srcStateRegistry)).setCoreContracts(
                 vars.srcSuperRouter,
-                vars.srcTokenBank
+                vars.srcTokenBank,
+                vars.dstSuperFormFactory
             );
 
             StateRegistry(payable(vars.srcStateRegistry)).grantRole(
@@ -947,18 +955,18 @@ abstract contract BaseSetup is DSTest, Test {
             from,
             args.multiTx
                 ? getContract(args.toChainId, "MultiTxProcessor")
-                : args.toDst,
+                : args.toDst, /// NOTE: TokenBank address / Form address???
             args.underlyingToken[0], /// @dev - needs fix because it should have an array of underlying like state req
-            args.amounts[0], /// @dev - 1 amount is sent, not testing sum of amounts (different vaults)
+            args.amounts[0], /// @dev FIXME - 1 amount is sent, not testing sum of amounts (different vaults)
             FORKS[args.toChainId]
         );
 
         liqReq = LiqRequest(
             1,
             socketTxData,
-            args.underlyingToken[0], /// @dev - needs fix because it should have an array of underlying like state req
+            args.underlyingToken[0], /// @dev FIXME - needs fix because it should have an array of underlying like state req
             getContract(args.srcChainId, "SocketRouterMockFork"),
-            args.amounts[0], /// @dev - 1 amount is sent, not testing sum of amounts (different vaults)
+            args.amounts[0], /// @dev FIXME - 1 amount is sent, not testing sum of amounts (different vaults)
             0
         );
 
@@ -1022,28 +1030,22 @@ abstract contract BaseSetup is DSTest, Test {
             msgValue
         );
 
-        address to = args.fromSrc;
-
-        if (args.srcChainId == args.toChainId) {
-            /// @dev direct withdraw sends the final desired token to the user
-            to = args.user;
-        }
         // !! WARNING !! - sending single amount here - todo change
         /// @dev check this from down here when contracts are fixed for multi vault
         /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
         bytes memory socketTxData = abi.encodeWithSignature(
             "mockSocketTransfer(address,address,address,uint256,uint256)",
             args.toDst,
-            args.fromSrc,
-            args.underlyingToken[0], /// @dev - needs fix
-            amountsToWithdraw[0], /// @dev - needs fix
+            args.user,
+            args.underlyingToken[0], /// @dev FIXME - needs fix
+            amountsToWithdraw[0], /// @dev FIXME - needs fix
             FORKS[args.toChainId]
         );
 
         liqReq = LiqRequest(
             1,
             socketTxData,
-            args.underlyingToken[0], /// @dev - needs fix
+            args.underlyingToken[0], /// @dev  FIXME - needs fix
             getContract(args.srcChainId, "SocketRouterMockFork"),
             amountsToWithdraw[0],
             0
@@ -1122,7 +1124,7 @@ abstract contract BaseSetup is DSTest, Test {
 
         vm.selectFork(FORKS[targetChainId_]);
 
-        uint256 msgValue = 5 * _getPriceMultiplier(targetChainId_) * 1e18;
+        uint256 msgValue = 10 * _getPriceMultiplier(targetChainId_) * 1e18;
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {
@@ -1155,9 +1157,9 @@ abstract contract BaseSetup is DSTest, Test {
         bytes memory socketTxData = abi.encodeWithSignature(
             "mockSocketTransfer(address,address,address,uint256,uint256)",
             getContract(targetChainId_, "MultiTxProcessor"),
-            getContract(targetChainId_, "ERC4626Form"),
-            underlyingToken_, /// @dev - needs fix because it should have an array of underlying like state req
-            amount_, /// @dev - 1 amount is sent, not testing sum of amounts (different vaults)
+            getContract(targetChainId_, "TokenBank"),
+            underlyingToken_, /// @dev FIXME - needs fix because it should have an array of underlying like state req
+            amount_, /// @dev FIXME - 1 amount is sent, not testing sum of amounts (different vaults)
             FORKS[targetChainId_]
         );
 
