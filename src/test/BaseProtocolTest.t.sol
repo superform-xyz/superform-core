@@ -4,12 +4,13 @@ pragma solidity 0.8.19;
 // Contracts
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/BaseSetup.sol";
 
+/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 contract BaseProtocolTest is BaseSetup {
     /// @dev chainId => actionType => UnderlyingToken
     mapping(uint80 => mapping(uint256 => uint256[]))
@@ -73,7 +74,7 @@ contract BaseProtocolTest is BaseSetup {
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
                 multiTx: false
-            }) /*,
+            }) /*
             /// FTM=>BSC: user withdrawing tokens from a vault on BSC from/to Fantom
             TestAction({
                 action: Actions.Withdraw,
@@ -229,8 +230,7 @@ contract BaseProtocolTest is BaseSetup {
                 maxSlippage: 1000, // 10%,
                 slippage: 0,
                 multiTx: false
-            })
-            */
+            })*/
         ];
 
         return testActionCases[index_];
@@ -265,7 +265,12 @@ contract BaseProtocolTest is BaseSetup {
             vars.fromSrc = payable(getContract(action.CHAIN_0, "SuperRouter"));
 
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
-            if (action.CHAIN_0 == action.CHAIN_1) {
+            /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
+            if (
+                action.CHAIN_0 == action.CHAIN_1 ||
+                (action.action == Actions.Withdraw &&
+                    action.CHAIN_0 != action.CHAIN_1)
+            ) {
                 /// @dev FIXME: this is only using hardcoded formid 1 (ERC4626Form) for now!!!
                 /// !!WARNING
                 vars.toDst = payable(

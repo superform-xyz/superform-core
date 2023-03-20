@@ -425,8 +425,12 @@ contract AttackTest is BaseSetup {
         slippage[0] = 1000;
         uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;
 
+        uint8[] memory secAmb = new uint8[](1);
+        secAmb[0] = 1;
+
         stateReq = StateReq(
             1,
+            secAmb, /// @dev FIXME! - this is a hack to get the test to start
             args.toChainId,
             amountsToDeposit,
             targetSuperFormIds,

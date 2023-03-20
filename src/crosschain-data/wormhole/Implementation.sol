@@ -109,12 +109,10 @@ contract WormholeImplementation is
         );
     }
 
-    function receiveWormholeMessages(bytes[] memory whMessages, bytes[] memory)
-        public
-        payable
-        override
-        onlyRole(WORMHOLE_RELAYER_ROLE)
-    {
+    function receiveWormholeMessages(
+        bytes[] memory whMessages,
+        bytes[] memory
+    ) public payable override onlyRole(WORMHOLE_RELAYER_ROLE) {
         (IWormhole.VM memory vm, bool valid, string memory reason) = bridge
             .parseAndVerifyVM(whMessages[0]);
 
@@ -142,11 +140,10 @@ contract WormholeImplementation is
     /// @dev allows admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
-    function setChainId(uint80 superChainId_, uint16 ambChainId_)
-        external
-        override
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function setChainId(
+        uint80 superChainId_,
+        uint16 ambChainId_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert INVALID_CHAIN_ID();
         }
@@ -160,11 +157,10 @@ contract WormholeImplementation is
     /// @notice relayer contracts are used to forward messages
     /// @dev allows admin to set the core relayer
     /// @param relayer_ is the identifier of the relayer address
-    function setRelayer(IWormholeRelayer relayer_)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        if (relayer_ == address(0)) {
+    function setRelayer(
+        IWormholeRelayer relayer_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (address(relayer_) == address(0)) {
             revert ZERO_ADDRESS();
         }
 

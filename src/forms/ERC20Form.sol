@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {BaseForm} from "../BaseForm.sol";

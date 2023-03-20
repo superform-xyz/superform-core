@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {IERC4626} from "./IERC4626.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
 
 interface IBaseForm is IERC165 {
     /*///////////////////////////////////////////////////////////////
@@ -39,6 +39,19 @@ interface IBaseForm is IERC165 {
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL WRITE FUNCTONS
     //////////////////////////////////////////////////////////////*/
+
+    // function withdrawSync(
+    //     bytes memory payload_
+    // ) external payable;
+
+    // function depositSync(
+    //     bytes memory payload_
+    // ) external payable;
+
+    // /// @notice move tokens received from socket
+    // function stateSync(
+    //     bytes memory payload_
+    // ) external payable;
 
     /// @dev adds the gas overrides for layerzero.
     /// @param param_    represents adapterParams V2.0 of layerzero

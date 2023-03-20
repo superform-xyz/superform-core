@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {ERC4626} from "solmate/mixins/ERC4626.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {ERC4626} from "@solmate/mixins/ERC4626.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {StateData, TransactionType, CallbackType, FormData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData} from "../types/DataTypes.sol";
@@ -11,17 +11,30 @@ import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ERC20Form} from "./ERC20Form.sol";
+import {ITokenBank} from "../interfaces/ITokenBank.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for ERC4626 vaults
 contract ERC4626Form is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
+    /*///////////////////////////////////////////////////////////////
+                                ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev error thrown when the bridge tokens haven't arrived to destination
+    error BRIDGE_TOKENS_PENDING();
+
+    bytes32 public constant STATE_REGISTRY_ROLE =
+        keccak256("STATE_REGISTRY_ROLE");
+
     constructor(
         uint80 chainId_,
         IBaseStateRegistry stateRegistry_,
         ISuperFormFactory superformfactory_
-    ) ERC20Form(chainId_, stateRegistry_, superformfactory_) {}
+    ) ERC20Form(chainId_, stateRegistry_, superformfactory_) {
+        _setupRole(STATE_REGISTRY_ROLE, address(stateRegistry_));
+    }
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
@@ -134,6 +147,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         );
 
         address collateral = address(ERC4626(vaults[0]).asset());
+        ERC20 collateral_ = ERC20(collateral);
         uint256 balanceBefore = ERC20(collateral).balanceOf(address(this));
 
         /// note: handle the collateral token transfers.
@@ -176,6 +190,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 address(v.asset()) == collateral,
                 "Destination: Invalid Collateral"
             );
+            collateral_.approve(vaults[i], commonData.amounts[i]);
             dstAmounts[i] = v.deposit(commonData.amounts[i], address(this));
         }
     }
@@ -241,9 +256,17 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         }
     }
 
+    struct LocalVars {
+        uint256 len;
+        uint256[] dstAmounts;
+        address[] vaults;
+        uint8[] secAmb;
+    }
+
     function _xChainDepositIntoVault(
         XChainActionArgs memory args_
     ) internal virtual override {
+        LocalVars memory vars;
         /// @dev TODO: Fix remove loops!!!!! See TokenBank.sol
 
         FormCommonData memory commonData = abi.decode(
@@ -258,29 +281,37 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         /// @dev Ordering dependency vaultIds need to match dstAmounts (shadow matched to user)
 
-        uint256 len = commonData.superFormIds.length;
-        (address[] memory vaults, , ) = superFormFactory.getSuperForms(
+        vars.len = commonData.superFormIds.length;
+        (vars.vaults, , ) = superFormFactory.getSuperForms(
             commonData.superFormIds
         );
 
-        uint256[] memory dstAmounts = new uint256[](len);
-        for (uint256 i = 0; i < len; i++) {
-            ERC4626 v = ERC4626(vaults[i]);
+        vars.dstAmounts = new uint256[](vars.len);
+        for (uint256 i = 0; i < vars.len; i++) {
+            ERC4626 v = ERC4626(vars.vaults[i]);
 
-            dstAmounts[i] = v.deposit(commonData.amounts[i], address(this));
+            ERC20(v.asset()).approve(vars.vaults[i], commonData.amounts[i]);
+            vars.dstAmounts[i] = v.deposit(
+                commonData.amounts[i],
+                address(this)
+            );
             /// @notice dstAmounts is equal to POSITIONS returned by v(ault)'s deposit while data.amounts is equal to ASSETS (tokens) bridged
             emit Processed(
                 args_.srcChainId,
                 args_.dstChainId,
                 xChainData.txId,
                 commonData.amounts[i],
-                vaults[i]
+                vars.vaults[i]
             );
         }
 
+        vars.secAmb = new uint8[](1);
+        vars.secAmb[0] = 1;
+
         /// Note Step-4: Send Data to Source to issue superform positions.
         stateRegistry.dispatchPayload{value: msg.value}(
-            1, /// @dev come to this later to accept any bridge id
+            1, /// @dev FIXME: need primaryAMB here...
+            vars.secAmb, /// @dev FIXME: need secondaryAMB here...
             args_.srcChainId,
             abi.encode(
                 StateData(
@@ -292,7 +323,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                             args_.srcChainId,
                             chainId,
                             xChainData.txId,
-                            dstAmounts
+                            vars.dstAmounts
                         )
                     )
                 )

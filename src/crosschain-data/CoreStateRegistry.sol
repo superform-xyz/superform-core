@@ -47,12 +47,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(uint256 payloadId_, uint256[] calldata finalAmounts_)
-        external
-        virtual
-        override
-        onlyRole(UPDATER_ROLE)
-    {
+    function updatePayload(
+        uint256 payloadId_,
+        uint256[] calldata finalAmounts_
+    ) external virtual override onlyRole(UPDATER_ROLE) {
         if (payloadId_ > payloadsCount) {
             revert INVALID_PAYLOAD_ID();
         }
@@ -127,13 +125,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// NOTE: function can only process successful payloads.
-    function processPayload(uint256 payloadId_)
-        external
-        payable
-        virtual
-        override
-        onlyRole(PROCESSOR_ROLE)
-    {
+    function processPayload(
+        uint256 payloadId_
+    ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         if (payloadId_ > payloadsCount) {
             revert INVALID_PAYLOAD_ID();
         }
@@ -145,8 +139,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bytes memory _payload = payload[payloadId_];
         bytes memory _proof = abi.encode(keccak256(_payload));
 
-        if(messageQuorum[_proof] < REQUIRED_QUORUM) {
-            revert QUORUM_NOT_REACHED(); 
+        if (messageQuorum[_proof] < REQUIRED_QUORUM) {
+            revert QUORUM_NOT_REACHED();
         }
 
         StateData memory payloadInfo = abi.decode(_payload, (StateData));
@@ -192,7 +186,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// NOTE: chain_ids conflict should be addresses here.
         // amb[ambId_].dipatchPayload(formData.dstChainId_, message_, extraData_);
     }
-    
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
@@ -214,9 +207,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
     }
 
-    function _processDeposit(uint256 payloadId_, StateData memory payloadInfo_)
-        internal
-    {
+    function _processDeposit(
+        uint256 payloadId_,
+        StateData memory payloadInfo_
+    ) internal {
         if (payloadInfo_.flag == CallbackType.INIT) {
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
                 revert PAYLOAD_NOT_UPDATED();

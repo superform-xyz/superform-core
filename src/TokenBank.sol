@@ -1,8 +1,8 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {StateData, FormData, FormCommonData, TransactionType} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
@@ -63,11 +63,13 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @dev handles the state when received from the source chain.
     /// @param payload_     represents the payload id associated with the transaction.
     /// note: called by external keepers when state is ready.
+    /// NOTE: If this is to be called by external keepers, then we block it with the state registry role.
     function stateSync(
         bytes memory payload_
     ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
         StateData memory stateData = abi.decode(payload_, (StateData));
         FormData memory data = abi.decode(stateData.params, (FormData));
+        /// @dev This has address srcSender;
         FormCommonData memory commonData = abi.decode(
             data.commonData,
             (FormCommonData)
@@ -81,12 +83,12 @@ contract TokenBank is ITokenBank, AccessControl {
             if (stateData.txType == TransactionType.DEPOSIT) {
                 ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
                 if (
-                    /// @dev TODO: generalise a way to check for balance for all types of formIds, for now works for ERC4626 and ERC20's
                     underlying.balanceOf(address(this)) >= commonData.amounts[i]
                 ) {
-                    /// @dev this means it currently only supports single vault deposit as we are checking for balance of the first vault
-                    /// @dev TODO: we have to optimize this flow for multi-vault deposits that would need changes to baseForms and how they handle deposits/withdraws in loop.
-                    IBaseForm(form).xChainDepositIntoVault(stateData.params);
+                    underlying.transfer(form, commonData.amounts[i]);
+                    IBaseForm(form).xChainDepositIntoVault{value: msg.value}(
+                        stateData.params
+                    );
                 } else {
                     revert BRIDGE_TOKENS_PENDING();
                 }

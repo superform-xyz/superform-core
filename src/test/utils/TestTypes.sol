@@ -101,6 +101,7 @@ struct SetupVars {
     address srcSuperRouter;
     address srcStateRegistry;
     address srcSuperFormFactory;
+    address dstSuperFormFactory;
     address srcErc4626Form;
     address srcLzImplementation;
     address dstLzImplementation;

@@ -84,8 +84,10 @@ interface IBaseStateRegistry {
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(uint256 payloadId_, uint256[] calldata finalAmounts_)
-        external;
+    function updatePayload(
+        uint256 payloadId_,
+        uint256[] calldata finalAmounts_
+    ) external;
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
