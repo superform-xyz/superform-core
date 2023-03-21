@@ -16,15 +16,12 @@ interface IBaseForm is IERC165 {
 
     /// @dev is emitted when a payload is processed by the destination contract.
     event Processed(
-        uint256 srcChainID,
-        uint256 dstChainId,
-        uint256 txId,
-        uint256 amounts,
+        uint16 srcChainID,
+        uint16 dstChainId,
+        uint80 txId,
+        uint256 amount,
         address vault
     );
-
-    /// @dev is emitted when layerzero safe gas params are updated.
-    event SafeGasParamUpdated(bytes oldParam, bytes newParam);
 
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(uint256 bridgeId, address bridgeAddress);
@@ -35,6 +32,27 @@ interface IBaseForm is IERC165 {
 
     /// @dev is emitted when the chain id brought in the cross chain message is invalid
     error INVALID_CHAIN_ID();
+
+    /// @dev is emitted when the bridge address being set is 0
+    error ZERO_BRIDGE_ADDRESS();
+
+    /// @dev is emitted when the allowance in direct deposit is not correct
+    error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+
+    /// @dev is emitted when the amount in direct deposit is not correct
+    error DIRECT_DEPOSIT_INVALID_DATA();
+
+    /// @dev is emitted when the collateral in direct deposit is not correct
+    error DIRECT_DEPOSIT_INVALID_COLLATERAL();
+
+    /// @dev is emitted when the collateral in direct withdraw is not correct
+    error DIRECT_WITHDRAW_INVALID_COLLATERAL();
+
+    /// @dev is emitted when the amount in direct withdraw is not correct
+    error DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+
+    /// @dev is emitted when the amount in xchain withdraw is not correct
+    error XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL WRITE FUNCTONS
@@ -78,22 +96,12 @@ interface IBaseForm is IERC165 {
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
-    /// @param actionData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev NOTE: Should this function return?
-    function directSingleDepositIntoVault(
-        bytes calldata actionData_
-    ) external payable returns (uint256 dstAmount);
-
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process same chain id deposits
     /// @param formData_  A bytes representation containing all the data required to make a form action
     /// @return dstAmounts  The amount of tokens deposited in same chain action
     /// @dev NOTE: Should this function return?
     function xChainDepositIntoVault(
         bytes calldata formData_
-    ) external payable returns (uint256[] memory dstAmounts);
+    ) external returns (uint256[] memory dstAmounts);
 
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
@@ -102,17 +110,7 @@ interface IBaseForm is IERC165 {
     /// @return dstAmounts  The amount of tokens withdrawn in same chain action
     function directWithdrawFromVault(
         bytes memory formData_
-    ) external payable returns (uint256[] memory dstAmounts);
-
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process same chain id deposits
-    /// @param actionData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev NOTE: Should this function return?
-    function directSingleWithdrawIntoVault(
-        bytes calldata actionData_
-    ) external payable returns (uint256 dstAmount);
+    ) external returns (uint256[] memory dstAmounts);
 
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
@@ -121,7 +119,7 @@ interface IBaseForm is IERC165 {
     /// @return dstAmounts  The amount of tokens withdrawn in same chain action
     function xChainWithdrawFromVault(
         bytes memory formData_
-    ) external payable returns (uint256[] memory dstAmounts);
+    ) external returns (uint256[] memory dstAmounts);
 
     function getUnderlyingOfVault(address vault) external view returns (ERC20);
 }

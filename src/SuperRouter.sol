@@ -6,12 +6,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import {LiqRequest, TransactionType, ReturnData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
+import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
+
+import "./utils/DataPacking.sol";
 
 /// @title Super Router
 /// @author Zeropoint Labs.
@@ -35,7 +37,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     /// @notice chainId represents unique chain id for each chains.
     /// @dev maybe should be constant or immutable
-    uint80 public chainId;
+    uint16 public chainId;
 
     uint80 public totalTransactions;
 
@@ -44,10 +46,6 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @notice history of state sent across chains are used for debugging.
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint80 => AMBMessage) public txHistory;
-
-    /// @notice history of state sent across chains are used for debugging.
-    /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint80 => AMBMessage) public ambMessagesHistory;
 
     /// @notice bridge id is mapped to its execution address.
     /// @dev maps all the bridges to their address.
@@ -58,7 +56,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @param stateRegistry_         State registry address deployed
     /// @param superFormFactory_         SuperFormFactory address deployed
     constructor(
-        uint80 chainId_,
+        uint16 chainId_,
         string memory baseUri_,
         IStateRegistry stateRegistry_,
         ISuperFormFactory superFormFactory_
@@ -102,8 +100,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         InitMultiVaultData memory ambData;
         vars.srcSender = _msgSender();
 
-        /// @dev FIXME
-        vars.srcChainId = uint16(chainId);
+        vars.srcChainId = chainId;
         if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
             revert INVALID_AMB_IDS();
 
@@ -143,8 +140,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         );
 
         /// @dev same chain action
-        /// @dev FIXME chainId should be 16 bits
-        if (uint16(vars.srcChainId) == vars.dstChainId) {
+        if (vars.srcChainId == vars.dstChainId) {
             _directMultiDeposit(
                 vars.srcSender,
                 req.superFormsData.liqRequests,
@@ -178,7 +174,6 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             );
 
             txHistory[vars.currentTotalTransactions] = vars.ambMessage;
-            ambMessagesHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
             emit CrossChainInitiated(vars.currentTotalTransactions);
         }
@@ -187,7 +182,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function multiDstSingleVaultDeposit(
         MultiDstSingleVaultStateReq calldata req
     ) external payable {
-        uint16 srcChainId = uint16(chainId);
+        uint16 srcChainId = chainId;
         uint16 dstChainId;
 
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
@@ -222,13 +217,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         ActionLocalVars memory vars;
 
         vars.srcSender = _msgSender();
-        /// @dev FIXME
-        vars.srcChainId = uint16(chainId);
+
+        vars.srcChainId = chainId;
         if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
             revert INVALID_AMB_IDS();
 
-        if (uint16(vars.srcChainId) == vars.dstChainId)
-            revert INVALID_CHAIN_IDS();
+        if (vars.srcChainId == vars.dstChainId) revert INVALID_CHAIN_IDS();
 
         vars.dstChainId = req.dstChainId;
 
@@ -282,7 +276,6 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             req.adapterParam
         );
         txHistory[vars.currentTotalTransactions] = vars.ambMessage;
-        ambMessagesHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
         emit CrossChainInitiated(vars.currentTotalTransactions);
     }
@@ -294,10 +287,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         InitSingleVaultData memory ambData;
 
         vars.srcSender = _msgSender();
-        /// @dev FIXME
-        vars.srcChainId = uint16(chainId);
-        if (uint16(vars.srcChainId) != vars.dstChainId)
-            revert INVALID_CHAIN_IDS();
+
+        vars.srcChainId = chainId;
+        if (vars.srcChainId != vars.dstChainId) revert INVALID_CHAIN_IDS();
 
         vars.dstChainId = req.dstChainId;
 
@@ -357,8 +349,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         InitMultiVaultData memory ambData;
         vars.srcSender = _msgSender();
 
-        /// @dev FIXME
-        vars.srcChainId = uint16(chainId);
+        vars.srcChainId = chainId;
         if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
             revert INVALID_AMB_IDS();
 
@@ -405,8 +396,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         );
 
         /// @dev same chain action
-        /// @dev FIXME chainId should be 16 bits
-        if (uint16(vars.srcChainId) == vars.dstChainId) {
+        if (vars.srcChainId == vars.dstChainId) {
             _directMultiWithdraw(
                 vars.srcSender,
                 req.superFormsData.liqRequests,
@@ -425,7 +415,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                 req.adapterParam
             );
             txHistory[vars.currentTotalTransactions] = vars.ambMessage;
-            ambMessagesHistory[vars.currentTotalTransactions] = vars.ambMessage;
+
             emit CrossChainInitiated(vars.currentTotalTransactions);
         }
     }
@@ -433,7 +423,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function multiDstSingleVaultWithdraw(
         MultiDstSingleVaultStateReq calldata req
     ) external payable {
-        uint16 srcChainId = uint16(chainId);
+        uint16 srcChainId = chainId;
         uint16 dstChainId;
 
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
@@ -468,13 +458,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         ActionLocalVars memory vars;
 
         vars.srcSender = _msgSender();
-        /// @dev FIXME
-        vars.srcChainId = uint16(chainId);
+
+        vars.srcChainId = chainId;
         if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
             revert INVALID_AMB_IDS();
 
-        if (uint16(vars.srcChainId) == vars.dstChainId)
-            revert INVALID_CHAIN_IDS();
+        if (vars.srcChainId == vars.dstChainId) revert INVALID_CHAIN_IDS();
 
         vars.dstChainId = req.dstChainId;
 
@@ -524,7 +513,6 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         );
 
         txHistory[vars.currentTotalTransactions] = vars.ambMessage;
-        ambMessagesHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
         emit CrossChainInitiated(vars.currentTotalTransactions);
     }
@@ -536,10 +524,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         InitSingleVaultData memory ambData;
 
         vars.srcSender = _msgSender();
-        /// @dev FIXME
-        vars.srcChainId = uint16(chainId);
-        if (uint16(vars.srcChainId) != vars.dstChainId)
-            revert INVALID_CHAIN_IDS();
+
+        vars.srcChainId = chainId;
+        if (vars.srcChainId != vars.dstChainId) revert INVALID_CHAIN_IDS();
 
         vars.dstChainId = req.dstChainId;
 
@@ -593,7 +580,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     ) internal returns (uint256 dstAmount) {
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = IBaseForm(superFormFactory.getForm(formId_))
-            .directSingleDepositIntoVault{value: msg.value}(
+            .directDepositIntoVault{value: msg.value}(
             abi.encode(
                 InitSingleVaultData(
                     txData_,
@@ -619,7 +606,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         uint256 formId;
         uint256 dstAmount;
         /// @dev decode superforms
-        (, formId, ) = superFormFactory.getSuperForm(ambData_.superFormId);
+        (, formId, ) = _getSuperForm(ambData_.superFormId);
 
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = _directDeposit(
@@ -650,7 +637,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             ambData_.superFormIds.length
         );
         /// @dev decode superforms
-        (, formIds, ) = superFormFactory.getSuperForms(ambData_.superFormIds);
+        (, formIds, ) = _getSuperForms(ambData_.superFormIds);
 
         for (uint256 i = 0; i < formIds.length; i++) {
             /// @dev deposits collateral to a given vault and mint vault positions.
@@ -678,7 +665,6 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         bytes memory extraFormData_,
         bytes memory liqData_
     ) internal {
-        /// @dev FIXME only one form id is being used here!
         /// @dev to allow bridging somewhere else requires arch change
         IBaseForm(superFormFactory.getForm(formId_)).directWithdrawFromVault{
             value: msg.value
@@ -705,10 +691,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         LiqRequest memory liqRequest_,
         InitSingleVaultData memory ambData_
     ) internal {
-        uint256 formId;
-        uint256 dstAmount;
         /// @dev decode superforms
-        (, formId, ) = superFormFactory.getSuperForm(ambData_.superFormId);
+        (, uint256 formId, ) = _getSuperForm(ambData_.superFormId);
 
         _directWithdraw(
             formId,
@@ -730,13 +714,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         LiqRequest[] memory liqRequests_,
         InitMultiVaultData memory ambData_
     ) internal {
-        uint256[] memory formIds = new uint256[](ambData_.superFormIds.length);
-        uint256[] memory dstAmounts = new uint256[](
-            ambData_.superFormIds.length
-        );
         /// @dev decode superforms
-        /// @dev FIXME Assumes all forms have the same form id
-        (, formIds, ) = superFormFactory.getSuperForms(ambData_.superFormIds);
+        (, uint256[] memory formIds, ) = _getSuperForms(ambData_.superFormIds);
 
         for (uint256 i = 0; i < formIds.length; i++) {
             /// @dev deposits collateral to a given vault and mint vault positions.
@@ -763,7 +742,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         for (uint256 i = 0; i < bridgeId_.length; i++) {
             address x = bridgeAddress_[i];
             uint8 y = bridgeId_[i];
-            require(x != address(0), "Router: Zero Bridge Address");
+            if (x == address(0)) revert ZERO_BRIDGE_ADDRESS();
 
             bridgeAddress[y] = x;
             emit SetBridgeAddress(y, x);
@@ -771,17 +750,25 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     }
 
     /// @dev allows registry contract to send payload for processing to the router contract.
-    /// @param payload_ is the received information to be processed.
-    function stateSync(bytes memory payload_) external payable override {
+    /// @param data_ is the received information to be processed.
+    function stateMultiSync(AMBMessage memory data_) external payable override {
         if (msg.sender != address(stateRegistry)) revert REQUEST_DENIED();
 
-        AMBMessage memory data = abi.decode(payload_, (AMBMessage));
-        (uint256 txType, uint256 callbackType, ) = _decodeTxInfo(data.txInfo);
+        (uint256 txType, uint256 callbackType, ) = _decodeTxInfo(data_.txInfo);
 
         if (callbackType != uint256(CallbackType.RETURN))
             revert INVALID_PAYLOAD();
 
-        ReturnData memory returnData = abi.decode(data.params, (ReturnData));
+        ReturnMultiData memory returnData = abi.decode(
+            data_.params,
+            (ReturnMultiData)
+        );
+
+        AMBMessage memory stored = txHistory[returnData.txId];
+
+        (, , bool multi) = _decodeTxInfo(stored.txInfo);
+
+        if (!multi) revert INVALID_PAYLOAD();
 
         (
             bool status,
@@ -790,27 +777,105 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             uint80 returnDataTxId
         ) = _decodeReturnTxInfo(returnData.returnTxInfo);
 
+        InitMultiVaultData memory multiVaultData = abi.decode(
+            stored.params,
+            (InitMultiVaultData)
+        );
+        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
+            multiVaultData.txData
+        );
+
+        if (returnDataSrcChainId != srcChainId) revert SRC_CHAIN_IDS_MISMATCH();
+
+        if (
+            returnDataDstChainId !=
+            uint16(
+                multiVaultData.superFormIds[0] >> 240 /// @dev TODO destination chain Ids are prevalidated to have same destination. Remove hardcoded and use function?
+            )
+        ) revert DST_CHAIN_IDS_MISMATCH();
+
+        if (txType == uint256(TransactionType.DEPOSIT) && status) {
+            _mintBatch(
+                srcSender,
+                multiVaultData.superFormIds,
+                returnData.amounts,
+                ""
+            );
+        } else if (txType == uint256(TransactionType.WITHDRAW) && !status) {
+            _mintBatch(
+                srcSender,
+                multiVaultData.superFormIds,
+                returnData.amounts,
+                ""
+            );
+        } else {
+            revert INVALID_PAYLOAD_STATUS();
+        }
+
+        emit Completed(returnDataTxId);
+    }
+
+    /// @dev allows registry contract to send payload for processing to the router contract.
+    /// @param data_ is the received information to be processed.
+    function stateSync(AMBMessage memory data_) external payable override {
+        if (msg.sender != address(stateRegistry)) revert REQUEST_DENIED();
+
+        (uint256 txType, uint256 callbackType, ) = _decodeTxInfo(data_.txInfo);
+
+        if (callbackType != uint256(CallbackType.RETURN))
+            revert INVALID_PAYLOAD();
+
+        ReturnSingleData memory returnData = abi.decode(
+            data_.params,
+            (ReturnSingleData)
+        );
+
         AMBMessage memory stored = txHistory[returnData.txId];
         (, , bool multi) = _decodeTxInfo(stored.txInfo);
 
-        if (multi) {
-            _multiSuperPositionMint(
-                stored,
-                returnData,
-                returnDataSrcChainId,
-                returnDataDstChainId,
-                txType,
-                status
+        if (multi) revert INVALID_PAYLOAD();
+
+        (
+            bool status,
+            uint16 returnDataSrcChainId,
+            uint16 returnDataDstChainId,
+            uint80 returnDataTxId
+        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
+
+        InitSingleVaultData memory singleVaultData = abi.decode(
+            stored.params,
+            (InitSingleVaultData)
+        );
+        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
+            singleVaultData.txData
+        );
+
+        if (returnDataSrcChainId != srcChainId) revert SRC_CHAIN_IDS_MISMATCH();
+
+        if (
+            returnDataDstChainId !=
+            uint16(
+                singleVaultData.superFormId >> 240 /// @dev TODO destination chain Ids are prevalidated to have same destination. Remove hardcoded and use function?
+            )
+        ) revert DST_CHAIN_IDS_MISMATCH();
+
+        if (txType == uint256(TransactionType.DEPOSIT) && status) {
+            _mint(
+                srcSender,
+                singleVaultData.superFormId,
+                returnData.amount,
+                ""
+            );
+        } else if (txType == uint256(TransactionType.WITHDRAW) && !status) {
+            /// @dev FIXME: need to create returnData MULTI AMOUNTS and update this to _mint
+            _mint(
+                srcSender,
+                singleVaultData.superFormId,
+                returnData.amount,
+                ""
             );
         } else {
-            _singleSuperPositionMint(
-                stored,
-                returnData,
-                returnDataSrcChainId,
-                returnDataDstChainId,
-                txType,
-                status
-            );
+            revert INVALID_PAYLOAD_STATUS();
         }
 
         emit Completed(returnDataTxId);
@@ -863,93 +928,22 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev for the separation of multi/single sp minting
     function _multiSuperPositionMint(
         AMBMessage memory stored,
-        ReturnData memory returnData,
+        ReturnMultiData memory returnData,
         uint16 returnDataSrcChainId,
         uint16 returnDataDstChainId,
         uint256 txType,
         bool status
-    ) internal {
-        InitMultiVaultData memory multiVaultData = abi.decode(
-            stored.params,
-            (InitMultiVaultData)
-        );
-        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
-            multiVaultData.txData
-        );
-
-        if (returnDataSrcChainId != srcChainId) revert SRC_CHAIN_IDS_MISMATCH();
-
-        if (
-            returnDataDstChainId !=
-            uint16(
-                multiVaultData.superFormIds[0] >> 240 /// @dev TODO destination chain Ids are prevalidated to have same destination. Remove hardcoded and use function?
-            )
-        ) revert DST_CHAIN_IDS_MISMATCH();
-
-        if (txType == uint256(TransactionType.DEPOSIT) && status) {
-            _mintBatch(
-                srcSender,
-                multiVaultData.superFormIds,
-                returnData.amounts,
-                ""
-            );
-        } else if (txType == uint256(TransactionType.WITHDRAW) && !status) {
-            _mintBatch(
-                srcSender,
-                multiVaultData.superFormIds,
-                returnData.amounts,
-                ""
-            );
-        } else {
-            revert INVALID_PAYLOAD_STATUS();
-        }
-    }
+    ) internal {}
 
     /// @dev for the separation of multi/single sp minting
     function _singleSuperPositionMint(
         AMBMessage memory stored,
-        ReturnData memory returnData,
+        ReturnSingleData memory returnData,
         uint16 returnDataSrcChainId,
         uint16 returnDataDstChainId,
         uint256 txType,
         bool status
-    ) internal {
-        InitSingleVaultData memory singleVaultData = abi.decode(
-            stored.params,
-            (InitSingleVaultData)
-        );
-        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
-            singleVaultData.txData
-        );
-
-        if (returnDataSrcChainId != srcChainId) revert SRC_CHAIN_IDS_MISMATCH();
-
-        if (
-            returnDataDstChainId !=
-            uint16(
-                singleVaultData.superFormId >> 240 /// @dev TODO destination chain Ids are prevalidated to have same destination. Remove hardcoded and use function?
-            )
-        ) revert DST_CHAIN_IDS_MISMATCH();
-
-        if (txType == uint256(TransactionType.DEPOSIT) && status) {
-            _mint(
-                srcSender,
-                singleVaultData.superFormId,
-                returnData.amounts,
-                ""
-            );
-        } else if (txType == uint256(TransactionType.WITHDRAW) && !status) {
-            /// @dev FIXME: need to create returnData MULTI AMOUNTS and update this to _mint
-            _mintBatch(
-                srcSender,
-                singleVaultData.superFormId,
-                returnData.amounts,
-                ""
-            );
-        } else {
-            revert INVALID_PAYLOAD_STATUS();
-        }
-    }
+    ) internal {}
 
     /// @dev validates slippage parameter;
     /// slippages should always be within 0 - 100
@@ -1015,7 +1009,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         for (uint256 i = 0; i < len; i++) {
             if (
                 dstChainId_ !=
-                uint256(uint80(superFormsData_.superFormIds[i] >> 176))
+                uint256(uint80(superFormsData_.superFormIds[i] >> 176)) /// @dev TODO validate that this is actually being validated
             ) return false;
 
             if (
@@ -1043,66 +1037,5 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
 
         return true;
-    }
-
-    /// @dev TODO: pass to single contract
-    function _packTxData(
-        address srcSender_,
-        uint16 srcChainId_,
-        uint80 currentTotalTxs_
-    ) internal pure returns (uint256 txData) {
-        txData = uint256(uint160(srcSender_));
-        txData |= uint256(srcChainId_) << 160;
-        txData |= uint256(currentTotalTxs_) << 176;
-    }
-
-    /// @dev TODO: pass to single contract
-    function _packTxInfo(
-        uint120 txType_,
-        uint120 callbackType_,
-        bool multi_
-    ) internal pure returns (uint256 txInfo) {
-        txInfo = uint256(txType_);
-        txInfo |= uint256(callbackType_) << 120;
-        txInfo |= uint256(multi_) << 240;
-    }
-
-    /// @dev TODO: pass to single contract
-    /// @dev TODO: needs testing
-    function _decodeTxData(
-        uint256 txData_
-    )
-        internal
-        pure
-        returns (address srcSender, uint16 srcChainId, uint80 currentTotalTxs)
-    {
-        srcSender = address(uint160(txData_));
-        srcChainId = uint16(txData_ >> 160);
-        currentTotalTxs = uint80(txData_ >> 176);
-    }
-
-    /// @dev TODO: pass to single contract
-    /// @dev TODO: needs testing
-    function _decodeTxInfo(
-        uint256 txInfo_
-    ) internal pure returns (uint256 txType, uint256 callbackType, bool multi) {
-        txType = uint256(uint120(txInfo_));
-        callbackType = uint256(uint120(txInfo_ >> 120));
-        multi = bool(uint8(txInfo_ >> 240));
-    }
-
-    /// @dev TODO: pass to single contract
-    /// @dev TODO: needs testing
-    function _decodeReturnTxInfo(
-        uint256 returnTxInfo_
-    )
-        internal
-        pure
-        returns (bool status, uint16 srcChainId, uint16 dstChainId, uint80 txId)
-    {
-        status = bool(uint8(returnTxInfo_));
-        srcChainId = uint16(returnTxInfo_ >> 8);
-        dstChainId = uint16(returnTxInfo_ >> 24);
-        txId = uint80(returnTxInfo_ >> 40);
     }
 }

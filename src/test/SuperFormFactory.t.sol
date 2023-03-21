@@ -8,6 +8,7 @@ import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {SuperFormFactory} from "../SuperFormFactory.sol";
 import {ERC4626Form} from "../forms/ERC4626Form.sol";
+import "../utils/DataPacking.sol";
 
 contract SuperFormFactoryTest is Utilities {
     /// @dev emitted when a new form is entered into the factory
@@ -107,8 +108,8 @@ contract SuperFormFactoryTest is Utilities {
         (
             address resVault,
             uint256 resFormid,
-            uint256 resChainId
-        ) = superFormFactory.getSuperForm(superFormId);
+            uint16 resChainId
+        ) = _getSuperForm(superFormId);
 
         assertEq(resChainId, chainId);
         assertEq(resFormid, formId);

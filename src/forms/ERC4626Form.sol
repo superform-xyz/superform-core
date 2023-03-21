@@ -6,12 +6,12 @@ import {ERC4626} from "@solmate/mixins/ERC4626.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
-import {StateData, TransactionType, CallbackType, FormData, FormCommonData, FormXChainData, XChainActionArgs, ReturnData, InitSingleVaultData} from "../types/DataTypes.sol";
-import {LiqRequest} from "../types/LiquidityTypes.sol";
+import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
+import "../utils/DataPacking.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for ERC4626 vaults
@@ -123,376 +123,175 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc BaseForm
-    function _directSingleDepositIntoVault(
-        bytes calldata actionData_
+    function _directDepositIntoVault(
+        InitSingleVaultData memory singleVaultData_
     ) internal virtual override returns (uint256 dstAmount) {
-        InitSingleVaultData memory data = abi.decode(
-            actionData_,
-            (InitSingleVaultData)
-        );
-
-        LiqRequest memory liqData = abi.decode(data.liqData, (LiqRequest));
-
         /// note: checking balance
-        (address vault, , ) = superFormFactory.getSuperForm(data.superFormId);
+        (address vault, , ) = _getSuperForm(singleVaultData_.superFormId);
+
         ERC4626 v = ERC4626(vault);
+
         address collateral = address(v.asset());
-        uint256 balanceBefore = ERC20(collateral).balanceOf(address(this));
-        address srcSender = address(uint160(data.txData));
+        ERC20 collateralToken = ERC20(collateral);
+        uint256 balanceBefore = collateralToken.balanceOf(address(this));
+
+        (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
 
         /// note: handle the collateral token transfers.
-        if (liqData.txData.length == 0) {
-            require(
-                ERC20(liqData.token).allowance(srcSender, address(this)) >=
-                    liqData.amount,
-                "Destination: Insufficient Allowance"
-            );
-            ERC20(liqData.token).safeTransferFrom(
+        if (singleVaultData_.liqData.txData.length == 0) {
+            if (
+                ERC20(singleVaultData_.liqData.token).allowance(
+                    srcSender,
+                    address(this)
+                ) < singleVaultData_.liqData.amount
+            ) revert DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+
+            ERC20(singleVaultData_.liqData.token).safeTransferFrom(
                 srcSender,
                 address(this),
-                liqData.amount
+                singleVaultData_.liqData.amount
             );
         } else {
             dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
-                liqData.txData,
-                liqData.token,
-                liqData.allowanceTarget,
-                liqData.amount,
-                srcSender, // srcSender
-                liqData.nativeAmount
+                bridgeAddress[singleVaultData_.liqData.bridgeId],
+                singleVaultData_.liqData.txData,
+                singleVaultData_.liqData.token,
+                singleVaultData_.liqData.allowanceTarget,
+                singleVaultData_.liqData.amount,
+                srcSender,
+                singleVaultData_.liqData.nativeAmount
             );
         }
 
-        uint256 balanceAfter = ERC20(collateral).balanceOf(address(this));
-        require(
-            balanceAfter - balanceBefore >= data.amount,
-            "Destination: Invalid State & Liq Data"
-        );
+        uint256 balanceAfter = collateralToken.balanceOf(address(this));
+        if (balanceAfter - balanceBefore < singleVaultData_.amount)
+            revert DIRECT_DEPOSIT_INVALID_DATA();
 
-        require(
-            address(v.asset()) == collateral,
-            "Destination: Invalid Collateral"
-        );
-        dstAmount = v.deposit(data.amount, address(this));
-    }
+        if (address(v.asset()) != collateral)
+            revert DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
-    /// @inheritdoc BaseForm
-    function _directSingleWithdrawIntoVault(
-        bytes calldata formData
-    ) internal virtual override returns (uint256 dstAmount) {
-        InitSingleVaultData memory data = abi.decode(
-            formData,
-            (InitSingleVaultData)
-        );
-
-        LiqRequest memory liqData = abi.decode(data.liqData, (LiqRequest));
-
-        uint256 len1 = liqData.txData.length;
-        address srcSender = address(uint160(data.txData));
-
-        address receiver = len1 == 0 ? srcSender : address(this);
-
-        (address vault, , ) = superFormFactory.getSuperForm(data.superFormId);
-
-        ERC4626 v = ERC4626(vault);
-
-        dstAmount = v.redeem(data.amount, receiver, address(this));
-
-        if (len1 != 0) {
-            require(
-                liqData.amount <= dstAmount,
-                "Destination: Invalid Liq Request"
-            );
-
-            dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
-                liqData.txData,
-                liqData.token,
-                liqData.allowanceTarget,
-                liqData.amount,
-                address(this),
-                liqData.nativeAmount
-            );
-        }
-    }
-
-    /// @inheritdoc BaseForm
-    function _directDepositIntoVault(
-        bytes calldata formData
-    ) internal virtual override returns (uint256[] memory dstAmounts) {
-        FormData memory data = abi.decode(formData, (FormData));
-
-        FormCommonData memory commonData = abi.decode(
-            data.commonData,
-            (FormCommonData)
-        );
-
-        LiqRequest memory liqData = abi.decode(
-            commonData.liqData,
-            (LiqRequest)
-        );
-
-        uint256 loopLength = commonData.superFormIds.length;
-        uint256 expAmount = _addValues(commonData.amounts);
-
-        /// note: checking balance
-        (address[] memory vaults, , ) = superFormFactory.getSuperForms(
-            commonData.superFormIds
-        );
-
-        address collateral = address(ERC4626(vaults[0]).asset());
-        ERC20 collateral_ = ERC20(collateral);
-        uint256 balanceBefore = ERC20(collateral).balanceOf(address(this));
-
-        /// note: handle the collateral token transfers.
-        if (liqData.txData.length == 0) {
-            require(
-                ERC20(liqData.token).allowance(
-                    commonData.srcSender,
-                    address(this)
-                ) >= liqData.amount,
-                "Destination: Insufficient Allowance"
-            );
-            ERC20(liqData.token).safeTransferFrom(
-                commonData.srcSender,
-                address(this),
-                liqData.amount
-            );
-        } else {
-            dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
-                liqData.txData,
-                liqData.token,
-                liqData.allowanceTarget,
-                liqData.amount,
-                commonData.srcSender,
-                liqData.nativeAmount
-            );
-        }
-
-        uint256 balanceAfter = ERC20(collateral).balanceOf(address(this));
-        require(
-            balanceAfter - balanceBefore >= expAmount,
-            "Destination: Invalid State & Liq Data"
-        );
-
-        dstAmounts = new uint256[](loopLength);
-
-        for (uint256 i = 0; i < loopLength; i++) {
-            ERC4626 v = ERC4626(vaults[i]);
-            require(
-                address(v.asset()) == collateral,
-                "Destination: Invalid Collateral"
-            );
-            collateral_.approve(vaults[i], commonData.amounts[i]);
-            dstAmounts[i] = v.deposit(commonData.amounts[i], address(this));
-        }
+        /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
+        collateralToken.approve(vault, singleVaultData_.amount);
+        dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
 
     /// @inheritdoc BaseForm
     function _directWithdrawFromVault(
-        bytes calldata formData
-    ) internal virtual override returns (uint256[] memory dstAmounts) {
-        FormData memory data = abi.decode(formData, (FormData));
+        InitSingleVaultData memory singleVaultData_
+    ) internal virtual override returns (uint256 dstAmount) {
+        (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
 
-        FormCommonData memory commonData = abi.decode(
-            data.commonData,
-            (FormCommonData)
-        );
+        uint256 len1 = singleVaultData_.liqData.txData.length;
+        address receiver = len1 == 0 ? srcSender : address(this);
 
-        LiqRequest memory liqData = abi.decode(
-            commonData.liqData,
-            (LiqRequest)
-        );
+        (address vault, , ) = _getSuperForm(singleVaultData_.superFormId);
+        ERC4626 v = ERC4626(vault);
+        address collateral = v.asset();
 
-        uint256 len1 = liqData.txData.length;
-        address receiver = len1 == 0
-            ? address(commonData.srcSender)
-            : address(this);
+        if (address(v.asset()) != collateral)
+            revert DIRECT_WITHDRAW_INVALID_COLLATERAL();
 
-        uint256 loopLength = commonData.superFormIds.length;
-        dstAmounts = new uint256[](loopLength);
-
-        (address[] memory vaults, , ) = superFormFactory.getSuperForms(
-            commonData.superFormIds
-        );
-
-        address collateral = address(ERC4626(vaults[0]).asset());
-
-        for (uint256 i = 0; i < loopLength; i++) {
-            ERC4626 v = ERC4626(vaults[i]);
-            require(
-                address(v.asset()) == collateral,
-                "Destination: Invalid Collateral"
-            );
-            dstAmounts[i] = v.redeem(
-                commonData.amounts[i],
-                receiver,
-                address(this)
-            );
-        }
+        dstAmount = v.redeem(singleVaultData_.amount, receiver, address(this));
 
         if (len1 != 0) {
-            require(
-                liqData.amount <= _addValues(dstAmounts),
-                "Destination: Invalid Liq Request"
-            );
+            /// @dev this check here might be too much already, but can't hurt
+            if (singleVaultData_.liqData.amount > singleVaultData_.amount)
+                revert DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
-                liqData.txData,
-                liqData.token,
-                liqData.allowanceTarget,
-                liqData.amount,
+                bridgeAddress[singleVaultData_.liqData.bridgeId],
+                singleVaultData_.liqData.txData,
+                singleVaultData_.liqData.token,
+                singleVaultData_.liqData.allowanceTarget,
+                singleVaultData_.liqData.amount,
                 address(this),
-                liqData.nativeAmount
+                singleVaultData_.liqData.nativeAmount
             );
         }
     }
 
     function _xChainDepositIntoVault(
-        XChainActionArgs memory args_
-    ) internal virtual override {
-        /// @dev TODO: Fix remove loops!!!!! See TokenBank.sol
-
-        FormCommonData memory commonData = abi.decode(
-            args_.commonData,
-            (FormCommonData)
+        InitSingleVaultData memory singleVaultData_
+    ) internal virtual override returns (uint256 dstAmount) {
+        (address vault, , uint16 dstChainId) = _getSuperForm(
+            singleVaultData_.superFormId
         );
 
-        FormXChainData memory xChainData = abi.decode(
-            args_.xChainData,
-            (FormXChainData)
+        ERC4626 v = ERC4626(vault);
+
+        /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
+        ERC20(v.asset()).approve(vault, singleVaultData_.amount);
+
+        dstAmount = v.deposit(singleVaultData_.amount, address(this));
+        (, uint16 srcChainId, uint80 txId) = _decodeTxData(
+            singleVaultData_.txData
         );
 
-        /// @dev Ordering dependency vaultIds need to match dstAmounts (shadow matched to user)
-
-        uint256 len = commonData.superFormIds.length;
-        (address[] memory vaults, , ) = superFormFactory.getSuperForms(
-            commonData.superFormIds
-        );
-
-        uint256[] memory dstAmounts = new uint256[](len);
-        for (uint256 i = 0; i < len; i++) {
-            ERC4626 v = ERC4626(vaults[i]);
-
-            ERC20(v.asset()).approve(vaults[i], commonData.amounts[i]);
-            dstAmounts[i] = v.deposit(commonData.amounts[i], address(this));
-            /// @notice dstAmounts is equal to POSITIONS returned by v(ault)'s deposit while data.amounts is equal to ASSETS (tokens) bridged
-            emit Processed(
-                args_.srcChainId,
-                args_.dstChainId,
-                xChainData.txId,
-                commonData.amounts[i],
-                vaults[i]
-            );
-        }
-
-        /// Note Step-4: Send Data to Source to issue superform positions.
-        stateRegistry.dispatchPayload{value: msg.value}(
-            1, /// @dev come to this later to accept any bridge id
-            args_.srcChainId,
-            abi.encode(
-                StateData(
-                    TransactionType.DEPOSIT,
-                    CallbackType.RETURN,
-                    abi.encode(
-                        ReturnData(
-                            _packReturnTxInfo(
-                                true,
-                                args_.srcChainId,
-                                chainId,
-                                xChainData.txId
-                            ),
-                            dstAmounts
-                        )
-                    )
-                )
-            ),
-            safeGasParam
+        /// @dev FIXME: check subgraph if this should emit amount or dstAmount
+        emit Processed(
+            srcChainId,
+            dstChainId,
+            singleVaultData_.txId,
+            singleVaultData_.amount,
+            vault
         );
     }
 
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
-        XChainActionArgs memory args_
+        InitSingleVaultData memory singleVaultData_
     ) internal virtual override {
-        /// @dev TODO: Fix remove loops!!!!! See TokenBank.sol
-
-        FormCommonData memory commonData = abi.decode(
-            args_.commonData,
-            (FormCommonData)
+        (address vault, , uint16 dstChainId) = _getSuperForms(
+            singleVaultData_.superFormId
         );
 
-        LiqRequest memory liqData = abi.decode(
-            commonData.liqData,
-            (LiqRequest)
+        uint256 dstAmount;
+
+        ERC4626 v = ERC4626(vault);
+
+        (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(
+            singleVaultData_.txData
         );
 
-        FormXChainData memory xChainData = abi.decode(
-            args_.xChainData,
-            (FormXChainData)
-        );
-
-        uint256 len = commonData.superFormIds.length;
-
-        (address[] memory vaults, , ) = superFormFactory.getSuperForms(
-            commonData.superFormIds
-        );
-        uint256[] memory dstAmounts = new uint256[](len);
-
-        for (uint256 i = 0; i < len; i++) {
-            ERC4626 v = ERC4626(vaults[i]);
-            if (liqData.txData.length != 0) {
-                /// Note Redeem Vault positions (we operate only on positions, not assets)
-                dstAmounts[i] = v.redeem(
-                    commonData.amounts[i],
-                    address(this),
-                    address(this)
-                );
-
-                uint256 balanceBefore = ERC20(v.asset()).balanceOf(
-                    address(this)
-                );
-                /// Note Send Tokens to Source Chain
-                /// FEAT Note: We could also allow to pass additional chainId arg here
-                /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
-                dispatchTokens(
-                    bridgeAddress[liqData.bridgeId],
-                    liqData.txData,
-                    liqData.token,
-                    liqData.allowanceTarget,
-                    dstAmounts[i],
-                    address(this),
-                    liqData.nativeAmount
-                );
-                uint256 balanceAfter = ERC20(v.asset()).balanceOf(
-                    address(this)
-                );
-
-                /// note: balance validation to prevent draining contract.
-                require(
-                    balanceAfter >= balanceBefore - dstAmounts[i],
-                    "Destination: Invalid Liq Request"
-                );
-            } else {
-                /// Note Redeem Vault positions (we operate only on positions, not assets)
-                dstAmounts[i] = v.redeem(
-                    commonData.amounts[i],
-                    address(commonData.srcSender),
-                    address(this)
-                );
-            }
-
-            emit Processed(
-                args_.srcChainId,
-                args_.dstChainId,
-                xChainData.txId,
-                dstAmounts[i],
-                vaults[i]
+        if (singleVaultData_.liqData.txData.length != 0) {
+            /// Note Redeem Vault positions (we operate only on positions, not assets)
+            dstAmount = v.redeem(
+                singleVaultData_.amount,
+                address(this),
+                address(this)
             );
+
+            uint256 balanceBefore = ERC20(v.asset()).balanceOf(address(this));
+            /// Note Send Tokens to Source Chain
+            /// FEAT Note: We could also allow to pass additional chainId arg here
+            /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
+            dispatchTokens(
+                bridgeAddress[singleVaultData_.liqData.bridgeId],
+                singleVaultData_.liqData.txData,
+                singleVaultData_.liqData.token,
+                singleVaultData_.liqData.allowanceTarget,
+                dstAmount,
+                address(this),
+                singleVaultData_.liqData.nativeAmount
+            );
+            uint256 balanceAfter = ERC20(v.asset()).balanceOf(address(this));
+
+            /// note: balance validation to prevent draining contract.
+            if (balanceAfter < balanceBefore - dstAmount)
+                revert XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+        } else {
+            /// Note Redeem Vault positions (we operate only on positions, not assets)
+            v.redeem(singleVaultData_.amount, srcSender, address(this));
         }
+
+        /// @dev FIXME: check subgraph if this should emit amount or dstAmount
+        emit Processed(
+            srcChainId,
+            dstChainId,
+            txId,
+            singleVaultData_.amount,
+            vault
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -524,34 +323,5 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
         return ERC4626(vault_).convertToShares(underlyingAmount_);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            UTILITY FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev returns the sum of an array.
-    /// @param amounts_ represents an array of inputs.
-    function _addValues(
-        uint256[] memory amounts_
-    ) internal pure returns (uint256) {
-        uint256 total;
-        for (uint256 i = 0; i < amounts_.length; i++) {
-            total += amounts_[i];
-        }
-        return total;
-    }
-
-    /// @dev TODO: pass to single contract
-    function _packReturnTxInfo(
-        bool status_,
-        uint16 srcChainId_,
-        uint16 dstChainId_,
-        uint80 txId_
-    ) internal pure returns (uint256 returnTxInfo) {
-        returnTxInfo = uint256(uint8(status_));
-        returnTxInfo |= uint256(srcChainId_) << 8;
-        returnTxInfo |= uint256(dstChainId_) << 24;
-        returnTxInfo |= uint256(txId_) << 40;
     }
 }

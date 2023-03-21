@@ -101,45 +101,16 @@ struct InitSingleVaultData {
 }
 
 struct AMBMessage {
-    uint256 txInfo; // tight packing of  TransactionType txType and CallbackType flag;
+    uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag and if multi/single vault
     bytes params; // abi.encode (AMBInitData)
 }
 
-struct ReturnData {
+struct ReturnMultiData {
     uint256 returnTxInfo; // tight packing of status, srcChainId, dstChainId and original txId
     uint256[] amounts;
 }
 
-struct FormData {
-    uint80 srcChainId;
-    uint80 dstChainId;
-    bytes commonData;
-    bytes xChainData;
-    bytes extraFormData;
-}
-
-struct FormCommonData {
-    address srcSender;
-    uint256[] superFormIds;
-    uint256[] amounts;
-    bytes liqData;
-}
-
-struct FormXChainData {
-    uint256 txId;
-    uint256[] maxSlippage;
-}
-
-struct XChainActionArgs {
-    uint80 srcChainId;
-    uint80 dstChainId;
-    bytes commonData;
-    bytes xChainData;
-    bytes adapterParam;
-}
-
-struct StateData {
-    TransactionType txType; // <- 1
-    CallbackType flag; // <- 2
-    bytes params;
+struct ReturnSingleData {
+    uint256 returnTxInfo; // tight packing of status, srcChainId, dstChainId and original txId
+    uint256 amount;
 }

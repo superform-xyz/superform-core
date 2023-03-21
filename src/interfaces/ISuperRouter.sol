@@ -64,6 +64,9 @@ interface ISuperRouter {
     /// @dev is emitted if the payload status is invalid
     error INVALID_PAYLOAD_STATUS();
 
+    /// @dev is emitted when the bridge address being set is 0
+    error ZERO_BRIDGE_ADDRESS();
+
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL DEPOSIT FUNCTIONS
     //////////////////////////////////////////////////////////////*/

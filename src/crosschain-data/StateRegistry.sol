@@ -6,11 +6,12 @@ import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
-import {StateData, PayloadState, TransactionType, CallbackType, ReturnData, FormData, FormCommonData, FormXChainData} from "../types/DataTypes.sol";
-
+import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "../interfaces/IBaseForm.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
+
+import "../utils/DataPacking.sol";
 
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
@@ -37,10 +38,10 @@ contract StateRegistry is IStateRegistry, AccessControl {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     /// @dev superformChainid
-    uint80 public immutable chainId;
+    uint16 public immutable chainId;
     uint256 public payloadsCount;
 
-    address public routerContract;
+    ISuperRouter public routerContract;
 
     /// NOTE: Shouldnt we use multiple tokenBanks to benefit from using them?
     ITokenBank public tokenBankContract;
@@ -60,7 +61,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint80 chainId_) {
+    constructor(uint16 chainId_) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         chainId = chainId_;
     }
@@ -97,7 +98,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         address tokenBankContract_,
         address superFormFactory_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        routerContract = routerContract_;
+        routerContract = ISuperRouter(routerContract_);
         tokenBankContract = ITokenBank(tokenBankContract_);
         superFormFactory = ISuperFormFactory(superFormFactory_);
         emit CoreContractsUpdated(routerContract_, tokenBankContract_);
@@ -111,7 +112,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     /// NOTE: dstChainId maps with the message amb's propreitory chain Id.
     function dispatchPayload(
         uint8 ambId_,
-        uint80 dstChainId_,
+        uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
@@ -121,7 +122,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
             revert INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.dipatchPayload{value: msg.value}(
+        ambImplementation.dispatchPayload{value: msg.value}(
             dstChainId_,
             message_,
             extraData_
@@ -133,7 +134,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     /// @param message_ is the crosschain data received.
     /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
     function receivePayload(
-        uint80 srcChainId_,
+        uint16 srcChainId_,
         bytes memory message_
     ) external virtual override onlyRole(IMPLEMENTATION_CONTRACTS_ROLE) {
         ++payloadsCount;
@@ -146,7 +147,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(
+    function updateMultiVaultPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
     ) external virtual override onlyRole(UPDATER_ROLE) {
@@ -154,14 +155,17 @@ contract StateRegistry is IStateRegistry, AccessControl {
             revert INVALID_PAYLOAD_ID();
         }
 
-        StateData memory payloadInfo = abi.decode(
+        AMBMessage memory payloadInfo = abi.decode(
             payload[payloadId_],
-            (StateData)
+            (AMBMessage)
+        );
+        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+            payloadInfo.txInfo
         );
 
         if (
-            payloadInfo.txType != TransactionType.DEPOSIT &&
-            payloadInfo.flag != CallbackType.INIT
+            txType != uint256(TransactionType.DEPOSIT) &&
+            callbackType != uint256(CallbackType.INIT)
         ) {
             revert INVALID_PAYLOAD_UPDATE_REQUEST();
         }
@@ -170,17 +174,16 @@ contract StateRegistry is IStateRegistry, AccessControl {
             revert INVALID_PAYLOAD_STATE();
         }
 
-        FormData memory formData = abi.decode(payloadInfo.params, (FormData));
-        FormCommonData memory formCommonData = abi.decode(
-            formData.commonData,
-            (FormCommonData)
-        );
-        FormXChainData memory formXChainData = abi.decode(
-            formData.xChainData,
-            (FormXChainData)
+        if (!multi) {
+            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
+        InitMultiVaultData memory multiVaultData = abi.decode(
+            payloadInfo.params,
+            (InitMultiVaultData)
         );
 
-        uint256 l1 = formCommonData.amounts.length;
+        uint256 l1 = multiVaultData.amounts.length;
         uint256 l2 = finalAmounts_.length;
 
         if (l1 != l2) {
@@ -189,31 +192,87 @@ contract StateRegistry is IStateRegistry, AccessControl {
 
         for (uint256 i = 0; i < l1; i++) {
             uint256 newAmount = finalAmounts_[i]; /// backend fed amounts of socket tokens expected
-            uint256 maxAmount = formCommonData.amounts[i];
+            uint256 maxAmount = multiVaultData.amounts[i];
 
             if (newAmount > maxAmount) {
                 revert NEGATIVE_SLIPPAGE();
             }
 
             uint256 minAmount = (maxAmount *
-                (10000 - formXChainData.maxSlippage[i])) / 10000;
+                (10000 - multiVaultData.maxSlippage[i])) / 10000;
 
             if (newAmount < minAmount) {
                 revert SLIPPAGE_OUT_OF_BOUNDS();
             }
         }
 
-        formCommonData.amounts = finalAmounts_;
+        multiVaultData.amounts = finalAmounts_;
 
-        FormData memory updatedFormData = FormData(
-            formData.srcChainId,
-            formData.dstChainId,
-            abi.encode(formCommonData),
-            formData.xChainData,
-            formData.extraFormData
+        payloadInfo.params = abi.encode(multiVaultData);
+
+        payload[payloadId_] = abi.encode(payloadInfo);
+        payloadTracking[payloadId_] = PayloadState.UPDATED;
+
+        emit PayloadUpdated(payloadId_);
+    }
+
+    /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
+    /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
+    /// @param finalAmount_ is the amount to be updated.
+    /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
+    function updateSingleVaultPayload(
+        uint256 payloadId_,
+        uint256 finalAmount_
+    ) external virtual override onlyRole(UPDATER_ROLE) {
+        if (payloadId_ > payloadsCount) {
+            revert INVALID_PAYLOAD_ID();
+        }
+
+        AMBMessage memory payloadInfo = abi.decode(
+            payload[payloadId_],
+            (AMBMessage)
+        );
+        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+            payloadInfo.txInfo
         );
 
-        payloadInfo.params = abi.encode(updatedFormData);
+        if (
+            txType != uint256(TransactionType.DEPOSIT) &&
+            callbackType != uint256(CallbackType.INIT)
+        ) {
+            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
+        if (payloadTracking[payloadId_] != PayloadState.STORED) {
+            revert INVALID_PAYLOAD_STATE();
+        }
+
+        if (multi) {
+            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
+        InitSingleVaultData memory singleVaultData = abi.decode(
+            payloadInfo.params,
+            (InitSingleVaultData)
+        );
+
+        uint256 newAmount = finalAmount_; /// backend fed amounts of socket tokens expected
+        uint256 maxAmount = singleVaultData.amount;
+
+        if (newAmount > maxAmount) {
+            revert NEGATIVE_SLIPPAGE();
+        }
+
+        uint256 minAmount = (maxAmount *
+            (10000 - singleVaultData.maxSlippage)) / 10000;
+
+        if (newAmount < minAmount) {
+            revert SLIPPAGE_OUT_OF_BOUNDS();
+        }
+
+        singleVaultData.amount = finalAmount_;
+
+        payloadInfo.params = abi.encode(singleVaultData);
 
         payload[payloadId_] = abi.encode(payloadInfo);
         payloadTracking[payloadId_] = PayloadState.UPDATED;
@@ -235,13 +294,57 @@ contract StateRegistry is IStateRegistry, AccessControl {
             revert INVALID_PAYLOAD_STATE();
         }
 
-        bytes memory _payload = payload[payloadId_];
-        StateData memory payloadInfo = abi.decode(_payload, (StateData));
+        AMBMessage memory payloadInfo = abi.decode(
+            payload[payloadId_],
+            (AMBMessage)
+        );
 
-        if (payloadInfo.txType == TransactionType.WITHDRAW) {
-            _processWithdrawal(payloadId_, payloadInfo);
+        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+            payloadInfo.txInfo
+        );
+
+        if (multi) {
+            InitMultiVaultData memory multiVaultData = abi.decode(
+                payloadInfo.params,
+                (InitMultiVaultData)
+            );
+
+            if (txType == uint256(TransactionType.WITHDRAW)) {
+                _processMultiWithdrawal(
+                    payloadId_,
+                    callbackType,
+                    multiVaultData,
+                    payloadInfo
+                );
+            } else if (txType == uint256(TransactionType.DEPOSIT)) {
+                _processMultiDeposit(
+                    payloadId_,
+                    callbackType,
+                    multiVaultData,
+                    payloadInfo
+                );
+            }
         } else {
-            _processDeposit(payloadId_, payloadInfo);
+            InitSingleVaultData memory singleVaultData = abi.decode(
+                payloadInfo.params,
+                (InitSingleVaultData)
+            );
+
+            if (txType == uint256(TransactionType.WITHDRAW)) {
+                _processSingleWithdrawal(
+                    payloadId_,
+                    callbackType,
+                    singleVaultData,
+                    payloadInfo
+                );
+            } else if (txType == uint256(TransactionType.DEPOSIT)) {
+                _processSingleDeposit(
+                    payloadId_,
+                    callbackType,
+                    singleVaultData,
+                    payloadInfo
+                );
+            }
         }
     }
 
@@ -265,54 +368,73 @@ contract StateRegistry is IStateRegistry, AccessControl {
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-        StateData memory payloadInfo = abi.decode(
+        AMBMessage memory payloadInfo = abi.decode(
             payload[payloadId_],
-            (StateData)
+            (AMBMessage)
         );
-        FormData memory formData = abi.decode(payloadInfo.params, (FormData));
 
-        if (formData.dstChainId != chainId) {
-            revert INVALID_PAYLOAD_STATE();
+        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+            payloadInfo.txInfo
+        );
+
+        if (multi) {
+            InitMultiVaultData memory multiVaultData = abi.decode(
+                payloadInfo.params,
+                (InitMultiVaultData)
+            );
+
+            if (chainId != _getDestinationChain(multiVaultData.superFormIds[0]))
+                revert INVALID_PAYLOAD_STATE();
+        } else {
+            InitSingleVaultData memory singleVaultData = abi.decode(
+                payloadInfo.params,
+                (InitSingleVaultData)
+            );
+
+            if (
+                chainId != _getDestinationChain(singleVaultData.superFormIds[0])
+            ) revert INVALID_PAYLOAD_STATE();
         }
 
         /// NOTE: Send `data` back to source based on AmbID to revert the state.
         /// NOTE: chain_ids conflict should be addresses here.
-        // amb[ambId_].dipatchPayload(formData.dstChainId_, message_, extraData_);
+        // amb[ambId_].dispatchPayload(formData.dstChainId_, message_, extraData_);
     }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function _processWithdrawal(
+    function _processMultiWithdrawal(
         uint256 payloadId_,
-        StateData memory payloadInfo_
+        uint256 callbackType_,
+        InitMultiVaultData memory multiVaultData_,
+        AMBMessage memory payloadInfo_
     ) internal {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-        if (payloadInfo_.flag == CallbackType.INIT) {
-            
-            tokenBankContract.withdrawSync{value: msg.value}(
-                abi.encode(payloadInfo_)
+        if (callbackType_ == uint256(CallbackType.INIT)) {
+            tokenBankContract.withdrawMultiSync{value: msg.value}(
+                multiVaultData_
             );
         } else {
-            ISuperRouter(routerContract).stateSync{value: msg.value}(
-                abi.encode(payloadInfo_)
-            );
+            routerContract.stateMultiSync{value: msg.value}(payloadInfo_);
         }
     }
 
-    function _processDeposit(
+    function _processMultiDeposit(
         uint256 payloadId_,
-        StateData memory payloadInfo_
+        uint256 callbackType_,
+        InitMultiVaultData memory multiVaultData_,
+        AMBMessage memory payloadInfo_
     ) internal {
-        if (payloadInfo_.flag == CallbackType.INIT) {
+        if (callbackType_ == uint256(CallbackType.INIT)) {
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
                 revert PAYLOAD_NOT_UPDATED();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            tokenBankContract.depositSync{value: msg.value}(
-                abi.encode(payloadInfo_)
+            tokenBankContract.depositMultiSync{value: msg.value}(
+                multiVaultData_
             );
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
@@ -320,9 +442,45 @@ contract StateRegistry is IStateRegistry, AccessControl {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperRouter(routerContract).stateSync{value: msg.value}(
-                abi.encode(payloadInfo_)
-            );
+            routerContract.stateMultiSync{value: msg.value}(payloadInfo_);
+        }
+    }
+
+    function _processSingleWithdrawal(
+        uint256 payloadId_,
+        uint256 callbackType_,
+        InitSingleVaultData memory singleVaultData_,
+        AMBMessage memory payloadInfo_
+    ) internal {
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+        if (callbackType_ == uint256(CallbackType.INIT)) {
+            tokenBankContract.withdrawSync{value: msg.value}(payloadInfo_);
+        } else {
+            routerContract.stateSync{value: msg.value}(payloadInfo_);
+        }
+    }
+
+    function _processSingleDeposit(
+        uint256 payloadId_,
+        uint256 callbackType_,
+        InitSingleVaultData memory singleVaultData_,
+        AMBMessage memory payloadInfo_
+    ) internal {
+        if (callbackType_ == uint256(CallbackType.INIT)) {
+            if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
+                revert PAYLOAD_NOT_UPDATED();
+            }
+            payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+            tokenBankContract.depositSync{value: msg.value}(singleVaultData_);
+        } else {
+            if (payloadTracking[payloadId_] != PayloadState.STORED) {
+                revert INVALID_PAYLOAD_STATE();
+            }
+            payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+            routerContract.stateSync{value: msg.value}(payloadInfo_);
         }
     }
 }
