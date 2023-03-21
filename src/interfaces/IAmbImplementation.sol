@@ -33,5 +33,5 @@ interface IAmbImplementation {
     /// @dev allows admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
-    function setChainId(uint80 superChainId_, uint16 ambChainId_) external;
+    // function setChainId(uint80 superChainId_, uint16 ambChainId_) external;
 }
