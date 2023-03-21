@@ -119,4 +119,7 @@ contract TokenBank is ITokenBank, AccessControl {
             IBaseForm(form).xChainWithdrawFromVault(stateData.params);
         }
     }
+
+    /// FIXME just to avoid abstract warning added this function in here
+    function stateSync(bytes memory payload_) external payable override {}
 }

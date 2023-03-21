@@ -792,7 +792,7 @@ abstract contract BaseSetup is DSTest, Test {
             vm.recordLogs();
             /// @dev Value == fee paid to relayer. API call in our design
             if (args.action == Actions.Deposit) {
-                superRouter.deposit{value: vars.msgValue}(
+                superRouter.deposit{value: vars.msgValue * 2}(
                     args.liqReqs,
                     args.stateReqs
                 );

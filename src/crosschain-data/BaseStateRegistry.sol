@@ -91,7 +91,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             revert INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.dipatchPayload{value: msg.value}(
+        ambImplementation.dipatchPayload{value: msg.value / 2}(
             dstChainId_,
             message_,
             extraData_
@@ -107,7 +107,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             }
 
             /// @dev should figure out how to split message costs
-            tempImpl.dipatchPayload{value: msg.value}(
+            tempImpl.dipatchPayload{value: msg.value / 2}(
                 dstChainId_,
                 proof,
                 extraData_

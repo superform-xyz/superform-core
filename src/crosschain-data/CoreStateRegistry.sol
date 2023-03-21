@@ -197,7 +197,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (payloadInfo_.flag == CallbackType.INIT) {
-            ITokenBank(tokenBankContract).stateSync{value: msg.value}(
+            ITokenBank(tokenBankContract).withdrawSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {
@@ -217,7 +217,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ITokenBank(tokenBankContract).stateSync{value: msg.value}(
+            ITokenBank(tokenBankContract).depositSync{value: msg.value}(
                 abi.encode(payloadInfo_)
             );
         } else {
