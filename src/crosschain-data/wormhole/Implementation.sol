@@ -143,7 +143,7 @@ contract WormholeImplementation is
     function setChainId(
         uint80 superChainId_,
         uint16 ambChainId_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert INVALID_CHAIN_ID();
         }
