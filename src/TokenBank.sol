@@ -32,7 +32,7 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @notice state variable are all declared public to avoid creating functions to expose.
 
     /// @dev stateRegistry points to the state registry interface deployed in the respective chain.
-    address public stateRegistry;
+    IStateRegistry stateRegistry;
 
     /// @dev chainId represents the superform chain id of the specific chain.
     uint16 public chainId;
@@ -49,14 +49,14 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @dev FIXME: missing means for admin to change implementations
     constructor(
         uint16 chainId_,
-        address stateRegistry_,
+        IStateRegistry stateRegistry_,
         ISuperFormFactory superFormFactory_
     ) {
         chainId = chainId_;
         stateRegistry = stateRegistry_;
         superFormFactory = superFormFactory_;
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(STATE_REGISTRY_ROLE, stateRegistry_);
+        _setupRole(STATE_REGISTRY_ROLE, address(stateRegistry_));
     }
 
     /*///////////////////////////////////////////////////////////////

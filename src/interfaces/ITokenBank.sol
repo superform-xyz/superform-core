@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {LiqRequest} from "../types/LiquidityTypes.sol";
+import {InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
 import {IERC4626} from "../interfaces/IERC4626.sol";
 
 interface ITokenBank {
@@ -24,11 +25,35 @@ interface ITokenBank {
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
 
-    function withdrawSync(bytes memory payload_) external payable;
+    /// @dev handles the state when received from the source chain.
+    /// @param multiVaultData_     represents the struct with the associated multi vault data
+    /// note: called by external keepers when state is ready.
+    /// note: state registry sorts by deposit/withdraw txType before calling this function.
+    function depositMultiSync(
+        InitMultiVaultData memory multiVaultData_
+    ) external payable;
 
-    function depositSync(bytes memory payload_) external payable;
+    /// @dev handles the state when received from the source chain.
+    /// @param singleVaultData_       represents the struct with the associated single vault data
+    /// note: called by external keepers when state is ready.
+    /// note: state registry sorts by deposit/withdraw txType before calling this function.
+    function depositSync(
+        InitSingleVaultData memory singleVaultData_
+    ) external payable;
 
-    /// @dev allows state registry contract to send payload for processing to the form contract.
-    /// @param payload_ is the received information to be processed.
-    // function stateSync(bytes memory payload_) external payable;
+    /// @dev handles the state when received from the source chain.
+    /// @param multiVaultData_       represents the struct with the associated multi vault data
+    /// note: called by external keepers when state is ready.
+    /// note: state registry sorts by deposit/withdraw txType before calling this function.
+    function withdrawMultiSync(
+        InitMultiVaultData memory multiVaultData_
+    ) external payable;
+
+    /// @dev handles the state when received from the source chain.
+    /// @param singleVaultData_       represents the struct with the associated single vault data
+    /// note: called by external keepers when state is ready.
+    /// note: state registry sorts by deposit/withdraw txType before calling this function.
+    function withdrawSync(
+        InitSingleVaultData memory singleVaultData_
+    ) external payable;
 }

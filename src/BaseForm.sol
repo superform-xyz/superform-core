@@ -98,7 +98,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmounts  The amount of tokens deposited in same chain action
+    /// @return dstAmount  The amount of tokens deposited in same chain action
     /// @dev NOTE: Should this function return?
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
@@ -116,7 +116,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmounts  The amount of tokens deposited in same chain action
+    /// @return dstAmount  The amount of tokens deposited in same chain action
     /// @dev NOTE: Should this function return?
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
@@ -134,7 +134,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmounts  The amount of tokens withdrawn in same chain action
+    /// @return dstAmount  The amount of tokens withdrawn in same chain action
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     )
@@ -259,12 +259,12 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev Deposits underlying tokens into a vault
     function _directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual returns (uint256[] memory dstAmounts);
+    ) internal virtual returns (uint256 dstAmount);
 
     /// @dev Withdraws underlying tokens from a vault
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual returns (uint256[] memory dstAmounts);
+    ) internal virtual returns (uint256 dstAmount);
 
     /// @dev Deposits underlying tokens into a vault
     function _xChainDepositIntoVault(

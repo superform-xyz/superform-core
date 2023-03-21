@@ -391,9 +391,8 @@ contract StateRegistry is IStateRegistry, AccessControl {
                 (InitSingleVaultData)
             );
 
-            if (
-                chainId != _getDestinationChain(singleVaultData.superFormIds[0])
-            ) revert INVALID_PAYLOAD_STATE();
+            if (chainId != _getDestinationChain(singleVaultData.superFormId))
+                revert INVALID_PAYLOAD_STATE();
         }
 
         /// NOTE: Send `data` back to source based on AmbID to revert the state.
@@ -455,7 +454,7 @@ contract StateRegistry is IStateRegistry, AccessControl {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (callbackType_ == uint256(CallbackType.INIT)) {
-            tokenBankContract.withdrawSync{value: msg.value}(payloadInfo_);
+            tokenBankContract.withdrawSync{value: msg.value}(singleVaultData_);
         } else {
             routerContract.stateSync{value: msg.value}(payloadInfo_);
         }
