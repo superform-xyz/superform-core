@@ -94,7 +94,7 @@ interface ISuperFormFactory {
         returns (
             uint256[] memory superFormIds_,
             uint256[] memory formIds_,
-            uint256[] memory chainIds_
+            uint16[] memory chainIds_
         );
 
     /// @dev Returns all SuperForms
@@ -109,7 +109,7 @@ interface ISuperFormFactory {
             uint256[] memory superFormIds_,
             address[] memory vaults_,
             uint256[] memory formIds_,
-            uint256[] memory chainIds_
+            uint16[] memory chainIds_
         );
 
     /// @dev returns the number of forms

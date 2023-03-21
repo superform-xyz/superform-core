@@ -576,20 +576,20 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         uint256 amount_,
         uint256 maxSlippage_,
         bytes memory extraFormData_,
-        bytes memory liqData_
+        bytes memory liqData_,
+        uint256 msgValue_
     ) internal returns (uint256 dstAmount) {
         /// @dev deposits collateral to a given vault and mint vault positions.
+        /// @dev FIXME: in multi deposits we split the msg.value, but this only works if we validate that the user is only depositing from one source asset (native in this case)
         dstAmount = IBaseForm(superFormFactory.getForm(formId_))
-            .directDepositIntoVault{value: msg.value}(
-            abi.encode(
-                InitSingleVaultData(
-                    txData_,
-                    superFormId_,
-                    amount_,
-                    maxSlippage_,
-                    extraFormData_,
-                    liqData_
-                )
+            .directDepositIntoVault{value: msgValue_}(
+            InitSingleVaultData(
+                txData_,
+                superFormId_,
+                amount_,
+                maxSlippage_,
+                extraFormData_,
+                liqData_
             )
         );
     }
@@ -616,7 +616,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             ambData_.amount,
             ambData_.maxSlippage,
             ambData_.extraFormData,
-            abi.encode(liqRequest_)
+            abi.encode(liqRequest_),
+            msg.value
         );
 
         /// @dev TEST-CASE: _msgSender() to whom we mint. use passed `admin` arg?
@@ -632,14 +633,15 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         LiqRequest[] memory liqRequests_,
         InitMultiVaultData memory ambData_
     ) internal {
-        uint256[] memory formIds = new uint256[](ambData_.superFormIds.length);
-        uint256[] memory dstAmounts = new uint256[](
-            ambData_.superFormIds.length
-        );
+        uint256 len = ambData_.superFormIds.length;
+
+        uint256[] memory formIds = new uint256[](len);
+
+        uint256[] memory dstAmounts = new uint256[](len);
         /// @dev decode superforms
         (, formIds, ) = _getSuperForms(ambData_.superFormIds);
 
-        for (uint256 i = 0; i < formIds.length; i++) {
+        for (uint256 i = 0; i < len; i++) {
             /// @dev deposits collateral to a given vault and mint vault positions.
             dstAmounts[i] = _directDeposit(
                 formIds[i],
@@ -648,7 +650,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                 ambData_.amounts[i],
                 ambData_.maxSlippage[i],
                 ambData_.extraFormData,
-                abi.encode(liqRequests_[i])
+                abi.encode(liqRequests_[i]),
+                msg.value / len /// @dev FIXME: is this acceptable ? Note that the user fully controls the msg.value being sent
             );
         }
 
@@ -666,18 +669,14 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         bytes memory liqData_
     ) internal {
         /// @dev to allow bridging somewhere else requires arch change
-        IBaseForm(superFormFactory.getForm(formId_)).directWithdrawFromVault{
-            value: msg.value
-        }(
-            abi.encode(
-                InitSingleVaultData(
-                    txData_,
-                    superFormId_,
-                    amount_,
-                    maxSlippage_,
-                    extraFormData_,
-                    liqData_
-                )
+        IBaseForm(superFormFactory.getForm(formId_)).directWithdrawFromVault(
+            InitSingleVaultData(
+                txData_,
+                superFormId_,
+                amount_,
+                maxSlippage_,
+                extraFormData_,
+                liqData_
             )
         );
     }
@@ -764,7 +763,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             (ReturnMultiData)
         );
 
-        AMBMessage memory stored = txHistory[returnData.txId];
+        (, , , uint80 returnTxId) = _decodeReturnTxInfo(
+            returnData.returnTxInfo
+        );
+        AMBMessage memory stored = txHistory[returnTxId];
 
         (, , bool multi) = _decodeTxInfo(stored.txInfo);
 
@@ -830,7 +832,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             (ReturnSingleData)
         );
 
-        AMBMessage memory stored = txHistory[returnData.txId];
+        (, , , uint80 returnTxId) = _decodeReturnTxInfo(
+            returnData.returnTxInfo
+        );
+        AMBMessage memory stored = txHistory[returnTxId];
         (, , bool multi) = _decodeTxInfo(stored.txInfo);
 
         if (multi) revert INVALID_PAYLOAD();

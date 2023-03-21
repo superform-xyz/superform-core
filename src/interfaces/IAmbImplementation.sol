@@ -12,15 +12,16 @@ interface IAmbImplementation {
     /// @dev allows state registry to send message via implementation.
     /// @param dstChainId_ is the identifier of the destination chain
     /// @param message_ is the cross-chain message to be sent
-    /// @param extraData_ is message bridge specific override information
-    function dipatchPayload(
-        uint80 dstChainId_,
+    /// @param extraData_ is message amb specific override information
+    function dispatchPayload(
+        uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable;
 
+    /// @notice to add access based controls over here
     /// @dev allows admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
-    function setChainId(uint80 superChainId_, uint16 ambChainId_) external;
+    function setChainId(uint16 superChainId_, uint16 ambChainId_) external;
 }

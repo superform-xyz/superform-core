@@ -129,18 +129,22 @@ interface ISuperRouter {
     ) external;
 
     /// @dev allows registry contract to send payload for processing to the router contract.
-    /// @param payload_ is the received information to be processed.
-    function stateSync(bytes memory payload_) external payable;
+    /// @param data_ is the received information to be processed.
+    function stateMultiSync(AMBMessage memory data_) external payable;
+
+    /// @dev allows registry contract to send payload for processing to the router contract.
+    /// @param data_ is the received information to be processed.
+    function stateSync(AMBMessage memory data_) external payable;
 
     /*///////////////////////////////////////////////////////////////
                         External View Functions
     //////////////////////////////////////////////////////////////*/
 
     /// @dev returns the chain id of the router contract
-    function chainId() external view returns (uint80);
+    function chainId() external view returns (uint16);
 
     /// @dev returns the total individual vault transactions made through the router.
-    function totalTransactions() external view returns (uint256);
+    function totalTransactions() external view returns (uint80);
 
     /// @dev returns the off-chain metadata URI for each ERC1155 super position.
     /// @param id_ is the unique identifier of the ERC1155 super position aka the vault id.

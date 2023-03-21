@@ -184,6 +184,7 @@ abstract contract BaseSetup is DSTest, Test {
         _fundUnderlyingTokens(100);
     }
 
+    /*
     function deposit(
         TestAction memory action,
         ActionLocalVars memory vars
@@ -478,6 +479,7 @@ abstract contract BaseSetup is DSTest, Test {
         return true;
     }
 
+*/
     function getContract(
         uint16 chainId,
         string memory _name
@@ -583,12 +585,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 6 - Deploy 4626Form
             vars.erc4626Form = address(
-                new ERC4626Form(
-                    vars.chainId,
-                    /// NOTE: If each Form uses centralized stateRegistry, then this stateRegistry shouldn't have access to every single form?
-                    IStateRegistry(payable(vars.stateRegistry)),
-                    ISuperFormFactory(vars.factory)
-                )
+                new ERC4626Form(vars.chainId, ISuperFormFactory(vars.factory))
             );
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
                 .erc4626Form;
@@ -600,7 +597,7 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = address(
                 new TokenBank(
                     vars.chainId,
-                    vars.stateRegistry,
+                    IStateRegistry(payable(vars.stateRegistry)),
                     ISuperFormFactory(vars.factory)
                 )
             );
@@ -766,6 +763,7 @@ abstract contract BaseSetup is DSTest, Test {
             (ADVANCED DIRECT USAGE ALLOWED (see Attack.t.sol))
     //////////////////////////////////////////////////////////////*/
 
+    /*
     function _actionToSuperRouter(InternalActionArgs memory args) internal {
         InternalActionVars memory vars;
         vars.initialFork = vm.activeFork();
@@ -905,14 +903,16 @@ abstract contract BaseSetup is DSTest, Test {
 
         vm.selectFork(vars.initialFork);
     }
+*/
 
+    /*
     function _buildDepositCallData(
         BuildDepositCallDataArgs memory args
     ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
         bytes memory adapterParam;
-        /*
-            adapterParam = abi.encodePacked(version, gasLimit);
-        */
+        
+    /// adapterParam = abi.encodePacked(version, gasLimit);
+        
         uint256 lenDeposits = args.amounts.length;
 
         if (args.targetSuperFormIds.length != lenDeposits || lenDeposits == 0)
@@ -1052,7 +1052,8 @@ abstract contract BaseSetup is DSTest, Test {
             0
         );
     }
-
+*/
+    /// @dev FIXME: only working for updateMultiVaultPayload
     function _updateState(
         uint256 payloadId_,
         uint256[] memory amounts_,
@@ -1086,14 +1087,14 @@ abstract contract BaseSetup is DSTest, Test {
             vm.prank(deployer);
 
             StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
-                .updatePayload(payloadId_, finalAmounts);
+                .updateMultiVaultPayload(payloadId_, finalAmounts);
         } else if (testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
             vm.expectRevert(revertError); /// @dev removed string here: come to this later
 
             StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
-                .updatePayload(payloadId_, finalAmounts);
+                .updateMultiVaultPayload(payloadId_, finalAmounts);
 
             return false;
         } else if (testType == TestType.RevertUpdateStateRBAC) {
@@ -1105,7 +1106,7 @@ abstract contract BaseSetup is DSTest, Test {
             vm.expectRevert(errorMsg);
 
             StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
-                .updatePayload(payloadId_, finalAmounts);
+                .updateMultiVaultPayload(payloadId_, finalAmounts);
 
             return false;
         }

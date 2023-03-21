@@ -12,8 +12,10 @@ import {MockERC20} from "../mocks/MockERC20.sol";
                         MAIN TEST TYPES
 //////////////////////////////////////////////////////////////*/
 enum Actions {
-    Deposit,
-    Withdraw
+    MultiVaultDeposit,
+    SingleVaultDeposit,
+    MultiVaultWithdraw,
+    SingleVaultWithdraw
 }
 
 enum LiquidityChange {
@@ -29,23 +31,27 @@ enum TestType {
     RevertUpdateStateRBAC
 }
 
-struct ActionLocalVars {
+struct NewActionLocalVars {
     Vm.Log[] logs;
-    StateReq[] stateReqs;
-    LiqRequest[] liqReqs;
-    StateReq stateReq;
-    LiqRequest liqReq;
-    MockERC20[][] TARGET_VAULTS;
+    MultiDstMultiVaultsStateReq multiDstMultiVaultStateReq;
+    MultiDstSingleVaultStateReq multiDstSingleVaultStateReq;
+    SingleDstMultiVaultsStateReq singleDstMultiVaultStateReq;
+    SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;
+    SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
+    MultiVaultsSFData[] superFormsData;
+    SingleVaultSFData[] superFormData;
     uint256 sharesBalanceBeforeWithdraw; // 0
     uint256 amountsToWithdraw; // 0
-    address[][] vaultMock;
+    uint256 nDestinations;
+    address[] vaultMock;
     address lzEndpoint_0;
-    address lzEndpoint_1;
-    address[][] underlyingSrcToken;
+    address[] lzEndpoints_1;
+    address[] underlyingSrcToken;
     address payable fromSrc;
-    address payable toDst;
-    uint256[][] targetSuperFormIds;
-    uint256[][] amounts;
+    address[] toDst;
+    uint256[] targetSuperFormIds;
+    uint256[] amounts;
+    uint256[] maxSlippage;
 }
 
 struct VaultsAmounts {
@@ -55,17 +61,14 @@ struct VaultsAmounts {
 
 struct TestAction {
     Actions action;
-    uint16 actionType;
-    LiquidityChange actionKind;
-    uint16 CHAIN_0;
-    uint16 CHAIN_1;
     address user;
     TestType testType;
     bytes4 revertError;
     bytes32 revertRole; // temporary until errors are added to RBAC libraries
-    uint256 maxSlippage;
     int256 slippage;
     bool multiTx;
+    bytes adapterParam;
+    uint256 msgValue;
 }
 
 struct TestAssertionVars {
@@ -113,6 +116,32 @@ struct SetupVars {
                     HELPER TYPES
 //////////////////////////////////////////////////////////////*/
 
+struct SingleVaultDepositArgs {
+    address user;
+    address fromSrc;
+    address toDst;
+    address underlyingToken;
+    uint256 superFormId;
+    uint256 amount;
+    uint256 maxSlippage;
+    uint16 srcChainId;
+    uint16 toChainId;
+    bool multiTx;
+}
+
+struct MultiVaultDepositArgs {
+    address user;
+    address fromSrc;
+    address toDst;
+    address[] underlyingTokens;
+    uint256[] superFormIds;
+    uint256[] amounts;
+    uint256[] maxSlippage;
+    uint16 srcChainId;
+    uint16 toChainId;
+    bool multiTx;
+}
+
 struct BuildDepositCallDataArgs {
     address user;
     address fromSrc;
@@ -140,6 +169,7 @@ struct BuildWithdrawCallDataArgs {
     uint16 toChainId;
 }
 
+/*
 struct InternalActionArgs {
     address payable fromSrc; // SuperRouter
     address toLzEndpoint;
@@ -169,7 +199,7 @@ struct InternalActionVars {
     FormXChainData receivedFormXChainData;
     StateData data;
 }
-
+*/
 /*//////////////////////////////////////////////////////////////
                         ERRORS
 //////////////////////////////////////////////////////////////*/

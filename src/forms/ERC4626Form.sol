@@ -6,7 +6,7 @@ import {ERC4626} from "@solmate/mixins/ERC4626.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
-import {InitSingleVaultData} from "../types/DataTypes.sol";
+import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ERC20Form} from "./ERC20Form.sol";
@@ -25,16 +25,10 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     /// @dev error thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
 
-    bytes32 public constant STATE_REGISTRY_ROLE =
-        keccak256("STATE_REGISTRY_ROLE");
-
     constructor(
-        uint80 chainId_,
-        IStateRegistry stateRegistry_,
+        uint16 chainId_,
         ISuperFormFactory superformfactory_
-    ) ERC20Form(chainId_, stateRegistry_, superformfactory_) {
-        _setupRole(STATE_REGISTRY_ROLE, address(stateRegistry_));
-    }
+    ) ERC20Form(chainId_, superformfactory_) {}
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
@@ -137,29 +131,32 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
 
+        LiqRequest memory liqData = abi.decode(
+            singleVaultData_.liqData,
+            (LiqRequest)
+        );
+
         /// note: handle the collateral token transfers.
-        if (singleVaultData_.liqData.txData.length == 0) {
+        if (liqData.txData.length == 0) {
             if (
-                ERC20(singleVaultData_.liqData.token).allowance(
-                    srcSender,
-                    address(this)
-                ) < singleVaultData_.liqData.amount
+                ERC20(liqData.token).allowance(srcSender, address(this)) <
+                liqData.amount
             ) revert DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
-            ERC20(singleVaultData_.liqData.token).safeTransferFrom(
+            ERC20(liqData.token).safeTransferFrom(
                 srcSender,
                 address(this),
-                singleVaultData_.liqData.amount
+                liqData.amount
             );
         } else {
             dispatchTokens(
-                bridgeAddress[singleVaultData_.liqData.bridgeId],
-                singleVaultData_.liqData.txData,
-                singleVaultData_.liqData.token,
-                singleVaultData_.liqData.allowanceTarget,
-                singleVaultData_.liqData.amount,
+                bridgeAddress[liqData.bridgeId],
+                liqData.txData,
+                liqData.token,
+                liqData.allowanceTarget,
+                liqData.amount,
                 srcSender,
-                singleVaultData_.liqData.nativeAmount
+                liqData.nativeAmount
             );
         }
 
@@ -181,12 +178,17 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     ) internal virtual override returns (uint256 dstAmount) {
         (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
 
-        uint256 len1 = singleVaultData_.liqData.txData.length;
+        LiqRequest memory liqData = abi.decode(
+            singleVaultData_.liqData,
+            (LiqRequest)
+        );
+
+        uint256 len1 = liqData.txData.length;
         address receiver = len1 == 0 ? srcSender : address(this);
 
         (address vault, , ) = _getSuperForm(singleVaultData_.superFormId);
         ERC4626 v = ERC4626(vault);
-        address collateral = v.asset();
+        address collateral = address(v.asset());
 
         if (address(v.asset()) != collateral)
             revert DIRECT_WITHDRAW_INVALID_COLLATERAL();
@@ -195,17 +197,17 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         if (len1 != 0) {
             /// @dev this check here might be too much already, but can't hurt
-            if (singleVaultData_.liqData.amount > singleVaultData_.amount)
+            if (liqData.amount > singleVaultData_.amount)
                 revert DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             dispatchTokens(
-                bridgeAddress[singleVaultData_.liqData.bridgeId],
-                singleVaultData_.liqData.txData,
-                singleVaultData_.liqData.token,
-                singleVaultData_.liqData.allowanceTarget,
-                singleVaultData_.liqData.amount,
+                bridgeAddress[liqData.bridgeId],
+                liqData.txData,
+                liqData.token,
+                liqData.allowanceTarget,
+                liqData.amount,
                 address(this),
-                singleVaultData_.liqData.nativeAmount
+                liqData.nativeAmount
             );
         }
     }
@@ -233,7 +235,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         emit Processed(
             srcChainId,
             dstChainId,
-            singleVaultData_.txId,
+            txId,
             singleVaultData_.amount,
             vault
         );
@@ -243,7 +245,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     ) internal virtual override {
-        (address vault, , uint16 dstChainId) = _getSuperForms(
+        (address vault, , uint16 dstChainId) = _getSuperForm(
             singleVaultData_.superFormId
         );
 
@@ -254,8 +256,11 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(
             singleVaultData_.txData
         );
-
-        if (singleVaultData_.liqData.txData.length != 0) {
+        LiqRequest memory liqData = abi.decode(
+            singleVaultData_.liqData,
+            (LiqRequest)
+        );
+        if (liqData.txData.length != 0) {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
             dstAmount = v.redeem(
                 singleVaultData_.amount,
@@ -268,13 +273,13 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             /// FEAT Note: We could also allow to pass additional chainId arg here
             /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
             dispatchTokens(
-                bridgeAddress[singleVaultData_.liqData.bridgeId],
-                singleVaultData_.liqData.txData,
-                singleVaultData_.liqData.token,
-                singleVaultData_.liqData.allowanceTarget,
+                bridgeAddress[liqData.bridgeId],
+                liqData.txData,
+                liqData.token,
+                liqData.allowanceTarget,
                 dstAmount,
                 address(this),
-                singleVaultData_.liqData.nativeAmount
+                liqData.nativeAmount
             );
             uint256 balanceAfter = ERC20(v.asset()).balanceOf(address(this));
 
