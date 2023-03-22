@@ -23,8 +23,6 @@ contract Scenario1Test is BaseSetup {
 
     mapping(uint16 => uint256[]) public TARGET_UNDERLYING_VAULTS;
 
-    mapping(uint16 => uint256[]) public TARGET_FORMS; /// @dev must conform to the above
-
     mapping(uint16 => uint256[]) public AMOUNTS;
 
     mapping(uint16 => uint256[]) public MAX_SLIPPAGE;
@@ -47,10 +45,6 @@ contract Scenario1Test is BaseSetup {
         TARGET_UNDERLYING_VAULTS[BSC] = [0];
         TARGET_UNDERLYING_VAULTS[POLY] = [1, 2];
 
-        /// @dev - only one form kind exists for now (id 0)
-        TARGET_FORMS[BSC] = [0];
-        TARGET_FORMS[POLY] = [0, 0];
-
         AMOUNTS[BSC] = [1000];
         AMOUNTS[POLY] = [1000, 2000];
 
@@ -60,7 +54,9 @@ contract Scenario1Test is BaseSetup {
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         action = TestAction({
-            action: Actions.SingleVaultDeposit,
+            action: Actions.Deposit,
+            actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
+            multiVaults: true,
             user: users[0],
             testType: TestType.Pass,
             revertError: "",
@@ -76,9 +72,7 @@ contract Scenario1Test is BaseSetup {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_actions() public {
-        /// @dev do the test actions in order
-
+    function test_run_action() public {
         if (action.revertError != bytes4(0) && action.testType == TestType.Pass)
             revert MISMATCH_TEST_TYPE();
 
@@ -95,16 +89,19 @@ contract Scenario1Test is BaseSetup {
         vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
 
         vars.nDestinations = DST_CHAINS.length;
+
+        vars.lzEndpoints_1 = new address[](vars.nDestinations);
+        vars.toDst = new address[](vars.nDestinations);
+        vars.multiSuperFormsData = new MultiVaultsSFData[](vars.nDestinations);
+        vars.singleSuperFormsData = new SingleVaultSFData[](vars.nDestinations);
+
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
-
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
             /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
             if (
                 CHAIN_0 == DST_CHAINS[i] ||
-                ((action.action == Actions.MultiVaultWithdraw ||
-                    action.action == Actions.SingleVaultWithdraw) &&
-                    CHAIN_0 != DST_CHAINS[i])
+                (action.action == Actions.Withdraw && CHAIN_0 != DST_CHAINS[i])
             ) {
                 /// @dev FIXME: this is only using hardcoded formid 1 (ERC4626Form) for now!!!
                 /// !!WARNING
@@ -127,31 +124,83 @@ contract Scenario1Test is BaseSetup {
 
             vars.maxSlippage = MAX_SLIPPAGE[DST_CHAINS[i]];
 
-            if (action.action == Actions.MultiVaultDeposit) {
-                vars.superFormsData[i] = _buildMultiVaultDepositCallData(
-                    MultiVaultDepositArgs(
+            if (action.multiVaults) {
+                vars.multiSuperFormsData[i] = _buildMultiVaultCallData(
+                    MultiVaultCallDataArgs(
                         action.user,
                         vars.fromSrc,
                         vars.toDst[i],
-                        vars.underlyingSrcToken, ///!!!WARNING !!! @dev we probably need to create liq request with both src and dst tokens
+                        vars.underlyingSrcToken,
                         vars.targetSuperFormIds,
                         vars.amounts,
                         vars.maxSlippage,
+                        vars.vaultMock,
                         CHAIN_0,
                         DST_CHAINS[i],
-                        action.multiTx
+                        action.multiTx,
+                        action.actionKind,
+                        action.action
                     )
                 );
-
-                /// @dev multiDstMultiVaultDeposit
+            } else {
+                if (
+                    !((vars.underlyingSrcToken.length ==
+                        vars.targetSuperFormIds.length) &&
+                        (vars.underlyingSrcToken.length ==
+                            vars.amounts.length) &&
+                        (vars.underlyingSrcToken.length ==
+                            vars.maxSlippage.length) &&
+                        (vars.underlyingSrcToken.length == 1))
+                ) revert INVALID_AMOUNTS_LENGTH();
+                if (action.action == Actions.Deposit) {
+                    vars.singleSuperFormsData[
+                        i
+                    ] = _buildSingleVaultDepositCallData(
+                        SingleVaultCallDataArgs(
+                            action.user,
+                            vars.fromSrc,
+                            vars.toDst[i],
+                            vars.underlyingSrcToken[0],
+                            vars.targetSuperFormIds[0],
+                            vars.amounts[0],
+                            vars.maxSlippage[0],
+                            vars.vaultMock[0],
+                            CHAIN_0,
+                            DST_CHAINS[i],
+                            action.multiTx,
+                            action.actionKind
+                        )
+                    );
+                } else {
+                    vars.singleSuperFormsData[
+                        i
+                    ] = _buildSingleVaultWithdrawCallData(
+                        SingleVaultCallDataArgs(
+                            action.user,
+                            vars.fromSrc,
+                            vars.toDst[i],
+                            vars.underlyingSrcToken[0],
+                            vars.targetSuperFormIds[0],
+                            vars.amounts[0],
+                            vars.maxSlippage[0],
+                            vars.vaultMock[0],
+                            CHAIN_0,
+                            DST_CHAINS[i],
+                            action.multiTx,
+                            action.actionKind
+                        )
+                    );
+                }
             }
+        }
 
+        if (vars.multiSuperFormsData.length > 0) {
             if (vars.nDestinations == 1) {
                 vars.singleDstMultiVaultStateReq = SingleDstMultiVaultsStateReq(
                     primaryAMB,
                     secondaryAMBs,
-                    DST_CHAINS[i],
-                    vars.superFormsData[0],
+                    DST_CHAINS[0],
+                    vars.multiSuperFormsData[0],
                     action.adapterParam,
                     action.msgValue
                 );
@@ -161,7 +210,37 @@ contract Scenario1Test is BaseSetup {
                     primaryAMB,
                     secondaryAMBs,
                     DST_CHAINS,
-                    vars.superFormsData,
+                    vars.multiSuperFormsData,
+                    action.adapterParam,
+                    action.msgValue
+                );
+            }
+        } else if (vars.singleSuperFormsData.length > 0) {
+            if (vars.nDestinations == 1) {
+                if (CHAIN_0 != DST_CHAINS[0])
+                    vars
+                        .singleXChainSingleVaultStateReq = SingleXChainSingleVaultStateReq(
+                        primaryAMB,
+                        secondaryAMBs,
+                        DST_CHAINS[0],
+                        vars.singleSuperFormsData[0],
+                        action.adapterParam,
+                        action.msgValue
+                    );
+                else
+                    vars
+                        .singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
+                        DST_CHAINS[0],
+                        vars.singleSuperFormsData[0],
+                        action.adapterParam,
+                        action.msgValue
+                    );
+            } else if (vars.nDestinations > 1) {
+                vars.multiDstSingleVaultStateReq = MultiDstSingleVaultStateReq(
+                    primaryAMB,
+                    secondaryAMBs,
+                    DST_CHAINS,
+                    vars.singleSuperFormsData,
                     action.adapterParam,
                     action.msgValue
                 );
@@ -169,32 +248,50 @@ contract Scenario1Test is BaseSetup {
         }
     }
 
-    function _buildMultiVaultDepositCallData(
-        MultiVaultDepositArgs memory args
+    function _buildMultiVaultCallData(
+        MultiVaultCallDataArgs memory args
     ) internal returns (MultiVaultsSFData memory superFormsData) {
-        bytes memory adapterParam;
-        /*
-            adapterParam = abi.encodePacked(version, gasLimit);
-        */
         SingleVaultSFData memory superFormData;
         uint256 len = args.superFormIds.length;
         LiqRequest[] memory liqRequests = new LiqRequest[](len);
 
         for (uint i = 0; i < len; i++) {
-            superFormData = _buildSingleVaultDepositCallData(
-                SingleVaultDepositArgs(
-                    args.user,
-                    args.fromSrc,
-                    args.toDst,
-                    args.underlyingTokens[i],
-                    args.superFormIds[i],
-                    args.amounts[i],
-                    args.maxSlippage[i],
-                    args.srcChainId,
-                    args.toChainId,
-                    args.multiTx
-                )
-            );
+            if (args.action == Actions.Deposit) {
+                superFormData = _buildSingleVaultDepositCallData(
+                    SingleVaultCallDataArgs(
+                        args.user,
+                        args.fromSrc,
+                        args.toDst,
+                        args.underlyingTokens[i],
+                        args.superFormIds[i],
+                        args.amounts[i],
+                        args.maxSlippage[i],
+                        args.vaultMock[i],
+                        args.srcChainId,
+                        args.toChainId,
+                        args.multiTx,
+                        args.actionKind
+                    )
+                );
+            } else if (args.action == Actions.Withdraw) {
+                superFormData = _buildSingleVaultWithdrawCallData(
+                    SingleVaultCallDataArgs(
+                        args.user,
+                        args.fromSrc,
+                        args.toDst,
+                        args.underlyingTokens[i],
+                        args.superFormIds[i],
+                        args.amounts[i],
+                        args.maxSlippage[i],
+                        args.vaultMock[i],
+                        args.srcChainId,
+                        args.toChainId,
+                        args.multiTx,
+                        args.actionKind
+                    )
+                );
+            }
+
             liqRequests[i] = superFormData.liqRequest;
         }
 
@@ -208,7 +305,7 @@ contract Scenario1Test is BaseSetup {
     }
 
     function _buildSingleVaultDepositCallData(
-        SingleVaultDepositArgs memory args
+        SingleVaultCallDataArgs memory args
     ) internal returns (SingleVaultSFData memory superFormData) {
         uint256 initialFork = vm.activeFork();
 
@@ -252,6 +349,93 @@ contract Scenario1Test is BaseSetup {
         superFormData = SingleVaultSFData(
             args.superFormId,
             args.amount,
+            args.maxSlippage,
+            liqReq,
+            ""
+        );
+    }
+
+    function _buildMultiVaultWithdrawCallData(
+        MultiVaultCallDataArgs memory args
+    ) internal returns (MultiVaultsSFData memory superFormsData) {
+        SingleVaultSFData memory superFormData;
+        uint256 len = args.superFormIds.length;
+        LiqRequest[] memory liqRequests = new LiqRequest[](len);
+
+        for (uint i = 0; i < len; i++) {
+            superFormData = _buildSingleVaultWithdrawCallData(
+                SingleVaultCallDataArgs(
+                    args.user,
+                    args.fromSrc,
+                    args.toDst,
+                    args.underlyingTokens[i],
+                    args.superFormIds[i],
+                    args.amounts[i],
+                    args.maxSlippage[i],
+                    args.vaultMock[i],
+                    args.srcChainId,
+                    args.toChainId,
+                    args.multiTx,
+                    args.actionKind
+                )
+            );
+            liqRequests[i] = superFormData.liqRequest;
+        }
+
+        superFormsData = MultiVaultsSFData(
+            args.superFormIds,
+            args.amounts,
+            args.maxSlippage,
+            liqRequests,
+            ""
+        );
+    }
+
+    function _buildSingleVaultWithdrawCallData(
+        SingleVaultCallDataArgs memory args
+    ) internal returns (SingleVaultSFData memory superFormData) {
+        uint256 amountToWithdraw;
+
+        if (args.actionKind == LiquidityChange.Full) {
+            uint256 sharesBalanceBeforeWithdraw;
+            vm.selectFork(FORKS[args.srcChainId]);
+
+            sharesBalanceBeforeWithdraw = SuperRouter(payable(args.fromSrc))
+                .balanceOf(args.user, args.superFormId);
+
+            vm.selectFork(FORKS[args.toChainId]);
+
+            /// @dev FIXME likely can be changed to form
+            amountToWithdraw = VaultMock(args.vaultMock).previewRedeem(
+                sharesBalanceBeforeWithdraw
+            );
+        } else if (args.actionKind == LiquidityChange.Partial) {
+            amountToWithdraw = args.amount;
+        }
+
+        /// @dev check this from down here when contracts are fixed for multi vault
+        /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
+        bytes memory socketTxData = abi.encodeWithSignature(
+            "mockSocketTransfer(address,address,address,uint256,uint256)",
+            args.toDst,
+            args.user,
+            args.underlyingToken,
+            amountToWithdraw, /// @dev FIXME - not testing sum of amounts (different vaults)
+            FORKS[args.toChainId]
+        );
+
+        LiqRequest memory liqReq = LiqRequest(
+            1, /// @dev FIXME: hardcoded for now
+            socketTxData,
+            args.underlyingToken,
+            getContract(args.srcChainId, "SocketRouterMockFork"),
+            amountToWithdraw, /// @dev FIXME -  not testing sum of amounts (different vaults)
+            0
+        );
+
+        superFormData = SingleVaultSFData(
+            args.superFormId,
+            amountToWithdraw,
             args.maxSlippage,
             liqReq,
             ""
