@@ -269,12 +269,11 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             srcSender,
             liqData_.nativeAmount
         );
-        uint8[] memory secAmb = new uint8[](1);
-        secAmb[0] = 1;
+
         /// @dev LayerZero endpoint
         stateRegistry.dispatchPayload{value: stateData_.msgValue}(
             stateData_.ambId,
-            secAmb,
+            stateData_.proofAmbId,
             stateData_.dstChainId,
             abi.encode(info),
             stateData_.adapterParam
@@ -393,15 +392,13 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         txHistory[currentTotalTransactions] = info;
 
-        uint8[] memory secAmb = new uint8[](1);
-        secAmb[0] = 1;
         /// @dev _liqReq should have path encoded for withdraw to SuperRouter on chain different than chainId
         /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
         /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
         /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
         stateRegistry.dispatchPayload{value: stateData_.msgValue}(
             stateData_.ambId,
-            secAmb,
+            stateData_.proofAmbId,
             stateData_.dstChainId,
             abi.encode(info),
             stateData_.adapterParam

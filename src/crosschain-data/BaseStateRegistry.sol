@@ -100,13 +100,20 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         bytes memory proof = abi.encode(keccak256(message_));
         
         for(uint8 i=0; i<secAmbId_.length; i++) {
-            IAmbImplementation tempImpl = amb[secAmbId_[i]];
+            uint8 tempAmbId = secAmbId_[i];
+
+            if(tempAmbId == ambId_) {
+                revert INVALID_PROOF_BRIDGE_ID();
+            }
+
+            IAmbImplementation tempImpl = amb[tempAmbId];
 
             if (address(tempImpl) == address(0)) {
                 revert INVALID_BRIDGE_ID();
             }
 
             /// @dev should figure out how to split message costs
+            /// @notice for now works if the secAmbId loop lenght == 1
             tempImpl.dipatchPayload{value: msg.value / 2}(
                 dstChainId_,
                 proof,

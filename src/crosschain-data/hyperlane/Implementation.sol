@@ -76,7 +76,7 @@ contract HyperlaneImplementation is
         igp.payForGas{value: msg.value}(
             messageId,
             ambChainId[dstChainId_],
-            abi.decode(extraData_, (uint256)),
+            500000,             // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
             msg.sender /// @dev should refund to the user, now refunds to core state registry
         );
     }

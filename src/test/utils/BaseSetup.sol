@@ -311,6 +311,7 @@ abstract contract BaseSetup is DSTest, Test {
                             FORKS[action.CHAIN_0],
                             vars.logs
                         );
+
                     unchecked {
                         PAYLOAD_ID[action.CHAIN_0]++;
                     }
@@ -855,6 +856,13 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.logs
                     );
 
+                // HyperlaneHelper(getContract(args.srcChainId, "HyperlaneHelper"))
+                //     .helpWithEstimates(
+                //         HyperlaneMailbox,
+                //         FORKS[args.toChainId],
+                //         vars.logs
+                //     );
+
                 vm.selectFork(FORKS[args.toChainId]);
 
                 vars.payloadNumberBefore = stateRegistry.payloadsCount();
@@ -1068,7 +1076,7 @@ abstract contract BaseSetup is DSTest, Test {
 
         stateReq = StateReq(
             ambIds[0],
-            secAmb, 
+            secAmb,
             args.toChainId,
             amountsToWithdraw,
             args.targetSuperFormIds,
