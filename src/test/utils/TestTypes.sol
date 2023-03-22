@@ -92,6 +92,8 @@ struct SetupVars {
     address lzEndpoint;
     address lzHelper;
     address lzImplementation;
+    address hyperlaneHelper;
+    address hyperlaneImplementation;
     address socketRouter;
     address erc4626Form;
     address stateRegistry;
