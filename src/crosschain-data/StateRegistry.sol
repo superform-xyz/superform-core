@@ -10,7 +10,6 @@ import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVault
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "../interfaces/IBaseForm.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-
 import "../utils/DataPacking.sol";
 
 /// @title Cross-Chain AMB Aggregator
@@ -304,46 +303,18 @@ contract StateRegistry is IStateRegistry, AccessControl {
         );
 
         if (multi) {
-            InitMultiVaultData memory multiVaultData = abi.decode(
-                payloadInfo.params,
-                (InitMultiVaultData)
-            );
-
             if (txType == uint256(TransactionType.WITHDRAW)) {
-                _processMultiWithdrawal(
-                    payloadId_,
-                    callbackType,
-                    multiVaultData,
-                    payloadInfo
-                );
+                _processMultiWithdrawal(payloadId_, callbackType, payloadInfo);
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                _processMultiDeposit(
-                    payloadId_,
-                    callbackType,
-                    multiVaultData,
-                    payloadInfo
-                );
+                _processMultiDeposit(payloadId_, callbackType, payloadInfo);
             }
         } else {
-            InitSingleVaultData memory singleVaultData = abi.decode(
-                payloadInfo.params,
-                (InitSingleVaultData)
-            );
+            if (callbackType == 0) {}
 
             if (txType == uint256(TransactionType.WITHDRAW)) {
-                _processSingleWithdrawal(
-                    payloadId_,
-                    callbackType,
-                    singleVaultData,
-                    payloadInfo
-                );
+                _processSingleWithdrawal(payloadId_, callbackType, payloadInfo);
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                _processSingleDeposit(
-                    payloadId_,
-                    callbackType,
-                    singleVaultData,
-                    payloadInfo
-                );
+                _processSingleDeposit(payloadId_, callbackType, payloadInfo);
             }
         }
     }
@@ -406,14 +377,17 @@ contract StateRegistry is IStateRegistry, AccessControl {
     function _processMultiWithdrawal(
         uint256 payloadId_,
         uint256 callbackType_,
-        InitMultiVaultData memory multiVaultData_,
         AMBMessage memory payloadInfo_
     ) internal {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (callbackType_ == uint256(CallbackType.INIT)) {
+            InitMultiVaultData memory multiVaultData = abi.decode(
+                payloadInfo_.params,
+                (InitMultiVaultData)
+            );
             tokenBankContract.withdrawMultiSync{value: msg.value}(
-                multiVaultData_
+                multiVaultData
             );
         } else {
             routerContract.stateMultiSync{value: msg.value}(payloadInfo_);
@@ -423,7 +397,6 @@ contract StateRegistry is IStateRegistry, AccessControl {
     function _processMultiDeposit(
         uint256 payloadId_,
         uint256 callbackType_,
-        InitMultiVaultData memory multiVaultData_,
         AMBMessage memory payloadInfo_
     ) internal {
         if (callbackType_ == uint256(CallbackType.INIT)) {
@@ -432,8 +405,13 @@ contract StateRegistry is IStateRegistry, AccessControl {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
+            InitMultiVaultData memory multiVaultData = abi.decode(
+                payloadInfo_.params,
+                (InitMultiVaultData)
+            );
+
             tokenBankContract.depositMultiSync{value: msg.value}(
-                multiVaultData_
+                multiVaultData
             );
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
@@ -448,13 +426,16 @@ contract StateRegistry is IStateRegistry, AccessControl {
     function _processSingleWithdrawal(
         uint256 payloadId_,
         uint256 callbackType_,
-        InitSingleVaultData memory singleVaultData_,
         AMBMessage memory payloadInfo_
     ) internal {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (callbackType_ == uint256(CallbackType.INIT)) {
-            tokenBankContract.withdrawSync{value: msg.value}(singleVaultData_);
+            InitSingleVaultData memory singleVaultData = abi.decode(
+                payloadInfo_.params,
+                (InitSingleVaultData)
+            );
+            tokenBankContract.withdrawSync{value: msg.value}(singleVaultData);
         } else {
             routerContract.stateSync{value: msg.value}(payloadInfo_);
         }
@@ -463,16 +444,19 @@ contract StateRegistry is IStateRegistry, AccessControl {
     function _processSingleDeposit(
         uint256 payloadId_,
         uint256 callbackType_,
-        InitSingleVaultData memory singleVaultData_,
         AMBMessage memory payloadInfo_
     ) internal {
         if (callbackType_ == uint256(CallbackType.INIT)) {
+            InitSingleVaultData memory singleVaultData = abi.decode(
+                payloadInfo_.params,
+                (InitSingleVaultData)
+            );
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
                 revert PAYLOAD_NOT_UPDATED();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            tokenBankContract.depositSync{value: msg.value}(singleVaultData_);
+            tokenBankContract.depositSync{value: msg.value}(singleVaultData);
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
                 revert INVALID_PAYLOAD_STATE();

@@ -12,26 +12,29 @@ import "./utils/ProtocolActions.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario1Test is ProtocolActions {
+contract Scenario3Test is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationSingleVault Deposit test case
+        /// @dev singleDestinationMultiVault Deposit test case
 
         primaryAMB = 1;
 
         secondaryAMBs = [2];
 
-        CHAIN_0 = FTM;
-        DST_CHAINS = [POLY];
+        CHAIN_0 = OP;
+        DST_CHAINS = [ARBI, ETH];
 
-        TARGET_UNDERLYING_VAULTS[POLY] = [1];
+        TARGET_UNDERLYING_VAULTS[ARBI] = [1, 2];
+        TARGET_UNDERLYING_VAULTS[ETH] = [0];
 
-        AMOUNTS[POLY] = [1000];
+        AMOUNTS[ARBI] = [1000, 500];
+        AMOUNTS[ETH] = [100];
 
-        MAX_SLIPPAGE[POLY] = [1000];
+        MAX_SLIPPAGE[ARBI] = [1000, 1000];
+        MAX_SLIPPAGE[ETH] = [1000];
 
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
@@ -39,7 +42,7 @@ contract Scenario1Test is ProtocolActions {
         action = TestAction({
             action: Actions.Deposit,
             actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
-            multiVaults: false, /// @dev - !!WARNING turn on or off multi vaults
+            multiVaults: true, /// @dev - !!WARNING turn on or off multi vaults
             user: users[0],
             testType: TestType.Pass,
             revertError: "",
