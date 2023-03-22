@@ -12,10 +12,8 @@ import {MockERC20} from "../mocks/MockERC20.sol";
                         MAIN TEST TYPES
 //////////////////////////////////////////////////////////////*/
 enum Actions {
-    MultiVaultDeposit,
-    SingleVaultDeposit,
-    MultiVaultWithdraw,
-    SingleVaultWithdraw
+    Deposit,
+    Withdraw
 }
 
 enum LiquidityChange {
@@ -38,8 +36,10 @@ struct NewActionLocalVars {
     SingleDstMultiVaultsStateReq singleDstMultiVaultStateReq;
     SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;
     SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
-    MultiVaultsSFData[] superFormsData;
-    SingleVaultSFData[] superFormData;
+    MultiVaultsSFData[] multiSuperFormsData;
+    SingleVaultSFData[] singleSuperFormsData;
+    MultiVaultsSFData multiSuperFormData;
+    SingleVaultSFData singleSuperFormData;
     uint256 sharesBalanceBeforeWithdraw; // 0
     uint256 amountsToWithdraw; // 0
     uint256 nDestinations;
@@ -61,6 +61,8 @@ struct VaultsAmounts {
 
 struct TestAction {
     Actions action;
+    LiquidityChange actionKind;
+    bool multiVaults;
     address user;
     TestType testType;
     bytes4 revertError;
@@ -116,7 +118,7 @@ struct SetupVars {
                     HELPER TYPES
 //////////////////////////////////////////////////////////////*/
 
-struct SingleVaultDepositArgs {
+struct SingleVaultCallDataArgs {
     address user;
     address fromSrc;
     address toDst;
@@ -124,12 +126,14 @@ struct SingleVaultDepositArgs {
     uint256 superFormId;
     uint256 amount;
     uint256 maxSlippage;
+    address vaultMock;
     uint16 srcChainId;
     uint16 toChainId;
     bool multiTx;
+    LiquidityChange actionKind;
 }
 
-struct MultiVaultDepositArgs {
+struct MultiVaultCallDataArgs {
     address user;
     address fromSrc;
     address toDst;
@@ -137,9 +141,12 @@ struct MultiVaultDepositArgs {
     uint256[] superFormIds;
     uint256[] amounts;
     uint256[] maxSlippage;
+    address[] vaultMock;
     uint16 srcChainId;
     uint16 toChainId;
     bool multiTx;
+    LiquidityChange actionKind;
+    Actions action;
 }
 
 struct BuildDepositCallDataArgs {
@@ -212,3 +219,4 @@ error LEN_VAULTS_ZERO();
 error MISMATCH_TEST_TYPE();
 error MISMATCH_RBAC_TEST();
 error WRONG_UNDERLYING_ID();
+error INVALID_AMOUNTS_LENGTH();

@@ -80,7 +80,20 @@ contract SuperFormFactoryTest is Utilities {
         address vault1;
         address vault2;
         uint256 expectedSuperFormId1;
+        uint256 expectedSuperFormId2;
         uint256 superFormId;
+        address resVault;
+        uint256 resFormid;
+        uint16 resChainId;
+        uint256[] superFormIds_;
+        uint256[] formIds_;
+        uint16[] chainIds_;
+        uint256[] transformedChainIds_;
+        uint256[] expectedSuperFormIds;
+        uint256[] expectedFormIds;
+        uint256[] expectedChainIds;
+        address[] vaults_;
+        address[] expectedVaults;
     }
 
     function test_createSuperForm() public {
@@ -97,7 +110,7 @@ contract SuperFormFactoryTest is Utilities {
 
         vars.expectedSuperFormId1 = uint256(uint160(vars.vault1));
         vars.expectedSuperFormId1 |= vars.formId << 160;
-        vars.expectedSuperFormId1 |= uint256(chainId) << 176;
+        vars.expectedSuperFormId1 |= uint256(chainId) << 240;
 
         vm.expectEmit(true, true, true, true, address(superFormFactory));
         emit SuperFormCreated(
@@ -105,87 +118,94 @@ contract SuperFormFactoryTest is Utilities {
             vars.vault1,
             vars.expectedSuperFormId1
         );
-        uint256 superFormId = superFormFactory.createSuperForm(
+        vars.superFormId = superFormFactory.createSuperForm(
             vars.formId,
             vars.vault1
         );
 
-        assertEq(superFormId, vars.expectedSuperFormId1);
+        assertEq(vars.superFormId, vars.expectedSuperFormId1);
 
         vm.stopPrank();
 
         /// @dev test getSuperForm
-        (
-            address resVault,
-            uint256 resFormid,
-            uint16 resChainId
-        ) = _getSuperForm(vars.superFormId);
+        (vars.resVault, vars.resFormid, vars.resChainId) = _getSuperForm(
+            vars.superFormId
+        );
 
-        assertEq(resChainId, chainId);
-        assertEq(resFormid, vars.formId);
-        assertEq(resVault, vars.vault1);
+        assertEq(vars.resChainId, chainId);
+        assertEq(vars.resFormid, vars.formId);
+        assertEq(vars.resVault, vars.vault1);
 
         /// @dev add new vault
-        uint256 expectedSuperFormId2 = uint256(uint160(vars.vault2));
-        expectedSuperFormId2 |= vars.formId << 160;
-        expectedSuperFormId2 |= uint256(chainId) << 176;
+        vars.expectedSuperFormId2 = uint256(uint160(vars.vault2));
+        vars.expectedSuperFormId2 |= vars.formId << 160;
+        vars.expectedSuperFormId2 |= uint256(chainId) << 240;
         vm.expectEmit(true, true, true, true, address(superFormFactory));
-        emit SuperFormCreated(vars.formId, vars.vault2, expectedSuperFormId2);
+        emit SuperFormCreated(
+            vars.formId,
+            vars.vault2,
+            vars.expectedSuperFormId2
+        );
         superFormFactory.createSuperForm(vars.formId, vars.vault2);
 
         /// @dev test getSuperFormFromVault
-        uint256[] memory superFormIds_;
-        uint256[] memory formIds_;
-        uint16[] memory chainIds_;
-        uint256[] memory transformedChainIds_;
-        (superFormIds_, formIds_, chainIds_) = superFormFactory
+
+        (vars.superFormIds_, vars.formIds_, vars.chainIds_) = superFormFactory
             .getAllSuperFormsFromVault(vars.vault1);
 
-        for (uint256 i = 0; i < chainIds_.length; i++) {
-            transformedChainIds_[i] = uint256(chainIds_[i]);
+        vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
+
+        for (uint256 i = 0; i < vars.chainIds_.length; i++) {
+            vars.transformedChainIds_[i] = uint256(vars.chainIds_[i]);
         }
 
-        uint256[] memory expectedSuperFormIds = new uint256[](1);
-        expectedSuperFormIds[0] = vars.expectedSuperFormId1;
+        vars.expectedSuperFormIds = new uint256[](1);
+        vars.expectedSuperFormIds[0] = vars.expectedSuperFormId1;
 
-        uint256[] memory expectedFormIds = new uint256[](1);
-        expectedFormIds[0] = vars.formId;
+        vars.expectedFormIds = new uint256[](1);
+        vars.expectedFormIds[0] = vars.formId;
 
-        uint256[] memory expectedChainIds = new uint256[](1);
-        expectedChainIds[0] = chainId;
+        vars.expectedChainIds = new uint256[](1);
+        vars.expectedChainIds[0] = chainId;
 
-        assertEq(superFormIds_, expectedSuperFormIds);
-        assertEq(formIds_, expectedFormIds);
-        assertEq(transformedChainIds_, expectedChainIds);
+        assertEq(vars.superFormIds_, vars.expectedSuperFormIds);
+        assertEq(vars.formIds_, vars.expectedFormIds);
+        assertEq(vars.transformedChainIds_, vars.expectedChainIds);
 
         /// @dev test getAllSuperForms
-        address[] memory vaults_;
-        (superFormIds_, vaults_, formIds_, chainIds_) = superFormFactory
-            .getAllSuperForms();
 
-        for (uint256 i = 0; i < chainIds_.length; i++) {
-            transformedChainIds_[i] = uint256(chainIds_[i]);
+        (
+            vars.superFormIds_,
+            vars.vaults_,
+            vars.formIds_,
+            vars.chainIds_
+        ) = superFormFactory.getAllSuperForms();
+
+        vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
+
+        for (uint256 i = 0; i < vars.chainIds_.length; i++) {
+            vars.transformedChainIds_[i] = uint256(vars.chainIds_[i]);
         }
-        expectedSuperFormIds = new uint256[](2);
-        expectedSuperFormIds[0] = vars.expectedSuperFormId1;
-        expectedSuperFormIds[1] = expectedSuperFormId2;
+        vars.expectedSuperFormIds = new uint256[](2);
+        vars.expectedSuperFormIds[0] = vars.expectedSuperFormId1;
+        vars.expectedSuperFormIds[1] = vars.expectedSuperFormId2;
 
-        expectedFormIds = new uint256[](2);
-        expectedFormIds[0] = vars.formId;
-        expectedFormIds[1] = vars.formId;
+        vars.expectedFormIds = new uint256[](2);
+        vars.expectedFormIds[0] = vars.formId;
+        vars.expectedFormIds[1] = vars.formId;
 
-        expectedChainIds = new uint256[](2);
-        expectedChainIds[0] = chainId;
-        expectedChainIds[1] = chainId;
+        vars.expectedChainIds = new uint256[](2);
+        vars.expectedChainIds[0] = chainId;
+        vars.expectedChainIds[1] = chainId;
 
-        address[] memory expectedVaults = new address[](2);
-        expectedVaults[0] = vars.vault1;
-        expectedVaults[1] = vars.vault2;
+        vars.expectedVaults = new address[](2);
+        vars.expectedVaults[0] = vars.vault1;
+        vars.expectedVaults[1] = vars.vault2;
 
-        assertEq(superFormIds_, expectedSuperFormIds);
-        assertEq(vaults_, expectedVaults);
-        assertEq(formIds_, expectedFormIds);
-        assertEq(transformedChainIds_, expectedChainIds);
+        assertEq(vars.superFormIds_, vars.expectedSuperFormIds);
+        assertEq(vars.vaults_, vars.expectedVaults);
+        assertEq(vars.formIds_, vars.expectedFormIds);
+        assertEq(vars.transformedChainIds_, vars.expectedChainIds);
 
         assertEq(superFormFactory.getAllFormsList(), 1);
         assertEq(superFormFactory.getAllSuperFormsList(), 2);
