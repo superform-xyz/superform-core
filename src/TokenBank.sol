@@ -175,7 +175,7 @@ contract TokenBank is ITokenBank, AccessControl {
                     _packTxInfo(
                         uint120(TransactionType.DEPOSIT),
                         uint120(CallbackType.RETURN),
-                        true
+                        false
                     ),
                     abi.encode(
                         ReturnSingleData(

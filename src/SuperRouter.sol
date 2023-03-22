@@ -12,7 +12,6 @@ import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
-
 import "./utils/DataPacking.sol";
 
 /// @title Super Router
@@ -791,9 +790,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         if (
             returnDataDstChainId !=
-            uint16(
-                multiVaultData.superFormIds[0] >> 240 /// @dev TODO destination chain Ids are prevalidated to have same destination. Remove hardcoded and use function?
-            )
+            _getDestinationChain(multiVaultData.superFormIds[0])
         ) revert DST_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && status) {
@@ -859,9 +856,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         if (
             returnDataDstChainId !=
-            uint16(
-                singleVaultData.superFormId >> 240 /// @dev TODO destination chain Ids are prevalidated to have same destination. Remove hardcoded and use function?
-            )
+            _getDestinationChain(singleVaultData.superFormId)
         ) revert DST_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && status) {
@@ -981,13 +976,11 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function _validateSuperFormData(
         uint16 dstChainId_,
         SingleVaultSFData memory superFormData_
-    ) internal pure returns (bool) {
-        if (dstChainId_ != uint256(uint80(superFormData_.superFormId >> 176)))
+    ) internal view returns (bool) {
+        if (dstChainId_ != _getDestinationChain(superFormData_.superFormId))
             return false;
 
-        if (
-            superFormData_.maxSlippage < 0 || superFormData_.maxSlippage > 10000
-        ) return false;
+        if (superFormData_.maxSlippage > 10000) return false;
 
         /// @dev TODO validate TxData to avoid exploits
 
@@ -1012,15 +1005,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
 
         for (uint256 i = 0; i < len; i++) {
-            if (
-                dstChainId_ !=
-                uint256(uint80(superFormsData_.superFormIds[i] >> 176)) /// @dev TODO validate that this is actually being validated
-            ) return false;
-
-            if (
-                superFormsData_.maxSlippage[i] < 0 ||
-                superFormsData_.maxSlippage[i] > 10000
-            ) return false;
+            if (superFormsData_.maxSlippage[i] > 10000) return false;
 
             sumAmounts += superFormsData_.amounts[i];
 
@@ -1028,13 +1013,14 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             /// @dev TODO validate TxData to avoid exploits
         }
 
-        /// @dev if length = 1; amount = sum of superFormsData amount
+        /// @dev In multiVaults, if there is only one liqRequest, then the sum of the amounts must be equal to the amount in the liqRequest
         if (
             liqRequestsLen == 1 &&
+            (liqRequestsLen != len) &&
             superFormsData_.liqRequests[0].amount != sumAmounts
         ) {
             return false;
-            /// @dev else, length must be equal to the number of superForms sent in this request
+            /// @dev else if number of liq request >1, length must be equal to the number of superForms sent in this request
         } else if (liqRequestsLen > 1) {
             if (liqRequestsLen != len) {
                 return false;

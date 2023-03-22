@@ -38,10 +38,8 @@ struct NewActionLocalVars {
     SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
     MultiVaultsSFData[] multiSuperFormsData;
     SingleVaultSFData[] singleSuperFormsData;
-    MultiVaultsSFData multiSuperFormData;
-    SingleVaultSFData singleSuperFormData;
-    uint256 sharesBalanceBeforeWithdraw; // 0
-    uint256 amountsToWithdraw; // 0
+    UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
+    UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;
     address[] vaultMock;
     address lzEndpoint_0;
@@ -54,9 +52,18 @@ struct NewActionLocalVars {
     uint256[] maxSlippage;
 }
 
-struct VaultsAmounts {
-    uint256[] vaults;
-    uint256[] amounts;
+struct AssertVars {
+    uint256 initialFork;
+    uint256 msgValue;
+    uint256 txIdBefore;
+    uint256 payloadNumberBefore;
+    uint16 toChainId;
+    bool success;
+    MultiVaultsSFData expectedMultiVaultsData;
+    SingleVaultSFData expectedSingleVaultData;
+    InitMultiVaultData receivedMultiVaultData;
+    InitSingleVaultData receivedSingleVaultData;
+    AMBMessage data;
 }
 
 struct TestAction {
@@ -115,7 +122,7 @@ struct SetupVars {
 }
 
 /*//////////////////////////////////////////////////////////////
-                    HELPER TYPES
+                    ARGS TYPES
 //////////////////////////////////////////////////////////////*/
 
 struct SingleVaultCallDataArgs {
@@ -176,37 +183,26 @@ struct BuildWithdrawCallDataArgs {
     uint16 toChainId;
 }
 
-/*
-struct InternalActionArgs {
-    address payable fromSrc; // SuperRouter
-    address toLzEndpoint;
-    address user;
-    StateReq[] stateReqs;
-    LiqRequest[] liqReqs;
-    uint16 srcChainId;
-    uint16 toChainId;
-    Actions action;
+struct UpdateMultiVaultPayloadArgs {
+    uint256 payloadId;
+    uint256[] amounts;
+    int256 slippage;
+    uint16 targetChainId;
     TestType testType;
     bytes4 revertError;
-    bool multiTx;
+    bytes32 revertRole;
 }
 
-struct InternalActionVars {
-    uint256 initialFork;
-    uint256 msgValue;
-    uint256 txIdBefore;
-    uint256 payloadNumberBefore;
-    uint256 lenRequests;
-    Vm.Log[] logs;
-    FormData expectedFormData;
-    FormCommonData expectedFormCommonData;
-    FormXChainData expectedFormXChainData;
-    FormData receivedFormData;
-    FormCommonData receivedFormCommonData;
-    FormXChainData receivedFormXChainData;
-    StateData data;
+struct UpdateSingleVaultPayloadArgs {
+    uint256 payloadId;
+    uint256 amount;
+    int256 slippage;
+    uint16 targetChainId;
+    TestType testType;
+    bytes4 revertError;
+    bytes32 revertRole;
 }
-*/
+
 /*//////////////////////////////////////////////////////////////
                         ERRORS
 //////////////////////////////////////////////////////////////*/
