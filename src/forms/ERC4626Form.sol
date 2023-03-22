@@ -222,7 +222,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         ERC4626 v = ERC4626(vault);
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
-        /// DEVNOTE: we already assume that approve exists for v.asset() increase/decrease maybe problematic
+        /// DEVNOTE: allowance is modified inside of the ERC20.transferFrom() call
         ERC20(v.asset()).approve(vault, singleVaultData_.amount);
 
         /// DEVNOTE: This makes ERC4626Form (address(this)) owner of v.shares

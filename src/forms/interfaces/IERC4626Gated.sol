@@ -3,7 +3,11 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IERC4626Vault is IERC20 {
+interface IERC4626GatedVault is IERC20 {
+
+    /// @dev NOTE: TEMP interface for testing, we can provide whatever we need here or build other interface.
+    function isAllowed(address owner) external view returns (bool allowed);
+
     /// @notice The address of the underlying token used by the Vault for valuing, depositing, and withdrawing.
     function asset() external view returns (address assetTokenAddress);
 

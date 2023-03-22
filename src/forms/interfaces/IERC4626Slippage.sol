@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IERC4626Vault is IERC20 {
+interface IERC4626SlippageVault is IERC20 {
     /// @notice The address of the underlying token used by the Vault for valuing, depositing, and withdrawing.
     function asset() external view returns (address assetTokenAddress);
 
@@ -42,6 +42,15 @@ interface IERC4626Vault is IERC20 {
      * @notice Mint vault shares to receiver by transferring exact amount of underlying asset tokens from the caller.
      * @param assets The amount of underlying assets to be transferred to the vault.
      * @param receiver The account that the vault shares will be minted to.
+     * @param minAmount The minimum amount of vault shares that will be minted. NOTE: Can be adjusted per needs
+     * @return shares The amount of vault shares that were minted.
+     */
+    function deposit(uint256 assets, address receiver, uint256 minAmount) external returns (uint256 shares);
+
+    /**
+     * @notice Mint vault shares to receiver by transferring exact amount of underlying asset tokens from the caller.
+     * @param assets The amount of underlying assets to be transferred to the vault.
+     * @param receiver The account that the vault shares will be minted to.
      * @return shares The amount of vault shares that were minted.
      */
     function deposit(uint256 assets, address receiver) external returns (uint256 shares);
@@ -59,6 +68,15 @@ interface IERC4626Vault is IERC20 {
      * @return assets The amount of underlying assests that will be transferred from the caller.
      */
     function previewMint(uint256 shares) external view returns (uint256 assets);
+
+    /**
+     * @notice Mint exact amount of vault shares to the receiver by transferring enough underlying asset tokens from the caller.
+     * @param shares The amount of vault shares to be minted.
+     * @param receiver The account the vault shares will be minted to.
+     * @param mintAmount The min amount of shares to receive NOTE: Can be adjusted per needs
+     * @return assets The amount of underlying assets that were transferred from the caller.
+     */
+    function mint(uint256 shares, address receiver, uint256 mintAmount) external returns (uint256 assets);
 
     /**
      * @notice Mint exact amount of vault shares to the receiver by transferring enough underlying asset tokens from the caller.
