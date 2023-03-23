@@ -27,28 +27,31 @@ contract Scenario2Test is ProtocolActions {
         CHAIN_0 = FTM;
         DST_CHAINS = [POLY];
 
-        TARGET_UNDERLYING_VAULTS[POLY] = [1, 2];
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYING_VAULTS[POLY][0] = [1, 2];
 
-        AMOUNTS[POLY] = [1000, 500];
+        AMOUNTS[POLY][0] = [1000, 500];
 
-        MAX_SLIPPAGE[POLY] = [1000, 1000];
+        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
 
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
-        action = TestAction({
-            action: Actions.Deposit,
-            actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
-            multiVaults: true, /// @dev - !!WARNING turn on or off multi vaults
-            user: users[0],
-            testType: TestType.Pass,
-            revertError: "",
-            revertRole: "",
-            slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-            multiTx: false,
-            adapterParam: "",
-            msgValue: msgValue
-        });
+        actions.push(
+            TestAction({
+                action: Actions.Deposit,
+                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
+                multiVaults: true, /// @dev - !!WARNING turn on or off multi vaults
+                user: users[0],
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
+                adapterParam: "",
+                msgValue: msgValue
+            })
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -56,6 +59,6 @@ contract Scenario2Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        _run_action();
+        _run_actions();
     }
 }

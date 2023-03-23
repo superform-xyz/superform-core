@@ -101,10 +101,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcSender = _msgSender();
 
         vars.srcChainId = chainId;
+        vars.dstChainId = req.dstChainId;
+
         if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
             revert INVALID_AMB_IDS();
-
-        vars.dstChainId = req.dstChainId;
 
         /// @dev validate superFormsData
 
@@ -219,12 +219,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcSender = _msgSender();
 
         vars.srcChainId = chainId;
+        vars.dstChainId = req.dstChainId;
+
         if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
             revert INVALID_AMB_IDS();
 
         if (vars.srcChainId == vars.dstChainId) revert INVALID_CHAIN_IDS();
-
-        vars.dstChainId = req.dstChainId;
 
         /// @dev validate superFormsData
 
@@ -289,9 +289,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcSender = _msgSender();
 
         vars.srcChainId = chainId;
-        if (vars.srcChainId != vars.dstChainId) revert INVALID_CHAIN_IDS();
-
         vars.dstChainId = req.dstChainId;
+
+        if (vars.srcChainId != vars.dstChainId) revert INVALID_CHAIN_IDS();
 
         /// @dev validate superFormsData
 
@@ -351,10 +351,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcSender = _msgSender();
 
         vars.srcChainId = chainId;
+        vars.dstChainId = req.dstChainId;
+
         if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
             revert INVALID_AMB_IDS();
-
-        vars.dstChainId = req.dstChainId;
 
         /// @dev validate superFormsData
 
@@ -461,12 +461,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcSender = _msgSender();
 
         vars.srcChainId = chainId;
+        vars.dstChainId = req.dstChainId;
+
         if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
             revert INVALID_AMB_IDS();
 
         if (vars.srcChainId == vars.dstChainId) revert INVALID_CHAIN_IDS();
-
-        vars.dstChainId = req.dstChainId;
 
         /// @dev validate superFormsData
 
@@ -486,7 +486,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         /// @dev write amb message
         vars.ambMessage = AMBMessage(
             _packTxInfo(
-                uint120(TransactionType.DEPOSIT),
+                uint120(TransactionType.WITHDRAW),
                 uint120(CallbackType.INIT),
                 false
             ),
@@ -527,9 +527,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcSender = _msgSender();
 
         vars.srcChainId = chainId;
-        if (vars.srcChainId != vars.dstChainId) revert INVALID_CHAIN_IDS();
-
         vars.dstChainId = req.dstChainId;
+
+        if (vars.srcChainId != vars.dstChainId) revert INVALID_CHAIN_IDS();
 
         /// @dev validate superFormsData
 
