@@ -1,5 +1,5 @@
 AttackTest:test_attack_contract_same_address() (gas: 4582)
-BaseProtocolTest:test_actions() (gas: 3726652)
+BaseProtocolTest:test_actions() (gas: 36986379)
 SuperFormFactoryTest:test_addForm() (gas: 3587900)
 SuperFormFactoryTest:test_chainId() (gas: 7707)
 SuperFormFactoryTest:test_createSuperForm() (gas: 3825533)

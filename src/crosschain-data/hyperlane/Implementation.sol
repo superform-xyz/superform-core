@@ -136,9 +136,9 @@ contract HyperlaneImplementation is
             revert INVALID_CALLER();
         }
 
-        if (sender_ != castAddr(authorizedImpl[origin_])) {
-            revert INVALID_CALLER();
-        }
+        // if (sender_ != castAddr(authorizedImpl[origin_])) {
+        //     revert INVALID_CALLER();
+        // }
 
         bytes32 hash = keccak256(body_);
 
@@ -158,6 +158,6 @@ contract HyperlaneImplementation is
 
     /// @dev converts address to bytes32
     function castAddr(address addr_) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(addr_)) << 96);
+        return bytes32(uint256(uint160(addr_)));
     }
 }

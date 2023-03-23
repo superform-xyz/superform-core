@@ -306,7 +306,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         }
 
         vars.secAmb = new uint8[](1);
-        vars.secAmb[0] = 1;
+        vars.secAmb[0] = 2;
 
         /// Note Step-4: Send Data to Source to issue superform positions.
         stateRegistry.dispatchPayload{value: msg.value}(

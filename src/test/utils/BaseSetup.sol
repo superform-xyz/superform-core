@@ -313,6 +313,14 @@ abstract contract BaseSetup is DSTest, Test {
                             vars.logs
                         );
 
+                    HyperlaneHelper(
+                        getContract(action.CHAIN_1, "HyperlaneHelper")
+                    ).help(
+                            address(HyperlaneMailbox),
+                            FORKS[action.CHAIN_0],
+                            vars.logs
+                        );
+
                     unchecked {
                         PAYLOAD_ID[action.CHAIN_0]++;
                     }
@@ -882,7 +890,7 @@ abstract contract BaseSetup is DSTest, Test {
                     );
 
                 HyperlaneHelper(getContract(args.srcChainId, "HyperlaneHelper"))
-                    .helpWithEstimates(
+                    .help(
                         address(HyperlaneMailbox),
                         FORKS[args.toChainId],
                         vars.logs
@@ -891,7 +899,6 @@ abstract contract BaseSetup is DSTest, Test {
                 vm.selectFork(FORKS[args.toChainId]);
 
                 vars.payloadNumberBefore = stateRegistry.payloadsCount();
-
                 console.log(stateRegistry.proofCount());
 
                 /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
