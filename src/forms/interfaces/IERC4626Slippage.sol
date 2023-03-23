@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IERC4626SlippageVault is IERC20 {
+interface IERC4626Slippage is IERC20 {
     /// @notice The address of the underlying token used by the Vault for valuing, depositing, and withdrawing.
     function asset() external view returns (address assetTokenAddress);
 
