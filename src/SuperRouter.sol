@@ -78,7 +78,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function multiDstMultiVaultDeposit(
         MultiDstMultiVaultsStateReq calldata req
     ) external payable override {
-        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
+        uint256 nDestinations = req.dstChainIds.length;
+        for (uint256 i = 0; i < nDestinations; i++) {
             singleDstMultiVaultDeposit(
                 SingleDstMultiVaultsStateReq(
                     req.primaryAmbId,
@@ -86,7 +87,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                     req.dstChainIds[i],
                     req.superFormsData[i],
                     req.adapterParam,
-                    req.msgValue
+                    req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
                 )
             );
         }
@@ -181,18 +182,18 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function multiDstSingleVaultDeposit(
         MultiDstSingleVaultStateReq calldata req
     ) external payable {
-        uint16 srcChainId = chainId;
         uint16 dstChainId;
+        uint256 nDestinations = req.dstChainIds.length;
 
-        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
+        for (uint256 i = 0; i < nDestinations; i++) {
             dstChainId = req.dstChainIds[i];
-            if (srcChainId == dstChainId) {
+            if (chainId == dstChainId) {
                 singleDirectSingleVaultDeposit(
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
                         req.superFormsData[i],
                         req.adapterParam,
-                        req.msgValue
+                        req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
                     )
                 );
             } else {
@@ -203,7 +204,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                         dstChainId,
                         req.superFormsData[i],
                         req.adapterParam,
-                        req.msgValue
+                        req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
                     )
                 );
             }
@@ -327,6 +328,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function multiDstMultiVaultWithdraw(
         MultiDstMultiVaultsStateReq calldata req
     ) external payable {
+        uint256 nDestinations = req.dstChainIds.length;
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             singleDstMultiVaultWithdraw(
                 SingleDstMultiVaultsStateReq(
@@ -335,7 +337,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                     req.dstChainIds[i],
                     req.superFormsData[i],
                     req.adapterParam,
-                    req.msgValue
+                    req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
                 )
             );
         }
@@ -422,18 +424,18 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function multiDstSingleVaultWithdraw(
         MultiDstSingleVaultStateReq calldata req
     ) external payable {
-        uint16 srcChainId = chainId;
         uint16 dstChainId;
+        uint256 nDestinations = req.dstChainIds.length;
 
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             dstChainId = req.dstChainIds[i];
-            if (srcChainId == dstChainId) {
+            if (chainId == dstChainId) {
                 singleDirectSingleVaultWithdraw(
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
                         req.superFormsData[i],
                         req.adapterParam,
-                        req.msgValue
+                        req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
                     )
                 );
             } else {
@@ -444,7 +446,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                         dstChainId,
                         req.superFormsData[i],
                         req.adapterParam,
-                        req.msgValue
+                        req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
                     )
                 );
             }

@@ -274,7 +274,9 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev this will probably need to loop given the number of destinations
 
                     vars.logs = vm.getRecordedLogs();
+
                     /// @dev see pigeon for this implementation
+                    /// @dev PIGEON DOES NOT WORK FOR MULTI DESTINATION (IT NEEDS AN ARRAY OF LZ ENDPOINTS!!!!)
                     LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
                         .helpWithEstimates(
                             vars.lzEndpoints_1[i],
@@ -359,9 +361,9 @@ abstract contract ProtocolActions is BaseSetup {
                         action.revertError,
                         action.revertRole
                     );
-
-                    if (action.testType == TestType.Pass) {
-                        /*
+                    if (action.action == Actions.Deposit) {
+                        if (action.testType == TestType.Pass) {
+                            /*
                         if (action.multiTx) {
                             _processMultiTx(
                                 aV.toChainId,
@@ -371,73 +373,85 @@ abstract contract ProtocolActions is BaseSetup {
                         }
                         */
 
-                        if (action.multiVaults) {
-                            _updateMultiVaultPayload(
-                                vars.multiVaultsPayloadArg
+                            if (action.multiVaults) {
+                                _updateMultiVaultPayload(
+                                    vars.multiVaultsPayloadArg
+                                );
+                            } else if (vars.singleSuperFormsData.length > 0) {
+                                _updateSingleVaultPayload(
+                                    vars.singleVaultsPayloadArg
+                                );
+                            }
+
+                            vm.recordLogs();
+                            _processPayload(
+                                PAYLOAD_ID[aV.toChainId],
+                                aV.toChainId,
+                                action.testType,
+                                action.revertError
                             );
-                        } else if (vars.singleSuperFormsData.length > 0) {
-                            _updateSingleVaultPayload(
-                                vars.singleVaultsPayloadArg
+
+                            vars.logs = vm.getRecordedLogs();
+
+                            LayerZeroHelper(
+                                getContract(aV.toChainId, "LayerZeroHelper")
+                            ).helpWithEstimates(
+                                    vars.lzEndpoint_0,
+                                    1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                                    FORKS[CHAIN_0],
+                                    vars.logs
+                                );
+                            unchecked {
+                                PAYLOAD_ID[CHAIN_0]++;
+                            }
+
+                            _processPayload(
+                                PAYLOAD_ID[CHAIN_0],
+                                CHAIN_0,
+                                action.testType,
+                                action.revertError
                             );
+                        } else if (
+                            action.testType == TestType.RevertProcessPayload
+                        ) {
+                            aV.success = _processPayload(
+                                PAYLOAD_ID[aV.toChainId],
+                                aV.toChainId,
+                                action.testType,
+                                action.revertError
+                            );
+                            if (!aV.success) {
+                                return false;
+                            }
+                        } else if (
+                            action.testType ==
+                            TestType.RevertUpdateStateSlippage ||
+                            action.testType == TestType.RevertUpdateStateRBAC
+                        ) {
+                            if (action.multiVaults) {
+                                aV.success = _updateMultiVaultPayload(
+                                    vars.multiVaultsPayloadArg
+                                );
+                            } else {
+                                aV.success = _updateSingleVaultPayload(
+                                    vars.singleVaultsPayloadArg
+                                );
+                            }
+
+                            if (!aV.success) {
+                                return false;
+                            }
                         }
-
-                        vm.recordLogs();
-                        _processPayload(
-                            PAYLOAD_ID[aV.toChainId],
-                            aV.toChainId,
-                            action.testType,
-                            action.revertError
-                        );
-
-                        vars.logs = vm.getRecordedLogs();
-
-                        LayerZeroHelper(
-                            getContract(aV.toChainId, "LayerZeroHelper")
-                        ).helpWithEstimates(
-                                vars.lzEndpoint_0,
-                                1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                                FORKS[CHAIN_0],
-                                vars.logs
-                            );
+                    } else {
                         unchecked {
-                            PAYLOAD_ID[CHAIN_0]++;
+                            PAYLOAD_ID[aV.toChainId]++;
                         }
-
                         _processPayload(
-                            PAYLOAD_ID[CHAIN_0],
-                            CHAIN_0,
-                            action.testType,
-                            action.revertError
-                        );
-                    } else if (
-                        action.testType == TestType.RevertProcessPayload
-                    ) {
-                        aV.success = _processPayload(
                             PAYLOAD_ID[aV.toChainId],
                             aV.toChainId,
                             action.testType,
                             action.revertError
                         );
-                        if (!aV.success) {
-                            return false;
-                        }
-                    } else if (
-                        action.testType == TestType.RevertUpdateStateSlippage ||
-                        action.testType == TestType.RevertUpdateStateRBAC
-                    ) {
-                        if (action.multiVaults) {
-                            aV.success = _updateMultiVaultPayload(
-                                vars.multiVaultsPayloadArg
-                            );
-                        } else {
-                            aV.success = _updateSingleVaultPayload(
-                                vars.singleVaultsPayloadArg
-                            );
-                        }
-
-                        if (!aV.success) {
-                            return false;
-                        }
                     }
                 }
                 vm.selectFork(aV.initialFork);

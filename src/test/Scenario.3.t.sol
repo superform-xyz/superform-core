@@ -18,7 +18,7 @@ contract Scenario3Test is ProtocolActions {
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationMultiVault Deposit test case
+        /// @dev MultiDestinationMultiVault Deposit test case
 
         primaryAMB = 1;
 
