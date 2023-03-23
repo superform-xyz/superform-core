@@ -308,16 +308,7 @@ abstract contract BaseSetup is DSTest, Test {
                         getContract(action.CHAIN_1, "LayerZeroHelper")
                     ).helpWithEstimates(
                             vars.lzEndpoint_0,
-                            1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                            FORKS[action.CHAIN_0],
-                            vars.logs
-                        );
-
-                    vars.logs = vm.getRecordedLogs();
-                    HyperlaneHelper(
-                        getContract(action.CHAIN_1, "HyperlaneHelper")
-                    ).helpWithEstimates(
-                            address(HyperlaneMailbox),
+                            2000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
                             FORKS[action.CHAIN_0],
                             vars.logs
                         );
@@ -802,7 +793,7 @@ abstract contract BaseSetup is DSTest, Test {
                         );
                     LayerzeroImplementation(payable(vars.srcLzImplementation))
                         .setChainId(vars.dstChainId, vars.dstAmbChainId);
-                    
+
                     HyperlaneImplementation(
                         payable(vars.srcHyperlaneImplementation)
                     ).setReceiver(
@@ -810,8 +801,9 @@ abstract contract BaseSetup is DSTest, Test {
                             vars.dstHyperlaneImplementation
                         );
 
-                    HyperlaneImplementation(payable(vars.srcHyperlaneImplementation))
-                        .setChainId(vars.dstChainId, vars.dstHypChainId);
+                    HyperlaneImplementation(
+                        payable(vars.srcHyperlaneImplementation)
+                    ).setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
 
@@ -884,14 +876,13 @@ abstract contract BaseSetup is DSTest, Test {
                 LayerZeroHelper(getContract(args.srcChainId, "LayerZeroHelper"))
                     .helpWithEstimates(
                         args.toLzEndpoint,
-                        1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                        2000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
                         FORKS[args.toChainId],
                         vars.logs
                     );
 
-                vars.logs = vm.getRecordedLogs();
                 HyperlaneHelper(getContract(args.srcChainId, "HyperlaneHelper"))
-                    .help(
+                    .helpWithEstimates(
                         address(HyperlaneMailbox),
                         FORKS[args.toChainId],
                         vars.logs
@@ -900,6 +891,8 @@ abstract contract BaseSetup is DSTest, Test {
                 vm.selectFork(FORKS[args.toChainId]);
 
                 vars.payloadNumberBefore = stateRegistry.payloadsCount();
+
+                console.log(stateRegistry.proofCount());
 
                 /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
                 for (uint256 i = 0; i < vars.lenRequests; i++) {

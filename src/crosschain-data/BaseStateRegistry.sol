@@ -133,7 +133,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         override
         onlyRole(IMPLEMENTATION_CONTRACTS_ROLE)
     {   
-        ++proofCount;
         if(message_.length == 32) {
             ++proofCount;
             /// assuming 32 bytes length is always proof 
