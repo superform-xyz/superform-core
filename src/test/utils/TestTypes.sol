@@ -29,43 +29,55 @@ enum TestType {
     RevertUpdateStateRBAC
 }
 
-struct ActionLocalVars {
+struct NewActionLocalVars {
     Vm.Log[] logs;
-    StateReq[] stateReqs;
-    LiqRequest[] liqReqs;
-    StateReq stateReq;
-    LiqRequest liqReq;
-    MockERC20[][] TARGET_VAULTS;
-    uint256 sharesBalanceBeforeWithdraw; // 0
-    uint256 amountsToWithdraw; // 0
-    address[][] vaultMock;
+    MultiDstMultiVaultsStateReq multiDstMultiVaultStateReq;
+    MultiDstSingleVaultStateReq multiDstSingleVaultStateReq;
+    SingleDstMultiVaultsStateReq singleDstMultiVaultStateReq;
+    SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;
+    SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
+    MultiVaultsSFData[] multiSuperFormsData;
+    SingleVaultSFData[] singleSuperFormsData;
+    UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
+    UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
+    uint256 nDestinations;
+    address[] vaultMock;
     address lzEndpoint_0;
-    address lzEndpoint_1;
-    address[][] underlyingSrcToken;
+    address[] lzEndpoints_1;
+    address[] underlyingSrcToken;
     address payable fromSrc;
-    address payable toDst;
-    uint256[][] targetSuperFormIds;
-    uint256[][] amounts;
+    address[] toDst;
+    uint256[] targetSuperFormIds;
+    uint256[] amounts;
+    uint256[] maxSlippage;
 }
 
-struct VaultsAmounts {
-    uint256[] vaults;
-    uint256[] amounts;
+struct AssertVars {
+    uint256 initialFork;
+    uint256 msgValue;
+    uint256 txIdBefore;
+    uint256 payloadNumberBefore;
+    uint16 toChainId;
+    bool success;
+    MultiVaultsSFData expectedMultiVaultsData;
+    SingleVaultSFData expectedSingleVaultData;
+    InitMultiVaultData receivedMultiVaultData;
+    InitSingleVaultData receivedSingleVaultData;
+    AMBMessage data;
 }
 
 struct TestAction {
     Actions action;
-    uint16 actionType;
     LiquidityChange actionKind;
-    uint80 CHAIN_0;
-    uint80 CHAIN_1;
+    bool multiVaults;
     address user;
     TestType testType;
     bytes4 revertError;
     bytes32 revertRole; // temporary until errors are added to RBAC libraries
-    uint256 maxSlippage;
     int256 slippage;
     bool multiTx;
+    bytes adapterParam;
+    uint256 msgValue;
 }
 
 struct TestAssertionVars {
@@ -82,10 +94,10 @@ struct TestAssertionVars {
 //////////////////////////////////////////////////////////////*/
 
 struct SetupVars {
-    uint80[2] chainIds;
+    uint16[2] chainIds;
     address[2] lzEndpoints;
-    uint80 chainId;
-    uint80 dstChainId;
+    uint16 chainId;
+    uint16 dstChainId;
     uint16 dstAmbChainId;
     uint256 fork;
     address factory;
@@ -110,8 +122,39 @@ struct SetupVars {
 }
 
 /*//////////////////////////////////////////////////////////////
-                    HELPER TYPES
+                    ARGS TYPES
 //////////////////////////////////////////////////////////////*/
+
+struct SingleVaultCallDataArgs {
+    address user;
+    address fromSrc;
+    address toDst;
+    address underlyingToken;
+    uint256 superFormId;
+    uint256 amount;
+    uint256 maxSlippage;
+    address vaultMock;
+    uint16 srcChainId;
+    uint16 toChainId;
+    bool multiTx;
+    LiquidityChange actionKind;
+}
+
+struct MultiVaultCallDataArgs {
+    address user;
+    address fromSrc;
+    address toDst;
+    address[] underlyingTokens;
+    uint256[] superFormIds;
+    uint256[] amounts;
+    uint256[] maxSlippage;
+    address[] vaultMock;
+    uint16 srcChainId;
+    uint16 toChainId;
+    bool multiTx;
+    LiquidityChange actionKind;
+    Actions action;
+}
 
 struct BuildDepositCallDataArgs {
     address user;
@@ -121,8 +164,8 @@ struct BuildDepositCallDataArgs {
     uint256[] targetSuperFormIds;
     uint256[] amounts;
     uint256 maxSlippage;
-    uint80 srcChainId;
-    uint80 toChainId;
+    uint16 srcChainId;
+    uint16 toChainId;
     bool multiTx;
 }
 
@@ -136,38 +179,28 @@ struct BuildWithdrawCallDataArgs {
     uint256[] amounts;
     uint256 maxSlippage;
     LiquidityChange actionKind;
-    uint80 srcChainId;
-    uint80 toChainId;
+    uint16 srcChainId;
+    uint16 toChainId;
 }
 
-struct InternalActionArgs {
-    address payable fromSrc; // SuperRouter
-    address toLzEndpoint;
-    address user;
-    StateReq[] stateReqs;
-    LiqRequest[] liqReqs;
-    uint80 srcChainId;
-    uint80 toChainId;
-    Actions action;
+struct UpdateMultiVaultPayloadArgs {
+    uint256 payloadId;
+    uint256[] amounts;
+    int256 slippage;
+    uint16 targetChainId;
     TestType testType;
     bytes4 revertError;
-    bool multiTx;
+    bytes32 revertRole;
 }
 
-struct InternalActionVars {
-    uint256 initialFork;
-    uint256 msgValue;
-    uint256 txIdBefore;
-    uint256 payloadNumberBefore;
-    uint256 lenRequests;
-    Vm.Log[] logs;
-    FormData expectedFormData;
-    FormCommonData expectedFormCommonData;
-    FormXChainData expectedFormXChainData;
-    FormData receivedFormData;
-    FormCommonData receivedFormCommonData;
-    FormXChainData receivedFormXChainData;
-    StateData data;
+struct UpdateSingleVaultPayloadArgs {
+    uint256 payloadId;
+    uint256 amount;
+    int256 slippage;
+    uint16 targetChainId;
+    TestType testType;
+    bytes4 revertError;
+    bytes32 revertRole;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -182,3 +215,4 @@ error LEN_VAULTS_ZERO();
 error MISMATCH_TEST_TYPE();
 error MISMATCH_RBAC_TEST();
 error WRONG_UNDERLYING_ID();
+error INVALID_AMOUNTS_LENGTH();

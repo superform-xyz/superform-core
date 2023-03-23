@@ -4,6 +4,7 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
+import "./utils/DataPacking.sol";
 
 /// @title SuperForms Factory
 /// @dev A secure, and easily queryable central point of access for all SuperForms on any given chain,
@@ -12,10 +13,10 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
-    uint256 constant MAX_FORM_ID = 2 ** 16 - 1;
+    uint256 constant MAX_FORM_ID = 2 ** 80 - 1;
 
     /// @dev chainId represents the superform chain id.
-    uint80 public chainId;
+    uint16 public chainId;
 
     address[] public forms;
 
@@ -34,7 +35,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
     /// @dev sets caller as the admin of the contract.
     /// @param chainId_ the superform? chain id this factory is deployed on
-    constructor(uint80 chainId_) {
+    constructor(uint16 chainId_) {
         chainId = chainId_;
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
@@ -95,7 +96,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
         superFormId_ = uint256(uint160(vault_));
         superFormId_ |= formId_ << 160;
-        superFormId_ |= uint256(chainId) << 176;
+        superFormId_ |= uint256(chainId) << 240;
 
         if (superFormToVault[superFormId_] != address(0))
             revert SUPERFORM_ALREADY_EXISTS();
@@ -117,53 +118,6 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         /// 4. SuperFormFactory could be given CORE_CONTRACTS_ROLE to achieve the above
 
         emit SuperFormCreated(formId_, vault_, superFormId_);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                         Public Pure Functions
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev returns the vault-form-chain pair of a superform
-    /// @param superFormId_ is the id of the superform
-    /// @return vault_ is the address of the vault
-    /// @return formId_ is the form id
-    /// @return chainId_ is the chain id
-    function getSuperForm(
-        uint256 superFormId_
-    )
-        public
-        pure
-        override
-        returns (address vault_, uint256 formId_, uint256 chainId_)
-    {
-        vault_ = address(uint160(superFormId_));
-        formId_ = uint256(uint16(superFormId_ >> 160));
-        chainId_ = uint256(uint80(superFormId_ >> 176));
-    }
-
-    /// @dev returns the vault-form-chain pair of an array of superforms
-    /// @param superFormIds_  array of superforms
-    /// @return vaults_ are the address of the vaults
-    /// @return formIds_ are the form ids
-    /// @return chainIds_ are the chain ids
-    function getSuperForms(
-        uint256[] memory superFormIds_
-    )
-        public
-        pure
-        override
-        returns (address[] memory, uint256[] memory, uint256[] memory)
-    {
-        address[] memory vaults_ = new address[](superFormIds_.length);
-        uint256[] memory formIds_ = new uint256[](superFormIds_.length);
-        uint256[] memory chainIds_ = new uint256[](superFormIds_.length);
-        for (uint256 i = 0; i < superFormIds_.length; i++) {
-            (vaults_[i], formIds_[i], chainIds_[i]) = getSuperForm(
-                superFormIds_[i]
-            );
-        }
-
-        return (vaults_, formIds_, chainIds_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -193,16 +147,16 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         returns (
             uint256[] memory superFormIds_,
             uint256[] memory formIds_,
-            uint256[] memory chainIds_
+            uint16[] memory chainIds_
         )
     {
         superFormIds_ = vaultToSuperForms[vault_];
         uint256 len = superFormIds_.length;
         formIds_ = new uint256[](len);
-        chainIds_ = new uint256[](len);
+        chainIds_ = new uint16[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (, formIds_[i], chainIds_[i]) = getSuperForm(superFormIds_[i]);
+            (, formIds_[i], chainIds_[i]) = _getSuperForm(superFormIds_[i]);
         }
     }
 
@@ -219,17 +173,17 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
             uint256[] memory superFormIds_,
             address[] memory vaults_,
             uint256[] memory formIds_,
-            uint256[] memory chainIds_
+            uint16[] memory chainIds_
         )
     {
         superFormIds_ = superForms;
         uint256 len = superFormIds_.length;
         vaults_ = new address[](len);
         formIds_ = new uint256[](len);
-        chainIds_ = new uint256[](len);
+        chainIds_ = new uint16[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (vaults_[i], formIds_[i], chainIds_[i]) = getSuperForm(
+            (vaults_[i], formIds_[i], chainIds_[i]) = _getSuperForm(
                 superFormIds_[i]
             );
         }
@@ -262,9 +216,9 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         uint256[] memory superFormIds_ = superForms;
         uint256 len = superFormIds_.length;
 
-        uint256 chainIdRes;
+        uint16 chainIdRes;
         for (uint256 i = 0; i < len; i++) {
-            (, , chainIdRes) = getSuperForm(superFormIds_[i]);
+            (, , chainIdRes) = _getSuperForm(superFormIds_[i]);
             if (chainIdRes == chainId) {
                 unchecked {
                     ++superForms_;

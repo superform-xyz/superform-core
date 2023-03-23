@@ -5,9 +5,8 @@ import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {StateData, FormData, FormCommonData, FormXChainData, XChainActionArgs} from "./types/DataTypes.sol";
+import {InitSingleVaultData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
-import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 
@@ -34,17 +33,11 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
 
     /// @notice state variable are all declared public to avoid creating functions to expose.
 
-    /// @dev stateRegistry points to the state registry interface deployed in the respective chain.
-    IStateRegistry public stateRegistry;
-
     /// @dev The superFormFactory address is used to create new SuperForms
     ISuperFormFactory public immutable superFormFactory;
 
-    /// @dev safeGasParam is used while sending layerzero message from destination to router.
-    bytes public safeGasParam;
-
     /// @dev chainId represents the superform chain id of the specific chain.
-    uint80 public chainId;
+    uint16 public chainId;
 
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 => address) public bridgeAddress;
@@ -54,16 +47,11 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @param chainId_              Layerzero chain id
-    /// @param stateRegistry_         State Registry address deployed
+    /// @param superFormFactory_         ISuperFormFactory address deployed
     /// @dev sets caller as the admin of the contract.
     /// @dev FIXME: missing means for admin to change implementations
-    constructor(
-        uint80 chainId_,
-        IStateRegistry stateRegistry_,
-        ISuperFormFactory superFormFactory_
-    ) {
+    constructor(uint16 chainId_, ISuperFormFactory superFormFactory_) {
         chainId = chainId_;
-        stateRegistry = stateRegistry_;
         superFormFactory = superFormFactory_;
         /// TODO: add tokenBank also for superRouter role for deposit and withdraw
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -73,90 +61,6 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
     receive() external payable {}
-
-    // function depositSync(
-    //     bytes memory payload_
-    // ) external payable virtual override onlyRole(STATE_REGISTRY_ROLE) {
-    //     StateData memory stateData = abi.decode(payload_, (StateData));
-    //     FormData memory data = abi.decode(stateData.params, (FormData));
-    //     FormCommonData memory commonData = abi.decode(
-    //         data.commonData,
-    //         (FormCommonData)
-    //     );
-
-    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
-    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
-    //             commonData.superFormIds[i]
-    //         );
-    //         address form = superFormFactory.getForm(formId_);
-    //         if (stateData.txType == TransactionType.DEPOSIT) {
-    //             ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
-    //             if (
-    //                 underlying.balanceOf(address(this)) >= commonData.amounts[i]
-    //             ) {
-
-    //                 directDepositToVault(stateData.params);
-    //             } else {
-    //                 revert BRIDGE_TOKENS_PENDING();
-    //             }
-    //         }
-    //     }
-    // }
-
-    // function withdrawSync(
-    //     bytes memory payload_
-    // ) external payable virtual override onlyRole(STATE_REGISTRY_ROLE) {
-    //     StateData memory stateData = abi.decode(payload_, (StateData));
-    //     FormData memory data = abi.decode(stateData.params, (FormData));
-    //     FormCommonData memory commonData = abi.decode(
-    //         data.commonData,
-    //         (FormCommonData)
-    //     );
-
-    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
-    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
-    //             commonData.superFormIds[i]
-    //         );
-    //         address form = superFormFactory.getForm(formId_);
-    //         if (stateData.txType == TransactionType.WITHDRAW) {
-    //             directWithdrawFromVault(stateData.params);
-    //         }
-    //     }
-    // }
-
-    // function stateSync(
-    //     bytes memory payload_
-    // ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
-    //     StateData memory stateData = abi.decode(payload_, (StateData));
-    //     FormData memory data = abi.decode(stateData.params, (FormData));
-    //     /// @dev This has address srcSender;
-    //     FormCommonData memory commonData = abi.decode(
-    //         data.commonData,
-    //         (FormCommonData)
-    //     );
-
-    //     for (uint256 i = 0; i < commonData.superFormIds.length; i++) {
-    //         (address vault_, uint256 formId_, ) = superFormFactory.getSuperForm(
-    //             commonData.superFormIds[i]
-    //         );
-    //         address form = superFormFactory.getForm(formId_);
-    //         if (stateData.txType == TransactionType.DEPOSIT) {
-    //             ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
-    //             if (
-    //                 /// @dev TODO: generalise a way to check for balance for all types of formIds, for now works for ERC4626 and ERC20's
-    //                 underlying.balanceOf(address(this)) >= commonData.amounts[i]
-    //             ) {
-    //                 /// @dev this means it currently only supports single vault deposit as we are checking for balance of the first vault
-    //                 /// @dev TODO: we have to optimize this flow for multi-vault deposits that would need changes to baseForms and how they handle deposits/withdraws in loop.
-    //                 xChainDepositIntoVault(stateData.params);
-    //             } else {
-    //                 revert BRIDGE_TOKENS_PENDING();
-    //             }
-    //         } else {
-    //             xChainWithdrawFromVault(stateData.params);
-    //         }
-    //     }
-    // }
 
     function supportsInterface(
         bytes4 interfaceId
@@ -173,19 +77,6 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     }
 
     /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev adds the gas overrides for layerzero.
-    /// @param param_    represents adapterParams V2.0 of layerzero
-    function updateSafeGasParam(
-        bytes memory param_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(param_.length != 0, "Destination: Invalid Gas Override");
-        bytes memory oldParam = safeGasParam;
-        safeGasParam = param_;
-
-        emit SafeGasParamUpdated(oldParam, param_);
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @param bridgeId_         represents the bridge unqiue identifier.
     /// @param bridgeAddress_    represents the bridge address.
@@ -196,7 +87,7 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         for (uint256 i = 0; i < bridgeId_.length; i++) {
             address x = bridgeAddress_[i];
             uint8 y = bridgeId_[i];
-            require(x != address(0), "Router: Zero Bridge Address");
+            if (x == address(0)) revert ZERO_BRIDGE_ADDRESS();
 
             bridgeAddress[y] = x;
             emit SetBridgeAddress(y, x);
@@ -206,101 +97,69 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
-    /// @param formData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmounts  The amount of tokens deposited in same chain action
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @return dstAmount  The amount of tokens deposited in same chain action
     /// @dev NOTE: Should this function return?
     function directDepositIntoVault(
-        bytes calldata formData_
+        InitSingleVaultData memory singleVaultData_
     )
         external
         payable
         override
         onlyRole(SUPER_ROUTER_ROLE)
-        returns (uint256[] memory dstAmounts)
+        returns (uint256 dstAmount)
     {
-        dstAmounts = _directDepositIntoVault(formData_);
+        dstAmount = _directDepositIntoVault(singleVaultData_);
     }
 
-    /// NOTE: Why do we need it? This Form is already on xChain, sameChain deposit happens on SuperRouter?
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
-    /// @param formData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmounts  The amount of tokens deposited in same chain action
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @return dstAmount  The amount of tokens deposited in same chain action
     /// @dev NOTE: Should this function return?
     function xChainDepositIntoVault(
-        bytes calldata formData_
+        InitSingleVaultData memory singleVaultData_
     )
         external
-        payable
         virtual
         override
         onlyRole(TOKEN_BANK_ROLE)
-        returns (uint256[] memory dstAmounts)
+        returns (uint256 dstAmount)
     {
-        FormData memory data = abi.decode(formData_, (FormData));
-
-        /// @dev NOTE: not returning anything
-        _xChainDepositIntoVault(
-            XChainActionArgs(
-                data.srcChainId,
-                data.dstChainId,
-                data.commonData,
-                data.xChainData,
-                data.extraFormData
-            )
-        );
+        dstAmount = _xChainDepositIntoVault(singleVaultData_);
     }
 
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
-    /// @param formData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmounts  The amount of tokens withdrawn in same chain action
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @return dstAmount  The amount of tokens withdrawn in same chain action
     function directWithdrawFromVault(
-        bytes calldata formData_
+        InitSingleVaultData memory singleVaultData_
     )
         external
-        payable
         override
         onlyRole(SUPER_ROUTER_ROLE)
-        returns (uint256[] memory dstAmounts)
+        returns (uint256 dstAmount)
     {
-        dstAmounts = _directWithdrawFromVault(formData_);
+        dstAmount = _directWithdrawFromVault(singleVaultData_);
     }
 
-    /// NOTE: Why do we need it? This Form is already on xChain, sameChain withdraw happens on SuperRouter?
-    /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
-    /// @param formData_  A bytes representation containing all the data required to make a form action
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @return dstAmounts  The amount of tokens withdrawn in same chain action
     function xChainWithdrawFromVault(
-        bytes memory formData_
+        InitSingleVaultData memory singleVaultData_
     )
         external
-        payable
         override
         onlyRole(TOKEN_BANK_ROLE)
         returns (uint256[] memory dstAmounts)
     {
-        /// @dev TODO: Fix remove loops
-
-        FormData memory data = abi.decode(formData_, (FormData));
-
-        /// @dev Validation
-        if (data.srcChainId == chainId) revert INVALID_CHAIN_ID();
-
-        /// @dev NOTE: not returning anything YET
-        _xChainWithdrawFromVault(
-            XChainActionArgs(
-                data.srcChainId,
-                data.dstChainId,
-                data.commonData,
-                data.xChainData,
-                data.extraFormData
-            )
-        );
+        /// @dev FIXME: not returning anything YET
+        _xChainWithdrawFromVault(singleVaultData_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -399,22 +258,22 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
 
     /// @dev Deposits underlying tokens into a vault
     function _directDepositIntoVault(
-        bytes calldata formData_
-    ) internal virtual returns (uint256[] memory dstAmounts);
+        InitSingleVaultData memory singleVaultData_
+    ) internal virtual returns (uint256 dstAmount);
 
     /// @dev Withdraws underlying tokens from a vault
     function _directWithdrawFromVault(
-        bytes calldata formData_
-    ) internal virtual returns (uint256[] memory dstAmounts);
+        InitSingleVaultData memory singleVaultData_
+    ) internal virtual returns (uint256 dstAmount);
 
     /// @dev Deposits underlying tokens into a vault
     function _xChainDepositIntoVault(
-        XChainActionArgs memory args_
-    ) internal virtual;
+        InitSingleVaultData memory singleVaultData_
+    ) internal virtual returns (uint256 dstAmount);
 
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
-        XChainActionArgs memory args_
+        InitSingleVaultData memory singleVaultData_
     ) internal virtual;
 
     /*///////////////////////////////////////////////////////////////

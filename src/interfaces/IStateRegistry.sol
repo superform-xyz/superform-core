@@ -68,24 +68,33 @@ interface IStateRegistry {
     /// NOTE: dstChainId maps with the message amb's propreitory chain Id.
     function dispatchPayload(
         uint8 ambId_,
-        uint80 dstChainId_,
+        uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable;
 
     /// @dev allows state registry to receive messages from amb implementations.
-    /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
     /// @param srcChainId_ is the internal chainId from which the data is sent.
     /// @param message_ is the crosschain data received.
-    function receivePayload(uint80 srcChainId_, bytes memory message_) external;
+    /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
+    function receivePayload(uint16 srcChainId_, bytes memory message_) external;
 
     /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(
+    function updateMultiVaultPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
+    ) external;
+
+    /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
+    /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
+    /// @param finalAmount_ is the amount to be updated.
+    /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
+    function updateSingleVaultPayload(
+        uint256 payloadId_,
+        uint256 finalAmount_
     ) external;
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.

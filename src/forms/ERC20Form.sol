@@ -10,10 +10,9 @@ import {BaseForm} from "../BaseForm.sol";
 /// @notice Abstract implementation of Form for protocols using ERC20 vault shares.
 abstract contract ERC20Form is BaseForm {
     constructor(
-        uint80 chainId_,
-        IStateRegistry stateRegistry_,
+        uint16 chainId_,
         ISuperFormFactory superFormFactory_
-    ) BaseForm(chainId_, stateRegistry_, superFormFactory_) {}
+    ) BaseForm(chainId_, superFormFactory_) {}
 
     /*///////////////////////////////////////////////////////////////
                             OVERRIDES
