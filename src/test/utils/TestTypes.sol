@@ -87,6 +87,7 @@ struct SetupVars {
     uint80 chainId;
     uint80 dstChainId;
     uint16 dstAmbChainId;
+    uint32 dstHypChainId;
     uint256 fork;
     address factory;
     address lzEndpoint;
@@ -107,6 +108,8 @@ struct SetupVars {
     address srcErc4626Form;
     address srcLzImplementation;
     address dstLzImplementation;
+    address srcHyperlaneImplementation;
+    address dstHyperlaneImplementation;
     address dstStateRegistry;
     address srcMultiTxProcessor;
 }

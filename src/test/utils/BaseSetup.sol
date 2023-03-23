@@ -141,6 +141,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint16 public constant LZ_FTM = 112;
 
     uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
+    uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
 
     uint16 public constant version = 1;
     uint256 public constant gasLimit = 1000000;
@@ -308,6 +309,15 @@ abstract contract BaseSetup is DSTest, Test {
                     ).helpWithEstimates(
                             vars.lzEndpoint_0,
                             1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                            FORKS[action.CHAIN_0],
+                            vars.logs
+                        );
+
+                    vars.logs = vm.getRecordedLogs();
+                    HyperlaneHelper(
+                        getContract(action.CHAIN_1, "HyperlaneHelper")
+                    ).helpWithEstimates(
+                            address(HyperlaneMailbox),
                             FORKS[action.CHAIN_0],
                             vars.logs
                         );
@@ -667,6 +677,11 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.chainId,
                 "LzImplementation"
             );
+            vars.srcHyperlaneImplementation = getContract(
+                vars.chainId,
+                "HyperlaneImplementation"
+            );
+
             vars.srcSuperRouter = getContract(vars.chainId, "SuperRouter");
             vars.srcSuperFormFactory = getContract(
                 vars.chainId,
@@ -766,10 +781,17 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstChainId = chainIds[j];
                     /// @dev FIXME: for now only LZ amb
                     vars.dstAmbChainId = lz_chainIds[j];
+                    vars.dstHypChainId = hyperlane_chainIds[j];
+
                     vars.dstLzImplementation = getContract(
                         vars.dstChainId,
                         "LzImplementation"
                     );
+                    vars.dstHyperlaneImplementation = getContract(
+                        vars.dstChainId,
+                        "HyperlaneImplementation"
+                    );
+
                     LayerzeroImplementation(payable(vars.srcLzImplementation))
                         .setTrustedRemote(
                             vars.dstAmbChainId,
@@ -780,6 +802,16 @@ abstract contract BaseSetup is DSTest, Test {
                         );
                     LayerzeroImplementation(payable(vars.srcLzImplementation))
                         .setChainId(vars.dstChainId, vars.dstAmbChainId);
+                    
+                    HyperlaneImplementation(
+                        payable(vars.srcHyperlaneImplementation)
+                    ).setReceiver(
+                            vars.dstHypChainId,
+                            vars.dstHyperlaneImplementation
+                        );
+
+                    HyperlaneImplementation(payable(vars.srcHyperlaneImplementation))
+                        .setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
 
@@ -798,6 +830,7 @@ abstract contract BaseSetup is DSTest, Test {
             MultiTxProcessor(payable(vars.srcMultiTxProcessor))
                 .setBridgeAddress(bridgeIds, bridgeAddresses);
         }
+
         vm.stopPrank();
     }
 
@@ -856,12 +889,13 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.logs
                     );
 
-                // HyperlaneHelper(getContract(args.srcChainId, "HyperlaneHelper"))
-                //     .helpWithEstimates(
-                //         HyperlaneMailbox,
-                //         FORKS[args.toChainId],
-                //         vars.logs
-                //     );
+                vars.logs = vm.getRecordedLogs();
+                HyperlaneHelper(getContract(args.srcChainId, "HyperlaneHelper"))
+                    .help(
+                        address(HyperlaneMailbox),
+                        FORKS[args.toChainId],
+                        vars.logs
+                    );
 
                 vm.selectFork(FORKS[args.toChainId]);
 

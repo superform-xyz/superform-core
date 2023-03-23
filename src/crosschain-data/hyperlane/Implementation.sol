@@ -18,6 +18,8 @@ contract HyperlaneImplementation is
     IMessageRecipient,
     Ownable
 {
+    error INVALID_RECEIVER();
+    event HeyHey();
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
@@ -27,6 +29,7 @@ contract HyperlaneImplementation is
 
     mapping(uint80 => uint32) public ambChainId;
     mapping(uint32 => uint80) public superChainId;
+    mapping(uint32 => address) public authorizedImpl;
 
     mapping(bytes32 => bool) public processedMessages;
 
@@ -66,17 +69,18 @@ contract HyperlaneImplementation is
             revert INVALID_CALLER();
         }
 
+        uint32 domain = ambChainId[dstChainId_];
         /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3
         bytes32 messageId = mailbox.dispatch(
-            ambChainId[dstChainId_],
-            castAddr(address(this)),
+            domain,
+            castAddr(authorizedImpl[domain]),
             message_
         );
 
         igp.payForGas{value: msg.value}(
             messageId,
             ambChainId[dstChainId_],
-            500000,             // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
+            500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
             msg.sender /// @dev should refund to the user, now refunds to core state registry
         );
     }
@@ -85,10 +89,10 @@ contract HyperlaneImplementation is
     /// @dev allows admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
-    function setChainId(uint80 superChainId_, uint32 ambChainId_)
-        external
-        onlyOwner
-    {
+    function setChainId(
+        uint80 superChainId_,
+        uint32 ambChainId_
+    ) external onlyOwner {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert INVALID_CHAIN_ID();
         }
@@ -97,6 +101,21 @@ contract HyperlaneImplementation is
         superChainId[ambChainId_] = superChainId_;
 
         emit ChainAdded(superChainId_);
+    }
+
+    function setReceiver(
+        uint32 domain_,
+        address authorizedImpl_
+    ) external onlyOwner {
+        if (domain_ == 0) {
+            revert INVALID_CHAIN_ID();
+        }
+
+        if (authorizedImpl_ == address(0)) {
+            revert INVALID_RECEIVER();
+        }
+
+        authorizedImpl[domain_] = authorizedImpl_;
     }
 
     /// @notice Handle an interchain message
@@ -117,7 +136,7 @@ contract HyperlaneImplementation is
             revert INVALID_CALLER();
         }
 
-        if (castAddr((address(this))) != sender_) {
+        if (sender_ != castAddr(authorizedImpl[origin_])) {
             revert INVALID_CALLER();
         }
 
@@ -129,6 +148,8 @@ contract HyperlaneImplementation is
 
         processedMessages[hash] = true;
         registry.receivePayload(superChainId[origin_], body_);
+
+        emit HeyHey();
     }
 
     /*///////////////////////////////////////////////////////////////

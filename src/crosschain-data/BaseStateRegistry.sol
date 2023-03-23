@@ -27,6 +27,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     /// @dev superformChainid
     uint80 public immutable chainId;
     uint256 public payloadsCount;
+    uint256 public proofCount;
 
     mapping(uint8 => IAmbImplementation) public amb;
     mapping(bytes => uint256) public messageQuorum;
@@ -131,8 +132,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         virtual
         override
         onlyRole(IMPLEMENTATION_CONTRACTS_ROLE)
-    {
+    {   
+        ++proofCount;
         if(message_.length == 32) {
+            ++proofCount;
             /// assuming 32 bytes length is always proof 
             /// @dev should validate this later
             messageQuorum[message_] += 1;
