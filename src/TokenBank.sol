@@ -153,6 +153,12 @@ contract TokenBank is ITokenBank, AccessControl {
         ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
         uint256 dstAmount;
         /// @dev This will revert ALL of the transactions if one of them fails.
+        
+        /// DEVNOTE: This will revert with an error only descriptive of the first possible revert out of many
+        /// 1. Not enough tokens on this contract == BRIDGE_TOKENS_PENDING
+        /// 2. Fail to .transfer() == BRIDGE_TOKENS_PENDING
+        /// 3. xChainDepositIntoVault() reverting on anything == BRIDGE_TOKENS_PENDING
+        /// FIXME: Add reverts at the Form level
         if (underlying.balanceOf(address(this)) >= singleVaultData_.amount) {
             underlying.transfer(form, singleVaultData_.amount);
 
@@ -162,6 +168,7 @@ contract TokenBank is ITokenBank, AccessControl {
         } else {
             revert BRIDGE_TOKENS_PENDING();
         }
+
         (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
             singleVaultData_.txData
         );

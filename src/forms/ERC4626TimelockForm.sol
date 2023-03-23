@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {ERC4626} from "@solmate/mixins/ERC4626.sol";
+import {IERC4626Timelock} from "./interfaces/IERC4626Timelock.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
@@ -13,9 +13,9 @@ import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import "../utils/DataPacking.sol";
 
-/// @title ERC4626Form
-/// @notice The Form implementation for ERC4626 vaults
-contract ERC4626Form is ERC20Form, LiquidityHandler {
+/// @title ERC4626TimelockedForm
+/// @notice The Form implementation with timelock extension for IERC4626Timelock vaults
+contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
     /*///////////////////////////////////////////////////////////////
@@ -24,6 +24,9 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
     /// @dev error thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
+
+    /// @dev unlock already requested, cooldown period didn't pass yet
+    error WITHDRAW_COOLDOWN_PERIOD();
 
     constructor(
         uint16 chainId_,
@@ -55,45 +58,45 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     function getUnderlyingOfVault(
         address vault_
     ) public view virtual override returns (ERC20) {
-        return ERC4626(vault_).asset();
+        return ERC20(IERC4626Timelock(vault_).asset());
     }
 
     /// @inheritdoc BaseForm
     function getPricePerVaultShare(
         address vault_
     ) public view virtual override returns (uint256) {
-        uint256 vaultDecimals = ERC4626(vault_).decimals();
-        return ERC4626(vault_).convertToAssets(10 ** vaultDecimals);
+        uint256 vaultDecimals = ERC20(vault_).decimals();
+        return IERC4626Timelock(vault_).convertToAssets(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
     function getVaultShareBalance(
         address vault_
     ) public view virtual override returns (uint256) {
-        return ERC4626(vault_).balanceOf(address(this));
+        return IERC4626Timelock(vault_).balanceOf(address(this));
     }
 
     /// @inheritdoc BaseForm
     function getTotalAssets(
         address vault_
     ) public view virtual override returns (uint256) {
-        return ERC4626(vault_).totalAssets();
+        return IERC4626Timelock(vault_).totalAssets();
     }
 
     /// @inheritdoc BaseForm
     function getConvertPricePerVaultShare(
         address vault_
     ) public view virtual override returns (uint256) {
-        uint256 vaultDecimals = ERC4626(vault_).decimals();
-        return ERC4626(vault_).convertToAssets(10 ** vaultDecimals);
+        uint256 vaultDecimals = ERC20(vault_).decimals();
+        return IERC4626Timelock(vault_).convertToAssets(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
     function getPreviewPricePerVaultShare(
         address vault_
     ) public view virtual override returns (uint256) {
-        uint256 vaultDecimals = ERC4626(vault_).decimals();
-        return ERC4626(vault_).previewRedeem(10 ** vaultDecimals);
+        uint256 vaultDecimals = ERC20(vault_).decimals();
+        return IERC4626Timelock(vault_).previewRedeem(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
@@ -101,7 +104,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         address vault_,
         uint256 assets_
     ) public view virtual override returns (uint256) {
-        return ERC4626(vault_).convertToShares(assets_);
+        return IERC4626Timelock(vault_).convertToShares(assets_);
     }
 
     /// @inheritdoc BaseForm
@@ -109,7 +112,15 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         address vault_,
         uint256 assets_
     ) public view virtual override returns (uint256) {
-        return ERC4626(vault_).previewWithdraw(assets_);
+        return IERC4626Timelock(vault_).previewWithdraw(assets_);
+    }
+
+    /// @dev ERC4626TimelockFork getter
+    /// NOTE: Implement neccessary checks here, e.g
+    function checkUnlock(address vault_, address owner_) public view returns (bool) {
+        /// isUnlocked is just an example, we can make multiple checks here
+        /// assumption is that target contract implements SOME method to check cooldown
+        return IERC4626Timelock(vault_).isUnlocked(owner_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -123,7 +134,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         /// note: checking balance
         (address vault, , ) = _getSuperForm(singleVaultData_.superFormId);
 
-        ERC4626 v = ERC4626(vault);
+        IERC4626Timelock v = IERC4626Timelock(vault);
 
         address collateral = address(v.asset());
         ERC20 collateralToken = ERC20(collateral);
@@ -168,6 +179,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             revert DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
+        /// DEVNOTE: allowance is modified inside of the ERC20.transferFrom() call
         collateralToken.approve(vault, singleVaultData_.amount);
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
@@ -187,28 +199,44 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         address receiver = len1 == 0 ? srcSender : address(this);
 
         (address vault, , ) = _getSuperForm(singleVaultData_.superFormId);
-        ERC4626 v = ERC4626(vault);
+        IERC4626Timelock v = IERC4626Timelock(vault);
         address collateral = address(v.asset());
 
         if (address(v.asset()) != collateral)
             revert DIRECT_WITHDRAW_INVALID_COLLATERAL();
 
-        dstAmount = v.redeem(singleVaultData_.amount, receiver, address(this));
-
-        if (len1 != 0) {
-            /// @dev this check here might be too much already, but can't hurt
-            if (liqData.amount > singleVaultData_.amount)
-                revert DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
-
-            dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
-                liqData.txData,
-                liqData.token,
-                liqData.allowanceTarget,
-                liqData.amount,
-                address(this),
-                liqData.nativeAmount
+        /// NOTE: This assumes that first transaction to this vault may just trigger the unlock with cooldown
+        /// NOTE: Only next withdraw transaction would trigger the actual withdraw.
+        /// TODO: Besides API making informed choice how else we can revert this better?
+        /// TODO: extraData could be used to first make check at the begining of this func and revert earlier
+        if (checkUnlock(vault, srcSender)) {
+            dstAmount = v.redeem(
+                singleVaultData_.amount,
+                receiver,
+                address(this)
             );
+
+            if (len1 != 0) {
+                /// @dev this check here might be too much already, but can't hurt
+                if (liqData.amount > singleVaultData_.amount)
+                    revert DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+
+                dispatchTokens(
+                    bridgeAddress[liqData.bridgeId],
+                    liqData.txData,
+                    liqData.token,
+                    liqData.allowanceTarget,
+                    liqData.amount,
+                    address(this),
+                    liqData.nativeAmount
+                );
+            }
+        } else {
+            /// @dev FIXME - If VaultBank holds tokens, this won't work
+            if (v.cooldownPeriod(address(this)) > 0)
+                revert WITHDRAW_COOLDOWN_PERIOD();
+
+            v.requestUnlock(singleVaultData_.amount);
         }
     }
 
@@ -219,7 +247,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             singleVaultData_.superFormId
         );
 
-        ERC4626 v = ERC4626(vault);
+        IERC4626Timelock v = IERC4626Timelock(vault);
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
         /// DEVNOTE: allowance is modified inside of the ERC20.transferFrom() call
@@ -251,7 +279,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         uint256 dstAmount;
 
-        ERC4626 v = ERC4626(vault);
+        IERC4626Timelock v = IERC4626Timelock(vault);
 
         (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(
             singleVaultData_.txData
@@ -260,35 +288,46 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             singleVaultData_.liqData,
             (LiqRequest)
         );
-        if (liqData.txData.length != 0) {
-            /// Note Redeem Vault positions (we operate only on positions, not assets)
-            dstAmount = v.redeem(
-                singleVaultData_.amount,
-                address(this),
-                address(this)
-            );
 
-            uint256 balanceBefore = ERC20(v.asset()).balanceOf(address(this));
-            /// Note Send Tokens to Source Chain
-            /// FEAT Note: We could also allow to pass additional chainId arg here
-            /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
-            dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
-                liqData.txData,
-                liqData.token,
-                liqData.allowanceTarget,
-                dstAmount,
-                address(this),
-                liqData.nativeAmount
-            );
-            uint256 balanceAfter = ERC20(v.asset()).balanceOf(address(this));
+        if (checkUnlock(vault, srcSender)) {
+            if (liqData.txData.length != 0) {
+                /// Note Redeem Vault positions (we operate only on positions, not assets)
+                dstAmount = v.redeem(
+                    singleVaultData_.amount,
+                    address(this),
+                    address(this)
+                );
 
-            /// note: balance validation to prevent draining contract.
-            if (balanceAfter < balanceBefore - dstAmount)
-                revert XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+                uint256 balanceBefore = ERC20(v.asset()).balanceOf(
+                    address(this)
+                );
+                /// Note Send Tokens to Source Chain
+                /// FEAT Note: We could also allow to pass additional chainId arg here
+                /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
+                dispatchTokens(
+                    bridgeAddress[liqData.bridgeId],
+                    liqData.txData,
+                    liqData.token,
+                    liqData.allowanceTarget,
+                    dstAmount,
+                    address(this),
+                    liqData.nativeAmount
+                );
+                uint256 balanceAfter = ERC20(v.asset()).balanceOf(
+                    address(this)
+                );
+
+                /// note: balance validation to prevent draining contract.
+                if (balanceAfter < balanceBefore - dstAmount)
+                    revert XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+            } else {
+                /// Note Redeem Vault positions (we operate only on positions, not assets)
+                v.redeem(singleVaultData_.amount, srcSender, address(this));
+            }
         } else {
-            /// Note Redeem Vault positions (we operate only on positions, not assets)
-            v.redeem(singleVaultData_.amount, srcSender, address(this));
+            if (v.cooldownPeriod(address(this)) > 0)
+                revert WITHDRAW_COOLDOWN_PERIOD();
+            v.requestUnlock(singleVaultData_.amount);
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
@@ -311,7 +350,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         uint256 vaultSharesAmount_,
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
-        return ERC4626(vault_).convertToAssets(vaultSharesAmount_);
+        return IERC4626Timelock(vault_).convertToAssets(vaultSharesAmount_);
     }
 
     /// @inheritdoc BaseForm
@@ -320,7 +359,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         uint256 vaultSharesAmount_,
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
-        return ERC4626(vault_).previewMint(vaultSharesAmount_);
+        return IERC4626Timelock(vault_).previewMint(vaultSharesAmount_);
     }
 
     /// @inheritdoc BaseForm
@@ -329,6 +368,6 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         uint256 underlyingAmount_,
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
-        return ERC4626(vault_).convertToShares(underlyingAmount_);
+        return IERC4626Timelock(vault_).convertToShares(underlyingAmount_);
     }
 }
