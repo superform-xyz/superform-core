@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
-import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
@@ -32,7 +32,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @notice state = information about destination chain & vault id.
     /// @notice  stateRegistry accepts requests from whitelisted addresses.
     /// @dev stateRegistry integrates with interblockchain messaging protocols.
-    IStateRegistry public stateRegistry;
+    IBaseStateRegistry public stateRegistry;
 
     /// @notice chainId represents unique chain id for each chains.
     /// @dev maybe should be constant or immutable
@@ -57,7 +57,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     constructor(
         uint16 chainId_,
         string memory baseUri_,
-        IStateRegistry stateRegistry_,
+        IBaseStateRegistry stateRegistry_,
         ISuperFormFactory superFormFactory_
     ) ERC1155(baseUri_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
@@ -83,7 +83,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             singleDstMultiVaultDeposit(
                 SingleDstMultiVaultsStateReq(
                     req.primaryAmbId,
-                    req.secondaryAmbIds,
+                    req.proofAmbId,
                     req.dstChainIds[i],
                     req.superFormsData[i],
                     req.adapterParam,
@@ -103,7 +103,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
+        if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
             revert INVALID_AMB_IDS();
 
         /// @dev validate superFormsData
@@ -168,6 +168,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
             stateRegistry.dispatchPayload{value: req.msgValue}(
                 req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+                req.proofAmbId,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
                 req.adapterParam
@@ -200,7 +201,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                 singleXChainSingleVaultDeposit(
                     SingleXChainSingleVaultStateReq(
                         req.primaryAmbId,
-                        req.secondaryAmbIds,
+                        req.proofAmbId,
                         dstChainId,
                         req.superFormsData[i],
                         req.adapterParam,
@@ -221,7 +222,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
+        if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
             revert INVALID_AMB_IDS();
 
         if (vars.srcChainId == vars.dstChainId) revert INVALID_CHAIN_IDS();
@@ -271,6 +272,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         stateRegistry.dispatchPayload{value: req.msgValue}(
             req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+            req.proofAmbId,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
             req.adapterParam
@@ -333,7 +335,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             singleDstMultiVaultWithdraw(
                 SingleDstMultiVaultsStateReq(
                     req.primaryAmbId,
-                    req.secondaryAmbIds,
+                    req.proofAmbId,
                     req.dstChainIds[i],
                     req.superFormsData[i],
                     req.adapterParam,
@@ -353,7 +355,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
+        if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
             revert INVALID_AMB_IDS();
 
         /// @dev validate superFormsData
@@ -411,6 +413,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
             stateRegistry.dispatchPayload{value: req.msgValue}(
                 req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+                req.proofAmbId,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
                 req.adapterParam
@@ -442,7 +445,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                 singleXChainSingleVaultWithdraw(
                     SingleXChainSingleVaultStateReq(
                         req.primaryAmbId,
-                        req.secondaryAmbIds,
+                        req.proofAmbId,
                         dstChainId,
                         req.superFormsData[i],
                         req.adapterParam,
@@ -463,7 +466,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (!_validateAmbs(req.primaryAmbId, req.secondaryAmbIds))
+        if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
             revert INVALID_AMB_IDS();
 
         if (vars.srcChainId == vars.dstChainId) revert INVALID_CHAIN_IDS();
@@ -508,6 +511,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         stateRegistry.dispatchPayload{value: req.msgValue}(
             req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+            req.proofAmbId,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
             req.adapterParam
@@ -965,10 +969,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     function _validateAmbs(
         uint8 primaryAmbId,
-        uint8[] memory secondaryAmbIds
+        uint8[] memory proofAmbId
     ) internal pure returns (bool) {
-        for (uint256 i = 0; i < secondaryAmbIds.length; i++) {
-            if (primaryAmbId == secondaryAmbIds[i]) {
+        for (uint256 i = 0; i < proofAmbId.length; i++) {
+            if (primaryAmbId == proofAmbId[i]) {
                 return false;
             }
         }

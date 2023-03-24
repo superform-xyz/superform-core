@@ -61,12 +61,12 @@ contract BaseProtocolTest is BaseSetup {
                     !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
         TestAction[numberOfTestActions] memory testActionCases = [
-            /// FTM=>BSC: user depositing to a vault on BSC from Fantom
+            /// ETH=>BSC: user depositing to a vault on BSC from Fantom
             TestAction({
                 action: Actions.Deposit,
                 actionType: 0,
                 actionKind: LiquidityChange.Full,
-                CHAIN_0: FTM,
+                CHAIN_0: ETH,
                 CHAIN_1: BSC,
                 user: users[0],
                 testType: TestType.Pass,
@@ -76,12 +76,12 @@ contract BaseProtocolTest is BaseSetup {
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
                 multiTx: false
             }),
-            /// FTM=>BSC: user withdrawing tokens from a vault on BSC from/to Fantom
+            /// ETH=>BSC: user withdrawing tokens from a vault on BSC from/to Fantom
             TestAction({
                 action: Actions.Withdraw,
                 actionType: 0,
                 actionKind: LiquidityChange.Full,
-                CHAIN_0: FTM,
+                CHAIN_0: ETH,
                 CHAIN_1: BSC,
                 user: users[0],
                 testType: TestType.Pass,
@@ -91,12 +91,12 @@ contract BaseProtocolTest is BaseSetup {
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
                 multiTx: false
             }),
-            /// FTM=>BSC: user depositing to a vault on BSC from Fantom with MultiTx
+            /// ETH=>BSC: user depositing to a vault on BSC from Fantom with MultiTx
             TestAction({
                 action: Actions.Deposit,
                 actionType: 0,
                 actionKind: LiquidityChange.Full,
-                CHAIN_0: FTM,
+                CHAIN_0: ETH,
                 CHAIN_1: BSC,
                 user: users[0],
                 testType: TestType.Pass,
@@ -106,14 +106,14 @@ contract BaseProtocolTest is BaseSetup {
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage,
                 multiTx: true
             }),
-            /// BSC=>FTM: multiple LiqReq/StateReq for multi-deposit
-            /// BSC=>FTM: user depositing to a vault on Fantom from BSC
+            /// BSC=>ETH: multiple LiqReq/StateReq for multi-deposit
+            /// BSC=>ETH: user depositing to a vault on Fantom from BSC
             TestAction({
                 action: Actions.Deposit,
                 actionType: 1,
                 actionKind: LiquidityChange.Full,
                 CHAIN_0: BSC,
-                CHAIN_1: FTM,
+                CHAIN_1: POLY,
                 user: users[2],
                 testType: TestType.Pass,
                 revertError: "",
@@ -129,7 +129,7 @@ contract BaseProtocolTest is BaseSetup {
                 actionType: 1,
                 actionKind: LiquidityChange.Partial,
                 CHAIN_0: BSC,
-                CHAIN_1: FTM,
+                CHAIN_1: POLY,
                 user: users[2],
                 testType: TestType.Pass,
                 revertError: "",
@@ -143,11 +143,11 @@ contract BaseProtocolTest is BaseSetup {
                 action: Actions.Deposit,
                 actionType: 0,
                 actionKind: LiquidityChange.Full,
-                CHAIN_0: FTM,
+                CHAIN_0: ETH,
                 CHAIN_1: BSC,
                 user: users[1],
                 testType: TestType.RevertProcessPayload,
-                revertError: IStateRegistry.INVALID_PAYLOAD_STATE.selector, // @dev to a find how to use reverts here
+                revertError: IBaseStateRegistry.INVALID_PAYLOAD_STATE.selector, // @dev to a find how to use reverts here
                 revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 0, // 0% <- if we are testing a pass this must be below maxSlippage
@@ -158,11 +158,11 @@ contract BaseProtocolTest is BaseSetup {
                 action: Actions.Deposit,
                 actionType: 0,
                 actionKind: LiquidityChange.Full,
-                CHAIN_0: FTM,
+                CHAIN_0: ETH,
                 CHAIN_1: BSC,
                 user: users[0],
                 testType: TestType.RevertUpdateStateSlippage,
-                revertError: IStateRegistry.SLIPPAGE_OUT_OF_BOUNDS.selector, // @dev to a find how to use reverts here
+                revertError: IBaseStateRegistry.SLIPPAGE_OUT_OF_BOUNDS.selector, // @dev to a find how to use reverts here
                 revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: 1200, // 12%
@@ -177,7 +177,7 @@ contract BaseProtocolTest is BaseSetup {
                 CHAIN_1: OP,
                 user: users[2],
                 testType: TestType.RevertUpdateStateSlippage,
-                revertError: IStateRegistry.NEGATIVE_SLIPPAGE.selector, // @dev to a find how to use reverts here
+                revertError: IBaseStateRegistry.NEGATIVE_SLIPPAGE.selector, // @dev to a find how to use reverts here
                 revertRole: "",
                 maxSlippage: 1000, // 10%,
                 slippage: -100,
@@ -333,6 +333,7 @@ contract BaseProtocolTest is BaseSetup {
         vars.underlyingTokenIds = TARGET_UNDERLYING_VAULTS[chain1][action];
         vars.superFormIdsTemp = _superFormIds(vars.underlyingTokenIds, chain1);
         vars.len = vars.superFormIdsTemp.length;
+        console.log(vars.len, action, chain0, chain1);
         if (vars.len == 0) revert LEN_VAULTS_ZERO();
 
         targetSuperFormsMem = new uint256[][](vars.len);

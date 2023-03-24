@@ -1,145 +1,51 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
-import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
+
+import {BaseStateRegistry} from "./BaseStateRegistry.sol";
+import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
-import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
-import {IBaseForm} from "../interfaces/IBaseForm.sol";
-import {ERC20} from "@solmate/tokens/ERC20.sol";
 import "../utils/DataPacking.sol";
 
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging ambs.
-contract StateRegistry is IStateRegistry, AccessControl {
-    /*///////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev error thrown when the bridge tokens haven't arrived to destination
-    error BRIDGE_TOKENS_PENDING();
-
-    /*///////////////////////////////////////////////////////////////
-                    ACCESS CONTROL ROLE CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-    bytes32 public constant CORE_CONTRACTS_ROLE =
-        keccak256("CORE_CONTRACTS_ROLE");
-    bytes32 public constant IMPLEMENTATION_CONTRACTS_ROLE =
-        keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
-    bytes32 public constant PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
-    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
+contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
+    uint256 public constant REQUIRED_QUORUM = 1;
 
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    /// @dev superformChainid
-    uint16 public immutable chainId;
-    uint256 public payloadsCount;
 
     ISuperRouter public routerContract;
 
     /// NOTE: Shouldnt we use multiple tokenBanks to benefit from using them?
     ITokenBank public tokenBankContract;
 
-    ISuperFormFactory public superFormFactory;
-
-    mapping(uint8 => IAmbImplementation) public amb;
-
-    /// @dev stores all received payloads after assigning them an unique identifier upon receiving.
-    mapping(uint256 => bytes) public payload;
-
-    /// @dev maps payloads to their status
-    mapping(uint256 => PayloadState) public payloadTracking;
-
     /*///////////////////////////////////////////////////////////////
                              CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint16 chainId_) {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        chainId = chainId_;
-    }
+    constructor(uint16 chainId_) BaseStateRegistry(chainId_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    receive() external payable {}
-
-    /// @dev allows admin to update amb implementations.
-    /// @param ambId_ is the propreitory amb id.
-    /// @param ambImplementation_ is the implementation address.
-    function configureAmb(
-        uint8 ambId_,
-        address ambImplementation_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (ambId_ == 0) {
-            revert INVALID_BRIDGE_ID();
-        }
-
-        if (ambImplementation_ == address(0)) {
-            revert INVALID_BRIDGE_ADDRESS();
-        }
-
-        amb[ambId_] = IAmbImplementation(ambImplementation_);
-        emit AmbConfigured(ambId_, ambImplementation_);
-    }
 
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
-    /// @param routerContract_ is the address of the router`
+    /// @param routerContract_ is the address of the router
     /// @param tokenBankContract_ is the address of the token bank
     function setCoreContracts(
         address routerContract_,
-        address tokenBankContract_,
-        address superFormFactory_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        address tokenBankContract_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         routerContract = ISuperRouter(routerContract_);
         tokenBankContract = ITokenBank(tokenBankContract_);
-        superFormFactory = ISuperFormFactory(superFormFactory_);
+
         emit CoreContractsUpdated(routerContract_, tokenBankContract_);
-    }
-
-    /// @dev allows core contracts to send data to a destination chain.
-    /// @param ambId_ is the identifier of the message amb to be used.
-    /// @param dstChainId_ is the internal chainId used throughtout the protocol.
-    /// @param message_ is the crosschain data to be sent.
-    /// @param extraData_ defines all the message amb specific information.
-    /// NOTE: dstChainId maps with the message amb's propreitory chain Id.
-    function dispatchPayload(
-        uint8 ambId_,
-        uint16 dstChainId_,
-        bytes memory message_,
-        bytes memory extraData_
-    ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
-        IAmbImplementation ambImplementation = amb[ambId_];
-
-        if (address(ambImplementation) == address(0)) {
-            revert INVALID_BRIDGE_ID();
-        }
-
-        ambImplementation.dispatchPayload{value: msg.value}(
-            dstChainId_,
-            message_,
-            extraData_
-        );
-    }
-
-    /// @dev allows state registry to receive messages from amb implementations.
-    /// @param srcChainId_ is the internal chainId from which the data is sent.
-    /// @param message_ is the crosschain data received.
-    /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
-    function receivePayload(
-        uint16 srcChainId_,
-        bytes memory message_
-    ) external virtual override onlyRole(IMPLEMENTATION_CONTRACTS_ROLE) {
-        ++payloadsCount;
-        payload[payloadsCount] = message_;
-
-        emit PayloadReceived(srcChainId_, chainId, payloadsCount);
     }
 
     /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
@@ -293,10 +199,14 @@ contract StateRegistry is IStateRegistry, AccessControl {
             revert INVALID_PAYLOAD_STATE();
         }
 
-        AMBMessage memory payloadInfo = abi.decode(
-            payload[payloadId_],
-            (AMBMessage)
-        );
+        bytes memory _payload = payload[payloadId_];
+        bytes memory _proof = abi.encode(keccak256(_payload));
+
+        if (messageQuorum[_proof] < REQUIRED_QUORUM) {
+            revert QUORUM_NOT_REACHED();
+        }
+
+        AMBMessage memory payloadInfo = abi.decode(_payload, (AMBMessage));
 
         (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
             payloadInfo.txInfo

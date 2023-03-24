@@ -5,6 +5,7 @@ import {Utilities} from "./utils/Utilities.sol";
 import "forge-std/console.sol";
 
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
+
 import {SuperFormFactory} from "../SuperFormFactory.sol";
 import {ERC4626Form} from "../forms/ERC4626Form.sol";
 import "../utils/DataPacking.sol";
@@ -35,6 +36,7 @@ contract SuperFormFactoryTest is Utilities {
         users = createUsers(5);
         admin = users[0];
         vm.label(admin, "Admin");
+
         chainId = uint16(block.chainid);
         vm.prank(admin);
         superFormFactory = new SuperFormFactory(chainId);

@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IERC4626Timelock} from "./interfaces/IERC4626Timelock.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
@@ -117,7 +116,10 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
 
     /// @dev ERC4626TimelockFork getter
     /// NOTE: Implement neccessary checks here, e.g
-    function checkUnlock(address vault_, address owner_) public view returns (bool) {
+    function checkUnlock(
+        address vault_,
+        address owner_
+    ) public view returns (bool) {
         /// isUnlocked is just an example, we can make multiple checks here
         /// assumption is that target contract implements SOME method to check cooldown
         return IERC4626Timelock(vault_).isUnlocked(owner_);

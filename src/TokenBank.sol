@@ -4,7 +4,7 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
-import {IStateRegistry} from "./interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {ITokenBank} from "./interfaces/ITokenBank.sol";
@@ -32,7 +32,7 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @notice state variable are all declared public to avoid creating functions to expose.
 
     /// @dev stateRegistry points to the state registry interface deployed in the respective chain.
-    IStateRegistry stateRegistry;
+    IBaseStateRegistry stateRegistry;
 
     /// @dev chainId represents the superform chain id of the specific chain.
     uint16 public chainId;
@@ -49,7 +49,7 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @dev FIXME: missing means for admin to change implementations
     constructor(
         uint16 chainId_,
-        IStateRegistry stateRegistry_,
+        IBaseStateRegistry stateRegistry_,
         ISuperFormFactory superFormFactory_
     ) {
         chainId = chainId_;
@@ -111,9 +111,14 @@ contract TokenBank is ITokenBank, AccessControl {
             multiVaultData_.txData
         );
 
+        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
+        uint8[] memory proofAmbIds = new uint8[](1);
+        proofAmbIds[0] = 2;
+
         /// @notice Send Data to Source to issue superform positions.
         stateRegistry.dispatchPayload{value: msg.value}(
             1, /// @dev come to this later to accept any bridge id
+            proofAmbIds,
             srcChainId,
             abi.encode(
                 AMBMessage(
@@ -153,7 +158,7 @@ contract TokenBank is ITokenBank, AccessControl {
         ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
         uint256 dstAmount;
         /// @dev This will revert ALL of the transactions if one of them fails.
-        
+
         /// DEVNOTE: This will revert with an error only descriptive of the first possible revert out of many
         /// 1. Not enough tokens on this contract == BRIDGE_TOKENS_PENDING
         /// 2. Fail to .transfer() == BRIDGE_TOKENS_PENDING
@@ -173,9 +178,14 @@ contract TokenBank is ITokenBank, AccessControl {
             singleVaultData_.txData
         );
 
+        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
+        uint8[] memory proofAmbIds = new uint8[](1);
+        proofAmbIds[0] = 2;
+
         /// @notice Send Data to Source to issue superform positions.
         stateRegistry.dispatchPayload{value: msg.value}(
             1, /// @dev come to this later to accept any bridge id
+            proofAmbIds,
             srcChainId,
             abi.encode(
                 AMBMessage(

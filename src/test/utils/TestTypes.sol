@@ -99,11 +99,14 @@ struct SetupVars {
     uint16 chainId;
     uint16 dstChainId;
     uint16 dstAmbChainId;
+    uint32 dstHypChainId;
     uint256 fork;
     address factory;
     address lzEndpoint;
     address lzHelper;
     address lzImplementation;
+    address hyperlaneHelper;
+    address hyperlaneImplementation;
     address socketRouter;
     address erc4626Form;
     address stateRegistry;
@@ -111,12 +114,14 @@ struct SetupVars {
     address vault;
     address srcTokenBank;
     address srcSuperRouter;
-    address srcStateRegistry;
+    address srcCoreStateRegistry;
     address srcSuperFormFactory;
     address dstSuperFormFactory;
     address srcErc4626Form;
     address srcLzImplementation;
     address dstLzImplementation;
+    address srcHyperlaneImplementation;
+    address dstHyperlaneImplementation;
     address dstStateRegistry;
     address srcMultiTxProcessor;
 }

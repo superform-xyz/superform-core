@@ -6,13 +6,14 @@ import "@std/Test.sol";
 import "@ds-test/test.sol";
 // import "forge-std/console.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
+import {HyperlaneHelper} from "@pigeon/hyperlane/HyperlaneHelper.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @dev src imports
 import {VaultMock} from "../mocks/VaultMock.sol";
-import {IStateRegistry} from "../../interfaces/IStateRegistry.sol";
-import {StateRegistry} from "../../crosschain-data/StateRegistry.sol";
+import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
+import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "../../interfaces/IERC4626.sol";
@@ -23,6 +24,10 @@ import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
+import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
+
+import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
+import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
 
 /// @dev local test imports
 import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
@@ -110,7 +115,14 @@ abstract contract BaseSetup is DSTest, Test {
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
     ];
 
-    /// @dev these are the superform chain Ids (to be defined)
+    /*//////////////////////////////////////////////////////////////
+                        HYPERLANE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+    IMailbox public constant HyperlaneMailbox =
+        IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
+    IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
+        IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
+
     uint16 public constant ETH = 1;
     uint16 public constant BSC = 2;
     uint16 public constant AVAX = 3;
@@ -131,6 +143,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint16 public constant LZ_FTM = 112;
 
     uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
+    uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
 
     uint16 public constant version = 1;
     uint256 public constant gasLimit = 1000000;
@@ -226,20 +239,39 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars
                 .lzHelper;
 
+            /// @dev 1.1- deploy Hyperlane Helper from Pigeon
+            vars.hyperlaneHelper = address(new HyperlaneHelper());
+            vm.allowCheatcodes(vars.hyperlaneHelper);
+
+            contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars
+                .hyperlaneHelper;
+
             /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
-            vars.stateRegistry = address(new StateRegistry(vars.chainId));
-            contracts[vars.chainId][bytes32(bytes("StateRegistry"))] = vars
+            vars.stateRegistry = address(new CoreStateRegistry(vars.chainId));
+            contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
                 .stateRegistry;
 
-            /// @dev 2.1 - deployed Layerzero Implementation
+            /// @dev 2.1- deployed Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
-                    IStateRegistry(vars.stateRegistry)
+                    IBaseStateRegistry(vars.stateRegistry)
                 )
             );
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
                 .lzImplementation;
+
+            /// @dev 2.2- deploy Hyperlane Implementation
+            vars.hyperlaneImplementation = address(
+                new HyperlaneImplementation(
+                    HyperlaneMailbox,
+                    IBaseStateRegistry(vars.stateRegistry),
+                    HyperlaneGasPaymaster
+                )
+            );
+            contracts[vars.chainId][
+                bytes32(bytes("HyperlaneImplementation"))
+            ] = vars.hyperlaneImplementation;
 
             /// @dev 3- deploy SocketRouterMockFork
             vars.socketRouter = address(new SocketRouterMockFork());
@@ -303,7 +335,7 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = address(
                 new TokenBank(
                     vars.chainId,
-                    IStateRegistry(payable(vars.stateRegistry)),
+                    IBaseStateRegistry(payable(vars.stateRegistry)),
                     ISuperFormFactory(vars.factory)
                 )
             );
@@ -313,7 +345,7 @@ abstract contract BaseSetup is DSTest, Test {
                 new SuperRouter(
                     vars.chainId,
                     "test.com/",
-                    IStateRegistry(payable(vars.stateRegistry)),
+                    IBaseStateRegistry(payable(vars.stateRegistry)),
                     ISuperFormFactory(vars.factory)
                 )
             );
@@ -334,11 +366,19 @@ abstract contract BaseSetup is DSTest, Test {
             vars.fork = FORKS[vars.chainId];
             vm.selectFork(vars.fork);
 
-            vars.srcStateRegistry = getContract(vars.chainId, "StateRegistry");
+            vars.srcCoreStateRegistry = getContract(
+                vars.chainId,
+                "CoreStateRegistry"
+            );
             vars.srcLzImplementation = getContract(
                 vars.chainId,
                 "LzImplementation"
             );
+            vars.srcHyperlaneImplementation = getContract(
+                vars.chainId,
+                "HyperlaneImplementation"
+            );
+
             vars.srcSuperRouter = getContract(vars.chainId, "SuperRouter");
             vars.srcSuperFormFactory = getContract(
                 vars.chainId,
@@ -373,31 +413,32 @@ abstract contract BaseSetup is DSTest, Test {
             //     .updateSafeGasParam("0x000100000000000000000000000000000000000000000000000000000000004c4b40");
 
             /// @dev - RBAC
-            StateRegistry(payable(vars.srcStateRegistry)).setCoreContracts(
-                vars.srcSuperRouter,
-                vars.srcTokenBank,
-                vars.dstSuperFormFactory
-            );
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry))
+                .setCoreContracts(vars.srcSuperRouter, vars.srcTokenBank);
 
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.srcSuperRouter
             );
 
             /// @dev TODO: for each form , add it to the core_contracts_role. Just 1 for now
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.srcTokenBank
             );
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 IMPLEMENTATION_CONTRACTS_ROLE,
                 vars.lzImplementation
             );
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+                IMPLEMENTATION_CONTRACTS_ROLE,
+                vars.hyperlaneImplementation
+            );
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 PROCESSOR_ROLE,
                 deployer
             );
-            StateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 UPDATER_ROLE,
                 deployer
             );
@@ -419,13 +460,19 @@ abstract contract BaseSetup is DSTest, Test {
 
             TokenBank(payable(vars.srcTokenBank)).grantRole(
                 STATE_REGISTRY_ROLE,
-                vars.srcStateRegistry
+                vars.srcCoreStateRegistry
             );
 
             /// @dev configures lzImplementation to state registry
-            StateRegistry(payable(vars.srcStateRegistry)).configureAmb(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
                 ambIds[0],
                 vars.lzImplementation
+            );
+
+            /// @dev configures hyperlaneImplementation to state registry
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
+                ambIds[1],
+                vars.hyperlaneImplementation
             );
 
             /// @dev Set all trusted remotes for each chain & configure amb chains ids
@@ -434,10 +481,17 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstChainId = chainIds[j];
                     /// @dev FIXME: for now only LZ amb
                     vars.dstAmbChainId = lz_chainIds[j];
+                    vars.dstHypChainId = hyperlane_chainIds[j];
+
                     vars.dstLzImplementation = getContract(
                         vars.dstChainId,
                         "LzImplementation"
                     );
+                    vars.dstHyperlaneImplementation = getContract(
+                        vars.dstChainId,
+                        "HyperlaneImplementation"
+                    );
+
                     LayerzeroImplementation(payable(vars.srcLzImplementation))
                         .setTrustedRemote(
                             vars.dstAmbChainId,
@@ -448,6 +502,17 @@ abstract contract BaseSetup is DSTest, Test {
                         );
                     LayerzeroImplementation(payable(vars.srcLzImplementation))
                         .setChainId(vars.dstChainId, vars.dstAmbChainId);
+
+                    HyperlaneImplementation(
+                        payable(vars.srcHyperlaneImplementation)
+                    ).setReceiver(
+                            vars.dstHypChainId,
+                            vars.dstHyperlaneImplementation
+                        );
+
+                    HyperlaneImplementation(
+                        payable(vars.srcHyperlaneImplementation)
+                    ).setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
 
@@ -466,6 +531,7 @@ abstract contract BaseSetup is DSTest, Test {
             MultiTxProcessor(payable(vars.srcMultiTxProcessor))
                 .setBridgeAddress(bridgeIds, bridgeAddresses);
         }
+
         vm.stopPrank();
     }
 
@@ -526,7 +592,10 @@ abstract contract BaseSetup is DSTest, Test {
         bridgeIds.push(1);
 
         /// @dev setup amb bridges
+        /// @notice id 1 is layerzero
+        /// @notice id 2 is hyperlane
         ambIds.push(1);
+        ambIds.push(2);
 
         /// @dev setup users
         users.push(address(1));

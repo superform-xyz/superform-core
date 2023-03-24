@@ -5,9 +5,20 @@ pragma solidity 0.8.19;
 /// @author ZeroPoint Labs
 /// @dev interface for arbitrary message bridge implementation
 interface IAmbImplementation {
+    error INVALID_SENDER();
     error INVALID_CALLER();
-
     error DUPLICATE_PAYLOAD();
+    error INVALID_CHAIN_ID();
+    error ZERO_ADDRESS();
+
+    /*///////////////////////////////////////////////////////////////
+                    Events
+    //////////////////////////////////////////////////////////////*/
+    event ChainAdded(uint16 superChainId);
+
+    /*///////////////////////////////////////////////////////////////
+                    External Functions
+    //////////////////////////////////////////////////////////////*/
 
     /// @dev allows state registry to send message via implementation.
     /// @param dstChainId_ is the identifier of the destination chain
@@ -18,10 +29,4 @@ interface IAmbImplementation {
         bytes memory message_,
         bytes memory extraData_
     ) external payable;
-
-    /// @notice to add access based controls over here
-    /// @dev allows admin to add new chain ids in future
-    /// @param superChainId_ is the identifier of the chain within superform protocol
-    /// @param ambChainId_ is the identifier of the chain given by the AMB
-    function setChainId(uint16 superChainId_, uint16 ambChainId_) external;
 }
