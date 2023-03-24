@@ -164,7 +164,7 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
 
-            StateRegistry stateRegistry;
+            CoreStateRegistry stateRegistry;
 
             SuperRouter superRouter = SuperRouter(vars.fromSrc);
 
@@ -279,8 +279,10 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
 
                     if (CHAIN_0 != aV.toChainId) {
-                        stateRegistry = StateRegistry(
-                            payable(getContract(aV.toChainId, "StateRegistry"))
+                        stateRegistry = CoreStateRegistry(
+                            payable(
+                                getContract(aV.toChainId, "CoreStateRegistry")
+                            )
                         );
                         /// @dev this will probably need to loop given the number of destinations
 
@@ -292,6 +294,13 @@ abstract contract ProtocolActions is BaseSetup {
                             .helpWithEstimates(
                                 vars.lzEndpoints_1[i],
                                 1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                                FORKS[aV.toChainId],
+                                vars.logs
+                            );
+
+                        HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper"))
+                            .help(
+                                address(HyperlaneMailbox),
                                 FORKS[aV.toChainId],
                                 vars.logs
                             );
@@ -412,10 +421,19 @@ abstract contract ProtocolActions is BaseSetup {
                                     getContract(aV.toChainId, "LayerZeroHelper")
                                 ).helpWithEstimates(
                                         vars.lzEndpoint_0,
-                                        1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                                        1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
                                         FORKS[CHAIN_0],
                                         vars.logs
                                     );
+
+                                HyperlaneHelper(
+                                    getContract(aV.toChainId, "HyperlaneHelper")
+                                ).help(
+                                        address(HyperlaneMailbox),
+                                        FORKS[CHAIN_0],
+                                        vars.logs
+                                    );
+
                                 unchecked {
                                     PAYLOAD_ID[CHAIN_0]++;
                                 }
@@ -703,7 +721,7 @@ abstract contract ProtocolActions is BaseSetup {
     function _superFormId(
         address vault_,
         uint256 formId_,
-        uint80 chainId_
+        uint16 chainId_
     ) internal pure returns (uint256 superFormId_) {
         superFormId_ = uint256(uint160(vault_));
         superFormId_ |= formId_ << 160;
@@ -918,16 +936,16 @@ abstract contract ProtocolActions is BaseSetup {
         if (args.testType == TestType.Pass) {
             vm.prank(deployer);
 
-            StateRegistry(
-                payable(getContract(args.targetChainId, "StateRegistry"))
+            CoreStateRegistry(
+                payable(getContract(args.targetChainId, "CoreStateRegistry"))
             ).updateMultiVaultPayload(args.payloadId, finalAmounts);
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
             vm.expectRevert(args.revertError); /// @dev removed string here: come to this later
 
-            StateRegistry(
-                payable(getContract(args.targetChainId, "StateRegistry"))
+            CoreStateRegistry(
+                payable(getContract(args.targetChainId, "CoreStateRegistry"))
             ).updateMultiVaultPayload(args.payloadId, finalAmounts);
 
             return false;
@@ -939,8 +957,8 @@ abstract contract ProtocolActions is BaseSetup {
             );
             vm.expectRevert(errorMsg);
 
-            StateRegistry(
-                payable(getContract(args.targetChainId, "StateRegistry"))
+            CoreStateRegistry(
+                payable(getContract(args.targetChainId, "CoreStateRegistry"))
             ).updateMultiVaultPayload(args.payloadId, finalAmounts);
 
             return false;
@@ -974,16 +992,16 @@ abstract contract ProtocolActions is BaseSetup {
         if (args.testType == TestType.Pass) {
             vm.prank(deployer);
 
-            StateRegistry(
-                payable(getContract(args.targetChainId, "StateRegistry"))
+            CoreStateRegistry(
+                payable(getContract(args.targetChainId, "CoreStateRegistry"))
             ).updateSingleVaultPayload(args.payloadId, finalAmount);
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
             vm.expectRevert(args.revertError); /// @dev removed string here: come to this later
 
-            StateRegistry(
-                payable(getContract(args.targetChainId, "StateRegistry"))
+            CoreStateRegistry(
+                payable(getContract(args.targetChainId, "CoreStateRegistry"))
             ).updateSingleVaultPayload(args.payloadId, finalAmount);
 
             return false;
@@ -995,8 +1013,8 @@ abstract contract ProtocolActions is BaseSetup {
             );
             vm.expectRevert(errorMsg);
 
-            StateRegistry(
-                payable(getContract(args.targetChainId, "StateRegistry"))
+            CoreStateRegistry(
+                payable(getContract(args.targetChainId, "CoreStateRegistry"))
             ).updateSingleVaultPayload(args.payloadId, finalAmount);
 
             return false;
@@ -1021,13 +1039,15 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {
-            StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
-                .processPayload{value: msgValue}(payloadId_);
+            CoreStateRegistry(
+                payable(getContract(targetChainId_, "CoreStateRegistry"))
+            ).processPayload{value: msgValue}(payloadId_);
         } else if (testType == TestType.RevertProcessPayload) {
             vm.expectRevert();
 
-            StateRegistry(payable(getContract(targetChainId_, "StateRegistry")))
-                .processPayload{value: msgValue}(payloadId_);
+            CoreStateRegistry(
+                payable(getContract(targetChainId_, "CoreStateRegistry"))
+            ).processPayload{value: msgValue}(payloadId_);
 
             return false;
         }

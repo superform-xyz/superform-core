@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {ERC4626} from "@solmate/mixins/ERC4626.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {IStateRegistry} from "../interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
@@ -210,6 +210,13 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 liqData.nativeAmount
             );
         }
+    }
+
+    struct LocalVars {
+        uint256 len;
+        uint256[] dstAmounts;
+        address[] vaults;
+        uint8[] secAmb;
     }
 
     function _xChainDepositIntoVault(

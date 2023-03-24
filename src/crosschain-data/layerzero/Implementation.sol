@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "./NonblockingLzApp.sol";
-import {IStateRegistry} from "../../interfaces/IStateRegistry.sol";
+import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 
 /// @title Layerzero implementation contract
@@ -12,7 +12,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
-    IStateRegistry public immutable registry;
+    IBaseStateRegistry public immutable registry;
 
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
@@ -27,7 +27,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     /// @param endpoint_ is the layer zero endpoint for respective chain.
     constructor(
         address endpoint_,
-        IStateRegistry registry_
+        IBaseStateRegistry registry_
     ) NonblockingLzApp(endpoint_) {
         registry = registry_;
     }
@@ -37,7 +37,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice receive enables processing native token transfers into the smart contract.
-    /// @dev socket.tech fails without a native receive function.
+    /// @dev layerzero gas payments/refund fails without a native receive function.
     receive() external payable {}
 
     /// @dev allows state registry to send message via implementation.
@@ -69,7 +69,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     function setChainId(
         uint16 superChainId_,
         uint16 ambChainId_
-    ) external override onlyOwner {
+    ) external onlyOwner {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
     }

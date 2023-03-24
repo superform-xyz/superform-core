@@ -24,7 +24,7 @@ contract Scenario2Test is ProtocolActions {
 
         secondaryAMBs = [2];
 
-        CHAIN_0 = FTM;
+        CHAIN_0 = OP;
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action

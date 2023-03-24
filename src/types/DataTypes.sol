@@ -41,7 +41,7 @@ struct SingleVaultSFData {
 
 struct MultiDstMultiVaultsStateReq {
     uint8 primaryAmbId;
-    uint8[] secondaryAmbIds;
+    uint8[] proofAmbId;
     uint16[] dstChainIds;
     MultiVaultsSFData[] superFormsData;
     bytes adapterParam;
@@ -50,7 +50,7 @@ struct MultiDstMultiVaultsStateReq {
 
 struct SingleDstMultiVaultsStateReq {
     uint8 primaryAmbId;
-    uint8[] secondaryAmbIds;
+    uint8[] proofAmbId;
     uint16 dstChainId;
     MultiVaultsSFData superFormsData;
     bytes adapterParam;
@@ -59,7 +59,7 @@ struct SingleDstMultiVaultsStateReq {
 
 struct MultiDstSingleVaultStateReq {
     uint8 primaryAmbId;
-    uint8[] secondaryAmbIds;
+    uint8[] proofAmbId;
     uint16[] dstChainIds;
     SingleVaultSFData[] superFormsData;
     bytes adapterParam;
@@ -68,7 +68,7 @@ struct MultiDstSingleVaultStateReq {
 
 struct SingleXChainSingleVaultStateReq {
     uint8 primaryAmbId;
-    uint8[] secondaryAmbIds;
+    uint8[] proofAmbId;
     uint16 dstChainId;
     SingleVaultSFData superFormData;
     bytes adapterParam;

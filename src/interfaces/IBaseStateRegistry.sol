@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-/// @title IStateRegistry
+/// @title IBaseStateRegistry
 /// @author ZeroPoint Labs
 /// @dev stores, updates & process cross-chain payloads
-interface IStateRegistry {
+interface IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 Errors
     //////////////////////////////////////////////////////////////*/
@@ -26,6 +26,10 @@ interface IStateRegistry {
 
     error PAYLOAD_NOT_UPDATED();
 
+    error QUORUM_NOT_REACHED();
+
+    error INVALID_PROOF_BRIDGE_ID();
+
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
@@ -34,22 +38,19 @@ interface IStateRegistry {
 
     /// @dev is emitted when a cross-chain payload is received in the state registry.
     event PayloadReceived(
-        uint80 srcChainId,
-        uint80 dstChainId,
+        uint16 srcChainId,
+        uint16 dstChainId,
         uint256 payloadId
     );
+
+    /// @dev is emitted when a cross-chain proof is received in the state registry.
+    event ProofReceived(bytes proof);
 
     /// @dev is emitted when a payload gets updated.
     event PayloadUpdated(uint256 payloadId);
 
     /// @dev is emitted when a payload gets processed.
     event PayloadProcessed(uint256 payloadId);
-
-    /// @dev is emitted when core contracts are updated
-    event CoreContractsUpdated(
-        address routerContract,
-        address tokenBankContract
-    );
 
     /*///////////////////////////////////////////////////////////////
                             External Functions
@@ -62,12 +63,14 @@ interface IStateRegistry {
 
     /// @dev allows core contracts to send data to a destination chain.
     /// @param ambId_ is the identifier of the message amb to be used.
+    /// @param secAmbId_ is the identifiers for the proof amb to be used.
     /// @param dstChainId_ is the internal chainId used throughtout the protocol.
     /// @param message_ is the crosschain data to be sent.
     /// @param extraData_ defines all the message amb specific information.
     /// NOTE: dstChainId maps with the message amb's propreitory chain Id.
     function dispatchPayload(
         uint8 ambId_,
+        uint8[] memory secAmbId_,
         uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
@@ -78,24 +81,6 @@ interface IStateRegistry {
     /// @param message_ is the crosschain data received.
     /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
     function receivePayload(uint16 srcChainId_, bytes memory message_) external;
-
-    /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
-    /// @param finalAmounts_ is the amount to be updated.
-    /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updateMultiVaultPayload(
-        uint256 payloadId_,
-        uint256[] calldata finalAmounts_
-    ) external;
-
-    /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
-    /// @param finalAmount_ is the amount to be updated.
-    /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updateSingleVaultPayload(
-        uint256 payloadId_,
-        uint256 finalAmount_
-    ) external;
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
@@ -112,13 +97,4 @@ interface IStateRegistry {
         uint256 ambId_,
         bytes memory extraData_
     ) external payable;
-
-    /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
-    /// @param routerContract_ is the address of the router
-    /// @param tokenBankContract_ is the address of the token bank
-    function setCoreContracts(
-        address routerContract_,
-        address tokenBankContract_,
-        address superFormFactory_
-    ) external;
 }

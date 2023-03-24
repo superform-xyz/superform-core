@@ -9,7 +9,7 @@ import {ERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/utils/ERC11
 import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {StateReq} from "../../types/DataTypes.sol";
 import {LiqRequest} from "../../types/LiquidityTypes.sol";
-import {StateRegistry} from "../../crosschain-data/StateRegistry.sol";
+import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
 import {SuperRouter} from "../../SuperRouter.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 
@@ -50,7 +50,7 @@ contract Attack is Ownable, ERC1155Holder {
 
     receive() external payable {
         /// @dev the last payload id is obtained (during execution this will be the same)
-        uint256 payloadId = StateRegistry(stateRegistryDestination)
+        uint256 payloadId = CoreStateRegistry(stateRegistryDestination)
             .payloadsCount();
 
         /// @dev the vault balance is obtained. This method of looping is rough but works
@@ -62,7 +62,7 @@ contract Attack is Ownable, ERC1155Holder {
         if (vaultBalance > 999) {
             // send enough eth as gas to keep the tx alive, 1 as example
             try
-                StateRegistry(stateRegistryDestination).processPayload{
+                CoreStateRegistry(stateRegistryDestination).processPayload{
                     value: 1
                 }(payloadId)
             {} catch {}
@@ -99,7 +99,7 @@ contract Attack is Ownable, ERC1155Holder {
 
     /// @dev could be removed since anyone can call processPayload
     function processPayload(uint256 payloadId) external payable {
-        StateRegistry(stateRegistryDestination).processPayload{
+        CoreStateRegistry(stateRegistryDestination).processPayload{
             value: msg.value
         }(payloadId);
     }
