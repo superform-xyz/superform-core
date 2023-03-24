@@ -2,12 +2,14 @@
 pragma solidity 0.8.19;
 
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
+
 import {BaseStateRegistry} from "./BaseStateRegistry.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
-import {StateData, PayloadState, TransactionType, CallbackType, ReturnData, FormData, FormCommonData, FormXChainData} from "../types/DataTypes.sol";
+import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
+import "../utils/DataPacking.sol";
 
-/// @title State Registry To Process CORE MESSAGING CALLS (DEPOSIT & WITHDRAWALS)
+/// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging ambs.
 contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
@@ -16,15 +18,18 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    address public routerContract;
-    address public tokenBankContract;
+
+    ISuperRouter public routerContract;
+
+    /// NOTE: Shouldnt we use multiple tokenBanks to benefit from using them?
+    ITokenBank public tokenBankContract;
 
     /*///////////////////////////////////////////////////////////////
                              CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint80 chainId_) BaseStateRegistry(chainId_) {}
+    constructor(uint16 chainId_) BaseStateRegistry(chainId_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -37,8 +42,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         address routerContract_,
         address tokenBankContract_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        routerContract = routerContract_;
-        tokenBankContract = tokenBankContract_;
+        routerContract = ISuperRouter(routerContract_);
+        tokenBankContract = ITokenBank(tokenBankContract_);
 
         emit CoreContractsUpdated(routerContract_, tokenBankContract_);
     }
@@ -47,7 +52,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
     /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(
+    function updateMultiVaultPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
     ) external virtual override onlyRole(UPDATER_ROLE) {
@@ -55,14 +60,17 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert INVALID_PAYLOAD_ID();
         }
 
-        StateData memory payloadInfo = abi.decode(
+        AMBMessage memory payloadInfo = abi.decode(
             payload[payloadId_],
-            (StateData)
+            (AMBMessage)
+        );
+        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+            payloadInfo.txInfo
         );
 
         if (
-            payloadInfo.txType != TransactionType.DEPOSIT &&
-            payloadInfo.flag != CallbackType.INIT
+            txType != uint256(TransactionType.DEPOSIT) &&
+            callbackType != uint256(CallbackType.INIT)
         ) {
             revert INVALID_PAYLOAD_UPDATE_REQUEST();
         }
@@ -71,17 +79,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert INVALID_PAYLOAD_STATE();
         }
 
-        FormData memory formData = abi.decode(payloadInfo.params, (FormData));
-        FormCommonData memory formCommonData = abi.decode(
-            formData.commonData,
-            (FormCommonData)
-        );
-        FormXChainData memory formXChainData = abi.decode(
-            formData.xChainData,
-            (FormXChainData)
+        if (!multi) {
+            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
+        InitMultiVaultData memory multiVaultData = abi.decode(
+            payloadInfo.params,
+            (InitMultiVaultData)
         );
 
-        uint256 l1 = formCommonData.amounts.length;
+        uint256 l1 = multiVaultData.amounts.length;
         uint256 l2 = finalAmounts_.length;
 
         if (l1 != l2) {
@@ -89,32 +96,88 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         for (uint256 i = 0; i < l1; i++) {
-            uint256 newAmount = finalAmounts_[i];
-            uint256 maxAmount = formCommonData.amounts[i];
+            uint256 newAmount = finalAmounts_[i]; /// backend fed amounts of socket tokens expected
+            uint256 maxAmount = multiVaultData.amounts[i];
 
             if (newAmount > maxAmount) {
                 revert NEGATIVE_SLIPPAGE();
             }
 
             uint256 minAmount = (maxAmount *
-                (10000 - formXChainData.maxSlippage[i])) / 10000;
+                (10000 - multiVaultData.maxSlippage[i])) / 10000;
 
             if (newAmount < minAmount) {
                 revert SLIPPAGE_OUT_OF_BOUNDS();
             }
         }
 
-        formCommonData.amounts = finalAmounts_;
+        multiVaultData.amounts = finalAmounts_;
 
-        FormData memory updatedFormData = FormData(
-            formData.srcChainId,
-            formData.dstChainId,
-            abi.encode(formCommonData),
-            formData.xChainData,
-            formData.extraFormData
+        payloadInfo.params = abi.encode(multiVaultData);
+
+        payload[payloadId_] = abi.encode(payloadInfo);
+        payloadTracking[payloadId_] = PayloadState.UPDATED;
+
+        emit PayloadUpdated(payloadId_);
+    }
+
+    /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
+    /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
+    /// @param finalAmount_ is the amount to be updated.
+    /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
+    function updateSingleVaultPayload(
+        uint256 payloadId_,
+        uint256 finalAmount_
+    ) external virtual override onlyRole(UPDATER_ROLE) {
+        if (payloadId_ > payloadsCount) {
+            revert INVALID_PAYLOAD_ID();
+        }
+
+        AMBMessage memory payloadInfo = abi.decode(
+            payload[payloadId_],
+            (AMBMessage)
+        );
+        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+            payloadInfo.txInfo
         );
 
-        payloadInfo.params = abi.encode(updatedFormData);
+        if (
+            txType != uint256(TransactionType.DEPOSIT) &&
+            callbackType != uint256(CallbackType.INIT)
+        ) {
+            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
+        if (payloadTracking[payloadId_] != PayloadState.STORED) {
+            revert INVALID_PAYLOAD_STATE();
+        }
+
+        if (multi) {
+            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
+        InitSingleVaultData memory singleVaultData = abi.decode(
+            payloadInfo.params,
+            (InitSingleVaultData)
+        );
+
+        uint256 newAmount = finalAmount_; /// backend fed amounts of socket tokens expected
+        uint256 maxAmount = singleVaultData.amount;
+
+        if (newAmount > maxAmount) {
+            revert NEGATIVE_SLIPPAGE();
+        }
+
+        uint256 minAmount = (maxAmount *
+            (10000 - singleVaultData.maxSlippage)) / 10000;
+
+        if (newAmount < minAmount) {
+            revert SLIPPAGE_OUT_OF_BOUNDS();
+        }
+
+        singleVaultData.amount = finalAmount_;
+
+        payloadInfo.params = abi.encode(singleVaultData);
 
         payload[payloadId_] = abi.encode(payloadInfo);
         payloadTracking[payloadId_] = PayloadState.UPDATED;
@@ -143,12 +206,26 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert QUORUM_NOT_REACHED();
         }
 
-        StateData memory payloadInfo = abi.decode(_payload, (StateData));
+        AMBMessage memory payloadInfo = abi.decode(_payload, (AMBMessage));
 
-        if (payloadInfo.txType == TransactionType.WITHDRAW) {
-            _processWithdrawal(payloadId_, payloadInfo);
+        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+            payloadInfo.txInfo
+        );
+
+        if (multi) {
+            if (txType == uint256(TransactionType.WITHDRAW)) {
+                _processMultiWithdrawal(payloadId_, callbackType, payloadInfo);
+            } else if (txType == uint256(TransactionType.DEPOSIT)) {
+                _processMultiDeposit(payloadId_, callbackType, payloadInfo);
+            }
         } else {
-            _processDeposit(payloadId_, payloadInfo);
+            if (callbackType == 0) {}
+
+            if (txType == uint256(TransactionType.WITHDRAW)) {
+                _processSingleWithdrawal(payloadId_, callbackType, payloadInfo);
+            } else if (txType == uint256(TransactionType.DEPOSIT)) {
+                _processSingleDeposit(payloadId_, callbackType, payloadInfo);
+            }
         }
     }
 
@@ -172,53 +249,79 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-        StateData memory payloadInfo = abi.decode(
+        AMBMessage memory payloadInfo = abi.decode(
             payload[payloadId_],
-            (StateData)
+            (AMBMessage)
         );
-        FormData memory formData = abi.decode(payloadInfo.params, (FormData));
 
-        if (formData.dstChainId != chainId) {
-            revert INVALID_PAYLOAD_STATE();
+        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+            payloadInfo.txInfo
+        );
+
+        if (multi) {
+            InitMultiVaultData memory multiVaultData = abi.decode(
+                payloadInfo.params,
+                (InitMultiVaultData)
+            );
+
+            if (chainId != _getDestinationChain(multiVaultData.superFormIds[0]))
+                revert INVALID_PAYLOAD_STATE();
+        } else {
+            InitSingleVaultData memory singleVaultData = abi.decode(
+                payloadInfo.params,
+                (InitSingleVaultData)
+            );
+
+            if (chainId != _getDestinationChain(singleVaultData.superFormId))
+                revert INVALID_PAYLOAD_STATE();
         }
 
         /// NOTE: Send `data` back to source based on AmbID to revert the state.
         /// NOTE: chain_ids conflict should be addresses here.
-        // amb[ambId_].dipatchPayload(formData.dstChainId_, message_, extraData_);
+        // amb[ambId_].dispatchPayload(formData.dstChainId_, message_, extraData_);
     }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function _processWithdrawal(
+    function _processMultiWithdrawal(
         uint256 payloadId_,
-        StateData memory payloadInfo_
+        uint256 callbackType_,
+        AMBMessage memory payloadInfo_
     ) internal {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-        if (payloadInfo_.flag == CallbackType.INIT) {
-            ITokenBank(tokenBankContract).withdrawSync{value: msg.value}(
-                abi.encode(payloadInfo_)
+        if (callbackType_ == uint256(CallbackType.INIT)) {
+            InitMultiVaultData memory multiVaultData = abi.decode(
+                payloadInfo_.params,
+                (InitMultiVaultData)
+            );
+            tokenBankContract.withdrawMultiSync{value: msg.value}(
+                multiVaultData
             );
         } else {
-            ISuperRouter(routerContract).stateSync{value: msg.value}(
-                abi.encode(payloadInfo_)
-            );
+            routerContract.stateMultiSync{value: msg.value}(payloadInfo_);
         }
     }
 
-    function _processDeposit(
+    function _processMultiDeposit(
         uint256 payloadId_,
-        StateData memory payloadInfo_
+        uint256 callbackType_,
+        AMBMessage memory payloadInfo_
     ) internal {
-        if (payloadInfo_.flag == CallbackType.INIT) {
+        if (callbackType_ == uint256(CallbackType.INIT)) {
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
                 revert PAYLOAD_NOT_UPDATED();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ITokenBank(tokenBankContract).depositSync{value: msg.value}(
-                abi.encode(payloadInfo_)
+            InitMultiVaultData memory multiVaultData = abi.decode(
+                payloadInfo_.params,
+                (InitMultiVaultData)
+            );
+
+            tokenBankContract.depositMultiSync{value: msg.value}(
+                multiVaultData
             );
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
@@ -226,9 +329,51 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperRouter(routerContract).stateSync{value: msg.value}(
-                abi.encode(payloadInfo_)
+            routerContract.stateMultiSync{value: msg.value}(payloadInfo_);
+        }
+    }
+
+    function _processSingleWithdrawal(
+        uint256 payloadId_,
+        uint256 callbackType_,
+        AMBMessage memory payloadInfo_
+    ) internal {
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+        if (callbackType_ == uint256(CallbackType.INIT)) {
+            InitSingleVaultData memory singleVaultData = abi.decode(
+                payloadInfo_.params,
+                (InitSingleVaultData)
             );
+            tokenBankContract.withdrawSync{value: msg.value}(singleVaultData);
+        } else {
+            routerContract.stateSync{value: msg.value}(payloadInfo_);
+        }
+    }
+
+    function _processSingleDeposit(
+        uint256 payloadId_,
+        uint256 callbackType_,
+        AMBMessage memory payloadInfo_
+    ) internal {
+        if (callbackType_ == uint256(CallbackType.INIT)) {
+            InitSingleVaultData memory singleVaultData = abi.decode(
+                payloadInfo_.params,
+                (InitSingleVaultData)
+            );
+            if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
+                revert PAYLOAD_NOT_UPDATED();
+            }
+            payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+            tokenBankContract.depositSync{value: msg.value}(singleVaultData);
+        } else {
+            if (payloadTracking[payloadId_] != PayloadState.STORED) {
+                revert INVALID_PAYLOAD_STATE();
+            }
+            payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+            routerContract.stateSync{value: msg.value}(payloadInfo_);
         }
     }
 }

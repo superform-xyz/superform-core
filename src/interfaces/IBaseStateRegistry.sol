@@ -38,8 +38,8 @@ interface IBaseStateRegistry {
 
     /// @dev is emitted when a cross-chain payload is received in the state registry.
     event PayloadReceived(
-        uint80 srcChainId,
-        uint80 dstChainId,
+        uint16 srcChainId,
+        uint16 dstChainId,
         uint256 payloadId
     );
 
@@ -71,25 +71,16 @@ interface IBaseStateRegistry {
     function dispatchPayload(
         uint8 ambId_,
         uint8[] memory secAmbId_,
-        uint80 dstChainId_,
+        uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable;
 
     /// @dev allows state registry to receive messages from amb implementations.
-    /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
     /// @param srcChainId_ is the internal chainId from which the data is sent.
     /// @param message_ is the crosschain data received.
-    function receivePayload(uint80 srcChainId_, bytes memory message_) external;
-
-    /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
-    /// @param finalAmounts_ is the amount to be updated.
-    /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(
-        uint256 payloadId_,
-        uint256[] calldata finalAmounts_
-    ) external;
+    /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
+    function receivePayload(uint16 srcChainId_, bytes memory message_) external;
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.

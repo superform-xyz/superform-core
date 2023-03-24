@@ -44,7 +44,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     address public deployer = address(777);
     address[] public users;
-    mapping(uint80 => mapping(bytes32 => address)) public contracts;
+    mapping(uint16 => mapping(bytes32 => address)) public contracts;
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
@@ -60,6 +60,8 @@ abstract contract BaseSetup is DSTest, Test {
     bytes32 public constant ROUTER_ROLE = keccak256("ROUTER_ROLE");
     bytes32 public constant SUPER_ROUTER_ROLE = keccak256("SUPER_ROUTER_ROLE");
     bytes32 public constant TOKEN_BANK_ROLE = keccak256("TOKEN_BANK_ROLE");
+    bytes32 public constant STATE_REGISTRY_ROLE =
+        keccak256("STATE_REGISTRY_ROLE");
 
     /// @dev one vault per request at the moment - do not change for now
     uint256 internal constant allowedNumberOfVaultsPerRequest = 1;
@@ -70,9 +72,9 @@ abstract contract BaseSetup is DSTest, Test {
     uint256[] public FORMS_FOR_VAULTS = [uint256(1), 1, 1];
     string[] public VAULT_NAMES;
 
-    mapping(uint80 => IERC4626[]) public vaults;
-    mapping(uint80 => uint256[]) vaultIds;
-    mapping(uint80 => uint256) PAYLOAD_ID; // chaindId => payloadId
+    mapping(uint16 => IERC4626[]) public vaults;
+    mapping(uint16 => uint256[]) vaultIds;
+    mapping(uint16 => uint256) PAYLOAD_ID; // chaindId => payloadId
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -83,10 +85,10 @@ abstract contract BaseSetup is DSTest, Test {
     uint8[] ambIds;
 
     /*//////////////////////////////////////////////////////////////
-                        LAYER ZERO VARIABLES
+                        AMB VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint80 => address) public LZ_ENDPOINTS;
+    mapping(uint16 => address) public LZ_ENDPOINTS;
 
     address public constant ETH_lzEndpoint =
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
@@ -121,15 +123,15 @@ abstract contract BaseSetup is DSTest, Test {
     IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
         IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
 
-    uint80 public constant ETH = 1;
-    uint80 public constant BSC = 2;
-    uint80 public constant AVAX = 3;
-    uint80 public constant POLY = 4;
-    uint80 public constant ARBI = 5;
-    uint80 public constant OP = 6;
-    uint80 public constant FTM = 7;
+    uint16 public constant ETH = 1;
+    uint16 public constant BSC = 2;
+    uint16 public constant AVAX = 3;
+    uint16 public constant POLY = 4;
+    uint16 public constant ARBI = 5;
+    uint16 public constant OP = 6;
+    uint16 public constant FTM = 7;
 
-    uint80[7] public chainIds = [1, 2, 3, 4, 5, 6, 7];
+    uint16[7] public chainIds = [1, 2, 3, 4, 5, 6, 7];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -153,7 +155,7 @@ abstract contract BaseSetup is DSTest, Test {
                         CHAINLINK VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint80 => address) public PRICE_FEEDS;
+    mapping(uint16 => address) public PRICE_FEEDS;
 
     address public constant ETHEREUM_ETH_USD_FEED =
         0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
@@ -171,8 +173,8 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     // chainID => FORK
-    mapping(uint80 => uint256) public FORKS;
-    mapping(uint80 => string) public RPC_URLS;
+    mapping(uint16 => uint256) public FORKS;
+    mapping(uint16 => string) public RPC_URLS;
 
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
@@ -197,311 +199,8 @@ abstract contract BaseSetup is DSTest, Test {
         _fundUnderlyingTokens(100);
     }
 
-    function deposit(
-        TestAction memory action,
-        ActionLocalVars memory vars
-    ) public returns (bool) {
-        TestAssertionVars memory aV;
-        aV.lenRequests = vars.amounts.length;
-
-        if (
-            vars.targetSuperFormIds.length != aV.lenRequests ||
-            aV.lenRequests == 0
-        ) revert LEN_MISMATCH();
-
-        vars.stateReqs = new StateReq[](aV.lenRequests);
-        vars.liqReqs = new LiqRequest[](aV.lenRequests);
-
-        for (uint256 i = 0; i < aV.lenRequests; i++) {
-            (vars.stateReqs[i], vars.liqReqs[i]) = _buildDepositCallData(
-                BuildDepositCallDataArgs(
-                    action.user,
-                    vars.fromSrc,
-                    vars.toDst,
-                    vars.underlyingSrcToken[i], ///!!!WARNING !!! @dev we probably need to create liq request with both src and dst tokens
-                    vars.targetSuperFormIds[i],
-                    vars.amounts[i],
-                    action.maxSlippage,
-                    action.CHAIN_0,
-                    action.CHAIN_1,
-                    action.multiTx
-                )
-            );
-        }
-
-        /// @dev calculate amounts before deposit
-
-        aV.superPositionsAmountBefore = new uint256[][](aV.lenRequests);
-        aV.destinationSharesBefore = new uint256[][](aV.lenRequests);
-
-        for (uint256 i = 0; i < aV.lenRequests; i++) {
-            aV.tSPAmtBefore = new uint256[](allowedNumberOfVaultsPerRequest);
-            aV.tDestinationSharesAmtBefore = new uint256[](
-                allowedNumberOfVaultsPerRequest
-            );
-            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
-                vm.selectFork(FORKS[action.CHAIN_0]);
-                aV.tSPAmtBefore[j] = SuperRouter(vars.fromSrc).balanceOf(
-                    action.user,
-                    vars.targetSuperFormIds[i][j]
-                );
-
-                vm.selectFork(FORKS[action.CHAIN_1]);
-                /// @dev this should be the balance of FormBank in the future
-                aV.tDestinationSharesAmtBefore[j] = VaultMock(
-                    vars.vaultMock[i][j]
-                ).balanceOf(getContract(action.CHAIN_1, "ERC4626Form"));
-            }
-            aV.superPositionsAmountBefore[i] = aV.tSPAmtBefore;
-            aV.destinationSharesBefore[i] = aV.tDestinationSharesAmtBefore;
-        }
-        /// @dev deposit happens here
-        _actionToSuperRouter(
-            InternalActionArgs(
-                vars.fromSrc,
-                vars.lzEndpoint_1,
-                action.user,
-                vars.stateReqs,
-                vars.liqReqs,
-                action.CHAIN_0,
-                action.CHAIN_1,
-                action.action,
-                action.testType,
-                action.revertError,
-                action.multiTx
-            )
-        );
-
-        if (action.CHAIN_0 != action.CHAIN_1) {
-            for (uint256 i = 0; i < aV.lenRequests; i++) {
-                unchecked {
-                    PAYLOAD_ID[action.CHAIN_1]++;
-                }
-                if (action.testType == TestType.Pass) {
-                    if (action.multiTx) {
-                        _processMultiTx(
-                            action.CHAIN_1,
-                            vars.underlyingSrcToken[i][0], /// @dev should be made to support multiple tokens
-                            vars.amounts[i][0] /// @dev should be made to support multiple tokens
-                        );
-                    }
-
-                    _updateState(
-                        PAYLOAD_ID[action.CHAIN_1],
-                        vars.amounts[i],
-                        action.slippage,
-                        action.CHAIN_1,
-                        action.testType,
-                        action.revertError,
-                        action.revertRole
-                    );
-                    vm.recordLogs();
-                    _processPayload(
-                        PAYLOAD_ID[action.CHAIN_1],
-                        action.CHAIN_1,
-                        action.testType,
-                        action.revertError
-                    );
-
-                    vars.logs = vm.getRecordedLogs();
-                    LayerZeroHelper(
-                        getContract(action.CHAIN_1, "LayerZeroHelper")
-                    ).helpWithEstimates(
-                            vars.lzEndpoint_0,
-                            2000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                            FORKS[action.CHAIN_0],
-                            vars.logs
-                        );
-
-                    HyperlaneHelper(
-                        getContract(action.CHAIN_1, "HyperlaneHelper")
-                    ).help(
-                            address(HyperlaneMailbox),
-                            FORKS[action.CHAIN_0],
-                            vars.logs
-                        );
-
-                    unchecked {
-                        PAYLOAD_ID[action.CHAIN_0]++;
-                    }
-                    _processPayload(
-                        PAYLOAD_ID[action.CHAIN_0],
-                        action.CHAIN_0,
-                        action.testType,
-                        action.revertError
-                    );
-                } else if (action.testType == TestType.RevertProcessPayload) {
-                    aV.success = _processPayload(
-                        PAYLOAD_ID[action.CHAIN_1],
-                        action.CHAIN_1,
-                        action.testType,
-                        action.revertError
-                    );
-                    if (!aV.success) {
-                        return false;
-                    }
-                } else if (
-                    action.testType == TestType.RevertUpdateStateSlippage ||
-                    action.testType == TestType.RevertUpdateStateRBAC
-                ) {
-                    aV.success = _updateState(
-                        PAYLOAD_ID[action.CHAIN_1],
-                        vars.amounts[i],
-                        action.slippage,
-                        action.CHAIN_1,
-                        action.testType,
-                        action.revertError,
-                        action.revertRole
-                    );
-                    if (!aV.success) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        /// @dev asserts for verification
-        for (uint256 i = 0; i < aV.lenRequests; i++) {
-            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
-                vm.selectFork(FORKS[action.CHAIN_0]);
-
-                assertEq(
-                    SuperRouter(vars.fromSrc).balanceOf(
-                        action.user,
-                        vars.targetSuperFormIds[i][j]
-                    ),
-                    aV.superPositionsAmountBefore[i][j] + vars.amounts[i][j]
-                );
-
-                vm.selectFork(FORKS[action.CHAIN_1]);
-
-                assertEq(
-                    VaultMock(vars.vaultMock[i][j]).balanceOf(
-                        getContract(action.CHAIN_1, "ERC4626Form")
-                    ),
-                    aV.destinationSharesBefore[i][j] + vars.amounts[i][j]
-                );
-            }
-        }
-
-        return true;
-    }
-
-    function withdraw(
-        TestAction memory action,
-        ActionLocalVars memory vars
-    ) public returns (bool) {
-        TestAssertionVars memory aV;
-
-        aV.lenRequests = vars.amounts.length;
-        if (
-            vars.targetSuperFormIds.length != aV.lenRequests &&
-            aV.lenRequests == 0
-        ) revert LEN_MISMATCH();
-
-        vars.stateReqs = new StateReq[](aV.lenRequests);
-        vars.liqReqs = new LiqRequest[](aV.lenRequests);
-
-        for (uint256 i = 0; i < aV.lenRequests; i++) {
-            (vars.stateReqs[i], vars.liqReqs[i]) = _buildWithdrawCallData(
-                BuildWithdrawCallDataArgs(
-                    action.user,
-                    payable(vars.fromSrc),
-                    vars.toDst,
-                    vars.underlyingSrcToken[i], /// @dev we probably need to create liq request with both src and dst tokens
-                    vars.vaultMock[i],
-                    vars.targetSuperFormIds[i],
-                    vars.amounts[i],
-                    action.maxSlippage,
-                    action.actionKind,
-                    action.CHAIN_0,
-                    action.CHAIN_1
-                )
-            );
-        }
-
-        /// @dev calculate amounts before withdraw
-        aV.superPositionsAmountBefore = new uint256[][](aV.lenRequests);
-        aV.destinationSharesBefore = new uint256[][](aV.lenRequests);
-
-        for (uint256 i = 0; i < aV.lenRequests; i++) {
-            aV.tSPAmtBefore = new uint256[](allowedNumberOfVaultsPerRequest);
-            aV.tDestinationSharesAmtBefore = new uint256[](
-                allowedNumberOfVaultsPerRequest
-            );
-            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
-                vm.selectFork(FORKS[action.CHAIN_0]);
-                aV.tSPAmtBefore[j] = SuperRouter(vars.fromSrc).balanceOf(
-                    action.user,
-                    vars.targetSuperFormIds[i][j]
-                );
-
-                vm.selectFork(FORKS[action.CHAIN_1]);
-                aV.tDestinationSharesAmtBefore[j] = VaultMock(
-                    vars.vaultMock[i][j]
-                ).balanceOf(getContract(action.CHAIN_1, "ERC4626Form"));
-            }
-            aV.superPositionsAmountBefore[i] = aV.tSPAmtBefore;
-            aV.destinationSharesBefore[i] = aV.tDestinationSharesAmtBefore;
-        }
-
-        _actionToSuperRouter(
-            InternalActionArgs(
-                vars.fromSrc,
-                vars.lzEndpoint_1,
-                action.user,
-                vars.stateReqs,
-                vars.liqReqs,
-                action.CHAIN_0,
-                action.CHAIN_1,
-                action.action,
-                action.testType,
-                action.revertError,
-                action.multiTx
-            )
-        );
-
-        if (action.CHAIN_0 != action.CHAIN_1) {
-            for (uint256 i = 0; i < aV.lenRequests; i++) {
-                PAYLOAD_ID[action.CHAIN_1]++;
-                _processPayload(
-                    PAYLOAD_ID[action.CHAIN_1],
-                    action.CHAIN_1,
-                    action.testType,
-                    action.revertError
-                );
-            }
-        }
-
-        /// @dev asserts for verification
-        for (uint256 i = 0; i < aV.lenRequests; i++) {
-            for (uint256 j = 0; j < allowedNumberOfVaultsPerRequest; j++) {
-                vm.selectFork(FORKS[action.CHAIN_0]);
-
-                assertEq(
-                    SuperRouter(vars.fromSrc).balanceOf(
-                        action.user,
-                        vars.targetSuperFormIds[i][j]
-                    ),
-                    aV.superPositionsAmountBefore[i][j] - vars.amounts[i][j]
-                );
-
-                vm.selectFork(FORKS[action.CHAIN_1]);
-
-                assertEq(
-                    VaultMock(vars.vaultMock[i][j]).balanceOf(
-                        getContract(action.CHAIN_1, "ERC4626Form")
-                    ),
-                    aV.destinationSharesBefore[i][j] - vars.amounts[i][j]
-                );
-            }
-        }
-
-        return true;
-    }
-
     function getContract(
-        uint80 chainId,
+        uint16 chainId,
         string memory _name
     ) public view returns (address) {
         return contracts[chainId][bytes32(bytes(_name))];
@@ -549,7 +248,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
             vars.stateRegistry = address(new CoreStateRegistry(vars.chainId));
-            contracts[vars.chainId][bytes32(bytes("StateRegistry"))] = vars
+            contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
                 .stateRegistry;
 
             /// @dev 2.1- deployed Layerzero Implementation
@@ -624,11 +323,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 6 - Deploy 4626Form
             vars.erc4626Form = address(
-                new ERC4626Form(
-                    vars.chainId,
-                    IBaseStateRegistry(payable(vars.stateRegistry)),
-                    ISuperFormFactory(vars.factory)
-                )
+                new ERC4626Form(vars.chainId, ISuperFormFactory(vars.factory))
             );
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
                 .erc4626Form;
@@ -640,7 +335,7 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = address(
                 new TokenBank(
                     vars.chainId,
-                    vars.stateRegistry,
+                    IBaseStateRegistry(payable(vars.stateRegistry)),
                     ISuperFormFactory(vars.factory)
                 )
             );
@@ -671,7 +366,10 @@ abstract contract BaseSetup is DSTest, Test {
             vars.fork = FORKS[vars.chainId];
             vm.selectFork(vars.fork);
 
-            vars.srcStateRegistry = getContract(vars.chainId, "StateRegistry");
+            vars.srcCoreStateRegistry = getContract(
+                vars.chainId,
+                "CoreStateRegistry"
+            );
             vars.srcLzImplementation = getContract(
                 vars.chainId,
                 "LzImplementation"
@@ -715,34 +413,32 @@ abstract contract BaseSetup is DSTest, Test {
             //     .updateSafeGasParam("0x000100000000000000000000000000000000000000000000000000000000004c4b40");
 
             /// @dev - RBAC
-            CoreStateRegistry(payable(vars.srcStateRegistry)).setCoreContracts(
-                vars.srcSuperRouter,
-                vars.srcTokenBank
-            );
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry))
+                .setCoreContracts(vars.srcSuperRouter, vars.srcTokenBank);
 
-            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.srcSuperRouter
             );
 
             /// @dev TODO: for each form , add it to the core_contracts_role. Just 1 for now
-            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
-                vars.srcErc4626Form
+                vars.srcTokenBank
             );
-            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 IMPLEMENTATION_CONTRACTS_ROLE,
                 vars.lzImplementation
             );
-            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 IMPLEMENTATION_CONTRACTS_ROLE,
                 vars.hyperlaneImplementation
             );
-            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 PROCESSOR_ROLE,
                 deployer
             );
-            CoreStateRegistry(payable(vars.srcStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 UPDATER_ROLE,
                 deployer
             );
@@ -762,14 +458,19 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.srcTokenBank
             );
 
+            TokenBank(payable(vars.srcTokenBank)).grantRole(
+                STATE_REGISTRY_ROLE,
+                vars.srcCoreStateRegistry
+            );
+
             /// @dev configures lzImplementation to state registry
-            CoreStateRegistry(payable(vars.srcStateRegistry)).configureAmb(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
                 ambIds[0],
                 vars.lzImplementation
             );
 
             /// @dev configures hyperlaneImplementation to state registry
-            CoreStateRegistry(payable(vars.srcStateRegistry)).configureAmb(
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
                 ambIds[1],
                 vars.hyperlaneImplementation
             );
@@ -834,444 +535,8 @@ abstract contract BaseSetup is DSTest, Test {
         vm.stopPrank();
     }
 
-    /*//////////////////////////////////////////////////////////////
-                            INTERNAL HELPERS:
-            (ADVANCED DIRECT USAGE ALLOWED (see Attack.t.sol))
-    //////////////////////////////////////////////////////////////*/
-
-    function _actionToSuperRouter(InternalActionArgs memory args) internal {
-        InternalActionVars memory vars;
-        vars.initialFork = vm.activeFork();
-        vars.lenRequests = args.liqReqs.length;
-
-        if (args.srcChainId != args.toChainId) {
-            /// @dev on same chain deposits, if we want to make a native asset deposit
-            /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
-            /// @dev the sum of native assets needed in each state request
-            vars.msgValue =
-                (vars.lenRequests + 1) *
-                _getPriceMultiplier(args.srcChainId) *
-                1e18;
-        }
-
-        CoreStateRegistry stateRegistry = CoreStateRegistry(
-            payable(getContract(args.toChainId, "StateRegistry"))
-        );
-        SuperRouter superRouter = SuperRouter(args.fromSrc);
-
-        vm.selectFork(FORKS[args.srcChainId]);
-        vars.txIdBefore = superRouter.totalTransactions();
-
-        if (args.testType != TestType.RevertMainAction) {
-            vm.prank(args.user);
-            /// @dev see pigeon for this implementation
-            vm.recordLogs();
-            /// @dev Value == fee paid to relayer. API call in our design
-            if (args.action == Actions.Deposit) {
-                superRouter.deposit{value: vars.msgValue * 2}(
-                    args.liqReqs,
-                    args.stateReqs
-                );
-            } else if (args.action == Actions.Withdraw) {
-                superRouter.withdraw{value: vars.msgValue}(
-                    args.liqReqs,
-                    args.stateReqs
-                );
-            }
-            if (args.srcChainId != args.toChainId) {
-                vars.logs = vm.getRecordedLogs();
-                /// @dev see pigeon for this implementation
-                LayerZeroHelper(getContract(args.srcChainId, "LayerZeroHelper"))
-                    .helpWithEstimates(
-                        args.toLzEndpoint,
-                        2000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                        FORKS[args.toChainId],
-                        vars.logs
-                    );
-
-                HyperlaneHelper(getContract(args.srcChainId, "HyperlaneHelper"))
-                    .help(
-                        address(HyperlaneMailbox),
-                        FORKS[args.toChainId],
-                        vars.logs
-                    );
-
-                vm.selectFork(FORKS[args.toChainId]);
-
-                vars.payloadNumberBefore = stateRegistry.payloadsCount();
-                console.log(stateRegistry.proofCount());
-
-                /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
-                for (uint256 i = 0; i < vars.lenRequests; i++) {
-                    /// @dev - assert the payload reached destination state registry
-
-                    vars.expectedFormXChainData = FormXChainData(
-                        vars.txIdBefore + i + 1,
-                        args.stateReqs[i].maxSlippage
-                    );
-
-                    vars.expectedFormCommonData = FormCommonData(
-                        args.user,
-                        args.stateReqs[i].superFormIds,
-                        args.stateReqs[i].amounts,
-                        bytes("")
-                    );
-
-                    vars.expectedFormData = FormData(
-                        args.srcChainId,
-                        args.toChainId,
-                        abi.encode(vars.expectedFormCommonData),
-                        abi.encode(vars.expectedFormXChainData),
-                        bytes("")
-                    );
-
-                    vars.data = abi.decode(
-                        stateRegistry.payload(
-                            vars.payloadNumberBefore + 1 - vars.lenRequests + i
-                        ),
-                        (StateData)
-                    );
-                    vars.receivedFormData = abi.decode(
-                        vars.data.params,
-                        (FormData)
-                    );
-
-                    vars.receivedFormCommonData = abi.decode(
-                        vars.receivedFormData.commonData,
-                        (FormCommonData)
-                    );
-
-                    vars.receivedFormXChainData = abi.decode(
-                        vars.receivedFormData.xChainData,
-                        (FormXChainData)
-                    );
-
-                    assertEq(
-                        vars.receivedFormData.srcChainId,
-                        vars.expectedFormData.srcChainId
-                    );
-                    assertEq(
-                        vars.receivedFormData.dstChainId,
-                        vars.expectedFormData.dstChainId
-                    );
-
-                    assertEq(
-                        vars.expectedFormCommonData.srcSender,
-                        vars.receivedFormCommonData.srcSender
-                    );
-
-                    assertEq(
-                        vars.receivedFormCommonData.superFormIds,
-                        vars.expectedFormCommonData.superFormIds
-                    );
-
-                    assertEq(
-                        vars.receivedFormCommonData.amounts,
-                        vars.expectedFormCommonData.amounts
-                    );
-                    assertEq(
-                        vars.receivedFormXChainData.maxSlippage,
-                        vars.expectedFormXChainData.maxSlippage
-                    );
-
-                    assertEq(
-                        vars.receivedFormXChainData.txId,
-                        vars.expectedFormXChainData.txId
-                    );
-                }
-            }
-        } else {
-            /// @dev empty for now
-        }
-
-        vm.selectFork(vars.initialFork);
-    }
-
-    function _buildDepositCallData(
-        BuildDepositCallDataArgs memory args
-    ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
-        bytes memory adapterParam;
-        /*
-            adapterParam = abi.encodePacked(version, gasLimit);
-        */
-        uint256 lenDeposits = args.amounts.length;
-
-        if (args.targetSuperFormIds.length != lenDeposits || lenDeposits == 0)
-            revert LEN_MISMATCH();
-        /// @dev Build State req
-
-        uint256[] memory slippage = new uint256[](lenDeposits);
-
-        for (uint256 i = 0; i < lenDeposits; i++) {
-            slippage[i] = args.maxSlippage;
-        }
-
-        uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;
-
-        uint8[] memory secAmb = new uint8[](1);
-        secAmb[0] = 2; /// @dev FIXME! - hardcoded secondary amb to 2 (hyperlane)
-
-        stateReq = StateReq(
-            ambIds[0],
-            secAmb, /// @dev FIXME! - this is a hack to get the test to start
-            args.toChainId,
-            args.amounts,
-            args.targetSuperFormIds,
-            slippage,
-            adapterParam,
-            bytes(""),
-            msgValue
-        );
-
-        /// @dev Build Liq request
-
-        // !! WARNING !! - sending single amount here - todo change
-        // !! WARNING !! - if collateral is the same we can actually send multi vault
-        address from = args.fromSrc;
-
-        if (args.srcChainId == args.toChainId) {
-            /// @dev same chain deposit, from is Form
-            /// @dev FIXME: this likely needs to be TOKENBANK now
-            from = args.toDst;
-        }
-        /// @dev check this from down here when contracts are fixed for multi vault
-        /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
-        bytes memory socketTxData = abi.encodeWithSignature(
-            "mockSocketTransfer(address,address,address,uint256,uint256)",
-            from,
-            args.multiTx
-                ? getContract(args.toChainId, "MultiTxProcessor")
-                : args.toDst, /// NOTE: TokenBank address / Form address???
-            args.underlyingToken[0], /// @dev - needs fix because it should have an array of underlying like state req
-            args.amounts[0], /// @dev FIXME - 1 amount is sent, not testing sum of amounts (different vaults)
-            FORKS[args.toChainId]
-        );
-
-        liqReq = LiqRequest(
-            1,
-            socketTxData,
-            args.underlyingToken[0], /// @dev FIXME - needs fix because it should have an array of underlying like state req
-            getContract(args.srcChainId, "SocketRouterMockFork"),
-            args.amounts[0], /// @dev FIXME - 1 amount is sent, not testing sum of amounts (different vaults)
-            0
-        );
-
-        uint256 initialFork = vm.activeFork();
-
-        vm.selectFork(FORKS[args.srcChainId]);
-
-        /// @dev - APPROVE transfer to SuperRouter (because of Socket)
-        vm.prank(args.user);
-        if (args.srcChainId != args.toChainId) {
-            MockERC20(args.underlyingToken[0]).approve(from, args.amounts[0]);
-        } else {
-            /// @dev same chain deposits approval is from Super Destination
-            MockERC20(args.underlyingToken[0]).approve(from, args.amounts[0]);
-        }
-
-        vm.selectFork(initialFork);
-    }
-
-    function _buildWithdrawCallData(
-        BuildWithdrawCallDataArgs memory args
-    ) internal returns (StateReq memory stateReq, LiqRequest memory liqReq) {
-        /// @dev set to empty bytes for now
-        bytes memory adapterParam;
-
-        uint256 lenWithdraws = args.targetSuperFormIds.length;
-
-        if (lenWithdraws == 0) revert LEN_MISMATCH();
-
-        uint256[] memory slippage = new uint256[](lenWithdraws);
-        uint256[] memory amountsToWithdraw = new uint256[](lenWithdraws);
-
-        if (args.actionKind == LiquidityChange.Full) {
-            uint256 sharesBalanceBeforeWithdraw;
-            for (uint256 i = 0; i < lenWithdraws; i++) {
-                slippage[i] = args.maxSlippage;
-                vm.selectFork(FORKS[args.srcChainId]);
-
-                sharesBalanceBeforeWithdraw = SuperRouter(args.fromSrc)
-                    .balanceOf(args.user, args.targetSuperFormIds[i]);
-
-                vm.selectFork(FORKS[args.toChainId]);
-
-                amountsToWithdraw[i] = VaultMock(args.vaultMock[i])
-                    .previewRedeem(sharesBalanceBeforeWithdraw);
-            }
-        } else if (args.actionKind == LiquidityChange.Partial) {
-            amountsToWithdraw = args.amounts;
-        }
-
-        uint256 msgValue = 1 * _getPriceMultiplier(args.srcChainId) * 1e18;
-
-        uint8[] memory secAmb = new uint8[](1);
-        secAmb[0] = 2; /// @dev FIXME! - hardcoded secondary amb to 2 (hyperlane)
-
-        stateReq = StateReq(
-            ambIds[0],
-            secAmb,
-            args.toChainId,
-            amountsToWithdraw,
-            args.targetSuperFormIds,
-            slippage,
-            adapterParam,
-            bytes(""),
-            msgValue
-        );
-
-        // !! WARNING !! - sending single amount here - todo change
-        /// @dev check this from down here when contracts are fixed for multi vault
-        /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
-        bytes memory socketTxData = abi.encodeWithSignature(
-            "mockSocketTransfer(address,address,address,uint256,uint256)",
-            args.toDst,
-            args.user,
-            args.underlyingToken[0], /// @dev FIXME - needs fix
-            amountsToWithdraw[0], /// @dev FIXME - needs fix
-            FORKS[args.toChainId]
-        );
-
-        liqReq = LiqRequest(
-            1,
-            socketTxData,
-            args.underlyingToken[0], /// @dev  FIXME - needs fix
-            getContract(args.srcChainId, "SocketRouterMockFork"),
-            amountsToWithdraw[0],
-            0
-        );
-    }
-
-    function _updateState(
-        uint256 payloadId_,
-        uint256[] memory amounts_,
-        int256 slippage,
-        uint80 targetChainId_,
-        TestType testType,
-        bytes4 revertError,
-        bytes32 revertRole
-    ) internal returns (bool) {
-        uint256 initialFork = vm.activeFork();
-
-        vm.selectFork(FORKS[targetChainId_]);
-        uint256 len = amounts_.length;
-        uint256[] memory finalAmounts = new uint256[](len);
-
-        for (uint256 i = 0; i < len; i++) {
-            finalAmounts[i] = amounts_[i];
-            if (slippage > 0) {
-                finalAmounts[i] =
-                    (amounts_[i] * (10000 - uint256(slippage))) /
-                    10000;
-            } else if (slippage < 0) {
-                slippage = -slippage;
-                finalAmounts[i] =
-                    (amounts_[i] * (10000 + uint256(slippage))) /
-                    10000;
-            }
-        }
-
-        if (testType == TestType.Pass) {
-            vm.prank(deployer);
-
-            CoreStateRegistry(
-                payable(getContract(targetChainId_, "StateRegistry"))
-            ).updatePayload(payloadId_, finalAmounts);
-        } else if (testType == TestType.RevertUpdateStateSlippage) {
-            vm.prank(deployer);
-
-            vm.expectRevert(revertError); /// @dev removed string here: come to this later
-
-            CoreStateRegistry(
-                payable(getContract(targetChainId_, "StateRegistry"))
-            ).updatePayload(payloadId_, finalAmounts);
-
-            return false;
-        } else if (testType == TestType.RevertUpdateStateRBAC) {
-            vm.prank(users[2]);
-            bytes memory errorMsg = getAccessControlErrorMsg(
-                users[2],
-                revertRole
-            );
-            vm.expectRevert(errorMsg);
-
-            CoreStateRegistry(
-                payable(getContract(targetChainId_, "StateRegistry"))
-            ).updatePayload(payloadId_, finalAmounts);
-
-            return false;
-        }
-
-        vm.selectFork(initialFork);
-
-        return true;
-    }
-
-    function _processPayload(
-        uint256 payloadId_,
-        uint80 targetChainId_,
-        TestType testType,
-        bytes4 revertError
-    ) internal returns (bool) {
-        uint256 initialFork = vm.activeFork();
-
-        vm.selectFork(FORKS[targetChainId_]);
-
-        uint256 msgValue = 10 * _getPriceMultiplier(targetChainId_) * 1e18;
-
-        vm.prank(deployer);
-        if (testType == TestType.Pass) {
-            CoreStateRegistry(
-                payable(getContract(targetChainId_, "StateRegistry"))
-            ).processPayload{value: msgValue}(payloadId_);
-        } else if (testType == TestType.RevertProcessPayload) {
-            vm.expectRevert();
-
-            CoreStateRegistry(
-                payable(getContract(targetChainId_, "StateRegistry"))
-            ).processPayload{value: msgValue}(payloadId_);
-
-            return false;
-        }
-
-        vm.selectFork(initialFork);
-        return true;
-    }
-
-    function _processMultiTx(
-        uint80 targetChainId_,
-        address underlyingToken_,
-        uint256 amount_
-    ) internal {
-        uint256 initialFork = vm.activeFork();
-        vm.selectFork(FORKS[targetChainId_]);
-
-        vm.prank(deployer);
-        /// @dev builds the data to be processed by the keeper contract.
-        /// @dev at this point the tokens are delivered to the multi-tx processor on the destination chain.
-        bytes memory socketTxData = abi.encodeWithSignature(
-            "mockSocketTransfer(address,address,address,uint256,uint256)",
-            getContract(targetChainId_, "MultiTxProcessor"),
-            getContract(targetChainId_, "TokenBank"),
-            underlyingToken_, /// @dev FIXME - needs fix because it should have an array of underlying like state req
-            amount_, /// @dev FIXME - 1 amount is sent, not testing sum of amounts (different vaults)
-            FORKS[targetChainId_]
-        );
-
-        MultiTxProcessor(
-            payable(getContract(targetChainId_, "MultiTxProcessor"))
-        ).processTx(
-                bridgeIds[0],
-                socketTxData,
-                underlyingToken_,
-                getContract(targetChainId_, "SocketRouterMockFork"),
-                amount_
-            );
-        vm.selectFork(initialFork);
-    }
-
     function _resetPayloadIDs() internal {
-        mapping(uint80 => uint256) storage payloadID = PAYLOAD_ID; // chaindId => payloadId
+        mapping(uint16 => uint256) storage payloadID = PAYLOAD_ID; // chaindId => payloadId
 
         payloadID[ETH] = 0;
         payloadID[BSC] = 0;
@@ -1287,7 +552,7 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     function _preDeploymentSetup() private {
-        mapping(uint80 => uint256) storage forks = FORKS;
+        mapping(uint16 => uint256) storage forks = FORKS;
         forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 16742187);
         forks[BSC] = vm.createFork(BSC_RPC_URL, 26121321);
         forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 26933006);
@@ -1296,7 +561,7 @@ abstract contract BaseSetup is DSTest, Test {
         forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 78219242);
         forks[FTM] = vm.createFork(FANTOM_RPC_URL, 56806404);
 
-        mapping(uint80 => string) storage rpcURLs = RPC_URLS;
+        mapping(uint16 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
         rpcURLs[BSC] = BSC_RPC_URL;
         rpcURLs[AVAX] = AVALANCHE_RPC_URL;
@@ -1305,7 +570,7 @@ abstract contract BaseSetup is DSTest, Test {
         rpcURLs[OP] = OPTIMISM_RPC_URL;
         rpcURLs[FTM] = FANTOM_RPC_URL;
 
-        mapping(uint80 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
+        mapping(uint16 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
         lzEndpointsStorage[BSC] = BSC_lzEndpoint;
         lzEndpointsStorage[AVAX] = AVAX_lzEndpoint;
@@ -1314,7 +579,7 @@ abstract contract BaseSetup is DSTest, Test {
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         lzEndpointsStorage[FTM] = FTM_lzEndpoint;
 
-        mapping(uint80 => address) storage priceFeeds = PRICE_FEEDS;
+        mapping(uint16 => address) storage priceFeeds = PRICE_FEEDS;
         priceFeeds[ETH] = ETHEREUM_ETH_USD_FEED;
         priceFeeds[BSC] = BSC_BNB_USD_FEED;
         priceFeeds[AVAX] = AVALANCHE_AVAX_USD_FEED;
@@ -1361,7 +626,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     function _getPriceMultiplier(
-        uint80 targetChainId_
+        uint16 targetChainId_
     ) internal returns (uint256) {
         uint256 multiplier;
 

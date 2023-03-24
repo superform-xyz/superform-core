@@ -16,8 +16,8 @@ struct BuildAttackArgs {
     address underlyingDstToken;
     uint256 targetSuperFormId;
     uint256 amount;
-    uint80 srcChainId;
-    uint80 toChainId;
+    uint16 srcChainId;
+    uint16 toChainId;
 }
 
 struct TestAttackVars {
@@ -33,8 +33,8 @@ struct TestAttackVars {
     uint256[] victimVaults;
     uint256[] amountsToDeposit;
     bytes4 revertError;
-    uint80 CHAIN_0;
-    uint80 CHAIN_1;
+    uint16 CHAIN_0;
+    uint16 CHAIN_1;
     uint256 victimVault;
     uint256 amount;
     uint256 CHAIN_0_PAYLOAD_ID;
@@ -51,8 +51,8 @@ struct TestAttackVars {
 contract AttackTest is BaseSetup {
     Attack internal attackCHAIN_0;
     Attack internal attackCHAIN_1;
-    uint80 internal CHAIN_0;
-    uint80 internal CHAIN_1;
+    uint16 internal CHAIN_0;
+    uint16 internal CHAIN_1;
     address lzEndpoint_0;
     address lzEndpoint_1;
     string internal underlyingToken;

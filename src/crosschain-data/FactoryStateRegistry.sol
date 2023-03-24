@@ -16,7 +16,7 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint80 chainId_) BaseStateRegistry(chainId_) {}
+    constructor(uint16 chainId_) BaseStateRegistry(chainId_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -24,11 +24,9 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
 
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the factory contract
     /// @param factoryContract_ is the address of the factory
-    function setFactoryContract(address factoryContract_)
-        external
-        override
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function setFactoryContract(
+        address factoryContract_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         factoryContract = factoryContract_;
 
         emit FactoryContractsUpdated(address(factoryContract_));
@@ -37,13 +35,9 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// NOTE: function can only process successful payloads.
-    function processPayload(uint256 payloadId_)
-        external
-        payable
-        virtual
-        override
-        onlyRole(PROCESSOR_ROLE)
-    {
+    function processPayload(
+        uint256 payloadId_
+    ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         /// TODO sync factory data from crosschain
     }
 }

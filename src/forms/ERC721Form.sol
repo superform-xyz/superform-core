@@ -11,10 +11,9 @@ import {BaseForm} from "../BaseForm.sol";
 /// @notice WIP: likely not to be released in v1
 abstract contract ERC721Form is BaseForm {
     constructor(
-        uint80 chainId_,
-        IBaseStateRegistry stateRegistry_,
+        uint16 chainId_,
         ISuperFormFactory superFormFactory_
-    ) BaseForm(chainId_, stateRegistry_, superFormFactory_) {}
+    ) BaseForm(chainId_, superFormFactory_) {}
 
     /*///////////////////////////////////////////////////////////////
                             GETTERS

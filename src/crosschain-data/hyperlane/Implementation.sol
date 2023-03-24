@@ -27,8 +27,8 @@ contract HyperlaneImplementation is
     IMailbox public immutable mailbox;
     IInterchainGasPaymaster public immutable igp;
 
-    mapping(uint80 => uint32) public ambChainId;
-    mapping(uint32 => uint80) public superChainId;
+    mapping(uint16 => uint32) public ambChainId;
+    mapping(uint32 => uint16) public superChainId;
     mapping(uint32 => address) public authorizedImpl;
 
     mapping(bytes32 => bool) public processedMessages;
@@ -60,8 +60,8 @@ contract HyperlaneImplementation is
     /// @param dstChainId_ is the identifier of the destination chain
     /// @param message_ is the cross-chain message to be sent
     /// @param extraData_ is message amb specific override information
-    function dipatchPayload(
-        uint80 dstChainId_,
+    function dispatchPayload(
+        uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
@@ -90,7 +90,7 @@ contract HyperlaneImplementation is
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     function setChainId(
-        uint80 superChainId_,
+        uint16 superChainId_,
         uint32 ambChainId_
     ) external onlyOwner {
         if (superChainId_ == 0 || ambChainId_ == 0) {

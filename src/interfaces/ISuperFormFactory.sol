@@ -81,31 +81,6 @@ interface ISuperFormFactory {
     /// @return form_ is the address of the form
     function getForm(uint256 formId_) external view returns (address form_);
 
-    /// @dev returns the form-vault pair of a superform
-    /// @param superFormId_ is the id of the superform
-    /// @return vault_ is the address of the vault
-    /// @return formId_ is the form id
-    /// @return chainId_ is the chain id
-    function getSuperForm(
-        uint256 superFormId_
-    ) external view returns (address vault_, uint256 formId_, uint256 chainId_);
-
-    /// @dev returns the vault-form-chain pair of an array of superforms
-    /// @param superFormIds_  array of superforms
-    /// @return vaults_ are the address of the vaults
-    /// @return formIds_ are the form ids
-    /// @return chainIds_ are the chain ids
-    function getSuperForms(
-        uint256[] memory superFormIds_
-    )
-        external
-        view
-        returns (
-            address[] memory vaults_,
-            uint256[] memory formIds_,
-            uint256[] memory chainIds_
-        );
-
     /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
     /// @param vault_ is the address of a vault
     /// @return superFormIds_ is the id of the superform
@@ -119,7 +94,7 @@ interface ISuperFormFactory {
         returns (
             uint256[] memory superFormIds_,
             uint256[] memory formIds_,
-            uint256[] memory chainIds_
+            uint16[] memory chainIds_
         );
 
     /// @dev Returns all SuperForms
@@ -134,7 +109,7 @@ interface ISuperFormFactory {
             uint256[] memory superFormIds_,
             address[] memory vaults_,
             uint256[] memory formIds_,
-            uint256[] memory chainIds_
+            uint16[] memory chainIds_
         );
 
     /// @dev returns the number of forms

@@ -1,18 +1,31 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-
-import {LiqRequest} from "../types/LiquidityTypes.sol";
-import {StateReq} from "../types/DataTypes.sol";
+import {LiqRequest, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, AMBMessage} from "../types/DataTypes.sol";
 
 /// @title ISuperRouter
 /// @author Zeropoint Labs.
 interface ISuperRouter {
     /*///////////////////////////////////////////////////////////////
+                                STRUCTS
+    //////////////////////////////////////////////////////////////*/
+    struct ActionLocalVars {
+        AMBMessage ambMessage;
+        LiqRequest liqRequest;
+        uint16 srcChainId;
+        uint16 dstChainId;
+        uint80 currentTotalTransactions;
+        address srcSender;
+        uint256 liqRequestsLen;
+    }
+    /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev is emitted when a cross-chain transaction is initiated.
+    /// @dev FIXME: to remove? - is emitted when a cross-chain transaction is initiated.
     event Initiated(uint256 txId, address fromToken, uint256 fromAmount);
+
+    /// @dev is emitted when a cross-chain transaction is initiated.
+    event CrossChainInitiated(uint80 indexed txId);
 
     /// @dev is emitted when a cross-chain transaction is completed.
     event Completed(uint256 txId);
@@ -27,60 +40,84 @@ interface ISuperRouter {
     /// @dev is emitted when the chain id input is invalid.
     error INVALID_INPUT_CHAIN_ID();
 
+    /// @dev is emitted when the amb ids input is invalid.
+    error INVALID_AMB_IDS();
+
+    /// @dev is emitted when the vaults data is invalid
+    error INVALID_SUPERFORMS_DATA();
+
+    /// @dev is emitted when the chain ids data is invalid
+    error INVALID_CHAIN_IDS();
+
+    /// @dev is emitted if anything other than state Registry calls stateSync
+    error REQUEST_DENIED();
+
+    /// @dev is emitted when the payload is invalid
+    error INVALID_PAYLOAD();
+
+    /// @dev is emitted if srchain ids mismatch in state sync
+    error SRC_CHAIN_IDS_MISMATCH();
+
+    /// @dev is emitted if dsthain ids mismatch in state sync
+    error DST_CHAIN_IDS_MISMATCH();
+
+    /// @dev is emitted if the payload status is invalid
+    error INVALID_PAYLOAD_STATUS();
+
+    /// @dev is emitted when the bridge address being set is 0
+    error ZERO_BRIDGE_ADDRESS();
+
     /*///////////////////////////////////////////////////////////////
-                        EXTERNAL WRITE FUNCTIONS
+                        EXTERNAL DEPOSIT FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev allows users to mint vault tokens and receive vault positions in return.
-    /// @param liqData_      represents the data required to move tokens from user wallet to destination contract.
-    /// @param stateData_    represents the state information including destination vault ids and amounts to be deposited to such vaults.
-    /// note: Just use single type not arr and delegate to SuperFormRouter?
-    function deposit(
-        LiqRequest[] calldata liqData_,
-        StateReq[] calldata stateData_
+    function multiDstMultiVaultDeposit(
+        MultiDstMultiVaultsStateReq calldata req
     ) external payable;
 
-    /// @dev burns users superpositions and dispatch a withdrawal request to the destination chain.
-    /// @param liqData_         represents the bridge data for underlying to be moved from destination chain.
-    /// @param stateData_       represents the state data required for withdrawal of funds from the vaults.
-    /// @dev API NOTE: This function can be called by anybody
-    /// @dev ENG NOTE: Amounts is abstracted. 1:1 of positions on DESTINATION, but user can't query ie. previewWithdraw() cross-chain
-    function withdraw(
-        LiqRequest[] calldata liqData_, /// @dev Allow [] because user can request multiple tokens (as long as bridge has them - Needs check!)
-        StateReq[] calldata stateData_
+    function singleDstMultiVaultDeposit(
+        SingleDstMultiVaultsStateReq memory req
     ) external payable;
 
-    /// @dev allows users to mint vault tokens and receive vault positions in return.
-    /// @param liqData_      represents the data required to move tokens from user wallet to destination contract.
-    /// @param stateData_    represents the state information including destination vault ids and amounts to be deposited to such vaults.
-    function singleDirectDeposit(
-        LiqRequest calldata liqData_,
-        StateReq calldata stateData_
+    function multiDstSingleVaultDeposit(
+        MultiDstSingleVaultStateReq calldata req
     ) external payable;
 
-    /// @dev allows users to mint vault tokens and receive vault positions in return.
-    /// @param liqData_      represents the data required to move tokens from user wallet to destination contract.
-    /// @param stateData_    represents the state information including destination vault ids and amounts to be deposited to such vaults.
-    function singleXChainDeposit(
-        LiqRequest calldata liqData_,
-        StateReq calldata stateData_
+    function singleXChainSingleVaultDeposit(
+        SingleXChainSingleVaultStateReq memory req
     ) external payable;
 
-    /// @dev burns users superpositions and dispatch a withdrawal request to the destination chain.
-    /// @param liqData_         represents the bridge data for underlying to be moved from destination chain.
-    /// @param stateData_       represents the state data required for withdrawal of funds from the vaults.
-    function singleDirectWithdraw(
-        LiqRequest calldata liqData_,
-        StateReq calldata stateData_
+    function singleDirectSingleVaultDeposit(
+        SingleDirectSingleVaultStateReq memory req
     ) external payable;
 
-    /// @dev burns users superpositions and dispatch a withdrawal request to the destination chain.
-    /// @param liqData_         represents the bridge data for underlying to be moved from destination chain.
-    /// @param stateData_       represents the state data required for withdrawal of funds from the vaults.
-    function singleXChainWithdraw(
-        LiqRequest calldata liqData_,
-        StateReq calldata stateData_
+    /*///////////////////////////////////////////////////////////////
+                        EXTERNAL WITHDRAW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function multiDstMultiVaultWithdraw(
+        MultiDstMultiVaultsStateReq calldata req
     ) external payable;
+
+    function singleDstMultiVaultWithdraw(
+        SingleDstMultiVaultsStateReq memory req
+    ) external payable;
+
+    function multiDstSingleVaultWithdraw(
+        MultiDstSingleVaultStateReq calldata req
+    ) external payable;
+
+    function singleXChainSingleVaultWithdraw(
+        SingleXChainSingleVaultStateReq memory req
+    ) external payable;
+
+    function singleDirectSingleVaultWithdraw(
+        SingleDirectSingleVaultStateReq memory req
+    ) external payable;
+
+    /*///////////////////////////////////////////////////////////////
+                        OTHER EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @dev PREVILAGED admin ONLY FUNCTION.
     /// @dev allows admin to set the bridge address for an bridge id.
@@ -92,18 +129,22 @@ interface ISuperRouter {
     ) external;
 
     /// @dev allows registry contract to send payload for processing to the router contract.
-    /// @param payload_ is the received information to be processed.
-    function stateSync(bytes memory payload_) external payable;
+    /// @param data_ is the received information to be processed.
+    function stateMultiSync(AMBMessage memory data_) external payable;
+
+    /// @dev allows registry contract to send payload for processing to the router contract.
+    /// @param data_ is the received information to be processed.
+    function stateSync(AMBMessage memory data_) external payable;
 
     /*///////////////////////////////////////////////////////////////
                         External View Functions
     //////////////////////////////////////////////////////////////*/
 
     /// @dev returns the chain id of the router contract
-    function chainId() external view returns (uint80);
+    function chainId() external view returns (uint16);
 
     /// @dev returns the total individual vault transactions made through the router.
-    function totalTransactions() external view returns (uint256);
+    function totalTransactions() external view returns (uint80);
 
     /// @dev returns the off-chain metadata URI for each ERC1155 super position.
     /// @param id_ is the unique identifier of the ERC1155 super position aka the vault id.

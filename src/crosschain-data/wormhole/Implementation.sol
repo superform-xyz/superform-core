@@ -6,7 +6,6 @@ import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
 import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {StateData, CallbackType} from "../../types/DataTypes.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /// @title Wormhole implementation contract
@@ -41,8 +40,8 @@ contract WormholeImplementation is
     /// @dev relayer will forward published wormhole messages
     IWormholeRelayer public relayer;
 
-    mapping(uint80 => uint16) public ambChainId;
-    mapping(uint16 => uint80) public superChainId;
+    mapping(uint16 => uint16) public ambChainId;
+    mapping(uint16 => uint16) public superChainId;
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
@@ -76,8 +75,8 @@ contract WormholeImplementation is
     /// @param dstChainId_ is the identifier of the destination chain
     /// @param message_ is the cross-chain message to be sent
     /// @param extraData_ is message amb specific override information
-    function dipatchPayload(
-        uint80 dstChainId_,
+    function dispatchPayload(
+        uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
@@ -141,7 +140,7 @@ contract WormholeImplementation is
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     function setChainId(
-        uint80 superChainId_,
+        uint16 superChainId_,
         uint16 ambChainId_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superChainId_ == 0 || ambChainId_ == 0) {

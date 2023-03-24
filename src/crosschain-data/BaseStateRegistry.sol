@@ -25,7 +25,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev superformChainid
-    uint80 public immutable chainId;
+    uint16 public immutable chainId;
     uint256 public payloadsCount;
     uint256 public proofCount;
 
@@ -43,7 +43,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint80 chainId_) {
+    constructor(uint16 chainId_) {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         chainId = chainId_;
     }
@@ -56,11 +56,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     /// @dev allows admin to update amb implementations.
     /// @param ambId_ is the propreitory amb id.
     /// @param ambImplementation_ is the implementation address.
-    function configureAmb(uint8 ambId_, address ambImplementation_)
-        external
-        override
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function configureAmb(
+        uint8 ambId_,
+        address ambImplementation_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (ambId_ == 0) {
             revert INVALID_BRIDGE_ID();
         }
@@ -82,7 +81,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     function dispatchPayload(
         uint8 ambId_,
         uint8[] memory secAmbId_,
-        uint80 dstChainId_,
+        uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
@@ -92,18 +91,18 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             revert INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.dipatchPayload{value: msg.value / 2}(
+        ambImplementation.dispatchPayload{value: msg.value / 2}(
             dstChainId_,
             message_,
             extraData_
         );
 
         bytes memory proof = abi.encode(keccak256(message_));
-        
-        for(uint8 i=0; i<secAmbId_.length; i++) {
+
+        for (uint8 i = 0; i < secAmbId_.length; i++) {
             uint8 tempAmbId = secAmbId_[i];
 
-            if(tempAmbId == ambId_) {
+            if (tempAmbId == ambId_) {
                 revert INVALID_PROOF_BRIDGE_ID();
             }
 
@@ -115,7 +114,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
 
             /// @dev should figure out how to split message costs
             /// @notice for now works if the secAmbId loop lenght == 1
-            tempImpl.dipatchPayload{value: msg.value / 2}(
+            tempImpl.dispatchPayload{value: msg.value / 2}(
                 dstChainId_,
                 proof,
                 extraData_
@@ -127,15 +126,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     /// @param srcChainId_ is the internal chainId from which the data is sent.
     /// @param message_ is the crosschain data received.
     /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
-    function receivePayload(uint80 srcChainId_, bytes memory message_)
-        external
-        virtual
-        override
-        onlyRole(IMPLEMENTATION_CONTRACTS_ROLE)
-    {   
-        if(message_.length == 32) {
+    function receivePayload(
+        uint16 srcChainId_,
+        bytes memory message_
+    ) external virtual override onlyRole(IMPLEMENTATION_CONTRACTS_ROLE) {
+        if (message_.length == 32) {
             ++proofCount;
-            /// assuming 32 bytes length is always proof 
+            /// assuming 32 bytes length is always proof
             /// @dev should validate this later
             messageQuorum[message_] += 1;
 
@@ -143,32 +140,17 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         } else {
             ++payloadsCount;
             payload[payloadsCount] = message_;
-            
+
             emit PayloadReceived(srcChainId_, chainId, payloadsCount);
         }
     }
 
-    /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
-    /// @param finalAmounts_ is the amount to be updated.
-    /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
-    function updatePayload(uint256 payloadId_, uint256[] calldata finalAmounts_)
-        external
-        virtual
-        override
-        onlyRole(UPDATER_ROLE)
-    {}
-
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// NOTE: function can only process successful payloads.
-    function processPayload(uint256 payloadId_)
-        external
-        payable
-        virtual
-        override
-        onlyRole(PROCESSOR_ROLE)
-    {}
+    function processPayload(
+        uint256 payloadId_
+    ) external payable virtual override onlyRole(PROCESSOR_ROLE) {}
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to revert payload that fail to revert state changes on source chain.
     /// @param payloadId_ is the identifier of the cross-chain payload.
