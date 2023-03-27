@@ -64,7 +64,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payload[payloadId_],
             (AMBMessage)
         );
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -137,7 +137,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payload[payloadId_],
             (AMBMessage)
         );
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -208,7 +208,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         AMBMessage memory payloadInfo = abi.decode(_payload, (AMBMessage));
 
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -254,7 +254,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             (AMBMessage)
         );
 
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 

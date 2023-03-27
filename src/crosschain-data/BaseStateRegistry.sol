@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {PayloadState} from "../types/DataTypes.sol";
+import {PayloadState, AMBMessage} from "../types/DataTypes.sol";
 
 /// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
 /// @author Zeropoint Labs
@@ -27,7 +27,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     /// @dev superformChainid
     uint16 public immutable chainId;
     uint256 public payloadsCount;
-    uint256 public proofCount;
 
     mapping(uint8 => IAmbImplementation) public amb;
     mapping(bytes => uint256) public messageQuorum;
@@ -85,41 +84,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
-        IAmbImplementation ambImplementation = amb[ambId_];
-
-        if (address(ambImplementation) == address(0)) {
-            revert INVALID_BRIDGE_ID();
-        }
-
-        ambImplementation.dispatchPayload{value: msg.value / 2}(
-            dstChainId_,
-            message_,
-            extraData_
-        );
-
-        bytes memory proof = abi.encode(keccak256(message_));
-
-        for (uint8 i = 0; i < secAmbId_.length; i++) {
-            uint8 tempAmbId = secAmbId_[i];
-
-            if (tempAmbId == ambId_) {
-                revert INVALID_PROOF_BRIDGE_ID();
-            }
-
-            IAmbImplementation tempImpl = amb[tempAmbId];
-
-            if (address(tempImpl) == address(0)) {
-                revert INVALID_BRIDGE_ID();
-            }
-
-            /// @dev should figure out how to split message costs
-            /// @notice for now works if the secAmbId loop lenght == 1
-            tempImpl.dispatchPayload{value: msg.value / 2}(
-                dstChainId_,
-                proof,
-                extraData_
-            );
-        }
+        _dispatchPayload(ambId_, dstChainId_, message_, extraData_);
+        _dispatchProof(ambId_, secAmbId_, dstChainId_, message_, extraData_);
     }
 
     /// @dev allows state registry to receive messages from amb implementations.
@@ -130,13 +96,14 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         uint16 srcChainId_,
         bytes memory message_
     ) external virtual override onlyRole(IMPLEMENTATION_CONTRACTS_ROLE) {
-        if (message_.length == 32) {
-            ++proofCount;
+        AMBMessage memory data = abi.decode(message_, (AMBMessage));
+
+        if (data.params.length == 32) {
             /// assuming 32 bytes length is always proof
             /// @dev should validate this later
-            messageQuorum[message_] += 1;
+            messageQuorum[data.params] += 1;
 
-            emit ProofReceived(message_);
+            emit ProofReceived(data.params);
         } else {
             ++payloadsCount;
             payload[payloadsCount] = message_;
@@ -162,4 +129,59 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         uint256 ambId_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {}
+
+    function _dispatchPayload(
+        uint8 ambId_,
+        uint16 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) internal {
+        IAmbImplementation ambImplementation = amb[ambId_];
+
+        if (address(ambImplementation) == address(0)) {
+            revert INVALID_BRIDGE_ID();
+        }
+
+        ambImplementation.dispatchPayload{value: msg.value / 2}(
+            dstChainId_,
+            message_,
+            extraData_
+        );
+    }
+
+    function _dispatchProof(
+        uint8 ambId_,
+        uint8[] memory secAmbId_,
+        uint16 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) internal {
+        /// @dev generates the proof
+        bytes memory proof = abi.encode(keccak256(message_));
+        
+        AMBMessage memory data = abi.decode(message_, (AMBMessage));
+        data.params = proof;
+
+        for (uint8 i = 0; i < secAmbId_.length; i++) {
+            uint8 tempAmbId = secAmbId_[i];
+
+            if (tempAmbId == ambId_) {
+                revert INVALID_PROOF_BRIDGE_ID();
+            }
+
+            IAmbImplementation tempImpl = amb[tempAmbId];
+
+            if (address(tempImpl) == address(0)) {
+                revert INVALID_BRIDGE_ID();
+            }
+
+            /// @dev should figure out how to split message costs
+            /// @notice for now works if the secAmbId loop lenght == 1
+            tempImpl.dispatchPayload{value: msg.value / 2}(
+                dstChainId_,
+                abi.encode(data),
+                extraData_
+            );
+        }
+    }
 }

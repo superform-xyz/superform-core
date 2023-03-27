@@ -255,7 +255,8 @@ abstract contract BaseSetup is DSTest, Test {
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
-                    IBaseStateRegistry(vars.stateRegistry)
+                    IBaseStateRegistry(vars.stateRegistry),
+                    IBaseStateRegistry(vars.stateRegistry)  /// @dev replace with factory state registry
                 )
             );
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
@@ -266,6 +267,7 @@ abstract contract BaseSetup is DSTest, Test {
                 new HyperlaneImplementation(
                     HyperlaneMailbox,
                     IBaseStateRegistry(vars.stateRegistry),
+                    IBaseStateRegistry(vars.stateRegistry), /// @dev replace with factory state registry
                     HyperlaneGasPaymaster
                 )
             );

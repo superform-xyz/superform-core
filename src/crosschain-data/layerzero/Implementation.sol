@@ -4,15 +4,20 @@ pragma solidity 0.8.19;
 import "./NonblockingLzApp.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
+import {AMBMessage} from "../../types/DataTypes.sol";
+import "../../utils/DataPacking.sol";
 
 /// @title Layerzero implementation contract
 /// @author Zeropoint Labs.
 /// @dev interacts with Layerzero AMB.
 contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
+    uint256 private constant RECEIVER_OFFSET = 1;
+
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
-    IBaseStateRegistry public immutable registry;
+    IBaseStateRegistry public immutable coreRegistry;
+    IBaseStateRegistry public immutable factoryRegistry;
 
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
@@ -27,9 +32,11 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     /// @param endpoint_ is the layer zero endpoint for respective chain.
     constructor(
         address endpoint_,
-        IBaseStateRegistry registry_
+        IBaseStateRegistry coreRegistry_,
+        IBaseStateRegistry factoryRegistry_
     ) NonblockingLzApp(endpoint_) {
-        registry = registry_;
+        coreRegistry = coreRegistry_;
+        factoryRegistry = factoryRegistry_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -49,7 +56,10 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
-        if (msg.sender != address(registry)) {
+        if (
+            msg.sender != address(coreRegistry) ||
+            msg.sender != address(factoryRegistry)
+        ) {
             revert INVALID_CALLER();
         }
 
@@ -60,6 +70,34 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
             address(0x0),
             extraData_
         );
+    }
+
+    /// @dev allows state registry to send multiple messages via implementation
+    /// @param dstChainIds_ is the receiving destination chains
+    /// @param message_ is the cross-chain message to be sent
+    /// @param extraData_ is the message amb specific override information
+    function dispatchMultiPayload(
+        uint16[] memory dstChainIds_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable virtual {
+        if (
+            msg.sender != address(coreRegistry) ||
+            msg.sender != address(factoryRegistry)
+        ) {
+            revert INVALID_CALLER();
+        }
+
+        for (uint16 i = 0; i < dstChainIds_.length; i++) {
+            uint16 dstChainId = ambChainId[dstChainIds_[i]];
+            _lzSend(
+                dstChainId,
+                message_,
+                payable(msg.sender),
+                address(0x0),
+                extraData_
+            );
+        }
     }
 
     /// @notice to add access based controls over here
@@ -91,7 +129,17 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
         /// NOTE: changing state earlier to prevent re-entrancy.
         isValid[_srcChainId][_nonce] = true;
 
-        /// NOTE: add _srcAddress validation
-        registry.receivePayload(superChainId[_srcChainId], _payload);
+        /// @dev decodes payload received
+        AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
+
+        /// NOTE: experimental split of registry contracts
+        (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
+
+        /// FIXME: should migrate to support more state registry types
+        if (registryId == 0) {
+            coreRegistry.receivePayload(superChainId[_srcChainId], _payload);
+        } else {
+            factoryRegistry.receivePayload(superChainId[_srcChainId], _payload);
+        }
     }
 }

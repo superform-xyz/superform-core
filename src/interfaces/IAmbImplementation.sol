@@ -29,4 +29,14 @@ interface IAmbImplementation {
         bytes memory message_,
         bytes memory extraData_
     ) external payable;
+
+    /// @dev allows state registry to send multiple messages via implementation
+    /// @param dstChainIds_ is the receiving destination chains
+    /// @param message_ is the cross-chain message to be sent
+    /// @param extraData_ is the message amb specific override information
+    function dispatchMultiPayload(
+        uint16[] memory dstChainIds_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable;
 }

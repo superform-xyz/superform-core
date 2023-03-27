@@ -125,7 +125,8 @@ contract TokenBank is ITokenBank, AccessControl {
                     _packTxInfo(
                         uint120(TransactionType.DEPOSIT),
                         uint120(CallbackType.RETURN),
-                        true
+                        true,
+                        0
                     ),
                     abi.encode(
                         ReturnMultiData(
@@ -192,7 +193,8 @@ contract TokenBank is ITokenBank, AccessControl {
                     _packTxInfo(
                         uint120(TransactionType.DEPOSIT),
                         uint120(CallbackType.RETURN),
-                        false
+                        false,
+                        0
                     ),
                     abi.encode(
                         ReturnSingleData(

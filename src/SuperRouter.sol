@@ -134,7 +134,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             _packTxInfo(
                 uint120(TransactionType.DEPOSIT),
                 uint120(CallbackType.INIT),
-                true
+                true,
+                0
             ),
             abi.encode(ambData)
         );
@@ -240,7 +241,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             _packTxInfo(
                 uint120(TransactionType.DEPOSIT),
                 uint120(CallbackType.INIT),
-                false
+                false,
+                0
             ),
             abi.encode(
                 InitSingleVaultData(
@@ -393,7 +395,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             _packTxInfo(
                 uint120(TransactionType.WITHDRAW),
                 uint120(CallbackType.INIT),
-                true
+                true,
+                0
             ),
             abi.encode(ambData)
         );
@@ -491,7 +494,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             _packTxInfo(
                 uint120(TransactionType.WITHDRAW),
                 uint120(CallbackType.INIT),
-                false
+                false,
+                0
             ),
             abi.encode(
                 InitSingleVaultData(
@@ -758,7 +762,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function stateMultiSync(AMBMessage memory data_) external payable override {
         if (msg.sender != address(stateRegistry)) revert REQUEST_DENIED();
 
-        (uint256 txType, uint256 callbackType, ) = _decodeTxInfo(data_.txInfo);
+        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
+            data_.txInfo
+        );
 
         if (callbackType != uint256(CallbackType.RETURN))
             revert INVALID_PAYLOAD();
@@ -773,7 +779,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         );
         AMBMessage memory stored = txHistory[returnTxId];
 
-        (, , bool multi) = _decodeTxInfo(stored.txInfo);
+        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (!multi) revert INVALID_PAYLOAD();
 
@@ -825,7 +831,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function stateSync(AMBMessage memory data_) external payable override {
         if (msg.sender != address(stateRegistry)) revert REQUEST_DENIED();
 
-        (uint256 txType, uint256 callbackType, ) = _decodeTxInfo(data_.txInfo);
+        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
+            data_.txInfo
+        );
 
         if (callbackType != uint256(CallbackType.RETURN))
             revert INVALID_PAYLOAD();
@@ -839,7 +847,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             returnData.returnTxInfo
         );
         AMBMessage memory stored = txHistory[returnTxId];
-        (, , bool multi) = _decodeTxInfo(stored.txInfo);
+        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (multi) revert INVALID_PAYLOAD();
 

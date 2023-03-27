@@ -12,7 +12,7 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     address public factoryContract;
 
     /*///////////////////////////////////////////////////////////////
-                             CONSTRUCTOR
+                            CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
@@ -39,5 +39,6 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         uint256 payloadId_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         /// TODO sync factory data from crosschain
+        
     }
 }

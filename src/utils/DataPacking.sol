@@ -16,11 +16,13 @@ function _packTxData(
 function _packTxInfo(
     uint120 txType_,
     uint120 callbackType_,
-    bool multi_
+    bool multi_,
+    uint8 registryId_
 ) pure returns (uint256 txInfo) {
     txInfo = uint256(txType_);
     txInfo |= uint256(callbackType_) << 120;
     txInfo |= uint256(uint8(multi_ ? 1 : 0)) << 240;
+    txInfo |= uint256(registryId_) << 248;
 }
 
 function _packReturnTxInfo(
@@ -45,10 +47,11 @@ function _decodeTxData(
 
 function _decodeTxInfo(
     uint256 txInfo_
-) pure returns (uint256 txType, uint256 callbackType, bool multi) {
+) pure returns (uint256 txType, uint256 callbackType, bool multi, uint8 registryId) {
     txType = uint256(uint120(txInfo_));
     callbackType = uint256(uint120(txInfo_ >> 120));
     multi = uint256(uint8(txInfo_ >> 240)) == 1 ? true : false;
+    registryId = uint8(txInfo_ >> 248);
 }
 
 function _decodeReturnTxInfo(
