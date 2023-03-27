@@ -25,5 +25,6 @@ broadcast
 forge-cache/
 out/
 artifacts_forge
+bin/
 
 **/.DS_Store
