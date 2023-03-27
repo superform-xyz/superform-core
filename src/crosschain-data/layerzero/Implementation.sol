@@ -19,6 +19,8 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     IBaseStateRegistry public immutable coreRegistry;
     IBaseStateRegistry public immutable factoryRegistry;
 
+    uint16[] public broadcastChains;
+
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
 
@@ -73,11 +75,9 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     }
 
     /// @dev allows state registry to send multiple messages via implementation
-    /// @param dstChainIds_ is the receiving destination chains
     /// @param message_ is the cross-chain message to be sent
     /// @param extraData_ is the message amb specific override information
-    function dispatchMultiPayload(
-        uint16[] memory dstChainIds_,
+    function broadcastPayload(
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual {
@@ -88,8 +88,8 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
             revert INVALID_CALLER();
         }
 
-        for (uint16 i = 0; i < dstChainIds_.length; i++) {
-            uint16 dstChainId = ambChainId[dstChainIds_[i]];
+        for (uint16 i = 0; i < broadcastChains.length; i++) {
+            uint16 dstChainId = broadcastChains[i];
             _lzSend(
                 dstChainId,
                 message_,
@@ -110,6 +110,9 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     ) external onlyOwner {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
+
+        /// NOTE: @dev should handle a way to pop
+        broadcastChains.push(ambChainId_);
     }
 
     /*///////////////////////////////////////////////////////////////

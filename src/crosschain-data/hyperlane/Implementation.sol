@@ -28,6 +28,8 @@ contract HyperlaneImplementation is
     IMailbox public immutable mailbox;
     IInterchainGasPaymaster public immutable igp;
 
+    uint32[] public broadcastChains;
+
     mapping(uint16 => uint32) public ambChainId;
     mapping(uint32 => uint16) public superChainId;
     mapping(uint32 => address) public authorizedImpl;
@@ -93,11 +95,9 @@ contract HyperlaneImplementation is
     }
 
     /// @dev allows state registry to send multiple messages via implementation
-    /// @param dstChainIds_ is the receiving destination chains
     /// @param message_ is the cross-chain message to be sent
     /// @param extraData_ is the message amb specific override information
-    function dispatchMultiPayload(
-        uint16[] memory dstChainIds_,
+    function broadcastPayload(
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual {
@@ -108,8 +108,8 @@ contract HyperlaneImplementation is
             revert INVALID_CALLER();
         }
 
-        for (uint16 i = 0; i < dstChainIds_.length; i++) {
-            uint32 domain = ambChainId[dstChainIds_[i]];
+        for (uint16 i = 0; i < broadcastChains.length; i++) {
+            uint32 domain = broadcastChains[i];
 
             bytes32 messageId = mailbox.dispatch(
                 domain,
@@ -140,6 +140,9 @@ contract HyperlaneImplementation is
 
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
+
+        /// NOTE: @dev should handle a way to pop
+        broadcastChains.push(ambChainId_);
 
         emit ChainAdded(superChainId_);
     }

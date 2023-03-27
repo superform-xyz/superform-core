@@ -113,8 +113,7 @@ contract WormholeImplementation is
         );
     }
 
-    function dispatchMultiPayload(
-        uint16[] memory dstChainIds_,
+    function broadcastPayload(
         bytes memory message_,
         bytes memory extraData_
     ) external payable override {}
