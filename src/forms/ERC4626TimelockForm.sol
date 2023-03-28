@@ -241,7 +241,6 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
         /// NOTE: Only next withdraw transaction would trigger the actual withdraw.
         /// TODO: Besides API making informed choice how else we can revert this better?
         /// TODO: extraData could be used to first make check at the begining of this func and revert earlier
-
         uint16 unlock = checkUnlock(vault, singleVaultData_.amount, srcSender);
         if (unlock == 0) {
             dstAmount = v.redeem(
