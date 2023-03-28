@@ -75,6 +75,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev socket.tech fails without a native receive function.
     receive() external payable {}
 
+    /// @inheritdoc ISuperRouter
     function multiDstMultiVaultDeposit(
         MultiDstMultiVaultsStateReq calldata req
     ) external payable override {
@@ -93,9 +94,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
     }
 
+    /// @inheritdoc ISuperRouter
     function singleDstMultiVaultDeposit(
         SingleDstMultiVaultsStateReq memory req
-    ) public payable {
+    ) public payable override {
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
         vars.srcSender = _msgSender();
@@ -180,9 +182,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
     }
 
+    /// @inheritdoc ISuperRouter
     function multiDstSingleVaultDeposit(
         MultiDstSingleVaultStateReq calldata req
-    ) external payable {
+    ) external payable override {
         uint16 dstChainId;
         uint256 nDestinations = req.dstChainIds.length;
 
@@ -214,7 +217,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     function singleXChainSingleVaultDeposit(
         SingleXChainSingleVaultStateReq memory req
-    ) public payable {
+    ) public payable override {
         ActionLocalVars memory vars;
 
         vars.srcSender = _msgSender();
@@ -284,7 +287,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     function singleDirectSingleVaultDeposit(
         SingleDirectSingleVaultStateReq memory req
-    ) public payable {
+    ) public payable override {
         ActionLocalVars memory vars;
         InitSingleVaultData memory ambData;
 
@@ -327,9 +330,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         emit Completed(vars.currentTotalTransactions);
     }
 
+    /// @inheritdoc ISuperRouter
     function multiDstMultiVaultWithdraw(
         MultiDstMultiVaultsStateReq calldata req
-    ) external payable {
+    ) external payable override {
         uint256 nDestinations = req.dstChainIds.length;
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             singleDstMultiVaultWithdraw(
@@ -345,9 +349,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
     }
 
+    /// @inheritdoc ISuperRouter
     function singleDstMultiVaultWithdraw(
         SingleDstMultiVaultsStateReq memory req
-    ) public payable {
+    ) public payable override {
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
         vars.srcSender = _msgSender();
@@ -424,9 +429,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
     }
 
+    /// @inheritdoc ISuperRouter
     function multiDstSingleVaultWithdraw(
         MultiDstSingleVaultStateReq calldata req
-    ) external payable {
+    ) external payable override {
         uint16 dstChainId;
         uint256 nDestinations = req.dstChainIds.length;
 
@@ -456,9 +462,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
     }
 
+    /// @inheritdoc ISuperRouter
     function singleXChainSingleVaultWithdraw(
         SingleXChainSingleVaultStateReq memory req
-    ) public payable {
+    ) public payable override {
         ActionLocalVars memory vars;
 
         vars.srcSender = _msgSender();
@@ -522,9 +529,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         emit CrossChainInitiated(vars.currentTotalTransactions);
     }
 
+    /// @inheritdoc ISuperRouter
     function singleDirectSingleVaultWithdraw(
         SingleDirectSingleVaultStateReq memory req
-    ) public payable {
+    ) public payable override {
         ActionLocalVars memory vars;
         InitSingleVaultData memory ambData;
 

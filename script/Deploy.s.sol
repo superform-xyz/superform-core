@@ -1,0 +1,553 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
+
+import {Script} from "forge-std/Script.sol";
+
+import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
+import {HyperlaneHelper} from "@pigeon/hyperlane/HyperlaneHelper.sol";
+
+import {IBaseStateRegistry} from "src/interfaces/IBaseStateRegistry.sol";
+import {CoreStateRegistry} from "src/crosschain-data/CoreStateRegistry.sol";
+import {ISuperRouter} from "src/interfaces/ISuperRouter.sol";
+import {ISuperFormFactory} from "src/interfaces/ISuperFormFactory.sol";
+import {IERC4626} from "src/interfaces/IERC4626.sol";
+import {IBaseForm} from "src/interfaces/IBaseForm.sol";
+import {SuperRouter} from "src/SuperRouter.sol";
+import {TokenBank} from "src/TokenBank.sol";
+import {SuperFormFactory} from "src/SuperFormFactory.sol";
+import {ERC4626Form} from "src/forms/ERC4626Form.sol";
+import {MultiTxProcessor} from "src/crosschain-liquidity/MultiTxProcessor.sol";
+import {LayerzeroImplementation} from "src/crosschain-data/layerzero/Implementation.sol";
+import {HyperlaneImplementation} from "src/crosschain-data/hyperlane/Implementation.sol";
+import {IInterchainGasPaymaster} from "src/crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
+import {IMailbox} from "src/crosschain-data/hyperlane/interface/IMailbox.sol";
+import {VaultMock} from "src/test/mocks/VaultMock.sol";
+import {SocketRouterMockFork} from "src/test/mocks/SocketRouterMockFork.sol";
+import {MockERC20} from "src/test/mocks/MockERC20.sol";
+
+struct SetupVars {
+    uint16[2] chainIds;
+    address[2] lzEndpoints;
+    uint16 chainId;
+    uint16 dstChainId;
+    uint16 dstAmbChainId;
+    uint32 dstHypChainId;
+    uint256 fork;
+    address factory;
+    address lzEndpoint;
+    address lzHelper;
+    address lzImplementation;
+    address hyperlaneHelper;
+    address hyperlaneImplementation;
+    address socketRouter;
+    address erc4626Form;
+    address stateRegistry;
+    address UNDERLYING_TOKEN;
+    address vault;
+    address srcTokenBank;
+    address srcSuperRouter;
+    address srcCoreStateRegistry;
+    address srcSuperFormFactory;
+    address dstSuperFormFactory;
+    address srcErc4626Form;
+    address srcLzImplementation;
+    address dstLzImplementation;
+    address srcHyperlaneImplementation;
+    address dstHyperlaneImplementation;
+    address dstStateRegistry;
+    address srcMultiTxProcessor;
+}
+
+contract Deploy is Script {
+    mapping(uint16 => mapping(bytes32 => address)) public contracts;
+
+    /*//////////////////////////////////////////////////////////////
+                        PROTOCOL VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    bytes32 public constant SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
+    bytes32 public constant CORE_CONTRACTS_ROLE =
+        keccak256("CORE_CONTRACTS_ROLE");
+    bytes32 public constant IMPLEMENTATION_CONTRACTS_ROLE =
+        keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
+    bytes32 public constant PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
+    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
+    bytes32 public constant ROUTER_ROLE = keccak256("ROUTER_ROLE");
+    bytes32 public constant SUPER_ROUTER_ROLE = keccak256("SUPER_ROUTER_ROLE");
+    bytes32 public constant TOKEN_BANK_ROLE = keccak256("TOKEN_BANK_ROLE");
+    bytes32 public constant STATE_REGISTRY_ROLE =
+        keccak256("STATE_REGISTRY_ROLE");
+
+    /// @dev one vault per request at the moment - do not change for now
+    uint256 internal constant allowedNumberOfVaultsPerRequest = 1;
+
+    /// @dev we should fork these instead of mocking
+    string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
+    /// @dev all these vault mocks are currently  using formId 1 (4626)
+    uint256[] public FORMS_FOR_VAULTS = [uint256(1), 1, 1];
+    string[] public VAULT_NAMES;
+
+    mapping(uint16 => IERC4626[]) public vaults;
+    mapping(uint16 => uint256[]) vaultIds;
+    mapping(uint16 => uint256) PAYLOAD_ID; // chaindId => payloadId
+
+    /// @dev liquidity bridge ids
+    uint8[] bridgeIds;
+    /// @dev liquidity bridge addresses
+    address[] bridgeAddresses;
+
+    /// @dev amb ids
+    uint8[] ambIds;
+
+    /*//////////////////////////////////////////////////////////////
+                        AMB VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    mapping(uint16 => address) public LZ_ENDPOINTS;
+
+    address public constant ETH_lzEndpoint =
+        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
+    address public constant BSC_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant AVAX_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant POLY_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant ARBI_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant OP_lzEndpoint =
+        0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant FTM_lzEndpoint =
+        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+
+    address[7] public lzEndpoints = [
+        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0x3c2269811836af69497E5F486A85D7316753cf62,
+        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
+    ];
+
+    /*//////////////////////////////////////////////////////////////
+                        HYPERLANE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+    IMailbox public constant HyperlaneMailbox =
+        IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
+    IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
+        IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
+
+    uint16 public constant ETH = 1;
+    uint16 public constant BSC = 2;
+    uint16 public constant AVAX = 3;
+    uint16 public constant POLY = 4;
+    uint16 public constant ARBI = 5;
+    uint16 public constant OP = 6;
+    uint16 public constant FTM = 7;
+
+    uint16[7] public chainIds = [1, 2, 3, 4, 5, 6, 7];
+
+    /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
+    uint16 public constant LZ_ETH = 101;
+    uint16 public constant LZ_BSC = 102;
+    uint16 public constant LZ_AVAX = 106;
+    uint16 public constant LZ_POLY = 109;
+    uint16 public constant LZ_ARBI = 110;
+    uint16 public constant LZ_OP = 111;
+    uint16 public constant LZ_FTM = 112;
+
+    uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
+    uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
+
+    uint16 public constant version = 1;
+    uint256 public constant gasLimit = 1000000;
+    uint256 public constant mockEstimatedNativeFee = 1000000000000000; // 0.001 Native Tokens
+    uint256 public constant mockEstimatedZroFee = 250000000000000; // 0.00025 Native Tokens
+    uint256 public constant milionTokensE18 = 1 ether;
+
+    /*//////////////////////////////////////////////////////////////
+                        RPC VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    // chainID => FORK
+    mapping(uint16 => uint256) public FORKS;
+    mapping(uint16 => string) public RPC_URLS;
+
+    string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
+    string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
+    string public AVALANCHE_RPC_URL = vm.envString("AVALANCHE_RPC_URL"); // Native token: AVAX
+    string public POLYGON_RPC_URL = vm.envString("POLYGON_RPC_URL"); // Native token: MATIC
+    string public ARBITRUM_RPC_URL = vm.envString("ARBITRUM_RPC_URL"); // Native token: ETH
+    string public OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // Native token: ETH
+    string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: FTM
+
+    function getContract(
+        uint16 chainId,
+        string memory _name
+    ) public view returns (address) {
+        return contracts[chainId][bytes32(bytes(_name))];
+    }
+
+    /// @notice The main script entrypoint
+    function run() external {
+        _preDeploymentSetup();
+        address deployer = 0x8fb52e325C3145A2A7Cd4A04A6F4146017ADD6c0;
+        SetupVars memory vars;
+
+        /// @dev deployments
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vars.chainId = chainIds[i];
+            vars.fork = FORKS[vars.chainId];
+            vm.selectFork(vars.fork);
+            vm.startBroadcast();
+
+            /// @dev 1- deploy LZ Helper from Pigeon
+            vars.lzHelper = address(new LayerZeroHelper());
+            vm.allowCheatcodes(vars.lzHelper);
+
+            contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars
+                .lzHelper;
+
+            /// @dev 1.1- deploy Hyperlane Helper from Pigeon
+            vars.hyperlaneHelper = address(new HyperlaneHelper());
+            vm.allowCheatcodes(vars.hyperlaneHelper);
+
+            contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars
+                .hyperlaneHelper;
+
+            /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
+            vars.stateRegistry = address(new CoreStateRegistry(vars.chainId));
+            contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
+                .stateRegistry;
+
+            /// @dev 2.1- deployed Layerzero Implementation
+            vars.lzImplementation = address(
+                new LayerzeroImplementation(
+                    lzEndpoints[i],
+                    IBaseStateRegistry(vars.stateRegistry)
+                )
+            );
+            contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
+                .lzImplementation;
+
+            /// @dev 2.2- deploy Hyperlane Implementation
+            vars.hyperlaneImplementation = address(
+                new HyperlaneImplementation(
+                    HyperlaneMailbox,
+                    IBaseStateRegistry(vars.stateRegistry),
+                    HyperlaneGasPaymaster
+                )
+            );
+            contracts[vars.chainId][
+                bytes32(bytes("HyperlaneImplementation"))
+            ] = vars.hyperlaneImplementation;
+
+            /// @dev 3- deploy SocketRouterMockFork
+            vars.socketRouter = address(new SocketRouterMockFork());
+            contracts[vars.chainId][
+                bytes32(bytes("SocketRouterMockFork"))
+            ] = vars.socketRouter;
+            vm.allowCheatcodes(vars.socketRouter);
+
+            if (i == 0) {
+                bridgeAddresses.push(vars.socketRouter);
+            }
+
+            /// @dev 4 - Deploy UNDERLYING_TOKENS and VAULTS
+            for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
+                vars.UNDERLYING_TOKEN = address(
+                    new MockERC20(
+                        UNDERLYING_TOKENS[j],
+                        UNDERLYING_TOKENS[j],
+                        18,
+                        deployer,
+                        milionTokensE18
+                    )
+                );
+                contracts[vars.chainId][
+                    bytes32(bytes(UNDERLYING_TOKENS[j]))
+                ] = vars.UNDERLYING_TOKEN;
+
+                /// @dev 5 - Deploy mock Vault
+                vars.vault = address(
+                    new VaultMock(
+                        MockERC20(vars.UNDERLYING_TOKEN),
+                        VAULT_NAMES[j],
+                        VAULT_NAMES[j]
+                    )
+                );
+                contracts[vars.chainId][
+                    bytes32(bytes(string.concat(UNDERLYING_TOKENS[j], "Vault")))
+                ] = vars.vault;
+
+                vaults[vars.chainId].push(IERC4626(vars.vault));
+                vaultIds[vars.chainId].push(j + 1);
+            }
+
+            /// @dev 5 - Deploy SuperFormFactory
+            vars.factory = address(new SuperFormFactory(vars.chainId));
+
+            contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
+                .factory;
+
+            /// @dev 6 - Deploy 4626Form
+            vars.erc4626Form = address(
+                new ERC4626Form(vars.chainId, ISuperFormFactory(vars.factory))
+            );
+            contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
+                .erc4626Form;
+
+            /// @dev 7 - Add newly deployed form to Factory, formId 1
+            ISuperFormFactory(vars.factory).addForm(vars.erc4626Form, 1);
+
+            /// @dev 8 - Deploy TokenBank
+            contracts[vars.chainId][bytes32(bytes("TokenBank"))] = address(
+                new TokenBank(
+                    vars.chainId,
+                    IBaseStateRegistry(payable(vars.stateRegistry)),
+                    ISuperFormFactory(vars.factory)
+                )
+            );
+
+            /// @dev 9 - Deploy SuperRouter
+            contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = address(
+                new SuperRouter(
+                    vars.chainId,
+                    "test.com/",
+                    IBaseStateRegistry(payable(vars.stateRegistry)),
+                    ISuperFormFactory(vars.factory)
+                )
+            );
+
+            /// @dev 10 - Deploy MultiTx Processor
+            contracts[vars.chainId][
+                bytes32(bytes("MultiTxProcessor"))
+            ] = address(new MultiTxProcessor());
+
+            /// @dev 11 - Deploy SWAP token with no associated vault with 18 decimals
+            contracts[vars.chainId][bytes32(bytes("Swap"))] = address(
+                new MockERC20("Swap", "SWP", 18, deployer, milionTokensE18)
+            );
+            vm.stopBroadcast();
+        }
+
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vars.chainId = chainIds[i];
+            vars.fork = FORKS[vars.chainId];
+            vm.selectFork(vars.fork);
+            vm.startBroadcast();
+
+            vars.srcCoreStateRegistry = getContract(
+                vars.chainId,
+                "CoreStateRegistry"
+            );
+            vars.srcLzImplementation = getContract(
+                vars.chainId,
+                "LzImplementation"
+            );
+            vars.srcHyperlaneImplementation = getContract(
+                vars.chainId,
+                "HyperlaneImplementation"
+            );
+
+            vars.srcSuperRouter = getContract(vars.chainId, "SuperRouter");
+            vars.srcSuperFormFactory = getContract(
+                vars.chainId,
+                "SuperFormFactory"
+            );
+
+            vars.dstSuperFormFactory = getContract(
+                vars.chainId,
+                "SuperFormFactory"
+            );
+
+            vars.srcTokenBank = getContract(vars.chainId, "TokenBank");
+            vars.srcErc4626Form = getContract(vars.chainId, "ERC4626Form");
+            vars.srcMultiTxProcessor = getContract(
+                vars.chainId,
+                "MultiTxProcessor"
+            );
+
+            /// @dev - Create SuperForms in Factory contract
+            ///
+            for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
+                ISuperFormFactory(vars.srcSuperFormFactory).createSuperForm(
+                    1,
+                    address(vaults[vars.chainId][j])
+                );
+            }
+
+            // SuperDestination(payable(vars.srcSuperDestination))
+            //     .setSrcTokenDistributor(vars.srcSuperRouter, vars.chainId);
+
+            // SuperDestination(payable(vars.srcSuperDestination))
+            //     .updateSafeGasParam("0x000100000000000000000000000000000000000000000000000000000000004c4b40");
+
+            /// @dev - RBAC
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry))
+                .setCoreContracts(vars.srcSuperRouter, vars.srcTokenBank);
+
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+                CORE_CONTRACTS_ROLE,
+                vars.srcSuperRouter
+            );
+
+            /// @dev TODO: for each form , add it to the core_contracts_role. Just 1 for now
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+                CORE_CONTRACTS_ROLE,
+                vars.srcTokenBank
+            );
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+                IMPLEMENTATION_CONTRACTS_ROLE,
+                vars.lzImplementation
+            );
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+                IMPLEMENTATION_CONTRACTS_ROLE,
+                vars.hyperlaneImplementation
+            );
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+                PROCESSOR_ROLE,
+                deployer
+            );
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+                UPDATER_ROLE,
+                deployer
+            );
+
+            /// @dev FIXME: in reality who has the SWAPPER_ROLE?
+            MultiTxProcessor(payable(vars.srcMultiTxProcessor)).grantRole(
+                SWAPPER_ROLE,
+                deployer
+            );
+
+            ERC4626Form(payable(vars.srcErc4626Form)).grantRole(
+                SUPER_ROUTER_ROLE,
+                vars.srcSuperRouter
+            );
+
+            ERC4626Form(payable(vars.srcErc4626Form)).grantRole(
+                TOKEN_BANK_ROLE,
+                vars.srcTokenBank
+            );
+
+            TokenBank(payable(vars.srcTokenBank)).grantRole(
+                STATE_REGISTRY_ROLE,
+                vars.srcCoreStateRegistry
+            );
+
+            /// @dev configures lzImplementation to state registry
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
+                ambIds[0],
+                vars.lzImplementation
+            );
+
+            /// @dev configures hyperlaneImplementation to state registry
+            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
+                ambIds[1],
+                vars.hyperlaneImplementation
+            );
+
+            /// @dev Set all trusted remotes for each chain & configure amb chains ids
+            for (uint256 j = 0; j < chainIds.length; j++) {
+                if (j != i) {
+                    vars.dstChainId = chainIds[j];
+                    /// @dev FIXME: for now only LZ amb
+                    vars.dstAmbChainId = lz_chainIds[j];
+                    vars.dstHypChainId = hyperlane_chainIds[j];
+
+                    vars.dstLzImplementation = getContract(
+                        vars.dstChainId,
+                        "LzImplementation"
+                    );
+                    vars.dstHyperlaneImplementation = getContract(
+                        vars.dstChainId,
+                        "HyperlaneImplementation"
+                    );
+
+                    LayerzeroImplementation(payable(vars.srcLzImplementation))
+                        .setTrustedRemote(
+                            vars.dstAmbChainId,
+                            abi.encodePacked(
+                                vars.srcLzImplementation,
+                                vars.dstLzImplementation
+                            )
+                        );
+                    LayerzeroImplementation(payable(vars.srcLzImplementation))
+                        .setChainId(vars.dstChainId, vars.dstAmbChainId);
+
+                    HyperlaneImplementation(
+                        payable(vars.srcHyperlaneImplementation)
+                    ).setReceiver(
+                            vars.dstHypChainId,
+                            vars.dstHyperlaneImplementation
+                        );
+
+                    HyperlaneImplementation(
+                        payable(vars.srcHyperlaneImplementation)
+                    ).setChainId(vars.dstChainId, vars.dstHypChainId);
+                }
+            }
+
+            /// @dev - Set bridge addresses
+            SuperRouter(payable(vars.srcSuperRouter)).setBridgeAddress(
+                bridgeIds,
+                bridgeAddresses
+            );
+
+            /// @dev TODO: on each form , add the correct bridge data
+            IBaseForm(vars.srcErc4626Form).setBridgeAddress(
+                bridgeIds,
+                bridgeAddresses
+            );
+
+            MultiTxProcessor(payable(vars.srcMultiTxProcessor))
+                .setBridgeAddress(bridgeIds, bridgeAddresses);
+
+            vm.stopBroadcast();
+        }
+    }
+
+    function _preDeploymentSetup() private {
+        mapping(uint16 => uint256) storage forks = FORKS;
+        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 16742187);
+        forks[BSC] = vm.createFork(BSC_RPC_URL, 26121321);
+        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 26933006);
+        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 39887036);
+        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 66125184);
+        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 78219242);
+        forks[FTM] = vm.createFork(FANTOM_RPC_URL, 56806404);
+
+        mapping(uint16 => string) storage rpcURLs = RPC_URLS;
+        rpcURLs[ETH] = ETHEREUM_RPC_URL;
+        rpcURLs[BSC] = BSC_RPC_URL;
+        rpcURLs[AVAX] = AVALANCHE_RPC_URL;
+        rpcURLs[POLY] = POLYGON_RPC_URL;
+        rpcURLs[ARBI] = ARBITRUM_RPC_URL;
+        rpcURLs[OP] = OPTIMISM_RPC_URL;
+        rpcURLs[FTM] = FANTOM_RPC_URL;
+
+        mapping(uint16 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
+        lzEndpointsStorage[ETH] = ETH_lzEndpoint;
+        lzEndpointsStorage[BSC] = BSC_lzEndpoint;
+        lzEndpointsStorage[AVAX] = AVAX_lzEndpoint;
+        lzEndpointsStorage[POLY] = POLY_lzEndpoint;
+        lzEndpointsStorage[ARBI] = ARBI_lzEndpoint;
+        lzEndpointsStorage[OP] = OP_lzEndpoint;
+        lzEndpointsStorage[FTM] = FTM_lzEndpoint;
+
+        /// @dev setup bridges. Only bridgeId 1 available for tests (Socket)
+        bridgeIds.push(1);
+
+        /// @dev setup amb bridges
+        /// @notice id 1 is layerzero
+        /// @notice id 2 is hyperlane
+        ambIds.push(1);
+        ambIds.push(2);
+
+        string[] memory underlyingTokens = UNDERLYING_TOKENS;
+        for (uint256 i = 0; i < underlyingTokens.length; i++) {
+            VAULT_NAMES.push(string.concat(underlyingTokens[i], "Vault"));
+        }
+    }
+}
