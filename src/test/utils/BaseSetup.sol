@@ -443,6 +443,7 @@ abstract contract BaseSetup is DSTest, Test {
                 deployer
             );
 
+            /// @dev FIXME: in reality who has the SWAPPER_ROLE?
             MultiTxProcessor(payable(vars.srcMultiTxProcessor)).grantRole(
                 SWAPPER_ROLE,
                 deployer

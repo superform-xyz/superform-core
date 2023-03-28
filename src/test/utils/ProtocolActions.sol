@@ -385,15 +385,40 @@ abstract contract ProtocolActions is BaseSetup {
                             );
                             if (action.testType == TestType.Pass) {
                                 /// @dev multi tx is currently disabled until fixed
-                                /*
-                                    if (action.multiTx) {
+                                /// @dev should loop here through multiSuperFormsData if multiVaults and call this multiple times?
+                                /// @dev should loop here through singleSuperFormsData if !multiVaults and call one time?
+
+                                if (action.multiTx) {
+                                    if (action.multiVaults) {
+                                        (
+                                            ,
+                                            vars.underlyingSrcToken,
+
+                                        ) = _targetVaults(
+                                            CHAIN_0,
+                                            DST_CHAINS[i],
+                                            act
+                                        );
+
+                                        vars.amounts = AMOUNTS[DST_CHAINS[i]][
+                                            act
+                                        ];
+                                        _batchProcessMultiTx(
+                                            aV.toChainId,
+                                            vars.underlyingSrcToken,
+                                            vars.amounts
+                                        );
+                                    } else {
                                         _processMultiTx(
                                             aV.toChainId,
-                                            vars.underlyingSrcToken[i][0], /// @dev should be made to support multiple tokens
-                                            vars.amounts[i][0] /// @dev should be made to support multiple tokens
+                                            vars
+                                                .singleSuperFormsData[i]
+                                                .liqRequest
+                                                .token,
+                                            vars.singleSuperFormsData[i].amount
                                         );
                                     }
-                                */
+                                }
 
                                 if (action.multiVaults) {
                                     _updateMultiVaultPayload(
@@ -1071,8 +1096,8 @@ abstract contract ProtocolActions is BaseSetup {
             "mockSocketTransfer(address,address,address,uint256,uint256)",
             getContract(targetChainId_, "MultiTxProcessor"),
             getContract(targetChainId_, "TokenBank"),
-            underlyingToken_, /// @dev FIXME - needs fix because it should have an array of underlying like state req
-            amount_, /// @dev FIXME - 1 amount is sent, not testing sum of amounts (different vaults)
+            underlyingToken_,
+            amount_, /// @dev FIXME -  not testing sum of amounts (different vaults)
             FORKS[targetChainId_]
         );
 
@@ -1084,6 +1109,42 @@ abstract contract ProtocolActions is BaseSetup {
                 underlyingToken_,
                 getContract(targetChainId_, "SocketRouterMockFork"),
                 amount_
+            );
+        vm.selectFork(initialFork);
+    }
+
+    function _batchProcessMultiTx(
+        uint16 targetChainId_,
+        address[] memory underlyingTokens_,
+        uint256[] memory amounts_
+    ) internal {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[targetChainId_]);
+
+        vm.prank(deployer);
+        /// @dev builds the data to be processed by the keeper contract.
+        /// @dev at this point the tokens are delivered to the multi-tx processor on the destination chain.
+        bytes[] memory socketTxDatas = new bytes[](underlyingTokens_.length);
+
+        for (uint256 i = 0; i < underlyingTokens_.length; i++) {
+            socketTxDatas[i] = abi.encodeWithSignature(
+                "mockSocketTransfer(address,address,address,uint256,uint256)",
+                getContract(targetChainId_, "MultiTxProcessor"),
+                getContract(targetChainId_, "TokenBank"),
+                underlyingTokens_[i],
+                amounts_[i], /// @dev FIXME -  not testing sum of amounts (different vaults)
+                FORKS[targetChainId_]
+            );
+        }
+
+        MultiTxProcessor(
+            payable(getContract(targetChainId_, "MultiTxProcessor"))
+        ).batchProcessTx(
+                bridgeIds[0],
+                socketTxDatas,
+                underlyingTokens_,
+                getContract(targetChainId_, "SocketRouterMockFork"),
+                amounts_
             );
         vm.selectFork(initialFork);
     }
