@@ -110,11 +110,13 @@ struct SetupVars {
     address socketRouter;
     address erc4626Form;
     address stateRegistry;
+    address factoryStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address srcTokenBank;
     address srcSuperRouter;
     address srcCoreStateRegistry;
+    address srcFactoryStateRegistry;
     address srcSuperFormFactory;
     address dstSuperFormFactory;
     address srcErc4626Form;

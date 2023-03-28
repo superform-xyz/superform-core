@@ -120,7 +120,7 @@ contract SuperFormFactoryTest is Utilities {
             vars.vault1,
             vars.expectedSuperFormId1
         );
-        vars.superFormId = superFormFactory.createSuperForm(
+        vars.superFormId = superFormFactory.createSuperForm{value:5*10**18}(
             vars.formId,
             vars.vault1
         );
@@ -148,7 +148,7 @@ contract SuperFormFactoryTest is Utilities {
             vars.vault2,
             vars.expectedSuperFormId2
         );
-        superFormFactory.createSuperForm(vars.formId, vars.vault2);
+        superFormFactory.createSuperForm{value:5*10**18}(vars.formId, vars.vault2);
 
         /// @dev test getSuperFormFromVault
 

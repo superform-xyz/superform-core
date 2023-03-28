@@ -27,6 +27,9 @@ interface ISuperFormFactory {
     /// @dev emitted when form id is larger than max uint16
     error INVALID_FORM_ID();
 
+    /// @dev emitted when the caller is not factory registry
+    error INVALID_CALLER();
+
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
@@ -70,7 +73,11 @@ interface ISuperFormFactory {
     function createSuperForm(
         uint256 formId_,
         address vault_
-    ) external returns (uint256 superFormId_);
+    ) external payable returns (uint256 superFormId_);
+
+    /// @dev to synchronize superforms added to different chains using factory registry
+    /// @param data_ is the cross-chain superform id
+    function stateSync(bytes memory data_) external payable;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions

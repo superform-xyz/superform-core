@@ -52,8 +52,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
     /// @param chainId_              SuperForm chain id
     /// @param baseUri_              URL for external metadata of ERC1155 SuperPositions
-    /// @param stateRegistry_         State registry address deployed
-    /// @param superFormFactory_         SuperFormFactory address deployed
+    /// @param stateRegistry_        State registry address deployed
+    /// @param superFormFactory_     SuperFormFactory address deployed
     constructor(
         uint16 chainId_,
         string memory baseUri_,

@@ -4,6 +4,8 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC165Checker} from "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
+import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
+import {AMBFactoryMessage} from "./types/DataTypes.sol";
 import "./utils/DataPacking.sol";
 
 /// @title SuperForms Factory
@@ -19,8 +21,10 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     uint16 public chainId;
 
     address[] public forms;
-
     uint256[] public superForms;
+
+    /// @notice factoryRegistry sync new forms added across all chains.
+    IBaseStateRegistry public factoryRegistry;
 
     /// @dev formId => formAddress
     /// @notice If form[formId_] is 0, form is not part of the protocol
@@ -89,7 +93,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     function createSuperForm(
         uint256 formId_,
         address vault_
-    ) external override returns (uint256 superFormId_) {
+    ) external payable override returns (uint256 superFormId_) {
         if (vault_ == address(0)) revert ZERO_ADDRESS();
         if (form[formId_] == address(0)) revert FORM_DOES_NOT_EXIST();
         if (formId_ > MAX_FORM_ID) revert INVALID_FORM_ID();
@@ -108,20 +112,51 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         /// @dev do we need to store info of all superforms just for external querying? Could save gas here
         superForms.push(superFormId_);
 
-        /// @dev TODO wormhole xchain spread of supervaults
+        /// @dev TODO amb xchain spread of supervaults
         /// @notice TODO There is a problem when we want to add a new chain - how do we sync with the new contract?
-
+        /// @notice TODO Ability to use AMB of Choice
         /// Next steps/proposed plan of work
         /// 1. Integration of base yield modules + Superform factory into core
         /// 2. I think StateRegistry could be upgraded to support multi message sending for all AMBs
         /// 3. Then we could create a wormhole implementation contract just like LZ with a dispatchPayload where it performs the above actions
         /// 4. SuperFormFactory could be given CORE_CONTRACTS_ROLE to achieve the above
+        AMBFactoryMessage memory data = AMBFactoryMessage(superFormId_, vault_);
+
+        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
+        uint8 ambId = 1;
+        uint8[] memory proofAmbIds = new uint8[](1);
+        proofAmbIds[0] = 2;
+
+        factoryRegistry.broadcastPayload{value: msg.value}(
+            ambId,
+            proofAmbIds,
+            abi.encode(data),
+            ""
+        );
 
         emit SuperFormCreated(formId_, vault_, superFormId_);
     }
 
+    /// @dev to synchronize superforms added to different chains using factory registry
+    /// @param data_ is the cross-chain data to be synchronized
+    function stateSync(bytes memory data_) external payable override {
+        if (msg.sender != address(factoryRegistry)) revert INVALID_CALLER();
+
+        AMBFactoryMessage memory data = abi.decode(data_, (AMBFactoryMessage));
+
+        if (superFormToVault[data.superFormId] != address(0))
+            revert SUPERFORM_ALREADY_EXISTS();
+
+        superFormToVault[data.superFormId] = data.vaultAddress;
+
+        vaultToSuperForms[data.vaultAddress].push(data.superFormId);
+
+        /// @dev do we need to store info of all superforms just for external querying? Could save gas here
+        superForms.push(data.superFormId);
+    }
+
     /*///////////////////////////////////////////////////////////////
-                         External View Functions
+                        External View Functions
     //////////////////////////////////////////////////////////////*/
 
     /// @dev returns the address of a form

@@ -23,7 +23,7 @@ contract TokenBank is ITokenBank, AccessControl {
         keccak256("STATE_REGISTRY_ROLE");
 
     /*///////////////////////////////////////////////////////////////
-                     State Variables
+                    State Variables
     //////////////////////////////////////////////////////////////*/
 
     /// @dev safeGasParam is used while sending layerzero message from destination to router.

@@ -14,6 +14,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
+import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "../../interfaces/IERC4626.sol";
@@ -251,7 +252,11 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
                 .stateRegistry;
 
-            /// @dev 2.1- deployed Layerzero Implementation
+            /// @dev 2.1- deploy Factory State Registry
+            vars.factoryStateRegistry = address(new FactoryStateRegistry(vars.chainId));
+            contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
+
+            /// @dev 2.2- deployed Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
@@ -262,7 +267,7 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
                 .lzImplementation;
 
-            /// @dev 2.2- deploy Hyperlane Implementation
+            /// @dev 2.3- deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation(
                     HyperlaneMailbox,
@@ -372,6 +377,10 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.chainId,
                 "CoreStateRegistry"
             );
+            vars.srcFactoryStateRegistry = getContract(
+                vars.chainId,
+                "FactoryStateRegistry"
+            );
             vars.srcLzImplementation = getContract(
                 vars.chainId,
                 "LzImplementation"
@@ -421,6 +430,14 @@ abstract contract BaseSetup is DSTest, Test {
             CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.srcSuperRouter
+            );
+
+            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry)).
+                setFactoryContract(vars.srcSuperFormFactory);
+            
+            FactoryStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+                CORE_CONTRACTS_ROLE,
+                vars.srcSuperFormFactory
             );
 
             /// @dev TODO: for each form , add it to the core_contracts_role. Just 1 for now

@@ -21,7 +21,6 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the factory contract
     /// @param factoryContract_ is the address of the factory
     function setFactoryContract(

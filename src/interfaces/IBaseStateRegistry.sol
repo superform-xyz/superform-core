@@ -76,6 +76,13 @@ interface IBaseStateRegistry {
         bytes memory extraData_
     ) external payable;
 
+    function broadcastPayload(
+        uint8 ambId_,
+        uint8[] memory secAmbId_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable;
+
     /// @dev allows state registry to receive messages from amb implementations.
     /// @param srcChainId_ is the internal chainId from which the data is sent.
     /// @param message_ is the crosschain data received.

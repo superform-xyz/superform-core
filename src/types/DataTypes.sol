@@ -105,6 +105,11 @@ struct AMBMessage {
     bytes params; // abi.encode (AMBInitData)
 }
 
+struct AMBFactoryMessage {
+    uint256 superFormId;
+    address vaultAddress;
+}
+
 struct ReturnMultiData {
     uint256 returnTxInfo; // tight packing of status, srcChainId, dstChainId and original txId
     uint256[] amounts;
