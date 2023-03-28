@@ -7,7 +7,7 @@ import {IMailbox} from "./interface/IMailbox.sol";
 import {IMessageRecipient} from "./interface/IMessageRecipient.sol";
 import {IInterchainGasPaymaster} from "./interface/IInterchainGasPaymaster.sol";
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 
 /// @title Hyperlane implementation contract
 /// @author Zeropoint Labs

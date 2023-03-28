@@ -1,7 +1,7 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 interface IERC4626Timelock is IERC20 {
     /*///////////////////////////////////////////////////////////////
@@ -26,12 +26,15 @@ interface IERC4626Timelock is IERC20 {
     function cooldownPeriod(address owner) external view returns (uint256);
 
     /// NOTE: Using Benqi sAVAX as example of a Vault with 15d cooldown period
-    function userUnlockRequests(address owner, uint256 index) external view returns (UnlockRequest memory);
+    function userUnlockRequests(
+        address owner,
+        uint256 index
+    ) external view returns (UnlockRequest memory);
 
     /// @dev Helper function for BaseForm to perform check on the Form level
     /// Should be implemented by the form (ie. call underlying valut to see if we can withdraw)
     function isUnlocked(address owner) external view returns (bool);
-    
+
     /*///////////////////////////////////////////////////////////////
                                ERC4626 SECTION
     //////////////////////////////////////////////////////////////*/

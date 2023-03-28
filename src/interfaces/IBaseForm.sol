@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+
 import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {IERC4626} from "./IERC4626.sol";
-import {ERC20} from "@solmate/tokens/ERC20.sol";
 
-interface IBaseForm is IERC165 {
+interface IBaseForm is IERC165Upgradeable {
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -104,5 +105,5 @@ interface IBaseForm is IERC165 {
         InitSingleVaultData memory singleVaultData_
     ) external returns (uint256[] memory dstAmounts);
 
-    function getUnderlyingOfVault(address vault) external view returns (ERC20);
+    function getUnderlyingOfVault() external view returns (ERC20);
 }

@@ -8,7 +8,8 @@ import "@ds-test/test.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "@pigeon/hyperlane/HyperlaneHelper.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin-contracts/contracts/utils/Strings.sol";
+import "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev src imports
 import {VaultMock} from "../mocks/VaultMock.sol";
@@ -70,6 +71,7 @@ abstract contract BaseSetup is DSTest, Test {
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
     /// @dev all these vault mocks are currently  using formId 1 (4626)
     uint256[] public FORMS_FOR_VAULTS = [uint256(1), 1, 1];
+    uint256[] public FORM_IDS = [uint256(1)];
     string[] public VAULT_NAMES;
 
     mapping(uint16 => IERC4626[]) public vaults;
@@ -321,15 +323,17 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
                 .factory;
 
-            /// @dev 6 - Deploy 4626Form
-            vars.erc4626Form = address(
-                new ERC4626Form(vars.chainId, ISuperFormFactory(vars.factory))
-            );
+            /// @dev 6 - Deploy 4626Form implementation
+
+            vars.erc4626Form = address(new ERC4626Form());
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
                 .erc4626Form;
 
             /// @dev 7 - Add newly deployed form to Factory, formId 1
-            ISuperFormFactory(vars.factory).addForm(vars.erc4626Form, 1);
+            ISuperFormFactory(vars.factory).addForm(
+                vars.erc4626Form,
+                FORM_IDS[0]
+            );
 
             /// @dev 8 - Deploy TokenBank
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = address(
@@ -397,13 +401,27 @@ abstract contract BaseSetup is DSTest, Test {
                 "MultiTxProcessor"
             );
 
-            /// @dev - Create SuperForms in Factory contract
+            /// @dev - Create SuperForm for id 1 in Factory contract
+            /// @dev FIXME: currently hardcoded formId 1
             ///
             for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
-                ISuperFormFactory(vars.srcSuperFormFactory).createSuperForm(
-                    1,
-                    address(vaults[vars.chainId][j])
-                );
+                (, vars.superForm) = ISuperFormFactory(vars.srcSuperFormFactory)
+                    .createSuperForm(
+                        FORMS_FOR_VAULTS[j],
+                        address(vaults[vars.chainId][j])
+                    );
+
+                contracts[vars.chainId][
+                    bytes32(
+                        bytes(
+                            string.concat(
+                                UNDERLYING_TOKENS[j],
+                                "SuperForm",
+                                Strings.toString(FORMS_FOR_VAULTS[j])
+                            )
+                        )
+                    )
+                ] = vars.superForm;
             }
 
             // SuperDestination(payable(vars.srcSuperDestination))

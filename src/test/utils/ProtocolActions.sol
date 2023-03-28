@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 /// @dev lib imports
 import "./BaseSetup.sol";
-
 import "forge-std/console.sol";
+import "../../utils/DataPacking.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     uint8 public primaryAMB;
@@ -83,6 +83,7 @@ abstract contract ProtocolActions is BaseSetup {
                         CHAIN_0 != DST_CHAINS[i])
                 ) {
                     /// @dev FIXME: this is only using hardcoded formid 1 (ERC4626Form) for now!!!
+                    /// @dev FIXME: tests needs to be fixed here
                     /// !!WARNING
                     vars.toDst[i] = payable(
                         getContract(DST_CHAINS[i], "ERC4626Form")
@@ -570,7 +571,6 @@ abstract contract ProtocolActions is BaseSetup {
 
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is Form
-            /// @dev FIXME: this likely needs to be TOKENBANK now
             from = args.toDst;
         }
         /// @dev check this from down here when contracts are fixed for multi vault
@@ -726,31 +726,22 @@ abstract contract ProtocolActions is BaseSetup {
             if (underlyingTokenIds_[i] > UNDERLYING_TOKENS.length)
                 revert WRONG_UNDERLYING_ID();
 
-            address vault = getContract(
+            address superForm = getContract(
                 chainId_,
                 string.concat(
                     UNDERLYING_TOKENS[underlyingTokenIds_[i]],
-                    "Vault"
+                    "SuperForm",
+                    Strings.toString(FORMS_FOR_VAULTS[underlyingTokenIds_[i]])
                 )
             );
 
-            superFormIds_[i] = _superFormId(
-                vault,
+            superFormIds_[i] = _packSuperForm(
+                superForm,
                 FORMS_FOR_VAULTS[underlyingTokenIds_[i]],
                 chainId_
             );
         }
         return superFormIds_;
-    }
-
-    function _superFormId(
-        address vault_,
-        uint256 formId_,
-        uint16 chainId_
-    ) internal pure returns (uint256 superFormId_) {
-        superFormId_ = uint256(uint160(vault_));
-        superFormId_ |= formId_ << 160;
-        superFormId_ |= uint256(chainId_) << 240;
     }
 
     /*

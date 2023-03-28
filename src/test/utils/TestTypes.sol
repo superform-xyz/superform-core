@@ -101,6 +101,7 @@ struct SetupVars {
     uint16 dstAmbChainId;
     uint32 dstHypChainId;
     uint256 fork;
+    address superForm;
     address factory;
     address lzEndpoint;
     address lzHelper;

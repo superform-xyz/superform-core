@@ -1,6 +1,6 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
@@ -71,7 +71,7 @@ contract TokenBank is ITokenBank, AccessControl {
     function depositMultiSync(
         InitMultiVaultData memory multiVaultData_
     ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
-        (address[] memory vaults, uint256[] memory formIds, ) = _getSuperForms(
+        (, uint256[] memory formIds, ) = _getSuperForms(
             multiVaultData_.superFormIds
         );
         address form;
@@ -84,7 +84,7 @@ contract TokenBank is ITokenBank, AccessControl {
             /// @dev FIXME: whole msg.value is transferred here, in multi sync this needs to be split
 
             form = superFormFactory.getForm(formIds[i]);
-            underlying = IBaseForm(form).getUnderlyingOfVault(vaults[i]);
+            underlying = IBaseForm(form).getUnderlyingOfVault();
 
             /// @dev This will revert ALL of the transactions if one of them fails.
             if (
@@ -151,11 +151,9 @@ contract TokenBank is ITokenBank, AccessControl {
     function depositSync(
         InitSingleVaultData memory singleVaultData_
     ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
-        (address vault_, uint256 formId_, ) = _getSuperForm(
-            singleVaultData_.superFormId
-        );
+        (, uint256 formId_, ) = _getSuperForm(singleVaultData_.superFormId);
         address form = superFormFactory.getForm(formId_);
-        ERC20 underlying = IBaseForm(form).getUnderlyingOfVault(vault_);
+        ERC20 underlying = IBaseForm(form).getUnderlyingOfVault();
         uint256 dstAmount;
         /// @dev This will revert ALL of the transactions if one of them fails.
 

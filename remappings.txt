@@ -1,4 +1,5 @@
-@openzeppelin=lib/openzeppelin-contracts/
+@openzeppelin-contracts=lib/openzeppelin-contracts/
+@openzeppelin-contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/
 @pigeon=lib/pigeon/src/
 @ds-test=lib/ds-test/src/
 @std=lib/forge-std/src/
