@@ -8,7 +8,6 @@ import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
-import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import "../utils/DataPacking.sol";
@@ -24,11 +23,6 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
     /// @dev error thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
-
-    constructor(
-        uint16 chainId_,
-        ISuperFormFactory superformfactory_
-    ) ERC20Form(chainId_, superformfactory_) {}
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
@@ -52,64 +46,80 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     /// @dev asset() or some similar function should return all possible tokens that can be deposited into the vault so that BE can grab that properly
-    function getUnderlyingOfVault(
-        address vault_
-    ) public view virtual override returns (ERC20) {
-        return ERC4626(vault_).asset();
+    function getUnderlyingOfVault()
+        public
+        view
+        virtual
+        override
+        returns (ERC20)
+    {
+        return ERC4626(vault).asset();
     }
 
     /// @inheritdoc BaseForm
-    function getPricePerVaultShare(
-        address vault_
-    ) public view virtual override returns (uint256) {
-        uint256 vaultDecimals = ERC4626(vault_).decimals();
-        return ERC4626(vault_).convertToAssets(10 ** vaultDecimals);
+    function getPricePerVaultShare()
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        uint256 vaultDecimals = ERC4626(vault).decimals();
+        return ERC4626(vault).convertToAssets(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
-    function getVaultShareBalance(
-        address vault_
-    ) public view virtual override returns (uint256) {
-        return ERC4626(vault_).balanceOf(address(this));
+    function getVaultShareBalance()
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        return ERC4626(vault).balanceOf(address(this));
     }
 
     /// @inheritdoc BaseForm
-    function getTotalAssets(
-        address vault_
-    ) public view virtual override returns (uint256) {
-        return ERC4626(vault_).totalAssets();
+    function getTotalAssets() public view virtual override returns (uint256) {
+        return ERC4626(vault).totalAssets();
     }
 
     /// @inheritdoc BaseForm
-    function getConvertPricePerVaultShare(
-        address vault_
-    ) public view virtual override returns (uint256) {
-        uint256 vaultDecimals = ERC4626(vault_).decimals();
-        return ERC4626(vault_).convertToAssets(10 ** vaultDecimals);
+    function getConvertPricePerVaultShare()
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        uint256 vaultDecimals = ERC4626(vault).decimals();
+        return ERC4626(vault).convertToAssets(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
-    function getPreviewPricePerVaultShare(
-        address vault_
-    ) public view virtual override returns (uint256) {
-        uint256 vaultDecimals = ERC4626(vault_).decimals();
-        return ERC4626(vault_).previewRedeem(10 ** vaultDecimals);
+    function getPreviewPricePerVaultShare()
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        uint256 vaultDecimals = ERC4626(vault).decimals();
+        return ERC4626(vault).previewRedeem(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
     function previewDepositTo(
-        address vault_,
         uint256 assets_
     ) public view virtual override returns (uint256) {
-        return ERC4626(vault_).convertToShares(assets_);
+        return ERC4626(vault).convertToShares(assets_);
     }
 
     /// @inheritdoc BaseForm
     function previewWithdrawFrom(
-        address vault_,
         uint256 assets_
     ) public view virtual override returns (uint256) {
-        return ERC4626(vault_).previewWithdraw(assets_);
+        return ERC4626(vault).previewWithdraw(assets_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -120,10 +130,10 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     function _directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) internal virtual override returns (uint256 dstAmount) {
-        /// note: checking balance
-        (address vault, , ) = _getSuperForm(singleVaultData_.superFormId);
+        address vaultLoc = vault;
 
-        ERC4626 v = ERC4626(vault);
+        /// note: checking balance
+        ERC4626 v = ERC4626(vaultLoc);
 
         address collateral = address(v.asset());
         ERC20 collateralToken = ERC20(collateral);
@@ -150,7 +160,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             );
         } else {
             dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
+                superRegistry.getBridgeAddress(liqData.bridgeId),
                 liqData.txData,
                 liqData.token,
                 liqData.allowanceTarget,
@@ -168,7 +178,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             revert DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
-        collateralToken.approve(vault, singleVaultData_.amount);
+        collateralToken.approve(vaultLoc, singleVaultData_.amount);
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
 
@@ -186,7 +196,6 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         uint256 len1 = liqData.txData.length;
         address receiver = len1 == 0 ? srcSender : address(this);
 
-        (address vault, , ) = _getSuperForm(singleVaultData_.superFormId);
         ERC4626 v = ERC4626(vault);
         address collateral = address(v.asset());
 
@@ -201,7 +210,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 revert DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
+                superRegistry.getBridgeAddress(liqData.bridgeId),
                 liqData.txData,
                 liqData.token,
                 liqData.allowanceTarget,
@@ -222,15 +231,14 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) internal virtual override returns (uint256 dstAmount) {
-        (address vault, , uint16 dstChainId) = _getSuperForm(
-            singleVaultData_.superFormId
-        );
+        (, , uint16 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
+        address vaultLoc = vault;
 
-        ERC4626 v = ERC4626(vault);
+        ERC4626 v = ERC4626(vaultLoc);
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
         /// DEVNOTE: allowance is modified inside of the ERC20.transferFrom() call
-        ERC20(v.asset()).approve(vault, singleVaultData_.amount);
+        ERC20(v.asset()).approve(vaultLoc, singleVaultData_.amount);
 
         /// DEVNOTE: This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
@@ -244,7 +252,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             dstChainId,
             txId,
             singleVaultData_.amount,
-            vault
+            vaultLoc
         );
     }
 
@@ -252,13 +260,11 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     ) internal virtual override {
-        (address vault, , uint16 dstChainId) = _getSuperForm(
-            singleVaultData_.superFormId
-        );
-
+        (, , uint16 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
+        address vaultLoc = vault;
         uint256 dstAmount;
 
-        ERC4626 v = ERC4626(vault);
+        ERC4626 v = ERC4626(vaultLoc);
 
         (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(
             singleVaultData_.txData
@@ -276,11 +282,13 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             );
 
             uint256 balanceBefore = ERC20(v.asset()).balanceOf(address(this));
+
             /// Note Send Tokens to Source Chain
             /// FEAT Note: We could also allow to pass additional chainId arg here
             /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
+            /// FIXME: bridge address should be validated at router level
             dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
+                superRegistry.getBridgeAddress(liqData.bridgeId),
                 liqData.txData,
                 liqData.token,
                 liqData.allowanceTarget,
@@ -304,7 +312,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             dstChainId,
             txId,
             singleVaultData_.amount,
-            vault
+            vaultLoc
         );
     }
 
@@ -314,28 +322,25 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function _vaultSharesAmountToUnderlyingAmount(
-        address vault_,
         uint256 vaultSharesAmount_,
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
-        return ERC4626(vault_).convertToAssets(vaultSharesAmount_);
+        return ERC4626(vault).convertToAssets(vaultSharesAmount_);
     }
 
     /// @inheritdoc BaseForm
     function _vaultSharesAmountToUnderlyingAmountRoundingUp(
-        address vault_,
         uint256 vaultSharesAmount_,
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
-        return ERC4626(vault_).previewMint(vaultSharesAmount_);
+        return ERC4626(vault).previewMint(vaultSharesAmount_);
     }
 
     /// @inheritdoc BaseForm
     function _underlyingAmountToVaultSharesAmount(
-        address vault_,
         uint256 underlyingAmount_,
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
-        return ERC4626(vault_).convertToShares(underlyingAmount_);
+        return ERC4626(vault).convertToShares(underlyingAmount_);
     }
 }

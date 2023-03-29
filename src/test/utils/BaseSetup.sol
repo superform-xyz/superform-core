@@ -8,7 +8,7 @@ import "@ds-test/test.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "@pigeon/hyperlane/HyperlaneHelper.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev src imports
 import {VaultMock} from "../mocks/VaultMock.sol";
@@ -19,6 +19,7 @@ import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "../../interfaces/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {SuperRouter} from "../../SuperRouter.sol";
+import {SuperRegistry} from "../../SuperRegistry.sol";
 import {TokenBank} from "../../TokenBank.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
@@ -70,6 +71,7 @@ abstract contract BaseSetup is DSTest, Test {
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
     /// @dev all these vault mocks are currently  using formId 1 (4626)
     uint256[] public FORMS_FOR_VAULTS = [uint256(1), 1, 1];
+    uint256[] public FORM_IDS = [uint256(1)];
     string[] public VAULT_NAMES;
 
     mapping(uint16 => IERC4626[]) public vaults;
@@ -247,15 +249,17 @@ abstract contract BaseSetup is DSTest, Test {
                 .hyperlaneHelper;
 
             /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
-            vars.stateRegistry = address(new CoreStateRegistry(vars.chainId));
+            vars.coreStateRegistry = address(
+                new CoreStateRegistry(vars.chainId)
+            );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
-                .stateRegistry;
+                .coreStateRegistry;
 
             /// @dev 2.1- deployed Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
-                    IBaseStateRegistry(vars.stateRegistry)
+                    IBaseStateRegistry(vars.coreStateRegistry)
                 )
             );
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
@@ -265,7 +269,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation(
                     HyperlaneMailbox,
-                    IBaseStateRegistry(vars.stateRegistry),
+                    IBaseStateRegistry(vars.coreStateRegistry),
                     HyperlaneGasPaymaster
                 )
             );
@@ -321,33 +325,27 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
                 .factory;
 
-            /// @dev 6 - Deploy 4626Form
-            vars.erc4626Form = address(
-                new ERC4626Form(vars.chainId, ISuperFormFactory(vars.factory))
-            );
+            /// @dev 6 - Deploy 4626Form implementation
+
+            vars.erc4626Form = address(new ERC4626Form());
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
                 .erc4626Form;
 
             /// @dev 7 - Add newly deployed form to Factory, formId 1
-            ISuperFormFactory(vars.factory).addForm(vars.erc4626Form, 1);
+            ISuperFormFactory(vars.factory).addForm(
+                vars.erc4626Form,
+                FORM_IDS[0]
+            );
 
             /// @dev 8 - Deploy TokenBank
-            contracts[vars.chainId][bytes32(bytes("TokenBank"))] = address(
-                new TokenBank(
-                    vars.chainId,
-                    IBaseStateRegistry(payable(vars.stateRegistry)),
-                    ISuperFormFactory(vars.factory)
-                )
-            );
+            vars.tokenBank = address(new TokenBank(vars.chainId));
+
+            contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
+                .tokenBank;
 
             /// @dev 9 - Deploy SuperRouter
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = address(
-                new SuperRouter(
-                    vars.chainId,
-                    "test.com/",
-                    IBaseStateRegistry(payable(vars.stateRegistry)),
-                    ISuperFormFactory(vars.factory)
-                )
+                new SuperRouter(vars.chainId, "test.com/")
             );
 
             /// @dev 10 - Deploy MultiTx Processor
@@ -358,6 +356,48 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 11 - Deploy SWAP token with no associated vault with 18 decimals
             contracts[vars.chainId][bytes32(bytes("Swap"))] = address(
                 new MockERC20("Swap", "SWP", 18, deployer, milionTokensE18)
+            );
+
+            /// @dev 12 - Deploy SuperRegistry and assign roles
+            vars.superRegistry = address(new SuperRegistry(vars.chainId));
+            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
+                .superRegistry;
+
+            SuperRegistry(vars.superRegistry).setSuperRouter(
+                contracts[vars.chainId][bytes32(bytes("SuperRouter"))]
+            );
+            SuperRegistry(vars.superRegistry).setTokenBank(
+                contracts[vars.chainId][bytes32(bytes("TokenBank"))]
+            );
+            SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
+
+            SuperRegistry(vars.superRegistry).setCoreStateRegistry(
+                vars.coreStateRegistry
+            );
+
+            SuperRegistry(vars.superRegistry).setBridgeAddress(
+                bridgeIds,
+                bridgeAddresses
+            );
+
+            SuperFormFactory(vars.factory).setSuperRegistry(vars.superRegistry);
+
+            MultiTxProcessor(
+                payable(
+                    contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))]
+                )
+            ).setSuperRegistry(vars.superRegistry);
+
+            SuperRouter(
+                payable(contracts[vars.chainId][bytes32(bytes("SuperRouter"))])
+            ).setSuperRegistry(vars.superRegistry);
+
+            TokenBank(payable(vars.tokenBank)).setSuperRegistry(
+                vars.superRegistry
+            );
+
+            IBaseStateRegistry(vars.coreStateRegistry).setSuperRegistry(
+                vars.superRegistry
             );
         }
 
@@ -391,19 +431,32 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             vars.srcTokenBank = getContract(vars.chainId, "TokenBank");
-            vars.srcErc4626Form = getContract(vars.chainId, "ERC4626Form");
             vars.srcMultiTxProcessor = getContract(
                 vars.chainId,
                 "MultiTxProcessor"
             );
 
-            /// @dev - Create SuperForms in Factory contract
+            /// @dev - Create SuperForm for id 1 in Factory contract
+            /// @dev FIXME: currently hardcoded formId 1
             ///
             for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
-                ISuperFormFactory(vars.srcSuperFormFactory).createSuperForm(
-                    1,
-                    address(vaults[vars.chainId][j])
-                );
+                (, vars.superForm) = ISuperFormFactory(vars.srcSuperFormFactory)
+                    .createSuperForm(
+                        FORMS_FOR_VAULTS[j],
+                        address(vaults[vars.chainId][j])
+                    );
+
+                contracts[vars.chainId][
+                    bytes32(
+                        bytes(
+                            string.concat(
+                                UNDERLYING_TOKENS[j],
+                                "SuperForm",
+                                Strings.toString(FORMS_FOR_VAULTS[j])
+                            )
+                        )
+                    )
+                ] = vars.superForm;
             }
 
             // SuperDestination(payable(vars.srcSuperDestination))
@@ -413,8 +466,6 @@ abstract contract BaseSetup is DSTest, Test {
             //     .updateSafeGasParam("0x000100000000000000000000000000000000000000000000000000000000004c4b40");
 
             /// @dev - RBAC
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry))
-                .setCoreContracts(vars.srcSuperRouter, vars.srcTokenBank);
 
             CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
@@ -443,19 +494,10 @@ abstract contract BaseSetup is DSTest, Test {
                 deployer
             );
 
+            /// @dev FIXME: in reality who has the SWAPPER_ROLE?
             MultiTxProcessor(payable(vars.srcMultiTxProcessor)).grantRole(
                 SWAPPER_ROLE,
                 deployer
-            );
-
-            ERC4626Form(payable(vars.srcErc4626Form)).grantRole(
-                SUPER_ROUTER_ROLE,
-                vars.srcSuperRouter
-            );
-
-            ERC4626Form(payable(vars.srcErc4626Form)).grantRole(
-                TOKEN_BANK_ROLE,
-                vars.srcTokenBank
             );
 
             TokenBank(payable(vars.srcTokenBank)).grantRole(
@@ -515,21 +557,6 @@ abstract contract BaseSetup is DSTest, Test {
                     ).setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
-
-            /// @dev - Set bridge addresses
-            SuperRouter(payable(vars.srcSuperRouter)).setBridgeAddress(
-                bridgeIds,
-                bridgeAddresses
-            );
-
-            /// @dev TODO: on each form , add the correct bridge data
-            IBaseForm(vars.srcErc4626Form).setBridgeAddress(
-                bridgeIds,
-                bridgeAddresses
-            );
-
-            MultiTxProcessor(payable(vars.srcMultiTxProcessor))
-                .setBridgeAddress(bridgeIds, bridgeAddresses);
         }
 
         vm.stopPrank();

@@ -30,8 +30,8 @@ interface ISuperRouter {
     /// @dev is emitted when a cross-chain transaction is completed.
     event Completed(uint256 txId);
 
-    /// @dev is emitted when a new cross-chain token bridge is configured.
-    event SetBridgeAddress(uint256 bridgeId, address bridgeAddress);
+    /// @dev is emitted when the super registry is updated.
+    event SuperRegistryUpdated(address indexed superRegistry);
 
     /*///////////////////////////////////////////////////////////////
                                 ERRORS
@@ -64,8 +64,8 @@ interface ISuperRouter {
     /// @dev is emitted if the payload status is invalid
     error INVALID_PAYLOAD_STATUS();
 
-    /// @dev is emitted when the bridge address being set is 0
-    error ZERO_BRIDGE_ADDRESS();
+    /// @dev is emitted when an address is being set to 0
+    error ZERO_ADDRESS();
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL DEPOSIT FUNCTIONS
@@ -119,14 +119,10 @@ interface ISuperRouter {
                         OTHER EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev PREVILAGED admin ONLY FUNCTION.
-    /// @dev allows admin to set the bridge address for an bridge id.
-    /// @param bridgeId_         represents the bridge unqiue identifier.
-    /// @param bridgeAddress_    represents the bridge address.
-    function setBridgeAddress(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
-    ) external;
+    /// set super registry
+    /// @dev allows an admin to set the super registry
+    /// @param superRegistry_ is the address of the super registry
+    function setSuperRegistry(address superRegistry_) external;
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
