@@ -9,7 +9,6 @@ import {FormBeacon} from "./forms/FormBeacon.sol";
 import {BaseForm} from "./BaseForm.sol";
 import "./utils/DataPacking.sol";
 
-/// @dev FIXME - missing update call on formBeacon (factory is the admin)
 /// @title SuperForms Factory
 /// @dev A secure, and easily queryable central point of access for all SuperForms on any given chain,
 /// @author Zeropoint Labs.
