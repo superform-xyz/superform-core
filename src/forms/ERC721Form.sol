@@ -10,20 +10,19 @@ import {BaseForm} from "../BaseForm.sol";
 /// @notice Abstract implementation of BaseForm for protocols using ERC721 vault shares.
 /// @notice WIP: likely not to be released in v1
 abstract contract ERC721Form is BaseForm {
-    constructor(
-        uint16 chainId_,
-        ISuperFormFactory superFormFactory_
-    ) BaseForm(chainId_, superFormFactory_) {}
-
     /*///////////////////////////////////////////////////////////////
                             GETTERS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc BaseForm
-    function getVaultShareBalance(
-        address vault_
-    ) public view virtual override returns (uint256) {
-        return ERC721(vault_).balanceOf(address(this));
+    function getVaultShareBalance()
+        public
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        return ERC721(vault).balanceOf(address(this));
     }
 
     /// @inheritdoc BaseForm
@@ -48,24 +47,36 @@ abstract contract ERC721Form is BaseForm {
     }
 
     /// @inheritdoc BaseForm
-    function superformYieldTokenName(
-        address vault_
-    ) external view virtual override returns (string memory) {
-        return string(abi.encodePacked("Superform ", ERC721(vault_).name()));
+    function superformYieldTokenName()
+        external
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return string(abi.encodePacked("Superform ", ERC721(vault).name()));
     }
 
     /// @inheritdoc BaseForm
-    function superformYieldTokenSymbol(
-        address vault_
-    ) external view virtual override returns (string memory) {
-        return string(abi.encodePacked("SUP-", ERC721(vault_).symbol()));
+    function superformYieldTokenSymbol()
+        external
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return string(abi.encodePacked("SUP-", ERC721(vault).symbol()));
     }
 
     /// @dev TODO - should this be 0?
     /// @inheritdoc BaseForm
-    function superformYieldTokenDecimals(
-        address
-    ) external view virtual override returns (uint256 underlyingDecimals) {
+    function superformYieldTokenDecimals()
+        external
+        view
+        virtual
+        override
+        returns (uint256 underlyingDecimals)
+    {
         return 0;
     }
 }

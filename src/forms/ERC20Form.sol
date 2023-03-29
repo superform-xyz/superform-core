@@ -8,11 +8,6 @@ import {BaseForm} from "../BaseForm.sol";
 /// @title ERC20Form
 /// @notice Abstract implementation of Form for protocols using ERC20 vault shares.
 abstract contract ERC20Form is BaseForm {
-    constructor(
-        uint16 chainId_,
-        ISuperFormFactory superFormFactory_
-    ) BaseForm(chainId_, superFormFactory_) {}
-
     /*///////////////////////////////////////////////////////////////
                             OVERRIDES
     //////////////////////////////////////////////////////////////*/
@@ -39,23 +34,35 @@ abstract contract ERC20Form is BaseForm {
     }
 
     /// @inheritdoc BaseForm
-    function superformYieldTokenName(
-        address vault_
-    ) external view virtual override returns (string memory) {
-        return string(abi.encodePacked("Superform ", ERC20(vault_).name()));
+    function superformYieldTokenName()
+        external
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return string(abi.encodePacked("Superform ", ERC20(vault).name()));
     }
 
     /// @inheritdoc BaseForm
-    function superformYieldTokenSymbol(
-        address vault_
-    ) external view virtual override returns (string memory) {
-        return string(abi.encodePacked("SUP-", ERC20(vault_).symbol()));
+    function superformYieldTokenSymbol()
+        external
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return string(abi.encodePacked("SUP-", ERC20(vault).symbol()));
     }
 
     /// @inheritdoc BaseForm
-    function superformYieldTokenDecimals(
-        address vault_
-    ) external view virtual override returns (uint256 underlyingDecimals) {
-        return ERC20(vault_).decimals();
+    function superformYieldTokenDecimals()
+        external
+        view
+        virtual
+        override
+        returns (uint256 underlyingDecimals)
+    {
+        return ERC20(vault).decimals();
     }
 }

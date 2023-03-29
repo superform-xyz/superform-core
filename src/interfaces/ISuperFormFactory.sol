@@ -33,8 +33,13 @@ interface ISuperFormFactory {
 
     /// @dev emitted when a new form is entered into the factory
     /// @param form is the address of the new form
+    /// @param beacon is the address of the beacon
     /// @param formId is the id of the new form
-    event FormCreated(address indexed form, uint256 indexed formId);
+    event FormAdded(
+        address indexed form,
+        address indexed beacon,
+        uint256 indexed formId
+    );
 
     /// @dev emitted when a new SuperForm is created
     /// @param formId is the id of the form
@@ -43,8 +48,13 @@ interface ISuperFormFactory {
     event SuperFormCreated(
         uint256 indexed formId,
         address indexed vault,
-        uint256 indexed superFormId
+        uint256 indexed superFormId,
+        address superForm
     );
+
+    /// @dev emitted when a new SuperRegistry is set
+    /// @param superRegistry is the address of the super registry
+    event SuperRegistrySet(address indexed superRegistry);
 
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
@@ -53,7 +63,10 @@ interface ISuperFormFactory {
     /// @dev allows an admin to enter a form to the factory
     /// @param form_ is the address of a form
     /// @param formId_ is the id of the form
-    function addForm(address form_, uint256 formId_) external;
+    function addForm(
+        address form_,
+        uint256 formId_
+    ) external returns (address beacon_);
 
     /// @dev allows an admin to add a form to the factory
     /// @param forms_ are the address of a form
@@ -70,7 +83,20 @@ interface ISuperFormFactory {
     function createSuperForm(
         uint256 formId_,
         address vault_
-    ) external returns (uint256 superFormId_);
+    ) external returns (uint256 superFormId_, address superForm_);
+
+    /// @dev allows an admin to update the beacon logic of a form
+    /// @param formId_ is the id of the form
+    /// @param newFormLogic_ is the address of the new form logic
+    function updateFormBeaconLogic(
+        uint256 formId_,
+        address newFormLogic_
+    ) external;
+
+    /// set super registry
+    /// @dev allows an admin to set the super registry
+    /// @param superRegistry_ is the address of the super registry
+    function setSuperRegistry(address superRegistry_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions

@@ -41,6 +41,7 @@ struct NewActionLocalVars {
     UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
     UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;
+    address superFormT;
     address[] vaultMock;
     address lzEndpoint_0;
     address[] lzEndpoints_1;
@@ -101,6 +102,8 @@ struct SetupVars {
     uint16 dstAmbChainId;
     uint32 dstHypChainId;
     uint256 fork;
+    address tokenBank;
+    address superForm;
     address factory;
     address lzEndpoint;
     address lzHelper;
@@ -109,7 +112,7 @@ struct SetupVars {
     address hyperlaneImplementation;
     address socketRouter;
     address erc4626Form;
-    address stateRegistry;
+    address coreStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address srcTokenBank;
@@ -124,6 +127,7 @@ struct SetupVars {
     address dstHyperlaneImplementation;
     address dstStateRegistry;
     address srcMultiTxProcessor;
+    address superRegistry;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -148,7 +152,7 @@ struct SingleVaultCallDataArgs {
 struct MultiVaultCallDataArgs {
     address user;
     address fromSrc;
-    address toDst;
+    address[] toDst;
     address[] underlyingTokens;
     uint256[] superFormIds;
     uint256[] amounts;

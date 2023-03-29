@@ -1,15 +1,16 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IMultiTxProcessor} from "../interfaces/IMultiTxProcessor.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 
 /// @title MultiTxProcessor
 /// @author Zeropoint Labs.
 /// @dev handles all destination chain swaps.
 /// @notice all write functions can only be accessed by superform keepers.
-contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
+contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
     /*///////////////////////////////////////////////////////////////
                     Access Control Role Constants
     //////////////////////////////////////////////////////////////*/
@@ -18,9 +19,8 @@ contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
-    /// @dev maps all the bridges to their address.
-    /// @notice bridge id is mapped to its execution address.
-    mapping(uint8 => address) public bridgeAddress;
+
+    ISuperRegistry public superRegistry;
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -32,20 +32,6 @@ contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @dev socket.tech fails without a native receive function.
     receive() external payable {}
-
-    function setBridgeAddress(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i = 0; i < bridgeId_.length; i++) {
-            address x = bridgeAddress_[i];
-            uint8 y = bridgeId_[i];
-            require(x != address(0), "Router: Zero Bridge Address");
-
-            bridgeAddress[y] = x;
-            emit SetBridgeAddress(y, x);
-        }
-    }
 
     /// @dev PREVILEGED SWAPPER ONLY FUNCTION
     /// @dev would interact with socket contract to process multi-tx transactions and move the funds into destination contract.
@@ -61,7 +47,7 @@ contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
         address allowanceTarget_,
         uint256 amount_
     ) external override onlyRole(SWAPPER_ROLE) {
-        address to = bridgeAddress[bridgeId_];
+        address to = superRegistry.getBridgeAddress(bridgeId_);
         if (allowanceTarget_ != address(0)) {
             IERC20(approvalToken_).approve(allowanceTarget_, amount_);
             (bool success, ) = payable(to).call(txData_);
@@ -86,7 +72,7 @@ contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
         address allowanceTarget_,
         uint256[] calldata amounts_
     ) external override onlyRole(SWAPPER_ROLE) {
-        address to = bridgeAddress[bridgeId_];
+        address to = superRegistry.getBridgeAddress(bridgeId_);
         for (uint256 i = 0; i < txDatas_.length; i++) {
             if (allowanceTarget_ != address(0)) {
                 IERC20(approvalTokens_[i]).approve(
@@ -102,6 +88,16 @@ contract MultiTxProcessor is AccessControl, IMultiTxProcessor {
                 require(success, "Socket Error: Invalid Tx Data (2)");
             }
         }
+    }
+
+    /// @dev PREVILEGED admin ONLY FUNCTION.
+    /// @param superRegistry_    represents the address of the superRegistry
+    function setSuperRegistry(
+        address superRegistry_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        superRegistry = ISuperRegistry(superRegistry_);
+
+        emit SuperRegistryUpdated(superRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////

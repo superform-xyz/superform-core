@@ -10,17 +10,8 @@ interface IMultiTxProcessor {
                                 Events
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev is emitted when a new token bridge is configured.
-    event SetBridgeAddress(uint256 bridgeId, address bridgeAddress);
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev allows admin to set the bridge address for an bridge id.
-    /// @param bridgeId_         represents the bridge unqiue identifier.
-    /// @param bridgeAddress_    represents the bridge address.
-    function setBridgeAddress(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
-    ) external;
+    /// @dev is emitted when the super registry is updated.
+    event SuperRegistryUpdated(address indexed superRegistry);
 
     /// @dev PREVILEGED SWAPPER ONLY FUNCTION
     /// @dev would interact with socket contract to process multi-tx transactions and move the funds into destination contract.
@@ -51,4 +42,9 @@ interface IMultiTxProcessor {
         address allowanceTarget_,
         uint256[] calldata amounts_
     ) external;
+
+    /// set super registry
+    /// @dev allows an admin to set the super registry
+    /// @param superRegistry_ is the address of the super registry
+    function setSuperRegistry(address superRegistry_) external;
 }

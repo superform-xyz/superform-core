@@ -52,6 +52,9 @@ interface IBaseStateRegistry {
     /// @dev is emitted when a payload gets processed.
     event PayloadProcessed(uint256 payloadId);
 
+    /// @dev is emitted when the super registry is updated.
+    event SuperRegistryUpdated(address indexed superRegistry);
+
     /*///////////////////////////////////////////////////////////////
                             External Functions
     //////////////////////////////////////////////////////////////*/
@@ -97,4 +100,9 @@ interface IBaseStateRegistry {
         uint256 ambId_,
         bytes memory extraData_
     ) external payable;
+
+    /// set super registry
+    /// @dev allows an admin to set the super registry
+    /// @param superRegistry_ is the address of the super registry
+    function setSuperRegistry(address superRegistry_) external;
 }

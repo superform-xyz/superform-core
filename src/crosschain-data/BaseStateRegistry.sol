@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {PayloadState} from "../types/DataTypes.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 
 /// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
 /// @author Zeropoint Labs
@@ -38,14 +39,16 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     /// @dev maps payloads to their status
     mapping(uint256 => PayloadState) public payloadTracking;
 
+    ISuperRegistry public superRegistry;
+
     /*///////////////////////////////////////////////////////////////
                              CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
     constructor(uint16 chainId_) {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         chainId = chainId_;
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -162,4 +165,14 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         uint256 ambId_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {}
+
+    /// @dev PREVILEGED admin ONLY FUNCTION.
+    /// @param superRegistry_    represents the address of the superRegistry
+    function setSuperRegistry(
+        address superRegistry_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        superRegistry = ISuperRegistry(superRegistry_);
+
+        emit SuperRegistryUpdated(superRegistry_);
+    }
 }
