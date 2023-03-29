@@ -5,8 +5,8 @@ import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
+import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
-import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {ITokenBank} from "./interfaces/ITokenBank.sol";
 import "./utils/DataPacking.sol";
 
@@ -29,25 +29,18 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @dev safeGasParam is used while sending layerzero message from destination to router.
     bytes public safeGasParam;
 
-    /// @notice state variable are all declared public to avoid creating functions to expose.
-
-    /// @dev stateRegistry points to the state registry interface deployed in the respective chain.
-    IBaseStateRegistry stateRegistry;
+    /// @dev superRegistry points to the super registry deployed in the respective chain.
+    ISuperRegistry public superRegistry;
 
     /// @dev chainId represents the superform chain id of the specific chain.
-    uint16 public chainId;
+    uint16 public immutable chainId;
 
-    /// TODO: add bridge id to bridge address mapping
     /// @notice deploy stateRegistry before SuperDestination
     /// @param chainId_              Superform chain id
-    /// @param stateRegistry_         State Registry address deployed
     /// @dev sets caller as the admin of the contract.
-    /// @dev FIXME: missing means for admin to change implementations
-    constructor(uint16 chainId_, IBaseStateRegistry stateRegistry_) {
+    constructor(uint16 chainId_) {
         chainId = chainId_;
-        stateRegistry = stateRegistry_;
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(STATE_REGISTRY_ROLE, address(stateRegistry_));
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -107,7 +100,9 @@ contract TokenBank is ITokenBank, AccessControl {
         proofAmbIds[0] = 2;
 
         /// @notice Send Data to Source to issue superform positions.
-        stateRegistry.dispatchPayload{value: msg.value}(
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
+            value: msg.value
+        }(
             1, /// @dev come to this later to accept any bridge id
             proofAmbIds,
             srcChainId,
@@ -173,7 +168,9 @@ contract TokenBank is ITokenBank, AccessControl {
         proofAmbIds[0] = 2;
 
         /// @notice Send Data to Source to issue superform positions.
-        stateRegistry.dispatchPayload{value: msg.value}(
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
+            value: msg.value
+        }(
             1, /// @dev come to this later to accept any bridge id
             proofAmbIds,
             srcChainId,
@@ -248,5 +245,18 @@ contract TokenBank is ITokenBank, AccessControl {
         safeGasParam = param_;
 
         emit SafeGasParamUpdated(oldParam, param_);
+    }
+
+    /// @dev PREVILEGED admin ONLY FUNCTION.
+    /// @param superRegistry_    represents the address of the superRegistry
+    function setSuperRegistry(
+        address superRegistry_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (address(superRegistry_) == address(0)) {
+            revert ZERO_ADDRESS();
+        }
+        superRegistry = ISuperRegistry(superRegistry_);
+
+        emit SuperRegistryUpdated(superRegistry_);
     }
 }

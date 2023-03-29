@@ -85,6 +85,14 @@ interface ISuperFormFactory {
         address vault_
     ) external returns (uint256 superFormId_, address superForm_);
 
+    /// @dev allows an admin to update the beacon logic of a form
+    /// @param formId_ is the id of the form
+    /// @param newFormLogic_ is the address of the new form logic
+    function updateFormBeaconLogic(
+        uint256 formId_,
+        address newFormLogic_
+    ) external;
+
     /// set super registry
     /// @dev allows an admin to set the super registry
     /// @param superRegistry_ is the address of the super registry

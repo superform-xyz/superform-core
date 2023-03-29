@@ -9,7 +9,6 @@ import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "@pigeon/hyperlane/HyperlaneHelper.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import "@openzeppelin-contracts/contracts/utils/Strings.sol";
-import "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev src imports
 import {VaultMock} from "../mocks/VaultMock.sol";
@@ -250,15 +249,17 @@ abstract contract BaseSetup is DSTest, Test {
                 .hyperlaneHelper;
 
             /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
-            vars.stateRegistry = address(new CoreStateRegistry(vars.chainId));
+            vars.coreStateRegistry = address(
+                new CoreStateRegistry(vars.chainId)
+            );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
-                .stateRegistry;
+                .coreStateRegistry;
 
             /// @dev 2.1- deployed Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
-                    IBaseStateRegistry(vars.stateRegistry)
+                    IBaseStateRegistry(vars.coreStateRegistry)
                 )
             );
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
@@ -268,7 +269,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation(
                     HyperlaneMailbox,
-                    IBaseStateRegistry(vars.stateRegistry),
+                    IBaseStateRegistry(vars.coreStateRegistry),
                     HyperlaneGasPaymaster
                 )
             );
@@ -337,21 +338,14 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev 8 - Deploy TokenBank
-            contracts[vars.chainId][bytes32(bytes("TokenBank"))] = address(
-                new TokenBank(
-                    vars.chainId,
-                    IBaseStateRegistry(payable(vars.stateRegistry))
-                )
-            );
+            vars.tokenBank = address(new TokenBank(vars.chainId));
+
+            contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
+                .tokenBank;
 
             /// @dev 9 - Deploy SuperRouter
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = address(
-                new SuperRouter(
-                    vars.chainId,
-                    "test.com/",
-                    IBaseStateRegistry(payable(vars.stateRegistry)),
-                    ISuperFormFactory(vars.factory)
-                )
+                new SuperRouter(vars.chainId, "test.com/")
             );
 
             /// @dev 10 - Deploy MultiTx Processor
@@ -377,7 +371,9 @@ abstract contract BaseSetup is DSTest, Test {
             );
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
 
-            SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
+            SuperRegistry(vars.superRegistry).setCoreStateRegistry(
+                vars.coreStateRegistry
+            );
 
             SuperRegistry(vars.superRegistry).setBridgeAddress(
                 bridgeIds,
@@ -385,6 +381,24 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             SuperFormFactory(vars.factory).setSuperRegistry(vars.superRegistry);
+
+            MultiTxProcessor(
+                payable(
+                    contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))]
+                )
+            ).setSuperRegistry(vars.superRegistry);
+
+            SuperRouter(
+                payable(contracts[vars.chainId][bytes32(bytes("SuperRouter"))])
+            ).setSuperRegistry(vars.superRegistry);
+
+            TokenBank(payable(vars.tokenBank)).setSuperRegistry(
+                vars.superRegistry
+            );
+
+            IBaseStateRegistry(vars.coreStateRegistry).setSuperRegistry(
+                vars.superRegistry
+            );
         }
 
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -452,8 +466,6 @@ abstract contract BaseSetup is DSTest, Test {
             //     .updateSafeGasParam("0x000100000000000000000000000000000000000000000000000000000000004c4b40");
 
             /// @dev - RBAC
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry))
-                .setCoreContracts(vars.srcSuperRouter, vars.srcTokenBank);
 
             CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
@@ -545,15 +557,6 @@ abstract contract BaseSetup is DSTest, Test {
                     ).setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
-
-            /// @dev - Set bridge addresses
-            SuperRouter(payable(vars.srcSuperRouter)).setBridgeAddress(
-                bridgeIds,
-                bridgeAddresses
-            );
-
-            MultiTxProcessor(payable(vars.srcMultiTxProcessor))
-                .setBridgeAddress(bridgeIds, bridgeAddresses);
         }
 
         vm.stopPrank();

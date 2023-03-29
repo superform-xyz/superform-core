@@ -14,7 +14,25 @@ interface ISuperRegistry {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev is emitted when a new token bridge is configured.
-    event SetBridgeAddress(uint256 bridgeId, address bridgeAddress);
+    event SetBridgeAddress(
+        uint256 indexed bridgeId,
+        address indexed bridgeAddress
+    );
+
+    /// @dev is emitted when the super router address is set.
+    event SuperRouterUpdated(address indexed superRouter);
+
+    /// @dev is emitted when the token bank address is set.
+    event TokenBankUpdated(address indexed tokenBank);
+
+    /// @dev is emitted when the superform factory address is set.
+    event SuperFormFactoryUpdated(address indexed superFormFactory);
+
+    /// @dev is emitted when the state registry address is set.
+    event CoreStateRegistryUpdated(address indexed coreStateRegistry);
+
+    /// @dev is emitted when the state registry address is set.
+    event FactoryStateRegistryUpdated(address indexed factoryStateRegistry);
 
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
@@ -31,6 +49,14 @@ interface ISuperRegistry {
     /// @dev sets the superform factory address.
     /// @param superFormFactory_ the address of the superform factory
     function setSuperFormFactory(address superFormFactory_) external;
+
+    /// @dev sets the state registry address.
+    /// @param coreStateRegistry_ the address of the state registry
+    function setCoreStateRegistry(address coreStateRegistry_) external;
+
+    /// @dev sets the state registry address.
+    /// @param factoryStateRegistry_ the address of the state registry
+    function setFactoryStateRegistry(address factoryStateRegistry_) external;
 
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @param bridgeId_         represents the bridge unqiue identifier.
@@ -58,6 +84,20 @@ interface ISuperRegistry {
         external
         view
         returns (address superFormFactory_);
+
+    /// @dev gets the state registry address.
+    /// @return coreStateRegistry_ the address of the state registry
+    function coreStateRegistry()
+        external
+        view
+        returns (address coreStateRegistry_);
+
+    /// @dev gets the state registry address.
+    /// @return factoryStateRegistry_ the address of the state registry
+    function factoryStateRegistry()
+        external
+        view
+        returns (address factoryStateRegistry_);
 
     /// @dev gets the address of a bridge
     /// @param bridgeId_ is the id of a bridge

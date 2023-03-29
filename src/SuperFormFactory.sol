@@ -9,6 +9,7 @@ import {FormBeacon} from "./forms/FormBeacon.sol";
 import {BaseForm} from "./BaseForm.sol";
 import "./utils/DataPacking.sol";
 
+/// @dev FIXME - missing update call on formBeacon (factory is the admin)
 /// @title SuperForms Factory
 /// @dev A secure, and easily queryable central point of access for all SuperForms on any given chain,
 /// @author Zeropoint Labs.
@@ -21,11 +22,11 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /// @dev chainId represents the superform chain id.
     uint16 public immutable chainId;
 
+    address public superRegistry;
+
     address[] public formBeacons;
 
     uint256[] public superForms;
-
-    address public superRegistry;
 
     /// @dev formId => formAddress
     /// @notice If form[formId_] is 0, form is not part of the protocol
@@ -132,6 +133,14 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         /// 4. SuperFormFactory could be given CORE_CONTRACTS_ROLE to achieve the above
 
         emit SuperFormCreated(formId_, vault_, superFormId_, superForm_);
+    }
+
+    /// @inheritdoc ISuperFormFactory
+    function updateFormBeaconLogic(
+        uint256 formId_,
+        address newFormLogic_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        FormBeacon(form[formId_]).update(newFormLogic_);
     }
 
     /// set super registry

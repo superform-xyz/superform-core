@@ -11,6 +11,7 @@ import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
+import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./utils/DataPacking.sol";
 
@@ -29,42 +30,24 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     string public symbol = "SP";
     string public dynamicURI = "https://api.superform.xyz/superposition/";
 
-    /// @notice state = information about destination chain & vault id.
-    /// @notice  stateRegistry accepts requests from whitelisted addresses.
-    /// @dev stateRegistry integrates with interblockchain messaging protocols.
-    IBaseStateRegistry public stateRegistry;
-
     /// @notice chainId represents unique chain id for each chains.
     /// @dev maybe should be constant or immutable
-    uint16 public chainId;
+    uint16 public immutable chainId;
 
     uint80 public totalTransactions;
 
-    ISuperFormFactory public immutable superFormFactory;
+    ISuperRegistry public superRegistry;
 
     /// @notice history of state sent across chains are used for debugging.
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint80 => AMBMessage) public txHistory;
 
-    /// @notice bridge id is mapped to its execution address.
-    /// @dev maps all the bridges to their address.
-    mapping(uint8 => address) public bridgeAddress;
-
     /// @param chainId_              SuperForm chain id
     /// @param baseUri_              URL for external metadata of ERC1155 SuperPositions
-    /// @param stateRegistry_         State registry address deployed
-    /// @param superFormFactory_         SuperFormFactory address deployed
-    constructor(
-        uint16 chainId_,
-        string memory baseUri_,
-        IBaseStateRegistry stateRegistry_,
-        ISuperFormFactory superFormFactory_
-    ) ERC1155(baseUri_) {
+    constructor(uint16 chainId_, string memory baseUri_) ERC1155(baseUri_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
-        stateRegistry = stateRegistry_;
-        superFormFactory = superFormFactory_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -156,7 +139,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                 vars.liqRequest = req.superFormsData.liqRequests[j];
                 /// @dev dispatch liquidity data
                 dispatchTokens(
-                    bridgeAddress[vars.liqRequest.bridgeId],
+                    superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
                     vars.liqRequest.txData,
                     vars.liqRequest.token,
                     vars.liqRequest.allowanceTarget, /// to be removed
@@ -166,8 +149,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                 );
             }
 
-            stateRegistry.dispatchPayload{value: req.msgValue}(
-                req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+            IBaseStateRegistry(superRegistry.coreStateRegistry())
+                .dispatchPayload{value: req.msgValue}(
+                req.primaryAmbId,
                 req.proofAmbId,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
@@ -261,7 +245,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.liqRequest = req.superFormData.liqRequest;
         /// @dev dispatch liquidity data
         dispatchTokens(
-            bridgeAddress[vars.liqRequest.bridgeId],
+            superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
             vars.liqRequest.txData,
             vars.liqRequest.token,
             vars.liqRequest.allowanceTarget, /// to be removed
@@ -270,8 +254,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             vars.liqRequest.nativeAmount
         );
 
-        stateRegistry.dispatchPayload{value: req.msgValue}(
-            req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
+            value: req.msgValue
+        }(
+            req.primaryAmbId,
             req.proofAmbId,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
@@ -411,8 +397,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
             /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
             /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
-            stateRegistry.dispatchPayload{value: req.msgValue}(
-                req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+            IBaseStateRegistry(superRegistry.coreStateRegistry())
+                .dispatchPayload{value: req.msgValue}(
+                req.primaryAmbId,
                 req.proofAmbId,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
@@ -509,8 +496,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             )
         );
 
-        stateRegistry.dispatchPayload{value: req.msgValue}(
-            req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
+            value: req.msgValue
+        }(
+            req.primaryAmbId,
             req.proofAmbId,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
@@ -738,28 +727,11 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
     }
 
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev allows admin to set the bridge address for an bridge id.
-    /// @param bridgeId_         represents the bridge unqiue identifier.
-    /// @param bridgeAddress_    represents the bridge address.
-    function setBridgeAddress(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
-    ) external override onlyOwner {
-        for (uint256 i = 0; i < bridgeId_.length; i++) {
-            address x = bridgeAddress_[i];
-            uint8 y = bridgeId_[i];
-            if (x == address(0)) revert ZERO_BRIDGE_ADDRESS();
-
-            bridgeAddress[y] = x;
-            emit SetBridgeAddress(y, x);
-        }
-    }
-
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
     function stateMultiSync(AMBMessage memory data_) external payable override {
-        if (msg.sender != address(stateRegistry)) revert REQUEST_DENIED();
+        if (msg.sender != superRegistry.coreStateRegistry())
+            revert REQUEST_DENIED();
 
         (uint256 txType, uint256 callbackType, ) = _decodeTxInfo(data_.txInfo);
 
@@ -826,7 +798,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
     function stateSync(AMBMessage memory data_) external payable override {
-        if (msg.sender != address(stateRegistry)) revert REQUEST_DENIED();
+        if (msg.sender != superRegistry.coreStateRegistry())
+            revert REQUEST_DENIED();
 
         (uint256 txType, uint256 callbackType, ) = _decodeTxInfo(data_.txInfo);
 
@@ -888,6 +861,23 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
 
         emit Completed(returnDataTxId);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            ADMIN FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev PREVILEGED admin ONLY FUNCTION.
+    /// @param superRegistry_    represents the address of the superRegistry
+    function setSuperRegistry(
+        address superRegistry_
+    ) external override onlyOwner {
+        if (address(superRegistry_) == address(0)) {
+            revert ZERO_ADDRESS();
+        }
+        superRegistry = ISuperRegistry(superRegistry_);
+
+        emit SuperRegistryUpdated(superRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////

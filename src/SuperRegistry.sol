@@ -15,6 +15,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     address public superRouter;
     address public tokenBank;
     address public superFormFactory;
+    address public coreStateRegistry;
+    address public factoryStateRegistry;
 
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 => address) public bridgeAddress;
@@ -37,6 +39,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         if (superRouter_ == address(0)) revert ZERO_ADDRESS();
 
         superRouter = superRouter_;
+
+        emit SuperRouterUpdated(superRouter_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -46,6 +50,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         if (tokenBank_ == address(0)) revert ZERO_ADDRESS();
 
         tokenBank = tokenBank_;
+
+        emit TokenBankUpdated(tokenBank_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -55,6 +61,30 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         if (superFormFactory_ == address(0)) revert ZERO_ADDRESS();
 
         superFormFactory = superFormFactory_;
+
+        emit SuperFormFactoryUpdated(superFormFactory_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setCoreStateRegistry(
+        address coreStateRegistry_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (coreStateRegistry_ == address(0)) revert ZERO_ADDRESS();
+
+        coreStateRegistry = coreStateRegistry_;
+
+        emit CoreStateRegistryUpdated(coreStateRegistry_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setFactoryStateRegistry(
+        address factoryStateRegistry_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (factoryStateRegistry_ == address(0)) revert ZERO_ADDRESS();
+
+        factoryStateRegistry = factoryStateRegistry_;
+
+        emit FactoryStateRegistryUpdated(factoryStateRegistry_);
     }
 
     /// @inheritdoc ISuperRegistry
