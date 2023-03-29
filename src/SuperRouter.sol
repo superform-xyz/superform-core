@@ -575,7 +575,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     }
 
     function _directDeposit(
-        uint256 formId_,
+        address superForm,
         uint256 txData_,
         uint256 superFormId_,
         uint256 amount_,
@@ -586,8 +586,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     ) internal returns (uint256 dstAmount) {
         /// @dev deposits collateral to a given vault and mint vault positions.
         /// @dev FIXME: in multi deposits we split the msg.value, but this only works if we validate that the user is only depositing from one source asset (native in this case)
-        dstAmount = IBaseForm(superFormFactory.getForm(formId_))
-            .directDepositIntoVault{value: msgValue_}(
+        dstAmount = IBaseForm(superForm).directDepositIntoVault{
+            value: msgValue_
+        }(
             InitSingleVaultData(
                 txData_,
                 superFormId_,
@@ -608,14 +609,14 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         LiqRequest memory liqRequest_,
         InitSingleVaultData memory ambData_
     ) internal {
-        uint256 formId;
+        address superForm;
         uint256 dstAmount;
         /// @dev decode superforms
-        (, formId, ) = _getSuperForm(ambData_.superFormId);
+        (superForm, , ) = _getSuperForm(ambData_.superFormId);
 
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = _directDeposit(
-            formId,
+            superForm,
             ambData_.txData,
             ambData_.superFormId,
             ambData_.amount,
@@ -640,16 +641,16 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     ) internal {
         uint256 len = ambData_.superFormIds.length;
 
-        uint256[] memory formIds = new uint256[](len);
+        address[] memory superForms = new address[](len);
 
         uint256[] memory dstAmounts = new uint256[](len);
         /// @dev decode superforms
-        (, formIds, ) = _getSuperForms(ambData_.superFormIds);
+        (superForms, , ) = _getSuperForms(ambData_.superFormIds);
 
         for (uint256 i = 0; i < len; i++) {
             /// @dev deposits collateral to a given vault and mint vault positions.
             dstAmounts[i] = _directDeposit(
-                formIds[i],
+                superForms[i],
                 ambData_.txData,
                 ambData_.superFormIds[i],
                 ambData_.amounts[i],
@@ -665,7 +666,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     }
 
     function _directWithdraw(
-        uint256 formId_,
+        address superForm,
         uint256 txData_,
         uint256 superFormId_,
         uint256 amount_,
@@ -674,7 +675,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         bytes memory liqData_
     ) internal {
         /// @dev to allow bridging somewhere else requires arch change
-        IBaseForm(superFormFactory.getForm(formId_)).directWithdrawFromVault(
+        IBaseForm(superForm).directWithdrawFromVault(
             InitSingleVaultData(
                 txData_,
                 superFormId_,
@@ -696,10 +697,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         InitSingleVaultData memory ambData_
     ) internal {
         /// @dev decode superforms
-        (, uint256 formId, ) = _getSuperForm(ambData_.superFormId);
+        (address superForm, , ) = _getSuperForm(ambData_.superFormId);
 
         _directWithdraw(
-            formId,
+            superForm,
             ambData_.txData,
             ambData_.superFormId,
             ambData_.amount,
@@ -719,12 +720,14 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         InitMultiVaultData memory ambData_
     ) internal {
         /// @dev decode superforms
-        (, uint256[] memory formIds, ) = _getSuperForms(ambData_.superFormIds);
+        (address[] memory superForms, , ) = _getSuperForms(
+            ambData_.superFormIds
+        );
 
-        for (uint256 i = 0; i < formIds.length; i++) {
+        for (uint256 i = 0; i < superForms.length; i++) {
             /// @dev deposits collateral to a given vault and mint vault positions.
             _directWithdraw(
-                formIds[i],
+                superForms[i],
                 ambData_.txData,
                 ambData_.superFormIds[i],
                 ambData_.amounts[i],

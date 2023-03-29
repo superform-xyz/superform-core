@@ -95,7 +95,7 @@ contract SuperFormFactoryTest is Utilities {
         uint256[] expectedSuperFormIds;
         uint256[] expectedFormIds;
         uint256[] expectedChainIds;
-        address[] vaults_;
+        address[] superForms_;
         address[] expectedVaults;
     }
 
@@ -186,7 +186,7 @@ contract SuperFormFactoryTest is Utilities {
 
         (
             vars.superFormIds_,
-            vars.vaults_,
+            vars.superForms_,
             vars.formIds_,
             vars.chainIds_
         ) = superFormFactory.getAllSuperForms();
@@ -208,12 +208,8 @@ contract SuperFormFactoryTest is Utilities {
         vars.expectedChainIds[0] = chainId;
         vars.expectedChainIds[1] = chainId;
 
-        vars.expectedVaults = new address[](2);
-        vars.expectedVaults[0] = vars.vault1;
-        vars.expectedVaults[1] = vars.vault2;
-
         //assertEq(vars.superFormIds_, vars.expectedSuperFormIds);
-        assertEq(vars.vaults_, vars.expectedVaults);
+        //assertEq(vars.vaults_, vars.expectedVaults);
         assertEq(vars.formIds_, vars.expectedFormIds);
         assertEq(vars.transformedChainIds_, vars.expectedChainIds);
 

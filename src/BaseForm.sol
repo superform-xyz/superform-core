@@ -4,23 +4,17 @@ pragma solidity 0.8.19;
 import {Initializable} from "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {ERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 import {IERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
-import {AccessControlUpgradeable} from "@openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {InitSingleVaultData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
-import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
+import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
 /// @notice WIP: deposit and withdraw functions' arguments should be made uniform across direct and xchain
-abstract contract BaseForm is
-    Initializable,
-    ERC165Upgradeable,
-    IBaseForm,
-    AccessControlUpgradeable
-{
+abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -39,17 +33,14 @@ abstract contract BaseForm is
 
     /// @notice state variable are all declared public to avoid creating functions to expose.
 
-    /// @dev The superFormFactory address is used to create new SuperForms
-    ISuperFormFactory public superFormFactory;
+    /// @dev The superRegistry address is used to access relevant protocol addresses
+    ISuperRegistry public superRegistry;
 
     /// @dev the vault this form pertains to
     address public vault;
 
     /// @dev chainId represents the superform chain id of the specific chain.
     uint16 public chainId;
-
-    /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
-    mapping(uint8 => address) public bridgeAddress;
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
@@ -60,19 +51,18 @@ abstract contract BaseForm is
     }
 
     /// @param chainId_              Layerzero chain id
-    /// @param superFormFactory_         ISuperFormFactory address deployed
+    /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
     /// @dev FIXME: missing means for admin to change implementations
     function initialize(
         uint16 chainId_,
-        address superFormFactory_,
+        address superRegistry_,
         address vault_
     ) external initializer {
         chainId = chainId_;
-        superFormFactory = ISuperFormFactory(superFormFactory_);
+        superRegistry = ISuperRegistry(superRegistry_);
         vault = vault_;
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -86,34 +76,12 @@ abstract contract BaseForm is
         public
         view
         virtual
-        override(
-            AccessControlUpgradeable,
-            ERC165Upgradeable,
-            IERC165Upgradeable
-        )
+        override(ERC165Upgradeable, IERC165Upgradeable)
         returns (bool)
     {
         return
             interfaceId == type(IBaseForm).interfaceId ||
             super.supportsInterface(interfaceId);
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev allows admin to set the bridge address for an bridge id.
-    /// @param bridgeId_         represents the bridge unqiue identifier.
-    /// @param bridgeAddress_    represents the bridge address.
-    function setBridgeAddress(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i = 0; i < bridgeId_.length; i++) {
-            address x = bridgeAddress_[i];
-            uint8 y = bridgeId_[i];
-            if (x == address(0)) revert ZERO_BRIDGE_ADDRESS();
-
-            bridgeAddress[y] = x;
-            emit SetBridgeAddress(y, x);
-        }
     }
 
     /// @dev PREVILEGED router ONLY FUNCTION.
@@ -124,13 +92,9 @@ abstract contract BaseForm is
     /// @dev NOTE: Should this function return?
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
-    )
-        external
-        payable
-        override
-        onlyRole(SUPER_ROUTER_ROLE)
-        returns (uint256 dstAmount)
-    {
+    ) external payable override returns (uint256 dstAmount) {
+        if (msg.sender != superRegistry.superRouter())
+            revert NOT_SUPER_ROUTER();
         dstAmount = _directDepositIntoVault(singleVaultData_);
     }
 
@@ -142,13 +106,8 @@ abstract contract BaseForm is
     /// @dev NOTE: Should this function return?
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
-    )
-        external
-        virtual
-        override
-        onlyRole(TOKEN_BANK_ROLE)
-        returns (uint256 dstAmount)
-    {
+    ) external virtual override returns (uint256 dstAmount) {
+        if (msg.sender != superRegistry.tokenBank()) revert NOT_TOKEN_BANK();
         dstAmount = _xChainDepositIntoVault(singleVaultData_);
     }
 
@@ -159,12 +118,9 @@ abstract contract BaseForm is
     /// @return dstAmount  The amount of tokens withdrawn in same chain action
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    )
-        external
-        override
-        onlyRole(SUPER_ROUTER_ROLE)
-        returns (uint256 dstAmount)
-    {
+    ) external override returns (uint256 dstAmount) {
+        if (msg.sender != superRegistry.superRouter())
+            revert NOT_SUPER_ROUTER();
         dstAmount = _directWithdrawFromVault(singleVaultData_);
     }
 
@@ -174,12 +130,9 @@ abstract contract BaseForm is
     /// @return dstAmounts  The amount of tokens withdrawn in same chain action
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    )
-        external
-        override
-        onlyRole(TOKEN_BANK_ROLE)
-        returns (uint256[] memory dstAmounts)
-    {
+    ) external override returns (uint256[] memory dstAmounts) {
+        if (msg.sender != superRegistry.tokenBank()) revert NOT_TOKEN_BANK();
+
         /// @dev FIXME: not returning anything YET
         _xChainWithdrawFromVault(singleVaultData_);
     }
@@ -315,13 +268,13 @@ abstract contract BaseForm is
                             DEV FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev FIXME this needs logic in superformfactory to withdraw stuck tokens (or another way)
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function withdrawToken(
-        address tokenContract_,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawToken(address tokenContract_, uint256 amount) external {
+        if (msg.sender != superRegistry.superFormFactory())
+            revert NOT_SUPER_FORM_FACTORY();
         ERC20 tokenContract = ERC20(tokenContract_);
 
         /// note: transfer the token from address of this contract
@@ -329,11 +282,12 @@ abstract contract BaseForm is
         tokenContract.transfer(msg.sender, amount);
     }
 
+    /// @dev FIXME this needs logic in superformfactory to withdraw stuck tokens (or another way)
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function withdrawNativeToken(
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawNativeToken(uint256 amount) external {
+        if (msg.sender != superRegistry.superFormFactory())
+            revert NOT_SUPER_FORM_FACTORY();
         payable(msg.sender).transfer(amount);
     }
 }

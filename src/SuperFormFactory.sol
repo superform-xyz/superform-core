@@ -19,11 +19,13 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     uint256 constant MAX_FORM_ID = 2 ** 80 - 1;
 
     /// @dev chainId represents the superform chain id.
-    uint16 public chainId;
+    uint16 public immutable chainId;
 
     address[] public formBeacons;
 
     uint256[] public superForms;
+
+    address public superRegistry;
 
     /// @dev formId => formAddress
     /// @notice If form[formId_] is 0, form is not part of the protocol
@@ -106,7 +108,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
                 abi.encodeWithSelector(
                     BaseForm(payable(address(0))).initialize.selector,
                     chainId,
-                    address(this),
+                    superRegistry,
                     vault_
                 )
             )
@@ -130,6 +132,17 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         /// 4. SuperFormFactory could be given CORE_CONTRACTS_ROLE to achieve the above
 
         emit SuperFormCreated(formId_, vault_, superFormId_, superForm_);
+    }
+
+    /// set super registry
+    /// @dev allows an admin to set the super registry
+    /// @param superRegistry_ is the address of the super registry
+    function setSuperRegistry(
+        address superRegistry_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (superRegistry_ == address(0)) revert ZERO_ADDRESS();
+        superRegistry = superRegistry_;
+        emit SuperRegistrySet(superRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////

@@ -41,6 +41,7 @@ struct NewActionLocalVars {
     UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
     UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;
+    address superFormT;
     address[] vaultMock;
     address lzEndpoint_0;
     address[] lzEndpoints_1;
@@ -125,6 +126,7 @@ struct SetupVars {
     address dstHyperlaneImplementation;
     address dstStateRegistry;
     address srcMultiTxProcessor;
+    address superRegistry;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -149,7 +151,7 @@ struct SingleVaultCallDataArgs {
 struct MultiVaultCallDataArgs {
     address user;
     address fromSrc;
-    address toDst;
+    address[] toDst;
     address[] underlyingTokens;
     uint256[] superFormIds;
     uint256[] amounts;

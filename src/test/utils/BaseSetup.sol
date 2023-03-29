@@ -20,6 +20,7 @@ import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "../../interfaces/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {SuperRouter} from "../../SuperRouter.sol";
+import {SuperRegistry} from "../../SuperRegistry.sol";
 import {TokenBank} from "../../TokenBank.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
@@ -339,8 +340,7 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = address(
                 new TokenBank(
                     vars.chainId,
-                    IBaseStateRegistry(payable(vars.stateRegistry)),
-                    ISuperFormFactory(vars.factory)
+                    IBaseStateRegistry(payable(vars.stateRegistry))
                 )
             );
 
@@ -363,6 +363,28 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("Swap"))] = address(
                 new MockERC20("Swap", "SWP", 18, deployer, milionTokensE18)
             );
+
+            /// @dev 12 - Deploy SuperRegistry and assign roles
+            vars.superRegistry = address(new SuperRegistry(vars.chainId));
+            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
+                .superRegistry;
+
+            SuperRegistry(vars.superRegistry).setSuperRouter(
+                contracts[vars.chainId][bytes32(bytes("SuperRouter"))]
+            );
+            SuperRegistry(vars.superRegistry).setTokenBank(
+                contracts[vars.chainId][bytes32(bytes("TokenBank"))]
+            );
+            SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
+
+            SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
+
+            SuperRegistry(vars.superRegistry).setBridgeAddress(
+                bridgeIds,
+                bridgeAddresses
+            );
+
+            SuperFormFactory(vars.factory).setSuperRegistry(vars.superRegistry);
         }
 
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -395,7 +417,6 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             vars.srcTokenBank = getContract(vars.chainId, "TokenBank");
-            vars.srcErc4626Form = getContract(vars.chainId, "ERC4626Form");
             vars.srcMultiTxProcessor = getContract(
                 vars.chainId,
                 "MultiTxProcessor"
@@ -467,16 +488,6 @@ abstract contract BaseSetup is DSTest, Test {
                 deployer
             );
 
-            ERC4626Form(payable(vars.srcErc4626Form)).grantRole(
-                SUPER_ROUTER_ROLE,
-                vars.srcSuperRouter
-            );
-
-            ERC4626Form(payable(vars.srcErc4626Form)).grantRole(
-                TOKEN_BANK_ROLE,
-                vars.srcTokenBank
-            );
-
             TokenBank(payable(vars.srcTokenBank)).grantRole(
                 STATE_REGISTRY_ROLE,
                 vars.srcCoreStateRegistry
@@ -537,12 +548,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev - Set bridge addresses
             SuperRouter(payable(vars.srcSuperRouter)).setBridgeAddress(
-                bridgeIds,
-                bridgeAddresses
-            );
-
-            /// @dev TODO: on each form , add the correct bridge data
-            IBaseForm(vars.srcErc4626Form).setBridgeAddress(
                 bridgeIds,
                 bridgeAddresses
             );

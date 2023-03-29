@@ -61,7 +61,7 @@ contract Scenario3Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev DISABLED
+    /// @dev FIXME: it's reverting somewhere
     function xtest_scenario() public {
         _run_actions();
     }

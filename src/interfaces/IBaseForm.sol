@@ -10,6 +10,18 @@ import {IERC4626} from "./IERC4626.sol";
 
 interface IBaseForm is IERC165Upgradeable {
     /*///////////////////////////////////////////////////////////////
+                                ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev if the msg-sender is not token bank
+    error NOT_TOKEN_BANK();
+
+    /// @dev if the msg-sender is not super router
+    error NOT_SUPER_ROUTER();
+
+    /// @dev if the msg-sender is not super form factory
+    error NOT_SUPER_FORM_FACTORY();
+    /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
@@ -25,18 +37,12 @@ interface IBaseForm is IERC165Upgradeable {
         address vault
     );
 
-    /// @dev is emitted when a new token bridge is configured.
-    event SetBridgeAddress(uint256 bridgeId, address bridgeAddress);
-
     /*///////////////////////////////////////////////////////////////
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev is emitted when the chain id brought in the cross chain message is invalid
     error INVALID_CHAIN_ID();
-
-    /// @dev is emitted when the bridge address being set is 0
-    error ZERO_BRIDGE_ADDRESS();
 
     /// @dev is emitted when the allowance in direct deposit is not correct
     error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
@@ -59,14 +65,6 @@ interface IBaseForm is IERC165Upgradeable {
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL WRITE FUNCTONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev allows admin to set the bridge address for an bridge id.
-    /// @param bridgeId_         represents the bridge unqiue identifier.
-    /// @param bridgeAddress_    represents the bridge address.
-    function setBridgeAddress(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
-    ) external;
 
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address

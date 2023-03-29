@@ -8,7 +8,6 @@ import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
-import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import "../utils/DataPacking.sol";
@@ -161,7 +160,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             );
         } else {
             dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
+                superRegistry.getBridgeAddress(liqData.bridgeId),
                 liqData.txData,
                 liqData.token,
                 liqData.allowanceTarget,
@@ -211,7 +210,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 revert DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
+                superRegistry.getBridgeAddress(liqData.bridgeId),
                 liqData.txData,
                 liqData.token,
                 liqData.allowanceTarget,
@@ -283,11 +282,13 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             );
 
             uint256 balanceBefore = ERC20(v.asset()).balanceOf(address(this));
+
             /// Note Send Tokens to Source Chain
             /// FEAT Note: We could also allow to pass additional chainId arg here
             /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
+            /// FIXME: bridge address should be validated at router level
             dispatchTokens(
-                bridgeAddress[liqData.bridgeId],
+                superRegistry.getBridgeAddress(liqData.bridgeId),
                 liqData.txData,
                 liqData.token,
                 liqData.allowanceTarget,

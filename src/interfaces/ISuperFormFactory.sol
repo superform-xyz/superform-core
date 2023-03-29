@@ -52,6 +52,10 @@ interface ISuperFormFactory {
         address superForm
     );
 
+    /// @dev emitted when a new SuperRegistry is set
+    /// @param superRegistry is the address of the super registry
+    event SuperRegistrySet(address indexed superRegistry);
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
@@ -80,6 +84,11 @@ interface ISuperFormFactory {
         uint256 formId_,
         address vault_
     ) external returns (uint256 superFormId_, address superForm_);
+
+    /// set super registry
+    /// @dev allows an admin to set the super registry
+    /// @param superRegistry_ is the address of the super registry
+    function setSuperRegistry(address superRegistry_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
