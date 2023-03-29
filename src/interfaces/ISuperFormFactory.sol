@@ -75,6 +75,12 @@ interface ISuperFormFactory {
         address vault_
     ) external payable returns (uint256 superFormId_);
 
+    /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the factory contract
+    /// @param factoryRegistry_ is the address of the factory state registry
+    function setRegistryContract(
+        address factoryRegistry_
+    ) external;
+
     /// @dev to synchronize superforms added to different chains using factory registry
     /// @param data_ is the cross-chain superform id
     function stateSync(bytes memory data_) external payable;

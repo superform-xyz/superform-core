@@ -408,15 +408,6 @@ abstract contract BaseSetup is DSTest, Test {
                 "MultiTxProcessor"
             );
 
-            /// @dev - Create SuperForms in Factory contract
-            ///
-            for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
-                ISuperFormFactory(vars.srcSuperFormFactory).createSuperForm(
-                    1,
-                    address(vaults[vars.chainId][j])
-                );
-            }
-
             // SuperDestination(payable(vars.srcSuperDestination))
             //     .setSrcTokenDistributor(vars.srcSuperRouter, vars.chainId);
 
@@ -435,10 +426,22 @@ abstract contract BaseSetup is DSTest, Test {
             FactoryStateRegistry(payable(vars.srcFactoryStateRegistry)).
                 setFactoryContract(vars.srcSuperFormFactory);
             
-            FactoryStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.srcSuperFormFactory
             );
+
+            SuperFormFactory(vars.srcSuperFormFactory).setRegistryContract(
+                vars.srcFactoryStateRegistry
+            );
+
+            /// @dev - Create SuperForms in Factory contract
+            for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
+                ISuperFormFactory(vars.srcSuperFormFactory).createSuperForm(
+                    1,
+                    address(vaults[vars.chainId][j])
+                );
+            }
 
             /// @dev TODO: for each form , add it to the core_contracts_role. Just 1 for now
             CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(

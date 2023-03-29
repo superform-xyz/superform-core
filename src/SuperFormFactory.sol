@@ -68,6 +68,14 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         emit FormCreated(form_, formId_);
     }
 
+    /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the factory contract
+    /// @param factoryRegistry_ is the address of the factory state registry
+    function setRegistryContract(
+        address factoryRegistry_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        factoryRegistry = IBaseStateRegistry(factoryRegistry_);
+    }
+
     /// @dev allows an admin to add a form to the factory
     /// @param forms_ are the address of a form
     /// @param formIds_ are the id of the form
@@ -126,7 +134,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         uint8 ambId = 1;
         uint8[] memory proofAmbIds = new uint8[](1);
         proofAmbIds[0] = 2;
-
+        
         factoryRegistry.broadcastPayload{value: msg.value}(
             ambId,
             proofAmbIds,

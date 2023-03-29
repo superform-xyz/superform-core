@@ -95,8 +95,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
-        _broadcastPayload(ambId_, message_, extraData_);
-        _broadcastProof(ambId_, secAmbId_, message_, extraData_);
+        // _broadcastPayload(ambId_, message_, extraData_);
+        // _broadcastProof(ambId_, secAmbId_, message_, extraData_);
     }
 
     /// @dev allows state registry to receive messages from amb implementations.

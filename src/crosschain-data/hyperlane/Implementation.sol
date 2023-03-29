@@ -108,7 +108,8 @@ contract HyperlaneImplementation is
             revert INVALID_CALLER();
         }
 
-        for (uint16 i = 0; i < broadcastChains.length; i++) {
+        uint256 totalChains = broadcastChains.length;
+        for (uint16 i = 0; i < totalChains; i++) {
             uint32 domain = broadcastChains[i];
 
             bytes32 messageId = mailbox.dispatch(
@@ -117,7 +118,7 @@ contract HyperlaneImplementation is
                 message_
             );
 
-            igp.payForGas{value: msg.value}(
+            igp.payForGas{value: msg.value/totalChains}(
                 messageId,
                 domain,
                 500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
