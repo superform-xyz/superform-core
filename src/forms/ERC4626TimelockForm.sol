@@ -26,6 +26,9 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
     /// @dev unlock already requested, cooldown period didn't pass yet
     error WITHDRAW_COOLDOWN_PERIOD();
 
+    /// @dev error thrown when the unlock reques
+    error LOCKED();
+
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
     //////////////////////////////////////////////////////////////*/
@@ -125,11 +128,43 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
     }
 
     /// @dev ERC4626TimelockFork getter
-    /// NOTE: Implement neccessary checks here, e.g
-    function checkUnlock(address owner_) public view returns (bool) {
-        /// isUnlocked is just an example, we can make multiple checks here
-        /// assumption is that target contract implements SOME method to check cooldown
-        return IERC4626Timelock(vault).isUnlocked(owner_);
+    /// NOTE: We have control over Forms, checkUnlock is designed to act like standardized function to return true/false for withdraw action
+    function checkUnlock(
+        address vault_,
+        uint256 shares_,
+        address owner_
+    ) public view returns (uint16) {
+        /// @dev This func call also assumes existence of userUnlockRequests mapping in the target vault
+        /// @dev We could specify something else here though
+        IERC4626Timelock.UnlockRequest memory request = IERC4626Timelock(vault_)
+            .userUnlockRequests(owner_);
+
+        if (request.startedAt == 0) {
+            /// unlock not initiated. requestUnlock in return
+            return 2;
+        }
+
+        if (
+            request.startedAt + IERC4626Timelock(vault_).lockPeriod() >=
+            block.timestamp
+        ) {
+            if (request.shareAmount >= shares_) {
+                /// all clear. unlock after cooldown and enough of the shares. execute redeem
+                return 0;
+            } else {
+                /// not enough shares to unlock. revert NOT_ENOUGH_UNLOCKED
+                return 1;
+            }
+        }
+
+        /// check if unlock is initiated already passed and should return before reaching here
+        if (
+            request.startedAt + IERC4626Timelock(vault_).lockPeriod() <
+            block.timestamp
+        ) {
+            /// unlock cooldown period not passed. revert WITHDRAW_COOLDOWN_PERIOD
+            return 3;
+        }
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -216,7 +251,8 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
         /// NOTE: Only next withdraw transaction would trigger the actual withdraw.
         /// TODO: Besides API making informed choice how else we can revert this better?
         /// TODO: extraData could be used to first make check at the begining of this func and revert earlier
-        if (checkUnlock(srcSender)) {
+        uint16 unlock = checkUnlock(vault, singleVaultData_.amount, srcSender);
+        if (unlock == 0) {
             dstAmount = v.redeem(
                 singleVaultData_.amount,
                 receiver,
@@ -238,12 +274,15 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
                     liqData.nativeAmount
                 );
             }
-        } else {
-            /// @dev FIXME - If VaultBank holds tokens, this won't work
-            if (v.cooldownPeriod(address(this)) > 0)
-                revert WITHDRAW_COOLDOWN_PERIOD();
-
+        } else if (unlock == 1) {
+            revert LOCKED();
+        } else if (unlock == 2) {
+            /// @dev target vault should implement requestUnlock function. with 1Form<>1Vault we can actualy re-define it though.
+            /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
+            /// @dev IERC4626TimelockForm could be an ERC4626 extension? 
             v.requestUnlock(singleVaultData_.amount);
+        } else if (unlock == 3) {
+            revert WITHDRAW_COOLDOWN_PERIOD();
         }
     }
 
@@ -293,7 +332,8 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
             (LiqRequest)
         );
 
-        if (checkUnlock(srcSender)) {
+        uint16 unlock = checkUnlock(vault, singleVaultData_.amount, srcSender);
+        if (unlock == 0) {
             if (liqData.txData.length != 0) {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
                 dstAmount = v.redeem(
@@ -328,10 +368,15 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
                 v.redeem(singleVaultData_.amount, srcSender, address(this));
             }
-        } else {
-            if (v.cooldownPeriod(address(this)) > 0)
-                revert WITHDRAW_COOLDOWN_PERIOD();
+        } else if (unlock == 1) {
+            revert LOCKED();
+        } else if (unlock == 2) {
+            /// @dev target vault should implement requestUnlock function. with 1Form<>1Vault we can actualy re-define it though.
+            /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
+            /// @dev IERC4626TimelockForm could be an ERC4626 extension?
             v.requestUnlock(singleVaultData_.amount);
+        } else if (unlock == 3) {
+            revert WITHDRAW_COOLDOWN_PERIOD();
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount

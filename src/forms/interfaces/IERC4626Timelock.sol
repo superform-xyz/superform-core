@@ -4,37 +4,36 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 interface IERC4626Timelock is IERC20 {
+
     /*///////////////////////////////////////////////////////////////
                             TIMELOCK SECTION
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Data structure for unlock request. In production vaults have differing mechanism for this
     struct UnlockRequest {
+        /// Unique id of the request
+        uint id;
         // The timestamp at which the `shareAmount` was requested to be unlocked
         uint startedAt;
         // The amount of shares to burn
         uint shareAmount;
     }
 
-    /// NOTE: Using Benqi sAVAX as example of a Vault with 15d cooldown period
-    /// NOTE: https://snowtrace.io/address/0x0ce7f620eb645a4fbf688a1c1937bc6cb0cbdd29#code (sAVAX)
-    /// NOTE: Notice, this requires additional logic on FORM level itself
-    /// NOTE: Owner first submits request for unlock and only after 15d can withdraw
+    /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
+    /// @dev Owner first submits request for unlock and only after specified cooldown passes, can withdraw
     function requestUnlock(uint shareAmount) external;
 
-    /// NOTE: Using Benqi sAVAX as example of a Vault with 15d cooldown period
-    /// NOTE: Useful for API to keep track of when user can withdraw
-    function cooldownPeriod(address owner) external view returns (uint256);
+    /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
+    /// @dev Owner can resign from unlock request. In production vaults have differing mechanism for this
+    function cancelUnlock(address owner) external;
 
-    /// NOTE: Using Benqi sAVAX as example of a Vault with 15d cooldown period
-    function userUnlockRequests(
-        address owner,
-        uint256 index
-    ) external view returns (UnlockRequest memory);
+    /// @notice Check outstanding unlock request for the owner
+    /// @dev Mock Timelocked Vault uses single UnlockRequest. In production vaults have differing mechanism for this
+    function userUnlockRequests(address owner) external view returns (UnlockRequest memory);
 
-    /// @dev Helper function for BaseForm to perform check on the Form level
-    /// Should be implemented by the form (ie. call underlying valut to see if we can withdraw)
-    function isUnlocked(address owner) external view returns (bool);
-
+    /// @notice The amount of time that must pass between a requestUnlock() and withdraw() call.
+    function lockPeriod() external view returns (uint256);
+    
     /*///////////////////////////////////////////////////////////////
                                ERC4626 SECTION
     //////////////////////////////////////////////////////////////*/
@@ -90,7 +89,7 @@ interface IERC4626Timelock is IERC20 {
     function deposit(
         uint256 assets,
         address receiver
-    ) external returns (uint256 shares);
+    ) external virtual returns (uint256 shares);
 
     /**
      * @notice The maximum number of vault shares that caller can mint.
@@ -115,7 +114,7 @@ interface IERC4626Timelock is IERC20 {
     function mint(
         uint256 shares,
         address receiver
-    ) external returns (uint256 assets);
+    ) external virtual returns (uint256 assets);
 
     /**
      * @notice The maximum number of underlying assets that owner can withdraw.
@@ -146,7 +145,7 @@ interface IERC4626Timelock is IERC20 {
         uint256 assets,
         address receiver,
         address owner
-    ) external returns (uint256 shares);
+    ) external virtual returns (uint256 shares);
 
     /**
      * @notice The maximum number of shares an owner can redeem for underlying assets.
@@ -175,7 +174,7 @@ interface IERC4626Timelock is IERC20 {
         uint256 shares,
         address receiver,
         address owner
-    ) external returns (uint256 assets);
+    ) external virtual returns (uint256 assets);
 
     /**
      * @dev Emitted when sender has exchanged assets for shares, and transferred those shares to receiver.
