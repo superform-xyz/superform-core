@@ -149,6 +149,8 @@ struct SingleVaultCallDataArgs {
     uint16 toChainId;
     bool multiTx;
     LiquidityChange actionKind;
+    uint256 totalAmount;
+    address sameUnderlyingCheck;
 }
 
 struct MultiVaultCallDataArgs {

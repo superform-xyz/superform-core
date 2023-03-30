@@ -999,9 +999,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     function _validateSuperFormsData(
         uint16 dstChainId_,
         MultiVaultsSFData memory superFormsData_
-    ) internal pure returns (bool) {
+    ) internal view returns (bool) {
         uint256 len = superFormsData_.amounts.length;
         uint256 liqRequestsLen = superFormsData_.liqRequests.length;
+
+        if (len == 0 || liqRequestsLen == 0) return false;
+
         uint256 sumAmounts;
         /// @dev size validation
         if (
@@ -1012,21 +1015,39 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         ) {
             return false;
         }
+        (address firstSuperForm, , ) = _getSuperForm(
+            superFormsData_.superFormIds[0]
+        );
+        address collateral = address(
+            IBaseForm(firstSuperForm).getUnderlyingOfVault()
+        );
+
+        if (collateral == address(0)) return false;
 
         for (uint256 i = 0; i < len; i++) {
             if (superFormsData_.maxSlippage[i] > 10000) return false;
-
             sumAmounts += superFormsData_.amounts[i];
 
-            /// @dev TODO validate token correspond to superForms' underlying?
-            /// @dev TODO validate TxData to avoid exploits
+            /// @dev compare underlyings with the first superForm. If there is at least one different mark collateral as 0
+            if (collateral != address(0) && i + 1 < len) {
+                (address superForm, , ) = _getSuperForm(
+                    superFormsData_.superFormIds[i + 1]
+                );
+                if (
+                    collateral !=
+                    address(IBaseForm(superForm).getUnderlyingOfVault())
+                ) collateral = address(0);
+            }
         }
 
-        /// @dev In multiVaults, if there is only one liqRequest, then the sum of the amounts must be equal to the amount in the liqRequest
+        /// @dev TODO validate TxData to avoid exploits
+
+        /// @dev In multiVaults, if there is only one liqRequest, then the sum of the amounts must be equal to the amount in the liqRequest and all underlyings must be equal
         if (
             liqRequestsLen == 1 &&
             (liqRequestsLen != len) &&
-            superFormsData_.liqRequests[0].amount != sumAmounts
+            (superFormsData_.liqRequests[0].amount == sumAmounts) &&
+            collateral == address(0)
         ) {
             return false;
             /// @dev else if number of liq request >1, length must be equal to the number of superForms sent in this request
