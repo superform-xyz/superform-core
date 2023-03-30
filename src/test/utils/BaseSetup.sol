@@ -132,7 +132,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint16 public constant OP = 6;
     uint16 public constant FTM = 7;
 
-    uint16[7] public chainIds = [1, 2, 3, 4, 5, 6, 7];
+    uint16[6] public chainIds = [1, 2, 3, 4, 5, 6];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -256,12 +256,12 @@ abstract contract BaseSetup is DSTest, Test {
             vars.factoryStateRegistry = address(new FactoryStateRegistry(vars.chainId));
             contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
 
-            /// @dev 2.2- deployed Layerzero Implementation
+            /// @dev 2.2- deploy Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
                     IBaseStateRegistry(vars.stateRegistry),
-                    IBaseStateRegistry(vars.stateRegistry)  /// @dev replace with factory state registry
+                    IBaseStateRegistry(vars.factoryStateRegistry)
                 )
             );
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
@@ -272,7 +272,7 @@ abstract contract BaseSetup is DSTest, Test {
                 new HyperlaneImplementation(
                     HyperlaneMailbox,
                     IBaseStateRegistry(vars.stateRegistry),
-                    IBaseStateRegistry(vars.stateRegistry), /// @dev replace with factory state registry
+                    IBaseStateRegistry(vars.factoryStateRegistry),
                     HyperlaneGasPaymaster
                 )
             );
@@ -493,6 +493,18 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev configures hyperlaneImplementation to state registry
             CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
+                ambIds[1],
+                vars.hyperlaneImplementation
+            );
+
+            /// @dev configures lzImplementation to state registry
+            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry)).configureAmb(
+                ambIds[0],
+                vars.lzImplementation
+            );
+
+            /// @dev configures hyperlaneImplementation to state registry
+            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry)).configureAmb(
                 ambIds[1],
                 vars.hyperlaneImplementation
             );

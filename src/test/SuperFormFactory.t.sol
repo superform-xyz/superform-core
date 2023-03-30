@@ -155,6 +155,8 @@ contract SuperFormFactoryTest is BaseSetup {
             getContract(chainId, "SuperFormFactory")
         ).createSuperForm{value: 5 * 10 ** 18}(vars.formId, vars.vault1);
 
+        
+
         assertEq(vars.superFormId, vars.expectedSuperFormId1);
 
         vm.stopPrank();

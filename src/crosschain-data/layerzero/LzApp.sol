@@ -60,7 +60,8 @@ abstract contract LzApp is
         bytes memory _payload,
         address payable _refundAddress,
         address _zroPaymentAddress,
-        bytes memory _adapterParams
+        bytes memory _adapterParams,
+        uint256 _msgValue
     ) internal virtual {
         bytes memory trustedRemote = trustedRemoteLookup[_dstChainId];
         require(
@@ -68,7 +69,7 @@ abstract contract LzApp is
             "LzApp: destination chain is not a trusted source"
         );
 
-        lzEndpoint.send{value: msg.value}(
+        lzEndpoint.send{value: _msgValue}(
             _dstChainId,
             trustedRemote,
             _payload,

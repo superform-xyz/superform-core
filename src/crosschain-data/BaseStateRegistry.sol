@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {PayloadState, AMBMessage} from "../types/DataTypes.sol";
+import {PayloadState, AMBMessage, AMBFactoryMessage} from "../types/DataTypes.sol";
 
 /// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
 /// @author Zeropoint Labs
@@ -95,8 +95,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
-        // _broadcastPayload(ambId_, message_, extraData_);
-        // _broadcastProof(ambId_, secAmbId_, message_, extraData_);
+        _broadcastPayload(ambId_, message_, extraData_);
+        _broadcastProof(ambId_, secAmbId_, message_, extraData_);
     }
 
     /// @dev allows state registry to receive messages from amb implementations.
@@ -222,8 +222,11 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         /// @dev generates the proof
         bytes memory proof = abi.encode(keccak256(message_));
 
-        AMBMessage memory data = abi.decode(message_, (AMBMessage));
-        data.params = proof;
+        AMBFactoryMessage memory data = abi.decode(message_, (AMBFactoryMessage));
+        AMBMessage memory newData = AMBMessage(
+            data.superFormId,
+            proof
+        );
 
         for (uint8 i = 0; i < secAmbId_.length; i++) {
             uint8 tempAmbId = secAmbId_[i];
@@ -241,7 +244,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             /// @dev should figure out how to split message costs
             /// @notice for now works if the secAmbId loop lenght == 1
             tempImpl.broadcastPayload{value: msg.value / 2}(
-                abi.encode(data),
+                abi.encode(newData),
                 extraData_
             );
         }

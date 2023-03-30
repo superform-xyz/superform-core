@@ -59,7 +59,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
         bytes memory extraData_
     ) external payable virtual override {
         if (
-            msg.sender != address(coreRegistry) ||
+            msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
             revert INVALID_CALLER();
@@ -70,7 +70,8 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
             message_,
             payable(msg.sender),
             address(0x0),
-            extraData_
+            extraData_,
+            msg.value
         );
     }
 
@@ -82,7 +83,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
         bytes memory extraData_
     ) external payable virtual {
         if (
-            msg.sender != address(coreRegistry) ||
+            msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
             revert INVALID_CALLER();
@@ -95,7 +96,8 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
                 message_,
                 payable(msg.sender),
                 address(0x0),
-                extraData_
+                extraData_,
+                msg.value/broadcastChains.length
             );
         }
     }

@@ -72,7 +72,7 @@ contract HyperlaneImplementation is
         bytes memory extraData_
     ) external payable virtual override {
         if (
-            msg.sender != address(coreRegistry) ||
+            msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
             revert INVALID_CALLER();
@@ -102,7 +102,7 @@ contract HyperlaneImplementation is
         bytes memory extraData_
     ) external payable virtual {
         if (
-            msg.sender != address(coreRegistry) ||
+            msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
             revert INVALID_CALLER();
