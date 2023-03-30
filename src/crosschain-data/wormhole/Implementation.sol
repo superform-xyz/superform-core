@@ -7,6 +7,8 @@ import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {AMBMessage} from "../../types/DataTypes.sol";
+import "../../utils/DataPacking.sol";
 
 /// @title Wormhole implementation contract
 /// @author Zeropoint Labs.
@@ -35,7 +37,9 @@ contract WormholeImplementation is
     uint8 public constant CONSISTENCY_LEVEL = 1;
 
     IWormhole public immutable bridge;
-    IBaseStateRegistry public immutable registry;
+
+    IBaseStateRegistry public immutable coreRegistry;
+    IBaseStateRegistry public immutable factoryRegistry;
 
     /// @dev relayer will forward published wormhole messages
     IWormholeRelayer public relayer;
@@ -51,11 +55,13 @@ contract WormholeImplementation is
     /// @param bridge_ is the wormhole implementation for respective chain.
     constructor(
         IWormhole bridge_,
-        IBaseStateRegistry registry_,
+        IBaseStateRegistry coreRegistry_,
+        IBaseStateRegistry factoryRegistry_,
         address relayer_
     ) {
         bridge = bridge_;
-        registry = registry_;
+        coreRegistry = coreRegistry_;
+        factoryRegistry = factoryRegistry_;
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
@@ -80,7 +86,7 @@ contract WormholeImplementation is
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
-        if (msg.sender != address(registry)) {
+        if (msg.sender != address(coreRegistry)) {
             revert INVALID_CALLER();
         }
         bytes memory payload = abi.encode(msg.sender, dstChainId_, message_);
@@ -108,6 +114,11 @@ contract WormholeImplementation is
         );
     }
 
+    function broadcastPayload(
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable override {}
+
     function receiveWormholeMessages(
         bytes[] memory whMessages,
         bytes[] memory
@@ -132,7 +143,24 @@ contract WormholeImplementation is
         }
 
         processedMessages[vm.hash] = true;
-        registry.receivePayload(superChainId[vm.emitterChainId], vm.payload);
+
+        /// @dev decoding payload
+        AMBMessage memory decoded = abi.decode(vm.payload, (AMBMessage));
+
+        /// NOTE: experimental split of registry contracts
+        (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
+        /// FIXME: should migrate to support more state registry types
+        if (registryId == 0) {
+            coreRegistry.receivePayload(
+                superChainId[vm.emitterChainId],
+                vm.payload
+            );
+        } else {
+            factoryRegistry.receivePayload(
+                superChainId[vm.emitterChainId],
+                vm.payload
+            );
+        }
     }
 
     /// @notice to add access based controls over here

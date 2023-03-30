@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {Utilities} from "./utils/Utilities.sol";
 import "forge-std/console.sol";
-
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
-
 import {SuperFormFactory} from "../SuperFormFactory.sol";
 import {ERC4626Form} from "../forms/ERC4626Form.sol";
+import "./utils/BaseSetup.sol";
+import "./utils/Utilities.sol";
 import "../utils/DataPacking.sol";
 
-contract SuperFormFactoryTest is Utilities {
+contract SuperFormFactoryTest is BaseSetup {
     /// @dev emitted when a new form is entered into the factory
     /// @param form is the address of the new form
     /// @param formId is the id of the new form
@@ -26,59 +25,66 @@ contract SuperFormFactoryTest is Utilities {
         uint256 indexed superFormId
     );
 
-    address payable[] internal users;
+    uint16 internal chainId = ETH;
 
-    SuperFormFactory internal superFormFactory;
-    uint16 internal chainId;
-    address payable internal admin;
-
-    function setUp() public {
-        users = createUsers(5);
-        admin = users[0];
-        vm.label(admin, "Admin");
-
-        chainId = uint16(block.chainid);
-        vm.prank(admin);
-        superFormFactory = new SuperFormFactory(chainId);
+    function setUp() public override {
+        super.setUp();
     }
 
     function test_chainId() public {
-        assertEq(chainId, superFormFactory.chainId());
+        vm.selectFork(FORKS[chainId]);
+
+        assertEq(
+            chainId,
+            SuperFormFactory(getContract(chainId, "SuperFormFactory")).chainId()
+        );
     }
 
     function test_revert_addForm_addressZero() public {
         address form = address(0);
         uint256 formId = 1;
 
-        vm.prank(admin);
+        vm.prank(deployer);
         vm.expectRevert(ISuperFormFactory.ZERO_ADDRESS.selector);
-        superFormFactory.addForm(form, formId);
+        SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+            .addFormBeacon(form, formId);
     }
 
     function test_revert_addForm_interfaceUnsupported() public {
         address form = address(0x1);
         uint256 formId = 1;
 
-        vm.prank(admin);
+        vm.prank(deployer);
         vm.expectRevert(ISuperFormFactory.ERC165_UNSUPPORTED.selector);
-        superFormFactory.addForm(form, formId);
+        SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+            .addFormBeacon(form, formId);
     }
 
     function test_addForm() public {
-        vm.startPrank(admin);
-        address form = address(new ERC4626Form());
-        uint256 formId = 1;
+        vm.startPrank(deployer);
+        address formImplementation = address(new ERC4626Form());
+        uint256 formBeaconId = 1;
 
-        //vm.expectEmit(true, true, true, true, address(superFormFactory));
-        //emit FormCreated(form, 1);
-        superFormFactory.addForm(form, formId);
+        /*
+        /// @dev FIXME: cannot predict address of beacon
+        vm.expectEmit(
+            true,
+            true,
+            true,
+            true,
+            getContract(chainId, "SuperFormFactory")
+        );
+        emit FormCreated(form, 1);
+        */
+        SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+            .addFormBeacon(formImplementation, formBeaconId);
 
         //assertEq(formId, 1);
     }
 
     struct TestArgs {
-        address form;
-        uint256 formId;
+        address formImplementation;
+        uint256 formBeaconId;
         address vault1;
         address vault2;
         uint256 expectedSuperFormId1;
@@ -99,88 +105,21 @@ contract SuperFormFactoryTest is Utilities {
         address[] expectedVaults;
     }
 
-    function test_createSuperForm() public {
+    /// @dev FIXME: should have assertions for superForm addresses and ids (if we can predict them)
+    function test_base_setup_superForms() public {
         TestArgs memory vars;
-        vm.startPrank(admin);
-        vars.form = address(new ERC4626Form());
-        vars.formId = 1;
+        vm.startPrank(deployer);
+        vm.selectFork(FORKS[chainId]);
+        vars.formImplementation = address(new ERC4626Form());
 
-        superFormFactory.addForm(vars.form, vars.formId);
+        vars.formBeaconId = 1;
+
+        SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+            .addFormBeacon(vars.formImplementation, vars.formBeaconId);
 
         /// @dev as you can see we are not testing if the vaults are eoas or actual compliant contracts
         vars.vault1 = address(0x2);
         vars.vault2 = address(0x3);
-
-        /// @dev FIXME - can we predict superForm address so we can test this?
-        /*
-        vars.expectedSuperFormId1 = uint256(uint160(vars.vault1));
-        vars.expectedSuperFormId1 |= vars.formId << 160;
-        vars.expectedSuperFormId1 |= uint256(chainId) << 240;
-        */
-        /*
-        vm.expectEmit(true, true, true, true, address(superFormFactory));
-        emit SuperFormCreated(
-            vars.formId,
-            vars.vault1,
-            vars.expectedSuperFormId1
-        );
-        */
-        (vars.superFormId, vars.superForm) = superFormFactory.createSuperForm(
-            vars.formId,
-            vars.vault1
-        );
-
-        //assertEq(vars.superFormId, vars.expectedSuperFormId1);
-
-        vm.stopPrank();
-
-        /// @dev test getSuperForm
-        (vars.resSuperForm, vars.resFormid, vars.resChainId) = _getSuperForm(
-            vars.superFormId
-        );
-
-        assertEq(vars.resChainId, chainId);
-        assertEq(vars.resFormid, vars.formId);
-        //assertEq(vars.resVault, vars.vault1);
-
-        /// @dev FIXME - can we predict superForm address so we can test this?
-        /*
-        /// @dev add new vault
-        vars.expectedSuperFormId2 = uint256(uint160(vars.vault2));
-        vars.expectedSuperFormId2 |= vars.formId << 160;
-        vars.expectedSuperFormId2 |= uint256(chainId) << 240;
-        vm.expectEmit(true, true, true, true, address(superFormFactory));
-        emit SuperFormCreated(
-            vars.formId,
-            vars.vault2,
-            vars.expectedSuperFormId2
-        );
-        */
-        superFormFactory.createSuperForm(vars.formId, vars.vault2);
-
-        /// @dev test getSuperFormFromVault
-
-        (vars.superFormIds_, vars.formIds_, vars.chainIds_) = superFormFactory
-            .getAllSuperFormsFromVault(vars.vault1);
-
-        vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
-
-        for (uint256 i = 0; i < vars.chainIds_.length; i++) {
-            vars.transformedChainIds_[i] = uint256(vars.chainIds_[i]);
-        }
-
-        vars.expectedSuperFormIds = new uint256[](1);
-        vars.expectedSuperFormIds[0] = vars.expectedSuperFormId1;
-
-        vars.expectedFormIds = new uint256[](1);
-        vars.expectedFormIds[0] = vars.formId;
-
-        vars.expectedChainIds = new uint256[](1);
-        vars.expectedChainIds[0] = chainId;
-
-        //assertEq(vars.superFormIds_, vars.expectedSuperFormIds);
-        assertEq(vars.formIds_, vars.expectedFormIds);
-        assertEq(vars.transformedChainIds_, vars.expectedChainIds);
 
         /// @dev test getAllSuperForms
 
@@ -189,32 +128,32 @@ contract SuperFormFactoryTest is Utilities {
             vars.superForms_,
             vars.formIds_,
             vars.chainIds_
-        ) = superFormFactory.getAllSuperForms();
+        ) = SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+            .getAllSuperForms();
 
         vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
 
         for (uint256 i = 0; i < vars.chainIds_.length; i++) {
             vars.transformedChainIds_[i] = uint256(vars.chainIds_[i]);
         }
-        vars.expectedSuperFormIds = new uint256[](2);
-        vars.expectedSuperFormIds[0] = vars.expectedSuperFormId1;
-        vars.expectedSuperFormIds[1] = vars.expectedSuperFormId2;
 
-        vars.expectedFormIds = new uint256[](2);
-        vars.expectedFormIds[0] = vars.formId;
-        vars.expectedFormIds[1] = vars.formId;
+        vars.expectedFormIds = new uint256[](3);
+        vars.expectedFormIds[0] = vars.formBeaconId;
+        vars.expectedFormIds[1] = vars.formBeaconId;
+        vars.expectedFormIds[2] = vars.formBeaconId;
 
-        vars.expectedChainIds = new uint256[](2);
+        vars.expectedChainIds = new uint256[](3);
         vars.expectedChainIds[0] = chainId;
         vars.expectedChainIds[1] = chainId;
+        vars.expectedChainIds[2] = chainId;
 
-        //assertEq(vars.superFormIds_, vars.expectedSuperFormIds);
-        //assertEq(vars.vaults_, vars.expectedVaults);
         assertEq(vars.formIds_, vars.expectedFormIds);
         assertEq(vars.transformedChainIds_, vars.expectedChainIds);
 
-        assertEq(superFormFactory.getAllFormsList(), 1);
-        assertEq(superFormFactory.getAllSuperFormsList(), 2);
-        assertEq(superFormFactory.getAllChainSuperFormsList(), 2);
+        assertEq(
+            SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+                .getAllSuperFormsList(),
+            3
+        );
     }
 }

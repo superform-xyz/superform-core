@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-
+import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {IMailbox} from "./interface/IMailbox.sol";
 import {IMessageRecipient} from "./interface/IMessageRecipient.sol";
 import {IInterchainGasPaymaster} from "./interface/IInterchainGasPaymaster.sol";
-
-import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+import {AMBMessage} from "../../types/DataTypes.sol";
+import "../../utils/DataPacking.sol";
 
 /// @title Hyperlane implementation contract
 /// @author Zeropoint Labs
@@ -19,13 +19,16 @@ contract HyperlaneImplementation is
     Ownable
 {
     error INVALID_RECEIVER();
-    event HeyHey();
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
-    IBaseStateRegistry public immutable registry;
+    IBaseStateRegistry public immutable coreRegistry;
+    IBaseStateRegistry public immutable factoryRegistry;
+
     IMailbox public immutable mailbox;
     IInterchainGasPaymaster public immutable igp;
+
+    uint32[] public broadcastChains;
 
     mapping(uint16 => uint32) public ambChainId;
     mapping(uint32 => uint16) public superChainId;
@@ -40,10 +43,13 @@ contract HyperlaneImplementation is
     /// @param mailbox_ is the hyperlane mailbox for respective chain.
     constructor(
         IMailbox mailbox_,
-        IBaseStateRegistry registry_,
+        IBaseStateRegistry coreRegistry_,
+        IBaseStateRegistry factoryRegistry_,
         IInterchainGasPaymaster igp_
     ) {
-        registry = registry_;
+        coreRegistry = coreRegistry_;
+        factoryRegistry = factoryRegistry_;
+
         mailbox = mailbox_;
         igp = igp_;
     }
@@ -65,7 +71,10 @@ contract HyperlaneImplementation is
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
-        if (msg.sender != address(registry)) {
+        if (
+            msg.sender != address(coreRegistry) &&
+            msg.sender != address(factoryRegistry)
+        ) {
             revert INVALID_CALLER();
         }
 
@@ -79,10 +88,43 @@ contract HyperlaneImplementation is
 
         igp.payForGas{value: msg.value}(
             messageId,
-            ambChainId[dstChainId_],
+            domain,
             500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
             msg.sender /// @dev should refund to the user, now refunds to core state registry
         );
+    }
+
+    /// @dev allows state registry to send multiple messages via implementation
+    /// @param message_ is the cross-chain message to be sent
+    /// @param extraData_ is the message amb specific override information
+    function broadcastPayload(
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable virtual {
+        if (
+            msg.sender != address(coreRegistry) &&
+            msg.sender != address(factoryRegistry)
+        ) {
+            revert INVALID_CALLER();
+        }
+
+        uint256 totalChains = broadcastChains.length;
+        for (uint16 i = 0; i < totalChains; i++) {
+            uint32 domain = broadcastChains[i];
+
+            bytes32 messageId = mailbox.dispatch(
+                domain,
+                castAddr(authorizedImpl[domain]),
+                message_
+            );
+
+            igp.payForGas{value: msg.value / totalChains}(
+                messageId,
+                domain,
+                500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
+                msg.sender /// @dev should refund to the user, now refunds to core state registry
+            );
+        }
     }
 
     /// @notice to add access based controls over here
@@ -99,6 +141,9 @@ contract HyperlaneImplementation is
 
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
+
+        /// NOTE: @dev should handle a way to pop
+        broadcastChains.push(ambChainId_);
 
         emit ChainAdded(superChainId_);
     }
@@ -147,9 +192,18 @@ contract HyperlaneImplementation is
         }
 
         processedMessages[hash] = true;
-        registry.receivePayload(superChainId[origin_], body_);
 
-        emit HeyHey();
+        /// @dev decoding payload
+        AMBMessage memory decoded = abi.decode(body_, (AMBMessage));
+
+        /// NOTE: experimental split of registry contracts
+        (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
+        /// FIXME: should migrate to support more state registry types
+        if (registryId == 0) {
+            coreRegistry.receivePayload(superChainId[origin_], body_);
+        } else {
+            factoryRegistry.receivePayload(superChainId[origin_], body_);
+        }
     }
 
     /*///////////////////////////////////////////////////////////////

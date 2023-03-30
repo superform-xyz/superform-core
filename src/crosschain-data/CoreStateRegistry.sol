@@ -48,7 +48,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payload[payloadId_],
             (AMBMessage)
         );
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -121,7 +121,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payload[payloadId_],
             (AMBMessage)
         );
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -192,7 +192,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         AMBMessage memory payloadInfo = abi.decode(_payload, (AMBMessage));
 
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -203,8 +203,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 _processMultiDeposit(payloadId_, callbackType, payloadInfo);
             }
         } else {
-            if (callbackType == 0) {}
-
             if (txType == uint256(TransactionType.WITHDRAW)) {
                 _processSingleWithdrawal(payloadId_, callbackType, payloadInfo);
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
@@ -238,7 +236,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             (AMBMessage)
         );
 
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 

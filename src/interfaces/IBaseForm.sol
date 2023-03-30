@@ -21,6 +21,9 @@ interface IBaseForm is IERC165Upgradeable {
 
     /// @dev if the msg-sender is not super form factory
     error NOT_SUPER_FORM_FACTORY();
+
+    /// @dev is emitted when the chain id input is invalid.
+    error INVALID_INPUT_CHAIN_ID();
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/

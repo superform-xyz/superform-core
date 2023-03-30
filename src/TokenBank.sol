@@ -23,7 +23,7 @@ contract TokenBank is ITokenBank, AccessControl {
         keccak256("STATE_REGISTRY_ROLE");
 
     /*///////////////////////////////////////////////////////////////
-                     State Variables
+                    State Variables
     //////////////////////////////////////////////////////////////*/
 
     /// @dev safeGasParam is used while sending layerzero message from destination to router.
@@ -39,6 +39,8 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @param chainId_              Superform chain id
     /// @dev sets caller as the admin of the contract.
     constructor(uint16 chainId_) {
+        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+
         chainId = chainId_;
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
@@ -111,7 +113,8 @@ contract TokenBank is ITokenBank, AccessControl {
                     _packTxInfo(
                         uint120(TransactionType.DEPOSIT),
                         uint120(CallbackType.RETURN),
-                        true
+                        true,
+                        0
                     ),
                     abi.encode(
                         ReturnMultiData(
@@ -179,7 +182,8 @@ contract TokenBank is ITokenBank, AccessControl {
                     _packTxInfo(
                         uint120(TransactionType.DEPOSIT),
                         uint120(CallbackType.RETURN),
-                        false
+                        false,
+                        0
                     ),
                     abi.encode(
                         ReturnSingleData(

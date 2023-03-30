@@ -60,6 +60,8 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         address superRegistry_,
         address vault_
     ) external initializer {
+        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+
         chainId = chainId_;
         superRegistry = ISuperRegistry(superRegistry_);
         vault = vault_;

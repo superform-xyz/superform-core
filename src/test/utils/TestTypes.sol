@@ -112,12 +112,14 @@ struct SetupVars {
     address hyperlaneImplementation;
     address socketRouter;
     address erc4626Form;
+    address factoryStateRegistry;
     address coreStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address srcTokenBank;
     address srcSuperRouter;
     address srcCoreStateRegistry;
+    address srcFactoryStateRegistry;
     address srcSuperFormFactory;
     address dstSuperFormFactory;
     address srcErc4626Form;

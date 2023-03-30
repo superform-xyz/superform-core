@@ -24,6 +24,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev sets caller as the admin of the contract.
     /// @param chainId_ the superform chain id this registry is deployed on
     constructor(uint16 chainId_) {
+        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+
         chainId = chainId_;
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }

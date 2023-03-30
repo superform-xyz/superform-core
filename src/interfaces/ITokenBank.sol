@@ -27,6 +27,9 @@ interface ITokenBank {
     /// @dev is emitted when an address is being set to 0
     error ZERO_ADDRESS();
 
+    /// @dev is emitted when the chain id input is invalid.
+    error INVALID_INPUT_CHAIN_ID();
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/

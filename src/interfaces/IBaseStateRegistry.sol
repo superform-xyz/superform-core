@@ -8,6 +8,10 @@ interface IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 Errors
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev is emitted when the chain id input is invalid.
+    error INVALID_INPUT_CHAIN_ID();
+
     error INVALID_BRIDGE_ID();
 
     error INVALID_BRIDGE_ADDRESS();
@@ -75,6 +79,13 @@ interface IBaseStateRegistry {
         uint8 ambId_,
         uint8[] memory secAmbId_,
         uint16 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable;
+
+    function broadcastPayload(
+        uint8 ambId_,
+        uint8[] memory secAmbId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable;
