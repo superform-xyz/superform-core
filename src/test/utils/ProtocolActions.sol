@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 /// @dev lib imports
 import "./BaseSetup.sol";
-
 import "forge-std/console.sol";
+import "../../utils/DataPacking.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     uint8 public primaryAMB;
@@ -75,29 +75,31 @@ abstract contract ProtocolActions is BaseSetup {
 
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
-                /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
-                /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
-                if (
-                    CHAIN_0 == DST_CHAINS[i] ||
-                    (action.action == Actions.Withdraw &&
-                        CHAIN_0 != DST_CHAINS[i])
-                ) {
-                    /// @dev FIXME: this is only using hardcoded formid 1 (ERC4626Form) for now!!!
-                    /// !!WARNING
-                    vars.toDst[i] = payable(
-                        getContract(DST_CHAINS[i], "ERC4626Form")
-                    );
-                } else {
-                    vars.toDst[i] = payable(
-                        getContract(DST_CHAINS[i], "TokenBank")
-                    );
-                }
 
                 (
                     vars.targetSuperFormIds,
                     vars.underlyingSrcToken,
                     vars.vaultMock
                 ) = _targetVaults(CHAIN_0, DST_CHAINS[i], act);
+                vars.toDst = new address[](vars.targetSuperFormIds.length);
+                /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
+                /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
+                for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
+                    if (
+                        CHAIN_0 == DST_CHAINS[i] ||
+                        (action.action == Actions.Withdraw &&
+                            CHAIN_0 != DST_CHAINS[i])
+                    ) {
+                        (vars.superFormT, , ) = _getSuperForm(
+                            vars.targetSuperFormIds[k]
+                        );
+                        vars.toDst[k] = payable(vars.superFormT);
+                    } else {
+                        vars.toDst[k] = payable(
+                            getContract(DST_CHAINS[i], "TokenBank")
+                        );
+                    }
+                }
 
                 vars.amounts = AMOUNTS[DST_CHAINS[i]][act];
 
@@ -108,7 +110,7 @@ abstract contract ProtocolActions is BaseSetup {
                         MultiVaultCallDataArgs(
                             action.user,
                             vars.fromSrc,
-                            vars.toDst[i],
+                            vars.toDst,
                             vars.underlyingSrcToken,
                             vars.targetSuperFormIds,
                             vars.amounts,
@@ -136,7 +138,7 @@ abstract contract ProtocolActions is BaseSetup {
                         memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                             action.user,
                             vars.fromSrc,
-                            vars.toDst[i],
+                            vars.toDst[0],
                             vars.underlyingSrcToken[0],
                             vars.targetSuperFormIds[0],
                             vars.amounts[0],
@@ -385,15 +387,40 @@ abstract contract ProtocolActions is BaseSetup {
                             );
                             if (action.testType == TestType.Pass) {
                                 /// @dev multi tx is currently disabled until fixed
-                                /*
-                                    if (action.multiTx) {
+                                /// @dev should loop here through multiSuperFormsData if multiVaults and call this multiple times?
+                                /// @dev should loop here through singleSuperFormsData if !multiVaults and call one time?
+
+                                if (action.multiTx) {
+                                    if (action.multiVaults) {
+                                        (
+                                            ,
+                                            vars.underlyingSrcToken,
+
+                                        ) = _targetVaults(
+                                            CHAIN_0,
+                                            DST_CHAINS[i],
+                                            act
+                                        );
+
+                                        vars.amounts = AMOUNTS[DST_CHAINS[i]][
+                                            act
+                                        ];
+                                        _batchProcessMultiTx(
+                                            aV.toChainId,
+                                            vars.underlyingSrcToken,
+                                            vars.amounts
+                                        );
+                                    } else {
                                         _processMultiTx(
                                             aV.toChainId,
-                                            vars.underlyingSrcToken[i][0], /// @dev should be made to support multiple tokens
-                                            vars.amounts[i][0] /// @dev should be made to support multiple tokens
+                                            vars
+                                                .singleSuperFormsData[i]
+                                                .liqRequest
+                                                .token,
+                                            vars.singleSuperFormsData[i].amount
                                         );
                                     }
-                                */
+                                }
 
                                 if (action.multiVaults) {
                                     _updateMultiVaultPayload(
@@ -507,7 +534,7 @@ abstract contract ProtocolActions is BaseSetup {
             callDataArgs = SingleVaultCallDataArgs(
                 args.user,
                 args.fromSrc,
-                args.toDst,
+                args.toDst[i],
                 args.underlyingTokens[i],
                 args.superFormIds[i],
                 args.amounts[i],
@@ -545,7 +572,6 @@ abstract contract ProtocolActions is BaseSetup {
 
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is Form
-            /// @dev FIXME: this likely needs to be TOKENBANK now
             from = args.toDst;
         }
         /// @dev check this from down here when contracts are fixed for multi vault
@@ -675,7 +701,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         for (uint256 i = 0; i < vars.len; i++) {
             vars.underlyingToken = UNDERLYING_TOKENS[
-                vars.underlyingTokenIds[i]
+                vars.underlyingTokenIds[i] // 1
             ];
 
             targetSuperFormsMem[i] = vars.superFormIdsTemp[i];
@@ -701,31 +727,22 @@ abstract contract ProtocolActions is BaseSetup {
             if (underlyingTokenIds_[i] > UNDERLYING_TOKENS.length)
                 revert WRONG_UNDERLYING_ID();
 
-            address vault = getContract(
+            address superForm = getContract(
                 chainId_,
                 string.concat(
                     UNDERLYING_TOKENS[underlyingTokenIds_[i]],
-                    "Vault"
+                    "SuperForm",
+                    Strings.toString(FORMS_FOR_VAULTS[underlyingTokenIds_[i]])
                 )
             );
 
-            superFormIds_[i] = _superFormId(
-                vault,
+            superFormIds_[i] = _packSuperForm(
+                superForm,
                 FORMS_FOR_VAULTS[underlyingTokenIds_[i]],
                 chainId_
             );
         }
         return superFormIds_;
-    }
-
-    function _superFormId(
-        address vault_,
-        uint256 formId_,
-        uint16 chainId_
-    ) internal pure returns (uint256 superFormId_) {
-        superFormId_ = uint256(uint160(vault_));
-        superFormId_ |= formId_ << 160;
-        superFormId_ |= uint256(chainId_) << 240;
     }
 
     /*
@@ -1071,8 +1088,8 @@ abstract contract ProtocolActions is BaseSetup {
             "mockSocketTransfer(address,address,address,uint256,uint256)",
             getContract(targetChainId_, "MultiTxProcessor"),
             getContract(targetChainId_, "TokenBank"),
-            underlyingToken_, /// @dev FIXME - needs fix because it should have an array of underlying like state req
-            amount_, /// @dev FIXME - 1 amount is sent, not testing sum of amounts (different vaults)
+            underlyingToken_,
+            amount_, /// @dev FIXME -  not testing sum of amounts (different vaults)
             FORKS[targetChainId_]
         );
 
@@ -1084,6 +1101,42 @@ abstract contract ProtocolActions is BaseSetup {
                 underlyingToken_,
                 getContract(targetChainId_, "SocketRouterMockFork"),
                 amount_
+            );
+        vm.selectFork(initialFork);
+    }
+
+    function _batchProcessMultiTx(
+        uint16 targetChainId_,
+        address[] memory underlyingTokens_,
+        uint256[] memory amounts_
+    ) internal {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[targetChainId_]);
+
+        vm.prank(deployer);
+        /// @dev builds the data to be processed by the keeper contract.
+        /// @dev at this point the tokens are delivered to the multi-tx processor on the destination chain.
+        bytes[] memory socketTxDatas = new bytes[](underlyingTokens_.length);
+
+        for (uint256 i = 0; i < underlyingTokens_.length; i++) {
+            socketTxDatas[i] = abi.encodeWithSignature(
+                "mockSocketTransfer(address,address,address,uint256,uint256)",
+                getContract(targetChainId_, "MultiTxProcessor"),
+                getContract(targetChainId_, "TokenBank"),
+                underlyingTokens_[i],
+                amounts_[i], /// @dev FIXME -  not testing sum of amounts (different vaults)
+                FORKS[targetChainId_]
+            );
+        }
+
+        MultiTxProcessor(
+            payable(getContract(targetChainId_, "MultiTxProcessor"))
+        ).batchProcessTx(
+                bridgeIds[0],
+                socketTxDatas,
+                underlyingTokens_,
+                getContract(targetChainId_, "SocketRouterMockFork"),
+                amounts_
             );
         vm.selectFork(initialFork);
     }

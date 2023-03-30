@@ -11,6 +11,9 @@ interface ITokenBank {
     //////////////////////////////////////////////////////////////*/
     /// @dev is emitted when layerzero safe gas params are updated.
     event SafeGasParamUpdated(bytes oldParam, bytes newParam);
+
+    /// @dev is emitted when the super registry is updated.
+    event SuperRegistryUpdated(address indexed superRegistry);
     /*///////////////////////////////////////////////////////////////
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -20,6 +23,12 @@ interface ITokenBank {
 
     /// @dev error thrown when the safe gas param is incorrectly set
     error INVALID_GAS_OVERRIDE();
+
+    /// @dev is emitted when an address is being set to 0
+    error ZERO_ADDRESS();
+
+    /// @dev is emitted when the chain id input is invalid.
+    error INVALID_INPUT_CHAIN_ID();
 
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
@@ -56,4 +65,9 @@ interface ITokenBank {
     function withdrawSync(
         InitSingleVaultData memory singleVaultData_
     ) external payable;
+
+    /// set super registry
+    /// @dev allows an admin to set the super registry
+    /// @param superRegistry_ is the address of the super registry
+    function setSuperRegistry(address superRegistry_) external;
 }

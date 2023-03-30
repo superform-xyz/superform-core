@@ -30,69 +30,101 @@ interface ISuperFormFactory {
     /// @dev emitted when the caller is not factory registry
     error INVALID_CALLER();
 
+    /// @dev is emitted when the chain id input is invalid.
+    error INVALID_INPUT_CHAIN_ID();
+
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev emitted when a new form is entered into the factory
-    /// @param form is the address of the new form
-    /// @param formId is the id of the new form
-    event FormCreated(address indexed form, uint256 indexed formId);
+    /// @dev emitted when a new form beacon is entered into the factory
+    /// @param formImplementation is the address of the new form implementation
+    /// @param beacon is the address of the beacon
+    /// @param formBeaconId is the id of the new form beacon
+    event FormBeaconAdded(
+        address indexed formImplementation,
+        address indexed beacon,
+        uint256 indexed formBeaconId
+    );
 
     /// @dev emitted when a new SuperForm is created
-    /// @param formId is the id of the form
+    /// @param formBeaconId is the id of the form beacon
     /// @param vault is the address of the vault
     /// @param superFormId is the id of the superform - pair (form,vault)
+    /// @param superForm is the address of the superform
     event SuperFormCreated(
-        uint256 indexed formId,
+        uint256 indexed formBeaconId,
         address indexed vault,
-        uint256 indexed superFormId
+        uint256 indexed superFormId,
+        address superForm
     );
+
+    /// @dev emitted when a new SuperRegistry is set
+    /// @param superRegistry is the address of the super registry
+    event SuperRegistrySet(address indexed superRegistry);
 
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev allows an admin to enter a form to the factory
-    /// @param form_ is the address of a form
-    /// @param formId_ is the id of the form
-    function addForm(address form_, uint256 formId_) external;
+    /// @dev allows an admin to add a FormBeacon to the factory
+    /// @param formImplementation_ is the address of a form implementation
+    /// @param formBeaconId_ is the to-be id of the form beacon
+    function addFormBeacon(
+        address formImplementation_,
+        uint256 formBeaconId_
+    ) external returns (address beacon);
 
-    /// @dev allows an admin to add a form to the factory
-    /// @param forms_ are the address of a form
-    /// @param formIds_ are the id of the form
-    function addForms(
-        address[] memory forms_,
-        uint256[] memory formIds_
+    /// @dev allows an admin to add Form Beacons to the factory
+    /// @param formImplementations_ are the address of form implementaions
+    /// @param formBeaconIds_ are the to-be ids of the form beacons
+    function addFormBeacons(
+        address[] memory formImplementations_,
+        uint256[] memory formBeaconIds_
     ) external;
 
+    // 5. Forms should exist based on (everything else, including deposit/withdraw/tvl etc could be done in implementations above it)
+    //    1. Vault token type received (20, 4626, 721, or none)
+    //   2. To get/calculate the name of the resulting Superform
     /// @dev To add new vaults to Form implementations, fusing them together into SuperForms
-    /// @param formId_ is the formId we want to attach the vault to
-    /// @param vault_ is the address of a vault
+    /// @notice It is not possible to reliable ascertain if vault is a contract and if it is a compliant contract with a given form
+    /// @notice Perhaps this can checked at form level
+    /// @param formBeaconId_ is the form beacon we want to attach the vault to
+    /// @param vault_ is the address of the vault
     /// @return superFormId_ is the id of the superform
+    /// @dev TODO: add array version of thi
     function createSuperForm(
-        uint256 formId_,
+        uint256 formBeaconId_,
         address vault_
-    ) external payable returns (uint256 superFormId_);
-
-    /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the factory contract
-    /// @param factoryRegistry_ is the address of the factory state registry
-    function setRegistryContract(
-        address factoryRegistry_
-    ) external;
+    ) external payable returns (uint256 superFormId_, address superForm_);
 
     /// @dev to synchronize superforms added to different chains using factory registry
     /// @param data_ is the cross-chain superform id
     function stateSync(bytes memory data_) external payable;
 
+    /// @dev allows an admin to update the beacon logic of a form
+    /// @param formId_ is the id of the form
+    /// @param newFormLogic_ is the address of the new form logic
+    function updateFormBeaconLogic(
+        uint256 formId_,
+        address newFormLogic_
+    ) external;
+
+    /// set super registry
+    /// @dev allows an admin to set the super registry
+    /// @param superRegistry_ is the address of the super registry
+    function setSuperRegistry(address superRegistry_) external;
+
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev returns the address of a form
-    /// @param formId_ is the id of the form
-    /// @return form_ is the address of the form
-    function getForm(uint256 formId_) external view returns (address form_);
+    /// @dev returns the address of a form beacon
+    /// @param formBeaconId_ is the id of the beacon form
+    /// @return formBeacon_ is the address of the beacon form
+    function getFormBeacon(
+        uint256 formBeaconId_
+    ) external view returns (address formBeacon_);
 
     /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
     /// @param vault_ is the address of a vault

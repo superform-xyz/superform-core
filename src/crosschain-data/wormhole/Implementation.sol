@@ -6,9 +6,10 @@ import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
 import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
+
 /// @title Wormhole implementation contract
 /// @author Zeropoint Labs.
 /// @dev interacts with Wormhole AMB.
@@ -150,9 +151,15 @@ contract WormholeImplementation is
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
         /// FIXME: should migrate to support more state registry types
         if (registryId == 0) {
-            coreRegistry.receivePayload(superChainId[vm.emitterChainId], vm.payload);
+            coreRegistry.receivePayload(
+                superChainId[vm.emitterChainId],
+                vm.payload
+            );
         } else {
-            factoryRegistry.receivePayload(superChainId[vm.emitterChainId], vm.payload);
+            factoryRegistry.receivePayload(
+                superChainId[vm.emitterChainId],
+                vm.payload
+            );
         }
     }
 

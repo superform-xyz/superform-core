@@ -16,14 +16,6 @@ interface ICoreStateRegistry {
                             External Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
-    /// @param routerContract_ is the address of the router
-    /// @param tokenBankContract_ is the address of the token bank
-    function setCoreContracts(
-        address routerContract_,
-        address tokenBankContract_
-    ) external;
-
     /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
     /// @param finalAmounts_ is the amount to be updated.
