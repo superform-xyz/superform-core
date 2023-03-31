@@ -119,7 +119,6 @@ abstract contract ProtocolActions is BaseSetup {
                             CHAIN_0,
                             DST_CHAINS[i],
                             action.multiTx,
-                            action.actionKind,
                             action.action
                         )
                     );
@@ -147,7 +146,8 @@ abstract contract ProtocolActions is BaseSetup {
                             CHAIN_0,
                             DST_CHAINS[i],
                             action.multiTx,
-                            action.actionKind
+                            0,
+                            address(0)
                         );
 
                     if (action.action == Actions.Deposit) {
@@ -295,7 +295,7 @@ abstract contract ProtocolActions is BaseSetup {
                         LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
                             .helpWithEstimates(
                                 vars.lzEndpoints_1[i],
-                                1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                                2000000, /// @dev FIXME This needs to use a real gas amount!!
                                 FORKS[aV.toChainId],
                                 vars.logs
                             );
@@ -530,6 +530,27 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 len = args.superFormIds.length;
         LiqRequest[] memory liqRequests = new LiqRequest[](len);
         SingleVaultCallDataArgs memory callDataArgs;
+
+        if (len == 0) revert LEN_MISMATCH();
+
+        uint256 totalAmount;
+        address sameUnderlyingCheck = args.action == Actions.Deposit
+            ? args.underlyingTokens[0]
+            : address(0);
+
+        for (uint i = 0; i < len; i++) {
+            totalAmount += args.amounts[i];
+            if (i + 1 < len) {
+                if (sameUnderlyingCheck != args.underlyingTokens[i + 1]) {
+                    sameUnderlyingCheck = address(0);
+                }
+            }
+        }
+
+        if (sameUnderlyingCheck != address(0)) {
+            liqRequests = new LiqRequest[](1);
+        }
+
         for (uint i = 0; i < len; i++) {
             callDataArgs = SingleVaultCallDataArgs(
                 args.user,
@@ -543,15 +564,41 @@ abstract contract ProtocolActions is BaseSetup {
                 args.srcChainId,
                 args.toChainId,
                 args.multiTx,
-                args.actionKind
+                totalAmount,
+                sameUnderlyingCheck
             );
             if (args.action == Actions.Deposit) {
                 superFormData = _buildSingleVaultDepositCallData(callDataArgs);
             } else if (args.action == Actions.Withdraw) {
                 superFormData = _buildSingleVaultWithdrawCallData(callDataArgs);
             }
+            /// @dev if it is a same underlying deposit  - only one liqRequest is needed with the sum of amounts. We also need to only approve total amount of the underlying token
+            if (
+                i == 0 &&
+                args.action == Actions.Deposit &&
+                sameUnderlyingCheck != address(0)
+            ) {
+                liqRequests[0] = superFormData.liqRequest;
 
-            liqRequests[i] = superFormData.liqRequest;
+                uint256 initialFork = vm.activeFork();
+
+                address from = args.fromSrc;
+
+                if (args.srcChainId == args.toChainId) {
+                    /// @dev same chain deposit, from is Form
+                    from = args.toDst[i];
+                }
+
+                vm.selectFork(FORKS[args.srcChainId]);
+
+                /// @dev - APPROVE transfer to SuperRouter (because of Socket)
+                vm.prank(args.user);
+                MockERC20(args.underlyingTokens[i]).approve(from, totalAmount);
+
+                vm.selectFork(initialFork);
+            } else if (sameUnderlyingCheck == address(0)) {
+                liqRequests[i] = superFormData.liqRequest;
+            }
         }
 
         superFormsData = MultiVaultsSFData(
@@ -583,7 +630,9 @@ abstract contract ProtocolActions is BaseSetup {
                 ? getContract(args.toChainId, "MultiTxProcessor")
                 : args.toDst, /// NOTE: TokenBank address / Form address???
             args.underlyingToken,
-            args.amount, /// @dev FIXME - not testing sum of amounts (different vaults)
+            args.sameUnderlyingCheck != address(0)
+                ? args.totalAmount
+                : args.amount,
             FORKS[args.toChainId]
         );
 
@@ -592,17 +641,21 @@ abstract contract ProtocolActions is BaseSetup {
             socketTxData,
             args.underlyingToken,
             getContract(args.srcChainId, "SocketRouterMockFork"),
-            args.amount, /// @dev FIXME -  not testing sum of amounts (different vaults)
+            args.sameUnderlyingCheck != address(0)
+                ? args.totalAmount
+                : args.amount,
             0
         );
 
-        vm.selectFork(FORKS[args.srcChainId]);
+        if (args.sameUnderlyingCheck == address(0)) {
+            vm.selectFork(FORKS[args.srcChainId]);
 
-        /// @dev - APPROVE transfer to SuperRouter (because of Socket)
-        vm.prank(args.user);
-        MockERC20(args.underlyingToken).approve(from, args.amount);
+            /// @dev - APPROVE transfer to SuperRouter (because of Socket)
+            vm.prank(args.user);
+            MockERC20(args.underlyingToken).approve(from, args.amount);
 
-        vm.selectFork(initialFork);
+            vm.selectFork(initialFork);
+        }
 
         superFormData = SingleVaultSFData(
             args.superFormId,
@@ -616,25 +669,6 @@ abstract contract ProtocolActions is BaseSetup {
     function _buildSingleVaultWithdrawCallData(
         SingleVaultCallDataArgs memory args
     ) internal returns (SingleVaultSFData memory superFormData) {
-        uint256 amountToWithdraw;
-
-        if (args.actionKind == LiquidityChange.Full) {
-            uint256 sharesBalanceBeforeWithdraw;
-            vm.selectFork(FORKS[args.srcChainId]);
-
-            sharesBalanceBeforeWithdraw = SuperRouter(payable(args.fromSrc))
-                .balanceOf(args.user, args.superFormId);
-
-            vm.selectFork(FORKS[args.toChainId]);
-
-            /// @dev FIXME likely can be changed to form
-            amountToWithdraw = VaultMock(args.vaultMock).previewRedeem(
-                sharesBalanceBeforeWithdraw
-            );
-        } else if (args.actionKind == LiquidityChange.Partial) {
-            amountToWithdraw = args.amount;
-        }
-
         /// @dev check this from down here when contracts are fixed for multi vault
         /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
         bytes memory socketTxData = abi.encodeWithSignature(
@@ -642,7 +676,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.toDst,
             args.user,
             args.underlyingToken,
-            amountToWithdraw, /// @dev FIXME - not testing sum of amounts (different vaults)
+            args.amount,
             FORKS[args.toChainId]
         );
 
@@ -651,13 +685,13 @@ abstract contract ProtocolActions is BaseSetup {
             socketTxData,
             args.underlyingToken,
             getContract(args.srcChainId, "SocketRouterMockFork"),
-            amountToWithdraw, /// @dev FIXME -  not testing sum of amounts (different vaults)
+            args.amount,
             0
         );
 
         superFormData = SingleVaultSFData(
             args.superFormId,
-            amountToWithdraw,
+            args.amount,
             args.maxSlippage,
             liqReq,
             ""
@@ -732,13 +766,15 @@ abstract contract ProtocolActions is BaseSetup {
                 string.concat(
                     UNDERLYING_TOKENS[underlyingTokenIds_[i]],
                     "SuperForm",
-                    Strings.toString(FORMS_FOR_VAULTS[underlyingTokenIds_[i]])
+                    Strings.toString(
+                        FORM_BEACONIDS_FOR_VAULTS[underlyingTokenIds_[i]]
+                    )
                 )
             );
 
             superFormIds_[i] = _packSuperForm(
                 superForm,
-                FORMS_FOR_VAULTS[underlyingTokenIds_[i]],
+                FORM_BEACONIDS_FOR_VAULTS[underlyingTokenIds_[i]],
                 chainId_
             );
         }

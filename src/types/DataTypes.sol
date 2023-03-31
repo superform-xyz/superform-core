@@ -87,8 +87,8 @@ struct InitMultiVaultData {
     uint256[] superFormIds;
     uint256[] amounts;
     uint256[] maxSlippage;
+    LiqRequest[] liqData;
     bytes extraFormData;
-    bytes liqData;
 }
 
 struct InitSingleVaultData {
@@ -96,8 +96,8 @@ struct InitSingleVaultData {
     uint256 superFormId;
     uint256 amount;
     uint256 maxSlippage;
+    LiqRequest liqData;
     bytes extraFormData;
-    bytes liqData;
 }
 
 struct AMBMessage {

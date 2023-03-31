@@ -73,7 +73,7 @@ abstract contract BaseSetup is DSTest, Test {
     /// @dev we should fork these instead of mocking
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
     /// @dev all these vault mocks are currently  using formId 1 (4626)
-    uint256[] public FORMS_FOR_VAULTS = [uint256(1), 1, 1];
+    uint256[] public FORM_BEACONIDS_FOR_VAULTS = [uint256(1), 1, 1];
     uint256[] public FORM_BEACON_IDS = [uint256(1)];
     string[] public VAULT_NAMES;
 
@@ -594,7 +594,10 @@ abstract contract BaseSetup is DSTest, Test {
                 (, vars.superForm) = ISuperFormFactory(vars.srcSuperFormFactory)
                     .createSuperForm{
                     value: _getPriceMultiplier(vars.chainId) * 10 ** 18
-                }(FORMS_FOR_VAULTS[j], address(vaults[vars.chainId][j]));
+                }(
+                    FORM_BEACONIDS_FOR_VAULTS[j],
+                    address(vaults[vars.chainId][j])
+                );
 
                 contracts[vars.chainId][
                     bytes32(
@@ -602,7 +605,7 @@ abstract contract BaseSetup is DSTest, Test {
                             string.concat(
                                 UNDERLYING_TOKENS[j],
                                 "SuperForm",
-                                Strings.toString(FORMS_FOR_VAULTS[j])
+                                Strings.toString(FORM_BEACONIDS_FOR_VAULTS[j])
                             )
                         )
                     )
