@@ -590,11 +590,14 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev create superforms when the whole state registry is configured?
             for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
                 /// @dev FIXME should be an offchain calculation
-                
+                vm.recordLogs();
+
                 (, vars.superForm) = ISuperFormFactory(vars.srcSuperFormFactory)
                     .createSuperForm{
                     value: _getPriceMultiplier(vars.chainId) * 10 ** 18
                 }(FORMS_FOR_VAULTS[j], address(vaults[vars.chainId][j]));
+
+                _broadcastPayload(vars.chainId, vm.getRecordedLogs());
 
                 contracts[vars.chainId][
                     bytes32(
@@ -607,13 +610,9 @@ abstract contract BaseSetup is DSTest, Test {
                         )
                     )
                 ] = vars.superForm;
-
-                vm.recordLogs();
-                vars.logs = vm.getRecordedLogs();
             }
         }
         vm.stopPrank();
-        _broadcastPayload(vars.logs);
     }
 
     /*
@@ -775,21 +774,22 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev will sync the payloads for broadcast
-    function _broadcastPayload(Vm.Log[] memory logs) private {
-        for (uint256 i = 1; i < chainIds.length; i++) {
-            LayerZeroHelper(getContract(chainIds[0], "LayerZeroHelper"))
-                .helpWithEstimates(
-                    lzEndpoints[i],
-                    1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
-                    FORKS[chainIds[i]],
-                    logs
-                );
+    function _broadcastPayload(uint16 chainId, Vm.Log[] memory logs) private {
+        vm.stopPrank();
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (chainIds[i] != chainId) {
+                LayerZeroHelper(getContract(chainId, "LayerZeroHelper"))
+                    .helpWithEstimates(
+                        lzEndpoints[i],
+                        1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                        FORKS[chainIds[i]],
+                        logs
+                    );
 
-            HyperlaneHelper(getContract(chainIds[i], "HyperlaneHelper")).help(
-                address(HyperlaneMailbox),
-                FORKS[chainIds[i]],
-                logs
-            );
+                HyperlaneHelper(getContract(chainIds[i], "HyperlaneHelper"))
+                    .help(address(HyperlaneMailbox), FORKS[chainIds[i]], logs);
+            }
         }
+        vm.startPrank(deployer);
     }
 }
