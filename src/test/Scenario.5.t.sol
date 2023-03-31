@@ -44,7 +44,6 @@ contract Scenario5Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,
@@ -59,7 +58,6 @@ contract Scenario5Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,
@@ -77,7 +75,7 @@ contract Scenario5Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function xtest_scenario() public {
+    function test_scenario() public {
         _run_actions();
     }
 }

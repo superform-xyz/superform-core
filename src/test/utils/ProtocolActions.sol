@@ -119,7 +119,6 @@ abstract contract ProtocolActions is BaseSetup {
                             CHAIN_0,
                             DST_CHAINS[i],
                             action.multiTx,
-                            action.actionKind,
                             action.action
                         )
                     );
@@ -147,7 +146,6 @@ abstract contract ProtocolActions is BaseSetup {
                             CHAIN_0,
                             DST_CHAINS[i],
                             action.multiTx,
-                            action.actionKind,
                             0,
                             address(0)
                         );
@@ -297,7 +295,7 @@ abstract contract ProtocolActions is BaseSetup {
                         LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
                             .helpWithEstimates(
                                 vars.lzEndpoints_1[i],
-                                1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
+                                2000000, /// @dev FIXME This needs to use a real gas amount!!
                                 FORKS[aV.toChainId],
                                 vars.logs
                             );
@@ -536,21 +534,22 @@ abstract contract ProtocolActions is BaseSetup {
         if (len == 0) revert LEN_MISMATCH();
 
         uint256 totalAmount;
-        address sameUnderlyingCheck = args.underlyingTokens[0];
-
-        if (sameUnderlyingCheck == address(0))
-            revert INVALID_UNDERLYING_TOKEN_NAME();
+        address sameUnderlyingCheck = args.action == Actions.Deposit
+            ? args.underlyingTokens[0]
+            : address(0);
 
         for (uint i = 0; i < len; i++) {
             totalAmount += args.amounts[i];
             if (i + 1 < len) {
-                if (sameUnderlyingCheck != args.underlyingTokens[i + 1])
+                if (sameUnderlyingCheck != args.underlyingTokens[i + 1]) {
                     sameUnderlyingCheck = address(0);
+                }
             }
         }
 
-        if (sameUnderlyingCheck != address(0))
+        if (sameUnderlyingCheck != address(0)) {
             liqRequests = new LiqRequest[](1);
+        }
 
         for (uint i = 0; i < len; i++) {
             callDataArgs = SingleVaultCallDataArgs(
@@ -565,7 +564,6 @@ abstract contract ProtocolActions is BaseSetup {
                 args.srcChainId,
                 args.toChainId,
                 args.multiTx,
-                args.actionKind,
                 totalAmount,
                 sameUnderlyingCheck
             );
@@ -671,25 +669,6 @@ abstract contract ProtocolActions is BaseSetup {
     function _buildSingleVaultWithdrawCallData(
         SingleVaultCallDataArgs memory args
     ) internal returns (SingleVaultSFData memory superFormData) {
-        uint256 amountToWithdraw;
-
-        if (args.actionKind == LiquidityChange.Full) {
-            uint256 sharesBalanceBeforeWithdraw;
-            vm.selectFork(FORKS[args.srcChainId]);
-
-            sharesBalanceBeforeWithdraw = SuperRouter(payable(args.fromSrc))
-                .balanceOf(args.user, args.superFormId);
-
-            vm.selectFork(FORKS[args.toChainId]);
-
-            /// @dev FIXME likely can be changed to form
-            amountToWithdraw = VaultMock(args.vaultMock).previewRedeem(
-                sharesBalanceBeforeWithdraw
-            );
-        } else if (args.actionKind == LiquidityChange.Partial) {
-            amountToWithdraw = args.amount;
-        }
-
         /// @dev check this from down here when contracts are fixed for multi vault
         /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
         bytes memory socketTxData = abi.encodeWithSignature(
@@ -697,7 +676,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.toDst,
             args.user,
             args.underlyingToken,
-            amountToWithdraw,
+            args.amount,
             FORKS[args.toChainId]
         );
 
@@ -706,13 +685,13 @@ abstract contract ProtocolActions is BaseSetup {
             socketTxData,
             args.underlyingToken,
             getContract(args.srcChainId, "SocketRouterMockFork"),
-            amountToWithdraw,
+            args.amount,
             0
         );
 
         superFormData = SingleVaultSFData(
             args.superFormId,
-            amountToWithdraw,
+            args.amount,
             args.maxSlippage,
             liqReq,
             ""

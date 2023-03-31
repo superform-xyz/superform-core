@@ -43,7 +43,6 @@ contract Scenario3Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
                 multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,

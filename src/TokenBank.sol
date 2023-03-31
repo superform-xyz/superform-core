@@ -4,11 +4,13 @@ import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessCont
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
+import {LiqRequest} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ITokenBank} from "./interfaces/ITokenBank.sol";
 import "./utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @title Token Bank
 /// @author Zeropoint Labs.
@@ -78,14 +80,16 @@ contract TokenBank is ITokenBank, AccessControl {
                 multiVaultData_.amounts[i]
             ) {
                 underlying.transfer(superForms[i], multiVaultData_.amounts[i]);
+                LiqRequest memory emptyRequest;
+
                 dstAmounts[i] = IBaseForm(superForms[i]).xChainDepositIntoVault(
                     InitSingleVaultData({
                         txData: multiVaultData_.txData,
                         superFormId: multiVaultData_.superFormIds[i],
                         amount: multiVaultData_.amounts[i],
                         maxSlippage: multiVaultData_.maxSlippage[i],
-                        extraFormData: multiVaultData_.extraFormData,
-                        liqData: multiVaultData_.liqData
+                        liqData: emptyRequest,
+                        extraFormData: multiVaultData_.extraFormData
                     })
                 );
             } else {
@@ -217,8 +221,8 @@ contract TokenBank is ITokenBank, AccessControl {
                     superFormId: multiVaultData_.superFormIds[i],
                     amount: multiVaultData_.amounts[i],
                     maxSlippage: multiVaultData_.maxSlippage[i],
-                    extraFormData: multiVaultData_.extraFormData,
-                    liqData: multiVaultData_.liqData
+                    liqData: multiVaultData_.liqData[i],
+                    extraFormData: multiVaultData_.extraFormData
                 })
             );
         }

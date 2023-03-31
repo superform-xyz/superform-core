@@ -29,10 +29,13 @@ contract Scenario7Test is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYING_VAULTS[ARBI][0] = [1, 1, 1];
+        TARGET_UNDERLYING_VAULTS[ARBI][1] = [1, 1, 1];
 
         AMOUNTS[ARBI][0] = [7000, 1000, 2000];
+        AMOUNTS[ARBI][1] = [7000, 1000, 2000];
 
         MAX_SLIPPAGE[ARBI][0] = [1000, 1000, 1000];
+        MAX_SLIPPAGE[ARBI][1] = [1000, 1000, 1000];
 
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
@@ -41,7 +44,21 @@ contract Scenario7Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
+                multiVaults: true, //!!WARNING turn on or off multi vaults
+                user: users[0],
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
+                adapterParam: "",
+                msgValue: msgValue
+            })
+        );
+
+        actions.push(
+            TestAction({
+                action: Actions.Withdraw,
                 multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,

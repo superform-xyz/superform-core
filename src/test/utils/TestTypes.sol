@@ -69,7 +69,6 @@ struct AssertVars {
 
 struct TestAction {
     Actions action;
-    LiquidityChange actionKind;
     bool multiVaults;
     address user;
     TestType testType;
@@ -148,7 +147,6 @@ struct SingleVaultCallDataArgs {
     uint16 srcChainId;
     uint16 toChainId;
     bool multiTx;
-    LiquidityChange actionKind;
     uint256 totalAmount;
     address sameUnderlyingCheck;
 }
@@ -165,7 +163,6 @@ struct MultiVaultCallDataArgs {
     uint16 srcChainId;
     uint16 toChainId;
     bool multiTx;
-    LiquidityChange actionKind;
     Actions action;
 }
 
