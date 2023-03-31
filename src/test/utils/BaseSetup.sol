@@ -590,7 +590,7 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev create superforms when the whole state registry is configured?
             for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
                 /// @dev FIXME should be an offchain calculation
-
+                
                 (, vars.superForm) = ISuperFormFactory(vars.srcSuperFormFactory)
                     .createSuperForm{
                     value: _getPriceMultiplier(vars.chainId) * 10 ** 18
@@ -607,10 +607,13 @@ abstract contract BaseSetup is DSTest, Test {
                         )
                     )
                 ] = vars.superForm;
+
+                vm.recordLogs();
+                vars.logs = vm.getRecordedLogs();
             }
         }
-
         vm.stopPrank();
+        _broadcastPayload(vars.logs);
     }
 
     /*
@@ -768,6 +771,25 @@ abstract contract BaseSetup is DSTest, Test {
                 deal(swap, address(2), 1 ether * amount);
                 deal(swap, address(3), 1 ether * amount);
             }
+        }
+    }
+
+    /// @dev will sync the payloads for broadcast
+    function _broadcastPayload(Vm.Log[] memory logs) private {
+        for (uint256 i = 1; i < chainIds.length; i++) {
+            LayerZeroHelper(getContract(chainIds[0], "LayerZeroHelper"))
+                .helpWithEstimates(
+                    lzEndpoints[i],
+                    1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                    FORKS[chainIds[i]],
+                    logs
+                );
+
+            HyperlaneHelper(getContract(chainIds[i], "HyperlaneHelper")).help(
+                address(HyperlaneMailbox),
+                FORKS[chainIds[i]],
+                logs
+            );
         }
     }
 }

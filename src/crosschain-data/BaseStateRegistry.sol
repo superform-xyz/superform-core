@@ -6,6 +6,7 @@ import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {PayloadState, AMBMessage, AMBFactoryMessage} from "../types/DataTypes.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import "../utils/DataPacking.sol";
 
 /// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
 /// @author Zeropoint Labs
@@ -226,12 +227,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     ) internal {
         /// @dev generates the proof
         bytes memory proof = abi.encode(keccak256(message_));
-
-        AMBFactoryMessage memory data = abi.decode(
-            message_,
-            (AMBFactoryMessage)
-        );
-        AMBMessage memory newData = AMBMessage(data.superFormId, proof);
+        AMBMessage memory newData = AMBMessage(_packTxInfo(0, 0, false, 1), proof);
 
         for (uint8 i = 0; i < secAmbId_.length; i++) {
             uint8 tempAmbId = secAmbId_[i];

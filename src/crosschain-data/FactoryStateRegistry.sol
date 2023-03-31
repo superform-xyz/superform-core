@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {BaseStateRegistry} from "./BaseStateRegistry.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {IFactoryStateRegistry} from "../interfaces/IFactoryStateRegistry.sol";
+import {PayloadState} from "../types/DataTypes.sol";
 
 contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
@@ -38,6 +39,16 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         uint256 payloadId_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         /// TODO sync factory data from crosschain
+         if (payloadId_ > payloadsCount) {
+            revert INVALID_PAYLOAD_ID();
+        }
+
+        if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
+            revert INVALID_PAYLOAD_STATE();
+        }
+
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+        ISuperFormFactory(factoryContract).stateSync(payload[payloadId_]);
         
     }
 }

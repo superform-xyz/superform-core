@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "forge-std/console.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {SuperFormFactory} from "../SuperFormFactory.sol";
+import {FactoryStateRegistry} from "../crosschain-data/FactoryStateRegistry.sol";
 import {ERC4626Form} from "../forms/ERC4626Form.sol";
 import "./utils/BaseSetup.sol";
 import "./utils/Utilities.sol";
@@ -116,6 +117,9 @@ contract SuperFormFactoryTest is BaseSetup {
 
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
             .addFormBeacon(vars.formImplementation, vars.formBeaconId);
+
+        console.log(FactoryStateRegistry(payable(getContract(chainIds[1], "FactoryStateRegistry")))
+            .payloadsCount());
 
         /// @dev as you can see we are not testing if the vaults are eoas or actual compliant contracts
         vars.vault1 = address(0x2);

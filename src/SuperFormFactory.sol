@@ -147,6 +147,17 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         uint256 formBeaconId_,
         address newFormLogic_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (newFormLogic_ == address(0)) revert ZERO_ADDRESS();
+        if (!ERC165Checker.supportsERC165(newFormLogic_))
+            revert ERC165_UNSUPPORTED();
+        if (
+            !ERC165Checker.supportsInterface(
+                newFormLogic_,
+                type(IBaseForm).interfaceId
+            )
+        ) revert FORM_INTERFACE_UNSUPPORTED();
+        if (formBeacon[formBeaconId_] == address(0)) revert INVALID_FORM_ID();
+
         FormBeacon(formBeacon[formBeaconId_]).update(newFormLogic_);
     }
 

@@ -130,6 +130,7 @@ struct SetupVars {
     address dstStateRegistry;
     address srcMultiTxProcessor;
     address superRegistry;
+    Vm.Log[] logs;
 }
 
 /*//////////////////////////////////////////////////////////////
