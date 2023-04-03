@@ -79,6 +79,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint256[] public FORM_BEACON_IDS = [uint256(1), 2];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault"];
 
+    bytes[] public vaultBytecodes;
     // formbeacon id => vault name
     mapping(uint256 => string[]) VAULT_NAMES;
     // chainId => formbeacon id => vault
@@ -341,8 +342,10 @@ abstract contract BaseSetup is DSTest, Test {
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     /// @dev 5 - Deploy mock Vault
-                    vars.vault = address(
-                        new VaultMock(
+
+                    bytes memory bytecodeWithArgs = abi.encodePacked(
+                        vaultBytecodes[j],
+                        abi.encode(
                             MockERC20(
                                 getContract(vars.chainId, UNDERLYING_TOKENS[k])
                             ),
@@ -350,6 +353,8 @@ abstract contract BaseSetup is DSTest, Test {
                             VAULT_NAMES[j][k]
                         )
                     );
+
+                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
 
                     /// @dev Add ERC4626Vault
                     contracts[vars.chainId][
@@ -715,6 +720,10 @@ abstract contract BaseSetup is DSTest, Test {
         users.push(address(2));
         users.push(address(3));
 
+        /// @dev setup vault bytecodes
+        vaultBytecodes.push(type(VaultMock).creationCode);
+        vaultBytecodes.push(type(ERC4626TimelockMock).creationCode);
+
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
         for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
             for (uint256 j = 0; j < underlyingTokens.length; j++) {
@@ -807,5 +816,20 @@ abstract contract BaseSetup is DSTest, Test {
                 deal(swap, address(3), 1 ether * amount);
             }
         }
+    }
+
+    function _deployWithCreate2(
+        bytes memory bytecode_,
+        uint salt_
+    ) internal returns (address addr) {
+        assembly {
+            addr := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
+
+            if iszero(extcodesize(addr)) {
+                revert(0, 0)
+            }
+        }
+
+        return addr;
     }
 }
