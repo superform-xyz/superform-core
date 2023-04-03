@@ -111,10 +111,14 @@ struct SetupVars {
     address hyperlaneImplementation;
     address socketRouter;
     address erc4626Form;
+    /// @dev erc4626TimelockForm - var needed, BaseSetup._deployProtocol() parent contract forces it
+    address erc4626TimelockForm;
     address factoryStateRegistry;
     address coreStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
+    /// @dev timelockVault - var needed, BaseSetup._deployProtocol() parent contract forces it
+    address timelockVault;
     address srcTokenBank;
     address srcSuperRouter;
     address srcCoreStateRegistry;
@@ -122,6 +126,8 @@ struct SetupVars {
     address srcSuperFormFactory;
     address dstSuperFormFactory;
     address srcErc4626Form;
+    /// @dev srcErc4626TimelockForm - var needed, BaseSetup._deployProtocol() parent contract forces it
+    address srcErc4626TimelockForm;
     address srcLzImplementation;
     address dstLzImplementation;
     address srcHyperlaneImplementation;

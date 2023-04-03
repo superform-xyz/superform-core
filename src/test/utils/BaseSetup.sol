@@ -14,6 +14,7 @@ import "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev src imports
 import {VaultMock} from "../mocks/VaultMock.sol";
+import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
@@ -26,6 +27,7 @@ import {SuperRegistry} from "../../SuperRegistry.sol";
 import {TokenBank} from "../../TokenBank.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
+import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
@@ -72,9 +74,10 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev we should fork these instead of mocking
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
-    /// @dev all these vault mocks are currently  using formId 1 (4626)
-    uint256[] public FORM_BEACONIDS_FOR_VAULTS = [uint256(1), 1, 1];
-    uint256[] public FORM_BEACON_IDS = [uint256(1)];
+    /// @dev all these vault mocks are currently  using formId 1 (4626) UPDATE: Added form id 2 for timelock
+    uint256[] public FORM_BEACONIDS_FOR_VAULTS = [uint256(1), 1, 1, 2];
+    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm
+    uint256[] public FORM_BEACON_IDS = [uint256(1), uint256(2)];
     string[] public VAULT_NAMES;
 
     mapping(uint16 => IERC4626[]) public vaults;
@@ -337,12 +340,35 @@ abstract contract BaseSetup is DSTest, Test {
                         VAULT_NAMES[j]
                     )
                 );
+
+                vars.timelockVault = address(
+                    new ERC4626TimelockMock(
+                        MockERC20(vars.UNDERLYING_TOKEN),
+                        VAULT_NAMES[j],
+                        VAULT_NAMES[j]
+                    )
+                );
+
+                /// FIXME: There will be a need for more forms to be deployed, this may become messy
+                /// @dev Add ERC4626Vault
+                // mapping(uint16 => mapping(bytes32 => address)) public contracts;
+                // mapping(uint16 => IERC4626[]) public vaults;
+                // mapping(uint16 => uint256[]) vaultIds;
+                
                 contracts[vars.chainId][
                     bytes32(bytes(string.concat(UNDERLYING_TOKENS[j], "Vault")))
                 ] = vars.vault;
 
                 vaults[vars.chainId].push(IERC4626(vars.vault));
                 vaultIds[vars.chainId].push(j + 1);
+
+                /// @dev Add ERC4626TimelockVault
+                contracts[vars.chainId][
+                    bytes32(bytes(string.concat(UNDERLYING_TOKENS[j], "TimelockVault")))
+                ] = vars.timelockVault;
+
+                vaults[vars.chainId].push(IERC4626(vars.timelockVault));
+                vaultIds[vars.chainId].push(j + 2);
             }
 
             /// @dev 5 - Deploy SuperFormFactory
@@ -351,16 +377,28 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
                 .factory;
 
-            /// @dev 6 - Deploy 4626Form implementation
-
+            /// @dev 6 - Deploy 4626Form implementations
+            /// FIXME: Multiple Forms deployment and selection from Scenario.t.sol
+            // Standard ERC4626 Form
             vars.erc4626Form = address(new ERC4626Form());
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
                 .erc4626Form;
+
+            // Timelock + ERC4626 Form
+            vars.erc4626TimelockForm = address(new ERC4626TimelockForm());
+            contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars
+                .erc4626TimelockForm;
+
 
             /// @dev 7 - Add newly deployed form  implementation to Factory, formBeaconId 1
             ISuperFormFactory(vars.factory).addFormBeacon(
                 vars.erc4626Form,
                 FORM_BEACON_IDS[0]
+            );
+
+            ISuperFormFactory(vars.factory).addFormBeacon(
+                vars.erc4626TimelockForm,
+                FORM_BEACON_IDS[1]
             );
 
             /// @dev 8 - Deploy TokenBank
