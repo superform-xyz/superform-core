@@ -628,7 +628,6 @@ abstract contract BaseSetup is DSTest, Test {
             }
 
             /// @dev create superforms when the whole state registry is configured?
-            console.log("amount of vaults to deploy", vaults[vars.chainId].length);
             for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
 
                 /// @dev FIXME should be an offchain calculation
@@ -649,7 +648,7 @@ abstract contract BaseSetup is DSTest, Test {
                     bytes32(
                         bytes(
                             string.concat(
-                                UNDERLYING_ASSETS[j], /// @dev FIXME: temp replacement to resolve looping logic better
+                                UNDERLYING_ASSETS[j], /// @dev FIXME: temp replacement to resolve looping, using UNDERLYING_TOKENS makes arrays out of bounds
                                 "SuperForm",
                                 Strings.toString(FORM_BEACONIDS_FOR_VAULTS[j])
                             )
