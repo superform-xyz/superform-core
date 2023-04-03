@@ -18,6 +18,8 @@ abstract contract ProtocolActions is BaseSetup {
     mapping(uint16 => mapping(uint256 => uint256[]))
         public TARGET_UNDERLYING_VAULTS;
 
+    mapping(uint16 => mapping(uint256 => uint256[])) public TARGET_FORM_KINDS;
+
     mapping(uint16 => mapping(uint256 => uint256[])) public AMOUNTS;
 
     mapping(uint16 => mapping(uint256 => uint256[])) public MAX_SLIPPAGE;
@@ -704,6 +706,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     struct TargetVaultsVars {
         uint256[] underlyingTokenIds;
+        uint256[] formKinds;
         uint256[] superFormIdsTemp;
         uint256 len;
         string underlyingToken;
@@ -725,8 +728,15 @@ abstract contract ProtocolActions is BaseSetup {
     {
         TargetVaultsVars memory vars;
         vars.underlyingTokenIds = TARGET_UNDERLYING_VAULTS[chain1][action];
-        vars.superFormIdsTemp = _superFormIds(vars.underlyingTokenIds, chain1);
+        vars.formKinds = TARGET_FORM_KINDS[chain1][action];
+        vars.superFormIdsTemp = _superFormIds(
+            vars.underlyingTokenIds,
+            vars.formKinds,
+            chain1
+        );
+
         vars.len = vars.superFormIdsTemp.length;
+
         if (vars.len == 0) revert LEN_VAULTS_ZERO();
 
         targetSuperFormsMem = new uint256[](vars.len);
@@ -745,19 +755,25 @@ abstract contract ProtocolActions is BaseSetup {
             );
             vaultMocksMem[i] = getContract(
                 chain1,
-                VAULT_NAMES[vars.underlyingTokenIds[i]]
+                VAULT_NAMES[vars.formKinds[i]][vars.underlyingTokenIds[i]]
             );
         }
     }
 
     function _superFormIds(
         uint256[] memory underlyingTokenIds_,
+        uint256[] memory formKinds_,
         uint16 chainId_
     ) internal view returns (uint256[] memory) {
         uint256[] memory superFormIds_ = new uint256[](
             underlyingTokenIds_.length
         );
+        if (underlyingTokenIds_.length != formKinds_.length)
+            revert INVALID_TARGETS();
+
         for (uint256 i = 0; i < underlyingTokenIds_.length; i++) {
+            if (formKinds_[i] > FORM_BEACON_IDS.length)
+                revert WRONG_FORMBEACON_ID();
             if (underlyingTokenIds_[i] > UNDERLYING_TOKENS.length)
                 revert WRONG_UNDERLYING_ID();
 
@@ -766,18 +782,17 @@ abstract contract ProtocolActions is BaseSetup {
                 string.concat(
                     UNDERLYING_TOKENS[underlyingTokenIds_[i]],
                     "SuperForm",
-                    Strings.toString(
-                        FORM_BEACONIDS_FOR_VAULTS[underlyingTokenIds_[i]]
-                    )
+                    Strings.toString(FORM_BEACON_IDS[formKinds_[i]])
                 )
             );
 
             superFormIds_[i] = _packSuperForm(
                 superForm,
-                FORM_BEACONIDS_FOR_VAULTS[underlyingTokenIds_[i]],
+                FORM_BEACON_IDS[formKinds_[i]],
                 chainId_
             );
         }
+
         return superFormIds_;
     }
 

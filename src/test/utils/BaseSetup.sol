@@ -74,16 +74,17 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev we should fork these instead of mocking
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
-    /// FIXME: temp hack to get loops working with superforms
-    string[] public UNDERLYING_ASSETS = ["DAI", "USDT", "WETH", "DAI", "USDT", "WETH"];
-    /// @dev all these vault mocks are currently  using formId 1 (4626) UPDATE: Added form id 2 for timelock
-    uint256[] public FORM_BEACONIDS_FOR_VAULTS = [uint256(1), 1, 1, 2, 2, 2];
-    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm
-    uint256[] public FORM_BEACON_IDS = [uint256(1), uint256(2)];
-    string[] public VAULT_NAMES;
 
-    mapping(uint16 => IERC4626[]) public vaults;
-    mapping(uint16 => uint256[]) vaultIds;
+    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm
+    uint256[] public FORM_BEACON_IDS = [uint256(1), 2];
+    string[] public VAULT_KINDS = ["Vault", "TimelockedVault"];
+
+    // formbeacon id => vault name
+    mapping(uint256 => string[]) VAULT_NAMES;
+    // chainId => formbeacon id => vault
+    mapping(uint16 => mapping(uint256 => IERC4626[])) public vaults;
+    // chainId => formbeacon id => vault id
+    mapping(uint16 => mapping(uint256 => uint256[])) vaultIds;
     mapping(uint16 => uint256) PAYLOAD_ID; // chaindId => payloadId
 
     /// @dev liquidity bridge ids
@@ -115,6 +116,7 @@ abstract contract BaseSetup is DSTest, Test {
     address public constant FTM_lzEndpoint =
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
+    /// @dev removed FTM temporarily
     address[6] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -334,43 +336,31 @@ abstract contract BaseSetup is DSTest, Test {
                 contracts[vars.chainId][
                     bytes32(bytes(UNDERLYING_TOKENS[j]))
                 ] = vars.UNDERLYING_TOKEN;
+            }
+            uint256 vaultId = 0;
+            for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
+                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
+                    /// @dev 5 - Deploy mock Vault
+                    vars.vault = address(
+                        new VaultMock(
+                            MockERC20(
+                                getContract(vars.chainId, UNDERLYING_TOKENS[k])
+                            ),
+                            VAULT_NAMES[j][k],
+                            VAULT_NAMES[j][k]
+                        )
+                    );
 
-                /// @dev 5 - Deploy mock Vault
-                vars.vault = address(
-                    new VaultMock(
-                        MockERC20(vars.UNDERLYING_TOKEN),
-                        VAULT_NAMES[j],
-                        VAULT_NAMES[j]
-                    )
-                );
+                    /// @dev Add ERC4626Vault
+                    contracts[vars.chainId][
+                        bytes32(bytes(string.concat(VAULT_NAMES[j][k])))
+                    ] = vars.vault;
 
-                vars.timelockVault = address(
-                    new ERC4626TimelockMock(
-                        MockERC20(vars.UNDERLYING_TOKEN),
-                        VAULT_NAMES[j],
-                        VAULT_NAMES[j]
-                    )
-                );
-
-                /// FIXME: There will be a need for more forms to be deployed, this may become messy
-                // mapping(uint16 => mapping(bytes32 => address)) public contracts;
-                // mapping(uint16 => IERC4626[]) public vaults;
-                // mapping(uint16 => uint256[]) vaultIds;
-
-                /// @dev Add ERC4626Vault
-                uint256 vaultId = j;
-                contracts[vars.chainId][
-                    bytes32(bytes(string.concat(UNDERLYING_TOKENS[j], "Vault")))
-                ] = vars.vault;
-                vaults[vars.chainId].push(IERC4626(vars.vault));
-                vaultIds[vars.chainId].push(vaultId++);
-
-                /// @dev Add ERC4626TimelockVault
-                contracts[vars.chainId][
-                    bytes32(bytes(string.concat(UNDERLYING_TOKENS[j], "TimelockVault")))
-                ] = vars.timelockVault;
-                vaults[vars.chainId].push(IERC4626(vars.timelockVault));
-                vaultIds[vars.chainId].push(vaultId++);
+                    vaults[vars.chainId][FORM_BEACON_IDS[j]].push(
+                        IERC4626(vars.vault)
+                    );
+                    vaultIds[vars.chainId][FORM_BEACON_IDS[j]].push(vaultId++);
+                }
             }
 
             /// @dev 5 - Deploy SuperFormFactory
@@ -388,9 +378,9 @@ abstract contract BaseSetup is DSTest, Test {
 
             // Timelock + ERC4626 Form
             vars.erc4626TimelockForm = address(new ERC4626TimelockForm());
-            contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars
-                .erc4626TimelockForm;
-
+            contracts[vars.chainId][
+                bytes32(bytes("ERC4626TimelockForm"))
+            ] = vars.erc4626TimelockForm;
 
             /// @dev 7 - Add newly deployed form  implementation to Factory, formBeaconId 1
             ISuperFormFactory(vars.factory).addFormBeacon(
@@ -628,33 +618,29 @@ abstract contract BaseSetup is DSTest, Test {
             }
 
             /// @dev create superforms when the whole state registry is configured?
-            for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
+            for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
+                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
+                    (, vars.superForm) = ISuperFormFactory(
+                        vars.srcSuperFormFactory
+                    ).createSuperForm{
+                        value: _getPriceMultiplier(vars.chainId) * 10 ** 18
+                    }(
+                        FORM_BEACON_IDS[j],
+                        address(vaults[vars.chainId][FORM_BEACON_IDS[j]][k])
+                    );
 
-                /// @dev FIXME should be an offchain calculation
-                console.log("Deploying for chainId:", vars.chainId);
-                console.log("j loop no.", j);
-                console.log("FORM_BEACONIDS_FOR_VAULTS:", FORM_BEACONIDS_FOR_VAULTS[j]); /// !!! Here it falls out of bounds. loop len is 6, arr len is 4
-
-                (, vars.superForm) = ISuperFormFactory(vars.srcSuperFormFactory)
-                    .createSuperForm{
-                    value: _getPriceMultiplier(vars.chainId) * 10 ** 18
-                }(
-                    FORM_BEACONIDS_FOR_VAULTS[j],
-                    address(vaults[vars.chainId][j]) /// !!!
-                );
-                console.log("contract insert", j);
-                console.log(" ");
-                contracts[vars.chainId][
-                    bytes32(
-                        bytes(
-                            string.concat(
-                                UNDERLYING_ASSETS[j], /// @dev FIXME: temp replacement to resolve looping, using UNDERLYING_TOKENS makes arrays out of bounds
-                                "SuperForm",
-                                Strings.toString(FORM_BEACONIDS_FOR_VAULTS[j])
+                    contracts[vars.chainId][
+                        bytes32(
+                            bytes(
+                                string.concat(
+                                    UNDERLYING_TOKENS[k],
+                                    "SuperForm",
+                                    Strings.toString(FORM_BEACON_IDS[j])
+                                )
                             )
                         )
-                    )
-                ] = vars.superForm;
+                    ] = vars.superForm;
+                }
             }
         }
 
@@ -730,8 +716,12 @@ abstract contract BaseSetup is DSTest, Test {
         users.push(address(3));
 
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
-        for (uint256 i = 0; i < underlyingTokens.length; i++) {
-            VAULT_NAMES.push(string.concat(underlyingTokens[i], "Vault"));
+        for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
+            for (uint256 j = 0; j < underlyingTokens.length; j++) {
+                VAULT_NAMES[i].push(
+                    string.concat(underlyingTokens[j], VAULT_KINDS[i])
+                );
+            }
         }
     }
 

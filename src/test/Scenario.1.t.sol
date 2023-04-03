@@ -30,6 +30,8 @@ contract Scenario1Test is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYING_VAULTS[POLY][0] = [1];
 
+        TARGET_FORM_KINDS[POLY][0] = [0];
+
         AMOUNTS[POLY][0] = [1000];
 
         MAX_SLIPPAGE[POLY][0] = [1000];
