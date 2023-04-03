@@ -15,14 +15,14 @@ abstract contract ProtocolActions is BaseSetup {
 
     uint16[] public DST_CHAINS;
 
-    mapping(uint16 => mapping(uint256 => uint256[]))
+    mapping(uint16 chainId => mapping(uint256 action => uint256[] underlyingTokenIds))
         public TARGET_UNDERLYING_VAULTS;
 
-    mapping(uint16 => mapping(uint256 => uint256[])) public TARGET_FORM_KINDS;
+    mapping(uint16 chainId => mapping(uint256 action => uint256[] formKinds)) public TARGET_FORM_KINDS;
 
-    mapping(uint16 => mapping(uint256 => uint256[])) public AMOUNTS;
+    mapping(uint16 chainId => mapping(uint256 index => uint256[] action)) public AMOUNTS;
 
-    mapping(uint16 => mapping(uint256 => uint256[])) public MAX_SLIPPAGE;
+    mapping(uint16 chainId => mapping(uint256 index => uint256[] action)) public MAX_SLIPPAGE;
 
     TestAction[] actions;
 

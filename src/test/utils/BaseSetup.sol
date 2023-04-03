@@ -50,7 +50,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     address public deployer = address(777);
     address[] public users;
-    mapping(uint16 => mapping(bytes32 => address)) public contracts;
+    mapping(uint16 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
@@ -81,12 +81,12 @@ abstract contract BaseSetup is DSTest, Test {
 
     bytes[] public vaultBytecodes;
     // formbeacon id => vault name
-    mapping(uint256 => string[]) VAULT_NAMES;
+    mapping(uint256 formBeaconId => string[] names) VAULT_NAMES;
     // chainId => formbeacon id => vault
-    mapping(uint16 => mapping(uint256 => IERC4626[])) public vaults;
+    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults)) public vaults;
     // chainId => formbeacon id => vault id
-    mapping(uint16 => mapping(uint256 => uint256[])) vaultIds;
-    mapping(uint16 => uint256) PAYLOAD_ID; // chaindId => payloadId
+    mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
+    mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -199,8 +199,8 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     // chainID => FORK
-    mapping(uint16 => uint256) public FORKS;
-    mapping(uint16 => string) public RPC_URLS;
+    mapping(uint16 chainId => uint256 fork) public FORKS;
+    mapping(uint16 chainId => string forkUrl) public RPC_URLS;
 
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
