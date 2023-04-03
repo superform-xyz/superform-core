@@ -74,8 +74,10 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev we should fork these instead of mocking
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
+    /// FIXME: temp hack to get loops working with superforms
+    string[] public UNDERLYING_ASSETS = ["DAI", "USDT", "WETH", "DAI", "USDT", "WETH"];
     /// @dev all these vault mocks are currently  using formId 1 (4626) UPDATE: Added form id 2 for timelock
-    uint256[] public FORM_BEACONIDS_FOR_VAULTS = [uint256(1), 1, 1, 2];
+    uint256[] public FORM_BEACONIDS_FOR_VAULTS = [uint256(1), 1, 1, 2, 2, 2];
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm
     uint256[] public FORM_BEACON_IDS = [uint256(1), uint256(2)];
     string[] public VAULT_NAMES;
@@ -318,6 +320,7 @@ abstract contract BaseSetup is DSTest, Test {
             }
 
             /// @dev 4 - Deploy UNDERLYING_TOKENS and VAULTS
+            /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
                     new MockERC20(
@@ -350,25 +353,24 @@ abstract contract BaseSetup is DSTest, Test {
                 );
 
                 /// FIXME: There will be a need for more forms to be deployed, this may become messy
-                /// @dev Add ERC4626Vault
                 // mapping(uint16 => mapping(bytes32 => address)) public contracts;
                 // mapping(uint16 => IERC4626[]) public vaults;
                 // mapping(uint16 => uint256[]) vaultIds;
-                
+
+                /// @dev Add ERC4626Vault
+                uint256 vaultId = j;
                 contracts[vars.chainId][
                     bytes32(bytes(string.concat(UNDERLYING_TOKENS[j], "Vault")))
                 ] = vars.vault;
-
                 vaults[vars.chainId].push(IERC4626(vars.vault));
-                vaultIds[vars.chainId].push(j + 1);
+                vaultIds[vars.chainId].push(vaultId++);
 
                 /// @dev Add ERC4626TimelockVault
                 contracts[vars.chainId][
                     bytes32(bytes(string.concat(UNDERLYING_TOKENS[j], "TimelockVault")))
                 ] = vars.timelockVault;
-
                 vaults[vars.chainId].push(IERC4626(vars.timelockVault));
-                vaultIds[vars.chainId].push(j + 2);
+                vaultIds[vars.chainId].push(vaultId++);
             }
 
             /// @dev 5 - Deploy SuperFormFactory
@@ -626,22 +628,28 @@ abstract contract BaseSetup is DSTest, Test {
             }
 
             /// @dev create superforms when the whole state registry is configured?
+            console.log("amount of vaults to deploy", vaults[vars.chainId].length);
             for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
+
                 /// @dev FIXME should be an offchain calculation
+                console.log("Deploying for chainId:", vars.chainId);
+                console.log("j loop no.", j);
+                console.log("FORM_BEACONIDS_FOR_VAULTS:", FORM_BEACONIDS_FOR_VAULTS[j]); /// !!! Here it falls out of bounds. loop len is 6, arr len is 4
 
                 (, vars.superForm) = ISuperFormFactory(vars.srcSuperFormFactory)
                     .createSuperForm{
                     value: _getPriceMultiplier(vars.chainId) * 10 ** 18
                 }(
                     FORM_BEACONIDS_FOR_VAULTS[j],
-                    address(vaults[vars.chainId][j])
+                    address(vaults[vars.chainId][j]) /// !!!
                 );
-
+                console.log("contract insert", j);
+                console.log(" ");
                 contracts[vars.chainId][
                     bytes32(
                         bytes(
                             string.concat(
-                                UNDERLYING_TOKENS[j],
+                                UNDERLYING_ASSETS[j], /// @dev FIXME: temp replacement to resolve looping logic better
                                 "SuperForm",
                                 Strings.toString(FORM_BEACONIDS_FOR_VAULTS[j])
                             )
