@@ -112,7 +112,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     function receivePayload(
         uint16 srcChainId_,
         bytes memory message_
-    ) external virtual override onlyRole(IMPLEMENTATION_CONTRACTS_ROLE) {
+    ) external virtual override {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
 
         if (data.params.length == 32) {
@@ -207,6 +207,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         bytes memory message_,
         bytes memory extraData_
     ) internal {
+        AMBMessage memory newData = AMBMessage(_packTxInfo(0, 0, false, 1), message_);
+
         IAmbImplementation ambImplementation = amb[ambId_];
 
         if (address(ambImplementation) == address(0)) {
@@ -214,7 +216,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         }
 
         ambImplementation.broadcastPayload{value: msg.value / 2}(
-            message_,
+            abi.encode(newData),
             extraData_
         );
     }

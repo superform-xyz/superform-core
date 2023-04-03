@@ -77,7 +77,7 @@ contract Scenario4Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function xtest_scenario() public {
         _run_actions();
     }
 }

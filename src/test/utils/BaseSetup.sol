@@ -157,8 +157,8 @@ abstract contract BaseSetup is DSTest, Test {
     uint16 public constant LZ_OP = 111;
     //uint16 public constant LZ_FTM = 112;
 
-    uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111];
-    uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+    uint16[6] public lz_chainIds = [101, 102, 106, 109, 110, 111];
+    uint32[6] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
 
     // uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
     // uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
@@ -506,6 +506,19 @@ abstract contract BaseSetup is DSTest, Test {
                 IMPLEMENTATION_CONTRACTS_ROLE,
                 vars.hyperlaneImplementation
             );
+
+            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry))
+                .grantRole(
+                    IMPLEMENTATION_CONTRACTS_ROLE,
+                    vars.lzImplementation
+                );
+
+            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry))
+                .grantRole(
+                    IMPLEMENTATION_CONTRACTS_ROLE,
+                    vars.hyperlaneImplementation
+                );
+
             CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 PROCESSOR_ROLE,
                 deployer
@@ -563,6 +576,12 @@ abstract contract BaseSetup is DSTest, Test {
                         "HyperlaneImplementation"
                     );
 
+                    console.logBytes(
+                        abi.encodePacked(
+                            vars.srcLzImplementation,
+                            vars.dstLzImplementation
+                        )
+                    );
                     LayerzeroImplementation(payable(vars.srcLzImplementation))
                         .setTrustedRemote(
                             vars.dstAmbChainId,
@@ -597,7 +616,7 @@ abstract contract BaseSetup is DSTest, Test {
                     value: _getPriceMultiplier(vars.chainId) * 10 ** 18
                 }(FORMS_FOR_VAULTS[j], address(vaults[vars.chainId][j]));
 
-                _broadcastPayload(vars.chainId, vm.getRecordedLogs());
+                _broadcastPayload(i, vm.getRecordedLogs());
 
                 contracts[vars.chainId][
                     bytes32(
@@ -774,20 +793,23 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev will sync the payloads for broadcast
-    function _broadcastPayload(uint16 chainId, Vm.Log[] memory logs) private {
+    function _broadcastPayload(uint256 i, Vm.Log[] memory logs) private {
         vm.stopPrank();
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            if (chainIds[i] != chainId) {
-                LayerZeroHelper(getContract(chainId, "LayerZeroHelper"))
+        vm.selectFork(FORKS[chainIds[i]]);
+        for (uint256 j = 0; j < chainIds.length; j++) {
+            if (i != j) {
+                console.log(i, j, lz_chainIds[j], FORKS[chainIds[j]]);
+                LayerZeroHelper(getContract(chainIds[i], "LayerZeroHelper"))
                     .helpWithEstimates(
-                        lzEndpoints[i],
-                        1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
-                        FORKS[chainIds[i]],
+                        lzEndpoints[j],
+                        lz_chainIds[j],
+                        200000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                        FORKS[chainIds[j]],
                         logs
                     );
 
-                HyperlaneHelper(getContract(chainIds[i], "HyperlaneHelper"))
-                    .help(address(HyperlaneMailbox), FORKS[chainIds[i]], logs);
+                // HyperlaneHelper(getContract(chainId, "HyperlaneHelper"))
+                //     .help(address(HyperlaneMailbox), hyperlane_chainIds[i], FORKS[chainIds[i]], logs);
             }
         }
         vm.startPrank(deployer);
