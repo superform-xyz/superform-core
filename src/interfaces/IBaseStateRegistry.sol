@@ -8,6 +8,10 @@ interface IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 Errors
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev is emitted when the chain id input is invalid.
+    error INVALID_INPUT_CHAIN_ID();
+
     error INVALID_BRIDGE_ID();
 
     error INVALID_BRIDGE_ADDRESS();
@@ -52,6 +56,9 @@ interface IBaseStateRegistry {
     /// @dev is emitted when a payload gets processed.
     event PayloadProcessed(uint256 payloadId);
 
+    /// @dev is emitted when the super registry is updated.
+    event SuperRegistryUpdated(address indexed superRegistry);
+
     /*///////////////////////////////////////////////////////////////
                             External Functions
     //////////////////////////////////////////////////////////////*/
@@ -72,6 +79,13 @@ interface IBaseStateRegistry {
         uint8 ambId_,
         uint8[] memory secAmbId_,
         uint16 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable;
+
+    function broadcastPayload(
+        uint8 ambId_,
+        uint8[] memory secAmbId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable;
@@ -97,4 +111,9 @@ interface IBaseStateRegistry {
         uint256 ambId_,
         bytes memory extraData_
     ) external payable;
+
+    /// set super registry
+    /// @dev allows an admin to set the super registry
+    /// @param superRegistry_ is the address of the super registry
+    function setSuperRegistry(address superRegistry_) external;
 }

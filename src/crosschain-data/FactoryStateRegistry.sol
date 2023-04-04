@@ -12,7 +12,7 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     address public factoryContract;
 
     /*///////////////////////////////////////////////////////////////
-                             CONSTRUCTOR
+                            CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
@@ -21,7 +21,6 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the factory contract
     /// @param factoryContract_ is the address of the factory
     function setFactoryContract(
@@ -39,5 +38,6 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         uint256 payloadId_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         /// TODO sync factory data from crosschain
+        
     }
 }

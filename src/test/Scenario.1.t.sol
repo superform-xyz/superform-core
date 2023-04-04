@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 // Contracts
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
@@ -30,6 +30,8 @@ contract Scenario1Test is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYING_VAULTS[POLY][0] = [1];
 
+        TARGET_FORM_KINDS[POLY][0] = [0];
+
         AMOUNTS[POLY][0] = [1000];
 
         MAX_SLIPPAGE[POLY][0] = [1000];
@@ -39,8 +41,7 @@ contract Scenario1Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
-                multiVaults: false, /// @dev - !!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,
                 revertError: "",

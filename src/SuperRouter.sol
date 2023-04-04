@@ -1,18 +1,20 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin-contracts/contracts/utils/Strings.sol";
+import "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
+import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @title Super Router
 /// @author Zeropoint Labs.
@@ -29,42 +31,26 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     string public symbol = "SP";
     string public dynamicURI = "https://api.superform.xyz/superposition/";
 
-    /// @notice state = information about destination chain & vault id.
-    /// @notice  stateRegistry accepts requests from whitelisted addresses.
-    /// @dev stateRegistry integrates with interblockchain messaging protocols.
-    IBaseStateRegistry public stateRegistry;
+    uint8 public constant STATE_REGISTRY_TYPE = 0;
 
     /// @notice chainId represents unique chain id for each chains.
     /// @dev maybe should be constant or immutable
-    uint16 public chainId;
+    uint16 public immutable chainId;
 
     uint80 public totalTransactions;
 
-    ISuperFormFactory public immutable superFormFactory;
+    ISuperRegistry public superRegistry;
 
     /// @notice history of state sent across chains are used for debugging.
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint80 => AMBMessage) public txHistory;
 
-    /// @notice bridge id is mapped to its execution address.
-    /// @dev maps all the bridges to their address.
-    mapping(uint8 => address) public bridgeAddress;
-
     /// @param chainId_              SuperForm chain id
     /// @param baseUri_              URL for external metadata of ERC1155 SuperPositions
-    /// @param stateRegistry_         State registry address deployed
-    /// @param superFormFactory_         SuperFormFactory address deployed
-    constructor(
-        uint16 chainId_,
-        string memory baseUri_,
-        IBaseStateRegistry stateRegistry_,
-        ISuperFormFactory superFormFactory_
-    ) ERC1155(baseUri_) {
+    constructor(uint16 chainId_, string memory baseUri_) ERC1155(baseUri_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
-        stateRegistry = stateRegistry_;
-        superFormFactory = superFormFactory_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -110,8 +96,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         /// @dev validate superFormsData
 
-        if (!_validateSuperFormsData(vars.dstChainId, req.superFormsData))
-            revert INVALID_SUPERFORMS_DATA();
+        if (
+            !_validateSuperFormsDepositData(vars.dstChainId, req.superFormsData)
+        ) revert INVALID_SUPERFORMS_DATA();
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -127,8 +114,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             req.superFormsData.superFormIds,
             req.superFormsData.amounts,
             req.superFormsData.maxSlippage,
-            req.superFormsData.extraFormData,
-            ""
+            new LiqRequest[](0),
+            req.superFormsData.extraFormData
         );
 
         /// @dev write amb message
@@ -136,7 +123,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             _packTxInfo(
                 uint120(TransactionType.DEPOSIT),
                 uint120(CallbackType.INIT),
-                true
+                true,
+                STATE_REGISTRY_TYPE
             ),
             abi.encode(ambData)
         );
@@ -158,7 +146,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                 vars.liqRequest = req.superFormsData.liqRequests[j];
                 /// @dev dispatch liquidity data
                 dispatchTokens(
-                    bridgeAddress[vars.liqRequest.bridgeId],
+                    superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
                     vars.liqRequest.txData,
                     vars.liqRequest.token,
                     vars.liqRequest.allowanceTarget, /// to be removed
@@ -168,8 +156,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                 );
             }
 
-            stateRegistry.dispatchPayload{value: req.msgValue}(
-                req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+            IBaseStateRegistry(superRegistry.coreStateRegistry())
+                .dispatchPayload{value: req.msgValue}(
+                req.primaryAmbId,
                 req.proofAmbId,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
@@ -237,13 +226,14 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
-
+        LiqRequest memory emptyRequest;
         /// @dev write amb message
         vars.ambMessage = AMBMessage(
             _packTxInfo(
                 uint120(TransactionType.DEPOSIT),
                 uint120(CallbackType.INIT),
-                false
+                false,
+                STATE_REGISTRY_TYPE
             ),
             abi.encode(
                 InitSingleVaultData(
@@ -255,8 +245,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                     req.superFormData.superFormId,
                     req.superFormData.amount,
                     req.superFormData.maxSlippage,
-                    req.superFormData.extraFormData,
-                    ""
+                    emptyRequest,
+                    req.superFormData.extraFormData
                 )
             )
         );
@@ -264,7 +254,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         vars.liqRequest = req.superFormData.liqRequest;
         /// @dev dispatch liquidity data
         dispatchTokens(
-            bridgeAddress[vars.liqRequest.bridgeId],
+            superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
             vars.liqRequest.txData,
             vars.liqRequest.token,
             vars.liqRequest.allowanceTarget, /// to be removed
@@ -273,8 +263,10 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             vars.liqRequest.nativeAmount
         );
 
-        stateRegistry.dispatchPayload{value: req.msgValue}(
-            req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
+            value: req.msgValue
+        }(
+            req.primaryAmbId,
             req.proofAmbId,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
@@ -305,6 +297,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
+        LiqRequest memory emptyRequest;
 
         ambData = InitSingleVaultData(
             _packTxData(
@@ -315,8 +308,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             req.superFormData.superFormId,
             req.superFormData.amount,
             req.superFormData.maxSlippage,
-            req.superFormData.extraFormData,
-            ""
+            emptyRequest,
+            req.superFormData.extraFormData
         );
 
         /// @dev same chain action
@@ -365,8 +358,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         /// @dev validate superFormsData
 
-        if (!_validateSuperFormsData(vars.dstChainId, req.superFormsData))
-            revert INVALID_SUPERFORMS_DATA();
+        if (
+            !_validateSuperFormsWithdrawData(
+                vars.dstChainId,
+                req.superFormsData
+            )
+        ) revert INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
         _burnBatch(
@@ -389,8 +386,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             req.superFormsData.superFormIds,
             req.superFormsData.amounts,
             req.superFormsData.maxSlippage,
-            req.superFormsData.extraFormData,
-            abi.encode(req.superFormsData.liqRequests)
+            req.superFormsData.liqRequests,
+            req.superFormsData.extraFormData
         );
 
         /// @dev write amb message
@@ -398,7 +395,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             _packTxInfo(
                 uint120(TransactionType.WITHDRAW),
                 uint120(CallbackType.INIT),
-                true
+                true,
+                STATE_REGISTRY_TYPE
             ),
             abi.encode(ambData)
         );
@@ -416,8 +414,9 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
             /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
             /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
-            stateRegistry.dispatchPayload{value: req.msgValue}(
-                req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+            IBaseStateRegistry(superRegistry.coreStateRegistry())
+                .dispatchPayload{value: req.msgValue}(
+                req.primaryAmbId,
                 req.proofAmbId,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
@@ -498,7 +497,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             _packTxInfo(
                 uint120(TransactionType.WITHDRAW),
                 uint120(CallbackType.INIT),
-                false
+                false,
+                STATE_REGISTRY_TYPE
             ),
             abi.encode(
                 InitSingleVaultData(
@@ -510,14 +510,16 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
                     req.superFormData.superFormId,
                     req.superFormData.amount,
                     req.superFormData.maxSlippage,
-                    req.superFormData.extraFormData,
-                    abi.encode(req.superFormData.liqRequest)
+                    req.superFormData.liqRequest,
+                    req.superFormData.extraFormData
                 )
             )
         );
 
-        stateRegistry.dispatchPayload{value: req.msgValue}(
-            req.primaryAmbId, ///  @dev <- misses a second argument to send secondary amb ids - WIP sujith
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
+            value: req.msgValue
+        }(
+            req.primaryAmbId,
             req.proofAmbId,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
@@ -567,8 +569,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             req.superFormData.superFormId,
             req.superFormData.amount,
             req.superFormData.maxSlippage,
-            req.superFormData.extraFormData,
-            abi.encode(req.superFormData.liqRequest)
+            req.superFormData.liqRequest,
+            req.superFormData.extraFormData
         );
 
         /// @dev same chain action
@@ -583,26 +585,27 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     }
 
     function _directDeposit(
-        uint256 formId_,
+        address superForm,
         uint256 txData_,
         uint256 superFormId_,
         uint256 amount_,
         uint256 maxSlippage_,
+        LiqRequest memory liqData_,
         bytes memory extraFormData_,
-        bytes memory liqData_,
         uint256 msgValue_
     ) internal returns (uint256 dstAmount) {
         /// @dev deposits collateral to a given vault and mint vault positions.
         /// @dev FIXME: in multi deposits we split the msg.value, but this only works if we validate that the user is only depositing from one source asset (native in this case)
-        dstAmount = IBaseForm(superFormFactory.getForm(formId_))
-            .directDepositIntoVault{value: msgValue_}(
+        dstAmount = IBaseForm(superForm).directDepositIntoVault{
+            value: msgValue_
+        }(
             InitSingleVaultData(
                 txData_,
                 superFormId_,
                 amount_,
                 maxSlippage_,
-                extraFormData_,
-                liqData_
+                liqData_,
+                extraFormData_
             )
         );
     }
@@ -616,20 +619,20 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         LiqRequest memory liqRequest_,
         InitSingleVaultData memory ambData_
     ) internal {
-        uint256 formId;
+        address superForm;
         uint256 dstAmount;
         /// @dev decode superforms
-        (, formId, ) = _getSuperForm(ambData_.superFormId);
+        (superForm, , ) = _getSuperForm(ambData_.superFormId);
 
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = _directDeposit(
-            formId,
+            superForm,
             ambData_.txData,
             ambData_.superFormId,
             ambData_.amount,
             ambData_.maxSlippage,
+            liqRequest_,
             ambData_.extraFormData,
-            abi.encode(liqRequest_),
             msg.value
         );
 
@@ -648,22 +651,22 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     ) internal {
         uint256 len = ambData_.superFormIds.length;
 
-        uint256[] memory formIds = new uint256[](len);
+        address[] memory superForms = new address[](len);
 
         uint256[] memory dstAmounts = new uint256[](len);
         /// @dev decode superforms
-        (, formIds, ) = _getSuperForms(ambData_.superFormIds);
+        (superForms, , ) = _getSuperForms(ambData_.superFormIds);
 
         for (uint256 i = 0; i < len; i++) {
             /// @dev deposits collateral to a given vault and mint vault positions.
             dstAmounts[i] = _directDeposit(
-                formIds[i],
+                superForms[i],
                 ambData_.txData,
                 ambData_.superFormIds[i],
                 ambData_.amounts[i],
                 ambData_.maxSlippage[i],
+                liqRequests_[i],
                 ambData_.extraFormData,
-                abi.encode(liqRequests_[i]),
                 msg.value / len /// @dev FIXME: is this acceptable ? Note that the user fully controls the msg.value being sent
             );
         }
@@ -673,23 +676,23 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     }
 
     function _directWithdraw(
-        uint256 formId_,
+        address superForm,
         uint256 txData_,
         uint256 superFormId_,
         uint256 amount_,
         uint256 maxSlippage_,
-        bytes memory extraFormData_,
-        bytes memory liqData_
+        LiqRequest memory liqData_,
+        bytes memory extraFormData_
     ) internal {
         /// @dev to allow bridging somewhere else requires arch change
-        IBaseForm(superFormFactory.getForm(formId_)).directWithdrawFromVault(
+        IBaseForm(superForm).directWithdrawFromVault(
             InitSingleVaultData(
                 txData_,
                 superFormId_,
                 amount_,
                 maxSlippage_,
-                extraFormData_,
-                liqData_
+                liqData_,
+                extraFormData_
             )
         );
     }
@@ -704,16 +707,16 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         InitSingleVaultData memory ambData_
     ) internal {
         /// @dev decode superforms
-        (, uint256 formId, ) = _getSuperForm(ambData_.superFormId);
+        (address superForm, , ) = _getSuperForm(ambData_.superFormId);
 
         _directWithdraw(
-            formId,
+            superForm,
             ambData_.txData,
             ambData_.superFormId,
             ambData_.amount,
             ambData_.maxSlippage,
-            ambData_.extraFormData,
-            abi.encode(liqRequest_)
+            liqRequest_,
+            ambData_.extraFormData
         );
     }
 
@@ -727,46 +730,33 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         InitMultiVaultData memory ambData_
     ) internal {
         /// @dev decode superforms
-        (, uint256[] memory formIds, ) = _getSuperForms(ambData_.superFormIds);
+        (address[] memory superForms, , ) = _getSuperForms(
+            ambData_.superFormIds
+        );
 
-        for (uint256 i = 0; i < formIds.length; i++) {
+        for (uint256 i = 0; i < superForms.length; i++) {
             /// @dev deposits collateral to a given vault and mint vault positions.
             _directWithdraw(
-                formIds[i],
+                superForms[i],
                 ambData_.txData,
                 ambData_.superFormIds[i],
                 ambData_.amounts[i],
                 ambData_.maxSlippage[i],
-                ambData_.extraFormData,
-                abi.encode(liqRequests_[i])
+                liqRequests_[i],
+                ambData_.extraFormData
             );
-        }
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev allows admin to set the bridge address for an bridge id.
-    /// @param bridgeId_         represents the bridge unqiue identifier.
-    /// @param bridgeAddress_    represents the bridge address.
-    function setBridgeAddress(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
-    ) external override onlyOwner {
-        for (uint256 i = 0; i < bridgeId_.length; i++) {
-            address x = bridgeAddress_[i];
-            uint8 y = bridgeId_[i];
-            if (x == address(0)) revert ZERO_BRIDGE_ADDRESS();
-
-            bridgeAddress[y] = x;
-            emit SetBridgeAddress(y, x);
         }
     }
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
     function stateMultiSync(AMBMessage memory data_) external payable override {
-        if (msg.sender != address(stateRegistry)) revert REQUEST_DENIED();
+        if (msg.sender != superRegistry.coreStateRegistry())
+            revert REQUEST_DENIED();
 
-        (uint256 txType, uint256 callbackType, ) = _decodeTxInfo(data_.txInfo);
+        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
+            data_.txInfo
+        );
 
         if (callbackType != uint256(CallbackType.RETURN))
             revert INVALID_PAYLOAD();
@@ -781,7 +771,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         );
         AMBMessage memory stored = txHistory[returnTxId];
 
-        (, , bool multi) = _decodeTxInfo(stored.txInfo);
+        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (!multi) revert INVALID_PAYLOAD();
 
@@ -831,9 +821,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
     function stateSync(AMBMessage memory data_) external payable override {
-        if (msg.sender != address(stateRegistry)) revert REQUEST_DENIED();
+        if (msg.sender != superRegistry.coreStateRegistry())
+            revert REQUEST_DENIED();
 
-        (uint256 txType, uint256 callbackType, ) = _decodeTxInfo(data_.txInfo);
+        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
+            data_.txInfo
+        );
 
         if (callbackType != uint256(CallbackType.RETURN))
             revert INVALID_PAYLOAD();
@@ -847,7 +840,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             returnData.returnTxInfo
         );
         AMBMessage memory stored = txHistory[returnTxId];
-        (, , bool multi) = _decodeTxInfo(stored.txInfo);
+        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (multi) revert INVALID_PAYLOAD();
 
@@ -893,6 +886,23 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
 
         emit Completed(returnDataTxId);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            ADMIN FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev PREVILEGED admin ONLY FUNCTION.
+    /// @param superRegistry_    represents the address of the superRegistry
+    function setSuperRegistry(
+        address superRegistry_
+    ) external override onlyOwner {
+        if (address(superRegistry_) == address(0)) {
+            revert ZERO_ADDRESS();
+        }
+        superRegistry = ISuperRegistry(superRegistry_);
+
+        emit SuperRegistryUpdated(superRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -1001,13 +1011,79 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         return true;
     }
 
-    function _validateSuperFormsData(
+    function _validateSuperFormsDepositData(
         uint16 dstChainId_,
         MultiVaultsSFData memory superFormsData_
-    ) internal pure returns (bool) {
+    ) internal view returns (bool) {
         uint256 len = superFormsData_.amounts.length;
         uint256 liqRequestsLen = superFormsData_.liqRequests.length;
+
+        if (len == 0 || liqRequestsLen == 0) return false;
+
         uint256 sumAmounts;
+        /// @dev size validation
+        if (
+            !(superFormsData_.superFormIds.length ==
+                superFormsData_.amounts.length &&
+                superFormsData_.superFormIds.length ==
+                superFormsData_.maxSlippage.length)
+        ) {
+            return false;
+        }
+        (address firstSuperForm, , ) = _getSuperForm(
+            superFormsData_.superFormIds[0]
+        );
+        address collateral = address(
+            IBaseForm(firstSuperForm).getUnderlyingOfVault()
+        );
+
+        if (collateral == address(0)) return false;
+
+        for (uint256 i = 0; i < len; i++) {
+            if (superFormsData_.maxSlippage[i] > 10000) return false;
+            sumAmounts += superFormsData_.amounts[i];
+
+            /// @dev compare underlyings with the first superForm. If there is at least one different mark collateral as 0
+            if (collateral != address(0) && i + 1 < len) {
+                (address superForm, , ) = _getSuperForm(
+                    superFormsData_.superFormIds[i + 1]
+                );
+                if (
+                    collateral !=
+                    address(IBaseForm(superForm).getUnderlyingOfVault())
+                ) collateral = address(0);
+            }
+        }
+
+        /// @dev TODO validate TxData to avoid exploits
+
+        /// @dev In multiVaults, if there is only one liqRequest, then the sum of the amounts must be equal to the amount in the liqRequest and all underlyings must be equal
+        if (
+            liqRequestsLen == 1 &&
+            (liqRequestsLen != len) &&
+            (superFormsData_.liqRequests[0].amount == sumAmounts) &&
+            collateral == address(0)
+        ) {
+            return false;
+            /// @dev else if number of liq request >1, length must be equal to the number of superForms sent in this request
+        } else if (liqRequestsLen > 1) {
+            if (liqRequestsLen != len) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function _validateSuperFormsWithdrawData(
+        uint16 dstChainId_,
+        MultiVaultsSFData memory superFormsData_
+    ) internal view returns (bool) {
+        uint256 len = superFormsData_.amounts.length;
+        uint256 liqRequestsLen = superFormsData_.liqRequests.length;
+
+        if (len == 0 || liqRequestsLen == 0) return false;
+
         /// @dev size validation
         if (
             !(superFormsData_.superFormIds.length ==
@@ -1020,25 +1096,13 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
 
         for (uint256 i = 0; i < len; i++) {
             if (superFormsData_.maxSlippage[i] > 10000) return false;
-
-            sumAmounts += superFormsData_.amounts[i];
-
-            /// @dev TODO validate token correspond to superForms' underlying?
-            /// @dev TODO validate TxData to avoid exploits
         }
 
-        /// @dev In multiVaults, if there is only one liqRequest, then the sum of the amounts must be equal to the amount in the liqRequest
-        if (
-            liqRequestsLen == 1 &&
-            (liqRequestsLen != len) &&
-            superFormsData_.liqRequests[0].amount != sumAmounts
-        ) {
+        /// @dev TODO validate TxData to avoid exploits
+
+        /// @dev In multiVault withdraws, the number of liq requests must be equal to number of target vaults
+        if (liqRequestsLen != len) {
             return false;
-            /// @dev else if number of liq request >1, length must be equal to the number of superForms sent in this request
-        } else if (liqRequestsLen > 1) {
-            if (liqRequestsLen != len) {
-                return false;
-            }
         }
 
         return true;

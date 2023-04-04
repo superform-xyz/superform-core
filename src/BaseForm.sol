@@ -1,20 +1,20 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Initializable} from "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {ERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {InitSingleVaultData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
-import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
+import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
 /// @notice WIP: deposit and withdraw functions' arguments should be made uniform across direct and xchain
-abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
+abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -33,28 +33,38 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
 
     /// @notice state variable are all declared public to avoid creating functions to expose.
 
-    /// @dev The superFormFactory address is used to create new SuperForms
-    ISuperFormFactory public immutable superFormFactory;
+    /// @dev The superRegistry address is used to access relevant protocol addresses
+    ISuperRegistry public superRegistry;
+
+    /// @dev the vault this form pertains to
+    address public vault;
 
     /// @dev chainId represents the superform chain id of the specific chain.
     uint16 public chainId;
-
-    /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
-    mapping(uint8 => address) public bridgeAddress;
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @param chainId_              Layerzero chain id
-    /// @param superFormFactory_         ISuperFormFactory address deployed
+    /// @param superRegistry_        ISuperRegistry address deployed
+    /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
     /// @dev FIXME: missing means for admin to change implementations
-    constructor(uint16 chainId_, ISuperFormFactory superFormFactory_) {
+    function initialize(
+        uint16 chainId_,
+        address superRegistry_,
+        address vault_
+    ) external initializer {
+        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+
         chainId = chainId_;
-        superFormFactory = superFormFactory_;
-        /// TODO: add tokenBank also for superRouter role for deposit and withdraw
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        superRegistry = ISuperRegistry(superRegistry_);
+        vault = vault_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -68,30 +78,12 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         public
         view
         virtual
-        override(AccessControl, ERC165, IERC165)
+        override(ERC165Upgradeable, IERC165Upgradeable)
         returns (bool)
     {
         return
             interfaceId == type(IBaseForm).interfaceId ||
             super.supportsInterface(interfaceId);
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev allows admin to set the bridge address for an bridge id.
-    /// @param bridgeId_         represents the bridge unqiue identifier.
-    /// @param bridgeAddress_    represents the bridge address.
-    function setBridgeAddress(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i = 0; i < bridgeId_.length; i++) {
-            address x = bridgeAddress_[i];
-            uint8 y = bridgeId_[i];
-            if (x == address(0)) revert ZERO_BRIDGE_ADDRESS();
-
-            bridgeAddress[y] = x;
-            emit SetBridgeAddress(y, x);
-        }
     }
 
     /// @dev PREVILEGED router ONLY FUNCTION.
@@ -102,13 +94,9 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev NOTE: Should this function return?
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
-    )
-        external
-        payable
-        override
-        onlyRole(SUPER_ROUTER_ROLE)
-        returns (uint256 dstAmount)
-    {
+    ) external payable override returns (uint256 dstAmount) {
+        if (msg.sender != superRegistry.superRouter())
+            revert NOT_SUPER_ROUTER();
         dstAmount = _directDepositIntoVault(singleVaultData_);
     }
 
@@ -120,13 +108,8 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @dev NOTE: Should this function return?
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
-    )
-        external
-        virtual
-        override
-        onlyRole(TOKEN_BANK_ROLE)
-        returns (uint256 dstAmount)
-    {
+    ) external virtual override returns (uint256 dstAmount) {
+        if (msg.sender != superRegistry.tokenBank()) revert NOT_TOKEN_BANK();
         dstAmount = _xChainDepositIntoVault(singleVaultData_);
     }
 
@@ -137,12 +120,9 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @return dstAmount  The amount of tokens withdrawn in same chain action
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    )
-        external
-        override
-        onlyRole(SUPER_ROUTER_ROLE)
-        returns (uint256 dstAmount)
-    {
+    ) external override returns (uint256 dstAmount) {
+        if (msg.sender != superRegistry.superRouter())
+            revert NOT_SUPER_ROUTER();
         dstAmount = _directWithdrawFromVault(singleVaultData_);
     }
 
@@ -152,12 +132,9 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     /// @return dstAmounts  The amount of tokens withdrawn in same chain action
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    )
-        external
-        override
-        onlyRole(TOKEN_BANK_ROLE)
-        returns (uint256[] memory dstAmounts)
-    {
+    ) external override returns (uint256[] memory dstAmounts) {
+        if (msg.sender != superRegistry.tokenBank()) revert NOT_TOKEN_BANK();
+
         /// @dev FIXME: not returning anything YET
         _xChainWithdrawFromVault(singleVaultData_);
     }
@@ -179,76 +156,67 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
     function vaultSharesIsERC721() public pure virtual returns (bool);
 
     /// @notice get Superform name of the ERC20 vault representation
-    /// @param vault_ Address of ERC20 vault representation
     /// @return The ERC20 name
-    function superformYieldTokenName(
-        address vault_
-    ) external view virtual returns (string memory);
+    function superformYieldTokenName()
+        external
+        view
+        virtual
+        returns (string memory);
 
     /// @notice get Superform symbol of the ERC20 vault representation
-    /// @param vault_ Address of ERC20 vault representation
     /// @return The ERC20 symbol
-    function superformYieldTokenSymbol(
-        address vault_
-    ) external view virtual returns (string memory);
+    function superformYieldTokenSymbol()
+        external
+        view
+        virtual
+        returns (string memory);
 
     /// @notice get Supershare decimals of the ERC20 vault representation
-    /// @param vault_ Address of ERC20 vault representation
-    function superformYieldTokenDecimals(
-        address vault_
-    ) external view virtual returns (uint256);
+    function superformYieldTokenDecimals()
+        external
+        view
+        virtual
+        returns (uint256);
 
     /// @notice Returns the underlying token of a vault.
-    /// @param vault_ The vault to query
     /// @return The underlying token
-    function getUnderlyingOfVault(
-        address vault_
-    ) public view virtual returns (ERC20);
+    function getUnderlyingOfVault() public view virtual returns (ERC20);
 
     /// @notice Returns the amount of underlying tokens each share of a vault is worth.
-    /// @param vault_ The vault to query
     /// @return The pricePerVaultShare value
-    function getPricePerVaultShare(
-        address vault_
-    ) public view virtual returns (uint256);
+    function getPricePerVaultShare() public view virtual returns (uint256);
 
     /// @notice Returns the amount of vault shares owned by the form.
-    /// @param vault_ The vault to query
     /// @return The form's vault share balance
-    function getVaultShareBalance(
-        address vault_
-    ) public view virtual returns (uint256);
+    function getVaultShareBalance() public view virtual returns (uint256);
 
     /// @notice get the total amount of underlying managed in the ERC4626 vault
     /// NOTE: does not exist in timeless implementation
-    /// @param vault_ The vault to query
-    function getTotalAssets(
-        address vault_
-    ) public view virtual returns (uint256);
+    function getTotalAssets() public view virtual returns (uint256);
 
     /// @notice get the total amount of assets received if shares are converted
-    /// @param vault_ The vault to query
-    function getConvertPricePerVaultShare(
-        address vault_
-    ) public view virtual returns (uint256);
+    function getConvertPricePerVaultShare()
+        public
+        view
+        virtual
+        returns (uint256);
 
     /// @notice get the total amount of assets received if shares are actually redeemed
     /// @notice https://eips.ethereum.org/EIPS/eip-4626
-    /// @param vault_ The vault to query
-    function getPreviewPricePerVaultShare(
-        address vault_
-    ) public view virtual returns (uint256);
+    function getPreviewPricePerVaultShare()
+        public
+        view
+        virtual
+        returns (uint256);
 
     /// @dev API may need to know state of funds deployed
     function previewDepositTo(
-        address vault_,
         uint256 assets_
     ) public view virtual returns (uint256);
 
     /// @notice positionBalance() -> .vaultIds&destAmounts
     /// @return how much of an asset + interest (accrued) is to withdraw from the Vault
     function previewWithdrawFrom(
-        address vault_,
         uint256 assets_
     ) public view virtual returns (uint256);
 
@@ -282,21 +250,18 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
 
     /// @dev Converts a vault share amount into an equivalent underlying asset amount
     function _vaultSharesAmountToUnderlyingAmount(
-        address vault_,
         uint256 vaultSharesAmount_,
         uint256 pricePerVaultShare_
     ) internal view virtual returns (uint256);
 
     /// @dev Converts a vault share amount into an equivalent underlying asset amount, rounding up
     function _vaultSharesAmountToUnderlyingAmountRoundingUp(
-        address vault_,
         uint256 vaultSharesAmount_,
         uint256 pricePerVaultShare_
     ) internal view virtual returns (uint256);
 
     /// @dev Converts an underlying asset amount into an equivalent vault shares amount
     function _underlyingAmountToVaultSharesAmount(
-        address vault_,
         uint256 underlyingAmount_,
         uint256 pricePerVaultShare_
     ) internal view virtual returns (uint256);
@@ -305,13 +270,13 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
                             DEV FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev FIXME this needs logic in superformfactory to withdraw stuck tokens (or another way)
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function withdrawToken(
-        address tokenContract_,
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawToken(address tokenContract_, uint256 amount) external {
+        if (msg.sender != superRegistry.superFormFactory())
+            revert NOT_SUPER_FORM_FACTORY();
         ERC20 tokenContract = ERC20(tokenContract_);
 
         /// note: transfer the token from address of this contract
@@ -319,11 +284,12 @@ abstract contract BaseForm is ERC165, IBaseForm, AccessControl {
         tokenContract.transfer(msg.sender, amount);
     }
 
+    /// @dev FIXME this needs logic in superformfactory to withdraw stuck tokens (or another way)
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function withdrawNativeToken(
-        uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawNativeToken(uint256 amount) external {
+        if (msg.sender != superRegistry.superFormFactory())
+            revert NOT_SUPER_FORM_FACTORY();
         payable(msg.sender).transfer(amount);
     }
 }

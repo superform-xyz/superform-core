@@ -41,6 +41,7 @@ struct NewActionLocalVars {
     UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
     UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;
+    address superFormT;
     address[] vaultMock;
     address lzEndpoint_0;
     address[] lzEndpoints_1;
@@ -68,7 +69,6 @@ struct AssertVars {
 
 struct TestAction {
     Actions action;
-    LiquidityChange actionKind;
     bool multiVaults;
     address user;
     TestType testType;
@@ -101,6 +101,8 @@ struct SetupVars {
     uint16 dstAmbChainId;
     uint32 dstHypChainId;
     uint256 fork;
+    address tokenBank;
+    address superForm;
     address factory;
     address lzEndpoint;
     address lzHelper;
@@ -109,21 +111,30 @@ struct SetupVars {
     address hyperlaneImplementation;
     address socketRouter;
     address erc4626Form;
-    address stateRegistry;
+    /// @dev erc4626TimelockForm - var needed, BaseSetup._deployProtocol() parent contract forces it
+    address erc4626TimelockForm;
+    address factoryStateRegistry;
+    address coreStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
+    /// @dev timelockVault - var needed, BaseSetup._deployProtocol() parent contract forces it
+    address timelockVault;
     address srcTokenBank;
     address srcSuperRouter;
     address srcCoreStateRegistry;
+    address srcFactoryStateRegistry;
     address srcSuperFormFactory;
     address dstSuperFormFactory;
     address srcErc4626Form;
+    /// @dev srcErc4626TimelockForm - var needed, BaseSetup._deployProtocol() parent contract forces it
+    address srcErc4626TimelockForm;
     address srcLzImplementation;
     address dstLzImplementation;
     address srcHyperlaneImplementation;
     address dstHyperlaneImplementation;
     address dstStateRegistry;
     address srcMultiTxProcessor;
+    address superRegistry;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -142,13 +153,14 @@ struct SingleVaultCallDataArgs {
     uint16 srcChainId;
     uint16 toChainId;
     bool multiTx;
-    LiquidityChange actionKind;
+    uint256 totalAmount;
+    address sameUnderlyingCheck;
 }
 
 struct MultiVaultCallDataArgs {
     address user;
     address fromSrc;
-    address toDst;
+    address[] toDst;
     address[] underlyingTokens;
     uint256[] superFormIds;
     uint256[] amounts;
@@ -157,7 +169,6 @@ struct MultiVaultCallDataArgs {
     uint16 srcChainId;
     uint16 toChainId;
     bool multiTx;
-    LiquidityChange actionKind;
     Actions action;
 }
 
@@ -221,3 +232,5 @@ error MISMATCH_TEST_TYPE();
 error MISMATCH_RBAC_TEST();
 error WRONG_UNDERLYING_ID();
 error INVALID_AMOUNTS_LENGTH();
+error INVALID_TARGETS();
+error WRONG_FORMBEACON_ID();

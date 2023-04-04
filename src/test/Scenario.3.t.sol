@@ -29,7 +29,10 @@ contract Scenario3Test is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYING_VAULTS[ARBI][0] = [1, 2];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0];
+
         TARGET_UNDERLYING_VAULTS[ETH][0] = [0];
+        TARGET_FORM_KINDS[ETH][0] = [0, 0];
 
         AMOUNTS[ARBI][0] = [1000, 500];
         AMOUNTS[ETH][0] = [100];
@@ -43,8 +46,7 @@ contract Scenario3Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
-                multiVaults: true, /// @dev - !!WARNING turn on or off multi vaults
+                multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,
                 revertError: "",
@@ -61,7 +63,7 @@ contract Scenario3Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev DISABLED
+    /// @dev FIXME: MULTI VAULTS TESTS WON'T WORK WITH CURRENT LAYERZERO HELPER!!
     function xtest_scenario() public {
         _run_actions();
     }

@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-
-import {ITokenBank} from "../interfaces/ITokenBank.sol";
-
 import {BaseStateRegistry} from "./BaseStateRegistry.sol";
+import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
@@ -13,16 +11,11 @@ import "../utils/DataPacking.sol";
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging ambs.
 contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
-    uint256 public constant REQUIRED_QUORUM = 1;
-
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    ISuperRouter public routerContract;
-
-    /// NOTE: Shouldnt we use multiple tokenBanks to benefit from using them?
-    ITokenBank public tokenBankContract;
+    uint256 public constant REQUIRED_QUORUM = 1;
 
     /*///////////////////////////////////////////////////////////////
                              CONSTRUCTOR
@@ -38,15 +31,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the core contracts
     /// @param routerContract_ is the address of the router
     /// @param tokenBankContract_ is the address of the token bank
-    function setCoreContracts(
-        address routerContract_,
-        address tokenBankContract_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        routerContract = ISuperRouter(routerContract_);
-        tokenBankContract = ITokenBank(tokenBankContract_);
-
-        emit CoreContractsUpdated(routerContract_, tokenBankContract_);
-    }
 
     /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
@@ -64,7 +48,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payload[payloadId_],
             (AMBMessage)
         );
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -137,7 +121,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payload[payloadId_],
             (AMBMessage)
         );
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -208,7 +192,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         AMBMessage memory payloadInfo = abi.decode(_payload, (AMBMessage));
 
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -219,8 +203,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 _processMultiDeposit(payloadId_, callbackType, payloadInfo);
             }
         } else {
-            if (callbackType == 0) {}
-
             if (txType == uint256(TransactionType.WITHDRAW)) {
                 _processSingleWithdrawal(payloadId_, callbackType, payloadInfo);
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
@@ -254,7 +236,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             (AMBMessage)
         );
 
-        (uint256 txType, uint256 callbackType, bool multi) = _decodeTxInfo(
+        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
@@ -296,11 +278,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 payloadInfo_.params,
                 (InitMultiVaultData)
             );
-            tokenBankContract.withdrawMultiSync{value: msg.value}(
-                multiVaultData
-            );
+            ITokenBank(superRegistry.tokenBank()).withdrawMultiSync{
+                value: msg.value
+            }(multiVaultData);
         } else {
-            routerContract.stateMultiSync{value: msg.value}(payloadInfo_);
+            ISuperRouter(superRegistry.superRouter()).stateMultiSync{
+                value: msg.value
+            }(payloadInfo_);
         }
     }
 
@@ -320,16 +304,18 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 (InitMultiVaultData)
             );
 
-            tokenBankContract.depositMultiSync{value: msg.value}(
-                multiVaultData
-            );
+            ITokenBank(superRegistry.tokenBank()).depositMultiSync{
+                value: msg.value
+            }(multiVaultData);
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
                 revert INVALID_PAYLOAD_STATE();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            routerContract.stateMultiSync{value: msg.value}(payloadInfo_);
+            ISuperRouter(superRegistry.superRouter()).stateMultiSync{
+                value: msg.value
+            }(payloadInfo_);
         }
     }
 
@@ -345,9 +331,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 payloadInfo_.params,
                 (InitSingleVaultData)
             );
-            tokenBankContract.withdrawSync{value: msg.value}(singleVaultData);
+            ITokenBank(superRegistry.tokenBank()).withdrawSync{
+                value: msg.value
+            }(singleVaultData);
         } else {
-            routerContract.stateSync{value: msg.value}(payloadInfo_);
+            ISuperRouter(superRegistry.superRouter()).stateSync{
+                value: msg.value
+            }(payloadInfo_);
         }
     }
 
@@ -366,14 +356,18 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            tokenBankContract.depositSync{value: msg.value}(singleVaultData);
+            ITokenBank(superRegistry.tokenBank()).depositSync{value: msg.value}(
+                singleVaultData
+            );
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
                 revert INVALID_PAYLOAD_STATE();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            routerContract.stateSync{value: msg.value}(payloadInfo_);
+            ISuperRouter(superRegistry.superRouter()).stateSync{
+                value: msg.value
+            }(payloadInfo_);
         }
     }
 }

@@ -87,8 +87,8 @@ struct InitMultiVaultData {
     uint256[] superFormIds;
     uint256[] amounts;
     uint256[] maxSlippage;
+    LiqRequest[] liqData;
     bytes extraFormData;
-    bytes liqData;
 }
 
 struct InitSingleVaultData {
@@ -96,13 +96,18 @@ struct InitSingleVaultData {
     uint256 superFormId;
     uint256 amount;
     uint256 maxSlippage;
+    LiqRequest liqData;
     bytes extraFormData;
-    bytes liqData;
 }
 
 struct AMBMessage {
-    uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag and if multi/single vault
+    uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag and if multi/single vault, uint8 = 1, 2, 3
     bytes params; // abi.encode (AMBInitData)
+}
+
+struct AMBFactoryMessage {
+    uint256 superFormId;
+    address vaultAddress;
 }
 
 struct ReturnMultiData {

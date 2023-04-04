@@ -29,7 +29,10 @@ contract Scenario5Test is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYING_VAULTS[ETH][0] = [2];
+        TARGET_FORM_KINDS[ETH][0] = [0];
+
         TARGET_UNDERLYING_VAULTS[ETH][1] = [2];
+        TARGET_FORM_KINDS[ETH][1] = [0];
 
         AMOUNTS[ETH][0] = [1000];
         AMOUNTS[ETH][1] = [1000];
@@ -44,8 +47,7 @@ contract Scenario5Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
-                multiVaults: false, /// @dev - !!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,
                 revertError: "",
@@ -59,8 +61,7 @@ contract Scenario5Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
-                multiVaults: false, /// @dev - !!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,
                 revertError: "",

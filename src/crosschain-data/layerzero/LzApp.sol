@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin-contracts/contracts/access/Ownable.sol";
 import "./interface/ILayerZeroReceiver.sol";
 import "./interface/ILayerZeroUserApplicationConfig.sol";
 import "./interface/ILayerZeroEndpoint.sol";
@@ -60,7 +60,8 @@ abstract contract LzApp is
         bytes memory _payload,
         address payable _refundAddress,
         address _zroPaymentAddress,
-        bytes memory _adapterParams
+        bytes memory _adapterParams,
+        uint256 _msgValue
     ) internal virtual {
         bytes memory trustedRemote = trustedRemoteLookup[_dstChainId];
         require(
@@ -68,7 +69,7 @@ abstract contract LzApp is
             "LzApp: destination chain is not a trusted source"
         );
 
-        lzEndpoint.send{value: msg.value}(
+        lzEndpoint.send{value: _msgValue}(
             _dstChainId,
             trustedRemote,
             _payload,
@@ -112,30 +113,28 @@ abstract contract LzApp is
         lzEndpoint.setReceiveVersion(_version);
     }
 
-    function forceResumeReceive(uint16 _srcChainId, bytes calldata _srcAddress)
-        external
-        override
-        onlyOwner
-    {
+    function forceResumeReceive(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) external override onlyOwner {
         lzEndpoint.forceResumeReceive(_srcChainId, _srcAddress);
     }
 
     // allow owner to set it multiple times.
-    function setTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress)
-        external
-        onlyOwner
-    {
+    function setTrustedRemote(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) external onlyOwner {
         trustedRemoteLookup[_srcChainId] = _srcAddress;
         emit SetTrustedRemote(_srcChainId, _srcAddress);
     }
 
     //--------------------------- VIEW FUNCTION ----------------------------------------
 
-    function isTrustedRemote(uint16 _srcChainId, bytes calldata _srcAddress)
-        external
-        view
-        returns (bool)
-    {
+    function isTrustedRemote(
+        uint16 _srcChainId,
+        bytes calldata _srcAddress
+    ) external view returns (bool) {
         bytes memory trustedSource = trustedRemoteLookup[_srcChainId];
         return keccak256(trustedSource) == keccak256(_srcAddress);
     }
