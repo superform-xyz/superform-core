@@ -808,8 +808,8 @@ abstract contract BaseSetup is DSTest, Test {
                         logs
                     );
 
-                // HyperlaneHelper(getContract(chainId, "HyperlaneHelper"))
-                //     .help(address(HyperlaneMailbox), hyperlane_chainIds[i], FORKS[chainIds[i]], logs);
+                HyperlaneHelper(getContract(chainIds[i], "HyperlaneHelper"))
+                    .help(address(HyperlaneMailbox), hyperlane_chainIds[j], FORKS[chainIds[j]], logs);
             }
         }
         vm.startPrank(deployer);
