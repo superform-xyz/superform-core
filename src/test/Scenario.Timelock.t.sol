@@ -21,7 +21,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev singleDestinationSingleVault Deposit test case
         /// ^^^^
-        /// NOTE: What if we want to run multiple scenarios for given TARGET_UNDERLYING_VAULTS/FORMS? 
+        /// NOTE: What if we want to run multiple scenarios for given TARGET_UNDERLYING_VAULTS/FORMS?
         /// NOTE: BaseScenario to inherit for custom forms and other infra?
 
         primaryAMB = 1;
@@ -32,7 +32,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        
+
         /// @dev Deposit Action
         /// chainID => actionID => vaultID
         TARGET_UNDERLYING_VAULTS[POLY][0] = [1];
@@ -51,7 +51,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
-        
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -85,7 +85,6 @@ contract ScenarioTimelockTest is ProtocolActions {
                 msgValue: msgValue
             })
         );
-
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -93,13 +92,53 @@ contract ScenarioTimelockTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        /// NOTE: Shouldn't this return something to allow us to assert?
-        /// NOTE: We may want to make asserts about state of the vault/form/tokenbank/etc.. too, not only user balances
+        for (uint256 act = 0; act < actions.length; act++) {
+            TestAction memory action = actions[act];
+            MultiVaultsSFData[] memory multiSuperFormsData;
+            SingleVaultSFData[] memory singleSuperFormsData;
+            MessagingAssertVars memory aV;
+            StagesLocalVars memory vars;
+            bool success;
 
-        /// NOTE: E.g. This call succeeds with requestUnlock as it should, but we have no way to assert that here if withdraw or request happen
-        _run_actions();
-        
-        /// NOTE: E.g No access to revert msg. We get EvmError while we should get TimeLock error
-        // vm.expectRevert();
+            (
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars
+            ) = _stage1_buildReqData(action, act);
+
+            (vars, aV) = _stage2_run_src_action(
+                action,
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars
+            );
+
+            _stage3_src_to_dst_amb_delivery(
+                action,
+                vars,
+                aV,
+                multiSuperFormsData,
+                singleSuperFormsData
+            );
+
+            success = _stage4_process_src_dst_payload(
+                action,
+                vars,
+                aV,
+                singleSuperFormsData,
+                act
+            );
+
+            if (!success) {
+                continue;
+            }
+
+            if (action.action == Actions.Deposit) {
+                success = _stage5_process_superPositions_mint(action, vars, aV);
+                if (!success) {
+                    continue;
+                }
+            }
+        }
     }
 }

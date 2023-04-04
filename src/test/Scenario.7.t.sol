@@ -80,6 +80,53 @@ contract Scenario7Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        _run_actions();
+        for (uint256 act = 0; act < actions.length; act++) {
+            TestAction memory action = actions[act];
+            MultiVaultsSFData[] memory multiSuperFormsData;
+            SingleVaultSFData[] memory singleSuperFormsData;
+            MessagingAssertVars memory aV;
+            StagesLocalVars memory vars;
+            bool success;
+
+            (
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars
+            ) = _stage1_buildReqData(action, act);
+
+            (vars, aV) = _stage2_run_src_action(
+                action,
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars
+            );
+
+            _stage3_src_to_dst_amb_delivery(
+                action,
+                vars,
+                aV,
+                multiSuperFormsData,
+                singleSuperFormsData
+            );
+
+            success = _stage4_process_src_dst_payload(
+                action,
+                vars,
+                aV,
+                singleSuperFormsData,
+                act
+            );
+
+            if (!success) {
+                continue;
+            }
+
+            if (action.action == Actions.Deposit) {
+                success = _stage5_process_superPositions_mint(action, vars, aV);
+                if (!success) {
+                    continue;
+                }
+            }
+        }
     }
 }
