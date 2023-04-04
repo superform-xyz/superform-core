@@ -616,8 +616,6 @@ abstract contract BaseSetup is DSTest, Test {
                     value: _getPriceMultiplier(vars.chainId) * 10 ** 18
                 }(FORMS_FOR_VAULTS[j], address(vaults[vars.chainId][j]));
 
-                _broadcastPayload(i, vm.getRecordedLogs());
-
                 contracts[vars.chainId][
                     bytes32(
                         bytes(
@@ -630,6 +628,7 @@ abstract contract BaseSetup is DSTest, Test {
                     )
                 ] = vars.superForm;
             }
+            _broadcastPayload(i, vm.getRecordedLogs());
         }
         vm.stopPrank();
     }
@@ -795,10 +794,9 @@ abstract contract BaseSetup is DSTest, Test {
     /// @dev will sync the payloads for broadcast
     function _broadcastPayload(uint256 i, Vm.Log[] memory logs) private {
         vm.stopPrank();
-        vm.selectFork(FORKS[chainIds[i]]);
         for (uint256 j = 0; j < chainIds.length; j++) {
             if (i != j) {
-                console.log(i, j, lz_chainIds[j], FORKS[chainIds[j]]);
+                //console.log(i, j, FORKS[chainIds[i]], FORKS[chainIds[j]]);
                 LayerZeroHelper(getContract(chainIds[i], "LayerZeroHelper"))
                     .helpWithEstimates(
                         lzEndpoints[j],
@@ -809,7 +807,12 @@ abstract contract BaseSetup is DSTest, Test {
                     );
 
                 HyperlaneHelper(getContract(chainIds[i], "HyperlaneHelper"))
-                    .help(address(HyperlaneMailbox), hyperlane_chainIds[j], FORKS[chainIds[j]], logs);
+                    .help(
+                        address(HyperlaneMailbox),
+                        hyperlane_chainIds[j],
+                        FORKS[chainIds[j]],
+                        logs
+                    );
             }
         }
         vm.startPrank(deployer);
