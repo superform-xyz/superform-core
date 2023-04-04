@@ -118,8 +118,8 @@ contract SuperFormFactoryTest is BaseSetup {
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
             .addFormBeacon(vars.formImplementation, vars.formBeaconId);
 
-        console.log(FactoryStateRegistry(payable(getContract(chainIds[1], "FactoryStateRegistry")))
-            .payloadsCount());
+        //console.log(FactoryStateRegistry(payable(getContract(chainIds[1], "FactoryStateRegistry")))
+        //    .payloadsCount());
 
         /// @dev as you can see we are not testing if the vaults are eoas or actual compliant contracts
         vars.vault1 = address(0x2);

@@ -333,7 +333,6 @@ contract BaseProtocolTest is BaseSetup {
         vars.underlyingTokenIds = TARGET_UNDERLYING_VAULTS[chain1][action];
         vars.superFormIdsTemp = _superFormIds(vars.underlyingTokenIds, chain1);
         vars.len = vars.superFormIdsTemp.length;
-        console.log(vars.len, action, chain0, chain1);
         if (vars.len == 0) revert LEN_VAULTS_ZERO();
 
         targetSuperFormsMem = new uint256[][](vars.len);
