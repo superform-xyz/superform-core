@@ -11,9 +11,9 @@ import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import "../utils/DataPacking.sol";
 
-/// @title ERC4626TimelockedForm
+/// @title ERC4626TimelockForm
 /// @notice The Form implementation with timelock extension for IERC4626Timelock vaults
-contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
+contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
     /*///////////////////////////////////////////////////////////////
@@ -276,7 +276,7 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
             /// @dev target vault should implement requestUnlock function. with 1Form<>1Vault we can actualy re-define it though.
             /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
             /// @dev IERC4626TimelockForm could be an ERC4626 extension?
-            v.requestUnlock(singleVaultData_.amount);
+            v.requestUnlock(singleVaultData_.amount, address(this));
         } else if (unlock == 3) {
             revert WITHDRAW_COOLDOWN_PERIOD();
         }
@@ -384,7 +384,7 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
             /// @dev target vault should implement requestUnlock function. with 1Form<>1Vault we can actualy re-define it though.
             /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
             /// @dev IERC4626TimelockForm could be an ERC4626 extension?
-            v.requestUnlock(singleVaultData_.amount);
+            v.requestUnlock(singleVaultData_.amount, address(this));
         } else if (vars.unlock == 3) {
             revert WITHDRAW_COOLDOWN_PERIOD();
         }

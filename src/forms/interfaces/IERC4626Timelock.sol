@@ -21,7 +21,7 @@ interface IERC4626Timelock is IERC20 {
 
     /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
     /// @dev Owner first submits request for unlock and only after specified cooldown passes, can withdraw
-    function requestUnlock(uint shareAmount) external;
+    function requestUnlock(uint shareAmount, address owner) external;
 
     /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
     /// @dev Owner can resign from unlock request. In production vaults have differing mechanism for this

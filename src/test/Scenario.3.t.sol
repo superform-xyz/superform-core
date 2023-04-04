@@ -29,7 +29,10 @@ contract Scenario3Test is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYING_VAULTS[ARBI][0] = [1, 2];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0];
+
         TARGET_UNDERLYING_VAULTS[ETH][0] = [0];
+        TARGET_FORM_KINDS[ETH][0] = [0, 0];
 
         AMOUNTS[ARBI][0] = [1000, 500];
         AMOUNTS[ETH][0] = [100];

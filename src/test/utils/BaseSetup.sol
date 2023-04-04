@@ -14,6 +14,7 @@ import "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev src imports
 import {VaultMock} from "../mocks/VaultMock.sol";
+import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
@@ -26,6 +27,7 @@ import {SuperRegistry} from "../../SuperRegistry.sol";
 import {TokenBank} from "../../TokenBank.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
+import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
@@ -48,7 +50,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     address public deployer = address(777);
     address[] public users;
-    mapping(uint16 => mapping(bytes32 => address)) public contracts;
+    mapping(uint16 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
@@ -72,14 +74,19 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev we should fork these instead of mocking
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
-    /// @dev all these vault mocks are currently  using formId 1 (4626)
-    uint256[] public FORM_BEACONIDS_FOR_VAULTS = [uint256(1), 1, 1];
-    uint256[] public FORM_BEACON_IDS = [uint256(1)];
-    string[] public VAULT_NAMES;
 
-    mapping(uint16 => IERC4626[]) public vaults;
-    mapping(uint16 => uint256[]) vaultIds;
-    mapping(uint16 => uint256) PAYLOAD_ID; // chaindId => payloadId
+    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm
+    uint256[] public FORM_BEACON_IDS = [uint256(1), 2];
+    string[] public VAULT_KINDS = ["Vault", "TimelockedVault"];
+
+    bytes[] public vaultBytecodes;
+    // formbeacon id => vault name
+    mapping(uint256 formBeaconId => string[] names) VAULT_NAMES;
+    // chainId => formbeacon id => vault
+    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults)) public vaults;
+    // chainId => formbeacon id => vault id
+    mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
+    mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -110,6 +117,7 @@ abstract contract BaseSetup is DSTest, Test {
     address public constant FTM_lzEndpoint =
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
+    /// @dev removed FTM temporarily
     address[6] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -191,8 +199,8 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     // chainID => FORK
-    mapping(uint16 => uint256) public FORKS;
-    mapping(uint16 => string) public RPC_URLS;
+    mapping(uint16 chainId => uint256 fork) public FORKS;
+    mapping(uint16 chainId => string forkUrl) public RPC_URLS;
 
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
@@ -315,6 +323,7 @@ abstract contract BaseSetup is DSTest, Test {
             }
 
             /// @dev 4 - Deploy UNDERLYING_TOKENS and VAULTS
+            /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
                     new MockERC20(
@@ -328,21 +337,35 @@ abstract contract BaseSetup is DSTest, Test {
                 contracts[vars.chainId][
                     bytes32(bytes(UNDERLYING_TOKENS[j]))
                 ] = vars.UNDERLYING_TOKEN;
+            }
+            uint256 vaultId = 0;
+            for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
+                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
+                    /// @dev 5 - Deploy mock Vault
 
-                /// @dev 5 - Deploy mock Vault
-                vars.vault = address(
-                    new VaultMock(
-                        MockERC20(vars.UNDERLYING_TOKEN),
-                        VAULT_NAMES[j],
-                        VAULT_NAMES[j]
-                    )
-                );
-                contracts[vars.chainId][
-                    bytes32(bytes(string.concat(UNDERLYING_TOKENS[j], "Vault")))
-                ] = vars.vault;
+                    bytes memory bytecodeWithArgs = abi.encodePacked(
+                        vaultBytecodes[j],
+                        abi.encode(
+                            MockERC20(
+                                getContract(vars.chainId, UNDERLYING_TOKENS[k])
+                            ),
+                            VAULT_NAMES[j][k],
+                            VAULT_NAMES[j][k]
+                        )
+                    );
 
-                vaults[vars.chainId].push(IERC4626(vars.vault));
-                vaultIds[vars.chainId].push(j + 1);
+                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+
+                    /// @dev Add ERC4626Vault
+                    contracts[vars.chainId][
+                        bytes32(bytes(string.concat(VAULT_NAMES[j][k])))
+                    ] = vars.vault;
+
+                    vaults[vars.chainId][FORM_BEACON_IDS[j]].push(
+                        IERC4626(vars.vault)
+                    );
+                    vaultIds[vars.chainId][FORM_BEACON_IDS[j]].push(vaultId++);
+                }
             }
 
             /// @dev 5 - Deploy SuperFormFactory
@@ -351,16 +374,28 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
                 .factory;
 
-            /// @dev 6 - Deploy 4626Form implementation
-
+            /// @dev 6 - Deploy 4626Form implementations
+            /// FIXME: Multiple Forms deployment and selection from Scenario.t.sol
+            // Standard ERC4626 Form
             vars.erc4626Form = address(new ERC4626Form());
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
                 .erc4626Form;
+
+            // Timelock + ERC4626 Form
+            vars.erc4626TimelockForm = address(new ERC4626TimelockForm());
+            contracts[vars.chainId][
+                bytes32(bytes("ERC4626TimelockForm"))
+            ] = vars.erc4626TimelockForm;
 
             /// @dev 7 - Add newly deployed form  implementation to Factory, formBeaconId 1
             ISuperFormFactory(vars.factory).addFormBeacon(
                 vars.erc4626Form,
                 FORM_BEACON_IDS[0]
+            );
+
+            ISuperFormFactory(vars.factory).addFormBeacon(
+                vars.erc4626TimelockForm,
+                FORM_BEACON_IDS[1]
             );
 
             /// @dev 8 - Deploy TokenBank
@@ -588,28 +623,29 @@ abstract contract BaseSetup is DSTest, Test {
             }
 
             /// @dev create superforms when the whole state registry is configured?
-            for (uint256 j = 0; j < vaults[vars.chainId].length; j++) {
-                /// @dev FIXME should be an offchain calculation
+            for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
+                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
+                    (, vars.superForm) = ISuperFormFactory(
+                        vars.srcSuperFormFactory
+                    ).createSuperForm{
+                        value: _getPriceMultiplier(vars.chainId) * 10 ** 18
+                    }(
+                        FORM_BEACON_IDS[j],
+                        address(vaults[vars.chainId][FORM_BEACON_IDS[j]][k])
+                    );
 
-                (, vars.superForm) = ISuperFormFactory(vars.srcSuperFormFactory)
-                    .createSuperForm{
-                    value: _getPriceMultiplier(vars.chainId) * 10 ** 18
-                }(
-                    FORM_BEACONIDS_FOR_VAULTS[j],
-                    address(vaults[vars.chainId][j])
-                );
-
-                contracts[vars.chainId][
-                    bytes32(
-                        bytes(
-                            string.concat(
-                                UNDERLYING_TOKENS[j],
-                                "SuperForm",
-                                Strings.toString(FORM_BEACONIDS_FOR_VAULTS[j])
+                    contracts[vars.chainId][
+                        bytes32(
+                            bytes(
+                                string.concat(
+                                    UNDERLYING_TOKENS[k],
+                                    "SuperForm",
+                                    Strings.toString(FORM_BEACON_IDS[j])
+                                )
                             )
                         )
-                    )
-                ] = vars.superForm;
+                    ] = vars.superForm;
+                }
             }
         }
 
@@ -684,9 +720,17 @@ abstract contract BaseSetup is DSTest, Test {
         users.push(address(2));
         users.push(address(3));
 
+        /// @dev setup vault bytecodes
+        vaultBytecodes.push(type(VaultMock).creationCode);
+        vaultBytecodes.push(type(ERC4626TimelockMock).creationCode);
+
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
-        for (uint256 i = 0; i < underlyingTokens.length; i++) {
-            VAULT_NAMES.push(string.concat(underlyingTokens[i], "Vault"));
+        for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
+            for (uint256 j = 0; j < underlyingTokens.length; j++) {
+                VAULT_NAMES[i].push(
+                    string.concat(underlyingTokens[j], VAULT_KINDS[i])
+                );
+            }
         }
     }
 
@@ -772,5 +816,20 @@ abstract contract BaseSetup is DSTest, Test {
                 deal(swap, address(3), 1 ether * amount);
             }
         }
+    }
+
+    function _deployWithCreate2(
+        bytes memory bytecode_,
+        uint salt_
+    ) internal returns (address addr) {
+        assembly {
+            addr := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
+
+            if iszero(extcodesize(addr)) {
+                revert(0, 0)
+            }
+        }
+
+        return addr;
     }
 }
