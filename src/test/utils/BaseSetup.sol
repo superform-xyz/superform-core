@@ -84,6 +84,7 @@ abstract contract BaseSetup is DSTest, Test {
     // formbeacon id => vault name
     mapping(uint256 formBeaconId => string[] names) VAULT_NAMES;
     // chainId => formbeacon id => vault
+    /// FIXME: We need to map individual formBeaconId to individual vault to have access to ERC4626Form previewFunctions
     mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults))
         public vaults;
     // chainId => formbeacon id => vault id

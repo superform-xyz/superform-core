@@ -64,8 +64,6 @@ abstract contract ProtocolActions is BaseSetup {
                 action.revertRole == bytes32(0))
         ) revert MISMATCH_RBAC_TEST();
 
-        console.log("passing");
-
         vars.lzEndpoint_0 = LZ_ENDPOINTS[CHAIN_0];
         vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
 
@@ -84,12 +82,8 @@ abstract contract ProtocolActions is BaseSetup {
             _getPriceMultiplier(CHAIN_0) *
             1e18;
 
-        console.log("before loop");
-
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
-            console.log("before _targetVaults");
-
             (
                 vars.targetSuperFormIds,
                 vars.underlyingSrcToken,
@@ -117,12 +111,10 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
 
-            console.log("after interal");
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
             vars.maxSlippage = MAX_SLIPPAGE[DST_CHAINS[i]][actionIndex];
 
-            console.log("before if calls");
             if (action.multiVaults) {
                 multiSuperFormsData[i] = _buildMultiVaultCallData(
                     MultiVaultCallDataArgs(
@@ -158,8 +150,6 @@ abstract contract ProtocolActions is BaseSetup {
                 //         (vars.underlyingSrcToken.length == 1))
                 // ) revert INVALID_AMOUNTS_LENGTH();
 
-                console.log("building singleVaultCallDataArgs");
-
                 SingleVaultCallDataArgs
                     memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                         action.user,
@@ -178,7 +168,6 @@ abstract contract ProtocolActions is BaseSetup {
                     );
 
                 if (action.action == Actions.Deposit) {
-                    console.log("Action.Deposit");
                     singleSuperFormsData[i] = _buildSingleVaultDepositCallData(
                         singleVaultCallDataArgs
                     );
@@ -785,7 +774,6 @@ abstract contract ProtocolActions is BaseSetup {
     {
         TargetVaultsVars memory vars;
         vars.underlyingTokenIds = TARGET_UNDERLYING_VAULTS[chain1][action];
-        console.log("vars.underlyingTokenIds", vars.underlyingTokenIds[0]);
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
         vars.superFormIdsTemp = _superFormIds(
             vars.underlyingTokenIds,

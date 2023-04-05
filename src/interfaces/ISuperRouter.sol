@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
+
 import {LiqRequest, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, AMBMessage} from "../types/DataTypes.sol";
+
+/// TODO: Change to ERC1155s / depends on SuperBank task
+import "@openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
 /// @title ISuperRouter
 /// @author Zeropoint Labs.
-interface ISuperRouter {
+interface ISuperRouter is IERC1155 {
     /*///////////////////////////////////////////////////////////////
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/

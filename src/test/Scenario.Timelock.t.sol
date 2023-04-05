@@ -7,11 +7,12 @@ import "../types/DataTypes.sol";
 // import "forge-std/console.sol";
 
 // Test Utils
+import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ITimelockForm} from "./interfaces/ITimelockForm.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 
-/// @dev we can't use it because it shadows existing declaration at the BaseSetup leve
+/// @dev we can't use it because it shadows existing declaration at the BaseSetup level
 // import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol"; 
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
@@ -22,11 +23,19 @@ contract ScenarioTimelockTest is ProtocolActions {
     uint256 actionId;
 
     /// @dev Access Form interface to call form functions for assertions
-    ERC4626TimelockForm public erc4626TimelockForm;
+    // ERC4626TimelockForm public erc4626TimelockForm;
+
+    /// @dev Access SuperRouter interface
+    ISuperRouter superRouter;
 
     /// @dev singleDestinationSingleVault Deposit test case
     function setUp() public override {
         super.setUp();
+
+        /// FIXME: We need to map individual formBeaconId to individual vault to have access to ERC4626Form previewFunctions
+        /// see BaseSetup FIXME L87
+        // address targetForm = address(vaults[DST_CHAINS[0]][1][1]);
+        // ITimelockForm form = ITimelockForm(targetForm);
 
         primaryAMB = 1;
         secondaryAMBs = [2];
@@ -34,7 +43,6 @@ contract ScenarioTimelockTest is ProtocolActions {
         DST_CHAINS = [POLY]; /// @dev destination chain(s)
 
         /// @dev You can define settings here or pass them as arguments to _depositAction()/_withdrawAction()
-
         // TARGET_UNDERLYING_VAULTS[chainID][actionId] = [vaultID];
         // TARGET_FORM_KINDS[chainID][actionId] = [formID];
         // AMOUNTS[chainID][actionId] = [amount];
@@ -47,23 +55,19 @@ contract ScenarioTimelockTest is ProtocolActions {
 
     /// NOTE: Individual tests target validation of each possible condition for form deposit/withdraw to fail
 
-    /// @dev This test uses only 1 action
+    /// @dev TODO: This test uses only 1 action
     /// assert revert on WITHDRAW_COOLDOWN_PERIOD();
     // function testFail_scenario_request_unlock_cooldown() public {}
 
-    /// @dev This test uses only 1 action
+    /// @dev TODO: This test uses only 1 action
     /// assert revert on LOCKED(); - requestUnlock() was called but user wants to overwithdraw
     // function testFail_scenario_request_unlock_overwithdraw() public {}
 
     /// @dev This test uses 2 actions, rolls block between and make assertions about states in between
     function test_scenario_request_unlock_full_withdraw() public {
 
-        /*///////////////////////////////////////////////////////////////
-                            ACCESS TO EXTERNAL STATE
-        //////////////////////////////////////////////////////////////*/
-
-        address targetForm = contracts[DST_CHAINS[0]][bytes32(bytes("ERC4626Form"))];
-        ITimelockForm form = ITimelockForm(targetForm);
+        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        superRouter = ISuperRouter(_superRouter);
 
         /*///////////////////////////////////////////////////////////////
                                 DEPOSIT ACTION
@@ -72,7 +76,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         TestAction memory action = _depositAction(
             DST_CHAINS[0], // chainID (destination)
             1, // vaultID
-            2, // formID
+            1, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
             1000, // amount
             1000, // slippage 
             TestType.Pass // testType
@@ -143,8 +147,14 @@ contract ScenarioTimelockTest is ProtocolActions {
                                 DEPOSIT ASSERTS
         //////////////////////////////////////////////////////////////*/
 
-        uint256 balanceOfAlice = form.balanceOf(users[0]);
+        uint256 balanceOfAlice = superRouter.balanceOf(users[0], 1);
+        console.log("ASSERT FAILS HERE, NO SUPERPOSITION OWNED!!!");
         assertEq(balanceOfAlice, 1000);
+
+        /*///////////////////////////////////////////////////////////////
+                                WITHDRAW ACTION
+        //////////////////////////////////////////////////////////////*/
+
     }
 
     function _depositAction(
