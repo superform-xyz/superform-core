@@ -27,7 +27,8 @@ abstract contract ProtocolActions is BaseSetup {
     mapping(uint16 chainId => mapping(uint256 index => uint256[] action))
         public MAX_SLIPPAGE;
 
-    TestAction[] actions;
+    /// NOTE: Now that we can pass individual actions, this array is only useful for more extended simulations
+    TestAction[] public actions;
 
     function setUp() public virtual override {
         super.setUp();
@@ -52,6 +53,7 @@ abstract contract ProtocolActions is BaseSetup {
         if (action.revertError != bytes4(0) && action.testType == TestType.Pass)
             revert MISMATCH_TEST_TYPE();
 
+        /// NOTE: Why do we do it?
         if (
             (action.testType != TestType.RevertUpdateStateRBAC &&
                 action.revertRole != bytes32(0)) ||
@@ -127,15 +129,22 @@ abstract contract ProtocolActions is BaseSetup {
                     )
                 );
             } else {
-                if (
-                    !((vars.underlyingSrcToken.length ==
-                        vars.targetSuperFormIds.length) &&
-                        (vars.underlyingSrcToken.length ==
-                            vars.amounts.length) &&
-                        (vars.underlyingSrcToken.length ==
-                            vars.maxSlippage.length) &&
-                        (vars.underlyingSrcToken.length == 1))
-                ) revert INVALID_AMOUNTS_LENGTH();
+
+                /// FIXME: NOTE: Shouldn't we validate that at contract level?
+                /// This reverting may give us invalid sense of security. Contract should revert here, not test.
+                
+                // if (
+                //     !((vars.underlyingSrcToken.length ==
+                //         vars.targetSuperFormIds.length) &&
+
+                //         (vars.underlyingSrcToken.length ==
+                //             vars.amounts.length) &&
+
+                //         (vars.underlyingSrcToken.length ==
+                //             vars.maxSlippage.length) &&
+
+                //         (vars.underlyingSrcToken.length == 1))
+                // ) revert INVALID_AMOUNTS_LENGTH();
 
                 SingleVaultCallDataArgs
                     memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
@@ -769,7 +778,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vars.len = vars.superFormIdsTemp.length;
 
-        if (vars.len == 0) revert LEN_VAULTS_ZERO();
+        // if (vars.len == 0) revert LEN_VAULTS_ZERO();
 
         targetSuperFormsMem = new uint256[](vars.len);
         underlyingSrcTokensMem = new address[](vars.len);

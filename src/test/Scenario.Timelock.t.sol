@@ -13,6 +13,10 @@ import "./utils/ProtocolActions.sol";
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract ScenarioTimelockTest is ProtocolActions {
+    mapping(uint256 => Actions) public ACTION_TYPE;
+
+    uint256 actionCounter;
+
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -20,9 +24,6 @@ contract ScenarioTimelockTest is ProtocolActions {
         //////////////////////////////////////////////////////////////*/
 
         /// @dev singleDestinationSingleVault Deposit test case
-        /// ^^^^
-        /// NOTE: What if we want to run multiple scenarios for given TARGET_UNDERLYING_VAULTS/FORMS?
-        /// NOTE: BaseScenario to inherit for custom forms and other infra?
 
         primaryAMB = 1;
 
@@ -32,113 +33,251 @@ contract ScenarioTimelockTest is ProtocolActions {
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-
+        /// NOTE: PACK THIS INTO MAPPING? TIE TO ACTION HERE?
         /// @dev Deposit Action
         /// chainID => actionID => vaultID
-        TARGET_UNDERLYING_VAULTS[POLY][0] = [1];
-        /// chainID => actionID => formID
-        TARGET_FORM_KINDS[POLY][0] = [1];
-        /// chainID => actionID => amount
-        AMOUNTS[POLY][0] = [1000];
-        /// chainID => actionID => slippage
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        // TARGET_UNDERLYING_VAULTS[POLY][0] = [1];
+        // /// chainID => actionID => formID
+        // TARGET_FORM_KINDS[POLY][0] = [1];
+        // /// chainID => actionID => amount
+        // AMOUNTS[POLY][0] = [1000];
+        // /// chainID => actionID => slippage
+        // MAX_SLIPPAGE[POLY][0] = [1000];
 
-        /// @dev Withdraw action
-        TARGET_UNDERLYING_VAULTS[POLY][1] = [1];
-        TARGET_FORM_KINDS[POLY][1] = [1];
-        AMOUNTS[POLY][1] = [1000];
-        MAX_SLIPPAGE[POLY][1] = [1000];
+        // /// @dev Withdraw action
+        // TARGET_UNDERLYING_VAULTS[POLY][1] = [1];
+        // TARGET_FORM_KINDS[POLY][1] = [1];
+        // AMOUNTS[POLY][1] = [1000];
+        // MAX_SLIPPAGE[POLY][1] = [1000];
 
-        /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+        // /// @dev check if we need to have this here (it's being overriden)
+        // uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
-        actions.push(
-            TestAction({
-                action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: users[0],
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
-            })
-        );
+        // actions.push(
+        //     TestAction({
+        //         action: Actions.Deposit,
+        //         multiVaults: false, //!!WARNING turn on or off multi vaults
+        //         user: users[0],
+        //         testType: TestType.Pass,
+        //         revertError: "",
+        //         revertRole: "",
+        //         slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+        //         multiTx: false,
+        //         adapterParam: "",
+        //         msgValue: msgValue
+        //     })
+        // );
 
-        /// NOTE: We need some way to control execution of chained actions
-        /// NOTE: In this case, Withdraw is executed immediately after Deposit (we can't roll block)
-        /// NOTE: We also may want to have multiple testFunctions for different actions
-        /// NOTE: Other edge cases possible in future?
-        actions.push(
-            TestAction({
-                action: Actions.Withdraw,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: users[0],
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
-            })
-        );
+        // actions.push(
+        //     TestAction({
+        //         action: Actions.Withdraw,
+        //         multiVaults: false, //!!WARNING turn on or off multi vaults
+        //         user: users[0],
+        //         testType: TestType.Pass,
+        //         revertError: "",
+        //         revertRole: "",
+        //         slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+        //         multiTx: false,
+        //         adapterParam: "",
+        //         msgValue: msgValue
+        //     })
+        // );
     }
 
     /*///////////////////////////////////////////////////////////////
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
-        for (uint256 act = 0; act < actions.length; act++) {
-            TestAction memory action = actions[act];
-            MultiVaultsSFData[] memory multiSuperFormsData;
-            SingleVaultSFData[] memory singleSuperFormsData;
-            MessagingAssertVars memory aV;
-            StagesLocalVars memory vars;
-            bool success;
+    /// NOTE: Individual tests target validation of each possible condition for form deposit/withdraw to fail
 
-            (
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            ) = _stage1_buildReqData(action, act);
+    /// @dev This test uses only 1 action
+    /// assert revert on WITHDRAW_COOLDOWN_PERIOD();
+    // function testFail_scenario_request_unlock_cooldown() public {}
 
-            (vars, aV) = _stage2_run_src_action(
-                action,
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            );
+    /// @dev This test uses only 1 action
+    /// assert revert on LOCKED(); - requestUnlock() was called but user wants to overwithdraw
+    // function testFail_scenario_request_unlock_overwithdraw() public {}
 
-            _stage3_src_to_dst_amb_delivery(
-                action,
-                vars,
-                aV,
-                multiSuperFormsData,
-                singleSuperFormsData
-            );
+    /// @dev This test uses 2 actions and rolls block between
+    function test_scenario_request_unlock_withdraw() public {
+        /// NOTE: Execute single action by calling it
+        
+        TestAction memory action = _depositAction(
+            POLY,
+            1,
+            1,
+            1000,
+            1000,
+            TestType.Pass
+        );
 
-            success = _stage4_process_src_dst_payload(
-                action,
-                vars,
-                aV,
-                singleSuperFormsData,
-                act
-            );
+        MultiVaultsSFData[] memory multiSuperFormsData;
+        SingleVaultSFData[] memory singleSuperFormsData;
+        MessagingAssertVars memory aV;
+        StagesLocalVars memory vars;
+        bool success;
 
-            if (!success) {
-                continue;
-            }
+        /// NOTE: What if we want to send from different EOA than deployer's?
+        /// NOTE: Unsure if we need multi/singleSuperFormsData returned here if we can read state between calls now
+        
+        /// @dev User builds his request data for src (deposit action)
+        (
+            multiSuperFormsData,
+            singleSuperFormsData,
+            vars
+        ) = _stage1_buildReqData(action, actionCounter);
 
-            if (action.action == Actions.Deposit) {
-                success = _stage5_process_superPositions_mint(action, vars, aV);
-                if (!success) {
-                    continue;
-                }
-            }
-        }
+        /// @dev User sends his request data to the src (deposit action)
+        (vars, aV) = _stage2_run_src_action(
+            action,
+            multiSuperFormsData,
+            singleSuperFormsData,
+            vars
+        );
+
+        /// @dev FIXME? SuperForm Keepers operation, not relevant to deposit, should be separated for Form testing (internal processing)
+        _stage3_src_to_dst_amb_delivery(
+            action,
+            vars,
+            aV,
+            multiSuperFormsData,
+            singleSuperFormsData
+        );
+
+        /// @dev FIXME? SuperForm Keepers operation, not relevant to deposit, should be separated for Form testing (internal processing)
+        success = _stage4_process_src_dst_payload(
+            action,
+            vars,
+            aV,
+            singleSuperFormsData,
+            actionCounter
+        );
+
+        /// @dev FIXME? SuperForm Keepers operation, not relevant to deposit, should be separated for Form testing (internal processing)
+        success = _stage5_process_superPositions_mint(action, vars, aV);
+        
     }
+
+    function _depositAction(
+        uint16 chainID,
+        uint256 vaultID,
+        uint256 formID,
+        uint256 amount,
+        uint256 slippage,
+        TestType testType /// ProtocolActions invariant
+    ) internal returns (TestAction memory depositAction) {
+
+        uint256 actionID = actionCounter++;
+        /// @dev check if we need to have this here (it's being overriden)
+        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+
+        TARGET_UNDERLYING_VAULTS[chainID][actionID] = [vaultID];
+        TARGET_FORM_KINDS[chainID][actionID] = [formID];
+        AMOUNTS[chainID][actionID] = [amount];
+        MAX_SLIPPAGE[chainID][actionID] = [slippage];
+
+        depositAction = TestAction({
+            action: Actions.Deposit,
+            multiVaults: false, //!!WARNING turn on or off multi vaults
+            user: users[0],
+            testType: TestType.Pass, /// NOTE: TestType should be low level invariant
+            revertError: "",
+            revertRole: "",
+            slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+            multiTx: false,
+            adapterParam: "",
+            msgValue: msgValue
+        });
+    }
+
+    function _withdrawAction(
+        uint16 chainID,
+        uint256 vaultID,
+        uint256 formID,
+        uint256 amount,
+        uint256 slippage,
+        TestType testType /// ProtocolActions invariant
+    ) internal returns (TestAction memory withdrawAction) {
+        
+        uint256 actionID = actionCounter++;
+        /// @dev check if we need to have this here (it's being overriden)
+        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+
+        TARGET_UNDERLYING_VAULTS[chainID][actionID] = [vaultID];
+        TARGET_FORM_KINDS[chainID][actionID] = [formID];
+        AMOUNTS[chainID][actionID] = [amount];
+        MAX_SLIPPAGE[chainID][actionID] = [slippage];
+
+        withdrawAction = TestAction({
+            action: Actions.Withdraw,
+            multiVaults: false, //!!WARNING turn on or off multi vaults
+            user: users[0],
+            testType: TestType.Pass, /// NOTE: TestType should be low level invariant
+            revertError: "",
+            revertRole: "",
+            slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+            multiTx: false,
+            adapterParam: "",
+            msgValue: msgValue
+        });
+    }
+
+    // function test_scenario() public {
+    //     /// NOTE: Execute single action by calling it
+    //     for (uint256 act = 0; act < actions.length; act++) {
+    //         TestAction memory action = actions[act];
+    //         MultiVaultsSFData[] memory multiSuperFormsData;
+    //         SingleVaultSFData[] memory singleSuperFormsData;
+    //         MessagingAssertVars memory aV;
+    //         StagesLocalVars memory vars;
+    //         bool success;
+
+    //         /// NOTE: What if we want to send from different EOA than deployer's?
+    //         /// NOTE: Unsure if we need multi/singleSuperFormsData returned here if we can read state between calls now
+    //         /// @dev User builds his request data for src (deposit action)
+    //         (
+    //             multiSuperFormsData,
+    //             singleSuperFormsData,
+    //             vars
+    //         ) = _stage1_buildReqData(action, act);
+
+    //         /// @dev User sends his request data to the src (deposit action)
+    //         (vars, aV) = _stage2_run_src_action(
+    //             action,
+    //             multiSuperFormsData,
+    //             singleSuperFormsData,
+    //             vars
+    //         );
+
+    //         /// @dev SuperForm Keepers operation, no user's input here (process)
+    //         /// NOTE: Here msg.sender context should be different from first two user actions to reliably test
+    //         _stage3_src_to_dst_amb_delivery(
+    //             action,
+    //             vars,
+    //             aV,
+    //             multiSuperFormsData,
+    //             singleSuperFormsData
+    //         );
+
+    //         /// @dev SuperForm Keepers operation, no user's input here
+    //         success = _stage4_process_src_dst_payload(
+    //             action,
+    //             vars,
+    //             aV,
+    //             singleSuperFormsData,
+    //             act
+    //         );
+
+    //         if (!success) {
+    //             continue;
+    //         }
+
+    //         if (action.action == Actions.Deposit) {
+    //             success = _stage5_process_superPositions_mint(action, vars, aV);
+    //             if (!success) {
+    //                 continue;
+    //             }
+    //         }
+    //     }
+    // }
 }
