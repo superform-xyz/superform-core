@@ -18,11 +18,14 @@ abstract contract ProtocolActions is BaseSetup {
     mapping(uint16 chainId => mapping(uint256 action => uint256[] underlyingTokenIds))
         public TARGET_UNDERLYING_VAULTS;
 
-    mapping(uint16 chainId => mapping(uint256 action => uint256[] formKinds)) public TARGET_FORM_KINDS;
+    mapping(uint16 chainId => mapping(uint256 action => uint256[] formKinds))
+        public TARGET_FORM_KINDS;
 
-    mapping(uint16 chainId => mapping(uint256 index => uint256[] action)) public AMOUNTS;
+    mapping(uint16 chainId => mapping(uint256 index => uint256[] action))
+        public AMOUNTS;
 
-    mapping(uint16 chainId => mapping(uint256 index => uint256[] action)) public MAX_SLIPPAGE;
+    mapping(uint16 chainId => mapping(uint256 index => uint256[] action))
+        public MAX_SLIPPAGE;
 
     TestAction[] actions;
 
@@ -33,494 +36,523 @@ abstract contract ProtocolActions is BaseSetup {
     /*///////////////////////////////////////////////////////////////
                             MAIN INTERNAL
     //////////////////////////////////////////////////////////////*/
-    function _run_actions() internal returns (bool) {
-        for (uint256 act = 0; act < actions.length; act++) {
-            TestAction memory action = actions[act];
 
-            if (
-                action.revertError != bytes4(0) &&
-                action.testType == TestType.Pass
-            ) revert MISMATCH_TEST_TYPE();
+    /// @dev STEP 1: Build Request Data
+    function _stage1_buildReqData(
+        TestAction memory action,
+        uint256 actionIndex
+    )
+        internal
+        returns (
+            MultiVaultsSFData[] memory multiSuperFormsData,
+            SingleVaultSFData[] memory singleSuperFormsData,
+            StagesLocalVars memory vars
+        )
+    {
+        if (action.revertError != bytes4(0) && action.testType == TestType.Pass)
+            revert MISMATCH_TEST_TYPE();
 
-            if (
-                (action.testType != TestType.RevertUpdateStateRBAC &&
-                    action.revertRole != bytes32(0)) ||
-                (action.testType == TestType.RevertUpdateStateRBAC &&
-                    action.revertRole == bytes32(0))
-            ) revert MISMATCH_RBAC_TEST();
+        if (
+            (action.testType != TestType.RevertUpdateStateRBAC &&
+                action.revertRole != bytes32(0)) ||
+            (action.testType == TestType.RevertUpdateStateRBAC &&
+                action.revertRole == bytes32(0))
+        ) revert MISMATCH_RBAC_TEST();
 
-            NewActionLocalVars memory vars;
+        vars.lzEndpoint_0 = LZ_ENDPOINTS[CHAIN_0];
+        vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
 
-            /// @dev STEP 1: Build Request Data
+        vars.nDestinations = DST_CHAINS.length;
 
-            vars.lzEndpoint_0 = LZ_ENDPOINTS[CHAIN_0];
-            vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
+        vars.lzEndpoints_1 = new address[](vars.nDestinations);
+        vars.toDst = new address[](vars.nDestinations);
+        multiSuperFormsData = new MultiVaultsSFData[](vars.nDestinations);
+        singleSuperFormsData = new SingleVaultSFData[](vars.nDestinations);
 
-            vars.nDestinations = DST_CHAINS.length;
+        /// @dev FIXME this probably needs to be tailored for NATIVE DEPOSITS
+        /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
+        /// @dev the sum of native assets needed in each state request
+        action.msgValue =
+            (vars.nDestinations + 1) *
+            _getPriceMultiplier(CHAIN_0) *
+            1e18;
 
-            vars.lzEndpoints_1 = new address[](vars.nDestinations);
-            vars.toDst = new address[](vars.nDestinations);
-            vars.multiSuperFormsData = new MultiVaultsSFData[](
-                vars.nDestinations
-            );
-            vars.singleSuperFormsData = new SingleVaultSFData[](
-                vars.nDestinations
-            );
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
 
-            /// @dev FIXME this probably needs to be tailored for NATIVE DEPOSITS
-            /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
-            /// @dev the sum of native assets needed in each state request
-            action.msgValue =
-                (vars.nDestinations + 1) *
-                _getPriceMultiplier(CHAIN_0) *
-                1e18;
-
-            for (uint256 i = 0; i < vars.nDestinations; i++) {
-                vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
-
-                (
-                    vars.targetSuperFormIds,
-                    vars.underlyingSrcToken,
-                    vars.vaultMock
-                ) = _targetVaults(CHAIN_0, DST_CHAINS[i], act);
-                vars.toDst = new address[](vars.targetSuperFormIds.length);
-                /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
-                /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
-                for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
-                    if (
-                        CHAIN_0 == DST_CHAINS[i] ||
-                        (action.action == Actions.Withdraw &&
-                            CHAIN_0 != DST_CHAINS[i])
-                    ) {
-                        (vars.superFormT, , ) = _getSuperForm(
-                            vars.targetSuperFormIds[k]
-                        );
-                        vars.toDst[k] = payable(vars.superFormT);
-                    } else {
-                        vars.toDst[k] = payable(
-                            getContract(DST_CHAINS[i], "TokenBank")
-                        );
-                    }
-                }
-
-                vars.amounts = AMOUNTS[DST_CHAINS[i]][act];
-
-                vars.maxSlippage = MAX_SLIPPAGE[DST_CHAINS[i]][act];
-
-                if (action.multiVaults) {
-                    vars.multiSuperFormsData[i] = _buildMultiVaultCallData(
-                        MultiVaultCallDataArgs(
-                            action.user,
-                            vars.fromSrc,
-                            vars.toDst,
-                            vars.underlyingSrcToken,
-                            vars.targetSuperFormIds,
-                            vars.amounts,
-                            vars.maxSlippage,
-                            vars.vaultMock,
-                            CHAIN_0,
-                            DST_CHAINS[i],
-                            action.multiTx,
-                            action.action
-                        )
+            (
+                vars.targetSuperFormIds,
+                vars.underlyingSrcToken,
+                vars.vaultMock
+            ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex);
+            vars.toDst = new address[](vars.targetSuperFormIds.length);
+            /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
+            /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
+            for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
+                if (
+                    CHAIN_0 == DST_CHAINS[i] ||
+                    (action.action == Actions.Withdraw &&
+                        CHAIN_0 != DST_CHAINS[i])
+                ) {
+                    (vars.superFormT, , ) = _getSuperForm(
+                        vars.targetSuperFormIds[k]
                     );
+                    vars.toDst[k] = payable(vars.superFormT);
                 } else {
-                    if (
-                        !((vars.underlyingSrcToken.length ==
-                            vars.targetSuperFormIds.length) &&
-                            (vars.underlyingSrcToken.length ==
-                                vars.amounts.length) &&
-                            (vars.underlyingSrcToken.length ==
-                                vars.maxSlippage.length) &&
-                            (vars.underlyingSrcToken.length == 1))
-                    ) revert INVALID_AMOUNTS_LENGTH();
-
-                    SingleVaultCallDataArgs
-                        memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
-                            action.user,
-                            vars.fromSrc,
-                            vars.toDst[0],
-                            vars.underlyingSrcToken[0],
-                            vars.targetSuperFormIds[0],
-                            vars.amounts[0],
-                            vars.maxSlippage[0],
-                            vars.vaultMock[0],
-                            CHAIN_0,
-                            DST_CHAINS[i],
-                            action.multiTx,
-                            0,
-                            address(0)
-                        );
-
-                    if (action.action == Actions.Deposit) {
-                        vars.singleSuperFormsData[
-                            i
-                        ] = _buildSingleVaultDepositCallData(
-                            singleVaultCallDataArgs
-                        );
-                    } else {
-                        vars.singleSuperFormsData[
-                            i
-                        ] = _buildSingleVaultWithdrawCallData(
-                            singleVaultCallDataArgs
-                        );
-                    }
+                    vars.toDst[k] = payable(
+                        getContract(DST_CHAINS[i], "TokenBank")
+                    );
                 }
             }
 
-            CoreStateRegistry stateRegistry;
+            vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
-            SuperRouter superRouter = SuperRouter(vars.fromSrc);
+            vars.maxSlippage = MAX_SLIPPAGE[DST_CHAINS[i]][actionIndex];
 
-            AssertVars memory aV;
+            if (action.multiVaults) {
+                multiSuperFormsData[i] = _buildMultiVaultCallData(
+                    MultiVaultCallDataArgs(
+                        action.user,
+                        vars.fromSrc,
+                        vars.toDst,
+                        vars.underlyingSrcToken,
+                        vars.targetSuperFormIds,
+                        vars.amounts,
+                        vars.maxSlippage,
+                        vars.vaultMock,
+                        CHAIN_0,
+                        DST_CHAINS[i],
+                        action.multiTx,
+                        action.action
+                    )
+                );
+            } else {
+                if (
+                    !((vars.underlyingSrcToken.length ==
+                        vars.targetSuperFormIds.length) &&
+                        (vars.underlyingSrcToken.length ==
+                            vars.amounts.length) &&
+                        (vars.underlyingSrcToken.length ==
+                            vars.maxSlippage.length) &&
+                        (vars.underlyingSrcToken.length == 1))
+                ) revert INVALID_AMOUNTS_LENGTH();
 
-            vm.selectFork(FORKS[CHAIN_0]);
+                SingleVaultCallDataArgs
+                    memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
+                        action.user,
+                        vars.fromSrc,
+                        vars.toDst[0],
+                        vars.underlyingSrcToken[0],
+                        vars.targetSuperFormIds[0],
+                        vars.amounts[0],
+                        vars.maxSlippage[0],
+                        vars.vaultMock[0],
+                        CHAIN_0,
+                        DST_CHAINS[i],
+                        action.multiTx,
+                        0,
+                        address(0)
+                    );
 
-            aV.initialFork = vm.activeFork();
+                if (action.action == Actions.Deposit) {
+                    singleSuperFormsData[i] = _buildSingleVaultDepositCallData(
+                        singleVaultCallDataArgs
+                    );
+                } else {
+                    singleSuperFormsData[i] = _buildSingleVaultWithdrawCallData(
+                        singleVaultCallDataArgs
+                    );
+                }
+            }
+        }
+    }
 
-            aV.txIdBefore = superRouter.totalTransactions();
+    /// @dev STEP 2: Run Source Chain Action
+    function _stage2_run_src_action(
+        TestAction memory action,
+        MultiVaultsSFData[] memory multiSuperFormsData,
+        SingleVaultSFData[] memory singleSuperFormsData,
+        StagesLocalVars memory vars
+    ) internal returns (StagesLocalVars memory, MessagingAssertVars memory) {
+        MessagingAssertVars memory aV;
 
-            /// @dev STEP 2: Call Apropriate Action
+        SuperRouter superRouter = SuperRouter(vars.fromSrc);
 
-            if (action.testType != TestType.RevertMainAction) {
-                vm.prank(action.user);
-                /// @dev see pigeon for this implementation
-                vm.recordLogs();
-                if (action.multiVaults) {
-                    if (vars.nDestinations == 1) {
+        vm.selectFork(FORKS[CHAIN_0]);
+
+        aV.initialFork = vm.activeFork();
+
+        aV.txIdBefore = superRouter.totalTransactions();
+
+        if (action.testType != TestType.RevertMainAction) {
+            vm.prank(action.user);
+            /// @dev see pigeon for this implementation
+            vm.recordLogs();
+            if (action.multiVaults) {
+                if (vars.nDestinations == 1) {
+                    vars
+                        .singleDstMultiVaultStateReq = SingleDstMultiVaultsStateReq(
+                        primaryAMB,
+                        secondaryAMBs,
+                        DST_CHAINS[0],
+                        multiSuperFormsData[0],
+                        action.adapterParam,
+                        action.msgValue
+                    );
+
+                    if (action.action == Actions.Deposit)
+                        superRouter.singleDstMultiVaultDeposit{
+                            value: action.msgValue
+                        }(vars.singleDstMultiVaultStateReq);
+                    else if (action.action == Actions.Withdraw)
+                        superRouter.singleDstMultiVaultWithdraw{
+                            value: action.msgValue
+                        }(vars.singleDstMultiVaultStateReq);
+                } else if (vars.nDestinations > 1) {
+                    vars
+                        .multiDstMultiVaultStateReq = MultiDstMultiVaultsStateReq(
+                        primaryAMB,
+                        secondaryAMBs,
+                        DST_CHAINS,
+                        multiSuperFormsData,
+                        action.adapterParam,
+                        action.msgValue
+                    );
+
+                    if (action.action == Actions.Deposit)
+                        superRouter.multiDstMultiVaultDeposit{
+                            value: action.msgValue
+                        }(vars.multiDstMultiVaultStateReq);
+                    else if (action.action == Actions.Withdraw)
+                        superRouter.multiDstMultiVaultWithdraw{
+                            value: action.msgValue
+                        }(vars.multiDstMultiVaultStateReq);
+                }
+            } else {
+                if (vars.nDestinations == 1) {
+                    if (CHAIN_0 != DST_CHAINS[0]) {
                         vars
-                            .singleDstMultiVaultStateReq = SingleDstMultiVaultsStateReq(
+                            .singleXChainSingleVaultStateReq = SingleXChainSingleVaultStateReq(
                             primaryAMB,
                             secondaryAMBs,
                             DST_CHAINS[0],
-                            vars.multiSuperFormsData[0],
+                            singleSuperFormsData[0],
                             action.adapterParam,
                             action.msgValue
                         );
 
                         if (action.action == Actions.Deposit)
-                            superRouter.singleDstMultiVaultDeposit{
+                            superRouter.singleXChainSingleVaultDeposit{
                                 value: action.msgValue
-                            }(vars.singleDstMultiVaultStateReq);
+                            }(vars.singleXChainSingleVaultStateReq);
                         else if (action.action == Actions.Withdraw)
-                            superRouter.singleDstMultiVaultWithdraw{
+                            superRouter.singleXChainSingleVaultWithdraw{
                                 value: action.msgValue
-                            }(vars.singleDstMultiVaultStateReq);
-                    } else if (vars.nDestinations > 1) {
+                            }(vars.singleXChainSingleVaultStateReq);
+                    } else {
                         vars
-                            .multiDstMultiVaultStateReq = MultiDstMultiVaultsStateReq(
-                            primaryAMB,
-                            secondaryAMBs,
-                            DST_CHAINS,
-                            vars.multiSuperFormsData,
+                            .singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
+                            DST_CHAINS[0],
+                            singleSuperFormsData[0],
                             action.adapterParam,
                             action.msgValue
                         );
 
                         if (action.action == Actions.Deposit)
-                            superRouter.multiDstMultiVaultDeposit{
+                            superRouter.singleDirectSingleVaultDeposit{
                                 value: action.msgValue
-                            }(vars.multiDstMultiVaultStateReq);
+                            }(vars.singleDirectSingleVaultStateReq);
                         else if (action.action == Actions.Withdraw)
-                            superRouter.multiDstMultiVaultWithdraw{
+                            superRouter.singleDirectSingleVaultWithdraw{
                                 value: action.msgValue
-                            }(vars.multiDstMultiVaultStateReq);
+                            }(vars.singleDirectSingleVaultStateReq);
                     }
-                } else {
-                    if (vars.nDestinations == 1) {
-                        if (CHAIN_0 != DST_CHAINS[0]) {
-                            vars
-                                .singleXChainSingleVaultStateReq = SingleXChainSingleVaultStateReq(
-                                primaryAMB,
-                                secondaryAMBs,
-                                DST_CHAINS[0],
-                                vars.singleSuperFormsData[0],
-                                action.adapterParam,
-                                action.msgValue
-                            );
-
-                            if (action.action == Actions.Deposit)
-                                superRouter.singleXChainSingleVaultDeposit{
-                                    value: action.msgValue
-                                }(vars.singleXChainSingleVaultStateReq);
-                            else if (action.action == Actions.Withdraw)
-                                superRouter.singleXChainSingleVaultWithdraw{
-                                    value: action.msgValue
-                                }(vars.singleXChainSingleVaultStateReq);
-                        } else {
-                            vars
-                                .singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
-                                DST_CHAINS[0],
-                                vars.singleSuperFormsData[0],
-                                action.adapterParam,
-                                action.msgValue
-                            );
-
-                            if (action.action == Actions.Deposit)
-                                superRouter.singleDirectSingleVaultDeposit{
-                                    value: action.msgValue
-                                }(vars.singleDirectSingleVaultStateReq);
-                            else if (action.action == Actions.Withdraw)
-                                superRouter.singleDirectSingleVaultWithdraw{
-                                    value: action.msgValue
-                                }(vars.singleDirectSingleVaultStateReq);
-                        }
-                    } else if (vars.nDestinations > 1) {
-                        vars
-                            .multiDstSingleVaultStateReq = MultiDstSingleVaultStateReq(
-                            primaryAMB,
-                            secondaryAMBs,
-                            DST_CHAINS,
-                            vars.singleSuperFormsData,
-                            action.adapterParam,
-                            action.msgValue
-                        );
-                    }
+                } else if (vars.nDestinations > 1) {
+                    vars
+                        .multiDstSingleVaultStateReq = MultiDstSingleVaultStateReq(
+                        primaryAMB,
+                        secondaryAMBs,
+                        DST_CHAINS,
+                        singleSuperFormsData,
+                        action.adapterParam,
+                        action.msgValue
+                    );
+                    if (action.action == Actions.Deposit)
+                        superRouter.multiDstSingleVaultDeposit{
+                            value: action.msgValue
+                        }(vars.multiDstSingleVaultStateReq);
+                    else if (action.action == Actions.Withdraw)
+                        superRouter.multiDstSingleVaultWithdraw{
+                            value: action.msgValue
+                        }(vars.multiDstSingleVaultStateReq);
                 }
+            }
+        } else {
+            /// @dev not done
+        }
 
-                for (uint256 i = 0; i < vars.nDestinations; i++) {
-                    aV.toChainId = DST_CHAINS[i];
-                    /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
+        return (vars, aV);
+    }
 
-                    if (CHAIN_0 != aV.toChainId) {
-                        stateRegistry = CoreStateRegistry(
-                            payable(
-                                getContract(aV.toChainId, "CoreStateRegistry")
-                            )
+    /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
+    function _stage3_src_to_dst_amb_delivery(
+        TestAction memory action,
+        StagesLocalVars memory vars,
+        MessagingAssertVars memory aV,
+        MultiVaultsSFData[] memory multiSuperFormsData,
+        SingleVaultSFData[] memory singleSuperFormsData
+    ) internal {
+        CoreStateRegistry stateRegistry;
+
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            aV.toChainId = DST_CHAINS[i];
+
+            if (CHAIN_0 != aV.toChainId) {
+                stateRegistry = CoreStateRegistry(
+                    payable(getContract(aV.toChainId, "CoreStateRegistry"))
+                );
+                /// @dev this will probably need to loop given the number of destinations
+
+                vars.logs = vm.getRecordedLogs();
+
+                /// @dev see pigeon for this implementation
+                /// @dev PIGEON DOES NOT WORK FOR MULTI DESTINATION (IT NEEDS AN ARRAY OF LZ ENDPOINTS!!!!)
+                LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
+                    .helpWithEstimates(
+                        vars.lzEndpoints_1[i],
+                        2000000, /// @dev FIXME This needs to use a real gas amount!!
+                        FORKS[aV.toChainId],
+                        vars.logs
+                    );
+
+                HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper")).help(
+                    address(HyperlaneMailbox),
+                    FORKS[aV.toChainId],
+                    vars.logs
+                );
+                vm.selectFork(FORKS[aV.toChainId]);
+
+                /// @dev NOTE: it's better to assert here inside the loop
+                aV.payloadNumberBefore = stateRegistry.payloadsCount();
+                aV.data = abi.decode(
+                    stateRegistry.payload(
+                        aV.payloadNumberBefore + 1 - vars.nDestinations + i
+                    ),
+                    (AMBMessage)
+                );
+
+                /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
+                /// @dev - assert the payload reached destination state registry
+                if (action.multiVaults) {
+                    aV.expectedMultiVaultsData = multiSuperFormsData[i];
+                    aV.receivedMultiVaultData = abi.decode(
+                        aV.data.params,
+                        (InitMultiVaultData)
+                    );
+
+                    assertEq(
+                        aV.expectedMultiVaultsData.superFormIds,
+                        aV.receivedMultiVaultData.superFormIds
+                    );
+
+                    assertEq(
+                        aV.expectedMultiVaultsData.amounts,
+                        aV.receivedMultiVaultData.amounts
+                    );
+                } else {
+                    aV.expectedSingleVaultData = singleSuperFormsData[i];
+
+                    aV.receivedSingleVaultData = abi.decode(
+                        aV.data.params,
+                        (InitSingleVaultData)
+                    );
+
+                    assertEq(
+                        aV.expectedSingleVaultData.superFormId,
+                        aV.receivedSingleVaultData.superFormId
+                    );
+
+                    assertEq(
+                        aV.expectedSingleVaultData.amount,
+                        aV.receivedSingleVaultData.amount
+                    );
+                }
+            }
+            vm.selectFork(aV.initialFork);
+        }
+    }
+
+    /// @dev STEP 4 Update state and process src to dst payload
+    function _stage4_process_src_dst_payload(
+        TestAction memory action,
+        StagesLocalVars memory vars,
+        MessagingAssertVars memory aV,
+        SingleVaultSFData[] memory singleSuperFormsData,
+        uint256 actionIndex
+    ) internal returns (bool success) {
+        /// assume it will pass by default
+        success = true;
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            aV.toChainId = DST_CHAINS[i];
+
+            if (CHAIN_0 != aV.toChainId) {
+                if (action.action == Actions.Deposit) {
+                    unchecked {
+                        PAYLOAD_ID[aV.toChainId]++;
+                    }
+                    vars.multiVaultsPayloadArg = UpdateMultiVaultPayloadArgs(
+                        PAYLOAD_ID[aV.toChainId],
+                        aV.receivedMultiVaultData.amounts,
+                        action.slippage,
+                        aV.toChainId,
+                        action.testType,
+                        action.revertError,
+                        action.revertRole
+                    );
+
+                    vars.singleVaultsPayloadArg = UpdateSingleVaultPayloadArgs(
+                        PAYLOAD_ID[aV.toChainId],
+                        aV.receivedSingleVaultData.amount,
+                        action.slippage,
+                        aV.toChainId,
+                        action.testType,
+                        action.revertError,
+                        action.revertRole
+                    );
+                    if (action.testType == TestType.Pass) {
+                        if (action.multiTx) {
+                            if (action.multiVaults) {
+                                (, vars.underlyingSrcToken, ) = _targetVaults(
+                                    CHAIN_0,
+                                    DST_CHAINS[i],
+                                    actionIndex
+                                );
+
+                                vars.amounts = AMOUNTS[DST_CHAINS[i]][
+                                    actionIndex
+                                ];
+                                _batchProcessMultiTx(
+                                    aV.toChainId,
+                                    vars.underlyingSrcToken,
+                                    vars.amounts
+                                );
+                            } else {
+                                _processMultiTx(
+                                    aV.toChainId,
+                                    singleSuperFormsData[i].liqRequest.token,
+                                    singleSuperFormsData[i].amount
+                                );
+                            }
+                        }
+
+                        if (action.multiVaults) {
+                            _updateMultiVaultPayload(
+                                vars.multiVaultsPayloadArg
+                            );
+                        } else if (singleSuperFormsData.length > 0) {
+                            _updateSingleVaultPayload(
+                                vars.singleVaultsPayloadArg
+                            );
+                        }
+
+                        vm.recordLogs();
+                        _processPayload(
+                            PAYLOAD_ID[aV.toChainId],
+                            aV.toChainId,
+                            action.testType,
+                            action.revertError
                         );
-                        /// @dev this will probably need to loop given the number of destinations
 
                         vars.logs = vm.getRecordedLogs();
 
-                        /// @dev see pigeon for this implementation
-                        /// @dev PIGEON DOES NOT WORK FOR MULTI DESTINATION (IT NEEDS AN ARRAY OF LZ ENDPOINTS!!!!)
-                        LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
-                            .helpWithEstimates(
-                                vars.lzEndpoints_1[i],
-                                2000000, /// @dev FIXME This needs to use a real gas amount!!
-                                FORKS[aV.toChainId],
+                        LayerZeroHelper(
+                            getContract(aV.toChainId, "LayerZeroHelper")
+                        ).helpWithEstimates(
+                                vars.lzEndpoint_0,
+                                1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                                FORKS[CHAIN_0],
                                 vars.logs
                             );
 
-                        HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper"))
-                            .help(
+                        HyperlaneHelper(
+                            getContract(aV.toChainId, "HyperlaneHelper")
+                        ).help(
                                 address(HyperlaneMailbox),
-                                FORKS[aV.toChainId],
+                                FORKS[CHAIN_0],
                                 vars.logs
                             );
-                        vm.selectFork(FORKS[aV.toChainId]);
-
-                        aV.payloadNumberBefore = stateRegistry.payloadsCount();
-                        aV.data = abi.decode(
-                            stateRegistry.payload(
-                                aV.payloadNumberBefore +
-                                    1 -
-                                    vars.nDestinations +
-                                    i
-                            ),
-                            (AMBMessage)
+                    } else if (
+                        action.testType == TestType.RevertProcessPayload
+                    ) {
+                        success = _processPayload(
+                            PAYLOAD_ID[aV.toChainId],
+                            aV.toChainId,
+                            action.testType,
+                            action.revertError
                         );
-
-                        /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
-                        /// @dev - assert the payload reached destination state registry
+                        if (!success) {
+                            return success;
+                        }
+                    } else if (
+                        action.testType == TestType.RevertUpdateStateSlippage ||
+                        action.testType == TestType.RevertUpdateStateRBAC
+                    ) {
                         if (action.multiVaults) {
-                            aV.expectedMultiVaultsData = vars
-                                .multiSuperFormsData[i];
-                            aV.receivedMultiVaultData = abi.decode(
-                                aV.data.params,
-                                (InitMultiVaultData)
-                            );
-
-                            assertEq(
-                                aV.expectedMultiVaultsData.superFormIds,
-                                aV.receivedMultiVaultData.superFormIds
-                            );
-
-                            assertEq(
-                                aV.expectedMultiVaultsData.amounts,
-                                aV.receivedMultiVaultData.amounts
+                            success = _updateMultiVaultPayload(
+                                vars.multiVaultsPayloadArg
                             );
                         } else {
-                            aV.expectedSingleVaultData = vars
-                                .singleSuperFormsData[i];
-
-                            aV.receivedSingleVaultData = abi.decode(
-                                aV.data.params,
-                                (InitSingleVaultData)
-                            );
-
-                            assertEq(
-                                aV.expectedSingleVaultData.superFormId,
-                                aV.receivedSingleVaultData.superFormId
-                            );
-
-                            assertEq(
-                                aV.expectedSingleVaultData.amount,
-                                aV.receivedSingleVaultData.amount
+                            success = _updateSingleVaultPayload(
+                                vars.singleVaultsPayloadArg
                             );
                         }
 
-                        /// @dev STEP 4 (FOR XCHAIN) Update State and Process Payloads
-
-                        if (action.action == Actions.Deposit) {
-                            unchecked {
-                                PAYLOAD_ID[aV.toChainId]++;
-                            }
-                            vars
-                                .multiVaultsPayloadArg = UpdateMultiVaultPayloadArgs(
-                                PAYLOAD_ID[aV.toChainId],
-                                aV.receivedMultiVaultData.amounts,
-                                action.slippage,
-                                aV.toChainId,
-                                action.testType,
-                                action.revertError,
-                                action.revertRole
-                            );
-
-                            vars
-                                .singleVaultsPayloadArg = UpdateSingleVaultPayloadArgs(
-                                PAYLOAD_ID[aV.toChainId],
-                                aV.receivedSingleVaultData.amount,
-                                action.slippage,
-                                aV.toChainId,
-                                action.testType,
-                                action.revertError,
-                                action.revertRole
-                            );
-                            if (action.testType == TestType.Pass) {
-                                /// @dev multi tx is currently disabled until fixed
-                                /// @dev should loop here through multiSuperFormsData if multiVaults and call this multiple times?
-                                /// @dev should loop here through singleSuperFormsData if !multiVaults and call one time?
-
-                                if (action.multiTx) {
-                                    if (action.multiVaults) {
-                                        (
-                                            ,
-                                            vars.underlyingSrcToken,
-
-                                        ) = _targetVaults(
-                                            CHAIN_0,
-                                            DST_CHAINS[i],
-                                            act
-                                        );
-
-                                        vars.amounts = AMOUNTS[DST_CHAINS[i]][
-                                            act
-                                        ];
-                                        _batchProcessMultiTx(
-                                            aV.toChainId,
-                                            vars.underlyingSrcToken,
-                                            vars.amounts
-                                        );
-                                    } else {
-                                        _processMultiTx(
-                                            aV.toChainId,
-                                            vars
-                                                .singleSuperFormsData[i]
-                                                .liqRequest
-                                                .token,
-                                            vars.singleSuperFormsData[i].amount
-                                        );
-                                    }
-                                }
-
-                                if (action.multiVaults) {
-                                    _updateMultiVaultPayload(
-                                        vars.multiVaultsPayloadArg
-                                    );
-                                } else if (
-                                    vars.singleSuperFormsData.length > 0
-                                ) {
-                                    _updateSingleVaultPayload(
-                                        vars.singleVaultsPayloadArg
-                                    );
-                                }
-
-                                vm.recordLogs();
-                                _processPayload(
-                                    PAYLOAD_ID[aV.toChainId],
-                                    aV.toChainId,
-                                    action.testType,
-                                    action.revertError
-                                );
-
-                                vars.logs = vm.getRecordedLogs();
-
-                                LayerZeroHelper(
-                                    getContract(aV.toChainId, "LayerZeroHelper")
-                                ).helpWithEstimates(
-                                        vars.lzEndpoint_0,
-                                        1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
-                                        FORKS[CHAIN_0],
-                                        vars.logs
-                                    );
-
-                                HyperlaneHelper(
-                                    getContract(aV.toChainId, "HyperlaneHelper")
-                                ).help(
-                                        address(HyperlaneMailbox),
-                                        FORKS[CHAIN_0],
-                                        vars.logs
-                                    );
-
-                                unchecked {
-                                    PAYLOAD_ID[CHAIN_0]++;
-                                }
-
-                                _processPayload(
-                                    PAYLOAD_ID[CHAIN_0],
-                                    CHAIN_0,
-                                    action.testType,
-                                    action.revertError
-                                );
-                            } else if (
-                                action.testType == TestType.RevertProcessPayload
-                            ) {
-                                aV.success = _processPayload(
-                                    PAYLOAD_ID[aV.toChainId],
-                                    aV.toChainId,
-                                    action.testType,
-                                    action.revertError
-                                );
-                                if (!aV.success) {
-                                    return false;
-                                }
-                            } else if (
-                                action.testType ==
-                                TestType.RevertUpdateStateSlippage ||
-                                action.testType ==
-                                TestType.RevertUpdateStateRBAC
-                            ) {
-                                if (action.multiVaults) {
-                                    aV.success = _updateMultiVaultPayload(
-                                        vars.multiVaultsPayloadArg
-                                    );
-                                } else {
-                                    aV.success = _updateSingleVaultPayload(
-                                        vars.singleVaultsPayloadArg
-                                    );
-                                }
-
-                                if (!aV.success) {
-                                    return false;
-                                }
-                            }
-                        } else {
-                            unchecked {
-                                PAYLOAD_ID[aV.toChainId]++;
-                            }
-                            _processPayload(
-                                PAYLOAD_ID[aV.toChainId],
-                                aV.toChainId,
-                                action.testType,
-                                action.revertError
-                            );
+                        if (!success) {
+                            return success;
                         }
                     }
-                    vm.selectFork(aV.initialFork);
+                } else {
+                    unchecked {
+                        PAYLOAD_ID[aV.toChainId]++;
+                    }
+                    _processPayload(
+                        PAYLOAD_ID[aV.toChainId],
+                        aV.toChainId,
+                        action.testType,
+                        action.revertError
+                    );
                 }
-            } else {
-                /// @dev not done
+            }
+            vm.selectFork(aV.initialFork);
+        }
+    }
+
+    /// @dev STEP 5 Process dst to src payload (mint of SuperPositions for deposits)
+    function _stage5_process_superPositions_mint(
+        TestAction memory action,
+        StagesLocalVars memory vars,
+        MessagingAssertVars memory aV
+    ) internal returns (bool success) {
+        /// assume it will pass by default
+        success = true;
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            aV.toChainId = DST_CHAINS[i];
+
+            if (CHAIN_0 != aV.toChainId) {
+                if (action.testType == TestType.Pass) {
+                    unchecked {
+                        PAYLOAD_ID[CHAIN_0]++;
+                    }
+
+                    success = _processPayload(
+                        PAYLOAD_ID[CHAIN_0],
+                        CHAIN_0,
+                        action.testType,
+                        action.revertError
+                    );
+                }
+
+                vm.selectFork(aV.initialFork);
             }
         }
     }
@@ -670,7 +702,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _buildSingleVaultWithdrawCallData(
         SingleVaultCallDataArgs memory args
-    ) internal returns (SingleVaultSFData memory superFormData) {
+    ) internal view returns (SingleVaultSFData memory superFormData) {
         /// @dev check this from down here when contracts are fixed for multi vault
         /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
         bytes memory socketTxData = abi.encodeWithSignature(

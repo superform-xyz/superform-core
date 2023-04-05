@@ -10,11 +10,17 @@ import "@ds-test/test.sol";
 import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "@pigeon/hyperlane/HyperlaneHelper.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
-import "@openzeppelin-contracts/contracts/utils/Strings.sol";
+import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
 
-/// @dev src imports
+/// @dev test utils & mocks
+import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
+import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
+import "./TestTypes.sol";
+
+/// @dev Protocol imports
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
@@ -31,15 +37,8 @@ import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
-
 import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
-
-/// @dev local test imports
-import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
-import {MockERC20} from "../mocks/MockERC20.sol";
-import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
-import "./TestTypes.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
@@ -50,7 +49,8 @@ abstract contract BaseSetup is DSTest, Test {
 
     address public deployer = address(777);
     address[] public users;
-    mapping(uint16 chainId => mapping(bytes32 implementation => address at)) public contracts;
+    mapping(uint16 chainId => mapping(bytes32 implementation => address at))
+        public contracts;
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
@@ -83,7 +83,8 @@ abstract contract BaseSetup is DSTest, Test {
     // formbeacon id => vault name
     mapping(uint256 formBeaconId => string[] names) VAULT_NAMES;
     // chainId => formbeacon id => vault
-    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults)) public vaults;
+    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults))
+        public vaults;
     // chainId => formbeacon id => vault id
     mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
     mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
@@ -93,8 +94,10 @@ abstract contract BaseSetup is DSTest, Test {
     /// @dev liquidity bridge addresses
     address[] bridgeAddresses;
 
-    /// @dev amb ids
-    uint8[] ambIds;
+    /// @dev setup amb bridges
+    /// @notice id 1 is layerzero
+    /// @notice id 2 is hyperlane
+    uint8[] public ambIds = [uint8(1), 2];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -210,11 +213,6 @@ abstract contract BaseSetup is DSTest, Test {
     string public OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // Native token: ETH
     string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: FTM
 
-    /*//////////////////////////////////////////////////////////////
-                    PUBLIC FUNCTIONS FOR TESTS
-            THESE FUNCTIONS SHOULD BE USED WHENEVER POSSIBLE
-    //////////////////////////////////////////////////////////////*/
-
     function setUp() public virtual {
         _preDeploymentSetup();
 
@@ -258,28 +256,28 @@ abstract contract BaseSetup is DSTest, Test {
             vars.fork = FORKS[vars.chainId];
             vm.selectFork(vars.fork);
 
-            /// @dev 1- deploy LZ Helper from Pigeon
+            /// @dev 1.1- deploy LZ Helper from Pigeon
             vars.lzHelper = address(new LayerZeroHelper());
             vm.allowCheatcodes(vars.lzHelper);
 
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars
                 .lzHelper;
 
-            /// @dev 1.1- deploy Hyperlane Helper from Pigeon
+            /// @dev 1.2- deploy Hyperlane Helper from Pigeon
             vars.hyperlaneHelper = address(new HyperlaneHelper());
             vm.allowCheatcodes(vars.hyperlaneHelper);
 
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars
                 .hyperlaneHelper;
 
-            /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
+            /// @dev 2.1- deploy StateRegistry pointing to lzEndpoints
             vars.coreStateRegistry = address(
                 new CoreStateRegistry(vars.chainId)
             );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
                 .coreStateRegistry;
 
-            /// @dev 2.1- deploy Factory State Registry
+            /// @dev 2.2- deploy Factory State Registry
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry(vars.chainId)
             );
@@ -287,7 +285,7 @@ abstract contract BaseSetup is DSTest, Test {
                 bytes32(bytes("FactoryStateRegistry"))
             ] = vars.factoryStateRegistry;
 
-            /// @dev 2.2- deploy Layerzero Implementation
+            /// @dev 3.1- deploy Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
@@ -298,7 +296,7 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
                 .lzImplementation;
 
-            /// @dev 2.3- deploy Hyperlane Implementation
+            /// @dev 3.2- deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation(
                     HyperlaneMailbox,
@@ -368,14 +366,13 @@ abstract contract BaseSetup is DSTest, Test {
                 }
             }
 
-            /// @dev 5 - Deploy SuperFormFactory
+            /// @dev 6 - Deploy SuperFormFactory
             vars.factory = address(new SuperFormFactory(vars.chainId));
 
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
                 .factory;
 
-            /// @dev 6 - Deploy 4626Form implementations
-            /// FIXME: Multiple Forms deployment and selection from Scenario.t.sol
+            /// @dev 7 - Deploy 4626Form implementations
             // Standard ERC4626 Form
             vars.erc4626Form = address(new ERC4626Form());
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
@@ -387,7 +384,7 @@ abstract contract BaseSetup is DSTest, Test {
                 bytes32(bytes("ERC4626TimelockForm"))
             ] = vars.erc4626TimelockForm;
 
-            /// @dev 7 - Add newly deployed form  implementation to Factory, formBeaconId 1
+            /// @dev 8 - Add newly deployed form  implementation to Factory, formBeaconId 1
             ISuperFormFactory(vars.factory).addFormBeacon(
                 vars.erc4626Form,
                 FORM_BEACON_IDS[0]
@@ -398,38 +395,31 @@ abstract contract BaseSetup is DSTest, Test {
                 FORM_BEACON_IDS[1]
             );
 
-            /// @dev 8 - Deploy TokenBank
+            /// @dev 9 - Deploy TokenBank
             vars.tokenBank = address(new TokenBank(vars.chainId));
 
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
                 .tokenBank;
 
-            /// @dev 9 - Deploy SuperRouter
-            contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = address(
+            /// @dev 10 - Deploy SuperRouter
+            vars.superRouter = address(
                 new SuperRouter(vars.chainId, "test.com/")
             );
+            contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars
+                .superRouter;
 
-            /// @dev 10 - Deploy MultiTx Processor
-            contracts[vars.chainId][
-                bytes32(bytes("MultiTxProcessor"))
-            ] = address(new MultiTxProcessor());
+            /// @dev 11 - Deploy MultiTx Processor
+            vars.multiTxProcessor = address(new MultiTxProcessor());
+            contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
+                .multiTxProcessor;
 
-            /// @dev 11 - Deploy SWAP token with no associated vault with 18 decimals
-            contracts[vars.chainId][bytes32(bytes("Swap"))] = address(
-                new MockERC20("Swap", "SWP", 18, deployer, milionTokensE18)
-            );
-
-            /// @dev 12 - Deploy SuperRegistry and assign roles
+            /// @dev 12 - Deploy SuperRegistry and assign addresses
             vars.superRegistry = address(new SuperRegistry(vars.chainId));
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
 
-            SuperRegistry(vars.superRegistry).setSuperRouter(
-                contracts[vars.chainId][bytes32(bytes("SuperRouter"))]
-            );
-            SuperRegistry(vars.superRegistry).setTokenBank(
-                contracts[vars.chainId][bytes32(bytes("TokenBank"))]
-            );
+            SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
+            SuperRegistry(vars.superRegistry).setTokenBank(vars.tokenBank);
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
 
             SuperRegistry(vars.superRegistry).setCoreStateRegistry(
@@ -447,15 +437,13 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperFormFactory(vars.factory).setSuperRegistry(vars.superRegistry);
 
-            MultiTxProcessor(
-                payable(
-                    contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))]
-                )
-            ).setSuperRegistry(vars.superRegistry);
+            MultiTxProcessor(payable(vars.multiTxProcessor)).setSuperRegistry(
+                vars.superRegistry
+            );
 
-            SuperRouter(
-                payable(contracts[vars.chainId][bytes32(bytes("SuperRouter"))])
-            ).setSuperRegistry(vars.superRegistry);
+            SuperRouter(payable(vars.superRouter)).setSuperRegistry(
+                vars.superRegistry
+            );
 
             TokenBank(payable(vars.tokenBank)).setSuperRegistry(
                 vars.superRegistry
@@ -464,128 +452,98 @@ abstract contract BaseSetup is DSTest, Test {
             IBaseStateRegistry(vars.coreStateRegistry).setSuperRegistry(
                 vars.superRegistry
             );
-        }
 
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            vars.chainId = chainIds[i];
-            vars.fork = FORKS[vars.chainId];
-            vm.selectFork(vars.fork);
+            /// @dev 13 Setup RBAC
 
-            vars.srcCoreStateRegistry = getContract(
-                vars.chainId,
-                "CoreStateRegistry"
-            );
-            vars.srcFactoryStateRegistry = getContract(
-                vars.chainId,
-                "FactoryStateRegistry"
-            );
-            vars.srcLzImplementation = getContract(
-                vars.chainId,
-                "LzImplementation"
-            );
-            vars.srcHyperlaneImplementation = getContract(
-                vars.chainId,
-                "HyperlaneImplementation"
-            );
-
-            vars.srcSuperRouter = getContract(vars.chainId, "SuperRouter");
-            vars.srcSuperFormFactory = getContract(
-                vars.chainId,
-                "SuperFormFactory"
-            );
-
-            vars.dstSuperFormFactory = getContract(
-                vars.chainId,
-                "SuperFormFactory"
-            );
-
-            vars.srcTokenBank = getContract(vars.chainId, "TokenBank");
-            vars.srcMultiTxProcessor = getContract(
-                vars.chainId,
-                "MultiTxProcessor"
-            );
-
-            /// @dev - Create SuperForm for id 1 in Factory contract
-            /// @dev FIXME: currently hardcoded formId 1
-            ///
-
-            // SuperDestination(payable(vars.srcSuperDestination))
-            //     .setSrcTokenDistributor(vars.srcSuperRouter, vars.chainId);
-
-            // SuperDestination(payable(vars.srcSuperDestination))
-            //     .updateSafeGasParam("0x000100000000000000000000000000000000000000000000000000000000004c4b40");
-
-            /// @dev - RBAC
-
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
-                vars.srcSuperRouter
+                vars.superRouter
             );
 
-            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry))
-                .setFactoryContract(vars.srcSuperFormFactory);
+            FactoryStateRegistry(payable(vars.factoryStateRegistry))
+                .setFactoryContract(vars.factory);
 
-            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry))
-                .grantRole(CORE_CONTRACTS_ROLE, vars.srcSuperFormFactory);
+            FactoryStateRegistry(payable(vars.factoryStateRegistry)).grantRole(
+                CORE_CONTRACTS_ROLE,
+                vars.factory
+            );
 
             /// @dev TODO: for each form , add it to the core_contracts_role. Just 1 for now
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
-                vars.srcTokenBank
+                vars.tokenBank
             );
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 IMPLEMENTATION_CONTRACTS_ROLE,
                 vars.lzImplementation
             );
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 IMPLEMENTATION_CONTRACTS_ROLE,
                 vars.hyperlaneImplementation
             );
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 PROCESSOR_ROLE,
                 deployer
             );
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
+            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 UPDATER_ROLE,
                 deployer
             );
 
             /// @dev FIXME: in reality who has the SWAPPER_ROLE?
-            MultiTxProcessor(payable(vars.srcMultiTxProcessor)).grantRole(
+            MultiTxProcessor(payable(vars.multiTxProcessor)).grantRole(
                 SWAPPER_ROLE,
                 deployer
             );
 
-            TokenBank(payable(vars.srcTokenBank)).grantRole(
+            TokenBank(payable(vars.tokenBank)).grantRole(
                 STATE_REGISTRY_ROLE,
-                vars.srcCoreStateRegistry
+                vars.coreStateRegistry
             );
 
             /// @dev configures lzImplementation to state registry
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
+            CoreStateRegistry(payable(vars.coreStateRegistry)).configureAmb(
                 ambIds[0],
                 vars.lzImplementation
             );
 
             /// @dev configures hyperlaneImplementation to state registry
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
+            CoreStateRegistry(payable(vars.coreStateRegistry)).configureAmb(
                 ambIds[1],
                 vars.hyperlaneImplementation
             );
 
             /// @dev configures lzImplementation to state registry
-            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry))
+            FactoryStateRegistry(payable(vars.factoryStateRegistry))
                 .configureAmb(ambIds[0], vars.lzImplementation);
 
             /// @dev configures hyperlaneImplementation to state registry
-            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry))
+            FactoryStateRegistry(payable(vars.factoryStateRegistry))
                 .configureAmb(ambIds[1], vars.hyperlaneImplementation);
+        }
+
+        /// @dev 14 - Setup trusted remotes and deploy superforms. This must be done after the rest of the protocol has been deployed on all chains
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vars.chainId = chainIds[i];
+            vars.fork = FORKS[vars.chainId];
+            vm.selectFork(vars.fork);
+
+            vars.lzImplementation = getContract(
+                vars.chainId,
+                "LzImplementation"
+            );
+
+            vars.hyperlaneImplementation = getContract(
+                vars.chainId,
+                "HyperlaneImplementation"
+            );
+
+            vars.factory = getContract(vars.chainId, "SuperFormFactory");
 
             /// @dev Set all trusted remotes for each chain & configure amb chains ids
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (j != i) {
                     vars.dstChainId = chainIds[j];
-                    /// @dev FIXME: for now only LZ amb
                     vars.dstAmbChainId = lz_chainIds[j];
                     vars.dstHypChainId = hyperlane_chainIds[j];
 
@@ -598,26 +556,26 @@ abstract contract BaseSetup is DSTest, Test {
                         "HyperlaneImplementation"
                     );
 
-                    LayerzeroImplementation(payable(vars.srcLzImplementation))
+                    LayerzeroImplementation(payable(vars.lzImplementation))
                         .setTrustedRemote(
                             vars.dstAmbChainId,
                             abi.encodePacked(
-                                vars.srcLzImplementation,
+                                vars.lzImplementation,
                                 vars.dstLzImplementation
                             )
                         );
-                    LayerzeroImplementation(payable(vars.srcLzImplementation))
+                    LayerzeroImplementation(payable(vars.lzImplementation))
                         .setChainId(vars.dstChainId, vars.dstAmbChainId);
 
                     HyperlaneImplementation(
-                        payable(vars.srcHyperlaneImplementation)
+                        payable(vars.hyperlaneImplementation)
                     ).setReceiver(
                             vars.dstHypChainId,
                             vars.dstHyperlaneImplementation
                         );
 
                     HyperlaneImplementation(
-                        payable(vars.srcHyperlaneImplementation)
+                        payable(vars.hyperlaneImplementation)
                     ).setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
@@ -625,9 +583,8 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev create superforms when the whole state registry is configured?
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
-                    (, vars.superForm) = ISuperFormFactory(
-                        vars.srcSuperFormFactory
-                    ).createSuperForm{
+                    (, vars.superForm) = ISuperFormFactory(vars.factory)
+                        .createSuperForm{
                         value: _getPriceMultiplier(vars.chainId) * 10 ** 18
                     }(
                         FORM_BEACON_IDS[j],
@@ -664,7 +621,7 @@ abstract contract BaseSetup is DSTest, Test {
         payloadID[OP] = 0;
         // payloadID[FTM] = 0;
     }
-*/
+    */
     /*//////////////////////////////////////////////////////////////
                         MISC. HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -706,14 +663,8 @@ abstract contract BaseSetup is DSTest, Test {
         priceFeeds[OP] = address(0);
         //priceFeeds[FTM] = FANTOM_FTM_USD_FEED;
 
-        /// @dev setup bridges. Only bridgeId 1 available for tests (Socket)
+        /// @dev setup bridges. 1 is the socket mock
         bridgeIds.push(1);
-
-        /// @dev setup amb bridges
-        /// @notice id 1 is layerzero
-        /// @notice id 2 is hyperlane
-        ambIds.push(1);
-        ambIds.push(2);
 
         /// @dev setup users
         users.push(address(1));
@@ -789,10 +740,13 @@ abstract contract BaseSetup is DSTest, Test {
     ) internal view returns (int256) {
         // prettier-ignore
         (
-            /* uint80 roundID */,
-            int price,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
+            /* uint80 roundID */
+            ,
+            int256 price,
+            /*uint startedAt*/
+            ,
+            /*uint timeStamp*/
+            ,
             /*uint80 answeredInRound*/
         ) = AggregatorV3Interface(priceFeed_).latestRoundData();
         return price;
@@ -800,8 +754,9 @@ abstract contract BaseSetup is DSTest, Test {
 
     function _fundUnderlyingTokens(uint256 amount) private {
         for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
-            if (getContract(chainIds[0], UNDERLYING_TOKENS[j]) == address(0))
+            if (getContract(chainIds[0], UNDERLYING_TOKENS[j]) == address(0)) {
                 revert INVALID_UNDERLYING_TOKEN_NAME();
+            }
 
             for (uint256 i = 0; i < chainIds.length; i++) {
                 vm.selectFork(FORKS[chainIds[i]]);
@@ -809,18 +764,13 @@ abstract contract BaseSetup is DSTest, Test {
                 deal(token, address(1), 1 ether * amount);
                 deal(token, address(2), 1 ether * amount);
                 deal(token, address(3), 1 ether * amount);
-
-                address swap = getContract(chainIds[i], "Swap");
-                deal(swap, address(1), 1 ether * amount);
-                deal(swap, address(2), 1 ether * amount);
-                deal(swap, address(3), 1 ether * amount);
             }
         }
     }
 
     function _deployWithCreate2(
         bytes memory bytecode_,
-        uint salt_
+        uint256 salt_
     ) internal returns (address addr) {
         assembly {
             addr := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
