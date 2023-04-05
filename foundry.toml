@@ -11,6 +11,7 @@ remappings = [
   '@ds-test=lib/ds-test/src/',
   '@std=lib/forge-std/src/',
   '@solmate=lib/solmate/src/'
+  '@erc1155s=lib/erc1155s'
 ]
 test = 'src/test'
 verbosity = 0
