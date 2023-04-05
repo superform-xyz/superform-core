@@ -295,7 +295,7 @@ abstract contract ProtocolActions is BaseSetup {
                         LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
                             .helpWithEstimates(
                                 vars.lzEndpoints_1[i],
-                                lz_chainIds[i],
+                                0,
                                 1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
                                 FORKS[aV.toChainId],
                                 vars.logs
@@ -304,7 +304,7 @@ abstract contract ProtocolActions is BaseSetup {
                         HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper"))
                             .help(
                                 address(HyperlaneMailbox),
-                                hyperlane_chainIds[1],
+                                0,
                                 FORKS[aV.toChainId],
                                 vars.logs
                             );
@@ -450,7 +450,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     getContract(aV.toChainId, "LayerZeroHelper")
                                 ).helpWithEstimates(
                                         vars.lzEndpoint_0,
-                                        lz_chainIds[0],
+                                        0,
                                         1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
                                         FORKS[CHAIN_0],
                                         vars.logs
@@ -460,7 +460,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     getContract(aV.toChainId, "HyperlaneHelper")
                                 ).help(
                                         address(HyperlaneMailbox),
-                                        hyperlane_chainIds[0],
+                                        0,
                                         FORKS[CHAIN_0],
                                         vars.logs
                                     );

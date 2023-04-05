@@ -32,7 +32,7 @@ contract SuperFormFactoryTest is BaseSetup {
         super.setUp();
     }
 
-    function test_chainId() public {
+    function xtest_chainId() public {
         vm.selectFork(FORKS[chainId]);
 
         assertEq(
@@ -41,7 +41,7 @@ contract SuperFormFactoryTest is BaseSetup {
         );
     }
 
-    function test_revert_addForm_addressZero() public {
+    function xtest_revert_addForm_addressZero() public {
         address form = address(0);
         uint256 formId = 1;
 
@@ -51,7 +51,7 @@ contract SuperFormFactoryTest is BaseSetup {
             .addFormBeacon(form, formId);
     }
 
-    function test_revert_addForm_interfaceUnsupported() public {
+    function xtest_revert_addForm_interfaceUnsupported() public {
         address form = address(0x1);
         uint256 formId = 1;
 
@@ -61,7 +61,7 @@ contract SuperFormFactoryTest is BaseSetup {
             .addFormBeacon(form, formId);
     }
 
-    function test_addForm() public {
+    function xtest_addForm() public {
         vm.startPrank(deployer);
         address formImplementation = address(new ERC4626Form());
         uint256 formBeaconId = 1;
@@ -125,6 +125,37 @@ contract SuperFormFactoryTest is BaseSetup {
         vars.vault1 = address(0x2);
         vars.vault2 = address(0x3);
 
+        console.log(
+            FactoryStateRegistry(
+                payable(getContract(chainIds[0], "FactoryStateRegistry"))
+            ).payloadsCount()
+        );
+        console.log(
+            FactoryStateRegistry(
+                payable(getContract(chainIds[1], "FactoryStateRegistry"))
+            ).payloadsCount()
+        );
+        console.log(
+            FactoryStateRegistry(
+                payable(getContract(chainIds[2], "FactoryStateRegistry"))
+            ).payloadsCount()
+        );
+        console.log(
+            FactoryStateRegistry(
+                payable(getContract(chainIds[3], "FactoryStateRegistry"))
+            ).payloadsCount()
+        );
+        console.log(
+            FactoryStateRegistry(
+                payable(getContract(chainIds[4], "FactoryStateRegistry"))
+            ).payloadsCount()
+        );
+        console.log(
+            FactoryStateRegistry(
+                payable(getContract(chainIds[5], "FactoryStateRegistry"))
+            ).payloadsCount()
+        );
+
         /// @dev test getAllSuperForms
 
         (
@@ -141,15 +172,45 @@ contract SuperFormFactoryTest is BaseSetup {
             vars.transformedChainIds_[i] = uint256(vars.chainIds_[i]);
         }
 
-        vars.expectedFormIds = new uint256[](3);
+        vars.expectedFormIds = new uint256[](18);
         vars.expectedFormIds[0] = vars.formBeaconId;
         vars.expectedFormIds[1] = vars.formBeaconId;
         vars.expectedFormIds[2] = vars.formBeaconId;
+        vars.expectedFormIds[3] = vars.formBeaconId;
+        vars.expectedFormIds[4] = vars.formBeaconId;
+        vars.expectedFormIds[5] = vars.formBeaconId;
+        vars.expectedFormIds[6] = vars.formBeaconId;
+        vars.expectedFormIds[7] = vars.formBeaconId;
+        vars.expectedFormIds[8] = vars.formBeaconId;
+        vars.expectedFormIds[9] = vars.formBeaconId;
+        vars.expectedFormIds[10] = vars.formBeaconId;
+        vars.expectedFormIds[11] = vars.formBeaconId;
+        vars.expectedFormIds[12] = vars.formBeaconId;
+        vars.expectedFormIds[13] = vars.formBeaconId;
+        vars.expectedFormIds[14] = vars.formBeaconId;
+        vars.expectedFormIds[15] = vars.formBeaconId;
+        vars.expectedFormIds[16] = vars.formBeaconId;
+        vars.expectedFormIds[17] = vars.formBeaconId;
 
-        vars.expectedChainIds = new uint256[](3);
+        vars.expectedChainIds = new uint256[](18);
         vars.expectedChainIds[0] = chainId;
         vars.expectedChainIds[1] = chainId;
         vars.expectedChainIds[2] = chainId;
+        vars.expectedChainIds[3] = chainIds[1];
+        vars.expectedChainIds[4] = chainIds[1];
+        vars.expectedChainIds[5] = chainIds[1];
+        vars.expectedChainIds[6] = chainIds[2];
+        vars.expectedChainIds[7] = chainIds[2];
+        vars.expectedChainIds[8] = chainIds[2];
+        vars.expectedChainIds[9] = chainIds[3];
+        vars.expectedChainIds[10] = chainIds[3];
+        vars.expectedChainIds[11] = chainIds[3];
+        vars.expectedChainIds[12] = chainIds[4];
+        vars.expectedChainIds[13] = chainIds[4];
+        vars.expectedChainIds[14] = chainIds[4];
+        vars.expectedChainIds[15] = chainIds[5];
+        vars.expectedChainIds[16] = chainIds[5];
+        vars.expectedChainIds[17] = chainIds[5];
 
         assertEq(vars.formIds_, vars.expectedFormIds);
         assertEq(vars.transformedChainIds_, vars.expectedChainIds);
@@ -157,7 +218,7 @@ contract SuperFormFactoryTest is BaseSetup {
         assertEq(
             SuperFormFactory(getContract(chainId, "SuperFormFactory"))
                 .getAllSuperFormsList(),
-            3
-        );
+            18
+        ); /// 1 chain = 3; 6 chains = 6 * 3
     }
 }

@@ -7,7 +7,7 @@ import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
-import {AMBFactoryMessage} from "./types/DataTypes.sol";
+import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
 import {FormBeacon} from "./forms/FormBeacon.sol";
 import {BaseForm} from "./BaseForm.sol";
 import "./utils/DataPacking.sol";
@@ -127,9 +127,9 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         AMBFactoryMessage memory data = AMBFactoryMessage(superFormId_, vault_);
 
         /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8 ambId = 1;
+        uint8 ambId = 2;
         uint8[] memory proofAmbIds = new uint8[](1);
-        proofAmbIds[0] = 2;
+        proofAmbIds[0] = 1;
 
         IBaseStateRegistry(superRegistry.factoryStateRegistry())
             .broadcastPayload{value: msg.value}(
@@ -175,7 +175,12 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         if (msg.sender != superRegistry.factoryStateRegistry())
             revert INVALID_CALLER();
 
-        AMBFactoryMessage memory data = abi.decode(data_, (AMBFactoryMessage));
+        AMBMessage memory message = abi.decode(data_, (AMBMessage));
+
+        AMBFactoryMessage memory data = abi.decode(
+            message.params,
+            (AMBFactoryMessage)
+        );
 
         /// @dev TODO - do we need extra checks before pushing here?
 

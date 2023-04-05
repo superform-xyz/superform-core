@@ -523,6 +523,9 @@ abstract contract BaseSetup is DSTest, Test {
                 PROCESSOR_ROLE,
                 deployer
             );
+            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry))
+                .grantRole(PROCESSOR_ROLE, deployer);
+
             CoreStateRegistry(payable(vars.srcCoreStateRegistry)).grantRole(
                 UPDATER_ROLE,
                 deployer
@@ -576,12 +579,6 @@ abstract contract BaseSetup is DSTest, Test {
                         "HyperlaneImplementation"
                     );
 
-                    console.logBytes(
-                        abi.encodePacked(
-                            vars.srcLzImplementation,
-                            vars.dstLzImplementation
-                        )
-                    );
                     LayerzeroImplementation(payable(vars.srcLzImplementation))
                         .setTrustedRemote(
                             vars.dstAmbChainId,
@@ -615,6 +612,7 @@ abstract contract BaseSetup is DSTest, Test {
                     .createSuperForm{
                     value: _getPriceMultiplier(vars.chainId) * 10 ** 18
                 }(FORMS_FOR_VAULTS[j], address(vaults[vars.chainId][j]));
+                _broadcastPayload(vars.chainId, vm.getRecordedLogs());
 
                 contracts[vars.chainId][
                     bytes32(
@@ -628,8 +626,8 @@ abstract contract BaseSetup is DSTest, Test {
                     )
                 ] = vars.superForm;
             }
-            _broadcastPayload(i, vm.getRecordedLogs());
         }
+        _processFactoryPayloads();
         vm.stopPrank();
     }
 
@@ -792,21 +790,23 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev will sync the payloads for broadcast
-    function _broadcastPayload(uint256 i, Vm.Log[] memory logs) private {
+    function _broadcastPayload(
+        uint16 currentChainId,
+        Vm.Log[] memory logs
+    ) private {
         vm.stopPrank();
+
         for (uint256 j = 0; j < chainIds.length; j++) {
-            if (i != j) {
-                //console.log(i, j, FORKS[chainIds[i]], FORKS[chainIds[j]]);
-                LayerZeroHelper(getContract(chainIds[i], "LayerZeroHelper"))
+            if (chainIds[j] != currentChainId) {
+                LayerZeroHelper(getContract(currentChainId, "LayerZeroHelper"))
                     .helpWithEstimates(
                         lzEndpoints[j],
                         lz_chainIds[j],
-                        200000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                        1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
                         FORKS[chainIds[j]],
                         logs
                     );
-
-                HyperlaneHelper(getContract(chainIds[i], "HyperlaneHelper"))
+                HyperlaneHelper(getContract(currentChainId, "HyperlaneHelper"))
                     .help(
                         address(HyperlaneMailbox),
                         hyperlane_chainIds[j],
@@ -815,6 +815,19 @@ abstract contract BaseSetup is DSTest, Test {
                     );
             }
         }
+
         vm.startPrank(deployer);
+    }
+
+    /// @dev will sync the broadcasted factory payloads
+    function _processFactoryPayloads() private {
+        for (uint256 j = 0; j < chainIds.length; j++) {
+            vm.selectFork(FORKS[chainIds[j]]);
+            for (uint256 k = 1; k < 16; k++) {
+                FactoryStateRegistry(
+                    payable(getContract(chainIds[j], "FactoryStateRegistry"))
+                ).processPayload(k);
+            }
+        }
     }
 }
