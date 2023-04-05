@@ -7,81 +7,38 @@ import "../types/DataTypes.sol";
 // import "forge-std/console.sol";
 
 // Test Utils
+import {ITimelockForm} from "./interfaces/ITimelockForm.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
+
+/// @dev we can't use it because it shadows existing declaration at the BaseSetup leve
+// import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol"; 
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract ScenarioTimelockTest is ProtocolActions {
-    mapping(uint256 => Actions) public ACTION_TYPE;
 
+    /// @dev Global counter for actions sent to the protocol
     uint256 actionId;
 
+    /// @dev Access Form interface to call form functions for assertions
+    ERC4626TimelockForm public erc4626TimelockForm;
+
+    /// @dev singleDestinationSingleVault Deposit test case
     function setUp() public override {
         super.setUp();
-        /*//////////////////////////////////////////////////////////////
-                !! WARNING !!  DEFINE TEST SETTINGS HERE
-        //////////////////////////////////////////////////////////////*/
-
-        /// @dev singleDestinationSingleVault Deposit test case
 
         primaryAMB = 1;
-
         secondaryAMBs = [2];
+        CHAIN_0 = OP; /// @dev source chain
+        DST_CHAINS = [POLY]; /// @dev destination chain(s)
 
-        CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        /// @dev You can define settings here or pass them as arguments to _depositAction()/_withdrawAction()
 
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        /// NOTE: PACK THIS INTO MAPPING? TIE TO ACTION HERE?
-        /// @dev Deposit Action
-        /// chainID => actionID => vaultID
-        // TARGET_UNDERLYING_VAULTS[POLY][0] = [1];
-        // /// chainID => actionID => formID
-        // TARGET_FORM_KINDS[POLY][0] = [1];
-        // /// chainID => actionID => amount
-        // AMOUNTS[POLY][0] = [1000];
-        // /// chainID => actionID => slippage
-        // MAX_SLIPPAGE[POLY][0] = [1000];
-
-        // /// @dev Withdraw action
-        // TARGET_UNDERLYING_VAULTS[POLY][1] = [1];
-        // TARGET_FORM_KINDS[POLY][1] = [1];
-        // AMOUNTS[POLY][1] = [1000];
-        // MAX_SLIPPAGE[POLY][1] = [1000];
-
-        // /// @dev check if we need to have this here (it's being overriden)
-        // uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
-
-        // actions.push(
-        //     TestAction({
-        //         action: Actions.Deposit,
-        //         multiVaults: false, //!!WARNING turn on or off multi vaults
-        //         user: users[0],
-        //         testType: TestType.Pass,
-        //         revertError: "",
-        //         revertRole: "",
-        //         slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-        //         multiTx: false,
-        //         adapterParam: "",
-        //         msgValue: msgValue
-        //     })
-        // );
-
-        // actions.push(
-        //     TestAction({
-        //         action: Actions.Withdraw,
-        //         multiVaults: false, //!!WARNING turn on or off multi vaults
-        //         user: users[0],
-        //         testType: TestType.Pass,
-        //         revertError: "",
-        //         revertRole: "",
-        //         slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-        //         multiTx: false,
-        //         adapterParam: "",
-        //         msgValue: msgValue
-        //     })
-        // );
+        // TARGET_UNDERLYING_VAULTS[chainID][actionId] = [vaultID];
+        // TARGET_FORM_KINDS[chainID][actionId] = [formID];
+        // AMOUNTS[chainID][actionId] = [amount];
+        // MAX_SLIPPAGE[chainID][actionId] = [slippage];
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -98,17 +55,27 @@ contract ScenarioTimelockTest is ProtocolActions {
     /// assert revert on LOCKED(); - requestUnlock() was called but user wants to overwithdraw
     // function testFail_scenario_request_unlock_overwithdraw() public {}
 
-    /// @dev This test uses 2 actions and rolls block between
-    function test_scenario_request_unlock_withdraw() public {
-        /// NOTE: Execute single action by calling it
+    /// @dev This test uses 2 actions, rolls block between and make assertions about states in between
+    function test_scenario_request_unlock_full_withdraw() public {
+
+        /*///////////////////////////////////////////////////////////////
+                            ACCESS TO EXTERNAL STATE
+        //////////////////////////////////////////////////////////////*/
+
+        address targetForm = contracts[DST_CHAINS[0]][bytes32(bytes("ERC4626Form"))];
+        ITimelockForm form = ITimelockForm(targetForm);
+
+        /*///////////////////////////////////////////////////////////////
+                                DEPOSIT ACTION
+        //////////////////////////////////////////////////////////////*/
         
         TestAction memory action = _depositAction(
-            POLY,
-            1,
-            1,
-            1000,
-            1000,
-            TestType.Pass
+            DST_CHAINS[0], // chainID (destination)
+            1, // vaultID
+            2, // formID
+            1000, // amount
+            1000, // slippage 
+            TestType.Pass // testType
         );
 
         MultiVaultsSFData[] memory multiSuperFormsData;
@@ -119,10 +86,12 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// NOTE: What if we want to send from different EOA than deployer's?
         /// NOTE: Unsure if we need multi/singleSuperFormsData returned here if we can read state between calls now
-        
+
         console.log("stage0 buildReqData");
-        console.log("actionId", actionId);   
+        console.log("actionId", actionId);
+
         /// @dev User builds his request data for src (deposit action)
+        /// NOTE: SuperForm API operation, could be separated from individual test-flow  (internal processing)
         (
             multiSuperFormsData,
             singleSuperFormsData,
@@ -143,7 +112,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage2 done");
 
-        /// @dev FIXME? SuperForm Keepers operation, not relevant to deposit, should be separated for Form testing (internal processing)
+        /// @dev FIXME? SuperForm Keepers operation, could be separated from individual test-flow (internal processing)
         _stage3_src_to_dst_amb_delivery(
             action,
             vars,
@@ -154,7 +123,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage3 done");
 
-        /// @dev FIXME? SuperForm Keepers operation, not relevant to deposit, should be separated for Form testing (internal processing)
+        /// @dev FIXME? SuperForm Keepers operation, could be separated from individual test-flow (internal processing)
         success = _stage4_process_src_dst_payload(
             action,
             vars,
@@ -165,11 +134,17 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage4 done");
 
-        /// @dev FIXME? SuperForm Keepers operation, not relevant to deposit, should be separated for Form testing (internal processing)
+        /// @dev FIXME? SuperForm Keepers operation, not relevant to depositor, should be separated for Form testing (internal processing)
         success = _stage5_process_superPositions_mint(action, vars, aV);
 
         console.log("stage5 done");
-        
+
+        /*///////////////////////////////////////////////////////////////
+                                DEPOSIT ASSERTS
+        //////////////////////////////////////////////////////////////*/
+
+        uint256 balanceOfAlice = form.balanceOf(users[0]);
+        assertEq(balanceOfAlice, 1000);
     }
 
     function _depositAction(
@@ -180,7 +155,6 @@ contract ScenarioTimelockTest is ProtocolActions {
         uint256 slippage,
         TestType testType /// ProtocolActions invariant
     ) internal returns (TestAction memory depositAction) {
-
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
@@ -201,7 +175,6 @@ contract ScenarioTimelockTest is ProtocolActions {
             adapterParam: "",
             msgValue: msgValue
         });
-
     }
 
     function _withdrawAction(
@@ -212,7 +185,6 @@ contract ScenarioTimelockTest is ProtocolActions {
         uint256 slippage,
         TestType testType /// ProtocolActions invariant
     ) internal returns (TestAction memory withdrawAction) {
-        
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
@@ -233,7 +205,6 @@ contract ScenarioTimelockTest is ProtocolActions {
             adapterParam: "",
             msgValue: msgValue
         });
-        
     }
 
     // function test_scenario() public {
