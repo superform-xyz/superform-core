@@ -29,7 +29,7 @@ enum TestType {
     RevertUpdateStateRBAC
 }
 
-struct NewActionLocalVars {
+struct StagesLocalVars {
     Vm.Log[] logs;
     MultiDstMultiVaultsStateReq multiDstMultiVaultStateReq;
     MultiDstSingleVaultStateReq multiDstSingleVaultStateReq;
@@ -53,7 +53,7 @@ struct NewActionLocalVars {
     uint256[] maxSlippage;
 }
 
-struct AssertVars {
+struct MessagingAssertVars {
     uint256 initialFork;
     uint256 msgValue;
     uint256 txIdBefore;

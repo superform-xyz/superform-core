@@ -50,7 +50,8 @@ abstract contract BaseSetup is DSTest, Test {
 
     address public deployer = address(777);
     address[] public users;
-    mapping(uint16 chainId => mapping(bytes32 implementation => address at)) public contracts;
+    mapping(uint16 chainId => mapping(bytes32 implementation => address at))
+        public contracts;
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
@@ -83,7 +84,8 @@ abstract contract BaseSetup is DSTest, Test {
     // formbeacon id => vault name
     mapping(uint256 formBeaconId => string[] names) VAULT_NAMES;
     // chainId => formbeacon id => vault
-    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults)) public vaults;
+    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults))
+        public vaults;
     // chainId => formbeacon id => vault id
     mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
     mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
@@ -664,7 +666,7 @@ abstract contract BaseSetup is DSTest, Test {
         payloadID[OP] = 0;
         // payloadID[FTM] = 0;
     }
-*/
+    */
     /*//////////////////////////////////////////////////////////////
                         MISC. HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -789,10 +791,13 @@ abstract contract BaseSetup is DSTest, Test {
     ) internal view returns (int256) {
         // prettier-ignore
         (
-            /* uint80 roundID */,
-            int price,
-            /*uint startedAt*/,
-            /*uint timeStamp*/,
+            /* uint80 roundID */
+            ,
+            int256 price,
+            /*uint startedAt*/
+            ,
+            /*uint timeStamp*/
+            ,
             /*uint80 answeredInRound*/
         ) = AggregatorV3Interface(priceFeed_).latestRoundData();
         return price;
@@ -800,8 +805,9 @@ abstract contract BaseSetup is DSTest, Test {
 
     function _fundUnderlyingTokens(uint256 amount) private {
         for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
-            if (getContract(chainIds[0], UNDERLYING_TOKENS[j]) == address(0))
+            if (getContract(chainIds[0], UNDERLYING_TOKENS[j]) == address(0)) {
                 revert INVALID_UNDERLYING_TOKEN_NAME();
+            }
 
             for (uint256 i = 0; i < chainIds.length; i++) {
                 vm.selectFork(FORKS[chainIds[i]]);
@@ -820,7 +826,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     function _deployWithCreate2(
         bytes memory bytecode_,
-        uint salt_
+        uint256 salt_
     ) internal returns (address addr) {
         assembly {
             addr := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
