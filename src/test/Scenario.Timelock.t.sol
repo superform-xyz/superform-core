@@ -15,7 +15,7 @@ import "./utils/ProtocolActions.sol";
 contract ScenarioTimelockTest is ProtocolActions {
     mapping(uint256 => Actions) public ACTION_TYPE;
 
-    uint256 actionCounter;
+    uint256 actionId;
 
     function setUp() public override {
         super.setUp();
@@ -120,12 +120,18 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// NOTE: What if we want to send from different EOA than deployer's?
         /// NOTE: Unsure if we need multi/singleSuperFormsData returned here if we can read state between calls now
         
+        console.log("stage0 buildReqData");
+        console.log("actionId", actionId);   
         /// @dev User builds his request data for src (deposit action)
         (
             multiSuperFormsData,
             singleSuperFormsData,
             vars
-        ) = _stage1_buildReqData(action, actionCounter);
+        ) = _stage1_buildReqData(action, actionId);
+
+        actionId++;
+
+        console.log("stage1 done");
 
         /// @dev User sends his request data to the src (deposit action)
         (vars, aV) = _stage2_run_src_action(
@@ -134,6 +140,8 @@ contract ScenarioTimelockTest is ProtocolActions {
             singleSuperFormsData,
             vars
         );
+
+        console.log("stage2 done");
 
         /// @dev FIXME? SuperForm Keepers operation, not relevant to deposit, should be separated for Form testing (internal processing)
         _stage3_src_to_dst_amb_delivery(
@@ -144,17 +152,23 @@ contract ScenarioTimelockTest is ProtocolActions {
             singleSuperFormsData
         );
 
+        console.log("stage3 done");
+
         /// @dev FIXME? SuperForm Keepers operation, not relevant to deposit, should be separated for Form testing (internal processing)
         success = _stage4_process_src_dst_payload(
             action,
             vars,
             aV,
             singleSuperFormsData,
-            actionCounter
+            actionId
         );
+
+        console.log("stage4 done");
 
         /// @dev FIXME? SuperForm Keepers operation, not relevant to deposit, should be separated for Form testing (internal processing)
         success = _stage5_process_superPositions_mint(action, vars, aV);
+
+        console.log("stage5 done");
         
     }
 
@@ -167,14 +181,13 @@ contract ScenarioTimelockTest is ProtocolActions {
         TestType testType /// ProtocolActions invariant
     ) internal returns (TestAction memory depositAction) {
 
-        uint256 actionID = actionCounter++;
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
-        TARGET_UNDERLYING_VAULTS[chainID][actionID] = [vaultID];
-        TARGET_FORM_KINDS[chainID][actionID] = [formID];
-        AMOUNTS[chainID][actionID] = [amount];
-        MAX_SLIPPAGE[chainID][actionID] = [slippage];
+        TARGET_UNDERLYING_VAULTS[chainID][actionId] = [vaultID];
+        TARGET_FORM_KINDS[chainID][actionId] = [formID];
+        AMOUNTS[chainID][actionId] = [amount];
+        MAX_SLIPPAGE[chainID][actionId] = [slippage];
 
         depositAction = TestAction({
             action: Actions.Deposit,
@@ -188,6 +201,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             adapterParam: "",
             msgValue: msgValue
         });
+
     }
 
     function _withdrawAction(
@@ -199,14 +213,13 @@ contract ScenarioTimelockTest is ProtocolActions {
         TestType testType /// ProtocolActions invariant
     ) internal returns (TestAction memory withdrawAction) {
         
-        uint256 actionID = actionCounter++;
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
-        TARGET_UNDERLYING_VAULTS[chainID][actionID] = [vaultID];
-        TARGET_FORM_KINDS[chainID][actionID] = [formID];
-        AMOUNTS[chainID][actionID] = [amount];
-        MAX_SLIPPAGE[chainID][actionID] = [slippage];
+        TARGET_UNDERLYING_VAULTS[chainID][actionId] = [vaultID];
+        TARGET_FORM_KINDS[chainID][actionId] = [formID];
+        AMOUNTS[chainID][actionId] = [amount];
+        MAX_SLIPPAGE[chainID][actionId] = [slippage];
 
         withdrawAction = TestAction({
             action: Actions.Withdraw,
@@ -220,6 +233,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             adapterParam: "",
             msgValue: msgValue
         });
+        
     }
 
     // function test_scenario() public {

@@ -39,6 +39,9 @@ abstract contract ProtocolActions is BaseSetup {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev STEP 1: Build Request Data
+    /// NOTE: This whole step should be looked upon as PROTOCOL action, not USER action
+    /// Request is built for user, but all of operations here would be performed by protocol and not even it's smart contracts
+    /// It's worth checking out if we are not making to many of the assumptions here too.
     function _stage1_buildReqData(
         TestAction memory action,
         uint256 actionIndex
@@ -53,13 +56,15 @@ abstract contract ProtocolActions is BaseSetup {
         if (action.revertError != bytes4(0) && action.testType == TestType.Pass)
             revert MISMATCH_TEST_TYPE();
 
-        /// NOTE: Why do we do it?
+        /// FIXME: Separate concerns in tests, this revert is for protocol level operation
         if (
             (action.testType != TestType.RevertUpdateStateRBAC &&
                 action.revertRole != bytes32(0)) ||
             (action.testType == TestType.RevertUpdateStateRBAC &&
                 action.revertRole == bytes32(0))
         ) revert MISMATCH_RBAC_TEST();
+
+        console.log("passing");
 
         vars.lzEndpoint_0 = LZ_ENDPOINTS[CHAIN_0];
         vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
@@ -79,8 +84,11 @@ abstract contract ProtocolActions is BaseSetup {
             _getPriceMultiplier(CHAIN_0) *
             1e18;
 
+        console.log("before loop");
+
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
+            console.log("before _targetVaults");
 
             (
                 vars.targetSuperFormIds,
@@ -88,8 +96,10 @@ abstract contract ProtocolActions is BaseSetup {
                 vars.vaultMock
             ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex);
             vars.toDst = new address[](vars.targetSuperFormIds.length);
+
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
             /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
+            
             for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
                 if (
                     CHAIN_0 == DST_CHAINS[i] ||
@@ -107,10 +117,12 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
 
+            console.log("after interal");
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
             vars.maxSlippage = MAX_SLIPPAGE[DST_CHAINS[i]][actionIndex];
 
+            console.log("before if calls");
             if (action.multiVaults) {
                 multiSuperFormsData[i] = _buildMultiVaultCallData(
                     MultiVaultCallDataArgs(
@@ -146,6 +158,8 @@ abstract contract ProtocolActions is BaseSetup {
                 //         (vars.underlyingSrcToken.length == 1))
                 // ) revert INVALID_AMOUNTS_LENGTH();
 
+                console.log("building singleVaultCallDataArgs");
+
                 SingleVaultCallDataArgs
                     memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                         action.user,
@@ -164,6 +178,7 @@ abstract contract ProtocolActions is BaseSetup {
                     );
 
                 if (action.action == Actions.Deposit) {
+                    console.log("Action.Deposit");
                     singleSuperFormsData[i] = _buildSingleVaultDepositCallData(
                         singleVaultCallDataArgs
                     );
@@ -769,6 +784,7 @@ abstract contract ProtocolActions is BaseSetup {
     {
         TargetVaultsVars memory vars;
         vars.underlyingTokenIds = TARGET_UNDERLYING_VAULTS[chain1][action];
+        console.log("vars.underlyingTokenIds", vars.underlyingTokenIds[0]);
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
         vars.superFormIdsTemp = _superFormIds(
             vars.underlyingTokenIds,
@@ -778,7 +794,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vars.len = vars.superFormIdsTemp.length;
 
-        // if (vars.len == 0) revert LEN_VAULTS_ZERO();
+        if (vars.len == 0) revert LEN_VAULTS_ZERO();
 
         targetSuperFormsMem = new uint256[](vars.len);
         underlyingSrcTokensMem = new address[](vars.len);
