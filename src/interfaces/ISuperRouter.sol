@@ -71,22 +71,32 @@ interface ISuperRouter {
                         EXTERNAL DEPOSIT FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev Performs multi destination x multi vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function multiDstMultiVaultDeposit(
         MultiDstMultiVaultsStateReq calldata req
     ) external payable;
 
+    /// @dev Performs single destination x multi vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function singleDstMultiVaultDeposit(
         SingleDstMultiVaultsStateReq memory req
     ) external payable;
 
+    /// @dev Performs multi destination x single vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function multiDstSingleVaultDeposit(
         MultiDstSingleVaultStateReq calldata req
     ) external payable;
 
+    /// @dev Performs single xchain destination x single vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function singleXChainSingleVaultDeposit(
         SingleXChainSingleVaultStateReq memory req
     ) external payable;
 
+    /// @dev Performs single direct x single vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function singleDirectSingleVaultDeposit(
         SingleDirectSingleVaultStateReq memory req
     ) external payable;
@@ -95,22 +105,32 @@ interface ISuperRouter {
                         EXTERNAL WITHDRAW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev Performs multi destination x multi vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function multiDstMultiVaultWithdraw(
         MultiDstMultiVaultsStateReq calldata req
     ) external payable;
 
+    /// @dev Performs single destination x multi vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function singleDstMultiVaultWithdraw(
         SingleDstMultiVaultsStateReq memory req
     ) external payable;
 
+    /// @dev Performs multi destination x single vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function multiDstSingleVaultWithdraw(
         MultiDstSingleVaultStateReq calldata req
     ) external payable;
 
+    /// @dev Performs single xchain destination x single vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function singleXChainSingleVaultWithdraw(
         SingleXChainSingleVaultStateReq memory req
     ) external payable;
 
+    /// @dev Performs single direct x single vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function singleDirectSingleVaultWithdraw(
         SingleDirectSingleVaultStateReq memory req
     ) external payable;
