@@ -177,7 +177,6 @@ contract Deploy is Script {
     uint16 public constant ARBI = 5;
     uint16 public constant OP = 6;
     //uint16 public constant FTM = 7;
-
     uint16[6] public chainIds = [1, 2, 3, 4, 5, 6];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
@@ -234,6 +233,10 @@ contract Deploy is Script {
     string public OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // Native token: ETH
     string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: FTM
 
+    address deployer = vm.envAddress("LOCAL_DEPLOYER");
+
+    CoreStateRegistry[] coreStateRegistries;
+
     function getContract(
         uint16 chainId,
         string memory _name
@@ -242,14 +245,11 @@ contract Deploy is Script {
     }
 
     /// @notice The main script entrypoint
-    function run() external {
-        address deployer = 0x8fb52e325C3145A2A7Cd4A04A6F4146017ADD6c0;
-
+    function run() external returns (CoreStateRegistry[] memory) {
         _preDeploymentSetup();
         _fundNativeTokens(deployer);
 
         SetupVars memory vars;
-
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; i++) {
             vars.chainId = chainIds[i];
@@ -258,9 +258,10 @@ contract Deploy is Script {
             vm.startBroadcast();
 
             /// @dev 1.1 - Core State Registry
-            vars.coreStateRegistry = address(
-                new CoreStateRegistry(vars.chainId)
-            );
+            coreStateRegistries.push(new CoreStateRegistry(vars.chainId));
+
+            vars.coreStateRegistry = address(coreStateRegistries[i]);
+
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
                 .coreStateRegistry;
 
@@ -280,6 +281,7 @@ contract Deploy is Script {
                     IBaseStateRegistry(vars.factoryStateRegistry)
                 )
             );
+
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
                 .lzImplementation;
 
@@ -378,13 +380,14 @@ contract Deploy is Script {
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
                 .tokenBank;
 
-            /// @dev 9 - Deploy SuperRouter
+            /// @dev 9 - FIXME Deploy SuperRouter
+            /*
             vars.superRouter = address(
                 new SuperRouter(vars.chainId, "test.com/")
             );
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars
                 .superRouter;
-
+            */
             /// @dev 10 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(new MultiTxProcessor());
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
@@ -395,7 +398,8 @@ contract Deploy is Script {
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
 
-            SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
+            /// @dev FIXME
+            // SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
             SuperRegistry(vars.superRegistry).setTokenBank(vars.tokenBank);
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
 
@@ -418,9 +422,13 @@ contract Deploy is Script {
                 vars.superRegistry
             );
 
+            /// @dev FIXME
+
+            /*
             SuperRouter(payable(vars.superRouter)).setSuperRegistry(
                 vars.superRegistry
             );
+            */
 
             TokenBank(payable(vars.tokenBank)).setSuperRegistry(
                 vars.superRegistry
@@ -431,11 +439,13 @@ contract Deploy is Script {
             );
 
             /// @dev 12 Setup RBAC
-
+            /// @dev FIXME
+            /*
             CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.superRouter
             );
+            */
 
             FactoryStateRegistry(payable(vars.factoryStateRegistry))
                 .setFactoryContract(vars.factory);
@@ -558,9 +568,9 @@ contract Deploy is Script {
                     ).setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
-
-            vm.stopBroadcast();
             /*
+            vm.stopBroadcast();
+
             uint256 msgValueSuperforms = _getPriceMultiplier(vars.chainId) *
                 10 ** 18;
 
@@ -568,7 +578,6 @@ contract Deploy is Script {
 
             vm.startBroadcast();
 
-   
             /// @dev create superforms when the whole state registry is configured?
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
@@ -591,21 +600,30 @@ contract Deploy is Script {
                     ] = vars.superForm;
                 }
             }
-
+              */
             vm.stopBroadcast();
-            */
         }
+
+        return coreStateRegistries;
     }
 
     function _preDeploymentSetup() private {
         mapping(uint16 => uint256) storage forks = FORKS;
-        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 16742187);
-        forks[BSC] = vm.createFork(BSC_RPC_URL, 26121321);
-        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 26933006);
-        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 39887036);
-        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 66125184);
-        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 78219242);
+        /*
+        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL);
+        forks[BSC] = vm.createFork(BSC_RPC_URL);
+        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL);
+        forks[POLY] = vm.createFork(POLYGON_RPC_URL);
+        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL);
+        forks[OP] = vm.createFork(OPTIMISM_RPC_URL);
         //forks[FTM] = vm.createFork(FANTOM_RPC_URL, 56806404);
+        */
+        forks[ETH] = vm.createFork("http://127.0.0.1:8545");
+        forks[BSC] = vm.createFork("http://127.0.0.1:8546");
+        forks[AVAX] = vm.createFork("http://127.0.0.1:8547");
+        forks[POLY] = vm.createFork("http://127.0.0.1:8548");
+        forks[ARBI] = vm.createFork("http://127.0.0.1:8549");
+        forks[OP] = vm.createFork("http://127.0.0.1:8550");
 
         mapping(uint16 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
