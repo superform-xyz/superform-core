@@ -5,7 +5,7 @@ import {Script} from "forge-std/Script.sol";
 
 import "forge-std/console.sol";
 
-import {Strings} from "@openzeppelin-contracts/utils/Strings.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {AggregatorV3Interface} from "../src/test/utils/AggregatorV3Interface.sol";
 import {MockERC20} from "../src/test/mocks/MockERC20.sol";

@@ -1,9 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {AccessControl} from "@openzeppelin-contracts/access/AccessControl.sol";
-import {Strings} from "@openzeppelin-contracts/utils/Strings.sol";
-import {ERC1155s} from "@erc1155s/ERC1155s.sol";
+import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {ERC1155s} from "ERC1155s/src/ERC1155s.sol";
 import {ERC1155} from "solmate/tokens/ERC1155.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";

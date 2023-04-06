@@ -1,10 +1,10 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {Initializable} from "@openzeppelin-contracts-upgradeable/proxy/utils/Initializable.sol";
-import {ERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
-import {IERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
-import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {ERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 import {InitSingleVaultData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";

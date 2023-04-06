@@ -4,13 +4,13 @@ pragma solidity 0.8.19;
 import "forge-std/console.sol";
 
 /// @dev lib imports
-import "@std/Test.sol";
-import "@ds-test/test.sol";
+import "forge-std/Test.sol";
+import "ds-test/test.sol";
 // import "forge-std/console.sol";
-import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
-import {HyperlaneHelper} from "@pigeon/hyperlane/HyperlaneHelper.sol";
-import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
-import {Strings} from "@openzeppelin-contracts/utils/Strings.sol";
+import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
+import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev test utils & mocks
 import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
