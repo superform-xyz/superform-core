@@ -77,7 +77,7 @@ abstract contract BaseSetup is DSTest, Test {
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm
-    uint256[] public FORM_BEACON_IDS = [uint256(1), 2];
+    uint256[] public FORM_BEACON_IDS = [uint256(1), uint256(2)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault"];
 
     bytes[] public vaultBytecodes;
@@ -345,7 +345,6 @@ abstract contract BaseSetup is DSTest, Test {
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     /// @dev 5 - Deploy mock Vault
-
                     bytes memory bytecodeWithArgs = abi.encodePacked(
                         vaultBytecodes[j],
                         abi.encode(
@@ -648,6 +647,14 @@ abstract contract BaseSetup is DSTest, Test {
                             )
                         )
                     ] = vars.superForm;
+
+                    if (FORM_BEACON_IDS[j] == 1) {
+                        console.log("others", vars.superForm, "chainId", vars.chainId);
+                        if (vars.chainId == 4) console.log("POLY  ", vars.superForm, "chainId", vars.chainId);
+                    } else {
+                        console.log("form00", vars.superForm, "chainId", vars.chainId);
+                        if (vars.chainId == 4) console.log("POLY  ", vars.superForm, "chainId", vars.chainId);
+                    }
                 }
             }
         }

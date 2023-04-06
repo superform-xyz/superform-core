@@ -21,6 +21,7 @@ import {_packSuperForm} from "../utils/DataPacking.sol";
 contract ScenarioTimelockTest is ProtocolActions {
     /// @dev Global counter for actions sent to the protocol
     uint256 actionId;
+    uint256 timelockFormType = 2;
 
     /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests
     uint16 dstChainID;
@@ -39,20 +40,15 @@ contract ScenarioTimelockTest is ProtocolActions {
     function setUp() public override {
         super.setUp();
 
-        /// FIXME: We need to map individual formBeaconId to individual vault to have access to ERC4626Form previewFunctions
-        /// see BaseSetup FIXME L87
-        // address targetForm = address(vaults[DST_CHAINS[0]][1][1]);
-        // ITimelockForm form = ITimelockForm(targetForm);
-
         primaryAMB = 1;
         secondaryAMBs = [2];
-        CHAIN_0 = OP; /// @dev source chain
-        DST_CHAINS = [POLY]; /// @dev destination chain(s)
+        CHAIN_0 = OP; /// @dev source chain id6
+        DST_CHAINS = [POLY]; /// @dev destination chain(s) id4
 
         /// @dev You can define settings here or at the level of individual tests
-        dstChainID = DST_CHAINS[0];
-        dstVaultID = 1;
-        dstFormID = 1;
+        dstChainID = DST_CHAINS[0]; /// id4
+        dstVaultID = 0; /// vault 
+        dstFormID = 1; /// index to access in array of forms at BaseSetup level
         amount = 1000;
         slippage = 1000;
     }
@@ -61,16 +57,6 @@ contract ScenarioTimelockTest is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    /// NOTE: Individual tests target validation of each possible condition for form deposit/withdraw to fail
-
-    /// @dev TODO: This test uses only 1 action
-    /// assert revert on WITHDRAW_COOLDOWN_PERIOD();
-    // function testFail_scenario_request_unlock_cooldown() public {}
-
-    /// @dev TODO: This test uses only 1 action
-    /// assert revert on LOCKED(); - requestUnlock() was called but user wants to overwithdraw
-    // function testFail_scenario_request_unlock_overwithdraw() public {}
-
     /// @dev This test uses 2 actions, rolls block between and make assertions about states in between
     function test_scenario_request_unlock_full_withdraw() public {
         
@@ -78,6 +64,19 @@ contract ScenarioTimelockTest is ProtocolActions {
             bytes32(bytes("SuperRouter"))
         ];
         
+        for (uint256 i = 0; i < UNDERLYING_TOKENS.length; i++) {
+        address _superFormZ = getContract(
+            4,
+            string.concat(
+                UNDERLYING_TOKENS[i],
+                "SuperForm",
+                Strings.toString(FORM_BEACON_IDS[1])
+            )
+        );
+
+        console.log("possible superform", _superFormZ);
+        }
+
         address _superForm = getContract(
             dstChainID,
             string.concat(
@@ -87,10 +86,14 @@ contract ScenarioTimelockTest is ProtocolActions {
             )
         );
 
+        console.log("selected superForm", _superForm);
+
         superRouter = ISuperRouter(_superRouter);
         erc4626TimelockForm = IERC4626TimelockForm(_superForm);
 
-        uint256 _formId = _packSuperForm(_superForm, dstFormID, dstChainID);
+        /// Here, however, dstFormId == 2, as that's the indexing inside of an array. 1 = erc4626form, 2 = erc4626timelockform
+        uint256 _formId = _packSuperForm(_superForm, timelockFormType, dstChainID);
+        
         console.log("id" , _formId);
         _formId = 7067388259113537318333193573304610032728844785732419293124208230509126074;
 
@@ -264,7 +267,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         TARGET_UNDERLYING_VAULTS[chainID_][actionId] = [vaultID_];
-        TARGET_FORM_KINDS[chainID_][actionId] = [formID_];
+        TARGET_FORM_KINDS[chainID_][actionId] = [formID_]; /// <= 1 for timelock, this accesses array by index (0 for standard)
         AMOUNTS[chainID_][actionId] = [amount_];
         MAX_SLIPPAGE[chainID_][actionId] = [slippage_];
 
@@ -311,6 +314,16 @@ contract ScenarioTimelockTest is ProtocolActions {
             msgValue: msgValue
         });
     }
+
+    /// NOTE: Individual tests target validation of each possible condition for form deposit/withdraw to fail
+
+    /// @dev TODO: This test uses only 1 action
+    /// assert revert on WITHDRAW_COOLDOWN_PERIOD();
+    // function testFail_scenario_request_unlock_cooldown() public {}
+
+    /// @dev TODO: This test uses only 1 action
+    /// assert revert on LOCKED(); - requestUnlock() was called but user wants to overwithdraw
+    // function testFail_scenario_request_unlock_overwithdraw() public {}
 
     // function test_scenario() public {
     //     /// NOTE: Execute single action by calling it
