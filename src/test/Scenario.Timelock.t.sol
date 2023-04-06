@@ -22,11 +22,18 @@ contract ScenarioTimelockTest is ProtocolActions {
     /// @dev Global counter for actions sent to the protocol
     uint256 actionId;
 
-    /// @dev Access Form interface to call form functions for assertions
-    // ERC4626TimelockForm public erc4626TimelockForm;
+    /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests 
+    uint16 dstChainID;
+    uint256 dstVaultID;
+    uint256 dstFormID;
+    uint256 amount;
+    uint256 slippage;
 
     /// @dev Access SuperRouter interface
     ISuperRouter superRouter;
+
+    /// @dev Access Form interface to call form functions for assertions
+    // ERC4626TimelockForm public erc4626TimelockForm;
 
     /// @dev singleDestinationSingleVault Deposit test case
     function setUp() public override {
@@ -42,11 +49,13 @@ contract ScenarioTimelockTest is ProtocolActions {
         CHAIN_0 = OP; /// @dev source chain
         DST_CHAINS = [POLY]; /// @dev destination chain(s)
 
-        /// @dev You can define settings here or pass them as arguments to _depositAction()/_withdrawAction()
-        // TARGET_UNDERLYING_VAULTS[chainID][actionId] = [vaultID];
-        // TARGET_FORM_KINDS[chainID][actionId] = [formID];
-        // AMOUNTS[chainID][actionId] = [amount];
-        // MAX_SLIPPAGE[chainID][actionId] = [slippage];
+        /// @dev You can define settings here or at the level of individual tests
+        dstChainID = DST_CHAINS[0];
+        dstVaultID = 1;
+        dstFormID = 1;
+        amount = 1000;
+        slippage = 1000;
+
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -69,17 +78,24 @@ contract ScenarioTimelockTest is ProtocolActions {
         address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
         superRouter = ISuperRouter(_superRouter);
 
+        /// @dev Individual setting for deposit call (overwrite again for withdraw)
+        dstChainID = DST_CHAINS[0];
+        dstVaultID = 1;
+        dstFormID = 1;
+        amount = 1000;
+        slippage = 1000;
+
         /*///////////////////////////////////////////////////////////////
                                 DEPOSIT ACTION
         //////////////////////////////////////////////////////////////*/
         
         TestAction memory action = _depositAction(
-            DST_CHAINS[0], // chainID (destination)
-            1, // vaultID
-            1, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
-            1000, // amount
-            1000, // slippage 
-            TestType.Pass // testType
+            dstChainID,
+            dstVaultID, 
+            dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
+            amount, 
+            slippage, 
+            TestType.Pass
         );
 
         MultiVaultsSFData[] memory multiSuperFormsData;
@@ -102,17 +118,21 @@ contract ScenarioTimelockTest is ProtocolActions {
             vars
         ) = _stage1_buildReqData(action, actionId);
 
+        /// @dev Increment actionId AFTER each buildReqData() call
         actionId++;
 
         console.log("stage1 done");
 
         /// @dev User sends his request data to the src (deposit action)
+        // vm.stopPrank();
+        // vm.startPrank(action.user); // <= ERR? We can't prank because some dependency? (prank already active)
         (vars, aV) = _stage2_run_src_action(
             action,
             multiSuperFormsData,
             singleSuperFormsData,
             vars
         );
+        // vm.stopPrank();
 
         console.log("stage2 done");
 
@@ -153,25 +173,25 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /*///////////////////////////////////////////////////////////////
                                 WITHDRAW ACTION
-        //////////////////////////////////////////////////////////////*/
+        //////////////////////////////////////////////////////////////*/    
 
     }
 
     function _depositAction(
-        uint16 chainID,
-        uint256 vaultID,
-        uint256 formID,
-        uint256 amount,
-        uint256 slippage,
+        uint16 chainID_,
+        uint256 vaultID_,
+        uint256 formID_,
+        uint256 amount_,
+        uint256 slippage_,
         TestType testType /// ProtocolActions invariant
     ) internal returns (TestAction memory depositAction) {
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
-        TARGET_UNDERLYING_VAULTS[chainID][actionId] = [vaultID];
-        TARGET_FORM_KINDS[chainID][actionId] = [formID];
-        AMOUNTS[chainID][actionId] = [amount];
-        MAX_SLIPPAGE[chainID][actionId] = [slippage];
+        TARGET_UNDERLYING_VAULTS[chainID_][actionId] = [vaultID_];
+        TARGET_FORM_KINDS[chainID_][actionId] = [formID_];
+        AMOUNTS[chainID_][actionId] = [amount_];
+        MAX_SLIPPAGE[chainID_][actionId] = [slippage_];
 
         depositAction = TestAction({
             action: Actions.Deposit,
@@ -188,20 +208,20 @@ contract ScenarioTimelockTest is ProtocolActions {
     }
 
     function _withdrawAction(
-        uint16 chainID,
-        uint256 vaultID,
-        uint256 formID,
-        uint256 amount,
-        uint256 slippage,
+        uint16 chainID_,
+        uint256 vaultID_,
+        uint256 formID_,
+        uint256 amount_,
+        uint256 slippage_,
         TestType testType /// ProtocolActions invariant
     ) internal returns (TestAction memory withdrawAction) {
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
-        TARGET_UNDERLYING_VAULTS[chainID][actionId] = [vaultID];
-        TARGET_FORM_KINDS[chainID][actionId] = [formID];
-        AMOUNTS[chainID][actionId] = [amount];
-        MAX_SLIPPAGE[chainID][actionId] = [slippage];
+        TARGET_UNDERLYING_VAULTS[chainID_][actionId] = [vaultID_];
+        TARGET_FORM_KINDS[chainID_][actionId] = [formID_];
+        AMOUNTS[chainID_][actionId] = [amount_];
+        MAX_SLIPPAGE[chainID_][actionId] = [slippage_];
 
         withdrawAction = TestAction({
             action: Actions.Withdraw,

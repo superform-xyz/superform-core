@@ -13,6 +13,10 @@ import "./utils/ProtocolActions.sol";
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario1Test is ProtocolActions {
+
+    /// @dev Access SuperRouter interface
+    ISuperRouter superRouter;
+
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -59,6 +63,9 @@ contract Scenario1Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
+        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        superRouter = ISuperRouter(_superRouter);
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
@@ -107,5 +114,10 @@ contract Scenario1Test is ProtocolActions {
                 }
             }
         }
+
+        uint256 balanceOfAlice = superRouter.balanceOf(users[0], 1);
+        console.log("ASSERT FAILS HERE, NO SUPERPOSITION OWNED!!!");
+        assertEq(balanceOfAlice, 1000);
+
     }
 }
