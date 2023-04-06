@@ -118,15 +118,11 @@ contract SuperFormFactoryTest is BaseSetup {
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
             .addFormBeacon(vars.formImplementation, vars.formBeaconId);
 
-        //console.log(FactoryStateRegistry(payable(getContract(chainIds[1], "FactoryStateRegistry")))
-        //    .payloadsCount());
-
         /// @dev as you can see we are not testing if the vaults are eoas or actual compliant contracts
         vars.vault1 = address(0x2);
         vars.vault2 = address(0x3);
 
         /// @dev test getAllSuperForms
-
         (
             vars.superFormIds_,
             vars.superForms_,
@@ -141,45 +137,17 @@ contract SuperFormFactoryTest is BaseSetup {
             vars.transformedChainIds_[i] = uint256(vars.chainIds_[i]);
         }
 
-        vars.expectedFormIds = new uint256[](18);
-        vars.expectedFormIds[0] = vars.formBeaconId;
-        vars.expectedFormIds[1] = vars.formBeaconId;
-        vars.expectedFormIds[2] = vars.formBeaconId;
-        vars.expectedFormIds[3] = vars.formBeaconId;
-        vars.expectedFormIds[4] = vars.formBeaconId;
-        vars.expectedFormIds[5] = vars.formBeaconId;
-        vars.expectedFormIds[6] = vars.formBeaconId;
-        vars.expectedFormIds[7] = vars.formBeaconId;
-        vars.expectedFormIds[8] = vars.formBeaconId;
-        vars.expectedFormIds[9] = vars.formBeaconId;
-        vars.expectedFormIds[10] = vars.formBeaconId;
-        vars.expectedFormIds[11] = vars.formBeaconId;
-        vars.expectedFormIds[12] = vars.formBeaconId;
-        vars.expectedFormIds[13] = vars.formBeaconId;
-        vars.expectedFormIds[14] = vars.formBeaconId;
-        vars.expectedFormIds[15] = vars.formBeaconId;
-        vars.expectedFormIds[16] = vars.formBeaconId;
-        vars.expectedFormIds[17] = vars.formBeaconId;
+        vars.expectedFormIds = new uint256[](
+            chainIds.length * UNDERLYING_TOKENS.length
+        );
+        vars.expectedChainIds = new uint256[](
+            chainIds.length * UNDERLYING_TOKENS.length
+        );
 
-        vars.expectedChainIds = new uint256[](18);
-        vars.expectedChainIds[0] = chainId;
-        vars.expectedChainIds[1] = chainId;
-        vars.expectedChainIds[2] = chainId;
-        vars.expectedChainIds[3] = chainIds[1];
-        vars.expectedChainIds[4] = chainIds[1];
-        vars.expectedChainIds[5] = chainIds[1];
-        vars.expectedChainIds[6] = chainIds[2];
-        vars.expectedChainIds[7] = chainIds[2];
-        vars.expectedChainIds[8] = chainIds[2];
-        vars.expectedChainIds[9] = chainIds[3];
-        vars.expectedChainIds[10] = chainIds[3];
-        vars.expectedChainIds[11] = chainIds[3];
-        vars.expectedChainIds[12] = chainIds[4];
-        vars.expectedChainIds[13] = chainIds[4];
-        vars.expectedChainIds[14] = chainIds[4];
-        vars.expectedChainIds[15] = chainIds[5];
-        vars.expectedChainIds[16] = chainIds[5];
-        vars.expectedChainIds[17] = chainIds[5];
+        for (uint256 i = 0; i < vars.expectedFormIds.length; i++) {
+            vars.expectedFormIds[i] = vars.formBeaconId;
+            vars.expectedChainIds[i] = chainIds[i / 3];
+        }
 
         assertEq(vars.formIds_, vars.expectedFormIds);
         assertEq(vars.transformedChainIds_, vars.expectedChainIds);
