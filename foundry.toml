@@ -5,13 +5,13 @@ libraries = []
 optimizer = true
 optimizer_runs = 200
 remappings = [
-  '@openzeppelin-contracts=lib/openzeppelin-contracts/',
-  '@openzeppelin-contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/',
+  '@openzeppelin-contracts=lib/openzeppelin-contracts/contracts',
+  '@openzeppelin-contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/contracts',
   '@pigeon=lib/pigeon/src/',
   '@ds-test=lib/ds-test/src/',
   '@std=lib/forge-std/src/',
-  '@solmate=lib/solmate/src/'
-  '@erc1155s=lib/erc1155s'
+  '@solmate=lib/solmate/src/',
+  '@erc1155s=lib/erc1155s/src/'
 ]
 test = 'src/test'
 verbosity = 0

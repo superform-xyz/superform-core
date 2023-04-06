@@ -1,10 +1,9 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 interface IERC4626Timelock is IERC20 {
-
     /*///////////////////////////////////////////////////////////////
                             TIMELOCK SECTION
     //////////////////////////////////////////////////////////////*/
@@ -29,11 +28,13 @@ interface IERC4626Timelock is IERC20 {
 
     /// @notice Check outstanding unlock request for the owner
     /// @dev Mock Timelocked Vault uses single UnlockRequest. In production vaults have differing mechanism for this
-    function userUnlockRequests(address owner) external view returns (UnlockRequest memory);
+    function userUnlockRequests(
+        address owner
+    ) external view returns (UnlockRequest memory);
 
     /// @notice The amount of time that must pass between a requestUnlock() and withdraw() call.
     function lockPeriod() external view returns (uint256);
-    
+
     /*///////////////////////////////////////////////////////////////
                                ERC4626 SECTION
     //////////////////////////////////////////////////////////////*/

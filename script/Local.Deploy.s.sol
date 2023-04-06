@@ -2,8 +2,10 @@
 pragma solidity ^0.8.17;
 
 import {Script} from "forge-std/Script.sol";
+
 import "forge-std/console.sol";
-import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
+
+import {Strings} from "@openzeppelin-contracts/utils/Strings.sol";
 
 import {AggregatorV3Interface} from "../src/test/utils/AggregatorV3Interface.sol";
 import {MockERC20} from "../src/test/mocks/MockERC20.sol";
@@ -247,7 +249,7 @@ contract Deploy is Script {
     /// @notice The main script entrypoint
     function run() external returns (CoreStateRegistry[] memory) {
         _preDeploymentSetup();
-        _fundNativeTokens(deployer);
+        _fundNativeTokens();
 
         SetupVars memory vars;
         /// @dev deployments
@@ -743,7 +745,7 @@ contract Deploy is Script {
         return addr;
     }
 
-    function _fundNativeTokens(address deployer) private {
+    function _fundNativeTokens() private {
         for (uint256 i = 0; i < chainIds.length; i++) {
             uint256 multiplier = _getPriceMultiplier(chainIds[i]);
 

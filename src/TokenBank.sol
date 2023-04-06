@@ -1,6 +1,6 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {AccessControl} from "@openzeppelin-contracts/access/AccessControl.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";

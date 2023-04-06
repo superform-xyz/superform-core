@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import "@openzeppelin-contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin-contracts/access/AccessControl.sol";
 
 contract sERC20 is ERC20, AccessControl {
     bytes32 public constant POSITIONS_SPLITTER_ROLE =

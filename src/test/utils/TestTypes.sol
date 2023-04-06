@@ -124,6 +124,7 @@ struct SetupVars {
     address dstStateRegistry;
     address multiTxProcessor;
     address superRegistry;
+    address superPositions;
 }
 
 /*//////////////////////////////////////////////////////////////

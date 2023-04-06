@@ -69,6 +69,10 @@ interface ISuperRegistry {
         address[] memory bridgeAddress_
     ) external;
 
+    /// @dev allows admin to set the super positions address
+    /// @param superPositions_ the address of the super positions
+    function setSuperPositions(address superPositions_) external;
+
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
@@ -108,4 +112,8 @@ interface ISuperRegistry {
     function getBridgeAddress(
         uint8 bridgeId_
     ) external view returns (address bridgeAddress_);
+
+    /// @dev gets the super positions
+    /// @return superPositions_ the address of the super positions
+    function superPositions() external view returns (address superPositions_);
 }
