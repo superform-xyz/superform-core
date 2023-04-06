@@ -8,3 +8,6 @@ test = 'src/test'
 verbosity = 0
 ffi = true
 libs = ["lib"]
+fs_permissions = [
+    { access = "read-write", path = "./script/"}
+]

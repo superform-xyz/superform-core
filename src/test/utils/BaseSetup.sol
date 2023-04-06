@@ -294,8 +294,9 @@ abstract contract BaseSetup is DSTest, Test {
                     IBaseStateRegistry(vars.factoryStateRegistry)
                 )
             );
-            contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
-                .lzImplementation;
+            contracts[vars.chainId][
+                bytes32(bytes("LayerzeroImplementation"))
+            ] = vars.lzImplementation;
 
             /// @dev 3.2- deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
@@ -516,6 +517,11 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.coreStateRegistry
             );
 
+            SuperPositions(vars.superPositions).grantRole(
+                SUPER_ROUTER_ROLE,
+                vars.superRouter
+            );
+
             /// @dev configures lzImplementation to state registry
             CoreStateRegistry(payable(vars.coreStateRegistry)).configureAmb(
                 ambIds[0],
@@ -545,7 +551,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.lzImplementation = getContract(
                 vars.chainId,
-                "LzImplementation"
+                "LayerzeroImplementation"
             );
 
             vars.hyperlaneImplementation = getContract(
@@ -564,7 +570,7 @@ abstract contract BaseSetup is DSTest, Test {
 
                     vars.dstLzImplementation = getContract(
                         vars.dstChainId,
-                        "LzImplementation"
+                        "LayerzeroImplementation"
                     );
                     vars.dstHyperlaneImplementation = getContract(
                         vars.dstChainId,
