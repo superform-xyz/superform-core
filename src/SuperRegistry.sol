@@ -20,6 +20,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 => address) public bridgeAddress;
+    mapping(uint8 => address) public ambAddress;
 
     /// @dev sets caller as the admin of the contract.
     /// @param chainId_ the superform chain id this registry is deployed on
@@ -104,8 +105,23 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         }
     }
 
+    /// @inheritdoc ISuperRegistry
+    function setAmbAddress(
+        uint8[] memory ambId_,
+        address[] memory ambAddress_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        for (uint256 i = 0; i < ambId_.length; i++) {
+            address x = ambAddress_[i];
+            uint8 y = ambId_[i];
+            if (x == address(0)) revert ZERO_ADDRESS();
+
+            ambAddress[y] = x;
+            emit SetAmbAddress(y, x);
+        }
+    }
+
     /*///////////////////////////////////////////////////////////////
-                         External View Functions
+                    External View Functions
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRegistry
@@ -113,5 +129,12 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         uint8 bridgeId_
     ) external view override returns (address bridgeAddress_) {
         bridgeAddress_ = bridgeAddress[bridgeId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getAmbAddress(
+        uint8 ambId_
+    ) external view override returns (address ambAddress_) {
+        ambAddress_ = ambAddress[ambId_];
     }
 }

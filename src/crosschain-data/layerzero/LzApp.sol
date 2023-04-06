@@ -38,6 +38,7 @@ abstract contract LzApp is
         );
 
         bytes memory trustedRemote = trustedRemoteLookup[_srcChainId];
+        console.log(_srcChainId);
         console.logBytes(trustedRemote);
         console.logBytes(_srcAddress);
         // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.

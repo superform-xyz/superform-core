@@ -125,37 +125,6 @@ contract SuperFormFactoryTest is BaseSetup {
         vars.vault1 = address(0x2);
         vars.vault2 = address(0x3);
 
-        console.log(
-            FactoryStateRegistry(
-                payable(getContract(chainIds[0], "FactoryStateRegistry"))
-            ).payloadsCount()
-        );
-        console.log(
-            FactoryStateRegistry(
-                payable(getContract(chainIds[1], "FactoryStateRegistry"))
-            ).payloadsCount()
-        );
-        console.log(
-            FactoryStateRegistry(
-                payable(getContract(chainIds[2], "FactoryStateRegistry"))
-            ).payloadsCount()
-        );
-        console.log(
-            FactoryStateRegistry(
-                payable(getContract(chainIds[3], "FactoryStateRegistry"))
-            ).payloadsCount()
-        );
-        console.log(
-            FactoryStateRegistry(
-                payable(getContract(chainIds[4], "FactoryStateRegistry"))
-            ).payloadsCount()
-        );
-        console.log(
-            FactoryStateRegistry(
-                payable(getContract(chainIds[5], "FactoryStateRegistry"))
-            ).payloadsCount()
-        );
-
         /// @dev test getAllSuperForms
 
         (

@@ -37,9 +37,6 @@ interface IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
-    /// @dev is emitted when a new cross-chain amb is configured.
-    event AmbConfigured(uint8 ambId, address indexed ambImplAddress);
-
     /// @dev is emitted when a cross-chain payload is received in the state registry.
     event PayloadReceived(
         uint16 srcChainId,
@@ -62,11 +59,6 @@ interface IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             External Functions
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev allows admin to update amb implementations.
-    /// @param ambId_ is the propreitory amb id.
-    /// @param ambImpl_ is the implementation address.
-    function configureAmb(uint8 ambId_, address ambImpl_) external;
 
     /// @dev allows core contracts to send data to a destination chain.
     /// @param ambId_ is the identifier of the message amb to be used.

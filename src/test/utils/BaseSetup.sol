@@ -48,6 +48,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     address public deployer = address(777);
     address[] public users;
+    uint256 public trustedRemote;
     mapping(uint16 => mapping(bytes32 => address)) public contracts;
 
     /*//////////////////////////////////////////////////////////////
@@ -88,6 +89,8 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev amb ids
     uint8[] ambIds;
+    /// @dev amb implementations
+    address[] ambAddresses;
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -264,46 +267,60 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars
                 .hyperlaneHelper;
 
-            /// @dev 2- deploy StateRegistry pointing to lzEndpoints (constants)
+            /// @dev 2 - Deploy SuperRegistry and assign roles
+            vars.superRegistry = address(new SuperRegistry(vars.chainId));
+            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
+                .superRegistry;
+
+            /// @dev 3- deploy StateRegistry pointing to lzEndpoints (constants)
             vars.coreStateRegistry = address(
-                new CoreStateRegistry(vars.chainId)
+                new CoreStateRegistry(
+                    vars.chainId,
+                    SuperRegistry(vars.superRegistry)
+                )
             );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
                 .coreStateRegistry;
 
-            /// @dev 2.1- deploy Factory State Registry
+            /// @dev 3.1- deploy Factory State Registry
             vars.factoryStateRegistry = address(
-                new FactoryStateRegistry(vars.chainId)
+                new FactoryStateRegistry(
+                    vars.chainId,
+                    SuperRegistry(vars.superRegistry)
+                )
             );
             contracts[vars.chainId][
                 bytes32(bytes("FactoryStateRegistry"))
             ] = vars.factoryStateRegistry;
 
-            /// @dev 2.2- deploy Layerzero Implementation
+            /// @dev 3.2- deploy Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
-                    IBaseStateRegistry(vars.coreStateRegistry),
-                    IBaseStateRegistry(vars.factoryStateRegistry)
+                    SuperRegistry(vars.superRegistry)
                 )
             );
             contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
                 .lzImplementation;
 
-            /// @dev 2.3- deploy Hyperlane Implementation
+            /// @dev 3.3- deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation(
                     HyperlaneMailbox,
-                    IBaseStateRegistry(vars.coreStateRegistry),
-                    IBaseStateRegistry(vars.factoryStateRegistry),
-                    HyperlaneGasPaymaster
+                    HyperlaneGasPaymaster,
+                    SuperRegistry(vars.superRegistry)
                 )
             );
             contracts[vars.chainId][
                 bytes32(bytes("HyperlaneImplementation"))
             ] = vars.hyperlaneImplementation;
 
-            /// @dev 3- deploy SocketRouterMockFork
+            if (i == 0) {
+                ambAddresses.push(vars.lzImplementation);
+                ambAddresses.push(vars.hyperlaneImplementation);
+            }
+
+            /// @dev 4- deploy SocketRouterMockFork
             vars.socketRouter = address(new SocketRouterMockFork());
             contracts[vars.chainId][
                 bytes32(bytes("SocketRouterMockFork"))
@@ -314,7 +331,7 @@ abstract contract BaseSetup is DSTest, Test {
                 bridgeAddresses.push(vars.socketRouter);
             }
 
-            /// @dev 4 - Deploy UNDERLYING_TOKENS and VAULTS
+            /// @dev 4.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
                     new MockERC20(
@@ -329,7 +346,7 @@ abstract contract BaseSetup is DSTest, Test {
                     bytes32(bytes(UNDERLYING_TOKENS[j]))
                 ] = vars.UNDERLYING_TOKEN;
 
-                /// @dev 5 - Deploy mock Vault
+                /// @dev 4.2 - Deploy mock Vault
                 vars.vault = address(
                     new VaultMock(
                         MockERC20(vars.UNDERLYING_TOKEN),
@@ -383,11 +400,6 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("Swap"))] = address(
                 new MockERC20("Swap", "SWP", 18, deployer, milionTokensE18)
             );
-
-            /// @dev 12 - Deploy SuperRegistry and assign roles
-            vars.superRegistry = address(new SuperRegistry(vars.chainId));
-            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
-                .superRegistry;
 
             SuperRegistry(vars.superRegistry).setSuperRouter(
                 contracts[vars.chainId][bytes32(bytes("SuperRouter"))]
@@ -542,29 +554,13 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.srcCoreStateRegistry
             );
 
-            /// @dev configures lzImplementation to state registry
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
-                ambIds[0],
-                vars.lzImplementation
-            );
-
-            /// @dev configures hyperlaneImplementation to state registry
-            CoreStateRegistry(payable(vars.srcCoreStateRegistry)).configureAmb(
-                ambIds[1],
-                vars.hyperlaneImplementation
-            );
-
-            /// @dev configures lzImplementation to state registry
-            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry))
-                .configureAmb(ambIds[0], vars.lzImplementation);
-
-            /// @dev configures hyperlaneImplementation to state registry
-            FactoryStateRegistry(payable(vars.srcFactoryStateRegistry))
-                .configureAmb(ambIds[1], vars.hyperlaneImplementation);
+            /// @dev configures lzImplementation and hyperlane to super registry
+            SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry")))
+                .setAmbAddress(ambIds, ambAddresses);
 
             /// @dev Set all trusted remotes for each chain & configure amb chains ids
             for (uint256 j = 0; j < chainIds.length; j++) {
-                if (j != i) {
+                if (vars.chainId != chainIds[j]) {
                     vars.dstChainId = chainIds[j];
                     /// @dev FIXME: for now only LZ amb
                     vars.dstAmbChainId = lz_chainIds[j];
