@@ -198,7 +198,6 @@ abstract contract ProtocolActions is BaseSetup {
         aV.txIdBefore = superRouter.totalTransactions();
 
         if (action.testType != TestType.RevertMainAction) {
-            /// NOTE: user msg.sender context is only activated here, there msg.sender context confusion
             vm.prank(action.user);
             /// @dev see pigeon for this implementation
             vm.recordLogs();

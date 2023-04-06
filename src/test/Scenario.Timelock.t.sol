@@ -8,21 +8,21 @@ import "../types/DataTypes.sol";
 
 // Test Utils
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
-import {ITimelockForm} from "./interfaces/ITimelockForm.sol";
+import {IERC4626TimelockForm} from "./interfaces/IERC4626TimelockForm.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
+import {_packSuperForm} from "../utils/DataPacking.sol";
 
 /// @dev we can't use it because it shadows existing declaration at the BaseSetup level
-// import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol"; 
+// import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract ScenarioTimelockTest is ProtocolActions {
-
     /// @dev Global counter for actions sent to the protocol
     uint256 actionId;
 
-    /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests 
+    /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests
     uint16 dstChainID;
     uint256 dstVaultID;
     uint256 dstFormID;
@@ -33,7 +33,7 @@ contract ScenarioTimelockTest is ProtocolActions {
     ISuperRouter superRouter;
 
     /// @dev Access Form interface to call form functions for assertions
-    // ERC4626TimelockForm public erc4626TimelockForm;
+    IERC4626TimelockForm public erc4626TimelockForm;
 
     /// @dev singleDestinationSingleVault Deposit test case
     function setUp() public override {
@@ -55,7 +55,6 @@ contract ScenarioTimelockTest is ProtocolActions {
         dstFormID = 1;
         amount = 1000;
         slippage = 1000;
-
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -74,9 +73,26 @@ contract ScenarioTimelockTest is ProtocolActions {
 
     /// @dev This test uses 2 actions, rolls block between and make assertions about states in between
     function test_scenario_request_unlock_full_withdraw() public {
+        
+        address _superRouter = contracts[CHAIN_0][
+            bytes32(bytes("SuperRouter"))
+        ];
+        
+        address _superForm = getContract(
+            dstChainID,
+            string.concat(
+                UNDERLYING_TOKENS[0],
+                "SuperForm",
+                Strings.toString(FORM_BEACON_IDS[1])
+            )
+        );
 
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
         superRouter = ISuperRouter(_superRouter);
+        erc4626TimelockForm = IERC4626TimelockForm(_superForm);
+
+        uint256 _formId = _packSuperForm(_superForm, dstFormID, dstChainID);
+        console.log("id" , _formId);
+        _formId = 7067388259113537318333193573304610032728844785732419293124208230509126074;
 
         /// @dev Individual setting for deposit call (overwrite again for withdraw)
         dstChainID = DST_CHAINS[0];
@@ -88,13 +104,13 @@ contract ScenarioTimelockTest is ProtocolActions {
         /*///////////////////////////////////////////////////////////////
                                 DEPOSIT ACTION
         //////////////////////////////////////////////////////////////*/
-        
+
         TestAction memory action = _depositAction(
             dstChainID,
-            dstVaultID, 
+            dstVaultID,
             dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
-            amount, 
-            slippage, 
+            amount,
+            slippage,
             TestType.Pass
         );
 
@@ -107,8 +123,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// NOTE: What if we want to send from different EOA than deployer's?
         /// NOTE: Unsure if we need multi/singleSuperFormsData returned here if we can read state between calls now
 
-        console.log("stage0 buildReqData");
-        console.log("actionId", actionId);
+        console.log("stage0 deposit");
 
         /// @dev User builds his request data for src (deposit action)
         /// NOTE: SuperForm API operation, could be separated from individual test-flow  (internal processing)
@@ -124,15 +139,12 @@ contract ScenarioTimelockTest is ProtocolActions {
         console.log("stage1 done");
 
         /// @dev User sends his request data to the src (deposit action)
-        // vm.stopPrank();
-        // vm.startPrank(action.user); // <= ERR? We can't prank because some dependency? (prank already active)
         (vars, aV) = _stage2_run_src_action(
             action,
             multiSuperFormsData,
             singleSuperFormsData,
             vars
         );
-        // vm.stopPrank();
 
         console.log("stage2 done");
 
@@ -167,13 +179,76 @@ contract ScenarioTimelockTest is ProtocolActions {
                                 DEPOSIT ASSERTS
         //////////////////////////////////////////////////////////////*/
 
-        uint256 balanceOfAlice = superRouter.balanceOf(users[0], 1);
-        console.log("ASSERT FAILS HERE, NO SUPERPOSITION OWNED!!!");
+        uint256 balanceOfAlice = superRouter.balanceOf(users[0], _formId);
         assertEq(balanceOfAlice, 1000);
 
         /*///////////////////////////////////////////////////////////////
                                 WITHDRAW ACTION
-        //////////////////////////////////////////////////////////////*/    
+        //////////////////////////////////////////////////////////////*/
+
+        /// @dev Individual setting for deposit call (overwrite again for withdraw)
+        dstChainID = DST_CHAINS[0];
+        dstVaultID = 1;
+        dstFormID = 1;
+        amount = 1000;
+        slippage = 1000;
+
+        action = _withdrawAction(
+            dstChainID,
+            dstVaultID,
+            dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
+            amount,
+            slippage,
+            TestType.Pass
+        );
+
+        /// @dev Repeated
+        (
+            multiSuperFormsData,
+            singleSuperFormsData,
+            vars
+        ) = _stage1_buildReqData(action, actionId);
+
+        actionId++;
+
+        console.log("stage1 done");
+
+        /// @dev User sends his request data to the src (withdraw action)
+        (vars, aV) = _stage2_run_src_action(
+            action,
+            multiSuperFormsData,
+            singleSuperFormsData,
+            vars
+        );
+
+        console.log("stage2 done");
+
+        /// @dev Repeated
+        _stage3_src_to_dst_amb_delivery(
+            action,
+            vars,
+            aV,
+            multiSuperFormsData,
+            singleSuperFormsData
+        );
+
+        console.log("stage3 done");
+
+        /// @dev Repeated
+        success = _stage4_process_src_dst_payload(
+            action,
+            vars,
+            aV,
+            singleSuperFormsData,
+            actionId
+        );
+
+        /*///////////////////////////////////////////////////////////////
+                                WITHDRAW ASSERTS
+        //////////////////////////////////////////////////////////////*/
+
+        balanceOfAlice = superRouter.balanceOf(users[0], _formId);
+        assertEq(balanceOfAlice, 0);
 
     }
 

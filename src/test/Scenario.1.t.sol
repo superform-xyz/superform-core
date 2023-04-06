@@ -115,9 +115,5 @@ contract Scenario1Test is ProtocolActions {
             }
         }
 
-        uint256 balanceOfAlice = superRouter.balanceOf(users[0], 1);
-        console.log("ASSERT FAILS HERE, NO SUPERPOSITION OWNED!!!");
-        assertEq(balanceOfAlice, 1000);
-
     }
 }

@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-interface ITimelockForm is IERC20 {
+interface IERC4626TimelockForm is IERC20 {
     function vaultSharesIsERC20() external pure returns (bool);
     function vaultSharesIsERC4626() external pure returns (bool);
     function getUnderlyingOfVault() external view returns (IERC20);
