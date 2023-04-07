@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 // Contracts
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
+import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 // import "forge-std/console.sol";
 
 // Test Utils
@@ -51,7 +52,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// @dev You can define settings here or at the level of individual tests
         dstChainID = DST_CHAINS[0]; /// id4
         dstVaultID = 0; /// vault 
-        dstFormID = 1; /// index to access in array of forms at BaseSetup level
+        dstFormID = 1; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
         amount = 1000;
         slippage = 1000;
     }
@@ -86,7 +87,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         address _superForm = getContract(
             dstChainID,
             string.concat(
-                UNDERLYING_TOKENS[0],
+                UNDERLYING_TOKENS[0], /// <= Arbitrary choice as BaseSetup deploys all vaults & deals all tokens to users TODO: cleanup
                 "SuperForm",
                 Strings.toString(FORM_BEACON_IDS[1])
             )
@@ -110,6 +111,12 @@ contract ScenarioTimelockTest is ProtocolActions {
         /*///////////////////////////////////////////////////////////////
                                 DEPOSIT ACTION
         //////////////////////////////////////////////////////////////*/
+
+        uint256 currentBalanceOfAliceSP = superRouter.balanceOf(users[0], _formId);
+        uint256 currentBalanceOfAliceUnderlying = IERC20(erc4626TimelockForm.getUnderlyingOfVault()).balanceOf(users[0]);
+        uint256 previewDepositToExpectedAmountOfSP = erc4626TimelockForm.previewDepositTo(amount);
+
+        assertEq(currentBalanceOfAliceSP, 0);
 
         /// NOTE: Individual deposit/withdraw invocation allows to make asserts in between
         TestAction memory action = _depositAction(
@@ -186,8 +193,15 @@ contract ScenarioTimelockTest is ProtocolActions {
                             TODO: DEPOSIT ASSERTS
         //////////////////////////////////////////////////////////////*/
 
-        uint256 balanceOfAlice = superRouter.balanceOf(users[0], _formId);
-        assertEq(balanceOfAlice, 1000);
+        /// TODO: 
+        /// assert alice balanceOf SuperPositions before && after
+        currentBalanceOfAliceSP = superRouter.balanceOf(users[0], _formId);
+        assertEq(currentBalanceOfAliceSP, 1000);
+        /// assert alice balanceOf underlying token before && after 
+        uint256 newBalanceOfAliceUnderlying = IERC20(erc4626TimelockForm.getUnderlyingOfVault()).balanceOf(users[0]);
+        assertEq(newBalanceOfAliceUnderlying, currentBalanceOfAliceUnderlying - amount);
+        /// assert expected amount of SuperPosition (shares on Form) token received from previewDepositTo
+        assertEq(previewDepositToExpectedAmountOfSP, currentBalanceOfAliceSP);
 
         /*///////////////////////////////////////////////////////////////
                                 WITHDRAW ACTION
@@ -257,8 +271,14 @@ contract ScenarioTimelockTest is ProtocolActions {
         //////////////////////////////////////////////////////////////*/
 
         /// FIXME: This test actually proves that we burn shares but don't send anything back because we only requestUnlock!!! 
-        balanceOfAlice = superRouter.balanceOf(users[0], _formId);
-        assertEq(balanceOfAlice, 0);
+        currentBalanceOfAliceSP = superRouter.balanceOf(users[0], _formId);
+        /// FIXME: 0 Set only so test would pass!!! This is upstream problem!!!
+        assertEq(currentBalanceOfAliceSP, 0);
+
+        /// TODO:
+        /// assert alice balanceOf SuperPositions before && after
+        /// assert alice balanceOf underlying token before && after 
+        /// assert expected amount of underlying token received from previewWithdrawFrom
 
     }
 
