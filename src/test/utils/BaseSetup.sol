@@ -647,14 +647,6 @@ abstract contract BaseSetup is DSTest, Test {
                             )
                         )
                     ] = vars.superForm;
-
-                    if (FORM_BEACON_IDS[j] == 1) {
-                        console.log("others", vars.superForm, "chainId", vars.chainId);
-                        if (vars.chainId == 4) console.log("POLY  ", vars.superForm, "chainId", vars.chainId);
-                    } else {
-                        console.log("form00", vars.superForm, "chainId", vars.chainId);
-                        if (vars.chainId == 4) console.log("POLY  ", vars.superForm, "chainId", vars.chainId);
-                    }
                 }
             }
         }

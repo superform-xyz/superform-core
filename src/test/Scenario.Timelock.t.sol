@@ -19,8 +19,11 @@ import {_packSuperForm} from "../utils/DataPacking.sol";
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract ScenarioTimelockTest is ProtocolActions {
+
     /// @dev Global counter for actions sent to the protocol
     uint256 actionId;
+    
+    /// @dev Global variable for timelockForm type. Different from dstFormID which is an index to access FORM_BEACON_IDS in BaseSetup
     uint256 timelockFormType = 2;
 
     /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests
@@ -53,30 +56,33 @@ contract ScenarioTimelockTest is ProtocolActions {
         slippage = 1000;
     }
 
+
+
     /*///////////////////////////////////////////////////////////////
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
+    /// NOTE: Individual tests target validation of each possible condition for form deposit/withdraw to fail
+
+    /// @dev TODO: This test uses only 1 action
+    /// assert revert on WITHDRAW_COOLDOWN_PERIOD();
+    // function testFail_scenario_request_unlock_cooldown() public {}
+
+    /// @dev TODO: This test uses only 1 action
+    /// assert revert on LOCKED(); - requestUnlock() was called but user wants to overwithdraw
+    // function testFail_scenario_request_unlock_overwithdraw() public {}
+
     /// @dev This test uses 2 actions, rolls block between and make assertions about states in between
     function test_scenario_request_unlock_full_withdraw() public {
+
+        /*///////////////////////////////////////////////////////////////
+                                STATE SETUP
+        //////////////////////////////////////////////////////////////*/
         
         address _superRouter = contracts[CHAIN_0][
             bytes32(bytes("SuperRouter"))
         ];
         
-        for (uint256 i = 0; i < UNDERLYING_TOKENS.length; i++) {
-        address _superFormZ = getContract(
-            4,
-            string.concat(
-                UNDERLYING_TOKENS[i],
-                "SuperForm",
-                Strings.toString(FORM_BEACON_IDS[1])
-            )
-        );
-
-        console.log("possible superform", _superFormZ);
-        }
-
         address _superForm = getContract(
             dstChainID,
             string.concat(
@@ -91,15 +97,12 @@ contract ScenarioTimelockTest is ProtocolActions {
         superRouter = ISuperRouter(_superRouter);
         erc4626TimelockForm = IERC4626TimelockForm(_superForm);
 
-        /// Here, however, dstFormId == 2, as that's the indexing inside of an array. 1 = erc4626form, 2 = erc4626timelockform
+        /// @dev Here, however, dstFormId == 2, as that's the indexing inside of an array. 1 = erc4626form, 2 = erc4626timelockform
         uint256 _formId = _packSuperForm(_superForm, timelockFormType, dstChainID);
         
-        console.log("id" , _formId);
-        _formId = 7067388259113537318333193573304610032728844785732419293124208230509126074;
-
         /// @dev Individual setting for deposit call (overwrite again for withdraw)
         dstChainID = DST_CHAINS[0];
-        dstVaultID = 1;
+        dstVaultID = 0;
         dstFormID = 1;
         amount = 1000;
         slippage = 1000;
@@ -108,6 +111,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                                 DEPOSIT ACTION
         //////////////////////////////////////////////////////////////*/
 
+        /// NOTE: Individual deposit/withdraw invocation allows to make asserts in between
         TestAction memory action = _depositAction(
             dstChainID,
             dstVaultID,
@@ -179,7 +183,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         console.log("stage5 done");
 
         /*///////////////////////////////////////////////////////////////
-                                DEPOSIT ASSERTS
+                            TODO: DEPOSIT ASSERTS
         //////////////////////////////////////////////////////////////*/
 
         uint256 balanceOfAlice = superRouter.balanceOf(users[0], _formId);
@@ -190,8 +194,9 @@ contract ScenarioTimelockTest is ProtocolActions {
         //////////////////////////////////////////////////////////////*/
 
         /// @dev Individual setting for deposit call (overwrite again for withdraw)
+        /// NOTE: Having mutability for those allows to test with fuzzing on range of random params
         dstChainID = DST_CHAINS[0];
-        dstVaultID = 1;
+        dstVaultID = 0;
         dstFormID = 1;
         amount = 1000;
         slippage = 1000;
@@ -205,13 +210,14 @@ contract ScenarioTimelockTest is ProtocolActions {
             TestType.Pass
         );
 
-        /// @dev Repeated
+        /// @dev TODO: Repeated
         (
             multiSuperFormsData,
             singleSuperFormsData,
             vars
         ) = _stage1_buildReqData(action, actionId);
 
+        /// @dev Increment after building request
         actionId++;
 
         console.log("stage1 done");
@@ -226,7 +232,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage2 done");
 
-        /// @dev Repeated
+        /// @dev TODO Repeated
         _stage3_src_to_dst_amb_delivery(
             action,
             vars,
@@ -237,7 +243,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage3 done");
 
-        /// @dev Repeated
+        /// @dev TODO Repeated
         success = _stage4_process_src_dst_payload(
             action,
             vars,
@@ -247,13 +253,18 @@ contract ScenarioTimelockTest is ProtocolActions {
         );
 
         /*///////////////////////////////////////////////////////////////
-                                WITHDRAW ASSERTS
+                            TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/
 
+        /// FIXME: This test actually proves that we burn shares but don't send anything back because we only requestUnlock!!! 
         balanceOfAlice = superRouter.balanceOf(users[0], _formId);
         assertEq(balanceOfAlice, 0);
 
     }
+
+    /*///////////////////////////////////////////////////////////////
+                        TEST INTERNAL HELPERS
+    //////////////////////////////////////////////////////////////*/
 
     function _depositAction(
         uint16 chainID_,
@@ -315,72 +326,4 @@ contract ScenarioTimelockTest is ProtocolActions {
         });
     }
 
-    /// NOTE: Individual tests target validation of each possible condition for form deposit/withdraw to fail
-
-    /// @dev TODO: This test uses only 1 action
-    /// assert revert on WITHDRAW_COOLDOWN_PERIOD();
-    // function testFail_scenario_request_unlock_cooldown() public {}
-
-    /// @dev TODO: This test uses only 1 action
-    /// assert revert on LOCKED(); - requestUnlock() was called but user wants to overwithdraw
-    // function testFail_scenario_request_unlock_overwithdraw() public {}
-
-    // function test_scenario() public {
-    //     /// NOTE: Execute single action by calling it
-    //     for (uint256 act = 0; act < actions.length; act++) {
-    //         TestAction memory action = actions[act];
-    //         MultiVaultsSFData[] memory multiSuperFormsData;
-    //         SingleVaultSFData[] memory singleSuperFormsData;
-    //         MessagingAssertVars memory aV;
-    //         StagesLocalVars memory vars;
-    //         bool success;
-
-    //         /// NOTE: What if we want to send from different EOA than deployer's?
-    //         /// NOTE: Unsure if we need multi/singleSuperFormsData returned here if we can read state between calls now
-    //         /// @dev User builds his request data for src (deposit action)
-    //         (
-    //             multiSuperFormsData,
-    //             singleSuperFormsData,
-    //             vars
-    //         ) = _stage1_buildReqData(action, act);
-
-    //         /// @dev User sends his request data to the src (deposit action)
-    //         (vars, aV) = _stage2_run_src_action(
-    //             action,
-    //             multiSuperFormsData,
-    //             singleSuperFormsData,
-    //             vars
-    //         );
-
-    //         /// @dev SuperForm Keepers operation, no user's input here (process)
-    //         /// NOTE: Here msg.sender context should be different from first two user actions to reliably test
-    //         _stage3_src_to_dst_amb_delivery(
-    //             action,
-    //             vars,
-    //             aV,
-    //             multiSuperFormsData,
-    //             singleSuperFormsData
-    //         );
-
-    //         /// @dev SuperForm Keepers operation, no user's input here
-    //         success = _stage4_process_src_dst_payload(
-    //             action,
-    //             vars,
-    //             aV,
-    //             singleSuperFormsData,
-    //             act
-    //         );
-
-    //         if (!success) {
-    //             continue;
-    //         }
-
-    //         if (action.action == Actions.Deposit) {
-    //             success = _stage5_process_superPositions_mint(action, vars, aV);
-    //             if (!success) {
-    //                 continue;
-    //             }
-    //         }
-    //     }
-    // }
 }

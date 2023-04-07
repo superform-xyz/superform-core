@@ -817,6 +817,8 @@ abstract contract ProtocolActions is BaseSetup {
             revert INVALID_TARGETS();
 
         for (uint256 i = 0; i < underlyingTokenIds_.length; i++) {
+            /// NOTE/FIXME: This should be allowed to revert (or not) at the core level.
+            /// Can produce false positive. (What if we revert here, but not in the core)
             if (formKinds_[i] > FORM_BEACON_IDS.length)
                 revert WRONG_FORMBEACON_ID();
             if (underlyingTokenIds_[i] > UNDERLYING_TOKENS.length)
