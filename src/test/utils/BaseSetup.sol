@@ -122,6 +122,15 @@ abstract contract BaseSetup is DSTest, Test {
         0x3c2269811836af69497E5F486A85D7316753cf62
     ];
 
+    address[6] public hyperlaneMailboxes = [
+        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
+        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
+        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
+        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
+        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
+        0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70
+    ];
+
     /*
     address[7] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -792,25 +801,44 @@ abstract contract BaseSetup is DSTest, Test {
     ) private {
         vm.stopPrank();
 
-        for (uint256 j = 0; j < chainIds.length; j++) {
-            if (chainIds[j] != currentChainId) {
-                LayerZeroHelper(getContract(currentChainId, "LayerZeroHelper"))
-                    .helpWithEstimates(
-                        lzEndpoints[j],
-                        lz_chainIds[j],
-                        1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
-                        FORKS[chainIds[j]],
-                        logs
-                    );
-                HyperlaneHelper(getContract(currentChainId, "HyperlaneHelper"))
-                    .help(
-                        address(HyperlaneMailbox),
-                        hyperlane_chainIds[j],
-                        FORKS[chainIds[j]],
-                        logs
-                    );
+        address[] memory toMailboxes = new address[](5);
+        uint32[] memory expDstDomains = new uint32[](5);
+
+        address[] memory endpoints = new address[](5);
+        uint16[] memory lzChainIds = new uint16[](5);
+
+        uint256[] memory forkIds = new uint256[](5);
+
+        uint256 j = 0;
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (chainIds[i] != currentChainId) {
+                toMailboxes[j] = hyperlaneMailboxes[i];
+                expDstDomains[j] = hyperlane_chainIds[i];
+
+                endpoints[j] = lzEndpoints[i];
+                lzChainIds[j] = lz_chainIds[i];
+
+                forkIds[j] = FORKS[chainIds[i]];
+
+                j++;
             }
         }
+
+        HyperlaneHelper(getContract(currentChainId, "HyperlaneHelper")).help(
+            address(HyperlaneMailbox),
+            toMailboxes,
+            expDstDomains,
+            forkIds,
+            logs
+        );
+
+        LayerZeroHelper(getContract(currentChainId, "LayerZeroHelper")).help(
+            endpoints,
+            lzChainIds,
+            1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+            forkIds,
+            logs
+        );
 
         vm.startPrank(deployer);
     }
