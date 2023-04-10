@@ -251,6 +251,8 @@ contract ScenarioTimelockTest is ProtocolActions {
                 singleSuperFormsData,
                 vars
             );
+        
+        console.log("stage2 done");
 
         aV = _stage3_src_to_dst_amb_delivery(
                 action,
