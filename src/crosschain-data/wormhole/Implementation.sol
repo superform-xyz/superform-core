@@ -6,7 +6,7 @@ import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
 import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import "../../utils/DataPacking.sol";
@@ -38,7 +38,7 @@ contract WormholeImplementation is
     uint8 public constant CONSISTENCY_LEVEL = 1;
 
     IWormhole public immutable bridge;
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     /// @dev relayer will forward published wormhole messages
     IWormholeRelayer public relayer;

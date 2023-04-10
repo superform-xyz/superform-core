@@ -80,6 +80,10 @@ interface ISuperRegistry {
         address[] memory ambAddress_
     ) external;
 
+    /// @dev allows admin to set the super positions address
+    /// @param superPositions_ the address of the super positions
+    function setSuperPositions(address superPositions_) external;
+
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
@@ -126,4 +130,8 @@ interface ISuperRegistry {
     function getAmbAddress(
         uint8 ambId_
     ) external view returns (address ambAddress_);
+
+    /// @dev gets the super positions
+    /// @return superPositions_ the address of the super positions
+    function superPositions() external view returns (address superPositions_);
 }

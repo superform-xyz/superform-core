@@ -240,9 +240,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             (AMBMessage)
         );
 
-        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
-            payloadInfo.txInfo
-        );
+        (, , bool multi, ) = _decodeTxInfo(payloadInfo.txInfo);
 
         if (multi) {
             InitMultiVaultData memory multiVaultData = abi.decode(

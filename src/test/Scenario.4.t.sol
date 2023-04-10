@@ -29,7 +29,10 @@ contract Scenario4Test is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYING_VAULTS[ARBI][0] = [2];
+        TARGET_FORM_KINDS[ARBI][0] = [0];
+
         TARGET_UNDERLYING_VAULTS[ARBI][1] = [2];
+        TARGET_FORM_KINDS[ARBI][1] = [0];
 
         AMOUNTS[ARBI][0] = [1000];
         AMOUNTS[ARBI][1] = [1000];
@@ -44,8 +47,7 @@ contract Scenario4Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
-                multiVaults: false, /// @dev - !!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,
                 revertError: "",
@@ -59,8 +61,7 @@ contract Scenario4Test is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
-                actionKind: LiquidityChange.Full, /// @dev same for all vaults currently / only applies in withdrawals
-                multiVaults: false, /// @dev - !!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: users[0],
                 testType: TestType.Pass,
                 revertError: "",
@@ -78,6 +79,53 @@ contract Scenario4Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        _run_actions();
+        for (uint256 act = 0; act < actions.length; act++) {
+            TestAction memory action = actions[act];
+            MultiVaultsSFData[] memory multiSuperFormsData;
+            SingleVaultSFData[] memory singleSuperFormsData;
+            MessagingAssertVars memory aV;
+            StagesLocalVars memory vars;
+            bool success;
+
+            (
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars
+            ) = _stage1_buildReqData(action, act);
+
+            (vars, aV) = _stage2_run_src_action(
+                action,
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars
+            );
+
+            _stage3_src_to_dst_amb_delivery(
+                action,
+                vars,
+                aV,
+                multiSuperFormsData,
+                singleSuperFormsData
+            );
+
+            success = _stage4_process_src_dst_payload(
+                action,
+                vars,
+                aV,
+                singleSuperFormsData,
+                act
+            );
+
+            if (!success) {
+                continue;
+            }
+
+            if (action.action == Actions.Deposit) {
+                success = _stage5_process_superPositions_mint(action, vars, aV);
+                if (!success) {
+                    continue;
+                }
+            }
+        }
     }
 }

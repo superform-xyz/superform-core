@@ -18,7 +18,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
                     State Variables
     //////////////////////////////////////////////////////////////*/
     uint16[] public broadcastChains;
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;

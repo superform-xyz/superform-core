@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 
 /// @title SuperRegistry
@@ -12,11 +12,13 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
     uint16 public immutable chainId;
 
+    /// @dev main protocol modules
     address public superRouter;
     address public tokenBank;
     address public superFormFactory;
     address public coreStateRegistry;
     address public factoryStateRegistry;
+    address public superPositions;
 
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 => address) public bridgeAddress;
@@ -106,6 +108,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
+
     function setAmbAddress(
         uint8[] memory ambId_,
         address[] memory ambAddress_
@@ -118,6 +121,17 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
             ambAddress[y] = x;
             emit SetAmbAddress(y, x);
         }
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setSuperPositions(
+        address superPositions_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (superPositions_ == address(0)) revert ZERO_ADDRESS();
+
+        superPositions = superPositions_;
+
+        emit FactoryStateRegistryUpdated(superPositions_);
     }
 
     /*///////////////////////////////////////////////////////////////

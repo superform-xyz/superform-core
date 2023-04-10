@@ -1,10 +1,10 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {Initializable} from "@openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import {ERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
-import {IERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
-import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {ERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 import {InitSingleVaultData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
@@ -34,7 +34,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @notice state variable are all declared public to avoid creating functions to expose.
 
     /// @dev The superRegistry address is used to access relevant protocol addresses
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     /// @dev the vault this form pertains to
     address public vault;
@@ -46,7 +46,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor() {
+    constructor(address superRegistry_) {
+        superRegistry = ISuperRegistry(superRegistry_);
+
         _disableInitializers();
     }
 
@@ -61,9 +63,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         address vault_
     ) external initializer {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
-
+        if (ISuperRegistry(superRegistry_) != superRegistry)
+            revert INVALID_SUPER_REGISTRY();
         chainId = chainId_;
-        superRegistry = ISuperRegistry(superRegistry_);
         vault = vault_;
     }
 

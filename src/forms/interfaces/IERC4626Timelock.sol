@@ -1,10 +1,9 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 interface IERC4626Timelock is IERC20 {
-
     /*///////////////////////////////////////////////////////////////
                             TIMELOCK SECTION
     //////////////////////////////////////////////////////////////*/
@@ -21,7 +20,7 @@ interface IERC4626Timelock is IERC20 {
 
     /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
     /// @dev Owner first submits request for unlock and only after specified cooldown passes, can withdraw
-    function requestUnlock(uint shareAmount) external;
+    function requestUnlock(uint shareAmount, address owner) external;
 
     /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
     /// @dev Owner can resign from unlock request. In production vaults have differing mechanism for this
@@ -29,11 +28,13 @@ interface IERC4626Timelock is IERC20 {
 
     /// @notice Check outstanding unlock request for the owner
     /// @dev Mock Timelocked Vault uses single UnlockRequest. In production vaults have differing mechanism for this
-    function userUnlockRequests(address owner) external view returns (UnlockRequest memory);
+    function userUnlockRequests(
+        address owner
+    ) external view returns (UnlockRequest memory);
 
     /// @notice The amount of time that must pass between a requestUnlock() and withdraw() call.
     function lockPeriod() external view returns (uint256);
-    
+
     /*///////////////////////////////////////////////////////////////
                                ERC4626 SECTION
     //////////////////////////////////////////////////////////////*/
@@ -89,7 +90,7 @@ interface IERC4626Timelock is IERC20 {
     function deposit(
         uint256 assets,
         address receiver
-    ) external virtual returns (uint256 shares);
+    ) external returns (uint256 shares);
 
     /**
      * @notice The maximum number of vault shares that caller can mint.
@@ -114,7 +115,7 @@ interface IERC4626Timelock is IERC20 {
     function mint(
         uint256 shares,
         address receiver
-    ) external virtual returns (uint256 assets);
+    ) external returns (uint256 assets);
 
     /**
      * @notice The maximum number of underlying assets that owner can withdraw.
@@ -145,7 +146,7 @@ interface IERC4626Timelock is IERC20 {
         uint256 assets,
         address receiver,
         address owner
-    ) external virtual returns (uint256 shares);
+    ) external returns (uint256 shares);
 
     /**
      * @notice The maximum number of shares an owner can redeem for underlying assets.
@@ -174,7 +175,7 @@ interface IERC4626Timelock is IERC20 {
         uint256 shares,
         address receiver,
         address owner
-    ) external virtual returns (uint256 assets);
+    ) external returns (uint256 assets);
 
     /**
      * @dev Emitted when sender has exchanged assets for shares, and transferred those shares to receiver.

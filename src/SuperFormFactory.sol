@@ -1,8 +1,8 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
-import {ERC165Checker} from "@openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
-import {BeaconProxy} from "@openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
+import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
+import {BeaconProxy} from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
@@ -24,7 +24,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /// @dev chainId represents the superform chain id.
     uint16 public immutable chainId;
 
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     address[] public formBeacons;
 
@@ -39,10 +39,12 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
     /// @dev sets caller as the admin of the contract.
     /// @param chainId_ the superform? chain id this factory is deployed on
-    constructor(uint16 chainId_) {
+    /// @param superRegistry_ the superform registry contract
+    constructor(uint16 chainId_, address superRegistry_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
+        superRegistry = ISuperRegistry(superRegistry_);
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
@@ -89,7 +91,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
     /// @inheritdoc ISuperFormFactory
     function createSuperForm(
-        uint256 formBeaconId_,
+        uint256 formBeaconId_, /// TimelockedBeaconId, NormalBeaconId... etc
         address vault_
     )
         external
@@ -162,15 +164,6 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     }
 
     /// @inheritdoc ISuperFormFactory
-    function setSuperRegistry(
-        address superRegistry_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (superRegistry_ == address(0)) revert ZERO_ADDRESS();
-        superRegistry = ISuperRegistry(superRegistry_);
-        emit SuperRegistrySet(superRegistry_);
-    }
-
-    /// @inheritdoc ISuperFormFactory
     function stateSync(bytes memory data_) external payable override {
         if (msg.sender != superRegistry.factoryStateRegistry())
             revert INVALID_CALLER();
@@ -206,7 +199,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
     /// @param vault_ is the address of a vault
     /// @return superFormIds_ is the id of the superform
-    /// @return formIds_ is the form id
+    /// @return formBeaconIds_ is the form id
     /// @return chainIds_ is the chain id
     function getAllSuperFormsFromVault(
         address vault_
@@ -216,24 +209,26 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         override
         returns (
             uint256[] memory superFormIds_,
-            uint256[] memory formIds_,
+            uint256[] memory formBeaconIds_,
             uint16[] memory chainIds_
         )
     {
         superFormIds_ = vaultToSuperForms[vault_];
         uint256 len = superFormIds_.length;
-        formIds_ = new uint256[](len);
+        formBeaconIds_ = new uint256[](len);
         chainIds_ = new uint16[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (, formIds_[i], chainIds_[i]) = _getSuperForm(superFormIds_[i]);
+            (, formBeaconIds_[i], chainIds_[i]) = _getSuperForm(
+                superFormIds_[i]
+            );
         }
     }
 
     /// @dev Returns all SuperForms
     /// @return superFormIds_ is the id of the superform
     /// @return superForms_ is the address of the vault
-    /// @return formIds_ is the form id
+    /// @return formBeaconIds_ is the form beacon id
     /// @return chainIds_ is the chain id
     function getAllSuperForms()
         external
@@ -242,18 +237,18 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         returns (
             uint256[] memory superFormIds_,
             address[] memory superForms_,
-            uint256[] memory formIds_,
+            uint256[] memory formBeaconIds_,
             uint16[] memory chainIds_
         )
     {
         superFormIds_ = superForms;
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
-        formIds_ = new uint256[](len);
+        formBeaconIds_ = new uint256[](len);
         chainIds_ = new uint16[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], formIds_[i], chainIds_[i]) = _getSuperForm(
+            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = _getSuperForm(
                 superFormIds_[i]
             );
         }

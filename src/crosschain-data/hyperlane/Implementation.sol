@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {IMailbox} from "./interface/IMailbox.sol";
@@ -25,7 +25,7 @@ contract HyperlaneImplementation is
     //////////////////////////////////////////////////////////////*/
     IMailbox public immutable mailbox;
     IInterchainGasPaymaster public immutable igp;
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     uint32[] public broadcastChains;
 

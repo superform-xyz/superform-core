@@ -103,9 +103,4 @@ interface IBaseStateRegistry {
         uint256 ambId_,
         bytes memory extraData_
     ) external payable;
-
-    /// set super registry
-    /// @dev allows an admin to set the super registry
-    /// @param superRegistry_ is the address of the super registry
-    function setSuperRegistry(address superRegistry_) external;
 }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 import {IERC4626Timelock} from "./interfaces/IERC4626Timelock.sol";
-import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
@@ -11,9 +11,9 @@ import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import "../utils/DataPacking.sol";
 
-/// @title ERC4626TimelockedForm
+/// @title ERC4626TimelockForm
 /// @notice The Form implementation with timelock extension for IERC4626Timelock vaults
-contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
+contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
     /*///////////////////////////////////////////////////////////////
@@ -28,6 +28,12 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
 
     /// @dev error thrown when the unlock reques
     error LOCKED();
+
+    /*///////////////////////////////////////////////////////////////
+                            INITIALIZATION
+    //////////////////////////////////////////////////////////////*/
+
+    constructor(address superRegistry_) ERC20Form(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
@@ -185,32 +191,31 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
 
         (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
 
-        LiqRequest memory liqData = abi.decode(
-            singleVaultData_.liqData,
-            (LiqRequest)
-        );
-
         /// note: handle the collateral token transfers.
-        if (liqData.txData.length == 0) {
+        if (singleVaultData_.liqData.txData.length == 0) {
             if (
-                ERC20(liqData.token).allowance(srcSender, address(this)) <
-                liqData.amount
+                ERC20(singleVaultData_.liqData.token).allowance(
+                    srcSender,
+                    address(this)
+                ) < singleVaultData_.liqData.amount
             ) revert DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
-            ERC20(liqData.token).safeTransferFrom(
+            ERC20(singleVaultData_.liqData.token).safeTransferFrom(
                 srcSender,
                 address(this),
-                liqData.amount
+                singleVaultData_.liqData.amount
             );
         } else {
             dispatchTokens(
-                superRegistry.getBridgeAddress(liqData.bridgeId),
-                liqData.txData,
-                liqData.token,
-                liqData.allowanceTarget,
-                liqData.amount,
+                superRegistry.getBridgeAddress(
+                    singleVaultData_.liqData.bridgeId
+                ),
+                singleVaultData_.liqData.txData,
+                singleVaultData_.liqData.token,
+                singleVaultData_.liqData.allowanceTarget,
+                singleVaultData_.liqData.amount,
                 srcSender,
-                liqData.nativeAmount
+                singleVaultData_.liqData.nativeAmount
             );
         }
 
@@ -233,12 +238,7 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
     ) internal virtual override returns (uint256 dstAmount) {
         (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
 
-        LiqRequest memory liqData = abi.decode(
-            singleVaultData_.liqData,
-            (LiqRequest)
-        );
-
-        uint256 len1 = liqData.txData.length;
+        uint256 len1 = singleVaultData_.liqData.txData.length;
         address receiver = len1 == 0 ? srcSender : address(this);
 
         IERC4626Timelock v = IERC4626Timelock(vault);
@@ -261,17 +261,19 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
 
             if (len1 != 0) {
                 /// @dev this check here might be too much already, but can't hurt
-                if (liqData.amount > singleVaultData_.amount)
+                if (singleVaultData_.liqData.amount > singleVaultData_.amount)
                     revert DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
                 dispatchTokens(
-                    superRegistry.getBridgeAddress(liqData.bridgeId),
-                    liqData.txData,
-                    liqData.token,
-                    liqData.allowanceTarget,
-                    liqData.amount,
+                    superRegistry.getBridgeAddress(
+                        singleVaultData_.liqData.bridgeId
+                    ),
+                    singleVaultData_.liqData.txData,
+                    singleVaultData_.liqData.token,
+                    singleVaultData_.liqData.allowanceTarget,
+                    singleVaultData_.liqData.amount,
                     address(this),
-                    liqData.nativeAmount
+                    singleVaultData_.liqData.nativeAmount
                 );
             }
         } else if (unlock == 1) {
@@ -279,8 +281,8 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
         } else if (unlock == 2) {
             /// @dev target vault should implement requestUnlock function. with 1Form<>1Vault we can actualy re-define it though.
             /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
-            /// @dev IERC4626TimelockForm could be an ERC4626 extension? 
-            v.requestUnlock(singleVaultData_.amount);
+            /// @dev IERC4626TimelockForm could be an ERC4626 extension?
+            v.requestUnlock(singleVaultData_.amount, address(this));
         } else if (unlock == 3) {
             revert WITHDRAW_COOLDOWN_PERIOD();
         }
@@ -313,79 +315,93 @@ contract ERC4626TimelockedForm is ERC20Form, LiquidityHandler {
         );
     }
 
+    /// @dev Joao- needed to add this due to stack too deep error
+    struct xChainWithdrawLocalVars {
+        uint16 unlock;
+        uint16 dstChainId;
+        uint16 srcChainId;
+        uint80 txId;
+        address vaultLoc;
+        address srcSender;
+        uint256 dstAmount;
+        uint256 balanceBefore;
+        uint256 balanceAfter;
+    }
+
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     ) internal virtual override {
-        (, , uint16 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
-        address vaultLoc = vault;
+        xChainWithdrawLocalVars memory vars;
+        (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
+        vars.vaultLoc = vault;
 
-        uint256 dstAmount;
+        IERC4626Timelock v = IERC4626Timelock(vars.vaultLoc);
 
-        IERC4626Timelock v = IERC4626Timelock(vaultLoc);
-
-        (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(
+        (vars.srcSender, vars.srcChainId, vars.txId) = _decodeTxData(
             singleVaultData_.txData
         );
-        LiqRequest memory liqData = abi.decode(
-            singleVaultData_.liqData,
-            (LiqRequest)
-        );
 
-        uint16 unlock = checkUnlock(vault, singleVaultData_.amount, srcSender);
-        if (unlock == 0) {
-            if (liqData.txData.length != 0) {
+        vars.unlock = checkUnlock(
+            vault,
+            singleVaultData_.amount,
+            vars.srcSender
+        );
+        if (vars.unlock == 0) {
+            if (singleVaultData_.liqData.txData.length != 0) {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
-                dstAmount = v.redeem(
+                vars.dstAmount = v.redeem(
                     singleVaultData_.amount,
                     address(this),
                     address(this)
                 );
 
-                uint256 balanceBefore = ERC20(v.asset()).balanceOf(
-                    address(this)
-                );
+                vars.balanceBefore = ERC20(v.asset()).balanceOf(address(this));
                 /// Note Send Tokens to Source Chain
                 /// FEAT Note: We could also allow to pass additional chainId arg here
                 /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
                 dispatchTokens(
-                    superRegistry.getBridgeAddress(liqData.bridgeId),
-                    liqData.txData,
-                    liqData.token,
-                    liqData.allowanceTarget,
-                    dstAmount,
+                    superRegistry.getBridgeAddress(
+                        singleVaultData_.liqData.bridgeId
+                    ),
+                    singleVaultData_.liqData.txData,
+                    singleVaultData_.liqData.token,
+                    singleVaultData_.liqData.allowanceTarget,
+                    vars.dstAmount,
                     address(this),
-                    liqData.nativeAmount
+                    singleVaultData_.liqData.nativeAmount
                 );
-                uint256 balanceAfter = ERC20(v.asset()).balanceOf(
-                    address(this)
-                );
+                vars.balanceAfter = ERC20(v.asset()).balanceOf(address(this));
 
                 /// note: balance validation to prevent draining contract.
-                if (balanceAfter < balanceBefore - dstAmount)
+                if (vars.balanceAfter < vars.balanceBefore - vars.dstAmount)
                     revert XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
             } else {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
-                v.redeem(singleVaultData_.amount, srcSender, address(this));
+                v.redeem(
+                    singleVaultData_.amount,
+                    vars.srcSender,
+                    address(this)
+                );
             }
-        } else if (unlock == 1) {
+        } else if (vars.unlock == 1) {
             revert LOCKED();
-        } else if (unlock == 2) {
+        } else if (vars.unlock == 2) {
             /// @dev target vault should implement requestUnlock function. with 1Form<>1Vault we can actualy re-define it though.
             /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
             /// @dev IERC4626TimelockForm could be an ERC4626 extension?
-            v.requestUnlock(singleVaultData_.amount);
-        } else if (unlock == 3) {
+            v.requestUnlock(singleVaultData_.amount, address(this));
+        } else if (vars.unlock == 3) {
             revert WITHDRAW_COOLDOWN_PERIOD();
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
         emit Processed(
-            srcChainId,
-            dstChainId,
-            txId,
+            vars.srcChainId,
+            vars.dstChainId,
+            vars.txId,
             singleVaultData_.amount,
-            vaultLoc
+            vars.vaultLoc
         );
     }
 

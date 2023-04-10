@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import "@std/Test.sol";
+import "forge-std/Test.sol";
 
 import "../../types/LiquidityTypes.sol";
 
@@ -29,7 +29,7 @@ enum TestType {
     RevertUpdateStateRBAC
 }
 
-struct NewActionLocalVars {
+struct StagesLocalVars {
     Vm.Log[] logs;
     MultiDstMultiVaultsStateReq multiDstMultiVaultStateReq;
     MultiDstSingleVaultStateReq multiDstSingleVaultStateReq;
@@ -53,7 +53,7 @@ struct NewActionLocalVars {
     uint256[] maxSlippage;
 }
 
-struct AssertVars {
+struct MessagingAssertVars {
     uint256 initialFork;
     uint256 msgValue;
     uint256 txIdBefore;
@@ -69,7 +69,6 @@ struct AssertVars {
 
 struct TestAction {
     Actions action;
-    LiquidityChange actionKind;
     bool multiVaults;
     address user;
     TestType testType;
@@ -112,25 +111,21 @@ struct SetupVars {
     address hyperlaneImplementation;
     address socketRouter;
     address erc4626Form;
+    address erc4626TimelockForm;
     address factoryStateRegistry;
     address coreStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
+    address timelockVault;
     address srcTokenBank;
-    address srcSuperRouter;
-    address srcCoreStateRegistry;
-    address srcFactoryStateRegistry;
-    address srcSuperFormFactory;
-    address dstSuperFormFactory;
-    address srcErc4626Form;
-    address srcLzImplementation;
+    address superRouter;
     address dstLzImplementation;
-    address srcHyperlaneImplementation;
     address dstHyperlaneImplementation;
     address dstStateRegistry;
-    address srcMultiTxProcessor;
+    address multiTxProcessor;
     address superRegistry;
     Vm.Log[] logs;
+    address superPositions;
 }
 
 /*//////////////////////////////////////////////////////////////
@@ -149,7 +144,8 @@ struct SingleVaultCallDataArgs {
     uint16 srcChainId;
     uint16 toChainId;
     bool multiTx;
-    LiquidityChange actionKind;
+    uint256 totalAmount;
+    address sameUnderlyingCheck;
 }
 
 struct MultiVaultCallDataArgs {
@@ -164,7 +160,6 @@ struct MultiVaultCallDataArgs {
     uint16 srcChainId;
     uint16 toChainId;
     bool multiTx;
-    LiquidityChange actionKind;
     Actions action;
 }
 
@@ -228,3 +223,5 @@ error MISMATCH_TEST_TYPE();
 error MISMATCH_RBAC_TEST();
 error WRONG_UNDERLYING_ID();
 error INVALID_AMOUNTS_LENGTH();
+error INVALID_TARGETS();
+error WRONG_FORMBEACON_ID();

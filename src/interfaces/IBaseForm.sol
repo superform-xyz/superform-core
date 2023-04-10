@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC165Upgradeable} from "@openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
-import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
@@ -24,6 +24,9 @@ interface IBaseForm is IERC165Upgradeable {
 
     /// @dev is emitted when the chain id input is invalid.
     error INVALID_INPUT_CHAIN_ID();
+
+    /// @dev is emitted when the super registry input is invalid
+    error INVALID_SUPER_REGISTRY();
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/

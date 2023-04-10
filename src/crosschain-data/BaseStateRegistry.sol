@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {PayloadState, AMBMessage, AMBFactoryMessage} from "../types/DataTypes.sol";
@@ -36,7 +36,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     /// @dev maps payloads to their status
     mapping(uint256 => PayloadState) public payloadTracking;
 
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     /*///////////////////////////////////////////////////////////////
                         CONSTRUCTOR
@@ -244,15 +244,5 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
                 extraData_
             );
         }
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @param superRegistry_    represents the address of the superRegistry
-    function setSuperRegistry(
-        address superRegistry_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        superRegistry = ISuperRegistry(superRegistry_);
-
-        emit SuperRegistryUpdated(superRegistry_);
     }
 }
