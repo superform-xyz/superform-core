@@ -4,6 +4,7 @@ import {BaseStateRegistry} from "./BaseStateRegistry.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
 import "../utils/DataPacking.sol";
 
@@ -22,7 +23,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint16 chainId_) BaseStateRegistry(chainId_) {}
+    constructor(
+        uint16 chainId_,
+        ISuperRegistry superRegistry_
+    ) BaseStateRegistry(chainId_, superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -236,9 +240,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             (AMBMessage)
         );
 
-        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
-            payloadInfo.txInfo
-        );
+        (, , bool multi, ) = _decodeTxInfo(payloadInfo.txInfo);
 
         if (multi) {
             InitMultiVaultData memory multiVaultData = abi.decode(

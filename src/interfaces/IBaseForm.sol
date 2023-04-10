@@ -24,6 +24,9 @@ interface IBaseForm is IERC165Upgradeable {
 
     /// @dev is emitted when the chain id input is invalid.
     error INVALID_INPUT_CHAIN_ID();
+
+    /// @dev is emitted when the super registry input is invalid
+    error INVALID_SUPER_REGISTRY();
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/

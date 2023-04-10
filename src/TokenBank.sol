@@ -10,7 +10,6 @@ import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ITokenBank} from "./interfaces/ITokenBank.sol";
 import "./utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @title Token Bank
 /// @author Zeropoint Labs.
@@ -28,22 +27,23 @@ contract TokenBank is ITokenBank, AccessControl {
                     State Variables
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev safeGasParam is used while sending layerzero message from destination to router.
-    bytes public safeGasParam;
-
     /// @dev superRegistry points to the super registry deployed in the respective chain.
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     /// @dev chainId represents the superform chain id of the specific chain.
     uint16 public immutable chainId;
 
+    /// @dev safeGasParam is used while sending layerzero message from destination to router.
+    bytes public safeGasParam;
+
     /// @notice deploy stateRegistry before SuperDestination
     /// @param chainId_              Superform chain id
-    /// @dev sets caller as the admin of the contract.
-    constructor(uint16 chainId_) {
+    /// @param superRegistry_ the superform registry contract
+    constructor(uint16 chainId_, address superRegistry_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
+        superRegistry = ISuperRegistry(superRegistry_);
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
@@ -144,9 +144,7 @@ contract TokenBank is ITokenBank, AccessControl {
     function depositSync(
         InitSingleVaultData memory singleVaultData_
     ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
-        (address superForm_, uint256 formId_, ) = _getSuperForm(
-            singleVaultData_.superFormId
-        );
+        (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
         ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
         uint256 dstAmount;
         /// @dev This will revert ALL of the transactions if one of them fails.
@@ -235,9 +233,7 @@ contract TokenBank is ITokenBank, AccessControl {
     function withdrawSync(
         InitSingleVaultData memory singleVaultData_
     ) public payable override onlyRole(STATE_REGISTRY_ROLE) {
-        (address superForm_, uint256 formId_, ) = _getSuperForm(
-            singleVaultData_.superFormId
-        );
+        (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
         IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
     }
@@ -253,18 +249,5 @@ contract TokenBank is ITokenBank, AccessControl {
         safeGasParam = param_;
 
         emit SafeGasParamUpdated(oldParam, param_);
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @param superRegistry_    represents the address of the superRegistry
-    function setSuperRegistry(
-        address superRegistry_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (address(superRegistry_) == address(0)) {
-            revert ZERO_ADDRESS();
-        }
-        superRegistry = ISuperRegistry(superRegistry_);
-
-        emit SuperRegistryUpdated(superRegistry_);
     }
 }

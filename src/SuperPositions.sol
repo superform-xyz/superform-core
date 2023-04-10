@@ -23,7 +23,6 @@ contract SuperPositions is ISuperPositions, ERC1155s, AccessControl {
     string public dynamicURI = "https://api.superform.xyz/superposition/";
 
     /// @notice chainId represents unique chain id for each chains.
-    /// @dev maybe should be constant or immutable
     uint16 public immutable chainId;
 
     /// @param chainId_              SuperForm chain id

@@ -14,7 +14,6 @@ import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @title Super Router
 /// @author Zeropoint Labs.
@@ -34,19 +33,21 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     /// @dev maybe should be constant or immutable
     uint16 public immutable chainId;
 
-    uint80 public totalTransactions;
+    ISuperRegistry public immutable superRegistry;
 
-    ISuperRegistry public superRegistry;
+    uint80 public totalTransactions;
 
     /// @notice history of state sent across chains are used for debugging.
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint80 => AMBMessage) public txHistory;
 
     /// @param chainId_              SuperForm chain id
-    constructor(uint16 chainId_) {
+    /// @param superRegistry_ the superform registry contract
+    constructor(uint16 chainId_, address superRegistry_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
+        superRegistry = ISuperRegistry(superRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -92,9 +93,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
 
         /// @dev validate superFormsData
 
-        if (
-            !_validateSuperFormsDepositData(vars.dstChainId, req.superFormsData)
-        ) revert INVALID_SUPERFORMS_DATA();
+        if (!_validateSuperFormsDepositData(req.superFormsData))
+            revert INVALID_SUPERFORMS_DATA();
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -354,12 +354,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
 
         /// @dev validate superFormsData
 
-        if (
-            !_validateSuperFormsWithdrawData(
-                vars.dstChainId,
-                req.superFormsData
-            )
-        ) revert INVALID_SUPERFORMS_DATA();
+        if (!_validateSuperFormsWithdrawData(req.superFormsData))
+            revert INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
         ISuperPositions(superRegistry.superPositions()).burnBatchSP(
@@ -399,11 +395,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
 
         /// @dev same chain action
         if (vars.srcChainId == vars.dstChainId) {
-            _directMultiWithdraw(
-                vars.srcSender,
-                req.superFormsData.liqRequests,
-                ambData
-            );
+            _directMultiWithdraw(req.superFormsData.liqRequests, ambData);
             emit Completed(vars.currentTotalTransactions);
         } else {
             /// @dev _liqReq should have path encoded for withdraw to SuperRouter on chain different than chainId
@@ -571,11 +563,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
 
         /// @dev same chain action
 
-        _directSingleWithdraw(
-            vars.srcSender,
-            req.superFormData.liqRequest,
-            ambData
-        );
+        _directSingleWithdraw(req.superFormData.liqRequest, ambData);
 
         emit Completed(vars.currentTotalTransactions);
     }
@@ -708,7 +696,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
      * @dev Optimistic transfer & call
      */
     function _directSingleWithdraw(
-        address srcSender_,
         LiqRequest memory liqRequest_,
         InitSingleVaultData memory ambData_
     ) internal {
@@ -731,7 +718,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
      * @dev Optimistic transfer & call
      */
     function _directMultiWithdraw(
-        address srcSender_,
         LiqRequest[] memory liqRequests_,
         InitMultiVaultData memory ambData_
     ) internal {
@@ -895,23 +881,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            ADMIN FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @param superRegistry_    represents the address of the superRegistry
-    function setSuperRegistry(
-        address superRegistry_
-    ) external override onlyOwner {
-        if (address(superRegistry_) == address(0)) {
-            revert ZERO_ADDRESS();
-        }
-        superRegistry = ISuperRegistry(superRegistry_);
-
-        emit SuperRegistryUpdated(superRegistry_);
-    }
-
-    /*///////////////////////////////////////////////////////////////
                             DEV FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
@@ -982,7 +951,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     }
 
     function _validateSuperFormsDepositData(
-        uint16 dstChainId_,
         MultiVaultsSFData memory superFormsData_
     ) internal view returns (bool) {
         uint256 len = superFormsData_.amounts.length;
@@ -1046,7 +1014,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     }
 
     function _validateSuperFormsWithdrawData(
-        uint16 dstChainId_,
         MultiVaultsSFData memory superFormsData_
     ) internal view returns (bool) {
         uint256 len = superFormsData_.amounts.length;

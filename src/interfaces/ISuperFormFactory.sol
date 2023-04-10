@@ -102,18 +102,13 @@ interface ISuperFormFactory {
     /// @param data_ is the cross-chain superform id
     function stateSync(bytes memory data_) external payable;
 
-    /// @dev allows an admin to update the beacon logic of a form
-    /// @param formId_ is the id of the form
+    /// @dev allows an admin to update the logic of a form
+    /// @param formBeaconId_ is the id of the form beacon
     /// @param newFormLogic_ is the address of the new form logic
     function updateFormBeaconLogic(
-        uint256 formId_,
+        uint256 formBeaconId_,
         address newFormLogic_
     ) external;
-
-    /// set super registry
-    /// @dev allows an admin to set the super registry
-    /// @param superRegistry_ is the address of the super registry
-    function setSuperRegistry(address superRegistry_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -129,7 +124,7 @@ interface ISuperFormFactory {
     /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
     /// @param vault_ is the address of a vault
     /// @return superFormIds_ is the id of the superform
-    /// @return formIds_ is the form id
+    /// @return formBeaconIds_ is the form id
     /// @return chainIds_ is the chain id
     function getAllSuperFormsFromVault(
         address vault_
@@ -138,14 +133,14 @@ interface ISuperFormFactory {
         view
         returns (
             uint256[] memory superFormIds_,
-            uint256[] memory formIds_,
+            uint256[] memory formBeaconIds_,
             uint16[] memory chainIds_
         );
 
     /// @dev Returns all SuperForms
     /// @return superFormIds_ is the id of the superform
     /// @return vaults_ is the address of the vault
-    /// @return formIds_ is the form id
+    /// @return formBeaconIds_ is the form id
     /// @return chainIds_ is the chain id
     function getAllSuperForms()
         external
@@ -153,7 +148,7 @@ interface ISuperFormFactory {
         returns (
             uint256[] memory superFormIds_,
             address[] memory vaults_,
-            uint256[] memory formIds_,
+            uint256[] memory formBeaconIds_,
             uint16[] memory chainIds_
         );
 

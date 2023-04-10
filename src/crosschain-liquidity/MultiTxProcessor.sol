@@ -20,9 +20,19 @@ contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
                     State Variables
     //////////////////////////////////////////////////////////////*/
 
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
-    constructor() {
+    /// @notice chainId represents unique chain id for each chains.
+    uint16 public immutable chainId;
+
+    /// @param chainId_              SuperForm chain id
+    /// @param superRegistry_        SuperForm registry contract
+    constructor(uint16 chainId_, address superRegistry_) {
+        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+
+        chainId = chainId_;
+        superRegistry = ISuperRegistry(superRegistry_);
+
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
@@ -88,16 +98,6 @@ contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
                 require(success, "Socket Error: Invalid Tx Data (2)");
             }
         }
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @param superRegistry_    represents the address of the superRegistry
-    function setSuperRegistry(
-        address superRegistry_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        superRegistry = ISuperRegistry(superRegistry_);
-
-        emit SuperRegistryUpdated(superRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////

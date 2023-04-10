@@ -6,6 +6,7 @@ import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {PayloadState, AMBMessage, AMBFactoryMessage} from "../types/DataTypes.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import "../utils/DataPacking.sol";
 
 /// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
 /// @author Zeropoint Labs
@@ -29,26 +30,24 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     uint16 public immutable chainId;
     uint256 public payloadsCount;
 
-    mapping(uint8 => IAmbImplementation) public amb;
     mapping(bytes => uint256) public messageQuorum;
-
     /// @dev stores all received payloads after assigning them an unique identifier upon receiving.
     mapping(uint256 => bytes) public payload;
-
     /// @dev maps payloads to their status
     mapping(uint256 => PayloadState) public payloadTracking;
 
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     /*///////////////////////////////////////////////////////////////
-                             CONSTRUCTOR
+                        CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint16 chainId_) {
+    constructor(uint16 chainId_, ISuperRegistry superRegistry_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
+        superRegistry = superRegistry_;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
@@ -56,25 +55,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     receive() external payable {}
-
-    /// @dev allows admin to update amb implementations.
-    /// @param ambId_ is the propreitory amb id.
-    /// @param ambImplementation_ is the implementation address.
-    function configureAmb(
-        uint8 ambId_,
-        address ambImplementation_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (ambId_ == 0) {
-            revert INVALID_BRIDGE_ID();
-        }
-
-        if (ambImplementation_ == address(0)) {
-            revert INVALID_BRIDGE_ADDRESS();
-        }
-
-        amb[ambId_] = IAmbImplementation(ambImplementation_);
-        emit AmbConfigured(ambId_, ambImplementation_);
-    }
 
     /// @dev allows core contracts to send data to a destination chain.
     /// @param ambId_ is the identifier of the message amb to be used.
@@ -111,7 +91,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     function receivePayload(
         uint16 srcChainId_,
         bytes memory message_
-    ) external virtual override onlyRole(IMPLEMENTATION_CONTRACTS_ROLE) {
+    ) external virtual override {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
 
         if (data.params.length == 32) {
@@ -152,7 +132,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         bytes memory message_,
         bytes memory extraData_
     ) internal {
-        IAmbImplementation ambImplementation = amb[ambId_];
+        IAmbImplementation ambImplementation = IAmbImplementation(
+            superRegistry.getAmbAddress(ambId_)
+        );
 
         if (address(ambImplementation) == address(0)) {
             revert INVALID_BRIDGE_ID();
@@ -185,7 +167,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
                 revert INVALID_PROOF_BRIDGE_ID();
             }
 
-            IAmbImplementation tempImpl = amb[tempAmbId];
+            IAmbImplementation tempImpl = IAmbImplementation(
+                superRegistry.getAmbAddress(ambId_)
+            );
 
             if (address(tempImpl) == address(0)) {
                 revert INVALID_BRIDGE_ID();
@@ -206,14 +190,21 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         bytes memory message_,
         bytes memory extraData_
     ) internal {
-        IAmbImplementation ambImplementation = amb[ambId_];
+        AMBMessage memory newData = AMBMessage(
+            _packTxInfo(0, 0, false, 1),
+            message_
+        );
+
+        IAmbImplementation ambImplementation = IAmbImplementation(
+            superRegistry.getAmbAddress(ambId_)
+        );
 
         if (address(ambImplementation) == address(0)) {
             revert INVALID_BRIDGE_ID();
         }
 
         ambImplementation.broadcastPayload{value: msg.value / 2}(
-            message_,
+            abi.encode(newData),
             extraData_
         );
     }
@@ -226,12 +217,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     ) internal {
         /// @dev generates the proof
         bytes memory proof = abi.encode(keccak256(message_));
-
-        AMBFactoryMessage memory data = abi.decode(
-            message_,
-            (AMBFactoryMessage)
+        AMBMessage memory newData = AMBMessage(
+            _packTxInfo(0, 0, false, 1),
+            proof
         );
-        AMBMessage memory newData = AMBMessage(data.superFormId, proof);
 
         for (uint8 i = 0; i < secAmbId_.length; i++) {
             uint8 tempAmbId = secAmbId_[i];
@@ -240,7 +229,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
                 revert INVALID_PROOF_BRIDGE_ID();
             }
 
-            IAmbImplementation tempImpl = amb[tempAmbId];
+            IAmbImplementation tempImpl = IAmbImplementation(
+                superRegistry.getAmbAddress(ambId_)
+            );
 
             if (address(tempImpl) == address(0)) {
                 revert INVALID_BRIDGE_ID();
@@ -253,15 +244,5 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
                 extraData_
             );
         }
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @param superRegistry_    represents the address of the superRegistry
-    function setSuperRegistry(
-        address superRegistry_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        superRegistry = ISuperRegistry(superRegistry_);
-
-        emit SuperRegistryUpdated(superRegistry_);
     }
 }

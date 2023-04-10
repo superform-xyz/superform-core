@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -102,9 +102,6 @@ contract Deploy is Script {
     bytes32 public constant STATE_REGISTRY_ROLE =
         keccak256("STATE_REGISTRY_ROLE");
 
-    /// @dev one vault per request at the moment - do not change for now
-    uint256 internal constant allowedNumberOfVaultsPerRequest = 1;
-
     /// @dev we should fork these instead of mocking
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
 
@@ -122,7 +119,7 @@ contract Deploy is Script {
     mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
     mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
 
-    /// @dev liquidity bridge ids. 1,2,3 belong to socket. 4 is ifi
+    /// @dev liquidity bridge ids. 1,2,3 belong to socket. 4 is lifi
     uint8[] public bridgeIds = [uint8(1), 2, 3, 4];
     /// @dev liquidity bridge addresses
     address[] public bridgeAddresses = [
@@ -136,7 +133,8 @@ contract Deploy is Script {
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
     uint8[] public ambIds = [uint8(1), 2];
-
+    /// @dev amb implementations
+    address[] ambAddresses;
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -209,14 +207,10 @@ contract Deploy is Script {
     uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111];
     uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
 
+    uint256 public constant milionTokensE18 = 1 ether;
+
     // uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
     // uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
-
-    uint16 public constant version = 1;
-    uint256 public constant gasLimit = 1000000;
-    uint256 public constant mockEstimatedNativeFee = 1000000000000000; // 0.001 Native Tokens
-    uint256 public constant mockEstimatedZroFee = 250000000000000; // 0.00025 Native Tokens
-    uint256 public constant milionTokensE18 = 1 ether;
 
     /*//////////////////////////////////////////////////////////////
                         CHAINLINK VARIABLES
@@ -269,57 +263,68 @@ contract Deploy is Script {
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; i++) {
             vars.chainId = chainIds[i];
-            console.log("Deploying on chainId: ", vars.chainId);
             vars.fork = FORKS[vars.chainId];
-            console.log("vars.fork: ", vars.fork);
 
             vm.selectFork(vars.fork);
             vm.startBroadcast();
 
-            /// @dev 1.1 - Core State Registry
+            /// @dev 1 - Deploy SuperRegistry and assign roles
+            vars.superRegistry = address(new SuperRegistry(vars.chainId));
+            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
+                .superRegistry;
+
+            /// @dev 2.1 - deploy Core State Registry
 
             vars.coreStateRegistry = address(
-                new CoreStateRegistry(vars.chainId)
+                new CoreStateRegistry(
+                    vars.chainId,
+                    SuperRegistry(vars.superRegistry)
+                )
             );
-
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
                 .coreStateRegistry;
 
-            /// @dev 1.2 - deploy Factory State Registry
+            /// @dev 2.2- deploy Factory State Registry
+
             vars.factoryStateRegistry = address(
-                new FactoryStateRegistry(vars.chainId)
+                new FactoryStateRegistry(
+                    vars.chainId,
+                    SuperRegistry(vars.superRegistry)
+                )
             );
             contracts[vars.chainId][
                 bytes32(bytes("FactoryStateRegistry"))
             ] = vars.factoryStateRegistry;
 
-            /// @dev 2.1 - deploy Layerzero Implementation
+            /// @dev 3.1- deploy Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
-                    IBaseStateRegistry(vars.coreStateRegistry),
-                    IBaseStateRegistry(vars.factoryStateRegistry)
+                    SuperRegistry(vars.superRegistry)
                 )
             );
-
             contracts[vars.chainId][
                 bytes32(bytes("LayerzeroImplementation"))
             ] = vars.lzImplementation;
 
-            /// @dev 2.2 - deploy Hyperlane Implementation
+            /// @dev 3.2- deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation(
                     HyperlaneMailbox,
-                    IBaseStateRegistry(vars.coreStateRegistry),
-                    IBaseStateRegistry(vars.factoryStateRegistry),
-                    HyperlaneGasPaymaster
+                    HyperlaneGasPaymaster,
+                    SuperRegistry(vars.superRegistry)
                 )
             );
             contracts[vars.chainId][
                 bytes32(bytes("HyperlaneImplementation"))
             ] = vars.hyperlaneImplementation;
 
-            /// @dev 3 - Deploy UNDERLYING_TOKENS and VAULTS
+            if (i == 0) {
+                ambAddresses.push(vars.lzImplementation);
+                ambAddresses.push(vars.hyperlaneImplementation);
+            }
+
+            /// @dev 4 - Deploy UNDERLYING_TOKENS and VAULTS
             /// @dev FIXME grab testnet tokens
             /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
@@ -339,7 +344,7 @@ contract Deploy is Script {
             uint256 vaultId = 0;
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
-                    /// @dev 4 - Deploy mock Vault
+                    /// @dev 5 - Deploy mock Vault
 
                     bytes memory bytecodeWithArgs = abi.encodePacked(
                         vaultBytecodes[j],
@@ -366,25 +371,29 @@ contract Deploy is Script {
                 }
             }
 
-            /// @dev 5 - Deploy SuperFormFactory
-            vars.factory = address(new SuperFormFactory(vars.chainId));
+            /// @dev 6 - Deploy SuperFormFactory
+            vars.factory = address(
+                new SuperFormFactory(vars.chainId, vars.superRegistry)
+            );
 
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
                 .factory;
 
-            /// @dev 6 - Deploy 4626Form implementations
+            /// @dev 7 - Deploy 4626Form implementations
             // Standard ERC4626 Form
-            vars.erc4626Form = address(new ERC4626Form());
+            vars.erc4626Form = address(new ERC4626Form(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
                 .erc4626Form;
 
             // Timelock + ERC4626 Form
-            vars.erc4626TimelockForm = address(new ERC4626TimelockForm());
+            vars.erc4626TimelockForm = address(
+                new ERC4626TimelockForm(vars.superRegistry)
+            );
             contracts[vars.chainId][
                 bytes32(bytes("ERC4626TimelockForm"))
             ] = vars.erc4626TimelockForm;
 
-            /// @dev 7 - Add newly deployed form  implementation to Factory, formBeaconId 1
+            /// @dev 8 - Add newly deployed form  implementation to Factory, formBeaconId 1
             ISuperFormFactory(vars.factory).addFormBeacon(
                 vars.erc4626Form,
                 FORM_BEACON_IDS[0]
@@ -395,15 +404,19 @@ contract Deploy is Script {
                 FORM_BEACON_IDS[1]
             );
 
-            /// @dev 8 - Deploy TokenBank
-            vars.tokenBank = address(new TokenBank(vars.chainId));
+            /// @dev 9 - Deploy TokenBank
+            vars.tokenBank = address(
+                new TokenBank(vars.chainId, vars.superRegistry)
+            );
 
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
                 .tokenBank;
 
-            /// @dev 9 - Deploy SuperRouter
+            /// @dev 10 - Deploy SuperRouter
 
-            vars.superRouter = address(new SuperRouter(vars.chainId));
+            vars.superRouter = address(
+                new SuperRouter(vars.chainId, vars.superRegistry)
+            );
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars
                 .superRouter;
 
@@ -416,14 +429,13 @@ contract Deploy is Script {
                 .superPositions;
 
             /// @dev 12 - Deploy MultiTx Processor
-            vars.multiTxProcessor = address(new MultiTxProcessor());
+            vars.multiTxProcessor = address(
+                new MultiTxProcessor(vars.chainId, vars.superRegistry)
+            );
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
 
-            /// @dev 13 - Deploy SuperRegistry and assign addresses
-            vars.superRegistry = address(new SuperRegistry(vars.chainId));
-            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
-                .superRegistry;
+            /// @dev 13 - Super Registry setters
 
             SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
             SuperRegistry(vars.superRegistry).setTokenBank(vars.tokenBank);
@@ -444,24 +456,6 @@ contract Deploy is Script {
 
             SuperRegistry(vars.superRegistry).setSuperPositions(
                 vars.superPositions
-            );
-
-            SuperFormFactory(vars.factory).setSuperRegistry(vars.superRegistry);
-
-            MultiTxProcessor(payable(vars.multiTxProcessor)).setSuperRegistry(
-                vars.superRegistry
-            );
-
-            SuperRouter(payable(vars.superRouter)).setSuperRegistry(
-                vars.superRegistry
-            );
-
-            TokenBank(payable(vars.tokenBank)).setSuperRegistry(
-                vars.superRegistry
-            );
-
-            IBaseStateRegistry(vars.coreStateRegistry).setSuperRegistry(
-                vars.superRegistry
             );
 
             /// @dev 14 Setup RBAC
@@ -495,6 +489,10 @@ contract Deploy is Script {
                 PROCESSOR_ROLE,
                 deployer
             );
+            FactoryStateRegistry(payable(vars.factoryStateRegistry)).grantRole(
+                PROCESSOR_ROLE,
+                deployer
+            );
             CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 UPDATER_ROLE,
                 deployer
@@ -515,30 +513,14 @@ contract Deploy is Script {
                 vars.superRouter
             );
 
-            /// @dev configures lzImplementation to state registry
-            CoreStateRegistry(payable(vars.coreStateRegistry)).configureAmb(
-                ambIds[0],
-                vars.lzImplementation
-            );
-
-            /// @dev configures hyperlaneImplementation to state registry
-            CoreStateRegistry(payable(vars.coreStateRegistry)).configureAmb(
-                ambIds[1],
-                vars.hyperlaneImplementation
-            );
-
-            /// @dev configures lzImplementation to state registry
-            FactoryStateRegistry(payable(vars.factoryStateRegistry))
-                .configureAmb(ambIds[0], vars.lzImplementation);
-
-            /// @dev configures hyperlaneImplementation to state registry
-            FactoryStateRegistry(payable(vars.factoryStateRegistry))
-                .configureAmb(ambIds[1], vars.hyperlaneImplementation);
+            /// @dev configures lzImplementation and hyperlane to super registry
+            SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry")))
+                .setAmbAddress(ambIds, ambAddresses);
 
             vm.stopBroadcast();
         }
 
-        /// @dev 13 - Setup trusted remotes and deploy superforms. This must be done after the rest of the protocol has been deployed on all chains
+        /// @dev 15 - Setup trusted remotes and deploy superforms. This must be done after the rest of the protocol has been deployed on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
             vars.chainId = chainIds[i];
             vars.fork = FORKS[vars.chainId];
@@ -596,39 +578,6 @@ contract Deploy is Script {
                     ).setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
-            /*
-            vm.stopBroadcast();
-
-            uint256 msgValueSuperforms = _getPriceMultiplier(vars.chainId) *
-                10 ** 18;
-
-            vm.selectFork(vars.fork);
-
-            vm.startBroadcast();
-
-            /// @dev create superforms when the whole state registry is configured?
-            for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
-                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
-                    (, vars.superForm) = ISuperFormFactory(vars.factory)
-                        .createSuperForm{value: msgValueSuperforms}(
-                        FORM_BEACON_IDS[j],
-                        address(vaults[vars.chainId][FORM_BEACON_IDS[j]][k])
-                    );
-
-                    contracts[vars.chainId][
-                        bytes32(
-                            bytes(
-                                string.concat(
-                                    UNDERLYING_TOKENS[k],
-                                    "SuperForm",
-                                    Strings.toString(FORM_BEACON_IDS[j])
-                                )
-                            )
-                        )
-                    ] = vars.superForm;
-                }
-            }
-              */
             vm.stopBroadcast();
             /// @dev Exports
             for (uint256 j = 0; j < contractNames.length; j++) {

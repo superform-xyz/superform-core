@@ -22,6 +22,9 @@ interface ISuperRegistry {
         address indexed bridgeAddress
     );
 
+    /// @dev is emitted when a new amb is configured.
+    event SetAmbAddress(uint8 ambId_, address ambAddress_);
+
     /// @dev is emitted when the super router address is set.
     event SuperRouterUpdated(address indexed superRouter);
 
@@ -69,6 +72,14 @@ interface ISuperRegistry {
         address[] memory bridgeAddress_
     ) external;
 
+    /// @dev allows admin to set the amb address for an amb id.
+    /// @param ambId_         represents the bridge unqiue identifier.
+    /// @param ambAddress_    represents the bridge address.
+    function setAmbAddress(
+        uint8[] memory ambId_,
+        address[] memory ambAddress_
+    ) external;
+
     /// @dev allows admin to set the super positions address
     /// @param superPositions_ the address of the super positions
     function setSuperPositions(address superPositions_) external;
@@ -112,6 +123,13 @@ interface ISuperRegistry {
     function getBridgeAddress(
         uint8 bridgeId_
     ) external view returns (address bridgeAddress_);
+
+    /// @dev gets the address of a amb
+    /// @param ambId_ is the id of a bridge
+    /// @return ambAddress_ is the address of the form
+    function getAmbAddress(
+        uint8 ambId_
+    ) external view returns (address ambAddress_);
 
     /// @dev gets the super positions
     /// @return superPositions_ the address of the super positions

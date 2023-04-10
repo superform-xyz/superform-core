@@ -57,7 +57,7 @@ struct MessagingAssertVars {
     uint256 initialFork;
     uint256 msgValue;
     uint256 txIdBefore;
-    uint256 payloadNumberBefore;
+    uint256 receivedPayloadId;
     uint16 toChainId;
     bool success;
     MultiVaultsSFData expectedMultiVaultsData;
@@ -124,6 +124,7 @@ struct SetupVars {
     address dstStateRegistry;
     address multiTxProcessor;
     address superRegistry;
+    Vm.Log[] logs;
     address superPositions;
 }
 

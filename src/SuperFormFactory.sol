@@ -7,7 +7,7 @@ import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
-import {AMBFactoryMessage} from "./types/DataTypes.sol";
+import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
 import {FormBeacon} from "./forms/FormBeacon.sol";
 import {BaseForm} from "./BaseForm.sol";
 import "./utils/DataPacking.sol";
@@ -24,7 +24,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /// @dev chainId represents the superform chain id.
     uint16 public immutable chainId;
 
-    ISuperRegistry public superRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     address[] public formBeacons;
 
@@ -39,10 +39,12 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
     /// @dev sets caller as the admin of the contract.
     /// @param chainId_ the superform? chain id this factory is deployed on
-    constructor(uint16 chainId_) {
+    /// @param superRegistry_ the superform registry contract
+    constructor(uint16 chainId_, address superRegistry_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
+        superRegistry = ISuperRegistry(superRegistry_);
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
@@ -127,9 +129,9 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         AMBFactoryMessage memory data = AMBFactoryMessage(superFormId_, vault_);
 
         /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8 ambId = 1;
+        uint8 ambId = 2;
         uint8[] memory proofAmbIds = new uint8[](1);
-        proofAmbIds[0] = 2;
+        proofAmbIds[0] = 1;
 
         IBaseStateRegistry(superRegistry.factoryStateRegistry())
             .broadcastPayload{value: msg.value}(
@@ -147,16 +149,18 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         uint256 formBeaconId_,
         address newFormLogic_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        FormBeacon(formBeacon[formBeaconId_]).update(newFormLogic_);
-    }
+        if (newFormLogic_ == address(0)) revert ZERO_ADDRESS();
+        if (!ERC165Checker.supportsERC165(newFormLogic_))
+            revert ERC165_UNSUPPORTED();
+        if (
+            !ERC165Checker.supportsInterface(
+                newFormLogic_,
+                type(IBaseForm).interfaceId
+            )
+        ) revert FORM_INTERFACE_UNSUPPORTED();
+        if (formBeacon[formBeaconId_] == address(0)) revert INVALID_FORM_ID();
 
-    /// @inheritdoc ISuperFormFactory
-    function setSuperRegistry(
-        address superRegistry_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (superRegistry_ == address(0)) revert ZERO_ADDRESS();
-        superRegistry = ISuperRegistry(superRegistry_);
-        emit SuperRegistrySet(superRegistry_);
+        FormBeacon(formBeacon[formBeaconId_]).update(newFormLogic_);
     }
 
     /// @inheritdoc ISuperFormFactory
@@ -164,7 +168,12 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         if (msg.sender != superRegistry.factoryStateRegistry())
             revert INVALID_CALLER();
 
-        AMBFactoryMessage memory data = abi.decode(data_, (AMBFactoryMessage));
+        AMBMessage memory message = abi.decode(data_, (AMBMessage));
+
+        AMBFactoryMessage memory data = abi.decode(
+            message.params,
+            (AMBFactoryMessage)
+        );
 
         /// @dev TODO - do we need extra checks before pushing here?
 
@@ -190,7 +199,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
     /// @param vault_ is the address of a vault
     /// @return superFormIds_ is the id of the superform
-    /// @return formIds_ is the form id
+    /// @return formBeaconIds_ is the form id
     /// @return chainIds_ is the chain id
     function getAllSuperFormsFromVault(
         address vault_
@@ -200,24 +209,26 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         override
         returns (
             uint256[] memory superFormIds_,
-            uint256[] memory formIds_,
+            uint256[] memory formBeaconIds_,
             uint16[] memory chainIds_
         )
     {
         superFormIds_ = vaultToSuperForms[vault_];
         uint256 len = superFormIds_.length;
-        formIds_ = new uint256[](len);
+        formBeaconIds_ = new uint256[](len);
         chainIds_ = new uint16[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (, formIds_[i], chainIds_[i]) = _getSuperForm(superFormIds_[i]);
+            (, formBeaconIds_[i], chainIds_[i]) = _getSuperForm(
+                superFormIds_[i]
+            );
         }
     }
 
     /// @dev Returns all SuperForms
     /// @return superFormIds_ is the id of the superform
     /// @return superForms_ is the address of the vault
-    /// @return formIds_ is the form id
+    /// @return formBeaconIds_ is the form beacon id
     /// @return chainIds_ is the chain id
     function getAllSuperForms()
         external
@@ -226,18 +237,18 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         returns (
             uint256[] memory superFormIds_,
             address[] memory superForms_,
-            uint256[] memory formIds_,
+            uint256[] memory formBeaconIds_,
             uint16[] memory chainIds_
         )
     {
         superFormIds_ = superForms;
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
-        formIds_ = new uint256[](len);
+        formBeaconIds_ = new uint256[](len);
         chainIds_ = new uint16[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], formIds_[i], chainIds_[i]) = _getSuperForm(
+            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = _getSuperForm(
                 superFormIds_[i]
             );
         }

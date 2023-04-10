@@ -139,11 +139,6 @@ interface ISuperRouter {
                         OTHER EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// set super registry
-    /// @dev allows an admin to set the super registry
-    /// @param superRegistry_ is the address of the super registry
-    function setSuperRegistry(address superRegistry_) external;
-
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
     function stateMultiSync(AMBMessage memory data_) external payable;

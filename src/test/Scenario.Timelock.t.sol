@@ -96,7 +96,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
-            MessagingAssertVars memory aV;
+            MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
 
@@ -106,17 +106,16 @@ contract ScenarioTimelockTest is ProtocolActions {
                 vars
             ) = _stage1_buildReqData(action, act);
 
-            (vars, aV) = _stage2_run_src_action(
+            vars = _stage2_run_src_action(
                 action,
                 multiSuperFormsData,
                 singleSuperFormsData,
                 vars
             );
 
-            _stage3_src_to_dst_amb_delivery(
+            aV = _stage3_src_to_dst_amb_delivery(
                 action,
                 vars,
-                aV,
                 multiSuperFormsData,
                 singleSuperFormsData
             );
@@ -134,7 +133,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             }
 
             if (action.action == Actions.Deposit) {
-                success = _stage5_process_superPositions_mint(action, vars, aV);
+                success = _stage5_process_superPositions_mint(action, vars);
                 if (!success) {
                     continue;
                 }

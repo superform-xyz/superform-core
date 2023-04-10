@@ -90,7 +90,7 @@ interface IERC4626Timelock is IERC20 {
     function deposit(
         uint256 assets,
         address receiver
-    ) external virtual returns (uint256 shares);
+    ) external returns (uint256 shares);
 
     /**
      * @notice The maximum number of vault shares that caller can mint.
@@ -115,7 +115,7 @@ interface IERC4626Timelock is IERC20 {
     function mint(
         uint256 shares,
         address receiver
-    ) external virtual returns (uint256 assets);
+    ) external returns (uint256 assets);
 
     /**
      * @notice The maximum number of underlying assets that owner can withdraw.
@@ -146,7 +146,7 @@ interface IERC4626Timelock is IERC20 {
         uint256 assets,
         address receiver,
         address owner
-    ) external virtual returns (uint256 shares);
+    ) external returns (uint256 shares);
 
     /**
      * @notice The maximum number of shares an owner can redeem for underlying assets.
@@ -175,7 +175,7 @@ interface IERC4626Timelock is IERC20 {
         uint256 shares,
         address receiver,
         address owner
-    ) external virtual returns (uint256 assets);
+    ) external returns (uint256 assets);
 
     /**
      * @dev Emitted when sender has exchanged assets for shares, and transferred those shares to receiver.

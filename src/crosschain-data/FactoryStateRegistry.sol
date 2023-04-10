@@ -4,6 +4,8 @@ pragma solidity 0.8.19;
 import {BaseStateRegistry} from "./BaseStateRegistry.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {IFactoryStateRegistry} from "../interfaces/IFactoryStateRegistry.sol";
+import {PayloadState} from "../types/DataTypes.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 
 contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
@@ -16,7 +18,10 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint16 chainId_) BaseStateRegistry(chainId_) {}
+    constructor(
+        uint16 chainId_,
+        ISuperRegistry superRegistry_
+    ) BaseStateRegistry(chainId_, superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -38,6 +43,15 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         uint256 payloadId_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         /// TODO sync factory data from crosschain
-        
+        if (payloadId_ > payloadsCount) {
+            revert INVALID_PAYLOAD_ID();
+        }
+
+        if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
+            revert INVALID_PAYLOAD_STATE();
+        }
+
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+        ISuperFormFactory(factoryContract).stateSync(payload[payloadId_]);
     }
 }
