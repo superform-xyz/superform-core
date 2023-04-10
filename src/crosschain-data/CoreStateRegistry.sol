@@ -10,7 +10,7 @@ import "../utils/DataPacking.sol";
 
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
-/// @notice stores, senxwxwds & process message sent via various messaging ambs.
+/// @notice stores, sends & process message sent via various messaging ambs.
 contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
