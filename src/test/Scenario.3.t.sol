@@ -62,7 +62,7 @@ contract Scenario3Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev FIXME: MULTI VAULTS TESTS WON'T WORK WITH CURRENT LAYERZERO HELPER!!
-    function xtest_scenario() public {
+    function test_scenario() public {
         _run_actions();
     }
 }

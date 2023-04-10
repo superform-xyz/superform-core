@@ -276,9 +276,54 @@ abstract contract ProtocolActions is BaseSetup {
                     }
                 }
 
+                /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
+
+                address[] memory toMailboxes = new address[](DST_CHAINS.length);
+                uint32[] memory expDstDomains = new uint32[](DST_CHAINS.length);
+
+                address[] memory endpoints = new address[](DST_CHAINS.length);
+                uint16[] memory lzChainIds = new uint16[](DST_CHAINS.length);
+
+                uint256[] memory forkIds = new uint256[](DST_CHAINS.length);
+
+                uint256 k = 0;
+                for (uint256 i = 0; i < chainIds.length; i++) {
+                    for (uint256 j = 0; j < DST_CHAINS.length; j++) {
+                        if (DST_CHAINS[j] == chainIds[i]) {
+                            toMailboxes[k] = hyperlaneMailboxes[i];
+                            expDstDomains[k] = hyperlane_chainIds[i];
+
+                            endpoints[k] = lzEndpoints[i];
+                            lzChainIds[k] = lz_chainIds[i];
+
+                            forkIds[k] = FORKS[chainIds[i]];
+
+                            k++;
+                        }
+                    }
+                }
+                vars.logs = vm.getRecordedLogs();
+
+                /// @dev see pigeon for this implementation
+                HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper")).help(
+                    address(HyperlaneMailbox),
+                    toMailboxes,
+                    expDstDomains,
+                    forkIds,
+                    vars.logs
+                );
+
+                LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
+                    endpoints,
+                    lzChainIds,
+                    1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                    forkIds,
+                    vars.logs
+                );
+
                 for (uint256 i = 0; i < vars.nDestinations; i++) {
                     aV.toChainId = DST_CHAINS[i];
-                    /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
+                    vm.selectFork(FORKS[aV.toChainId]);
 
                     if (CHAIN_0 != aV.toChainId) {
                         stateRegistry = CoreStateRegistry(
@@ -288,35 +333,10 @@ abstract contract ProtocolActions is BaseSetup {
                         );
                         /// @dev this will probably need to loop given the number of destinations
 
-                        vars.logs = vm.getRecordedLogs();
-
-                        /// @dev see pigeon for this implementation
-                        /// @dev PIGEON DOES NOT WORK FOR MULTI DESTINATION (IT NEEDS AN ARRAY OF LZ ENDPOINTS!!!!)
-                        LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper"))
-                            .helpWithEstimates(
-                                vars.lzEndpoints_1[i],
-                                1000000, /// @dev This is the gas value to send - value needs to be tested and probably be lower
-                                FORKS[aV.toChainId],
-                                vars.logs
-                            );
-
-                        HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper"))
-                            .help(
-                                address(HyperlaneMailbox),
-                                address(HyperlaneMailbox),
-                                FORKS[aV.toChainId],
-                                vars.logs
-                            );
-                        vm.selectFork(FORKS[aV.toChainId]);
-
                         aV.payloadNumberBefore = stateRegistry.payloadsCount();
+                        /// FIXME 2+ payloads to same destination will fail here
                         aV.data = abi.decode(
-                            stateRegistry.payload(
-                                aV.payloadNumberBefore +
-                                    1 -
-                                    vars.nDestinations +
-                                    i
-                            ),
+                            stateRegistry.payload(aV.payloadNumberBefore),
                             (AMBMessage)
                         );
 
