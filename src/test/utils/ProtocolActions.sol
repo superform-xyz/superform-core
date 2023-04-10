@@ -371,7 +371,6 @@ abstract contract ProtocolActions is BaseSetup {
         );
 
         CoreStateRegistry stateRegistry;
-
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].initialFork = vm.activeFork();
             aV[i].toChainId = DST_CHAINS[i];
@@ -443,7 +442,6 @@ abstract contract ProtocolActions is BaseSetup {
         success = true;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].toChainId = DST_CHAINS[i];
-
             if (CHAIN_0 != aV[i].toChainId) {
                 if (action.action == Actions.Deposit) {
                     unchecked {

@@ -21,7 +21,7 @@ import {_packSuperForm} from "../utils/DataPacking.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract ScenarioTimelockTest is ProtocolActions {
+contract ScenarioT_TEST is ProtocolActions {
 
     /// @dev Global counter for actions sent to the protocol
     uint256 actionId;
@@ -30,7 +30,7 @@ contract ScenarioTimelockTest is ProtocolActions {
     uint256 timelockFormType = 2;
 
     /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests
-    uint16 dstChainID;
+    // uint16 DST_CHAINS;
     uint256 dstVaultID;
     uint256 dstFormID;
     uint256 amount;
@@ -49,13 +49,15 @@ contract ScenarioTimelockTest is ProtocolActions {
     function setUp() public override {
         super.setUp();
 
+        actionId = 0;
+
         primaryAMB = 1;
         secondaryAMBs = [2];
         CHAIN_0 = OP; /// @dev source chain id6
         DST_CHAINS = [POLY]; /// @dev destination chain(s) id4
 
         /// @dev You can define settings here or at the level of individual tests
-        dstChainID = DST_CHAINS[0]; /// id4
+        // DST_CHAINS = DST_CHAINS; /// id4
         dstVaultID = 0; /// vault 
         dstFormID = 1; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
         amount = 1000;
@@ -90,7 +92,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         ];
         
         address _superForm = getContract(
-            dstChainID,
+            DST_CHAINS[0],
             string.concat(
                 UNDERLYING_TOKENS[0], /// <= Arbitrary choice as BaseSetup deploys all vaults & deals all tokens to users TODO: cleanup
                 "SuperForm",
@@ -110,10 +112,10 @@ contract ScenarioTimelockTest is ProtocolActions {
         erc4626TimelockForm = IERC4626TimelockForm(_superForm);
 
         /// @dev Here, however, dstFormId == 2, as that's the indexing inside of an array. 1 = erc4626form, 2 = erc4626timelockform
-        uint256 _formId = _packSuperForm(_superForm, timelockFormType, dstChainID);
+        uint256 _formId = _packSuperForm(_superForm, timelockFormType, DST_CHAINS[0]);
         
         /// @dev Individual setting for deposit call (overwrite again for withdraw)
-        dstChainID = DST_CHAINS[0];
+        // DST_CHAINS = DST_CHAINS;
         dstVaultID = 0;
         dstFormID = 1;
         amount = 1000;
@@ -131,7 +133,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// NOTE: Individual deposit/withdraw invocation allows to make asserts in between
         TestAction memory action = _depositAction(
-            dstChainID,
+            DST_CHAINS,
             dstVaultID,
             dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
             amount,
@@ -218,14 +220,14 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev Individual setting for deposit call (overwrite again for withdraw)
         /// NOTE: Having mutability for those allows to test with fuzzing on range of random params
-        dstChainID = DST_CHAINS[0];
+        // DST_CHAINS = DST_CHAINS;
         dstVaultID = 0;
         dstFormID = 1;
         amount = 1000;
         slippage = 1000;
 
         action = _withdrawAction(
-            dstChainID,
+            DST_CHAINS,
             dstVaultID,
             dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
             amount,
@@ -292,7 +294,7 @@ contract ScenarioTimelockTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function _depositAction(
-        uint16 chainID_,
+        uint16[] memory chainID_,
         uint256 vaultID_,
         uint256 formID_,
         uint256 amount_,
@@ -302,10 +304,10 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
-        TARGET_UNDERLYING_VAULTS[chainID_][actionId] = [vaultID_];
-        TARGET_FORM_KINDS[chainID_][actionId] = [formID_]; /// <= 1 for timelock, this accesses array by index (0 for standard)
-        AMOUNTS[chainID_][actionId] = [amount_];
-        MAX_SLIPPAGE[chainID_][actionId] = [slippage_];
+        TARGET_UNDERLYING_VAULTS[chainID_[0]][actionId] = [vaultID_];
+        TARGET_FORM_KINDS[chainID_[0]][actionId] = [formID_]; /// <= 1 for timelock, this accesses array by index (0 for standard)
+        AMOUNTS[chainID_[0]][actionId] = [amount_];
+        MAX_SLIPPAGE[chainID_[0]][actionId] = [slippage_];
 
         depositAction = TestAction({
             action: Actions.Deposit,
@@ -319,10 +321,12 @@ contract ScenarioTimelockTest is ProtocolActions {
             adapterParam: "",
             msgValue: msgValue
         });
+
+        actions.push(depositAction);
     }
 
     function _withdrawAction(
-        uint16 chainID_,
+        uint16[] memory chainID_,
         uint256 vaultID_,
         uint256 formID_,
         uint256 amount_,
@@ -332,10 +336,10 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
-        TARGET_UNDERLYING_VAULTS[chainID_][actionId] = [vaultID_];
-        TARGET_FORM_KINDS[chainID_][actionId] = [formID_];
-        AMOUNTS[chainID_][actionId] = [amount_];
-        MAX_SLIPPAGE[chainID_][actionId] = [slippage_];
+        TARGET_UNDERLYING_VAULTS[chainID_[0]][actionId] = [vaultID_];
+        TARGET_FORM_KINDS[chainID_[0]][actionId] = [formID_];
+        AMOUNTS[chainID_[0]][actionId] = [amount_];
+        MAX_SLIPPAGE[chainID_[0]][actionId] = [slippage_];
 
         withdrawAction = TestAction({
             action: Actions.Withdraw,
@@ -349,6 +353,8 @@ contract ScenarioTimelockTest is ProtocolActions {
             adapterParam: "",
             msgValue: msgValue
         });
+
+        actions.push(withdrawAction);
     }
 
     // function _pushDepositAction(
