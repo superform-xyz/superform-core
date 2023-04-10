@@ -447,10 +447,6 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.superPositions
             );
 
-            SuperPositions(vars.superPositions).setSuperRegistry(
-                vars.superRegistry
-            );
-
             SuperFormFactory(vars.factory).setSuperRegistry(vars.superRegistry);
 
             MultiTxProcessor(payable(vars.multiTxProcessor)).setSuperRegistry(

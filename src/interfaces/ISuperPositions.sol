@@ -6,13 +6,6 @@ pragma solidity 0.8.19;
 /// @dev  extends ERC1155s to create SuperPositions which track vault shares from any originating chain
 interface ISuperPositions {
     /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev is emitted when the super registry is updated.
-    event SuperRegistryUpdated(address indexed superRegistry);
-
-    /*///////////////////////////////////////////////////////////////
                                 ERRORS
     //////////////////////////////////////////////////////////////*/
 
@@ -51,8 +44,6 @@ interface ISuperPositions {
         uint256[] memory superFormIds_,
         uint256[] memory amounts_
     ) external;
-
-    function setSuperRegistry(address superRegistry_) external;
 
     function setDynamicURI(string memory dynamicURI_) external;
 }

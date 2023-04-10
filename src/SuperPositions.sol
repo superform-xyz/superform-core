@@ -5,7 +5,6 @@ import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessContr
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC1155s} from "ERC1155s/src/ERC1155s.sol";
 import {ERC1155} from "solmate/tokens/ERC1155.sol";
-import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 
 /// @title Super Positions
@@ -26,8 +25,6 @@ contract SuperPositions is ISuperPositions, ERC1155s, AccessControl {
     /// @notice chainId represents unique chain id for each chains.
     /// @dev maybe should be constant or immutable
     uint16 public immutable chainId;
-
-    ISuperRegistry public superRegistry;
 
     /// @param chainId_              SuperForm chain id
     /// @param dynamicURI_              URL for external metadata of ERC1155 SuperPositions
@@ -80,19 +77,6 @@ contract SuperPositions is ISuperPositions, ERC1155s, AccessControl {
     /*///////////////////////////////////////////////////////////////
                             ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @param superRegistry_    represents the address of the superRegistry
-    function setSuperRegistry(
-        address superRegistry_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (address(superRegistry_) == address(0)) {
-            revert ZERO_ADDRESS();
-        }
-        superRegistry = ISuperRegistry(superRegistry_);
-
-        emit SuperRegistryUpdated(superRegistry_);
-    }
 
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @param dynamicURI_    represents the dynamicURI for the ERC1155 super positions
