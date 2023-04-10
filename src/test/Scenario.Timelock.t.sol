@@ -5,10 +5,12 @@ pragma solidity 0.8.19;
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 // import "forge-std/console.sol";
 
 // Test Utils
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IERC4626TimelockForm} from "./interfaces/IERC4626TimelockForm.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
@@ -36,6 +38,9 @@ contract ScenarioTimelockTest is ProtocolActions {
 
     /// @dev Access SuperRouter interface
     ISuperRouter superRouter;
+
+    /// @dev Access SuperPositions interface
+    IERC1155 superPositions;
 
     /// @dev Access Form interface to call form functions for assertions
     IERC4626TimelockForm public erc4626TimelockForm;
@@ -93,9 +98,15 @@ contract ScenarioTimelockTest is ProtocolActions {
             )
         );
 
-        console.log("selected superForm", _superForm);
+        address _stateRegistry = contracts[CHAIN_0][
+            bytes32(bytes("SuperRegistry"))
+        ];
 
         superRouter = ISuperRouter(_superRouter);
+
+        address _superPositions = ISuperRegistry(_stateRegistry).superPositions();
+        
+        superPositions = IERC1155(_superPositions);
         erc4626TimelockForm = IERC4626TimelockForm(_superForm);
 
         /// @dev Here, however, dstFormId == 2, as that's the indexing inside of an array. 1 = erc4626form, 2 = erc4626timelockform
@@ -112,7 +123,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                                 DEPOSIT ACTION
         //////////////////////////////////////////////////////////////*/
 
-        uint256 currentBalanceOfAliceSP = superRouter.balanceOf(users[0], _formId);
+        uint256 currentBalanceOfAliceSP = superPositions.balanceOf(users[0], _formId);
         uint256 currentBalanceOfAliceUnderlying = IERC20(erc4626TimelockForm.getUnderlyingOfVault()).balanceOf(users[0]);
         uint256 previewDepositToExpectedAmountOfSP = erc4626TimelockForm.previewDepositTo(amount);
 
@@ -130,7 +141,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         MultiVaultsSFData[] memory multiSuperFormsData;
         SingleVaultSFData[] memory singleSuperFormsData;
-        MessagingAssertVars memory aV;
+        MessagingAssertVars[] memory aV;
         StagesLocalVars memory vars;
         bool success;
 
@@ -166,7 +177,6 @@ contract ScenarioTimelockTest is ProtocolActions {
         _stage3_src_to_dst_amb_delivery(
             action,
             vars,
-            aV,
             multiSuperFormsData,
             singleSuperFormsData
         );
@@ -185,7 +195,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         console.log("stage4 done");
 
         /// @dev FIXME? SuperForm Keepers operation, not relevant to depositor, should be separated for Form testing (internal processing)
-        success = _stage5_process_superPositions_mint(action, vars, aV);
+        success = _stage5_process_superPositions_mint(action, vars);
 
         console.log("stage5 done");
 
@@ -195,7 +205,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// TODO: 
         /// assert alice balanceOf SuperPositions before && after
-        currentBalanceOfAliceSP = superRouter.balanceOf(users[0], _formId);
+        currentBalanceOfAliceSP = superPositions.balanceOf(users[0], _formId);
         assertEq(currentBalanceOfAliceSP, 1000);
         /// assert alice balanceOf underlying token before && after 
         uint256 newBalanceOfAliceUnderlying = IERC20(erc4626TimelockForm.getUnderlyingOfVault()).balanceOf(users[0]);
@@ -236,14 +246,14 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage1 done");
 
-            vars = _stage2_run_src_action(
+        vars = _stage2_run_src_action(
                 action,
                 multiSuperFormsData,
                 singleSuperFormsData,
                 vars
             );
 
-            aV = _stage3_src_to_dst_amb_delivery(
+        aV = _stage3_src_to_dst_amb_delivery(
                 action,
                 vars,
                 multiSuperFormsData,
@@ -261,12 +271,13 @@ contract ScenarioTimelockTest is ProtocolActions {
             actionId
         );
 
+        console.log("stage4 done");
         /*///////////////////////////////////////////////////////////////
                             TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/
 
         /// FIXME: This test actually proves that we burn shares but don't send anything back because we only requestUnlock!!! 
-        currentBalanceOfAliceSP = superRouter.balanceOf(users[0], _formId);
+        currentBalanceOfAliceSP = superPositions.balanceOf(users[0], _formId);
         /// FIXME: 0 Set only so test would pass!!! This is upstream problem!!!
         assertEq(currentBalanceOfAliceSP, 0);
 
