@@ -4,15 +4,10 @@ gas_reports = ["SuperRouter", "SuperDestination", "MultiTxProcessor"]
 libraries = []
 optimizer = true
 optimizer_runs = 200
-remappings = [
-  '@openzeppelin-contracts=lib/openzeppelin-contracts/',
-  '@openzeppelin-contracts-upgradeable=lib/openzeppelin-contracts-upgradeable/',
-  '@pigeon=lib/pigeon/src/',
-  '@ds-test=lib/ds-test/src/',
-  '@std=lib/forge-std/src/',
-  '@solmate=lib/solmate/src/'
-]
 test = 'src/test'
 verbosity = 0
 ffi = true
 libs = ["lib"]
+fs_permissions = [
+    { access = "read-write", path = "./script/"}
+]

@@ -1,14 +1,14 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "@openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin-contracts/contracts/utils/Strings.sol";
-import "@openzeppelin-contracts/contracts/access/Ownable.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
+import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
@@ -19,17 +19,14 @@ import "forge-std/console.sol";
 /// @title Super Router
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and deposit information to a remote execution chain.
-/// extends ERC1155 and Socket's Liquidity Handler.
-contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
+/// @dev extends Liquidity Handler.
+contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     using SafeERC20 for IERC20;
     using Strings for string;
 
     /*///////////////////////////////////////////////////////////////
                                 State Variables
     //////////////////////////////////////////////////////////////*/
-    string public name = "SuperPositions";
-    string public symbol = "SP";
-    string public dynamicURI = "https://api.superform.xyz/superposition/";
 
     uint8 public constant STATE_REGISTRY_TYPE = 0;
 
@@ -46,8 +43,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     mapping(uint80 => AMBMessage) public txHistory;
 
     /// @param chainId_              SuperForm chain id
-    /// @param baseUri_              URL for external metadata of ERC1155 SuperPositions
-    constructor(uint16 chainId_, string memory baseUri_) ERC1155(baseUri_) {
+    constructor(uint16 chainId_) {
         if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
@@ -366,7 +362,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         ) revert INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
-        _burnBatch(
+        ISuperPositions(superRegistry.superPositions()).burnBatchSP(
             vars.srcSender,
             req.superFormsData.superFormIds,
             req.superFormsData.amounts
@@ -483,7 +479,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             revert INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
-        _burn(
+        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
             vars.srcSender,
             req.superFormData.superFormId,
             req.superFormData.amount
@@ -551,7 +547,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             revert INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
-        _burn(
+        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
             vars.srcSender,
             req.superFormData.superFormId,
             req.superFormData.amount
@@ -637,7 +633,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         );
 
         /// @dev TEST-CASE: _msgSender() to whom we mint. use passed `admin` arg?
-        _mint(srcSender_, ambData_.superFormId, dstAmount, "");
+        ISuperPositions(superRegistry.superPositions()).mintSingleSP(
+            srcSender_,
+            ambData_.superFormId,
+            dstAmount,
+            ""
+        );
     }
 
     /**
@@ -672,7 +673,12 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         }
 
         /// @dev TEST-CASE: _msgSender() to whom we mint. use passed `admin` arg?
-        _mintBatch(srcSender_, ambData_.superFormIds, dstAmounts, "");
+        ISuperPositions(superRegistry.superPositions()).mintBatchSP(
+            srcSender_,
+            ambData_.superFormIds,
+            dstAmounts,
+            ""
+        );
     }
 
     function _directWithdraw(
@@ -798,14 +804,14 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         ) revert DST_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && status) {
-            _mintBatch(
+            ISuperPositions(superRegistry.superPositions()).mintBatchSP(
                 srcSender,
                 multiVaultData.superFormIds,
                 returnData.amounts,
                 ""
             );
         } else if (txType == uint256(TransactionType.WITHDRAW) && !status) {
-            _mintBatch(
+            ISuperPositions(superRegistry.superPositions()).mintBatchSP(
                 srcSender,
                 multiVaultData.superFormIds,
                 returnData.amounts,
@@ -867,7 +873,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
         ) revert DST_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && status) {
-            _mint(
+            ISuperPositions(superRegistry.superPositions()).mintSingleSP(
                 srcSender,
                 singleVaultData.superFormId,
                 returnData.amount,
@@ -875,7 +881,7 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
             );
         } else if (txType == uint256(TransactionType.WITHDRAW) && !status) {
             /// @dev FIXME: need to create returnData MULTI AMOUNTS and update this to _mint
-            _mint(
+            ISuperPositions(superRegistry.superPositions()).mintSingleSP(
                 srcSender,
                 singleVaultData.superFormId,
                 returnData.amount,
@@ -930,44 +936,8 @@ contract SuperRouter is ISuperRouter, ERC1155, LiquidityHandler, Ownable {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            Read Only Functions
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev returns the off-chain metadata URI for each ERC1155 super position.
-    /// @param id_ is the unique identifier of the ERC1155 super position aka the vault id.
-    /// @return string pointing to the off-chain metadata of the 1155 super position.
-    function tokenURI(
-        uint256 id_
-    ) public view override returns (string memory) {
-        return
-            string(
-                abi.encodePacked(dynamicURI, Strings.toString(id_), ".json")
-            );
-    }
-
-    /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev for the separation of multi/single sp minting
-    function _multiSuperPositionMint(
-        AMBMessage memory stored,
-        ReturnMultiData memory returnData,
-        uint16 returnDataSrcChainId,
-        uint16 returnDataDstChainId,
-        uint256 txType,
-        bool status
-    ) internal {}
-
-    /// @dev for the separation of multi/single sp minting
-    function _singleSuperPositionMint(
-        AMBMessage memory stored,
-        ReturnSingleData memory returnData,
-        uint16 returnDataSrcChainId,
-        uint16 returnDataDstChainId,
-        uint256 txType,
-        bool status
-    ) internal {}
 
     /// @dev validates slippage parameter;
     /// slippages should always be within 0 - 100

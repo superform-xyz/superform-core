@@ -161,9 +161,4 @@ interface ISuperRouter {
 
     /// @dev returns the total individual vault transactions made through the router.
     function totalTransactions() external view returns (uint80);
-
-    /// @dev returns the off-chain metadata URI for each ERC1155 super position.
-    /// @param id_ is the unique identifier of the ERC1155 super position aka the vault id.
-    /// @return string pointing to the off-chain metadata of the 1155 super position.
-    function tokenURI(uint256 id_) external view returns (string memory);
 }

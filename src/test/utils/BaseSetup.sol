@@ -4,13 +4,13 @@ pragma solidity 0.8.19;
 import "forge-std/console.sol";
 
 /// @dev lib imports
-import "@std/Test.sol";
-import "@ds-test/test.sol";
+import "forge-std/Test.sol";
+import "ds-test/test.sol";
 // import "forge-std/console.sol";
-import {LayerZeroHelper} from "@pigeon/layerzero/LayerZeroHelper.sol";
-import {HyperlaneHelper} from "@pigeon/hyperlane/HyperlaneHelper.sol";
-import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
-import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
+import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
+import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev test utils & mocks
 import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
@@ -30,6 +30,7 @@ import {IERC4626} from "../../interfaces/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {SuperRouter} from "../../SuperRouter.sol";
 import {SuperRegistry} from "../../SuperRegistry.sol";
+import {SuperPositions} from "../../SuperPositions.sol";
 import {TokenBank} from "../../TokenBank.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
@@ -293,8 +294,9 @@ abstract contract BaseSetup is DSTest, Test {
                     IBaseStateRegistry(vars.factoryStateRegistry)
                 )
             );
-            contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
-                .lzImplementation;
+            contracts[vars.chainId][
+                bytes32(bytes("LayerzeroImplementation"))
+            ] = vars.lzImplementation;
 
             /// @dev 3.2- deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
@@ -402,18 +404,24 @@ abstract contract BaseSetup is DSTest, Test {
                 .tokenBank;
 
             /// @dev 10 - Deploy SuperRouter
-            vars.superRouter = address(
-                new SuperRouter(vars.chainId, "test.com/")
-            );
+            vars.superRouter = address(new SuperRouter(vars.chainId));
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars
                 .superRouter;
 
-            /// @dev 11 - Deploy MultiTx Processor
+            /// @dev 11 - Deploy SuperPositions
+            vars.superPositions = address(
+                new SuperPositions(vars.chainId, "test.com/")
+            );
+
+            contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
+                .superPositions;
+
+            /// @dev 12 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(new MultiTxProcessor());
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
 
-            /// @dev 12 - Deploy SuperRegistry and assign addresses
+            /// @dev 13 - Deploy SuperRegistry and assign addresses
             vars.superRegistry = address(new SuperRegistry(vars.chainId));
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
@@ -433,6 +441,10 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setBridgeAddress(
                 bridgeIds,
                 bridgeAddresses
+            );
+
+            SuperRegistry(vars.superRegistry).setSuperPositions(
+                vars.superPositions
             );
 
             SuperFormFactory(vars.factory).setSuperRegistry(vars.superRegistry);
@@ -501,6 +513,11 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.coreStateRegistry
             );
 
+            SuperPositions(vars.superPositions).grantRole(
+                SUPER_ROUTER_ROLE,
+                vars.superRouter
+            );
+
             /// @dev configures lzImplementation to state registry
             CoreStateRegistry(payable(vars.coreStateRegistry)).configureAmb(
                 ambIds[0],
@@ -530,7 +547,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.lzImplementation = getContract(
                 vars.chainId,
-                "LzImplementation"
+                "LayerzeroImplementation"
             );
 
             vars.hyperlaneImplementation = getContract(
@@ -549,7 +566,7 @@ abstract contract BaseSetup is DSTest, Test {
 
                     vars.dstLzImplementation = getContract(
                         vars.dstChainId,
-                        "LzImplementation"
+                        "LayerzeroImplementation"
                     );
                     vars.dstHyperlaneImplementation = getContract(
                         vars.dstChainId,

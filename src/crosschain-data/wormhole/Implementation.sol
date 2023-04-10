@@ -6,7 +6,7 @@ import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
 import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
 

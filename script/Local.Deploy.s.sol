@@ -3,7 +3,8 @@ pragma solidity ^0.8.17;
 
 import {Script} from "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {Strings} from "@openzeppelin-contracts/contracts/utils/Strings.sol";
+
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {AggregatorV3Interface} from "../src/test/utils/AggregatorV3Interface.sol";
 import {MockERC20} from "../src/test/mocks/MockERC20.sol";
@@ -20,6 +21,7 @@ import {IERC4626} from "../src/interfaces/IERC4626.sol";
 import {IBaseForm} from "../src/interfaces/IBaseForm.sol";
 import {SuperRouter} from "../src/SuperRouter.sol";
 import {SuperRegistry} from "../src/SuperRegistry.sol";
+import {SuperPositions} from "../src/SuperPositions.sol";
 import {TokenBank} from "../src/TokenBank.sol";
 import {SuperFormFactory} from "../src/SuperFormFactory.sol";
 import {ERC4626Form} from "../src/forms/ERC4626Form.sol";
@@ -58,6 +60,7 @@ struct SetupVars {
     address dstStateRegistry;
     address multiTxProcessor;
     address superRegistry;
+    address superPositions;
 }
 
 contract Deploy is Script {
@@ -67,6 +70,20 @@ contract Deploy is Script {
 
     mapping(uint16 chainId => mapping(bytes32 implementation => address at))
         public contracts;
+    string[12] public contractNames = [
+        "CoreStateRegistry",
+        "FactoryStateRegistry",
+        "LayerzeroImplementation",
+        "HyperlaneImplementation",
+        "SuperFormFactory",
+        "ERC4626Form",
+        "ERC4626TimelockForm",
+        "TokenBank",
+        "SuperRouter",
+        "SuperPositions",
+        "MultiTxProcessor",
+        "SuperRegistry"
+    ];
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
@@ -178,6 +195,7 @@ contract Deploy is Script {
     uint16 public constant OP = 6;
     //uint16 public constant FTM = 7;
     uint16[6] public chainIds = [1, 2, 3, 4, 5, 6];
+    string[6] public chainNames = ["ETH", "BSC", "AVAX", "POLY", "ARBI", "OP"];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -235,8 +253,6 @@ contract Deploy is Script {
 
     address deployer = vm.envAddress("LOCAL_DEPLOYER");
 
-    CoreStateRegistry[] coreStateRegistries;
-
     function getContract(
         uint16 chainId,
         string memory _name
@@ -245,22 +261,26 @@ contract Deploy is Script {
     }
 
     /// @notice The main script entrypoint
-    function run() external returns (CoreStateRegistry[] memory) {
+    function run() external {
         _preDeploymentSetup();
-        _fundNativeTokens(deployer);
+        _fundNativeTokens();
 
         SetupVars memory vars;
         /// @dev deployments
         for (uint256 i = 0; i < chainIds.length; i++) {
             vars.chainId = chainIds[i];
+            console.log("Deploying on chainId: ", vars.chainId);
             vars.fork = FORKS[vars.chainId];
+            console.log("vars.fork: ", vars.fork);
+
             vm.selectFork(vars.fork);
             vm.startBroadcast();
 
             /// @dev 1.1 - Core State Registry
-            coreStateRegistries.push(new CoreStateRegistry(vars.chainId));
 
-            vars.coreStateRegistry = address(coreStateRegistries[i]);
+            vars.coreStateRegistry = address(
+                new CoreStateRegistry(vars.chainId)
+            );
 
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
                 .coreStateRegistry;
@@ -282,8 +302,9 @@ contract Deploy is Script {
                 )
             );
 
-            contracts[vars.chainId][bytes32(bytes("LzImplementation"))] = vars
-                .lzImplementation;
+            contracts[vars.chainId][
+                bytes32(bytes("LayerzeroImplementation"))
+            ] = vars.lzImplementation;
 
             /// @dev 2.2 - deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
@@ -380,26 +401,31 @@ contract Deploy is Script {
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
                 .tokenBank;
 
-            /// @dev 9 - FIXME Deploy SuperRouter
-            /*
-            vars.superRouter = address(
-                new SuperRouter(vars.chainId, "test.com/")
-            );
+            /// @dev 9 - Deploy SuperRouter
+
+            vars.superRouter = address(new SuperRouter(vars.chainId));
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars
                 .superRouter;
-            */
-            /// @dev 10 - Deploy MultiTx Processor
+
+            /// @dev 11 - Deploy SuperPositions
+            vars.superPositions = address(
+                new SuperPositions(vars.chainId, "test.com/")
+            );
+
+            contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
+                .superPositions;
+
+            /// @dev 12 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(new MultiTxProcessor());
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
 
-            /// @dev 11 - Deploy SuperRegistry and assign addresses
+            /// @dev 13 - Deploy SuperRegistry and assign addresses
             vars.superRegistry = address(new SuperRegistry(vars.chainId));
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
 
-            /// @dev FIXME
-            // SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
+            SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
             SuperRegistry(vars.superRegistry).setTokenBank(vars.tokenBank);
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
 
@@ -416,19 +442,19 @@ contract Deploy is Script {
                 bridgeAddresses
             );
 
+            SuperRegistry(vars.superRegistry).setSuperPositions(
+                vars.superPositions
+            );
+
             SuperFormFactory(vars.factory).setSuperRegistry(vars.superRegistry);
 
             MultiTxProcessor(payable(vars.multiTxProcessor)).setSuperRegistry(
                 vars.superRegistry
             );
 
-            /// @dev FIXME
-
-            /*
             SuperRouter(payable(vars.superRouter)).setSuperRegistry(
                 vars.superRegistry
             );
-            */
 
             TokenBank(payable(vars.tokenBank)).setSuperRegistry(
                 vars.superRegistry
@@ -438,14 +464,11 @@ contract Deploy is Script {
                 vars.superRegistry
             );
 
-            /// @dev 12 Setup RBAC
-            /// @dev FIXME
-            /*
+            /// @dev 14 Setup RBAC
             CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.superRouter
             );
-            */
 
             FactoryStateRegistry(payable(vars.factoryStateRegistry))
                 .setFactoryContract(vars.factory);
@@ -487,6 +510,11 @@ contract Deploy is Script {
                 vars.coreStateRegistry
             );
 
+            SuperPositions(vars.superPositions).grantRole(
+                SUPER_ROUTER_ROLE,
+                vars.superRouter
+            );
+
             /// @dev configures lzImplementation to state registry
             CoreStateRegistry(payable(vars.coreStateRegistry)).configureAmb(
                 ambIds[0],
@@ -519,7 +547,7 @@ contract Deploy is Script {
 
             vars.lzImplementation = getContract(
                 vars.chainId,
-                "LzImplementation"
+                "LayerzeroImplementation"
             );
 
             vars.hyperlaneImplementation = getContract(
@@ -538,7 +566,7 @@ contract Deploy is Script {
 
                     vars.dstLzImplementation = getContract(
                         vars.dstChainId,
-                        "LzImplementation"
+                        "LayerzeroImplementation"
                     );
                     vars.dstHyperlaneImplementation = getContract(
                         vars.dstChainId,
@@ -602,9 +630,16 @@ contract Deploy is Script {
             }
               */
             vm.stopBroadcast();
+            /// @dev Exports
+            for (uint256 j = 0; j < contractNames.length; j++) {
+                exportContract(
+                    chainNames[i],
+                    contractNames[j],
+                    getContract(vars.chainId, contractNames[j]),
+                    vars.chainId
+                );
+            }
         }
-
-        return coreStateRegistries;
     }
 
     function _preDeploymentSetup() private {
@@ -743,7 +778,7 @@ contract Deploy is Script {
         return addr;
     }
 
-    function _fundNativeTokens(address deployer) private {
+    function _fundNativeTokens() private {
         for (uint256 i = 0; i < chainIds.length; i++) {
             uint256 multiplier = _getPriceMultiplier(chainIds[i]);
 
@@ -755,6 +790,51 @@ contract Deploy is Script {
             vm.deal(deployer, amountDeployer);
 
             vm.stopBroadcast();
+        }
+    }
+
+    function exportContract(
+        string memory name,
+        string memory label,
+        address addr,
+        uint16 chainId
+    ) internal {
+        string memory json = vm.serializeAddress("EXPORTS", label, addr);
+        string memory root = vm.projectRoot();
+
+        string memory chainOutputFolder = string(
+            abi.encodePacked(
+                "/script/output/",
+                vm.toString(uint256(chainId)),
+                "/"
+            )
+        );
+
+        vm.writeJson(
+            json,
+            string(
+                abi.encodePacked(
+                    root,
+                    chainOutputFolder,
+                    name,
+                    "-",
+                    vm.toString(block.timestamp),
+                    ".json"
+                )
+            )
+        );
+        if (vm.envOr("FOUNDRY_EXPORTS_OVERWRITE_LATEST", false)) {
+            vm.writeJson(
+                json,
+                string(
+                    abi.encodePacked(
+                        root,
+                        chainOutputFolder,
+                        name,
+                        "-latest.json"
+                    )
+                )
+            );
         }
     }
 }

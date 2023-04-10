@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import "@std/Test.sol";
+import "forge-std/Test.sol";
 
 import "../../types/LiquidityTypes.sol";
 
@@ -124,6 +124,7 @@ struct SetupVars {
     address dstStateRegistry;
     address multiTxProcessor;
     address superRegistry;
+    address superPositions;
 }
 
 /*//////////////////////////////////////////////////////////////
