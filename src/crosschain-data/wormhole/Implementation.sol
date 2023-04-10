@@ -6,8 +6,9 @@ import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
 import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import "../../utils/DataPacking.sol";
 
 /// @title Wormhole implementation contract
@@ -37,9 +38,7 @@ contract WormholeImplementation is
     uint8 public constant CONSISTENCY_LEVEL = 1;
 
     IWormhole public immutable bridge;
-
-    IBaseStateRegistry public immutable coreRegistry;
-    IBaseStateRegistry public immutable factoryRegistry;
+    ISuperRegistry public immutable superRegistry;
 
     /// @dev relayer will forward published wormhole messages
     IWormholeRelayer public relayer;
@@ -55,14 +54,11 @@ contract WormholeImplementation is
     /// @param bridge_ is the wormhole implementation for respective chain.
     constructor(
         IWormhole bridge_,
-        IBaseStateRegistry coreRegistry_,
-        IBaseStateRegistry factoryRegistry_,
-        address relayer_
+        address relayer_,
+        ISuperRegistry superRegistry_
     ) {
         bridge = bridge_;
-        coreRegistry = coreRegistry_;
-        factoryRegistry = factoryRegistry_;
-
+        superRegistry = superRegistry_;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         /// @dev receiving relayer
@@ -86,6 +82,13 @@ contract WormholeImplementation is
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
+        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
+            superRegistry.coreStateRegistry()
+        );
+        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
+            superRegistry.factoryStateRegistry()
+        );
+
         if (msg.sender != address(coreRegistry)) {
             revert INVALID_CALLER();
         }
@@ -151,11 +154,18 @@ contract WormholeImplementation is
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
         /// FIXME: should migrate to support more state registry types
         if (registryId == 0) {
+            IBaseStateRegistry coreRegistry = IBaseStateRegistry(
+                superRegistry.coreStateRegistry()
+            );
+
             coreRegistry.receivePayload(
                 superChainId[vm.emitterChainId],
                 vm.payload
             );
         } else {
+            IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
+                superRegistry.factoryStateRegistry()
+            );
             factoryRegistry.receivePayload(
                 superChainId[vm.emitterChainId],
                 vm.payload

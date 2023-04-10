@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {UpgradeableBeacon} from "@openzeppelin-contracts/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import {AccessControl} from "@openzeppelin-contracts/contracts/access/AccessControl.sol";
+import {UpgradeableBeacon} from "openzeppelin-contracts/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 
 /// @title FormBeacon
 /// @notice The Beacon for any given form.

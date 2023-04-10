@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 // Contracts
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
-import {IERC20} from "@openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 // import "forge-std/console.sol";
 
 // Test Utils
@@ -153,12 +153,12 @@ contract ScenarioTimelockTest is ProtocolActions {
         console.log("stage1 done");
 
         /// @dev User sends his request data to the src (deposit action)
-        (vars, aV) = _stage2_run_src_action(
-            action,
-            multiSuperFormsData,
-            singleSuperFormsData,
-            vars
-        );
+        vars = _stage2_run_src_action(
+                action,
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars
+            );
 
         console.log("stage2 done");
 
@@ -236,24 +236,19 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage1 done");
 
-        /// @dev User sends his request data to the src (withdraw action)
-        (vars, aV) = _stage2_run_src_action(
-            action,
-            multiSuperFormsData,
-            singleSuperFormsData,
-            vars
-        );
+            vars = _stage2_run_src_action(
+                action,
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars
+            );
 
-        console.log("stage2 done");
-
-        /// @dev TODO Repeated
-        _stage3_src_to_dst_amb_delivery(
-            action,
-            vars,
-            aV,
-            multiSuperFormsData,
-            singleSuperFormsData
-        );
+            aV = _stage3_src_to_dst_amb_delivery(
+                action,
+                vars,
+                multiSuperFormsData,
+                singleSuperFormsData
+            );
 
         console.log("stage3 done");
 

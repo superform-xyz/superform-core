@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC721} from "@solmate/tokens/ERC721.sol";
+import {ERC721} from "solmate/tokens/ERC721.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {BaseForm} from "../BaseForm.sol";
@@ -10,6 +10,12 @@ import {BaseForm} from "../BaseForm.sol";
 /// @notice Abstract implementation of BaseForm for protocols using ERC721 vault shares.
 /// @notice WIP: likely not to be released in v1
 abstract contract ERC721Form is BaseForm {
+    /*///////////////////////////////////////////////////////////////
+                            INITIALIZATION
+    //////////////////////////////////////////////////////////////*/
+
+    constructor(address superRegistry_) BaseForm(superRegistry_) {}
+
     /*///////////////////////////////////////////////////////////////
                             GETTERS
     //////////////////////////////////////////////////////////////*/

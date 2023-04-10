@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {ERC4626} from "@solmate/mixins/ERC4626.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {IERC4626Timelock} from "../../forms/interfaces/IERC4626Timelock.sol";
-import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 /// @notice Mock ERC4626Timelock contract
 /// @dev Requires two separate calls to perform ERC4626.withdraw() or redeem()

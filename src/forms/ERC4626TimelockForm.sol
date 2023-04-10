@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 import {IERC4626Timelock} from "./interfaces/IERC4626Timelock.sol";
-import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
@@ -28,6 +28,12 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
     /// @dev error thrown when the unlock reques
     error LOCKED();
+
+    /*///////////////////////////////////////////////////////////////
+                            INITIALIZATION
+    //////////////////////////////////////////////////////////////*/
+
+    constructor(address superRegistry_) ERC20Form(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES

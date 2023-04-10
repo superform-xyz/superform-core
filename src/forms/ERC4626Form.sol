@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {ERC4626} from "@solmate/mixins/ERC4626.sol";
-import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
@@ -23,6 +23,12 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
     /// @dev error thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
+
+    /*///////////////////////////////////////////////////////////////
+                            INITIALIZATION
+    //////////////////////////////////////////////////////////////*/
+
+    constructor(address superRegistry_) ERC20Form(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES

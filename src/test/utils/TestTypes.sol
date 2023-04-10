@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import "@std/Test.sol";
+import "forge-std/Test.sol";
 
 import "../../types/LiquidityTypes.sol";
 
@@ -57,7 +57,7 @@ struct MessagingAssertVars {
     uint256 initialFork;
     uint256 msgValue;
     uint256 txIdBefore;
-    uint256 payloadNumberBefore;
+    uint256 receivedPayloadId;
     uint16 toChainId;
     bool success;
     MultiVaultsSFData expectedMultiVaultsData;
@@ -111,30 +111,21 @@ struct SetupVars {
     address hyperlaneImplementation;
     address socketRouter;
     address erc4626Form;
-    /// @dev erc4626TimelockForm - var needed, BaseSetup._deployProtocol() parent contract forces it
     address erc4626TimelockForm;
     address factoryStateRegistry;
     address coreStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
-    /// @dev timelockVault - var needed, BaseSetup._deployProtocol() parent contract forces it
     address timelockVault;
     address srcTokenBank;
-    address srcSuperRouter;
-    address srcCoreStateRegistry;
-    address srcFactoryStateRegistry;
-    address srcSuperFormFactory;
-    address dstSuperFormFactory;
-    address srcErc4626Form;
-    /// @dev srcErc4626TimelockForm - var needed, BaseSetup._deployProtocol() parent contract forces it
-    address srcErc4626TimelockForm;
-    address srcLzImplementation;
+    address superRouter;
     address dstLzImplementation;
-    address srcHyperlaneImplementation;
     address dstHyperlaneImplementation;
     address dstStateRegistry;
-    address srcMultiTxProcessor;
+    address multiTxProcessor;
     address superRegistry;
+    Vm.Log[] logs;
+    address superPositions;
 }
 
 /*//////////////////////////////////////////////////////////////

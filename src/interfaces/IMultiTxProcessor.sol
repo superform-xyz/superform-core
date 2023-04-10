@@ -7,6 +7,13 @@ pragma solidity 0.8.19;
 /// @notice all write functions can only be accessed by superform keepers.
 interface IMultiTxProcessor {
     /*///////////////////////////////////////////////////////////////
+                                Errors
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev is emitted when the chain id input is invalid.
+    error INVALID_INPUT_CHAIN_ID();
+
+    /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
 
@@ -42,9 +49,4 @@ interface IMultiTxProcessor {
         address allowanceTarget_,
         uint256[] calldata amounts_
     ) external;
-
-    /// set super registry
-    /// @dev allows an admin to set the super registry
-    /// @param superRegistry_ is the address of the super registry
-    function setSuperRegistry(address superRegistry_) external;
 }

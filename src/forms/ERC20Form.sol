@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {BaseForm} from "../BaseForm.sol";
 
 /// @title ERC20Form
 /// @notice Abstract implementation of Form for protocols using ERC20 vault shares.
 abstract contract ERC20Form is BaseForm {
+    /*///////////////////////////////////////////////////////////////
+                            INITIALIZATION
+    //////////////////////////////////////////////////////////////*/
+
+    constructor(address superRegistry_) BaseForm(superRegistry_) {}
+
     /*///////////////////////////////////////////////////////////////
                             OVERRIDES
     //////////////////////////////////////////////////////////////*/

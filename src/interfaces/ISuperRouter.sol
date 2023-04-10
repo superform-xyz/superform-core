@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {LiqRequest, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, AMBMessage} from "../types/DataTypes.sol";
 
 /// TODO: Change to ERC1155s / depends on SuperBank task
-import "@openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
+import "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
 /// @title ISuperRouter
 /// @author Zeropoint Labs.
@@ -75,22 +75,32 @@ interface ISuperRouter is IERC1155 {
                         EXTERNAL DEPOSIT FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev Performs multi destination x multi vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function multiDstMultiVaultDeposit(
         MultiDstMultiVaultsStateReq calldata req
     ) external payable;
 
+    /// @dev Performs single destination x multi vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function singleDstMultiVaultDeposit(
         SingleDstMultiVaultsStateReq memory req
     ) external payable;
 
+    /// @dev Performs multi destination x single vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function multiDstSingleVaultDeposit(
         MultiDstSingleVaultStateReq calldata req
     ) external payable;
 
+    /// @dev Performs single xchain destination x single vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function singleXChainSingleVaultDeposit(
         SingleXChainSingleVaultStateReq memory req
     ) external payable;
 
+    /// @dev Performs single direct x single vault deposits
+    /// @param req is the request object containing all the necessary data for the action
     function singleDirectSingleVaultDeposit(
         SingleDirectSingleVaultStateReq memory req
     ) external payable;
@@ -99,22 +109,32 @@ interface ISuperRouter is IERC1155 {
                         EXTERNAL WITHDRAW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev Performs multi destination x multi vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function multiDstMultiVaultWithdraw(
         MultiDstMultiVaultsStateReq calldata req
     ) external payable;
 
+    /// @dev Performs single destination x multi vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function singleDstMultiVaultWithdraw(
         SingleDstMultiVaultsStateReq memory req
     ) external payable;
 
+    /// @dev Performs multi destination x single vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function multiDstSingleVaultWithdraw(
         MultiDstSingleVaultStateReq calldata req
     ) external payable;
 
+    /// @dev Performs single xchain destination x single vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function singleXChainSingleVaultWithdraw(
         SingleXChainSingleVaultStateReq memory req
     ) external payable;
 
+    /// @dev Performs single direct x single vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
     function singleDirectSingleVaultWithdraw(
         SingleDirectSingleVaultStateReq memory req
     ) external payable;
@@ -122,11 +142,6 @@ interface ISuperRouter is IERC1155 {
     /*///////////////////////////////////////////////////////////////
                         OTHER EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// set super registry
-    /// @dev allows an admin to set the super registry
-    /// @param superRegistry_ is the address of the super registry
-    function setSuperRegistry(address superRegistry_) external;
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
@@ -145,9 +160,4 @@ interface ISuperRouter is IERC1155 {
 
     /// @dev returns the total individual vault transactions made through the router.
     function totalTransactions() external view returns (uint80);
-
-    /// @dev returns the off-chain metadata URI for each ERC1155 super position.
-    /// @param id_ is the unique identifier of the ERC1155 super position aka the vault id.
-    /// @return string pointing to the off-chain metadata of the 1155 super position.
-    function tokenURI(uint256 id_) external view returns (string memory);
 }

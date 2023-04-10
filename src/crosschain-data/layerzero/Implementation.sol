@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "./NonblockingLzApp.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
 
@@ -16,10 +17,8 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
-    IBaseStateRegistry public immutable coreRegistry;
-    IBaseStateRegistry public immutable factoryRegistry;
-
     uint16[] public broadcastChains;
+    ISuperRegistry public immutable superRegistry;
 
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
@@ -34,11 +33,9 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     /// @param endpoint_ is the layer zero endpoint for respective chain.
     constructor(
         address endpoint_,
-        IBaseStateRegistry coreRegistry_,
-        IBaseStateRegistry factoryRegistry_
+        ISuperRegistry superRegistry_
     ) NonblockingLzApp(endpoint_) {
-        coreRegistry = coreRegistry_;
-        factoryRegistry = factoryRegistry_;
+        superRegistry = superRegistry_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -58,6 +55,13 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
+        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
+            superRegistry.coreStateRegistry()
+        );
+        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
+            superRegistry.factoryStateRegistry()
+        );
+
         if (
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
@@ -82,6 +86,13 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual {
+        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
+            superRegistry.coreStateRegistry()
+        );
+        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
+            superRegistry.factoryStateRegistry()
+        );
+
         if (
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
@@ -97,7 +108,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
                 payable(msg.sender),
                 address(0x0),
                 extraData_,
-                msg.value/broadcastChains.length
+                msg.value / broadcastChains.length
             );
         }
     }
@@ -142,8 +153,14 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
 
         /// FIXME: should migrate to support more state registry types
         if (registryId == 0) {
+            IBaseStateRegistry coreRegistry = IBaseStateRegistry(
+                superRegistry.coreStateRegistry()
+            );
             coreRegistry.receivePayload(superChainId[_srcChainId], _payload);
         } else {
+            IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
+                superRegistry.factoryStateRegistry()
+            );
             factoryRegistry.receivePayload(superChainId[_srcChainId], _payload);
         }
     }

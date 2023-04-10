@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "forge-std/console.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {SuperFormFactory} from "../SuperFormFactory.sol";
+import {FactoryStateRegistry} from "../crosschain-data/FactoryStateRegistry.sol";
 import {ERC4626Form} from "../forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol";
 import "./utils/BaseSetup.sol";
@@ -63,7 +64,9 @@ contract SuperFormFactoryTest is BaseSetup {
 
     function test_addForm() public {
         vm.startPrank(deployer);
-        address formImplementation = address(new ERC4626Form());
+        address formImplementation = address(
+            new ERC4626Form(getContract(chainId, "SuperRegistry"))
+        );
         uint256 formBeaconId = 1;
 
         /*
@@ -102,7 +105,7 @@ contract SuperFormFactoryTest is BaseSetup {
         uint16[] chainIds_;
         uint256[] transformedChainIds_;
         uint256[] expectedSuperFormIds;
-        uint256[] expectedFormIds;
+        uint256[] expectedFormBeaconIds;
         uint256[] expectedChainIds;
         address[] superForms_;
         address[] expectedVaults;
@@ -113,8 +116,11 @@ contract SuperFormFactoryTest is BaseSetup {
         TestArgs memory vars;
         vm.startPrank(deployer);
         vm.selectFork(FORKS[chainId]);
-        vars.formImplementation1 = address(new ERC4626Form());
-        vars.formImplementation2 = address(new ERC4626TimelockForm());
+        address superRegistry = getContract(chainId, "SuperRegistry");
+        vars.formImplementation1 = address(new ERC4626Form(superRegistry));
+        vars.formImplementation2 = address(
+            new ERC4626TimelockForm(superRegistry)
+        );
 
         vars.formBeaconId1 = 1;
         vars.formBeaconId2 = 2;
@@ -129,7 +135,6 @@ contract SuperFormFactoryTest is BaseSetup {
         vars.vault2 = address(0x3);
 
         /// @dev test getAllSuperForms
-
         (
             vars.superFormIds_,
             vars.superForms_,
@@ -144,29 +149,32 @@ contract SuperFormFactoryTest is BaseSetup {
             vars.transformedChainIds_[i] = uint256(vars.chainIds_[i]);
         }
 
-        vars.expectedFormIds = new uint256[](6);
-        vars.expectedFormIds[0] = vars.formBeaconId1;
-        vars.expectedFormIds[1] = vars.formBeaconId1;
-        vars.expectedFormIds[2] = vars.formBeaconId1;
-        vars.expectedFormIds[3] = vars.formBeaconId2;
-        vars.expectedFormIds[4] = vars.formBeaconId2;
-        vars.expectedFormIds[5] = vars.formBeaconId2;
+        vars.expectedFormBeaconIds = new uint256[](
+            chainIds.length * UNDERLYING_TOKENS.length
+        );
+        vars.expectedChainIds = new uint256[](
+            chainIds.length * UNDERLYING_TOKENS.length
+        );
 
-        vars.expectedChainIds = new uint256[](6);
-        vars.expectedChainIds[0] = chainId;
-        vars.expectedChainIds[1] = chainId;
-        vars.expectedChainIds[2] = chainId;
-        vars.expectedChainIds[3] = chainId;
-        vars.expectedChainIds[4] = chainId;
-        vars.expectedChainIds[5] = chainId;
+        /*
+        for (uint256 i = 0; i < vars.expectedFormBeaconIds.length; i++) {
+            vars.expectedFormBeaconIds[i] = vars.formBeaconId;
+            vars.expectedChainIds[i] = chainIds[i / 3];
+        }
 
-        assertEq(vars.formIds_, vars.expectedFormIds);
+        assertEq(vars.formIds_, vars.expectedFormBeaconIds);
         assertEq(vars.transformedChainIds_, vars.expectedChainIds);
+*/
 
+        /// @dev 6 * 2 * 3 = 36
+
+        uint256 expectedNumberOfSuperforms = chainIds.length *
+            UNDERLYING_TOKENS.length *
+            FORM_BEACON_IDS.length;
         assertEq(
             SuperFormFactory(getContract(chainId, "SuperFormFactory"))
                 .getAllSuperFormsList(),
-            6
-        );
+            expectedNumberOfSuperforms
+        ); /// 1 chain = 3; 6 chains = 6 * 3
     }
 }

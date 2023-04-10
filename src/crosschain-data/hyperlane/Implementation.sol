@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {Ownable} from "@openzeppelin-contracts/contracts/access/Ownable.sol";
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {IMailbox} from "./interface/IMailbox.sol";
 import {IMessageRecipient} from "./interface/IMessageRecipient.sol";
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IInterchainGasPaymaster} from "./interface/IInterchainGasPaymaster.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
@@ -22,11 +23,9 @@ contract HyperlaneImplementation is
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
-    IBaseStateRegistry public immutable coreRegistry;
-    IBaseStateRegistry public immutable factoryRegistry;
-
     IMailbox public immutable mailbox;
     IInterchainGasPaymaster public immutable igp;
+    ISuperRegistry public immutable superRegistry;
 
     uint32[] public broadcastChains;
 
@@ -43,15 +42,12 @@ contract HyperlaneImplementation is
     /// @param mailbox_ is the hyperlane mailbox for respective chain.
     constructor(
         IMailbox mailbox_,
-        IBaseStateRegistry coreRegistry_,
-        IBaseStateRegistry factoryRegistry_,
-        IInterchainGasPaymaster igp_
+        IInterchainGasPaymaster igp_,
+        ISuperRegistry superRegistry_
     ) {
-        coreRegistry = coreRegistry_;
-        factoryRegistry = factoryRegistry_;
-
         mailbox = mailbox_;
         igp = igp_;
+        superRegistry = superRegistry_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -71,6 +67,13 @@ contract HyperlaneImplementation is
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
+        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
+            superRegistry.coreStateRegistry()
+        );
+        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
+            superRegistry.factoryStateRegistry()
+        );
+
         if (
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
@@ -101,6 +104,13 @@ contract HyperlaneImplementation is
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual {
+        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
+            superRegistry.coreStateRegistry()
+        );
+        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
+            superRegistry.factoryStateRegistry()
+        );
+
         if (
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
@@ -200,8 +210,15 @@ contract HyperlaneImplementation is
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
         /// FIXME: should migrate to support more state registry types
         if (registryId == 0) {
+            IBaseStateRegistry coreRegistry = IBaseStateRegistry(
+                superRegistry.coreStateRegistry()
+            );
+
             coreRegistry.receivePayload(superChainId[origin_], body_);
         } else {
+            IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
+                superRegistry.factoryStateRegistry()
+            );
             factoryRegistry.receivePayload(superChainId[origin_], body_);
         }
     }
