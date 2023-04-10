@@ -14,7 +14,6 @@ import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @title Super Router
 /// @author Zeropoint Labs.

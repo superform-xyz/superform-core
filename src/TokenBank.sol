@@ -10,7 +10,6 @@ import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ITokenBank} from "./interfaces/ITokenBank.sol";
 import "./utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @title Token Bank
 /// @author Zeropoint Labs.

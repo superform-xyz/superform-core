@@ -173,16 +173,10 @@ abstract contract ProtocolActions is BaseSetup {
         MultiVaultsSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars
-    ) internal returns (StagesLocalVars memory, MessagingAssertVars memory) {
-        MessagingAssertVars memory aV;
-
+    ) internal returns (StagesLocalVars memory) {
         SuperRouter superRouter = SuperRouter(vars.fromSrc);
 
         vm.selectFork(FORKS[CHAIN_0]);
-
-        aV.initialFork = vm.activeFork();
-
-        aV.txIdBefore = superRouter.totalTransactions();
 
         if (action.testType != TestType.RevertMainAction) {
             vm.prank(action.user);
@@ -291,40 +285,56 @@ abstract contract ProtocolActions is BaseSetup {
             /// @dev not done
         }
 
-        return (vars, aV);
+        return vars;
+    }
+
+    struct Stage3InternalVars {
+        address[] toMailboxes;
+        uint32[] expDstDomains;
+        address[] endpoints;
+        uint16[] lzChainIds;
+        uint256[] forkIds;
+        uint256 k;
     }
 
     /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
     function _stage3_src_to_dst_amb_delivery(
         TestAction memory action,
         StagesLocalVars memory vars,
-        MessagingAssertVars memory aV,
         MultiVaultsSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData
-    ) internal {
+    ) internal returns (MessagingAssertVars[] memory) {
+        Stage3InternalVars memory internalVars;
+        MessagingAssertVars[] memory aV = new MessagingAssertVars[](
+            vars.nDestinations
+        );
+
         /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
+        internalVars.toMailboxes = new address[](vars.nDestinations);
+        internalVars.expDstDomains = new uint32[](vars.nDestinations);
 
-        address[] memory toMailboxes = new address[](DST_CHAINS.length);
-        uint32[] memory expDstDomains = new uint32[](DST_CHAINS.length);
+        internalVars.endpoints = new address[](vars.nDestinations);
+        internalVars.lzChainIds = new uint16[](vars.nDestinations);
 
-        address[] memory endpoints = new address[](DST_CHAINS.length);
-        uint16[] memory lzChainIds = new uint16[](DST_CHAINS.length);
+        internalVars.forkIds = new uint256[](vars.nDestinations);
 
-        uint256[] memory forkIds = new uint256[](DST_CHAINS.length);
-
-        uint256 k = 0;
+        internalVars.k = 0;
         for (uint256 i = 0; i < chainIds.length; i++) {
-            for (uint256 j = 0; j < DST_CHAINS.length; j++) {
+            for (uint256 j = 0; j < vars.nDestinations; j++) {
                 if (DST_CHAINS[j] == chainIds[i]) {
-                    toMailboxes[k] = hyperlaneMailboxes[i];
-                    expDstDomains[k] = hyperlane_chainIds[i];
+                    internalVars.toMailboxes[
+                        internalVars.k
+                    ] = hyperlaneMailboxes[i];
+                    internalVars.expDstDomains[
+                        internalVars.k
+                    ] = hyperlane_chainIds[i];
 
-                    endpoints[k] = lzEndpoints[i];
-                    lzChainIds[k] = lz_chainIds[i];
+                    internalVars.endpoints[internalVars.k] = lzEndpoints[i];
+                    internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
 
-                    forkIds[k] = FORKS[chainIds[i]];
+                    internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
 
-                    k++;
+                    internalVars.k++;
                 }
             }
         }
@@ -333,115 +343,115 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev see pigeon for this implementation
         HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper")).help(
             address(HyperlaneMailbox),
-            toMailboxes,
-            expDstDomains,
-            forkIds,
+            internalVars.toMailboxes,
+            internalVars.expDstDomains,
+            internalVars.forkIds,
             vars.logs
         );
 
         LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
-            endpoints,
-            lzChainIds,
-            1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
-            forkIds,
+            internalVars.endpoints,
+            internalVars.lzChainIds,
+            2000000, /// (change to 2000000) @dev FIXME: should be calculated automatically - This is the gas value to send - value needs to be tested and probably be lower
+            internalVars.forkIds,
             vars.logs
         );
 
         CoreStateRegistry stateRegistry;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            aV.toChainId = DST_CHAINS[i];
-            vm.selectFork(FORKS[aV.toChainId]);
+            aV[i].initialFork = vm.activeFork();
+            aV[i].toChainId = DST_CHAINS[i];
+            vm.selectFork(FORKS[aV[i].toChainId]);
 
-            if (CHAIN_0 != aV.toChainId) {
+            if (CHAIN_0 != aV[i].toChainId) {
                 stateRegistry = CoreStateRegistry(
-                    payable(getContract(aV.toChainId, "CoreStateRegistry"))
+                    payable(getContract(aV[i].toChainId, "CoreStateRegistry"))
                 );
 
                 /// @dev NOTE: it's better to assert here inside the loop
-                aV.payloadNumberBefore = stateRegistry.payloadsCount();
-                /// FIXME 2+ payloads to same destination will fail here
-                aV.data = abi.decode(
-                    stateRegistry.payload(
-                        aV.payloadNumberBefore + 1 - vars.nDestinations + i
-                    ),
+                aV[i].receivedPayloadId = stateRegistry.payloadsCount();
+                aV[i].data = abi.decode(
+                    stateRegistry.payload(aV[i].receivedPayloadId),
                     (AMBMessage)
                 );
 
                 /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
                 /// @dev - assert the payload reached destination state registry
                 if (action.multiVaults) {
-                    aV.expectedMultiVaultsData = multiSuperFormsData[i];
-                    aV.receivedMultiVaultData = abi.decode(
-                        aV.data.params,
+                    aV[i].expectedMultiVaultsData = multiSuperFormsData[i];
+                    aV[i].receivedMultiVaultData = abi.decode(
+                        aV[i].data.params,
                         (InitMultiVaultData)
                     );
 
                     assertEq(
-                        aV.expectedMultiVaultsData.superFormIds,
-                        aV.receivedMultiVaultData.superFormIds
+                        aV[i].expectedMultiVaultsData.superFormIds,
+                        aV[i].receivedMultiVaultData.superFormIds
                     );
 
                     assertEq(
-                        aV.expectedMultiVaultsData.amounts,
-                        aV.receivedMultiVaultData.amounts
+                        aV[i].expectedMultiVaultsData.amounts,
+                        aV[i].receivedMultiVaultData.amounts
                     );
                 } else {
-                    aV.expectedSingleVaultData = singleSuperFormsData[i];
+                    aV[i].expectedSingleVaultData = singleSuperFormsData[i];
 
-                    aV.receivedSingleVaultData = abi.decode(
-                        aV.data.params,
+                    aV[i].receivedSingleVaultData = abi.decode(
+                        aV[i].data.params,
                         (InitSingleVaultData)
                     );
 
                     assertEq(
-                        aV.expectedSingleVaultData.superFormId,
-                        aV.receivedSingleVaultData.superFormId
+                        aV[i].expectedSingleVaultData.superFormId,
+                        aV[i].receivedSingleVaultData.superFormId
                     );
 
                     assertEq(
-                        aV.expectedSingleVaultData.amount,
-                        aV.receivedSingleVaultData.amount
+                        aV[i].expectedSingleVaultData.amount,
+                        aV[i].receivedSingleVaultData.amount
                     );
                 }
             }
-            vm.selectFork(aV.initialFork);
+            //vm.selectFork(aV.initialFork);
         }
+        return aV;
     }
 
     /// @dev STEP 4 Update state and process src to dst payload
     function _stage4_process_src_dst_payload(
         TestAction memory action,
         StagesLocalVars memory vars,
-        MessagingAssertVars memory aV,
+        MessagingAssertVars[] memory aV,
         SingleVaultSFData[] memory singleSuperFormsData,
         uint256 actionIndex
     ) internal returns (bool success) {
         /// assume it will pass by default
         success = true;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            aV.toChainId = DST_CHAINS[i];
+            aV[i].toChainId = DST_CHAINS[i];
 
-            if (CHAIN_0 != aV.toChainId) {
+            if (CHAIN_0 != aV[i].toChainId) {
                 if (action.action == Actions.Deposit) {
                     unchecked {
-                        PAYLOAD_ID[aV.toChainId]++;
+                        PAYLOAD_ID[aV[i].toChainId]++;
                     }
+
                     vars.multiVaultsPayloadArg = UpdateMultiVaultPayloadArgs(
-                        PAYLOAD_ID[aV.toChainId],
-                        aV.receivedMultiVaultData.amounts,
+                        PAYLOAD_ID[aV[i].toChainId],
+                        aV[i].receivedMultiVaultData.amounts,
                         action.slippage,
-                        aV.toChainId,
+                        aV[i].toChainId,
                         action.testType,
                         action.revertError,
                         action.revertRole
                     );
 
                     vars.singleVaultsPayloadArg = UpdateSingleVaultPayloadArgs(
-                        PAYLOAD_ID[aV.toChainId],
-                        aV.receivedSingleVaultData.amount,
+                        PAYLOAD_ID[aV[i].toChainId],
+                        aV[i].receivedSingleVaultData.amount,
                         action.slippage,
-                        aV.toChainId,
+                        aV[i].toChainId,
                         action.testType,
                         action.revertError,
                         action.revertRole
@@ -459,13 +469,13 @@ abstract contract ProtocolActions is BaseSetup {
                                     actionIndex
                                 ];
                                 _batchProcessMultiTx(
-                                    aV.toChainId,
+                                    aV[i].toChainId,
                                     vars.underlyingSrcToken,
                                     vars.amounts
                                 );
                             } else {
                                 _processMultiTx(
-                                    aV.toChainId,
+                                    aV[i].toChainId,
                                     singleSuperFormsData[i].liqRequest.token,
                                     singleSuperFormsData[i].amount
                                 );
@@ -484,8 +494,8 @@ abstract contract ProtocolActions is BaseSetup {
 
                         vm.recordLogs();
                         success = _processPayload(
-                            PAYLOAD_ID[aV.toChainId],
-                            aV.toChainId,
+                            PAYLOAD_ID[aV[i].toChainId],
+                            aV[i].toChainId,
                             action.testType,
                             action.revertError
                         );
@@ -493,7 +503,7 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.logs = vm.getRecordedLogs();
 
                         LayerZeroHelper(
-                            getContract(aV.toChainId, "LayerZeroHelper")
+                            getContract(aV[i].toChainId, "LayerZeroHelper")
                         ).helpWithEstimates(
                                 vars.lzEndpoint_0,
                                 1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
@@ -502,7 +512,7 @@ abstract contract ProtocolActions is BaseSetup {
                             );
 
                         HyperlaneHelper(
-                            getContract(aV.toChainId, "HyperlaneHelper")
+                            getContract(aV[i].toChainId, "HyperlaneHelper")
                         ).help(
                                 address(HyperlaneMailbox),
                                 address(HyperlaneMailbox),
@@ -513,8 +523,8 @@ abstract contract ProtocolActions is BaseSetup {
                         action.testType == TestType.RevertProcessPayload
                     ) {
                         success = _processPayload(
-                            PAYLOAD_ID[aV.toChainId],
-                            aV.toChainId,
+                            PAYLOAD_ID[aV[i].toChainId],
+                            aV[i].toChainId,
                             action.testType,
                             action.revertError
                         );
@@ -541,32 +551,32 @@ abstract contract ProtocolActions is BaseSetup {
                     }
                 } else {
                     unchecked {
-                        PAYLOAD_ID[aV.toChainId]++;
+                        PAYLOAD_ID[aV[i].toChainId]++;
                     }
                     _processPayload(
-                        PAYLOAD_ID[aV.toChainId],
-                        aV.toChainId,
+                        PAYLOAD_ID[aV[i].toChainId],
+                        aV[i].toChainId,
                         action.testType,
                         action.revertError
                     );
                 }
             }
-            vm.selectFork(aV.initialFork);
+            vm.selectFork(aV[i].initialFork);
         }
     }
 
     /// @dev STEP 5 Process dst to src payload (mint of SuperPositions for deposits)
     function _stage5_process_superPositions_mint(
         TestAction memory action,
-        StagesLocalVars memory vars,
-        MessagingAssertVars memory aV
+        StagesLocalVars memory vars
     ) internal returns (bool success) {
         /// assume it will pass by default
         success = true;
+        uint256 toChainId;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            aV.toChainId = DST_CHAINS[i];
+            toChainId = DST_CHAINS[i];
 
-            if (CHAIN_0 != aV.toChainId) {
+            if (CHAIN_0 != toChainId) {
                 if (action.testType == TestType.Pass) {
                     unchecked {
                         PAYLOAD_ID[CHAIN_0]++;
@@ -579,8 +589,6 @@ abstract contract ProtocolActions is BaseSetup {
                         action.revertError
                     );
                 }
-
-                vm.selectFork(aV.initialFork);
             }
         }
     }
