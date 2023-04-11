@@ -22,19 +22,18 @@ import {_packSuperForm} from "../utils/DataPacking.sol";
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract ScenarioTimelockTest is ProtocolActions {
-
     /// @dev Global counter for actions sent to the protocol
     uint256 actionId;
-    
+
     /// @dev Global variable for timelockForm type. Different from dstFormID which is an index to access FORM_BEACON_IDS in BaseSetup
     uint256 timelockFormType = 2;
 
     /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests
-    uint16 dstChainID;
-    uint256 dstVaultID;
-    uint256 dstFormID;
-    uint256 amount;
-    uint256 slippage;
+    uint16[] dstChainID;
+    uint256[] dstVaultID;
+    uint256[] dstFormID;
+    uint256[] amount;
+    uint256[] slippage;
 
     /// @dev Access SuperRouter interface
     ISuperRouter superRouter;
@@ -55,14 +54,12 @@ contract ScenarioTimelockTest is ProtocolActions {
         DST_CHAINS = [POLY]; /// @dev destination chain(s) id4
 
         /// @dev You can define settings here or at the level of individual tests
-        dstChainID = DST_CHAINS[0]; /// id4
-        dstVaultID = 0; /// vault 
-        dstFormID = 1; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
-        amount = 1000;
-        slippage = 1000;
+        dstChainID = DST_CHAINS; /// id4
+        dstVaultID = [0]; /// vault
+        dstFormID = [1]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
+        amount = [1000];
+        slippage = [1000];
     }
-
-
 
     /*///////////////////////////////////////////////////////////////
                         SCENARIO TESTS
@@ -80,17 +77,16 @@ contract ScenarioTimelockTest is ProtocolActions {
 
     /// @dev This test uses 2 actions, rolls block between and make assertions about states in between
     function test_scenario_request_unlock_full_withdraw() public {
-
         /*///////////////////////////////////////////////////////////////
                                 STATE SETUP
         //////////////////////////////////////////////////////////////*/
-        
+
         address _superRouter = contracts[CHAIN_0][
             bytes32(bytes("SuperRouter"))
         ];
-        
+
         address _superForm = getContract(
-            dstChainID,
+            dstChainID[0], /// temp select by index
             string.concat(
                 UNDERLYING_TOKENS[0], /// <= Arbitrary choice as BaseSetup deploys all vaults & deals all tokens to users TODO: cleanup
                 "SuperForm",
@@ -104,38 +100,50 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         superRouter = ISuperRouter(_superRouter);
 
-        address _superPositions = ISuperRegistry(_stateRegistry).superPositions();
-        
+        address _superPositions = ISuperRegistry(_stateRegistry)
+            .superPositions();
+
         superPositions = IERC1155(_superPositions);
         erc4626TimelockForm = IERC4626TimelockForm(_superForm);
 
         /// @dev Here, however, dstFormId == 2, as that's the indexing inside of an array. 1 = erc4626form, 2 = erc4626timelockform
-        uint256 _formId = _packSuperForm(_superForm, timelockFormType, dstChainID);
-        
+        uint256 _formId = _packSuperForm(
+            _superForm,
+            timelockFormType,
+            dstChainID[0] /// temp select by index
+        );
+
         /// @dev Individual setting for deposit call (overwrite again for withdraw)
-        dstChainID = DST_CHAINS[0];
-        dstVaultID = 0;
-        dstFormID = 1;
-        amount = 1000;
-        slippage = 1000;
+        dstChainID = DST_CHAINS; /// id4
+        dstVaultID = [0]; /// vault
+        dstFormID = [1]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
+        amount = [1000];
+        slippage = [1000];
 
         /*///////////////////////////////////////////////////////////////
                                 DEPOSIT ACTION
         //////////////////////////////////////////////////////////////*/
 
-        uint256 currentBalanceOfAliceSP = superPositions.balanceOf(users[0], _formId);
-        uint256 currentBalanceOfAliceUnderlying = IERC20(erc4626TimelockForm.getUnderlyingOfVault()).balanceOf(users[0]);
-        uint256 previewDepositToExpectedAmountOfSP = erc4626TimelockForm.previewDepositTo(amount);
+        uint256 currentBalanceOfAliceSP = superPositions.balanceOf(
+            users[0],
+            _formId
+        );
+        uint256 currentBalanceOfAliceUnderlying = IERC20(
+            erc4626TimelockForm.getUnderlyingOfVault()
+        ).balanceOf(users[0]);
+        uint256 previewDepositToExpectedAmountOfSP = erc4626TimelockForm
+            .previewDepositTo(amount[0]); /// temp select by index
 
         assertEq(currentBalanceOfAliceSP, 0);
 
         /// NOTE: Individual deposit/withdraw invocation allows to make asserts in between
-        TestAction memory action = _depositAction(
+        TestAction memory action = _createAction(
             dstChainID,
             dstVaultID,
             dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
             amount,
             slippage,
+            Actions.Deposit,
             TestType.Pass
         );
 
@@ -165,11 +173,11 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev User sends his request data to the src (deposit action)
         vars = _stage2_run_src_action(
-                action,
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            );
+            action,
+            multiSuperFormsData,
+            singleSuperFormsData,
+            vars
+        );
 
         console.log("stage2 done");
 
@@ -206,9 +214,15 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// assert alice balanceOf SuperPositions before && after
         currentBalanceOfAliceSP = superPositions.balanceOf(users[0], _formId);
         assertEq(currentBalanceOfAliceSP, 1000);
-        /// assert alice balanceOf underlying token before && after 
-        uint256 newBalanceOfAliceUnderlying = IERC20(erc4626TimelockForm.getUnderlyingOfVault()).balanceOf(users[0]);
-        assertEq(newBalanceOfAliceUnderlying, currentBalanceOfAliceUnderlying - amount);
+        /// assert alice balanceOf underlying token before && after
+        uint256 newBalanceOfAliceUnderlying = IERC20(
+            erc4626TimelockForm.getUnderlyingOfVault()
+        ).balanceOf(users[0]);
+
+        assertEq(
+            newBalanceOfAliceUnderlying,
+            currentBalanceOfAliceUnderlying - amount[0] /// temp select by index
+        );
         /// assert expected amount of SuperPosition (shares on Form) token received from previewDepositTo
         assertEq(previewDepositToExpectedAmountOfSP, currentBalanceOfAliceSP);
 
@@ -218,18 +232,19 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev Individual setting for deposit call (overwrite again for withdraw)
         /// NOTE: Having mutability for those allows to test with fuzzing on range of random params
-        dstChainID = DST_CHAINS[0];
-        dstVaultID = 0;
-        dstFormID = 1;
-        amount = 1000;
-        slippage = 1000;
+        dstChainID = DST_CHAINS; /// id4
+        dstVaultID = [0]; /// vault
+        dstFormID = [1]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
+        amount = [1000];
+        slippage = [1000];
 
-        action = _withdrawAction(
+        action = _createAction(
             dstChainID,
             dstVaultID,
             dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
             amount,
             slippage,
+            Actions.Withdraw,
             TestType.Pass
         );
 
@@ -246,20 +261,20 @@ contract ScenarioTimelockTest is ProtocolActions {
         console.log("stage1 done");
 
         vars = _stage2_run_src_action(
-                action,
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            );
-        
+            action,
+            multiSuperFormsData,
+            singleSuperFormsData,
+            vars
+        );
+
         console.log("stage2 done");
 
         aV = _stage3_src_to_dst_amb_delivery(
-                action,
-                vars,
-                multiSuperFormsData,
-                singleSuperFormsData
-            );
+            action,
+            vars,
+            multiSuperFormsData,
+            singleSuperFormsData
+        );
 
         console.log("stage3 done");
 
@@ -277,148 +292,72 @@ contract ScenarioTimelockTest is ProtocolActions {
                             TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/
 
-        /// FIXME: This test actually proves that we burn shares but don't send anything back because we only requestUnlock!!! 
+        /// FIXME: This test actually proves that we burn shares but don't send anything back because we only requestUnlock!!!
         currentBalanceOfAliceSP = superPositions.balanceOf(users[0], _formId);
         /// FIXME: 0 Set only so test would pass!!! This is upstream problem!!!
         assertEq(currentBalanceOfAliceSP, 0);
 
         /// TODO:
         /// assert alice balanceOf SuperPositions before && after
-        /// assert alice balanceOf underlying token before && after 
+        /// assert alice balanceOf underlying token before && after
         /// assert expected amount of underlying token received from previewWithdrawFrom
-
     }
 
     /*///////////////////////////////////////////////////////////////
                         TEST INTERNAL HELPERS
     //////////////////////////////////////////////////////////////*/
 
-    function _depositAction(
-        uint16 chainID_,
-        uint256 vaultID_,
-        uint256 formID_,
-        uint256 amount_,
-        uint256 slippage_,
+    function _createAction(
+        uint16[] memory chainID_,
+        uint256[] memory vaultIDs_,
+        uint256[] memory formIDs_,
+        uint256[] memory amounts_,
+        uint256[] memory slippages_,
+        Actions kind_, /// deposit or withdraw
         TestType testType /// ProtocolActions invariant
-    ) internal returns (TestAction memory depositAction) {
+        // bool multiVaults_
+    ) internal returns (TestAction memory action_) {
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
-        TARGET_UNDERLYING_VAULTS[chainID_][actionId] = [vaultID_];
-        TARGET_FORM_KINDS[chainID_][actionId] = [formID_]; /// <= 1 for timelock, this accesses array by index (0 for standard)
-        AMOUNTS[chainID_][actionId] = [amount_];
-        MAX_SLIPPAGE[chainID_][actionId] = [slippage_];
+        for (uint256 i = 0; i < chainID_.length; i++) {
 
-        depositAction = TestAction({
-            action: Actions.Deposit,
-            multiVaults: false, //!!WARNING turn on or off multi vaults
-            user: users[0],
-            testType: TestType.Pass, /// NOTE: TestType should be low level invariant
-            revertError: "",
-            revertRole: "",
-            slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-            multiTx: false,
-            adapterParam: "",
-            msgValue: msgValue
-        });
+            /// temp select by index. TODO: actionId mechanics requires update!
+            TARGET_UNDERLYING_VAULTS[chainID_[i]][actionId] = vaultIDs_;
+            TARGET_FORM_KINDS[chainID_[i]][actionId] = formIDs_; /// <= 1 for timelock, this accesses array by index (0 for standard)
+            AMOUNTS[chainID_[i]][actionId] = amounts_;
+            MAX_SLIPPAGE[chainID_[i]][actionId] = slippages_;
+
+            if (kind_ == Actions.Deposit) {
+                action_ = TestAction({
+                    action: Actions.Deposit,
+                    multiVaults: false, //!!WARNING turn on or off multi vaults
+                    user: users[0],
+                    testType: TestType.Pass, /// NOTE: TestType should be low level invariant
+                    revertError: "",
+                    revertRole: "",
+                    slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                    multiTx: false,
+                    adapterParam: "",
+                    msgValue: msgValue
+                });
+            } else if (kind_ == Actions.Withdraw) {
+                action_ = TestAction({
+                    action: Actions.Withdraw,
+                    multiVaults: false, //!!WARNING turn on or off multi vaults
+                    user: users[0],
+                    testType: TestType.Pass, /// NOTE: TestType should be low level invariant
+                    revertError: "",
+                    revertRole: "",
+                    slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                    multiTx: false,
+                    adapterParam: "",
+                    msgValue: msgValue
+                });
+            } else {
+                revert("Action not supported");
+            }
+        }
+
     }
-
-    function _withdrawAction(
-        uint16 chainID_,
-        uint256 vaultID_,
-        uint256 formID_,
-        uint256 amount_,
-        uint256 slippage_,
-        TestType testType /// ProtocolActions invariant
-    ) internal returns (TestAction memory withdrawAction) {
-        /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
-
-        TARGET_UNDERLYING_VAULTS[chainID_][actionId] = [vaultID_];
-        TARGET_FORM_KINDS[chainID_][actionId] = [formID_];
-        AMOUNTS[chainID_][actionId] = [amount_];
-        MAX_SLIPPAGE[chainID_][actionId] = [slippage_];
-
-        withdrawAction = TestAction({
-            action: Actions.Withdraw,
-            multiVaults: false, //!!WARNING turn on or off multi vaults
-            user: users[0],
-            testType: TestType.Pass, /// NOTE: TestType should be low level invariant
-            revertError: "",
-            revertRole: "",
-            slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-            multiTx: false,
-            adapterParam: "",
-            msgValue: msgValue
-        });
-    }
-
-    // function _pushDepositAction(
-    //     uint16[] memory chainID_,
-    //     uint256[] memory vaultIDs_,
-    //     uint256[] memory formIDs_,
-    //     uint256[] memory amounts_,
-    //     uint256[] memory slippage_,
-    //     TestType testType_ /// ProtocolActions invariant
-    // ) internal returns (TestAction memory depositAction) {
-    //     /// @dev check if we need to have this here (it's being overriden)
-    //     uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
-
-    //     for (uint256 i = 0; i < chainID_.length; i++) {
-    //         TARGET_UNDERLYING_VAULTS[chainID_[i]][actionId] = vaultIDs_;
-    //         TARGET_FORM_KINDS[chainID_[i]][actionId] = formIDs_; /// <= 1 for timelock, this accesses array by index (0 for standard)
-    //         AMOUNTS[chainID_[i]][actionId] = amounts_;
-    //         MAX_SLIPPAGE[chainID_[i]][actionId] = slippage_;
-
-    //         actions.push(
-    //             TestAction({
-    //                 action: Actions.Deposit,
-    //                 multiVaults: false, //!!WARNING turn on or off multi vaults
-    //                 user: users[0],
-    //                 testType: TestType.Pass, /// NOTE: TestType should be low level invariant
-    //                 revertError: "",
-    //                 revertRole: "",
-    //                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-    //                 multiTx: false,
-    //                 adapterParam: "",
-    //                 msgValue: msgValue
-    //             })
-    //         );
-    //     }
-    // }
-
-    // function _pushWithdrawAction(
-    //     uint16[] memory chainID_,
-    //     uint256[] memory vaultIDs_,
-    //     uint256[] memory formIDs_,
-    //     uint256[] memory amounts_,
-    //     uint256[] memory slippage_,
-    //     TestType testType_ /// ProtocolActions invariant
-    // ) internal returns (TestAction memory withdrawAction) {
-    //     /// @dev check if we need to have this here (it's being overriden)
-    //     uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
-
-    //     for (uint256 i = 0; i < chainID_.length; i++) {
-    //         TARGET_UNDERLYING_VAULTS[chainID_[i]][actionId] = vaultIDs_;
-    //         TARGET_FORM_KINDS[chainID_[i]][actionId] = formIDs_; /// <= 1 for timelock, this accesses array by index (0 for standard)
-    //         AMOUNTS[chainID_[i]][actionId] = amounts_;
-    //         MAX_SLIPPAGE[chainID_[i]][actionId] = slippage_;
-
-    //         actions.push(
-    //             TestAction({
-    //                 action: Actions.Withdraw,
-    //                 multiVaults: false, //!!WARNING turn on or off multi vaults
-    //                 user: users[0],
-    //                 testType: TestType.Pass, /// NOTE: TestType should be low level invariant
-    //                 revertError: "",
-    //                 revertRole: "",
-    //                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-    //                 multiTx: false,
-    //                 adapterParam: "",
-    //                 msgValue: msgValue
-    //             })
-    //         );
-    //     }
-    // }
-
 }
