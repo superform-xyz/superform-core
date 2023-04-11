@@ -20,7 +20,7 @@ import {ISuperFormFactory} from "../src/interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "../src/interfaces/IERC4626.sol";
 import {IBaseForm} from "../src/interfaces/IBaseForm.sol";
 import {SuperRouter} from "../src/SuperRouter.sol";
-import {SuperRegistry} from "../src/SuperRegistry.sol";
+import {SuperRegistry} from "../src/settings/SuperRegistry.sol";
 import {SuperPositions} from "../src/SuperPositions.sol";
 import {TokenBank} from "../src/TokenBank.sol";
 import {SuperFormFactory} from "../src/SuperFormFactory.sol";

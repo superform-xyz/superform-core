@@ -17,8 +17,8 @@ interface ISuperRegistry {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev is emitted when an address is set.
-    event AddressSet(
-        bytes32 indexed id,
+    event NewModuleUpdated(
+        bytes32 indexed moduleId,
         address indexed oldAddress,
         address indexed newAddress
     );
@@ -71,7 +71,7 @@ interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
-    function setAddress(bytes32 id, address newAddress) external;
+    function setNewModule(bytes32 moduleId_, address newAddress_) external;
 
     /// @dev sets the super router address.
     /// @param superRouter_ the address of the super router
@@ -116,10 +116,27 @@ interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
+    /// @dev returns the id of the super router module
+    function SUPER_ROUTER() external view returns (bytes32);
+
+    /// @dev returns the id of the token bank module
+    function TOKEN_BANK() external view returns (bytes32);
+
+    /// @dev returns the id of the superform factory module
+    function SUPERFORM_FACTORY() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry module
+    function CORE_STATE_REGISTRY() external view returns (bytes32);
+
+    /// @dev returns the id of the factory state registry module
+    function FACTORY_STATE_REGISTRY() external view returns (bytes32);
+
+    /// @dev returns the id of the super positions module
+    function SUPER_POSITIONS() external view returns (bytes32);
 
     /// @dev gets the address of a contract.
-    /// @param id is the id of the contract
-    function getAddress(bytes32 id) external view returns (address);
+    /// @param moduleId_ is the id of the contract
+    function getModule(bytes32 moduleId_) external view returns (address);
 
     /// @dev gets the super router address.
     /// @return superRouter_ the address of the super router

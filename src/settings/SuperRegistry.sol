@@ -2,28 +2,30 @@
 pragma solidity 0.8.19;
 
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
-import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 
 /// @title SuperRegistry
 /// @author Zeropoint Labs.
 /// @dev FIXME: this should be decentralized and protected by a timelock contract.
-/// @dev Keeps information on all addresses used in the SuperForms ecosystem.
+/// @dev Keeps information on all moduleAddresses used in the SuperForms ecosystem.
 contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
     uint16 public immutable chainId;
 
-    mapping(bytes32 id => address moduleAddress) private addresses;
+    mapping(bytes32 id => address moduleAddress) private moduleAddresses;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
     mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
 
     /// @dev main protocol modules
-    bytes32 private constant SUPER_ROUTER = "SUPER_ROUTER";
-    bytes32 private constant TOKEN_BANK = "TOKEN_BANK";
-    bytes32 private constant SUPERFORM_FACTORY = "SUPERFORM_FACTORY";
-    bytes32 private constant CORE_STATE_REGISTRY = "CORE_STATE_REGISTRY";
-    bytes32 private constant FACTORY_STATE_REGISTRY = "FACTORY_STATE_REGISTRY";
-    bytes32 private constant SUPER_POSITIONS = "SUPER_POSITIONS";
+    bytes32 public constant override SUPER_ROUTER = "SUPER_ROUTER";
+    bytes32 public constant override TOKEN_BANK = "TOKEN_BANK";
+    bytes32 public constant override SUPERFORM_FACTORY = "SUPERFORM_FACTORY";
+    bytes32 public constant override CORE_STATE_REGISTRY =
+        "CORE_STATE_REGISTRY";
+    bytes32 public constant override FACTORY_STATE_REGISTRY =
+        "FACTORY_STATE_REGISTRY";
+    bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
 
     /// @dev sets caller as the admin of the contract.
     /// @param chainId_ the superform chain id this registry is deployed on
@@ -39,13 +41,13 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRegistry
-    function setAddress(
-        bytes32 id,
-        address newAddress
+    function setNewModule(
+        bytes32 moduleId_,
+        address newAddress_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        address oldAddress = addresses[id];
-        addresses[id] = newAddress;
-        emit AddressSet(id, oldAddress, newAddress);
+        address oldAddress = moduleAddresses[moduleId_];
+        moduleAddresses[moduleId_] = newAddress_;
+        emit NewModuleUpdated(moduleId_, oldAddress, newAddress_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -54,8 +56,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superRouter_ == address(0)) revert ZERO_ADDRESS();
 
-        address oldSuperRouter = addresses[SUPER_ROUTER];
-        addresses[SUPER_ROUTER] = superRouter_;
+        address oldSuperRouter = moduleAddresses[SUPER_ROUTER];
+        moduleAddresses[SUPER_ROUTER] = superRouter_;
 
         emit SuperRouterUpdated(oldSuperRouter, superRouter_);
     }
@@ -66,8 +68,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (tokenBank_ == address(0)) revert ZERO_ADDRESS();
 
-        address oldTokenBank = addresses[TOKEN_BANK];
-        addresses[TOKEN_BANK] = tokenBank_;
+        address oldTokenBank = moduleAddresses[TOKEN_BANK];
+        moduleAddresses[TOKEN_BANK] = tokenBank_;
 
         emit TokenBankUpdated(oldTokenBank, tokenBank_);
     }
@@ -78,8 +80,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superFormFactory_ == address(0)) revert ZERO_ADDRESS();
 
-        address oldSuperFormFactory = addresses[SUPERFORM_FACTORY];
-        addresses[SUPERFORM_FACTORY] = superFormFactory_;
+        address oldSuperFormFactory = moduleAddresses[SUPERFORM_FACTORY];
+        moduleAddresses[SUPERFORM_FACTORY] = superFormFactory_;
 
         emit SuperFormFactoryUpdated(oldSuperFormFactory, superFormFactory_);
     }
@@ -90,8 +92,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (coreStateRegistry_ == address(0)) revert ZERO_ADDRESS();
 
-        address oldCoreStateRegistry = addresses[CORE_STATE_REGISTRY];
-        addresses[CORE_STATE_REGISTRY] = coreStateRegistry_;
+        address oldCoreStateRegistry = moduleAddresses[CORE_STATE_REGISTRY];
+        moduleAddresses[CORE_STATE_REGISTRY] = coreStateRegistry_;
 
         emit CoreStateRegistryUpdated(oldCoreStateRegistry, coreStateRegistry_);
     }
@@ -102,8 +104,10 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (factoryStateRegistry_ == address(0)) revert ZERO_ADDRESS();
 
-        address oldFactoryStateRegistry = addresses[FACTORY_STATE_REGISTRY];
-        addresses[FACTORY_STATE_REGISTRY] = factoryStateRegistry_;
+        address oldFactoryStateRegistry = moduleAddresses[
+            FACTORY_STATE_REGISTRY
+        ];
+        moduleAddresses[FACTORY_STATE_REGISTRY] = factoryStateRegistry_;
 
         emit FactoryStateRegistryUpdated(
             oldFactoryStateRegistry,
@@ -117,8 +121,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superPositions_ == address(0)) revert ZERO_ADDRESS();
 
-        address oldSuperPositions = addresses[SUPER_POSITIONS];
-        addresses[SUPER_POSITIONS] = superPositions_;
+        address oldSuperPositions = moduleAddresses[SUPER_POSITIONS];
+        moduleAddresses[SUPER_POSITIONS] = superPositions_;
 
         emit SuperPositionsUpdated(oldSuperPositions, superPositions_);
     }
@@ -159,8 +163,10 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRegistry
-    function getAddress(bytes32 id) public view override returns (address) {
-        return addresses[id];
+    function getModule(
+        bytes32 moduleId_
+    ) public view override returns (address) {
+        return moduleAddresses[moduleId_];
     }
 
     /// @inheritdoc ISuperRegistry
@@ -170,12 +176,12 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         override
         returns (address superRouter_)
     {
-        superRouter_ = getAddress(SUPER_ROUTER);
+        superRouter_ = getModule(SUPER_ROUTER);
     }
 
     /// @inheritdoc ISuperRegistry
     function tokenBank() external view override returns (address tokenBank_) {
-        tokenBank_ = getAddress(TOKEN_BANK);
+        tokenBank_ = getModule(TOKEN_BANK);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -185,7 +191,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         override
         returns (address superFormFactory_)
     {
-        superFormFactory_ = getAddress(SUPERFORM_FACTORY);
+        superFormFactory_ = getModule(SUPERFORM_FACTORY);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -195,7 +201,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         override
         returns (address coreStateRegistry_)
     {
-        coreStateRegistry_ = getAddress(CORE_STATE_REGISTRY);
+        coreStateRegistry_ = getModule(CORE_STATE_REGISTRY);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -205,7 +211,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         override
         returns (address factoryStateRegistry_)
     {
-        factoryStateRegistry_ = getAddress(FACTORY_STATE_REGISTRY);
+        factoryStateRegistry_ = getModule(FACTORY_STATE_REGISTRY);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -215,7 +221,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         override
         returns (address superPositions_)
     {
-        superPositions_ = getAddress(SUPER_POSITIONS);
+        superPositions_ = getModule(SUPER_POSITIONS);
     }
 
     /// @inheritdoc ISuperRegistry

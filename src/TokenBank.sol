@@ -36,7 +36,6 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @dev safeGasParam is used while sending layerzero message from destination to router.
     bytes public safeGasParam;
 
-    /// @notice deploy stateRegistry before SuperDestination
     /// @param chainId_              Superform chain id
     /// @param superRegistry_ the superform registry contract
     constructor(uint16 chainId_, address superRegistry_) {
