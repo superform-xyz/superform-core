@@ -30,6 +30,7 @@ import {IERC4626} from "../../interfaces/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {SuperRouter} from "../../SuperRouter.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
+import {SuperRBAC} from "../../settings/SuperRBAC.sol";
 import {SuperPositions} from "../../SuperPositions.sol";
 import {TokenBank} from "../../TokenBank.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
@@ -282,6 +283,8 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
 
+            SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
+
             /// @dev 3.1 - deploy Core State Registry
 
             vars.coreStateRegistry = address(
@@ -440,7 +443,11 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 12 - Deploy SuperPositions
             vars.superPositions = address(
-                new SuperPositions(vars.chainId, "test.com/")
+                new SuperPositions(
+                    vars.chainId,
+                    "test.com/",
+                    vars.superRegistry
+                )
             );
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
@@ -452,6 +459,13 @@ abstract contract BaseSetup is DSTest, Test {
             );
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
+
+            /// @dev 13 - Deploy SuperRBAC
+            vars.superRBAC = address(
+                new SuperRBAC(vars.chainId, vars.superRegistry)
+            );
+            contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars
+                .superRBAC;
 
             /// @dev 14 - Super Registry setters
             SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
@@ -475,7 +489,16 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.superPositions
             );
 
-            /// @dev 15- Setup RBAC
+            SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
+
+            /// @dev 14 Setup RBAC
+            SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(
+                vars.coreStateRegistry
+            );
+
+            SuperRBAC(vars.superRBAC).grantSuperRouterRole(vars.superRouter);
+
+            /// old rbac
 
             CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
@@ -532,16 +555,6 @@ abstract contract BaseSetup is DSTest, Test {
             MultiTxProcessor(payable(vars.multiTxProcessor)).grantRole(
                 SWAPPER_ROLE,
                 deployer
-            );
-
-            TokenBank(payable(vars.tokenBank)).grantRole(
-                STATE_REGISTRY_ROLE,
-                vars.coreStateRegistry
-            );
-
-            SuperPositions(vars.superPositions).grantRole(
-                SUPER_ROUTER_ROLE,
-                vars.superRouter
             );
 
             /// @dev configures lzImplementation and hyperlane to super registry

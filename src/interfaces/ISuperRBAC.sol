@@ -3,23 +3,24 @@ pragma solidity 0.8.19;
 
 interface ISuperRBAC {
     /*///////////////////////////////////////////////////////////////
-                                Errors
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev is emitted when the chain id input is invalid.
-    error INVALID_INPUT_CHAIN_ID();
-
-    /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev grants the STATE_REGISTRY_ROLE to the given address
-    /// @param stateRegistry_ the address to grant the role to
-    function grantStateRegistryRole(address stateRegistry_) external;
+    /// @dev grants the DEFAULT_ADMIN_ROLE to the given address
+    /// @param admin_ the address to grant the role to
+    function grantProtocolAdminRole(address admin_) external;
 
-    /// @dev revokes the STATE_REGISTRY_ROLE from given address
-    /// @param stateRegistry_ the address to revoke the role from
-    function revokeStateRegistryRole(address stateRegistry_) external;
+    /// @dev revokes the DEFAULT_ADMIN_ROLE from given address
+    /// @param admin_ the address to revoke the role from
+    function revokeProtocolAdminRole(address admin_) external;
+
+    /// @dev grants the CORE_STATE_REGISTRY_ROLE to the given address
+    /// @param coreStateRegistry_ the address to grant the role to
+    function grantCoreStateRegistryRole(address coreStateRegistry_) external;
+
+    /// @dev revokes the CORE_STATE_REGISTRY_ROLE from given address
+    /// @param coreStateRegistry_ the address to revoke the role from
+    function revokeCoreStateRegistryRole(address coreStateRegistry_) external;
 
     /// @dev grants the SUPER_ROUTER_ROLE to the given address
     /// @param superRouter_ the address to grant the role to
@@ -85,7 +86,7 @@ interface ISuperRBAC {
                             View Functions
     //////////////////////////////////////////////////////////////*/
     /// @dev returns the id of the state registry role
-    function STATE_REGISTRY_ROLE() external view returns (bytes32);
+    function CORE_STATE_REGISTRY_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the super router role
     function SUPER_ROUTER_ROLE() external view returns (bytes32);
@@ -108,10 +109,14 @@ interface ISuperRBAC {
     /// @dev returns the id of the updater role
     function UPDATER_ROLE() external view returns (bytes32);
 
+    /// @dev returns wether the given address has the protocol admin role
+    /// @param admin_ the address to check
+    function hasProtocolAdminRole(address admin_) external view returns (bool);
+
     /// @dev returns wether the given address has the state registry role
-    /// @param stateRegistry_ the address to check
-    function hasStateRegistryRole(
-        address stateRegistry_
+    /// @param coreStateRegistry_ the address to check
+    function hasCoreStateRegistryRole(
+        address coreStateRegistry_
     ) external view returns (bool);
 
     /// @dev returns wether the given address has the super router role

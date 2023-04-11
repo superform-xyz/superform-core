@@ -21,6 +21,7 @@ import {IERC4626} from "../src/interfaces/IERC4626.sol";
 import {IBaseForm} from "../src/interfaces/IBaseForm.sol";
 import {SuperRouter} from "../src/SuperRouter.sol";
 import {SuperRegistry} from "../src/settings/SuperRegistry.sol";
+import {SuperRBAC} from "../src/settings/SuperRBAC.sol";
 import {SuperPositions} from "../src/SuperPositions.sol";
 import {TokenBank} from "../src/TokenBank.sol";
 import {SuperFormFactory} from "../src/SuperFormFactory.sol";
@@ -61,6 +62,7 @@ struct SetupVars {
     address multiTxProcessor;
     address superRegistry;
     address superPositions;
+    address superRBAC;
 }
 
 contract Deploy is Script {
@@ -70,7 +72,7 @@ contract Deploy is Script {
 
     mapping(uint16 chainId => mapping(bytes32 implementation => address at))
         public contracts;
-    string[12] public contractNames = [
+    string[13] public contractNames = [
         "CoreStateRegistry",
         "FactoryStateRegistry",
         "LayerzeroImplementation",
@@ -82,7 +84,8 @@ contract Deploy is Script {
         "SuperRouter",
         "SuperPositions",
         "MultiTxProcessor",
-        "SuperRegistry"
+        "SuperRegistry",
+        "SuperRBAC"
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -307,6 +310,8 @@ contract Deploy is Script {
                 bytes32(bytes("LayerzeroImplementation"))
             ] = vars.lzImplementation;
 
+            SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
+
             /// @dev 3.2- deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation(
@@ -422,7 +427,11 @@ contract Deploy is Script {
 
             /// @dev 11 - Deploy SuperPositions
             vars.superPositions = address(
-                new SuperPositions(vars.chainId, "test.com/")
+                new SuperPositions(
+                    vars.chainId,
+                    "test.com/",
+                    vars.superRegistry
+                )
             );
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
@@ -434,6 +443,13 @@ contract Deploy is Script {
             );
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
+
+            /// @dev 13 - Deploy SuperRBAC
+            vars.superRBAC = address(
+                new SuperRBAC(vars.chainId, vars.superRegistry)
+            );
+            contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars
+                .superRBAC;
 
             /// @dev 13 - Super Registry setters
 
@@ -458,7 +474,16 @@ contract Deploy is Script {
                 vars.superPositions
             );
 
+            SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
+
             /// @dev 14 Setup RBAC
+            SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(
+                vars.coreStateRegistry
+            );
+
+            SuperRBAC(vars.superRBAC).grantSuperRouterRole(vars.superRouter);
+
+            /// old rbac
             CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
                 CORE_CONTRACTS_ROLE,
                 vars.superRouter
@@ -501,16 +526,6 @@ contract Deploy is Script {
             MultiTxProcessor(payable(vars.multiTxProcessor)).grantRole(
                 SWAPPER_ROLE,
                 deployer
-            );
-
-            TokenBank(payable(vars.tokenBank)).grantRole(
-                STATE_REGISTRY_ROLE,
-                vars.coreStateRegistry
-            );
-
-            SuperPositions(vars.superPositions).grantRole(
-                SUPER_ROUTER_ROLE,
-                vars.superRouter
             );
 
             /// @dev configures lzImplementation and hyperlane to super registry

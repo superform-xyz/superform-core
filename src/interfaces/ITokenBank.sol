@@ -14,21 +14,6 @@ interface ITokenBank {
 
     /// @dev is emitted when the super registry is updated.
     event SuperRegistryUpdated(address indexed superRegistry);
-    /*///////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev error thrown when the bridge tokens haven't arrived to destination
-    error BRIDGE_TOKENS_PENDING();
-
-    /// @dev error thrown when the safe gas param is incorrectly set
-    error INVALID_GAS_OVERRIDE();
-
-    /// @dev is emitted when an address is being set to 0
-    error ZERO_ADDRESS();
-
-    /// @dev is emitted when the chain id input is invalid.
-    error INVALID_INPUT_CHAIN_ID();
 
     /*///////////////////////////////////////////////////////////////
                         External Write Functions

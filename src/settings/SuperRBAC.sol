@@ -4,13 +4,14 @@ pragma solidity 0.8.19;
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
+import {Error} from "../utils/Error.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.
 /// @dev Contract to manage roles in the entire superForm protocol
 contract SuperRBAC is ISuperRBAC, AccessControl {
-    bytes32 public constant override STATE_REGISTRY_ROLE =
-        keccak256("STATE_REGISTRY_ROLE");
+    bytes32 public constant override CORE_STATE_REGISTRY_ROLE =
+        keccak256("CORE_STATE_REGISTRY_ROLE");
     bytes32 public constant override SUPER_ROUTER_ROLE =
         keccak256("SUPER_ROUTER_ROLE");
     bytes32 public constant override TOKEN_BANK_ROLE =
@@ -31,11 +32,15 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @param chainId_              Superform chain id
     /// @param superRegistry_ the superform registry contract
     constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         superRegistry = ISuperRegistry(superRegistry_);
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+
+        if (msg.sender != superRegistry.protocolAdmin())
+            revert Error.INVALID_DEPLOYER();
+
+        _setupRole(DEFAULT_ADMIN_ROLE, superRegistry.protocolAdmin());
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -43,13 +48,27 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRBAC
-    function grantStateRegistryRole(address stateRegistry_) external override {
-        grantRole(STATE_REGISTRY_ROLE, stateRegistry_);
+    function grantProtocolAdminRole(address admin_) external override {
+        grantRole(DEFAULT_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
-    function revokeStateRegistryRole(address stateRegistry_) external override {
-        revokeRole(STATE_REGISTRY_ROLE, stateRegistry_);
+    function revokeProtocolAdminRole(address admin_) external override {
+        revokeRole(DEFAULT_ADMIN_ROLE, admin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function grantCoreStateRegistryRole(
+        address coreStateRegistry_
+    ) external override {
+        grantRole(CORE_STATE_REGISTRY_ROLE, coreStateRegistry_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function revokeCoreStateRegistryRole(
+        address stateRegistry_
+    ) external override {
+        revokeRole(CORE_STATE_REGISTRY_ROLE, stateRegistry_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -131,10 +150,17 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRBAC
-    function hasStateRegistryRole(
-        address stateRegistry_
+    function hasProtocolAdminRole(
+        address admin_
     ) external view override returns (bool) {
-        return hasRole(STATE_REGISTRY_ROLE, stateRegistry_);
+        return hasRole(DEFAULT_ADMIN_ROLE, admin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasCoreStateRegistryRole(
+        address coreStateRegistry_
+    ) external view override returns (bool) {
+        return hasRole(CORE_STATE_REGISTRY_ROLE, coreStateRegistry_);
     }
 
     /// @inheritdoc ISuperRBAC

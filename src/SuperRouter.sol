@@ -12,14 +12,16 @@ import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
-import "./crosschain-liquidity/LiquidityHandler.sol";
+import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
+import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
+import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
 
 /// @title Super Router
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and deposit information to a remote execution chain.
 /// @dev extends Liquidity Handler.
-contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
+contract SuperRouter is ISuperRouter, LiquidityHandler {
     using SafeERC20 for IERC20;
     using Strings for string;
 
@@ -40,6 +42,15 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     /// @notice history of state sent across chains are used for debugging.
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint80 => AMBMessage) public txHistory;
+
+    modifier onlyProtocolAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
 
     /// @param chainId_              SuperForm chain id
     /// @param superRegistry_ the superform registry contract
@@ -83,7 +94,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     ) public payable override {
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
-        vars.srcSender = _msgSender();
+        vars.srcSender = msg.sender;
 
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
@@ -205,7 +216,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     ) public payable override {
         ActionLocalVars memory vars;
 
-        vars.srcSender = _msgSender();
+        vars.srcSender = msg.sender;
 
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
@@ -279,7 +290,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
         ActionLocalVars memory vars;
         InitSingleVaultData memory ambData;
 
-        vars.srcSender = _msgSender();
+        vars.srcSender = msg.sender;
 
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
@@ -344,7 +355,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     ) public payable override {
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
-        vars.srcSender = _msgSender();
+        vars.srcSender = msg.sender;
 
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
@@ -455,7 +466,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     ) public payable override {
         ActionLocalVars memory vars;
 
-        vars.srcSender = _msgSender();
+        vars.srcSender = msg.sender;
 
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
@@ -526,7 +537,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
         ActionLocalVars memory vars;
         InitSingleVaultData memory ambData;
 
-        vars.srcSender = _msgSender();
+        vars.srcSender = msg.sender;
 
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
@@ -620,7 +631,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
             msg.value
         );
 
-        /// @dev TEST-CASE: _msgSender() to whom we mint. use passed `admin` arg?
+        /// @dev TEST-CASE: msg.sender to whom we mint. use passed `admin` arg?
         ISuperPositions(superRegistry.superPositions()).mintSingleSP(
             srcSender_,
             ambData_.superFormId,
@@ -660,7 +671,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
             );
         }
 
-        /// @dev TEST-CASE: _msgSender() to whom we mint. use passed `admin` arg?
+        /// @dev TEST-CASE: msg.sender to whom we mint. use passed `admin` arg?
         ISuperPositions(superRegistry.superPositions()).mintBatchSP(
             srcSender_,
             ambData_.superFormIds,
@@ -890,18 +901,18 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
     function withdrawToken(
         address _tokenContract,
         uint256 _amount
-    ) external onlyOwner {
+    ) external onlyProtocolAdmin {
         IERC20 tokenContract = IERC20(_tokenContract);
 
         /// note: transfer the token from address of this contract
         /// note: to address of the user (executing the withdrawToken() function)
-        tokenContract.safeTransfer(owner(), _amount);
+        tokenContract.safeTransfer(superRegistry.protocolAdmin(), _amount);
     }
 
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function withdrawNativeToken(uint256 _amount) external onlyOwner {
-        payable(owner()).transfer(_amount);
+    function withdrawNativeToken(uint256 _amount) external onlyProtocolAdmin {
+        payable(superRegistry.protocolAdmin()).transfer(_amount);
     }
 
     /*///////////////////////////////////////////////////////////////
