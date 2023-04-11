@@ -119,3 +119,10 @@ struct ReturnSingleData {
     uint256 returnTxInfo; // tight packing of status, srcChainId, dstChainId and original txId
     uint256 amount;
 }
+
+struct AMBExtraData {
+    uint256 ambGas;
+    uint256[] proofAmbGas;
+    bytes ambExtraData;
+    bytes[] proofAmbExtraData;
+}

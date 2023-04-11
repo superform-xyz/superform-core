@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {PayloadState, AMBMessage, AMBFactoryMessage} from "../types/DataTypes.sol";
+import {PayloadState, AMBMessage, AMBFactoryMessage, AMBExtraData} from "../types/DataTypes.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import "../utils/DataPacking.sol";
 
@@ -64,13 +64,31 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     /// NOTE: dstChainId maps with the message amb's propreitory chain Id.
     function dispatchPayload(
         uint8 ambId_,
-        uint8[] memory secAmbId_,
+        uint8[] memory secAmbId_, /// @dev can merge them into a single id ?? should check gas viability here
         uint16 dstChainId_,
         bytes memory message_,
-        bytes memory extraData_
+        bytes memory extraData_ /// @dev can decode and get the amb specific info ??
     ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
-        _dispatchPayload(ambId_, dstChainId_, message_, extraData_);
-        _dispatchProof(ambId_, secAmbId_, dstChainId_, message_, extraData_);
+        AMBExtraData memory ambData = abi.decode(extraData_, (AMBExtraData));
+
+        _dispatchPayload(
+            ambId_,
+            dstChainId_,
+            message_,
+            ambData.ambGas,
+            ambData.ambExtraData
+        );
+        _dispatchProof(
+            ambId_,
+            secAmbId_,
+            dstChainId_,
+            message_,
+            ambData.proofAmbGas,
+            ambData.proofAmbExtraData
+        );
+
+        /// @dev finally refunds gas to tx.origin (FIXME: CHECK NO SECURITY ISSUE IN HERE)
+        payable(tx.origin).transfer(address(this).balance);
     }
 
     /// @dev allows core contracts to send data to all available destination chains
@@ -80,6 +98,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
+        /// @dev here the gas fees are variable dependent on chain, even primary has many
         _broadcastPayload(ambId_, message_, extraData_);
         _broadcastProof(ambId_, secAmbId_, message_, extraData_);
     }
@@ -130,6 +149,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         uint8 ambId_,
         uint16 dstChainId_,
         bytes memory message_,
+        uint256 gasFees_,
         bytes memory extraData_
     ) internal {
         IAmbImplementation ambImplementation = IAmbImplementation(
@@ -140,7 +160,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             revert INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.dispatchPayload{value: msg.value / 2}(
+        ambImplementation.dispatchPayload{value: gasFees_}(
             dstChainId_,
             message_,
             extraData_
@@ -152,7 +172,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         uint8[] memory secAmbId_,
         uint16 dstChainId_,
         bytes memory message_,
-        bytes memory extraData_
+        uint256[] memory gasFees_,
+        bytes[] memory extraData_
     ) internal {
         /// @dev generates the proof
         bytes memory proof = abi.encode(keccak256(message_));
@@ -177,10 +198,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
 
             /// @dev should figure out how to split message costs
             /// @notice for now works if the secAmbId loop lenght == 1
-            tempImpl.dispatchPayload{value: msg.value / 2}(
+            tempImpl.dispatchPayload{value: gasFees_[i]}(
                 dstChainId_,
                 abi.encode(data),
-                extraData_
+                extraData_[i]
             );
         }
     }
