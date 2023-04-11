@@ -12,17 +12,18 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
     uint16 public immutable chainId;
 
-    /// @dev main protocol modules
-    address public superRouter;
-    address public tokenBank;
-    address public superFormFactory;
-    address public coreStateRegistry;
-    address public factoryStateRegistry;
-    address public superPositions;
-
+    mapping(bytes32 id => address moduleAddress) private addresses;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
-    mapping(uint8 => address) public bridgeAddress;
-    mapping(uint8 => address) public ambAddress;
+    mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
+    mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
+
+    /// @dev main protocol modules
+    bytes32 private constant SUPER_ROUTER = "SUPER_ROUTER";
+    bytes32 private constant TOKEN_BANK = "TOKEN_BANK";
+    bytes32 private constant SUPERFORM_FACTORY = "SUPERFORM_FACTORY";
+    bytes32 private constant CORE_STATE_REGISTRY = "CORE_STATE_REGISTRY";
+    bytes32 private constant FACTORY_STATE_REGISTRY = "FACTORY_STATE_REGISTRY";
+    bytes32 private constant SUPER_POSITIONS = "SUPER_POSITIONS";
 
     /// @dev sets caller as the admin of the contract.
     /// @param chainId_ the superform chain id this registry is deployed on
@@ -38,14 +39,25 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRegistry
+    function setAddress(
+        bytes32 id,
+        address newAddress
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        address oldAddress = addresses[id];
+        addresses[id] = newAddress;
+        emit AddressSet(id, oldAddress, newAddress);
+    }
+
+    /// @inheritdoc ISuperRegistry
     function setSuperRouter(
         address superRouter_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superRouter_ == address(0)) revert ZERO_ADDRESS();
 
-        superRouter = superRouter_;
+        address oldSuperRouter = addresses[SUPER_ROUTER];
+        addresses[SUPER_ROUTER] = superRouter_;
 
-        emit SuperRouterUpdated(superRouter_);
+        emit SuperRouterUpdated(oldSuperRouter, superRouter_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -54,9 +66,10 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (tokenBank_ == address(0)) revert ZERO_ADDRESS();
 
-        tokenBank = tokenBank_;
+        address oldTokenBank = addresses[TOKEN_BANK];
+        addresses[TOKEN_BANK] = tokenBank_;
 
-        emit TokenBankUpdated(tokenBank_);
+        emit TokenBankUpdated(oldTokenBank, tokenBank_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -65,9 +78,10 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superFormFactory_ == address(0)) revert ZERO_ADDRESS();
 
-        superFormFactory = superFormFactory_;
+        address oldSuperFormFactory = addresses[SUPERFORM_FACTORY];
+        addresses[SUPERFORM_FACTORY] = superFormFactory_;
 
-        emit SuperFormFactoryUpdated(superFormFactory_);
+        emit SuperFormFactoryUpdated(oldSuperFormFactory, superFormFactory_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -76,9 +90,10 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (coreStateRegistry_ == address(0)) revert ZERO_ADDRESS();
 
-        coreStateRegistry = coreStateRegistry_;
+        address oldCoreStateRegistry = addresses[CORE_STATE_REGISTRY];
+        addresses[CORE_STATE_REGISTRY] = coreStateRegistry_;
 
-        emit CoreStateRegistryUpdated(coreStateRegistry_);
+        emit CoreStateRegistryUpdated(oldCoreStateRegistry, coreStateRegistry_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -87,9 +102,25 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (factoryStateRegistry_ == address(0)) revert ZERO_ADDRESS();
 
-        factoryStateRegistry = factoryStateRegistry_;
+        address oldFactoryStateRegistry = addresses[FACTORY_STATE_REGISTRY];
+        addresses[FACTORY_STATE_REGISTRY] = factoryStateRegistry_;
 
-        emit FactoryStateRegistryUpdated(factoryStateRegistry_);
+        emit FactoryStateRegistryUpdated(
+            oldFactoryStateRegistry,
+            factoryStateRegistry_
+        );
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setSuperPositions(
+        address superPositions_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (superPositions_ == address(0)) revert ZERO_ADDRESS();
+
+        address oldSuperPositions = addresses[SUPER_POSITIONS];
+        addresses[SUPER_POSITIONS] = superPositions_;
+
+        emit SuperPositionsUpdated(oldSuperPositions, superPositions_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -102,7 +133,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
             uint8 y = bridgeId_[i];
             if (x == address(0)) revert ZERO_ADDRESS();
 
-            bridgeAddress[y] = x;
+            bridgeAddresses[y] = x;
             emit SetBridgeAddress(y, x);
         }
     }
@@ -118,20 +149,9 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
             uint8 y = ambId_[i];
             if (x == address(0)) revert ZERO_ADDRESS();
 
-            ambAddress[y] = x;
+            ambAddresses[y] = x;
             emit SetAmbAddress(y, x);
         }
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function setSuperPositions(
-        address superPositions_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (superPositions_ == address(0)) revert ZERO_ADDRESS();
-
-        superPositions = superPositions_;
-
-        emit FactoryStateRegistryUpdated(superPositions_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -139,16 +159,76 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRegistry
+    function getAddress(bytes32 id) public view override returns (address) {
+        return addresses[id];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function superRouter()
+        external
+        view
+        override
+        returns (address superRouter_)
+    {
+        superRouter_ = getAddress(SUPER_ROUTER);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function tokenBank() external view override returns (address tokenBank_) {
+        tokenBank_ = getAddress(TOKEN_BANK);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function superFormFactory()
+        external
+        view
+        override
+        returns (address superFormFactory_)
+    {
+        superFormFactory_ = getAddress(SUPERFORM_FACTORY);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function coreStateRegistry()
+        external
+        view
+        override
+        returns (address coreStateRegistry_)
+    {
+        coreStateRegistry_ = getAddress(CORE_STATE_REGISTRY);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function factoryStateRegistry()
+        external
+        view
+        override
+        returns (address factoryStateRegistry_)
+    {
+        factoryStateRegistry_ = getAddress(FACTORY_STATE_REGISTRY);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function superPositions()
+        external
+        view
+        override
+        returns (address superPositions_)
+    {
+        superPositions_ = getAddress(SUPER_POSITIONS);
+    }
+
+    /// @inheritdoc ISuperRegistry
     function getBridgeAddress(
         uint8 bridgeId_
     ) external view override returns (address bridgeAddress_) {
-        bridgeAddress_ = bridgeAddress[bridgeId_];
+        bridgeAddress_ = bridgeAddresses[bridgeId_];
     }
 
     /// @inheritdoc ISuperRegistry
     function getAmbAddress(
         uint8 ambId_
     ) external view override returns (address ambAddress_) {
-        ambAddress_ = ambAddress[ambId_];
+        ambAddress_ = ambAddresses[ambId_];
     }
 }
