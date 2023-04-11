@@ -75,13 +75,14 @@ abstract contract BaseSetup is DSTest, Test {
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm
-    uint256[] public FORM_BEACON_IDS = [uint256(1), 2];
+    uint256[] public FORM_BEACON_IDS = [uint256(1), uint256(2)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault"];
 
     bytes[] public vaultBytecodes;
     // formbeacon id => vault name
     mapping(uint256 formBeaconId => string[] names) VAULT_NAMES;
     // chainId => formbeacon id => vault
+    /// FIXME: We need to map individual formBeaconId to individual vault to have access to ERC4626Form previewFunctions
     mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults))
         public vaults;
     // chainId => formbeacon id => vault id

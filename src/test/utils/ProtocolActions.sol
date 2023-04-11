@@ -27,7 +27,8 @@ abstract contract ProtocolActions is BaseSetup {
     mapping(uint16 chainId => mapping(uint256 index => uint256[] action))
         public MAX_SLIPPAGE;
 
-    TestAction[] actions;
+    /// NOTE: Now that we can pass individual actions, this array is only useful for more extended simulations
+    TestAction[] public actions;
 
     function setUp() public virtual override {
         super.setUp();
@@ -38,6 +39,9 @@ abstract contract ProtocolActions is BaseSetup {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev STEP 1: Build Request Data
+    /// NOTE: This whole step should be looked upon as PROTOCOL action, not USER action
+    /// Request is built for user, but all of operations here would be performed by protocol and not even it's smart contracts
+    /// It's worth checking out if we are not making to many of the assumptions here too.
     function _stage1_buildReqData(
         TestAction memory action,
         uint256 actionIndex
@@ -52,6 +56,7 @@ abstract contract ProtocolActions is BaseSetup {
         if (action.revertError != bytes4(0) && action.testType == TestType.Pass)
             revert MISMATCH_TEST_TYPE();
 
+        /// FIXME: Separate concerns in tests, this revert is for protocol level operation
         if (
             (action.testType != TestType.RevertUpdateStateRBAC &&
                 action.revertRole != bytes32(0)) ||
@@ -79,15 +84,16 @@ abstract contract ProtocolActions is BaseSetup {
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
-
             (
                 vars.targetSuperFormIds,
                 vars.underlyingSrcToken,
                 vars.vaultMock
             ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex);
             vars.toDst = new address[](vars.targetSuperFormIds.length);
+
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
             /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
+            
             for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
                 if (
                     CHAIN_0 == DST_CHAINS[i] ||
@@ -127,15 +133,22 @@ abstract contract ProtocolActions is BaseSetup {
                     )
                 );
             } else {
-                if (
-                    !((vars.underlyingSrcToken.length ==
-                        vars.targetSuperFormIds.length) &&
-                        (vars.underlyingSrcToken.length ==
-                            vars.amounts.length) &&
-                        (vars.underlyingSrcToken.length ==
-                            vars.maxSlippage.length) &&
-                        (vars.underlyingSrcToken.length == 1))
-                ) revert INVALID_AMOUNTS_LENGTH();
+
+                /// FIXME: NOTE: Shouldn't we validate that at contract level?
+                /// This reverting may give us invalid sense of security. Contract should revert here, not test.
+                
+                // if (
+                //     !((vars.underlyingSrcToken.length ==
+                //         vars.targetSuperFormIds.length) &&
+
+                //         (vars.underlyingSrcToken.length ==
+                //             vars.amounts.length) &&
+
+                //         (vars.underlyingSrcToken.length ==
+                //             vars.maxSlippage.length) &&
+
+                //         (vars.underlyingSrcToken.length == 1))
+                // ) revert INVALID_AMOUNTS_LENGTH();
 
                 SingleVaultCallDataArgs
                     memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
@@ -358,7 +371,6 @@ abstract contract ProtocolActions is BaseSetup {
         );
 
         CoreStateRegistry stateRegistry;
-
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].initialFork = vm.activeFork();
             aV[i].toChainId = DST_CHAINS[i];
@@ -430,7 +442,6 @@ abstract contract ProtocolActions is BaseSetup {
         success = true;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].toChainId = DST_CHAINS[i];
-
             if (CHAIN_0 != aV[i].toChainId) {
                 if (action.action == Actions.Deposit) {
                     unchecked {
@@ -840,6 +851,8 @@ abstract contract ProtocolActions is BaseSetup {
             revert INVALID_TARGETS();
 
         for (uint256 i = 0; i < underlyingTokenIds_.length; i++) {
+            /// NOTE/FIXME: This should be allowed to revert (or not) at the core level.
+            /// Can produce false positive. (What if we revert here, but not in the core)
             if (formKinds_[i] > FORM_BEACON_IDS.length)
                 revert WRONG_FORMBEACON_ID();
             if (underlyingTokenIds_[i] > UNDERLYING_TOKENS.length)
