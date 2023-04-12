@@ -9,6 +9,7 @@ import {InitSingleVaultData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
+import {Error} from "./utils/Error.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
@@ -62,9 +63,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         address superRegistry_,
         address vault_
     ) external initializer {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
         if (ISuperRegistry(superRegistry_) != superRegistry)
-            revert INVALID_SUPER_REGISTRY();
+            revert Error.NOT_SUPER_REGISTRY();
         chainId = chainId_;
         vault = vault_;
     }
@@ -98,7 +99,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         InitSingleVaultData memory singleVaultData_
     ) external payable override returns (uint256 dstAmount) {
         if (msg.sender != superRegistry.superRouter())
-            revert NOT_SUPER_ROUTER();
+            revert Error.NOT_SUPER_ROUTER();
         dstAmount = _directDepositIntoVault(singleVaultData_);
     }
 
@@ -111,7 +112,8 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) external virtual override returns (uint256 dstAmount) {
-        if (msg.sender != superRegistry.tokenBank()) revert NOT_TOKEN_BANK();
+        if (msg.sender != superRegistry.tokenBank())
+            revert Error.NOT_TOKEN_BANK();
         dstAmount = _xChainDepositIntoVault(singleVaultData_);
     }
 
@@ -124,7 +126,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         InitSingleVaultData memory singleVaultData_
     ) external override returns (uint256 dstAmount) {
         if (msg.sender != superRegistry.superRouter())
-            revert NOT_SUPER_ROUTER();
+            revert Error.NOT_SUPER_ROUTER();
         dstAmount = _directWithdrawFromVault(singleVaultData_);
     }
 
@@ -135,7 +137,8 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     ) external override returns (uint256[] memory dstAmounts) {
-        if (msg.sender != superRegistry.tokenBank()) revert NOT_TOKEN_BANK();
+        if (msg.sender != superRegistry.tokenBank())
+            revert Error.NOT_TOKEN_BANK();
 
         /// @dev FIXME: not returning anything YET
         _xChainWithdrawFromVault(singleVaultData_);
@@ -278,7 +281,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev allows admin to withdraw lost tokens in the smart contract.
     function withdrawToken(address tokenContract_, uint256 amount) external {
         if (msg.sender != superRegistry.superFormFactory())
-            revert NOT_SUPER_FORM_FACTORY();
+            revert Error.NOT_SUPER_FORM_FACTORY();
         ERC20 tokenContract = ERC20(tokenContract_);
 
         /// note: transfer the token from address of this contract
@@ -291,7 +294,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
     function withdrawNativeToken(uint256 amount) external {
         if (msg.sender != superRegistry.superFormFactory())
-            revert NOT_SUPER_FORM_FACTORY();
+            revert Error.NOT_SUPER_FORM_FACTORY();
         payable(msg.sender).transfer(amount);
     }
 }

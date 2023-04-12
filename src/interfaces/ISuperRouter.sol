@@ -35,40 +35,6 @@ interface ISuperRouter {
     event SuperRegistryUpdated(address indexed superRegistry);
 
     /*///////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev is emitted when the chain id input is invalid.
-    error INVALID_INPUT_CHAIN_ID();
-
-    /// @dev is emitted when the amb ids input is invalid.
-    error INVALID_AMB_IDS();
-
-    /// @dev is emitted when the vaults data is invalid
-    error INVALID_SUPERFORMS_DATA();
-
-    /// @dev is emitted when the chain ids data is invalid
-    error INVALID_CHAIN_IDS();
-
-    /// @dev is emitted if anything other than state Registry calls stateSync
-    error REQUEST_DENIED();
-
-    /// @dev is emitted when the payload is invalid
-    error INVALID_PAYLOAD();
-
-    /// @dev is emitted if srchain ids mismatch in state sync
-    error SRC_CHAIN_IDS_MISMATCH();
-
-    /// @dev is emitted if dsthain ids mismatch in state sync
-    error DST_CHAIN_IDS_MISMATCH();
-
-    /// @dev is emitted if the payload status is invalid
-    error INVALID_PAYLOAD_STATUS();
-
-    /// @dev is emitted when an address is being set to 0
-    error ZERO_ADDRESS();
-
-    /*///////////////////////////////////////////////////////////////
                         EXTERNAL DEPOSIT FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 

@@ -42,7 +42,7 @@ contract TokenBank is ITokenBank {
             !ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(
                 msg.sender
             )
-        ) revert Error.NOT_STATE_REGISTRY();
+        ) revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 

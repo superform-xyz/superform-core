@@ -6,6 +6,7 @@ import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
+import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 /// @title Cross-Chain AMB Aggregator
@@ -45,7 +46,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256[] calldata finalAmounts_
     ) external virtual override onlyRole(UPDATER_ROLE) {
         if (payloadId_ > payloadsCount) {
-            revert INVALID_PAYLOAD_ID();
+            revert Error.INVALID_PAYLOAD_ID();
         }
 
         AMBMessage memory payloadInfo = abi.decode(
@@ -60,15 +61,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             txType != uint256(TransactionType.DEPOSIT) &&
             callbackType != uint256(CallbackType.INIT)
         ) {
-            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
         }
 
         if (payloadTracking[payloadId_] != PayloadState.STORED) {
-            revert INVALID_PAYLOAD_STATE();
+            revert Error.INVALID_PAYLOAD_STATE();
         }
 
         if (!multi) {
-            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
         }
 
         InitMultiVaultData memory multiVaultData = abi.decode(
@@ -80,7 +81,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 l2 = finalAmounts_.length;
 
         if (l1 != l2) {
-            revert INVALID_ARR_LENGTH();
+            revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
         }
 
         for (uint256 i = 0; i < l1; i++) {
@@ -88,14 +89,14 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             uint256 maxAmount = multiVaultData.amounts[i];
 
             if (newAmount > maxAmount) {
-                revert NEGATIVE_SLIPPAGE();
+                revert Error.NEGATIVE_SLIPPAGE();
             }
 
             uint256 minAmount = (maxAmount *
                 (10000 - multiVaultData.maxSlippage[i])) / 10000;
 
             if (newAmount < minAmount) {
-                revert SLIPPAGE_OUT_OF_BOUNDS();
+                revert Error.SLIPPAGE_OUT_OF_BOUNDS();
             }
         }
 
@@ -118,7 +119,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 finalAmount_
     ) external virtual override onlyRole(UPDATER_ROLE) {
         if (payloadId_ > payloadsCount) {
-            revert INVALID_PAYLOAD_ID();
+            revert Error.INVALID_PAYLOAD_ID();
         }
 
         AMBMessage memory payloadInfo = abi.decode(
@@ -133,15 +134,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             txType != uint256(TransactionType.DEPOSIT) &&
             callbackType != uint256(CallbackType.INIT)
         ) {
-            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
         }
 
         if (payloadTracking[payloadId_] != PayloadState.STORED) {
-            revert INVALID_PAYLOAD_STATE();
+            revert Error.INVALID_PAYLOAD_STATE();
         }
 
         if (multi) {
-            revert INVALID_PAYLOAD_UPDATE_REQUEST();
+            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
         }
 
         InitSingleVaultData memory singleVaultData = abi.decode(
@@ -153,14 +154,14 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 maxAmount = singleVaultData.amount;
 
         if (newAmount > maxAmount) {
-            revert NEGATIVE_SLIPPAGE();
+            revert Error.NEGATIVE_SLIPPAGE();
         }
 
         uint256 minAmount = (maxAmount *
             (10000 - singleVaultData.maxSlippage)) / 10000;
 
         if (newAmount < minAmount) {
-            revert SLIPPAGE_OUT_OF_BOUNDS();
+            revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
 
         singleVaultData.amount = finalAmount_;
@@ -180,18 +181,18 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 payloadId_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         if (payloadId_ > payloadsCount) {
-            revert INVALID_PAYLOAD_ID();
+            revert Error.INVALID_PAYLOAD_ID();
         }
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert INVALID_PAYLOAD_STATE();
+            revert Error.INVALID_PAYLOAD_STATE();
         }
 
         bytes memory _payload = payload[payloadId_];
         bytes memory _proof = abi.encode(keccak256(_payload));
 
         if (messageQuorum[_proof] < REQUIRED_QUORUM) {
-            revert QUORUM_NOT_REACHED();
+            revert Error.QUORUM_NOT_REACHED();
         }
 
         AMBMessage memory payloadInfo = abi.decode(_payload, (AMBMessage));
@@ -215,7 +216,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
     }
 
-    /// @dev allows accounts with {PROCESSOR_ROLE} to revert payload that fail to revert state changes on source chain.
+    /// @dev allows accounts with {PROCESSOR_ROLE} to revert Error.payload that fail to revert Error.state changes on source chain.
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// @param ambId_ is the identifier of the cross-chain amb to be used to send the acknowledgement.
     /// @param extraData_ is any message amb specific override information.
@@ -226,11 +227,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         bytes memory extraData_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         if (payloadId_ > payloadsCount) {
-            revert INVALID_PAYLOAD_ID();
+            revert Error.INVALID_PAYLOAD_ID();
         }
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert INVALID_PAYLOAD_STATE();
+            revert Error.INVALID_PAYLOAD_STATE();
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
@@ -249,7 +250,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             );
 
             if (chainId != _getDestinationChain(multiVaultData.superFormIds[0]))
-                revert INVALID_PAYLOAD_STATE();
+                revert Error.INVALID_PAYLOAD_STATE();
         } else {
             InitSingleVaultData memory singleVaultData = abi.decode(
                 payloadInfo.params,
@@ -257,10 +258,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             );
 
             if (chainId != _getDestinationChain(singleVaultData.superFormId))
-                revert INVALID_PAYLOAD_STATE();
+                revert Error.INVALID_PAYLOAD_STATE();
         }
 
-        /// NOTE: Send `data` back to source based on AmbID to revert the state.
+        /// NOTE: Send `data` back to source based on AmbID to revert Error.the state.
         /// NOTE: chain_ids conflict should be addresses here.
         // amb[ambId_].dispatchPayload(formData.dstChainId_, message_, extraData_);
     }
@@ -297,7 +298,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     ) internal {
         if (callbackType_ == uint256(CallbackType.INIT)) {
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
-                revert PAYLOAD_NOT_UPDATED();
+                revert Error.PAYLOAD_NOT_UPDATED();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
@@ -311,7 +312,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }(multiVaultData);
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
-                revert INVALID_PAYLOAD_STATE();
+                revert Error.INVALID_PAYLOAD_STATE();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
@@ -354,7 +355,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 (InitSingleVaultData)
             );
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
-                revert PAYLOAD_NOT_UPDATED();
+                revert Error.PAYLOAD_NOT_UPDATED();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
@@ -363,7 +364,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             );
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
-                revert INVALID_PAYLOAD_STATE();
+                revert Error.INVALID_PAYLOAD_STATE();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 

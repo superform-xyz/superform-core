@@ -6,6 +6,7 @@ import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {IFactoryStateRegistry} from "../interfaces/IFactoryStateRegistry.sol";
 import {PayloadState} from "../types/DataTypes.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {Error} from "../utils/Error.sol";
 
 contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
@@ -44,11 +45,11 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
         /// TODO sync factory data from crosschain
         if (payloadId_ > payloadsCount) {
-            revert INVALID_PAYLOAD_ID();
+            revert Error.INVALID_PAYLOAD_ID();
         }
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert INVALID_PAYLOAD_STATE();
+            revert Error.INVALID_PAYLOAD_STATE();
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;

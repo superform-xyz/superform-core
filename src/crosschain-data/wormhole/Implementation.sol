@@ -9,6 +9,7 @@ import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
 
 /// @title Wormhole implementation contract
@@ -90,7 +91,7 @@ contract WormholeImplementation is
         );
 
         if (msg.sender != address(coreRegistry)) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
         bytes memory payload = abi.encode(msg.sender, dstChainId_, message_);
         ExtraData memory eData = abi.decode(extraData_, (ExtraData));
@@ -137,12 +138,12 @@ contract WormholeImplementation is
         /// @notice sender validation
         /// @note validation always fail if CREATE3 / CREATE2 is not used
         if (vm.emitterAddress != castAddr(address(this))) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
 
         /// @notice uniqueness validation
         if (processedMessages[vm.hash]) {
-            revert DUPLICATE_PAYLOAD();
+            revert Error.DUPLICATE_PAYLOAD();
         }
 
         processedMessages[vm.hash] = true;
@@ -182,7 +183,7 @@ contract WormholeImplementation is
         uint16 ambChainId_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superChainId_ == 0 || ambChainId_ == 0) {
-            revert INVALID_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         ambChainId[superChainId_] = ambChainId_;
@@ -198,7 +199,7 @@ contract WormholeImplementation is
         IWormholeRelayer relayer_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (address(relayer_) == address(0)) {
-            revert ZERO_ADDRESS();
+            revert Error.ZERO_ADDRESS();
         }
 
         relayer = relayer_;

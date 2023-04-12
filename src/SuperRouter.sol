@@ -55,7 +55,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     /// @param chainId_              SuperForm chain id
     /// @param superRegistry_ the superform registry contract
     constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         superRegistry = ISuperRegistry(superRegistry_);
@@ -100,12 +100,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.dstChainId = req.dstChainId;
 
         if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-            revert INVALID_AMB_IDS();
+            revert Error.INVALID_AMB_IDS();
 
         /// @dev validate superFormsData
 
         if (!_validateSuperFormsDepositData(req.superFormsData))
-            revert INVALID_SUPERFORMS_DATA();
+            revert Error.INVALID_SUPERFORMS_DATA();
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -222,14 +222,15 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.dstChainId = req.dstChainId;
 
         if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-            revert INVALID_AMB_IDS();
+            revert Error.INVALID_AMB_IDS();
 
-        if (vars.srcChainId == vars.dstChainId) revert INVALID_CHAIN_IDS();
+        if (vars.srcChainId == vars.dstChainId)
+            revert Error.INVALID_CHAIN_IDS();
 
         /// @dev validate superFormsData
 
         if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
-            revert INVALID_SUPERFORMS_DATA();
+            revert Error.INVALID_SUPERFORMS_DATA();
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -295,12 +296,13 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (vars.srcChainId != vars.dstChainId) revert INVALID_CHAIN_IDS();
+        if (vars.srcChainId != vars.dstChainId)
+            revert Error.INVALID_CHAIN_IDS();
 
         /// @dev validate superFormsData
 
         if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
-            revert INVALID_SUPERFORMS_DATA();
+            revert Error.INVALID_SUPERFORMS_DATA();
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -361,12 +363,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.dstChainId = req.dstChainId;
 
         if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-            revert INVALID_AMB_IDS();
+            revert Error.INVALID_AMB_IDS();
 
         /// @dev validate superFormsData
 
         if (!_validateSuperFormsWithdrawData(req.superFormsData))
-            revert INVALID_SUPERFORMS_DATA();
+            revert Error.INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
         ISuperPositions(superRegistry.superPositions()).burnBatchSP(
@@ -472,14 +474,15 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.dstChainId = req.dstChainId;
 
         if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-            revert INVALID_AMB_IDS();
+            revert Error.INVALID_AMB_IDS();
 
-        if (vars.srcChainId == vars.dstChainId) revert INVALID_CHAIN_IDS();
+        if (vars.srcChainId == vars.dstChainId)
+            revert Error.INVALID_CHAIN_IDS();
 
         /// @dev validate superFormsData
 
         if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
-            revert INVALID_SUPERFORMS_DATA();
+            revert Error.INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
         ISuperPositions(superRegistry.superPositions()).burnSingleSP(
@@ -542,12 +545,13 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (vars.srcChainId != vars.dstChainId) revert INVALID_CHAIN_IDS();
+        if (vars.srcChainId != vars.dstChainId)
+            revert Error.INVALID_CHAIN_IDS();
 
         /// @dev validate superFormsData
 
         if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
-            revert INVALID_SUPERFORMS_DATA();
+            revert Error.INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
         ISuperPositions(superRegistry.superPositions()).burnSingleSP(
@@ -755,14 +759,14 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     /// @param data_ is the received information to be processed.
     function stateMultiSync(AMBMessage memory data_) external payable override {
         if (msg.sender != superRegistry.coreStateRegistry())
-            revert REQUEST_DENIED();
+            revert Error.REQUEST_DENIED();
 
         (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
             data_.txInfo
         );
 
         if (callbackType != uint256(CallbackType.RETURN))
-            revert INVALID_PAYLOAD();
+            revert Error.INVALID_PAYLOAD();
 
         ReturnMultiData memory returnData = abi.decode(
             data_.params,
@@ -776,7 +780,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
-        if (!multi) revert INVALID_PAYLOAD();
+        if (!multi) revert Error.INVALID_PAYLOAD();
 
         (
             bool status,
@@ -793,12 +797,13 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             multiVaultData.txData
         );
 
-        if (returnDataSrcChainId != srcChainId) revert SRC_CHAIN_IDS_MISMATCH();
+        if (returnDataSrcChainId != srcChainId)
+            revert Error.SRC_CHAIN_IDS_MISMATCH();
 
         if (
             returnDataDstChainId !=
             _getDestinationChain(multiVaultData.superFormIds[0])
-        ) revert DST_CHAIN_IDS_MISMATCH();
+        ) revert Error.DST_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && status) {
             ISuperPositions(superRegistry.superPositions()).mintBatchSP(
@@ -815,7 +820,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 ""
             );
         } else {
-            revert INVALID_PAYLOAD_STATUS();
+            revert Error.INVALID_PAYLOAD_STATUS();
         }
 
         emit Completed(returnDataTxId);
@@ -825,14 +830,14 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     /// @param data_ is the received information to be processed.
     function stateSync(AMBMessage memory data_) external payable override {
         if (msg.sender != superRegistry.coreStateRegistry())
-            revert REQUEST_DENIED();
+            revert Error.REQUEST_DENIED();
 
         (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
             data_.txInfo
         );
 
         if (callbackType != uint256(CallbackType.RETURN))
-            revert INVALID_PAYLOAD();
+            revert Error.INVALID_PAYLOAD();
 
         ReturnSingleData memory returnData = abi.decode(
             data_.params,
@@ -845,7 +850,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         AMBMessage memory stored = txHistory[returnTxId];
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
-        if (multi) revert INVALID_PAYLOAD();
+        if (multi) revert Error.INVALID_PAYLOAD();
 
         (
             bool status,
@@ -862,12 +867,13 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             singleVaultData.txData
         );
 
-        if (returnDataSrcChainId != srcChainId) revert SRC_CHAIN_IDS_MISMATCH();
+        if (returnDataSrcChainId != srcChainId)
+            revert Error.SRC_CHAIN_IDS_MISMATCH();
 
         if (
             returnDataDstChainId !=
             _getDestinationChain(singleVaultData.superFormId)
-        ) revert DST_CHAIN_IDS_MISMATCH();
+        ) revert Error.DST_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && status) {
             ISuperPositions(superRegistry.superPositions()).mintSingleSP(
@@ -885,7 +891,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 ""
             );
         } else {
-            revert INVALID_PAYLOAD_STATUS();
+            revert Error.INVALID_PAYLOAD_STATUS();
         }
 
         emit Completed(returnDataTxId);

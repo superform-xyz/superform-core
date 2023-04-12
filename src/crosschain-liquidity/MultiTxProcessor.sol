@@ -5,6 +5,7 @@ import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IMultiTxProcessor} from "../interfaces/IMultiTxProcessor.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {Error} from "../utils/Error.sol";
 
 /// @title MultiTxProcessor
 /// @author Zeropoint Labs.
@@ -28,7 +29,7 @@ contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
     /// @param chainId_              SuperForm chain id
     /// @param superRegistry_        SuperForm registry contract
     constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         superRegistry = ISuperRegistry(superRegistry_);

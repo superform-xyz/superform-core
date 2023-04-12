@@ -5,7 +5,6 @@ import {ERC1155s} from "ERC1155s/src/ERC1155s.sol";
 import {ERC1155} from "solmate/tokens/ERC1155.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
-
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {Error} from "./utils/Error.sol";
 
@@ -50,7 +49,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         string memory dynamicURI_,
         address superRegistry_
     ) {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         dynamicURI = dynamicURI_;

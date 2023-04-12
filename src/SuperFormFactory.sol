@@ -10,6 +10,7 @@ import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
 import {FormBeacon} from "./forms/FormBeacon.sol";
 import {BaseForm} from "./BaseForm.sol";
+import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
 
 /// @title SuperForms Factory
@@ -41,7 +42,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /// @param chainId_ the superform? chain id this factory is deployed on
     /// @param superRegistry_ the superform registry contract
     constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         superRegistry = ISuperRegistry(superRegistry_);
@@ -57,16 +58,16 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         address formImplementation_,
         uint256 formBeaconId_
     ) public override onlyRole(DEFAULT_ADMIN_ROLE) returns (address beacon) {
-        if (formImplementation_ == address(0)) revert ZERO_ADDRESS();
+        if (formImplementation_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(formImplementation_))
-            revert ERC165_UNSUPPORTED();
+            revert Error.ERC165_UNSUPPORTED();
         if (
             !ERC165Checker.supportsInterface(
                 formImplementation_,
                 type(IBaseForm).interfaceId
             )
-        ) revert FORM_INTERFACE_UNSUPPORTED();
-        if (formBeaconId_ > MAX_FORM_ID) revert INVALID_FORM_ID();
+        ) revert Error.FORM_INTERFACE_UNSUPPORTED();
+        if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
         /// @dev TODO - should we predict beacon address?
         beacon = address(new FormBeacon(formImplementation_));
@@ -100,9 +101,9 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         returns (uint256 superFormId_, address superForm_)
     {
         address tFormBeacon = formBeacon[formBeaconId_];
-        if (vault_ == address(0)) revert ZERO_ADDRESS();
-        if (tFormBeacon == address(0)) revert FORM_DOES_NOT_EXIST();
-        if (formBeaconId_ > MAX_FORM_ID) revert INVALID_FORM_ID();
+        if (vault_ == address(0)) revert Error.ZERO_ADDRESS();
+        if (tFormBeacon == address(0)) revert Error.FORM_DOES_NOT_EXIST();
+        if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
         /// @dev TODO - should we predict superform address?
         /// @dev we just grab initialize selector from baseform, don't need to grab from a specific form
@@ -149,16 +150,17 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         uint256 formBeaconId_,
         address newFormLogic_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (newFormLogic_ == address(0)) revert ZERO_ADDRESS();
+        if (newFormLogic_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(newFormLogic_))
-            revert ERC165_UNSUPPORTED();
+            revert Error.ERC165_UNSUPPORTED();
         if (
             !ERC165Checker.supportsInterface(
                 newFormLogic_,
                 type(IBaseForm).interfaceId
             )
-        ) revert FORM_INTERFACE_UNSUPPORTED();
-        if (formBeacon[formBeaconId_] == address(0)) revert INVALID_FORM_ID();
+        ) revert Error.FORM_INTERFACE_UNSUPPORTED();
+        if (formBeacon[formBeaconId_] == address(0))
+            revert Error.INVALID_FORM_ID();
 
         FormBeacon(formBeacon[formBeaconId_]).update(newFormLogic_);
     }
@@ -166,7 +168,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /// @inheritdoc ISuperFormFactory
     function stateSync(bytes memory data_) external payable override {
         if (msg.sender != superRegistry.factoryStateRegistry())
-            revert INVALID_CALLER();
+            revert Error.NOT_FACTORY_STATE_REGISTRY();
 
         AMBMessage memory message = abi.decode(data_, (AMBMessage));
 

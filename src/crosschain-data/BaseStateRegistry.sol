@@ -6,6 +6,7 @@ import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {PayloadState, AMBMessage, AMBFactoryMessage} from "../types/DataTypes.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 /// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
@@ -44,7 +45,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
 
     ///@dev set up admin during deployment.
     constructor(uint16 chainId_, ISuperRegistry superRegistry_) {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         superRegistry = superRegistry_;
@@ -115,7 +116,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         uint256 payloadId_
     ) external payable virtual override onlyRole(PROCESSOR_ROLE) {}
 
-    /// @dev allows accounts with {PROCESSOR_ROLE} to revert payload that fail to revert state changes on source chain.
+    /// @dev allows accounts with {PROCESSOR_ROLE} to revert Error.payload that fail to revert Error.state changes on source chain.
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// @param ambId_ is the identifier of the cross-chain amb to be used to send the acknowledgement.
     /// @param extraData_ is any message amb specific override information.
@@ -137,7 +138,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         );
 
         if (address(ambImplementation) == address(0)) {
-            revert INVALID_BRIDGE_ID();
+            revert Error.INVALID_BRIDGE_ID();
         }
 
         ambImplementation.dispatchPayload{value: msg.value / 2}(
@@ -164,7 +165,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             uint8 tempAmbId = secAmbId_[i];
 
             if (tempAmbId == ambId_) {
-                revert INVALID_PROOF_BRIDGE_ID();
+                revert Error.INVALID_PROOF_BRIDGE_ID();
             }
 
             IAmbImplementation tempImpl = IAmbImplementation(
@@ -172,7 +173,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             );
 
             if (address(tempImpl) == address(0)) {
-                revert INVALID_BRIDGE_ID();
+                revert Error.INVALID_BRIDGE_ID();
             }
 
             /// @dev should figure out how to split message costs
@@ -200,7 +201,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         );
 
         if (address(ambImplementation) == address(0)) {
-            revert INVALID_BRIDGE_ID();
+            revert Error.INVALID_BRIDGE_ID();
         }
 
         ambImplementation.broadcastPayload{value: msg.value / 2}(
@@ -226,7 +227,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             uint8 tempAmbId = secAmbId_[i];
 
             if (tempAmbId == ambId_) {
-                revert INVALID_PROOF_BRIDGE_ID();
+                revert Error.INVALID_PROOF_BRIDGE_ID();
             }
 
             IAmbImplementation tempImpl = IAmbImplementation(
@@ -234,7 +235,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             );
 
             if (address(tempImpl) == address(0)) {
-                revert INVALID_BRIDGE_ID();
+                revert Error.INVALID_BRIDGE_ID();
             }
 
             /// @dev should figure out how to split message costs

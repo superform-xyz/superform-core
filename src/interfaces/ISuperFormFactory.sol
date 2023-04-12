@@ -3,37 +3,6 @@ pragma solidity 0.8.19;
 
 interface ISuperFormFactory {
     /*///////////////////////////////////////////////////////////////
-                                Errors
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev emitted when a vault address is 0
-    error ZERO_ADDRESS();
-
-    /// @dev emitted when a form is not ERC165 compatible
-    error ERC165_UNSUPPORTED();
-
-    /// @dev emitted when a form is not FORM interface compatible
-    error FORM_INTERFACE_UNSUPPORTED();
-
-    /// @dev emitted when a form does not exist
-    error FORM_DOES_NOT_EXIST();
-
-    /// @dev emitted when a SuperForm already exists
-    error SUPERFORM_ALREADY_EXISTS();
-
-    /// @dev emitted when a SuperForm does not exist
-    error SUPERFORM_DOES_NOT_EXIST();
-
-    /// @dev emitted when form id is larger than max uint16
-    error INVALID_FORM_ID();
-
-    /// @dev emitted when the caller is not factory registry
-    error INVALID_CALLER();
-
-    /// @dev is emitted when the chain id input is invalid.
-    error INVALID_INPUT_CHAIN_ID();
-
-    /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
 
