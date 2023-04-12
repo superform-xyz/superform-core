@@ -15,6 +15,8 @@ import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./utils/DataPacking.sol";
 
+import {SuperPositionBank} from "./SuperPositionBank.sol";
+
 /// @title Super Router
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and deposit information to a remote execution chain.
@@ -358,11 +360,26 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
             revert INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
-        ISuperPositions(superRegistry.superPositions()).burnBatchSP(
+        /// FIXME: Transfer shares to SuperPositionBank
+        // ISuperPositions(superRegistry.superPositions()).burnBatchSP(
+        //     vars.srcSender,
+        //     req.superFormsData.superFormIds,
+        //     req.superFormsData.amounts
+        // );
+
+        ISuperPositions(superRegistry.superPositions()).safeBatchTransferFrom(
             vars.srcSender,
+            superRegistry.superPositionBank(),
             req.superFormsData.superFormIds,
-            req.superFormsData.amounts
+            req.superFormsData.amounts,
+            ""
         );
+        // SuperPositionBank bank = SuperPositionBank(
+        //     superRegistry.superPositionBank()
+        // );
+
+        // bank.acceptPosition(req.superFormsData.superFormIds, req.superFormsData.amounts);
+
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -865,14 +882,16 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
                 returnData.amount,
                 ""
             );
-        } else if (txType == uint256(TransactionType.WITHDRAW) && !status) {
+        } else if (txType == uint256(TransactionType.WITHDRAW) && status) {
             /// @dev FIXME: need to create returnData MULTI AMOUNTS and update this to _mint
-            ISuperPositions(superRegistry.superPositions()).mintSingleSP(
-                srcSender,
-                singleVaultData.superFormId,
-                returnData.amount,
-                ""
-            );
+            // ISuperPositions(superRegistry.superPositions()).mintSingleSP(
+            //     srcSender,
+            //     singleVaultData.superFormId,
+            //     returnData.amount,
+            //     ""
+            // );
+
+
         } else {
             revert INVALID_PAYLOAD_STATUS();
         }

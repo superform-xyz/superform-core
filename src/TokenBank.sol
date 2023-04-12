@@ -236,6 +236,45 @@ contract TokenBank is ITokenBank, AccessControl {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
         IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
+
+        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
+            singleVaultData_.txData
+        );
+
+        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
+        uint8[] memory proofAmbIds = new uint8[](1);
+        proofAmbIds[0] = 2;
+
+        /// @notice Send Data to Source to issue superform positions.
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
+            value: msg.value
+        }(
+            1, /// @dev come to this later to accept any bridge id
+            proofAmbIds,
+            srcChainId,
+            abi.encode(
+                AMBMessage(
+                    _packTxInfo(
+                        uint120(TransactionType.WITHDRAW),
+                        uint120(CallbackType.RETURN),
+                        false,
+                        0
+                    ),
+                    abi.encode(
+                        ReturnSingleData(
+                            _packReturnTxInfo(
+                                true,
+                                srcChainId,
+                                chainId,
+                                currentTotalTxs
+                            ),
+                            singleVaultData_.amount /// @dev TODO: return this from Form, not InitSingleVaultData. Q: assets amount from shares or shares only?
+                        )
+                    )
+                )
+            ),
+            safeGasParam
+        );
     }
 
     /// @dev PREVILEGED admin ONLY FUNCTION.

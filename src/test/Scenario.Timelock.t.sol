@@ -268,7 +268,8 @@ contract ScenarioTimelockTest is ProtocolActions {
         );
 
         console.log("stage2 done");
-
+        
+        /// TODO: Rebuild this to also process withdraw payloads
         aV = _stage3_src_to_dst_amb_delivery(
             action,
             vars,
@@ -278,7 +279,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage3 done");
 
-        /// @dev TODO Repeated
+        /// TODO: Rebuild this to also process withdraw payloads
         success = _stage4_process_src_dst_payload(
             action,
             vars,
@@ -288,6 +289,9 @@ contract ScenarioTimelockTest is ProtocolActions {
         );
 
         console.log("stage4 done");
+
+        /// @dev FIXME: Requires to updatePayload before processing, this call fails now
+        success = _stage6_process_superPositions_withdraw(action, vars);
         /*///////////////////////////////////////////////////////////////
                             TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/

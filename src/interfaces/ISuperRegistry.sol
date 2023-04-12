@@ -84,6 +84,12 @@ interface ISuperRegistry {
     /// @param superPositions_ the address of the super positions
     function setSuperPositions(address superPositions_) external;
 
+    /// @dev allows admin to set the super positions bank address
+    /// @param superPositionBank_ the address of the super positions bank
+    function setSuperPositionBank(
+        address superPositionBank_
+    ) external; 
+
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
@@ -134,4 +140,11 @@ interface ISuperRegistry {
     /// @dev gets the super positions
     /// @return superPositions_ the address of the super positions
     function superPositions() external view returns (address superPositions_);
+
+    /// @dev gets the super positions bank
+    /// @return superPositionBank_ the address of the super positions bank
+    function superPositionBank()
+        external
+        view
+        returns (address superPositionBank_);
 }

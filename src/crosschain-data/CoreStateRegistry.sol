@@ -337,6 +337,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 value: msg.value
             }(singleVaultData);
         } else {
+            /// @dev Withdraw SyncBack here, callbackType.return 
             ISuperRouter(superRegistry.superRouter()).stateSync{
                 value: msg.value
             }(payloadInfo_);

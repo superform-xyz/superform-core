@@ -93,7 +93,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
             /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
-            
+
             for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
                 if (
                     CHAIN_0 == DST_CHAINS[i] ||
@@ -133,10 +133,9 @@ abstract contract ProtocolActions is BaseSetup {
                     )
                 );
             } else {
-
                 /// FIXME: NOTE: Shouldn't we validate that at contract level?
                 /// This reverting may give us invalid sense of security. Contract should revert here, not test.
-                
+
                 // if (
                 //     !((vars.underlyingSrcToken.length ==
                 //         vars.targetSuperFormIds.length) &&
@@ -601,6 +600,51 @@ abstract contract ProtocolActions is BaseSetup {
                     );
                 }
             }
+        }
+    }
+
+    // uint256 payloadId_,
+    // uint16 targetChainId_,
+    // TestType testType,
+    // bytes4 revertError
+    function _stage6_process_superPositions_withdraw(
+        TestAction memory action,
+        StagesLocalVars memory vars
+    ) internal returns (bool success) {
+        /// assume it will pass by default
+        success = true;
+
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+
+            CoreStateRegistry stateRegistry = CoreStateRegistry(
+                payable(getContract(CHAIN_0, "CoreStateRegistry"))
+            );
+
+            unchecked {
+                PAYLOAD_ID[CHAIN_0]++;
+            }
+
+            // success = _processPayload(
+            //     PAYLOAD_ID[CHAIN_0],
+            //     CHAIN_0,
+            //     action.testType,
+            //     action.revertError
+            // );
+
+            uint256 initialFork = vm.activeFork();
+
+            vm.selectFork(FORKS[CHAIN_0]);
+
+            uint256 msgValue = 10 * _getPriceMultiplier(CHAIN_0) * 1e18;
+
+            vm.prank(deployer);
+            stateRegistry.processPayload{value: msgValue}(
+                stateRegistry.payloadsCount()
+            );
+
+            vm.selectFork(initialFork);
+            
+            return true;
         }
     }
 

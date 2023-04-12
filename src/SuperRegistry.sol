@@ -19,6 +19,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     address public coreStateRegistry;
     address public factoryStateRegistry;
     address public superPositions;
+    address public superPositionBank;
 
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 => address) public bridgeAddress;
@@ -132,6 +133,17 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         superPositions = superPositions_;
 
         emit FactoryStateRegistryUpdated(superPositions_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setSuperPositionBank(
+        address superPositionBank_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (superPositionBank_ == address(0)) revert ZERO_ADDRESS();
+
+        superPositionBank = superPositionBank_;
+
+        emit FactoryStateRegistryUpdated(superPositionBank_);
     }
 
     /*///////////////////////////////////////////////////////////////
