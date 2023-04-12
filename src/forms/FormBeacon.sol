@@ -2,13 +2,14 @@
 pragma solidity 0.8.19;
 
 import {UpgradeableBeacon} from "openzeppelin-contracts/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {IFormBeacon} from "../interfaces/IFormBeacon.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 
 /// @title FormBeacon
 /// @notice The Beacon for any given form.
-contract FormBeacon {
+contract FormBeacon is IFormBeacon {
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
@@ -22,12 +23,14 @@ contract FormBeacon {
 
     address public formLogic;
 
-    modifier onlyProtocolAdmin() {
+    bool public paused;
+
+    modifier onlySuperFormFactory() {
         if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+            !ISuperRBAC(superRegistry.superRBAC()).hasSuperformFactoryRole(
                 msg.sender
             )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
+        ) revert Error.NOT_SUPERFORM_FACTORY();
         _;
     }
 
@@ -41,12 +44,25 @@ contract FormBeacon {
         formLogic = formLogic_;
     }
 
-    function update(address formLogic_) external onlyProtocolAdmin {
+    /// @inheritdoc IFormBeacon
+    function update(address formLogic_) external override onlySuperFormFactory {
         beacon.upgradeTo(formLogic_);
+        address oldLogic = formLogic;
         formLogic = formLogic_;
+
+        emit FormLogicUpdated(oldLogic, formLogic_);
     }
 
-    function implementation() external view returns (address) {
+    /// @inheritdoc IFormBeacon
+    function changePauseStatus(
+        bool newStatus_
+    ) external override onlySuperFormFactory {
+        paused = newStatus_;
+        emit FormBeaconStatus(newStatus_);
+    }
+
+    /// @inheritdoc IFormBeacon
+    function implementation() external view override returns (address) {
         return beacon.implementation();
     }
 }

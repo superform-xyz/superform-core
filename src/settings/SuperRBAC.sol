@@ -16,6 +16,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         keccak256("SUPER_ROUTER_ROLE");
     bytes32 public constant override TOKEN_BANK_ROLE =
         keccak256("TOKEN_BANK_ROLE");
+    bytes32 public constant override SUPERFORM_FACTORY_ROLE =
+        keccak256("SUPERFORM_FACTORY_ROLE");
     bytes32 public constant override SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
     bytes32 public constant override CORE_CONTRACTS_ROLE =
         keccak256("CORE_CONTRACTS_ROLE");
@@ -89,6 +91,20 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function revokeTokenBankRole(address tokenBank_) external override {
         revokeRole(TOKEN_BANK_ROLE, tokenBank_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function grantSuperformFactoryRole(
+        address superformFactory_
+    ) external override {
+        grantRole(SUPERFORM_FACTORY_ROLE, superformFactory_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function revokeSuperformFactoryRole(
+        address superformFactory_
+    ) external override {
+        revokeRole(SUPERFORM_FACTORY_ROLE, superformFactory_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -175,6 +191,13 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address tokenBank_
     ) external view override returns (bool) {
         return hasRole(TOKEN_BANK_ROLE, tokenBank_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasSuperformFactoryRole(
+        address superformFactory_
+    ) external view override returns (bool) {
+        return hasRole(SUPERFORM_FACTORY_ROLE, superformFactory_);
     }
 
     /// @inheritdoc ISuperRBAC

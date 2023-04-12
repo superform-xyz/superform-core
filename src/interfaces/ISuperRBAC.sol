@@ -38,6 +38,14 @@ interface ISuperRBAC {
     /// @param tokenBank_ the address to revoke the role from
     function revokeTokenBankRole(address tokenBank_) external;
 
+    /// @dev grants the SUPERFORM_FACTORY_ROLE to the given address
+    /// @param superformFactory_ the address to grant the role to
+    function grantSuperformFactoryRole(address superformFactory_) external;
+
+    /// @dev revokes the SUPERFORM_FACTORY_ROLE from given address
+    /// @param superformFactory_ the address to revoke the role from
+    function revokeSuperformFactoryRole(address superformFactory_) external;
+
     /// @dev grants the SWAPPER_ROLE to the given address
     /// @param swapper_ the address to grant the role to
     function grantSwapperRole(address swapper_) external;
@@ -94,6 +102,9 @@ interface ISuperRBAC {
     /// @dev returns the id of the token bank role
     function TOKEN_BANK_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of the superform factory role
+    function SUPERFORM_FACTORY_ROLE() external view returns (bytes32);
+
     /// @dev returns the id of the swapper role
     function SWAPPER_ROLE() external view returns (bytes32);
 
@@ -128,6 +139,12 @@ interface ISuperRBAC {
     /// @dev returns wether the given address has the token bank role
     /// @param tokenBank_ the address to check
     function hasTokenBankRole(address tokenBank_) external view returns (bool);
+
+    /// @dev returns wether the given address has the superform factory role
+    /// @param superformFactory_ the address to check
+    function hasSuperformFactoryRole(
+        address superformFactory_
+    ) external view returns (bool);
 
     /// @dev returns wether the given address has the swapper role
     /// @param swapper_ the address to check

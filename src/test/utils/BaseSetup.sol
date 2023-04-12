@@ -442,6 +442,7 @@ abstract contract BaseSetup is DSTest, Test {
                 .factory;
 
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
+            SuperRBAC(vars.superRBAC).grantSuperformFactoryRole(vars.factory);
 
             /// @dev 9 - Deploy 4626Form implementations
             // Standard ERC4626 Form

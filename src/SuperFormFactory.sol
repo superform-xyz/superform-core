@@ -2,13 +2,13 @@
 pragma solidity 0.8.19;
 import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 import {BeaconProxy} from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
+import {FormBeacon} from "./forms/FormBeacon.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
-import {FormBeacon} from "./forms/FormBeacon.sol";
 import {BaseForm} from "./BaseForm.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
@@ -31,12 +31,11 @@ contract SuperFormFactory is ISuperFormFactory {
 
     uint256[] public superForms;
 
-    /// @dev formId => formBeaconAddress
-    /// @notice If form[formId_] is 0, formBeacon is not part of the protocol
-    mapping(uint256 => address) public formBeacon;
+    /// @notice If formBeaconId is 0, formBeacon is not part of the protocol
+    mapping(uint256 formBeaconId => address formBeaconAddress)
+        public formBeacon;
 
-    /// @dev address Vault => uint256[] SuperFormIds
-    mapping(address => uint256[]) public vaultToSuperForms;
+    mapping(address vault => uint256[] superFormIds) public vaultToSuperForms;
 
     modifier onlyProtocolAdmin() {
         if (
@@ -173,6 +172,17 @@ contract SuperFormFactory is ISuperFormFactory {
             revert Error.INVALID_FORM_ID();
 
         FormBeacon(formBeacon[formBeaconId_]).update(newFormLogic_);
+    }
+
+    /// @inheritdoc ISuperFormFactory
+    function changeFormBeaconPauseStatus(
+        uint256 formBeaconId_,
+        bool status_
+    ) external override onlyProtocolAdmin {
+        if (formBeacon[formBeaconId_] == address(0))
+            revert Error.INVALID_FORM_ID();
+
+        FormBeacon(formBeacon[formBeaconId_]).changePauseStatus(status_);
     }
 
     /// @inheritdoc ISuperFormFactory

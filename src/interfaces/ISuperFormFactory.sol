@@ -79,6 +79,14 @@ interface ISuperFormFactory {
         address newFormLogic_
     ) external;
 
+    /// @dev allows an admin to change the status of a form
+    /// @param formBeaconId_ is the id of the form beacon
+    /// @param status_ is the new status
+    function changeFormBeaconPauseStatus(
+        uint256 formBeaconId_,
+        bool status_
+    ) external;
+
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/

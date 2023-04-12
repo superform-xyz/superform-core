@@ -413,6 +413,7 @@ contract Deploy is Script {
                 .factory;
 
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
+            SuperRBAC(vars.superRBAC).grantSuperformFactoryRole(vars.factory);
 
             /// @dev 7 - Deploy 4626Form implementations
             // Standard ERC4626 Form

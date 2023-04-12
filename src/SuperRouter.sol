@@ -13,6 +13,7 @@ import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
+import {IFormBeacon} from "./interfaces/IFormBeacon.sol";
 import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
@@ -962,6 +963,15 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         if (superFormData_.maxSlippage > 10000) return false;
 
+        (, uint256 formBeaconId_, ) = _getSuperForm(superFormData_.superFormId);
+
+        if (
+            IFormBeacon(
+                ISuperFormFactory(superRegistry.superFormFactory())
+                    .getFormBeacon(formBeaconId_)
+            ).paused()
+        ) return false;
+
         /// @dev TODO validate TxData to avoid exploits
 
         return true;
@@ -997,12 +1007,22 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         for (uint256 i = 0; i < len; i++) {
             if (superFormsData_.maxSlippage[i] > 10000) return false;
             sumAmounts += superFormsData_.amounts[i];
+            (, uint256 formBeaconId_, ) = _getSuperForm(
+                superFormsData_.superFormIds[i]
+            );
+            if (
+                IFormBeacon(
+                    ISuperFormFactory(superRegistry.superFormFactory())
+                        .getFormBeacon(formBeaconId_)
+                ).paused()
+            ) return false;
 
             /// @dev compare underlyings with the first superForm. If there is at least one different mark collateral as 0
             if (collateral != address(0) && i + 1 < len) {
                 (address superForm, , ) = _getSuperForm(
                     superFormsData_.superFormIds[i + 1]
                 );
+
                 if (
                     collateral !=
                     address(IBaseForm(superForm).getUnderlyingOfVault())
@@ -1050,6 +1070,15 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         for (uint256 i = 0; i < len; i++) {
             if (superFormsData_.maxSlippage[i] > 10000) return false;
+            (, uint256 formBeaconId_, ) = _getSuperForm(
+                superFormsData_.superFormIds[i]
+            );
+            if (
+                IFormBeacon(
+                    ISuperFormFactory(superRegistry.superFormFactory())
+                        .getFormBeacon(formBeaconId_)
+                ).paused()
+            ) return false;
         }
 
         /// @dev TODO validate TxData to avoid exploits

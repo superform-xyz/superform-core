@@ -39,11 +39,11 @@ function _packReturnTxInfo(
 
 function _packSuperForm(
     address superForm_,
-    uint256 formId_,
+    uint256 formBeaconId_,
     uint16 chainId_
 ) pure returns (uint256 superFormId_) {
     superFormId_ = uint256(uint160(superForm_));
-    superFormId_ |= formId_ << 160;
+    superFormId_ |= formBeaconId_ << 160;
     superFormId_ |= uint256(chainId_) << 240;
 }
 
@@ -57,7 +57,10 @@ function _decodeTxData(
 
 function _decodeTxInfo(
     uint256 txInfo_
-) pure returns (uint256 txType, uint256 callbackType, bool multi, uint8 registryId) {
+)
+    pure
+    returns (uint256 txType, uint256 callbackType, bool multi, uint8 registryId)
+{
     txType = uint256(uint120(txInfo_));
     callbackType = uint256(uint120(txInfo_ >> 120));
     multi = uint256(uint8(txInfo_ >> 240)) == 1 ? true : false;
@@ -88,13 +91,13 @@ function _getDestinationChain(
 /// @dev returns the vault-form-chain pair of a superform
 /// @param superFormId_ is the id of the superform
 /// @return superForm_ is the address of the superform
-/// @return formId_ is the form id
+/// @return formBeaconId_ is the form id
 /// @return chainId_ is the chain id
 function _getSuperForm(
     uint256 superFormId_
-) pure returns (address superForm_, uint256 formId_, uint16 chainId_) {
+) pure returns (address superForm_, uint256 formBeaconId_, uint16 chainId_) {
     superForm_ = address(uint160(superFormId_));
-    formId_ = uint256(uint80(superFormId_ >> 160));
+    formBeaconId_ = uint256(uint80(superFormId_ >> 160));
     chainId_ = uint16(superFormId_ >> 240);
 }
 

@@ -28,7 +28,7 @@ library Error {
     error NOT_TOKEN_BANK();
 
     /// @dev if the msg-sender is not super form factory
-    error NOT_SUPER_FORM_FACTORY();
+    error NOT_SUPERFORM_FACTORY();
 
     /// @dev if the msg-sender is not super registry
     error NOT_SUPER_REGISTRY();
