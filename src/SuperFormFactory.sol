@@ -1,11 +1,11 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 import {BeaconProxy} from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
+import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
 import {FormBeacon} from "./forms/FormBeacon.sol";
@@ -16,7 +16,7 @@ import "./utils/DataPacking.sol";
 /// @title SuperForms Factory
 /// @dev A secure, and easily queryable central point of access for all SuperForms on any given chain,
 /// @author Zeropoint Labs.
-contract SuperFormFactory is ISuperFormFactory, AccessControl {
+contract SuperFormFactory is ISuperFormFactory {
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
@@ -38,6 +38,15 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     /// @dev address Vault => uint256[] SuperFormIds
     mapping(address => uint256[]) public vaultToSuperForms;
 
+    modifier onlyProtocolAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
+
     /// @dev sets caller as the admin of the contract.
     /// @param chainId_ the superform? chain id this factory is deployed on
     /// @param superRegistry_ the superform registry contract
@@ -46,7 +55,6 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
 
         chainId = chainId_;
         superRegistry = ISuperRegistry(superRegistry_);
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -57,7 +65,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     function addFormBeacon(
         address formImplementation_,
         uint256 formBeaconId_
-    ) public override onlyRole(DEFAULT_ADMIN_ROLE) returns (address beacon) {
+    ) public override onlyProtocolAdmin returns (address beacon) {
         if (formImplementation_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(formImplementation_))
             revert Error.ERC165_UNSUPPORTED();
@@ -70,7 +78,9 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
         /// @dev TODO - should we predict beacon address?
-        beacon = address(new FormBeacon(formImplementation_));
+        beacon = address(
+            new FormBeacon(chainId, address(superRegistry), formImplementation_)
+        );
 
         /// @dev this should instantiate the beacon for each form
         formBeacon[formBeaconId_] = beacon;
@@ -84,7 +94,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     function addFormBeacons(
         address[] memory formImplementations_,
         uint256[] memory formBeaconIds_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external override onlyProtocolAdmin {
         for (uint256 i = 0; i < formImplementations_.length; i++) {
             addFormBeacon(formImplementations_[i], formBeaconIds_[i]);
         }
@@ -149,7 +159,7 @@ contract SuperFormFactory is ISuperFormFactory, AccessControl {
     function updateFormBeaconLogic(
         uint256 formBeaconId_,
         address newFormLogic_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external override onlyProtocolAdmin {
         if (newFormLogic_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(newFormLogic_))
             revert Error.ERC165_UNSUPPORTED();

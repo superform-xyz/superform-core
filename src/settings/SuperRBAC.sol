@@ -37,10 +37,10 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         chainId = chainId_;
         superRegistry = ISuperRegistry(superRegistry_);
 
-        if (msg.sender != superRegistry.protocolAdmin())
-            revert Error.INVALID_DEPLOYER();
+        address protocolAdmin = superRegistry.protocolAdmin();
+        if (msg.sender != protocolAdmin) revert Error.INVALID_DEPLOYER();
 
-        _setupRole(DEFAULT_ADMIN_ROLE, superRegistry.protocolAdmin());
+        _setupRole(DEFAULT_ADMIN_ROLE, protocolAdmin);
     }
 
     /*///////////////////////////////////////////////////////////////

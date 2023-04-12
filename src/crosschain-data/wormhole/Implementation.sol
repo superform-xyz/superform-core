@@ -6,8 +6,8 @@ import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
 import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
+import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
@@ -18,20 +18,12 @@ import "../../utils/DataPacking.sol";
 ///
 /// @notice https://book.wormhole.com/wormhole/3_coreLayerContracts.html#multicasting
 /// this contract uses multi-casting feature from wormhole
-contract WormholeImplementation is
-    IAmbImplementation,
-    IWormholeReceiver,
-    AccessControl
-{
+contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     struct ExtraData {
         uint256 messageFee;
         uint256 relayerFee;
         uint256 airdrop;
     }
-
-    /// @dev users with WORMHOLE_RELAYER_ROLE can only deliver messages
-    bytes32 public constant WORMHOLE_RELAYER_ROLE =
-        bytes32("WORMHOLE_RELAYER_ROLE");
 
     /*///////////////////////////////////////////////////////////////
                     State Variables
@@ -44,26 +36,44 @@ contract WormholeImplementation is
     /// @dev relayer will forward published wormhole messages
     IWormholeRelayer public relayer;
 
+    /// @dev FIXME: refactor
     mapping(uint16 => uint16) public ambChainId;
     mapping(uint16 => uint16) public superChainId;
     mapping(bytes32 => bool) public processedMessages;
+
+    /*///////////////////////////////////////////////////////////////
+                            MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyProtocolAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
+
+    modifier onlyRelayer() {
+        if (address(relayer) != msg.sender) revert Error.NOT_WORMHOLE_RELAYER();
+        _;
+    }
 
     /*///////////////////////////////////////////////////////////////
                     Constructor
     //////////////////////////////////////////////////////////////*/
 
     /// @param bridge_ is the wormhole implementation for respective chain.
+    /// @param relayer_ is the wormhole relayer for respective chain.
+    /// @param superRegistry_ is the superform registry.
     constructor(
         IWormhole bridge_,
-        address relayer_,
+        IWormholeRelayer relayer_,
         ISuperRegistry superRegistry_
     ) {
         bridge = bridge_;
+        relayer = relayer_;
         superRegistry = superRegistry_;
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-
-        /// @dev receiving relayer
-        _setupRole(WORMHOLE_RELAYER_ROLE, relayer_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -126,7 +136,7 @@ contract WormholeImplementation is
     function receiveWormholeMessages(
         bytes[] memory whMessages,
         bytes[] memory
-    ) public payable override onlyRole(WORMHOLE_RELAYER_ROLE) {
+    ) public payable override onlyRelayer {
         (IWormhole.VM memory vm, bool valid, string memory reason) = bridge
             .parseAndVerifyVM(whMessages[0]);
 
@@ -174,6 +184,7 @@ contract WormholeImplementation is
         }
     }
 
+    /// TODO: remove
     /// @notice to add access based controls over here
     /// @dev allows admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
@@ -181,7 +192,7 @@ contract WormholeImplementation is
     function setChainId(
         uint16 superChainId_,
         uint16 ambChainId_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -195,9 +206,7 @@ contract WormholeImplementation is
     /// @notice relayer contracts are used to forward messages
     /// @dev allows admin to set the core relayer
     /// @param relayer_ is the identifier of the relayer address
-    function setRelayer(
-        IWormholeRelayer relayer_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setRelayer(IWormholeRelayer relayer_) external onlyProtocolAdmin {
         if (address(relayer_) == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -209,6 +218,7 @@ contract WormholeImplementation is
                     Internal Functions
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev FIXME: should go into utils
     /// @dev converts address to bytes32
     function castAddr(address addr_) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(addr_)) << 96);

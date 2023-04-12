@@ -44,7 +44,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function updateMultiVaultPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
-    ) external virtual override onlyRole(UPDATER_ROLE) {
+    ) external virtual override onlyUpdater {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }
@@ -117,7 +117,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function updateSingleVaultPayload(
         uint256 payloadId_,
         uint256 finalAmount_
-    ) external virtual override onlyRole(UPDATER_ROLE) {
+    ) external virtual override onlyUpdater {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }
@@ -179,7 +179,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// NOTE: function can only process successful payloads.
     function processPayload(
         uint256 payloadId_
-    ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
+    ) external payable virtual override onlyProcessor {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }
@@ -225,7 +225,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 payloadId_,
         uint256 ambId_,
         bytes memory extraData_
-    ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
+    ) external payable virtual override onlyProcessor {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }

@@ -275,8 +275,25 @@ contract Deploy is Script {
             vars.superRegistry = address(new SuperRegistry(vars.chainId));
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
+            SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
 
-            /// @dev 2.1 - deploy Core State Registry
+            /// @dev 2 - Deploy SuperRBAC
+            vars.superRBAC = address(
+                new SuperRBAC(vars.chainId, vars.superRegistry)
+            );
+            contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars
+                .superRBAC;
+
+            SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
+
+            /// @dev FIXME: in reality who should have the SWAPPER_ROLE for multiTxProcessor?
+            SuperRBAC(vars.superRBAC).grantSwapperRole(deployer);
+            /// @dev FIXME: in reality who should have the PROCESSOR_ROLE for state registry?
+            SuperRBAC(vars.superRBAC).grantProcessorRole(deployer);
+            /// @dev FIXME: in reality who should have the UPDATER_ROLE for state registry?
+            SuperRBAC(vars.superRBAC).grantUpdaterRole(deployer);
+
+            /// @dev 3.1 - deploy Core State Registry
 
             vars.coreStateRegistry = address(
                 new CoreStateRegistry(
@@ -287,7 +304,15 @@ contract Deploy is Script {
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
                 .coreStateRegistry;
 
-            /// @dev 2.2- deploy Factory State Registry
+            SuperRegistry(vars.superRegistry).setCoreStateRegistry(
+                vars.coreStateRegistry
+            );
+
+            SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(
+                vars.coreStateRegistry
+            );
+
+            /// @dev 3.2- deploy Factory State Registry
 
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry(
@@ -299,7 +324,10 @@ contract Deploy is Script {
                 bytes32(bytes("FactoryStateRegistry"))
             ] = vars.factoryStateRegistry;
 
-            /// @dev 3.1- deploy Layerzero Implementation
+            SuperRegistry(vars.superRegistry).setFactoryStateRegistry(
+                vars.factoryStateRegistry
+            );
+            /// @dev 4.1- deploy Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation(
                     lzEndpoints[i],
@@ -312,7 +340,7 @@ contract Deploy is Script {
 
             SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
 
-            /// @dev 3.2- deploy Hyperlane Implementation
+            /// @dev 4.2- deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation(
                     HyperlaneMailbox,
@@ -329,7 +357,7 @@ contract Deploy is Script {
                 ambAddresses.push(vars.hyperlaneImplementation);
             }
 
-            /// @dev 4 - Deploy UNDERLYING_TOKENS and VAULTS
+            /// @dev 5 - Deploy UNDERLYING_TOKENS and VAULTS
             /// @dev FIXME grab testnet tokens
             /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
@@ -384,6 +412,8 @@ contract Deploy is Script {
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
                 .factory;
 
+            SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
+
             /// @dev 7 - Deploy 4626Form implementations
             // Standard ERC4626 Form
             vars.erc4626Form = address(new ERC4626Form(vars.superRegistry));
@@ -417,6 +447,9 @@ contract Deploy is Script {
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
                 .tokenBank;
 
+            SuperRegistry(vars.superRegistry).setTokenBank(vars.tokenBank);
+            SuperRBAC(vars.superRBAC).grantTokenBankRole(vars.tokenBank);
+
             /// @dev 10 - Deploy SuperRouter
 
             vars.superRouter = address(
@@ -424,6 +457,9 @@ contract Deploy is Script {
             );
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars
                 .superRouter;
+
+            SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
+            SuperRBAC(vars.superRBAC).grantSuperRouterRole(vars.superRouter);
 
             /// @dev 11 - Deploy SuperPositions
             vars.superPositions = address(
@@ -436,101 +472,39 @@ contract Deploy is Script {
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
                 .superPositions;
-
+            SuperRegistry(vars.superRegistry).setSuperPositions(
+                vars.superPositions
+            );
             /// @dev 12 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(
                 new MultiTxProcessor(vars.chainId, vars.superRegistry)
             );
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
+            SuperRBAC(vars.superRBAC).grantSwapperRole(vars.multiTxProcessor);
 
-            /// @dev 13 - Deploy SuperRBAC
-            vars.superRBAC = address(
-                new SuperRBAC(vars.chainId, vars.superRegistry)
-            );
-            contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars
-                .superRBAC;
-
-            /// @dev 13 - Super Registry setters
-
-            SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
-            SuperRegistry(vars.superRegistry).setTokenBank(vars.tokenBank);
-            SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
-
-            SuperRegistry(vars.superRegistry).setCoreStateRegistry(
-                vars.coreStateRegistry
-            );
-
-            SuperRegistry(vars.superRegistry).setFactoryStateRegistry(
-                vars.factoryStateRegistry
-            );
+            /// @dev 13 - Super Registry extra setters
 
             SuperRegistry(vars.superRegistry).setBridgeAddress(
                 bridgeIds,
                 bridgeAddresses
             );
 
-            SuperRegistry(vars.superRegistry).setSuperPositions(
-                vars.superPositions
-            );
-
-            SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
-
-            /// @dev 14 Setup RBAC
-            SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(
-                vars.coreStateRegistry
-            );
-
-            SuperRBAC(vars.superRBAC).grantSuperRouterRole(vars.superRouter);
-
-            /// old rbac
-            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
-                CORE_CONTRACTS_ROLE,
-                vars.superRouter
-            );
-
-            FactoryStateRegistry(payable(vars.factoryStateRegistry))
-                .setFactoryContract(vars.factory);
-
-            FactoryStateRegistry(payable(vars.factoryStateRegistry)).grantRole(
-                CORE_CONTRACTS_ROLE,
-                vars.factory
-            );
-
-            /// @dev TODO: for each form , add it to the core_contracts_role. Just 1 for now
-            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
-                CORE_CONTRACTS_ROLE,
-                vars.tokenBank
-            );
-            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
-                IMPLEMENTATION_CONTRACTS_ROLE,
-                vars.lzImplementation
-            );
-            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
-                IMPLEMENTATION_CONTRACTS_ROLE,
-                vars.hyperlaneImplementation
-            );
-            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
-                PROCESSOR_ROLE,
-                deployer
-            );
-            FactoryStateRegistry(payable(vars.factoryStateRegistry)).grantRole(
-                PROCESSOR_ROLE,
-                deployer
-            );
-            CoreStateRegistry(payable(vars.coreStateRegistry)).grantRole(
-                UPDATER_ROLE,
-                deployer
-            );
-
-            MultiTxProcessor(payable(vars.multiTxProcessor)).grantRole(
-                SWAPPER_ROLE,
-                deployer
-            );
-
             /// @dev configures lzImplementation and hyperlane to super registry
             SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry")))
                 .setAmbAddress(ambIds, ambAddresses);
+
+            /// @dev 14 Setup extra RBAC
+
+            SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
+            SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
+            SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.tokenBank);
+            SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
+                vars.lzImplementation
+            );
+            SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
+                vars.hyperlaneImplementation
+            );
 
             vm.stopBroadcast();
         }

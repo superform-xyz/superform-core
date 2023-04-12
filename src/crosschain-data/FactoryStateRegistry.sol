@@ -10,11 +10,6 @@ import {Error} from "../utils/Error.sol";
 
 contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-    address public factoryContract;
-
-    /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
@@ -27,22 +22,13 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    /// @dev allows accounts with {DEFAULT_ADMIN_ROLE} to update the factory contract
-    /// @param factoryContract_ is the address of the factory
-    function setFactoryContract(
-        address factoryContract_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        factoryContract = factoryContract_;
-
-        emit FactoryContractsUpdated(address(factoryContract_));
-    }
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// NOTE: function can only process successful payloads.
     function processPayload(
         uint256 payloadId_
-    ) external payable virtual override onlyRole(PROCESSOR_ROLE) {
+    ) external payable virtual override onlyProcessor {
         /// TODO sync factory data from crosschain
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
@@ -53,6 +39,8 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperFormFactory(factoryContract).stateSync(payload[payloadId_]);
+        ISuperFormFactory(superRegistry.superFormFactory()).stateSync(
+            payload[payloadId_]
+        );
     }
 }

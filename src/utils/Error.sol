@@ -33,6 +33,18 @@ library Error {
     /// @dev if the msg-sender is not super registry
     error NOT_SUPER_REGISTRY();
 
+    /// @dev if the msg-sender does not have SWAPPER role
+    error NOT_SWAPPER();
+
+    /// @dev if the msg-sender does not have PROCESSOR role
+    error NOT_PROCESSOR();
+
+    /// @dev if the msg-sender does not have UPDATER role
+    error NOT_UPDATER();
+
+    /// @dev if the msg-sender does not have CORE_CONTRACTS role
+    error NOT_CORE_CONTRACTS();
+
     /// @dev error thrown when the deployer is not the protocol admin
     error INVALID_DEPLOYER();
 
@@ -86,6 +98,9 @@ library Error {
 
     /// TODO: insert description
     error INVALID_PROOF_BRIDGE_ID();
+
+    /// @dev if the msg.sender is not the wormhole relayer
+    error NOT_WORMHOLE_RELAYER();
 
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS
