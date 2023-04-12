@@ -89,7 +89,10 @@ contract WormholeImplementation is
             superRegistry.factoryStateRegistry()
         );
 
-        if (msg.sender != address(coreRegistry)) {
+        if (
+            msg.sender != address(coreRegistry) ||
+            msg.sender != address(factoryRegistry)
+        ) {
             revert INVALID_CALLER();
         }
         bytes memory payload = abi.encode(msg.sender, dstChainId_, message_);
