@@ -603,10 +603,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
-    // uint256 payloadId_,
-    // uint16 targetChainId_,
-    // TestType testType,
-    // bytes4 revertError
+    /// NOTE: For 2-way comms we need to now process payload on Source again
     function _stage6_process_superPositions_withdraw(
         TestAction memory action,
         StagesLocalVars memory vars
@@ -624,13 +621,6 @@ abstract contract ProtocolActions is BaseSetup {
                 PAYLOAD_ID[CHAIN_0]++;
             }
 
-            // success = _processPayload(
-            //     PAYLOAD_ID[CHAIN_0],
-            //     CHAIN_0,
-            //     action.testType,
-            //     action.revertError
-            // );
-
             uint256 initialFork = vm.activeFork();
 
             vm.selectFork(FORKS[CHAIN_0]);
@@ -639,7 +629,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             vm.prank(deployer);
             stateRegistry.processPayload{value: msgValue}(
-                stateRegistry.payloadsCount()
+                stateRegistry.payloadsCount() /// <= Err, hardcoded for now
             );
 
             vm.selectFork(initialFork);

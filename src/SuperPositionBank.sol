@@ -16,7 +16,7 @@ contract SuperPositionBank is ERC165 {
         uint256[] amounts;
     }
     
-    mapping(address => mapping(uint256 => Position)) public queue;
+    mapping(address => mapping(uint256 => Position)) private queue;
     mapping(address => uint256) public queueCounter;
 
     constructor(IERC1155 _token, address _superRouter) {
@@ -29,30 +29,37 @@ contract SuperPositionBank is ERC165 {
         _;
     }
 
-    function acceptPosition(uint256[] memory _tokenIds, uint256[] memory _amounts, address _owner) public onlyRouter {
+    /// @dev Could call SuperRouter.deposit() function from here, first transfering tokens to this contract, thus saving gas
+    // function depositToSourceDirectly() external;
+
+    /// NOTE: What if we open this function to deposit here and then only make a check from SuperRouter.withdraw() if returned index matches caller of SuperRouter?
+    /// NOTE: Would require users to call two separate contracts and fragments flow
+    function acceptPosition(uint256[] memory _tokenIds, uint256[] memory _amounts, address _owner) public onlyRouter returns (uint256 index) {
         require(_tokenIds.length == _amounts.length, "LENGTH_MISMATCH");
 
         token.safeBatchTransferFrom(msg.sender, address(this), _tokenIds, _amounts, "");
 
         Position memory newPosition = Position({tokenIds: _tokenIds, amounts: _amounts});
         queue[_owner][queueCounter[_owner]] = newPosition;
-        queueCounter[_owner]++;
+        index = queueCounter[_owner]++;
     }
 
-    function returnPosition(uint256[] memory _tokenIds, uint256[] memory _amounts, address _owner, uint256 positionIndex) public onlyRouter {
-        require(_tokenIds.length == _amounts.length, "LENGTH_MISMATCH");
-
+    function returnPosition(address _owner, uint256 positionIndex) public onlyRouter {
         Position memory position = queue[_owner][positionIndex];
-        require(position.tokenIds.length == _tokenIds.length, "INVALID_POSITION");
-        
-        for (uint256 i = 0; i < _tokenIds.length; i++) {
-            require(position.tokenIds[i] == _tokenIds[i], "INVALID_TOKEN_ID");
-            require(position.amounts[i] == _amounts[i], "INVALID_AMOUNT");
-        }
-        
-        token.safeBatchTransferFrom(address(this), msg.sender, _tokenIds, _amounts, "");
-        
+        token.safeBatchTransferFrom(address(this), msg.sender, position.tokenIds, position.amounts, "");
         delete queue[_owner][positionIndex];
+    }
+
+    // function burnPosition(address _owner, uint256 positionIndex) public onlyRouter {
+    //     Position memory position = queue[_owner][positionIndex];
+    //     token.burnBatch(position.tokenIds, position.amounts);
+    //     delete queue[_owner][positionIndex];
+    // }
+
+    /// @dev Private queue requires public getter
+    function getPosition(address _owner, uint256 positionIndex) public view returns (uint256[] memory tokenIds, uint256[] memory amounts) {
+        Position memory position = queue[_owner][positionIndex];
+        return (position.tokenIds, position.amounts);
     }
 
     /**

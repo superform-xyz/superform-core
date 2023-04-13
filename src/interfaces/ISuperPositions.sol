@@ -46,4 +46,16 @@ interface ISuperPositions {
     ) external;
 
     function setDynamicURI(string memory dynamicURI_) external;
+
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts,
+        bytes memory data
+    ) external;
+
+    /// FIXME: Temp extension need to make approve at superRouter, may change with arch
+    function setApprovalForAll(address operator, bool approved) external;
+
 }

@@ -367,19 +367,34 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
         //     req.superFormsData.amounts
         // );
 
-        ISuperPositions(superRegistry.superPositions()).safeBatchTransferFrom(
+        /// Step 0: Get address of SuperPositionBank for temporary hold
+        address _superPositionBank = superRegistry.superPositionBank();
+        ISuperPositions superPositions = ISuperPositions(
+            superRegistry.superPositions()
+        );
+        SuperPositionBank bank = SuperPositionBank(_superPositionBank);
+
+        /// Step 1: Transfer shares to this contract
+        /// NOTE: This transfer forces further flow.
+        /// From user perspective would be better to enter through the bank.
+        superPositions.safeBatchTransferFrom(
             vars.srcSender,
-            superRegistry.superPositionBank(),
+            address(this),
             req.superFormsData.superFormIds,
             req.superFormsData.amounts,
             ""
         );
-        // SuperPositionBank bank = SuperPositionBank(
-        //     superRegistry.superPositionBank()
-        // );
 
-        // bank.acceptPosition(req.superFormsData.superFormIds, req.superFormsData.amounts);
+        /// @dev Should really use singleApprove here, but this will be a loop...
+        superPositions.setApprovalForAll(address(bank), true);
 
+        /// Step 2: This is deposit-like action, requires approve from this contract
+        /// NOTE: Regardless of final solution, this will need to track individual user request to retrive later on
+        uint256 index = bank.acceptPosition(
+            req.superFormsData.superFormIds,
+            req.superFormsData.amounts,
+            vars.srcSender
+        );
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -883,15 +898,19 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
                 ""
             );
         } else if (txType == uint256(TransactionType.WITHDRAW) && status) {
-            /// @dev FIXME: need to create returnData MULTI AMOUNTS and update this to _mint
-            // ISuperPositions(superRegistry.superPositions()).mintSingleSP(
-            //     srcSender,
-            //     singleVaultData.superFormId,
-            //     returnData.amount,
-            //     ""
-            // );
+            /// @dev FIXME: needs to call SuperPositionBank to burn the vault positions.
 
+            bytes memory extraData = singleVaultData.extraFormData; // read customForm type here
 
+            if (extraData.length == 0) {
+                ISuperPositions(superRegistry.superPositions()).burnSingleSP( // <= Err with conversion / decide on batch or single
+                    srcSender,
+                    singleVaultData.superFormId,
+                    returnData.amount
+                );
+            } else {
+                /// TODO: call with customForm returnType codes
+            }
         } else {
             revert INVALID_PAYLOAD_STATUS();
         }

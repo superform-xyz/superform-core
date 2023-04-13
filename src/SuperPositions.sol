@@ -35,6 +35,22 @@ contract SuperPositions is ISuperPositions, ERC1155s, AccessControl {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
+    /// FIXME: Temp extension to keep interfaces from conflict
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts,
+        bytes calldata data
+    ) public virtual override(ERC1155s, ISuperPositions) {
+        super.safeBatchTransferFrom(from, to, ids, amounts, data);
+    }
+
+    /// FIXME: Temp extension need to make approve at superRouter, may change with arch
+    function setApprovalForAll(address operator, bool approved) public virtual override(ERC1155, ISuperPositions) {
+        super.setApprovalForAll(operator, approved);
+    }
+
     /*///////////////////////////////////////////////////////////////
                         MINT/BURN PROTECTED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
