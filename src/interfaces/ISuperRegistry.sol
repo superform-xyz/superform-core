@@ -3,18 +3,63 @@ pragma solidity 0.8.19;
 
 interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
-                                Errors
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev is emitted when an address is being set to 0
-    error ZERO_ADDRESS();
-
-    /// @dev is emitted when the chain id input is invalid.
-    error INVALID_INPUT_CHAIN_ID();
-
-    /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev is emitted when an address is set.
+    event ProtocolAddressUpdated(
+        bytes32 indexed protocolAddressId,
+        address indexed oldAddress,
+        address indexed newAddress
+    );
+
+    /// @dev is emitted when the protocol admin address is set.
+    event ProtocolAdminUpdated(
+        address indexed oldProtocolAdmin,
+        address indexed protocolAdmin
+    );
+
+    /// @dev is emitted when the super router address is set.
+    event SuperRouterUpdated(
+        address indexed oldSuperRouter,
+        address indexed superRouter
+    );
+
+    /// @dev is emitted when the token bank address is set.
+    event TokenBankUpdated(
+        address indexed oldTokenBank,
+        address indexed tokenBank
+    );
+
+    /// @dev is emitted when the superform factory address is set.
+    event SuperFormFactoryUpdated(
+        address indexed oldSuperFormFactory,
+        address indexed superFormFactory
+    );
+
+    /// @dev is emitted when the state registry address is set.
+    event CoreStateRegistryUpdated(
+        address indexed oldCoreStateRegistry,
+        address indexed coreStateRegistry
+    );
+
+    /// @dev is emitted when the state registry address is set.
+    event FactoryStateRegistryUpdated(
+        address indexed oldFactoryStateRegistry,
+        address indexed factoryStateRegistry
+    );
+
+    /// @dev is emitted when a new super positions is configured.
+    event SuperPositionsUpdated(
+        address indexed oldSuperPositions,
+        address indexed superPositions
+    );
+
+    /// @dev is emitted when a new super rbac is configured.
+    event SuperRBACUpdated(
+        address indexed oldSuperRBAC,
+        address indexed superRBAC
+    );
 
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(
@@ -25,24 +70,17 @@ interface ISuperRegistry {
     /// @dev is emitted when a new amb is configured.
     event SetAmbAddress(uint8 ambId_, address ambAddress_);
 
-    /// @dev is emitted when the super router address is set.
-    event SuperRouterUpdated(address indexed superRouter);
-
-    /// @dev is emitted when the token bank address is set.
-    event TokenBankUpdated(address indexed tokenBank);
-
-    /// @dev is emitted when the superform factory address is set.
-    event SuperFormFactoryUpdated(address indexed superFormFactory);
-
-    /// @dev is emitted when the state registry address is set.
-    event CoreStateRegistryUpdated(address indexed coreStateRegistry);
-
-    /// @dev is emitted when the state registry address is set.
-    event FactoryStateRegistryUpdated(address indexed factoryStateRegistry);
-
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+    function setNewProtocolAddress(
+        bytes32 protocolAddressId_,
+        address newAddress_
+    ) external;
+
+    /// @dev sets the protocol admin address
+    /// @param admin_ the address of the protocol admin
+    function setProtocolAdmin(address admin_) external;
 
     /// @dev sets the super router address.
     /// @param superRouter_ the address of the super router
@@ -64,6 +102,14 @@ interface ISuperRegistry {
     /// @param factoryStateRegistry_ the address of the state registry
     function setFactoryStateRegistry(address factoryStateRegistry_) external;
 
+    /// @dev allows admin to set the super positions address
+    /// @param superPositions_ the address of the super positions
+    function setSuperPositions(address superPositions_) external;
+
+    /// @dev allows admin to set the super rbac address
+    /// @param superRBAC_ the address of the super rbac
+    function setSuperRBAC(address superRBAC_) external;
+
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @param bridgeId_         represents the bridge unqiue identifier.
     /// @param bridgeAddress_    represents the bridge address.
@@ -80,13 +126,43 @@ interface ISuperRegistry {
         address[] memory ambAddress_
     ) external;
 
-    /// @dev allows admin to set the super positions address
-    /// @param superPositions_ the address of the super positions
-    function setSuperPositions(address superPositions_) external;
-
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev returns the id of the protocol admin
+    function PROTOCOL_ADMIN() external view returns (bytes32);
+
+    /// @dev returns the id of the super router module
+    function SUPER_ROUTER() external view returns (bytes32);
+
+    /// @dev returns the id of the token bank module
+    function TOKEN_BANK() external view returns (bytes32);
+
+    /// @dev returns the id of the superform factory module
+    function SUPERFORM_FACTORY() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry module
+    function CORE_STATE_REGISTRY() external view returns (bytes32);
+
+    /// @dev returns the id of the factory state registry module
+    function FACTORY_STATE_REGISTRY() external view returns (bytes32);
+
+    /// @dev returns the id of the super positions module
+    function SUPER_POSITIONS() external view returns (bytes32);
+
+    /// @dev returns the id of the super rbac module
+    function SUPER_RBAC() external view returns (bytes32);
+
+    /// @dev gets the address of a contract.
+    /// @param protocolAddressId_ is the id of the contract
+    function getProtocolAddress(
+        bytes32 protocolAddressId_
+    ) external view returns (address);
+
+    /// @dev gets the protocol admin address.
+    /// @return protocolAdmin_ the address of the protocol admin
+    function protocolAdmin() external view returns (address protocolAdmin_);
 
     /// @dev gets the super router address.
     /// @return superRouter_ the address of the super router
@@ -117,6 +193,14 @@ interface ISuperRegistry {
         view
         returns (address factoryStateRegistry_);
 
+    /// @dev gets the super positions
+    /// @return superPositions_ the address of the super positions
+    function superPositions() external view returns (address superPositions_);
+
+    /// @dev gets the super rbac
+    /// @return superRBAC_ the address of the super rbac
+    function superRBAC() external view returns (address superRBAC_);
+
     /// @dev gets the address of a bridge
     /// @param bridgeId_ is the id of a bridge
     /// @return bridgeAddress_ is the address of the form
@@ -130,8 +214,4 @@ interface ISuperRegistry {
     function getAmbAddress(
         uint8 ambId_
     ) external view returns (address ambAddress_);
-
-    /// @dev gets the super positions
-    /// @return superPositions_ the address of the super positions
-    function superPositions() external view returns (address superPositions_);
 }

@@ -7,6 +7,7 @@ import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IMessageBus} from "./interface/IMessageBus.sol";
 import {IMessageReceiver} from "./interface/IMessageReceiver.sol";
+import {Error} from "../../utils/Error.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
 
@@ -67,7 +68,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
 
         uint64 chainId = ambChainId[dstChainId_];
@@ -97,7 +98,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
 
         uint256 totalChains = broadcastChains.length;
@@ -121,7 +122,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         uint64 ambChainId_
     ) external onlyOwner {
         if (superChainId_ == 0 || ambChainId_ == 0) {
-            revert INVALID_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         ambChainId[superChainId_] = ambChainId_;
@@ -138,7 +139,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         address authorizedImpl_
     ) external onlyOwner {
         if (domain_ == 0) {
-            revert INVALID_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         if (authorizedImpl_ == address(0)) {
@@ -164,7 +165,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
         if (msg.sender != address(messageBus)) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
 
         // if (sender_ != castAddr(authorizedImpl[origin_])) {
@@ -174,7 +175,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         bytes32 hash = keccak256(message_);
 
         if (processedMessages[hash]) {
-            revert DUPLICATE_PAYLOAD();
+            revert Error.DUPLICATE_PAYLOAD();
         }
 
         processedMessages[hash] = true;

@@ -8,7 +8,9 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {InitSingleVaultData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
+import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
+import {Error} from "./utils/Error.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
@@ -43,6 +45,34 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     uint16 public chainId;
 
     /*///////////////////////////////////////////////////////////////
+                            MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlySuperRouter() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(
+                msg.sender
+            )
+        ) revert Error.NOT_SUPER_ROUTER();
+        _;
+    }
+
+    modifier onlyTokenBank() {
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasTokenBankRole(msg.sender))
+            revert Error.NOT_TOKEN_BANK();
+        _;
+    }
+
+    modifier onlyProtocolAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
@@ -62,9 +92,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         address superRegistry_,
         address vault_
     ) external initializer {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
         if (ISuperRegistry(superRegistry_) != superRegistry)
-            revert INVALID_SUPER_REGISTRY();
+            revert Error.NOT_SUPER_REGISTRY();
         chainId = chainId_;
         vault = vault_;
     }
@@ -96,9 +126,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev NOTE: Should this function return?
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
-    ) external payable override returns (uint256 dstAmount) {
-        if (msg.sender != superRegistry.superRouter())
-            revert NOT_SUPER_ROUTER();
+    ) external payable override onlySuperRouter returns (uint256 dstAmount) {
         dstAmount = _directDepositIntoVault(singleVaultData_);
     }
 
@@ -110,8 +138,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev NOTE: Should this function return?
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
-    ) external virtual override returns (uint256 dstAmount) {
-        if (msg.sender != superRegistry.tokenBank()) revert NOT_TOKEN_BANK();
+    ) external override onlyTokenBank returns (uint256 dstAmount) {
         dstAmount = _xChainDepositIntoVault(singleVaultData_);
     }
 
@@ -122,9 +149,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @return dstAmount  The amount of tokens withdrawn in same chain action
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) external override returns (uint256 dstAmount) {
-        if (msg.sender != superRegistry.superRouter())
-            revert NOT_SUPER_ROUTER();
+    ) external override onlySuperRouter returns (uint256 dstAmount) {
         dstAmount = _directWithdrawFromVault(singleVaultData_);
     }
 
@@ -134,9 +159,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @return dstAmounts  The amount of tokens withdrawn in same chain action
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) external override returns (uint256[] memory dstAmounts) {
-        if (msg.sender != superRegistry.tokenBank()) revert NOT_TOKEN_BANK();
-
+    ) external override onlyTokenBank returns (uint256[] memory dstAmounts) {
         /// @dev FIXME: not returning anything YET
         _xChainWithdrawFromVault(singleVaultData_);
     }
@@ -272,13 +295,14 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
                             DEV FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev FIXME this needs logic in superformfactory to withdraw stuck tokens (or another way)
+    /// @dev FIXME Decide to keep this?
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function withdrawToken(address tokenContract_, uint256 amount) external {
-        if (msg.sender != superRegistry.superFormFactory())
-            revert NOT_SUPER_FORM_FACTORY();
+    function emergencyWithdrawToken(
+        address tokenContract_,
+        uint256 amount
+    ) external onlyProtocolAdmin {
         ERC20 tokenContract = ERC20(tokenContract_);
 
         /// note: transfer the token from address of this contract
@@ -286,12 +310,13 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         tokenContract.transfer(msg.sender, amount);
     }
 
-    /// @dev FIXME this needs logic in superformfactory to withdraw stuck tokens (or another way)
+    /// @dev FIXME Decide to keep this?
+    /// TODO: transfer may not work in zkSync - careful
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function withdrawNativeToken(uint256 amount) external {
-        if (msg.sender != superRegistry.superFormFactory())
-            revert NOT_SUPER_FORM_FACTORY();
+    function emergencyWithdrawNativeToken(
+        uint256 amount
+    ) external onlyProtocolAdmin {
         payable(msg.sender).transfer(amount);
     }
 }

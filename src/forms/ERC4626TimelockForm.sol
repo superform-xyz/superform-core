@@ -9,25 +9,13 @@ import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
+import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 /// @title ERC4626TimelockForm
 /// @notice The Form implementation with timelock extension for IERC4626Timelock vaults
 contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
-
-    /*///////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev error thrown when the bridge tokens haven't arrived to destination
-    error BRIDGE_TOKENS_PENDING();
-
-    /// @dev unlock already requested, cooldown period didn't pass yet
-    error WITHDRAW_COOLDOWN_PERIOD();
-
-    /// @dev error thrown when the unlock reques
-    error LOCKED();
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
@@ -158,7 +146,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 /// all clear. unlock after cooldown and enough of the shares. execute redeem
                 return 0;
             } else {
-                /// not enough shares to unlock. revert NOT_ENOUGH_UNLOCKED
+                /// not enough shares to unlock. revert Error.NOT_ENOUGH_UNLOCKED
                 return 1;
             }
         }
@@ -168,7 +156,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             request.startedAt + IERC4626Timelock(vault_).lockPeriod() <
             block.timestamp
         ) {
-            /// unlock cooldown period not passed. revert WITHDRAW_COOLDOWN_PERIOD
+            /// unlock cooldown period not passed. revert Error.WITHDRAW_COOLDOWN_PERIOD
             return 3;
         }
     }
@@ -198,7 +186,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                     srcSender,
                     address(this)
                 ) < singleVaultData_.liqData.amount
-            ) revert DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+            ) revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
             ERC20(singleVaultData_.liqData.token).safeTransferFrom(
                 srcSender,
@@ -221,10 +209,10 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
         uint256 balanceAfter = collateralToken.balanceOf(address(this));
         if (balanceAfter - balanceBefore < singleVaultData_.amount)
-            revert DIRECT_DEPOSIT_INVALID_DATA();
+            revert Error.DIRECT_DEPOSIT_INVALID_DATA();
 
         if (address(v.asset()) != collateral)
-            revert DIRECT_DEPOSIT_INVALID_COLLATERAL();
+            revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
         /// DEVNOTE: allowance is modified inside of the ERC20.transferFrom() call
@@ -245,7 +233,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
         address collateral = address(v.asset());
 
         if (address(v.asset()) != collateral)
-            revert DIRECT_WITHDRAW_INVALID_COLLATERAL();
+            revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
 
         /// NOTE: This assumes that first transaction to this vault may just trigger the unlock with cooldown
         /// NOTE: Only next withdraw transaction would trigger the actual withdraw.
@@ -262,7 +250,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             if (len1 != 0) {
                 /// @dev this check here might be too much already, but can't hurt
                 if (singleVaultData_.liqData.amount > singleVaultData_.amount)
-                    revert DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+                    revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
                 dispatchTokens(
                     superRegistry.getBridgeAddress(
@@ -277,14 +265,14 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 );
             }
         } else if (unlock == 1) {
-            revert LOCKED();
+            revert Error.LOCKED();
         } else if (unlock == 2) {
             /// @dev target vault should implement requestUnlock function. with 1Form<>1Vault we can actualy re-define it though.
             /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
             /// @dev IERC4626TimelockForm could be an ERC4626 extension?
             v.requestUnlock(singleVaultData_.amount, address(this));
         } else if (unlock == 3) {
-            revert WITHDRAW_COOLDOWN_PERIOD();
+            revert Error.WITHDRAW_COOLDOWN_PERIOD();
         }
     }
 
@@ -375,7 +363,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
                 /// note: balance validation to prevent draining contract.
                 if (vars.balanceAfter < vars.balanceBefore - vars.dstAmount)
-                    revert XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+                    revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
             } else {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
                 v.redeem(
@@ -385,14 +373,14 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 );
             }
         } else if (vars.unlock == 1) {
-            revert LOCKED();
+            revert Error.LOCKED();
         } else if (vars.unlock == 2) {
             /// @dev target vault should implement requestUnlock function. with 1Form<>1Vault we can actualy re-define it though.
             /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
             /// @dev IERC4626TimelockForm could be an ERC4626 extension?
             v.requestUnlock(singleVaultData_.amount, address(this));
         } else if (vars.unlock == 3) {
-            revert WITHDRAW_COOLDOWN_PERIOD();
+            revert Error.WITHDRAW_COOLDOWN_PERIOD();
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount

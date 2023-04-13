@@ -10,6 +10,7 @@ import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
+import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 /// @title ERC4626Form
@@ -154,7 +155,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                     srcSender,
                     address(this)
                 ) < singleVaultData_.liqData.amount
-            ) revert DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+            ) revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
             ERC20(singleVaultData_.liqData.token).safeTransferFrom(
                 srcSender,
@@ -177,10 +178,10 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         uint256 balanceAfter = collateralToken.balanceOf(address(this));
         if (balanceAfter - balanceBefore < singleVaultData_.amount)
-            revert DIRECT_DEPOSIT_INVALID_DATA();
+            revert Error.DIRECT_DEPOSIT_INVALID_DATA();
 
         if (address(v.asset()) != collateral)
-            revert DIRECT_DEPOSIT_INVALID_COLLATERAL();
+            revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
         collateralToken.approve(vaultLoc, singleVaultData_.amount);
@@ -200,14 +201,14 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         address collateral = address(v.asset());
 
         if (address(v.asset()) != collateral)
-            revert DIRECT_WITHDRAW_INVALID_COLLATERAL();
+            revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
 
         dstAmount = v.redeem(singleVaultData_.amount, receiver, address(this));
 
         if (len1 != 0) {
             /// @dev this check here might be too much already, but can't hurt
             if (singleVaultData_.liqData.amount > singleVaultData_.amount)
-                revert DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+                revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             dispatchTokens(
                 superRegistry.getBridgeAddress(
@@ -301,7 +302,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
             /// note: balance validation to prevent draining contract.
             if (balanceAfter < balanceBefore - dstAmount)
-                revert XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+                revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
         } else {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
             v.redeem(singleVaultData_.amount, srcSender, address(this));

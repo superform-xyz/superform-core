@@ -10,24 +10,6 @@ import {IERC4626} from "./IERC4626.sol";
 
 interface IBaseForm is IERC165Upgradeable {
     /*///////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev if the msg-sender is not token bank
-    error NOT_TOKEN_BANK();
-
-    /// @dev if the msg-sender is not super router
-    error NOT_SUPER_ROUTER();
-
-    /// @dev if the msg-sender is not super form factory
-    error NOT_SUPER_FORM_FACTORY();
-
-    /// @dev is emitted when the chain id input is invalid.
-    error INVALID_INPUT_CHAIN_ID();
-
-    /// @dev is emitted when the super registry input is invalid
-    error INVALID_SUPER_REGISTRY();
-    /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
@@ -42,31 +24,6 @@ interface IBaseForm is IERC165Upgradeable {
         uint256 amount,
         address vault
     );
-
-    /*///////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev is emitted when the chain id brought in the cross chain message is invalid
-    error INVALID_CHAIN_ID();
-
-    /// @dev is emitted when the allowance in direct deposit is not correct
-    error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
-
-    /// @dev is emitted when the amount in direct deposit is not correct
-    error DIRECT_DEPOSIT_INVALID_DATA();
-
-    /// @dev is emitted when the collateral in direct deposit is not correct
-    error DIRECT_DEPOSIT_INVALID_COLLATERAL();
-
-    /// @dev is emitted when the collateral in direct withdraw is not correct
-    error DIRECT_WITHDRAW_INVALID_COLLATERAL();
-
-    /// @dev is emitted when the amount in direct withdraw is not correct
-    error DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
-
-    /// @dev is emitted when the amount in xchain withdraw is not correct
-    error XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL WRITE FUNCTONS
