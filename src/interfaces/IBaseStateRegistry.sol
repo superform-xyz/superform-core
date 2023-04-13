@@ -6,35 +6,6 @@ pragma solidity 0.8.19;
 /// @dev stores, updates & process cross-chain payloads
 interface IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
-                                Errors
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev is emitted when the chain id input is invalid.
-    error INVALID_INPUT_CHAIN_ID();
-
-    error INVALID_BRIDGE_ID();
-
-    error INVALID_BRIDGE_ADDRESS();
-
-    error INVALID_PAYLOAD_ID();
-
-    error INVALID_PAYLOAD_STATE();
-
-    error INVALID_PAYLOAD_UPDATE_REQUEST();
-
-    error INVALID_ARR_LENGTH();
-
-    error NEGATIVE_SLIPPAGE();
-
-    error SLIPPAGE_OUT_OF_BOUNDS();
-
-    error PAYLOAD_NOT_UPDATED();
-
-    error QUORUM_NOT_REACHED();
-
-    error INVALID_PROOF_BRIDGE_ID();
-
-    /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
     /// @dev is emitted when a cross-chain payload is received in the state registry.

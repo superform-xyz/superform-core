@@ -1,20 +1,21 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
+import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ITokenBank} from "./interfaces/ITokenBank.sol";
+import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
 
 /// @title Token Bank
 /// @author Zeropoint Labs.
 /// @dev Temporary area for underlying tokens to wait until they are ready to be sent to the form vault
-contract TokenBank is ITokenBank, AccessControl {
+contract TokenBank is ITokenBank {
     using SafeTransferLib for ERC20;
 
     /*///////////////////////////////////////////////////////////////
@@ -36,15 +37,31 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @dev safeGasParam is used while sending layerzero message from destination to router.
     bytes public safeGasParam;
 
-    /// @notice deploy stateRegistry before SuperDestination
+    modifier onlyStateRegistry() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(
+                msg.sender
+            )
+        ) revert Error.NOT_CORE_STATE_REGISTRY();
+        _;
+    }
+
+    modifier onlyProtocolAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
+
     /// @param chainId_              Superform chain id
     /// @param superRegistry_ the superform registry contract
     constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         superRegistry = ISuperRegistry(superRegistry_);
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -58,7 +75,7 @@ contract TokenBank is ITokenBank, AccessControl {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositMultiSync(
         InitMultiVaultData memory multiVaultData_
-    ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
+    ) external payable override onlyStateRegistry {
         (
             address[] memory superForms,
             uint256[] memory formIds,
@@ -93,7 +110,7 @@ contract TokenBank is ITokenBank, AccessControl {
                     })
                 );
             } else {
-                revert BRIDGE_TOKENS_PENDING();
+                revert Error.BRIDGE_TOKENS_PENDING();
             }
         }
 
@@ -143,7 +160,7 @@ contract TokenBank is ITokenBank, AccessControl {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositSync(
         InitSingleVaultData memory singleVaultData_
-    ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
+    ) external payable override onlyStateRegistry {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
         ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
         uint256 dstAmount;
@@ -161,7 +178,7 @@ contract TokenBank is ITokenBank, AccessControl {
                 singleVaultData_
             );
         } else {
-            revert BRIDGE_TOKENS_PENDING();
+            revert Error.BRIDGE_TOKENS_PENDING();
         }
 
         (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
@@ -210,7 +227,7 @@ contract TokenBank is ITokenBank, AccessControl {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function withdrawMultiSync(
         InitMultiVaultData memory multiVaultData_
-    ) external payable override onlyRole(STATE_REGISTRY_ROLE) {
+    ) external payable override onlyStateRegistry {
         /// @dev This will revert ALL of the transactions if one of them fails.
         for (uint256 i = 0; i < multiVaultData_.superFormIds.length; i++) {
             withdrawSync(
@@ -232,7 +249,7 @@ contract TokenBank is ITokenBank, AccessControl {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function withdrawSync(
         InitSingleVaultData memory singleVaultData_
-    ) public payable override onlyRole(STATE_REGISTRY_ROLE) {
+    ) public payable override onlyStateRegistry {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
         IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
@@ -243,8 +260,8 @@ contract TokenBank is ITokenBank, AccessControl {
     /// @param param_    represents adapterParams V2.0 of layerzero
     function updateSafeGasParam(
         bytes memory param_
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (param_.length == 0) revert INVALID_GAS_OVERRIDE();
+    ) external onlyProtocolAdmin {
+        if (param_.length == 0) revert Error.INVALID_GAS_OVERRIDE();
         bytes memory oldParam = safeGasParam;
         safeGasParam = param_;
 

@@ -1,16 +1,17 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "openzeppelin-contracts/contracts/access/AccessControl.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IMultiTxProcessor} from "../interfaces/IMultiTxProcessor.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
+import {Error} from "../utils/Error.sol";
 
 /// @title MultiTxProcessor
 /// @author Zeropoint Labs.
 /// @dev handles all destination chain swaps.
 /// @notice all write functions can only be accessed by superform keepers.
-contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
+contract MultiTxProcessor is IMultiTxProcessor {
     /*///////////////////////////////////////////////////////////////
                     Access Control Role Constants
     //////////////////////////////////////////////////////////////*/
@@ -25,15 +26,28 @@ contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
     /// @notice chainId represents unique chain id for each chains.
     uint16 public immutable chainId;
 
+    modifier onlySwapper() {
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasSwapperRole(msg.sender))
+            revert Error.NOT_SWAPPER();
+        _;
+    }
+
+    modifier onlyProtocolAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
+
     /// @param chainId_              SuperForm chain id
     /// @param superRegistry_        SuperForm registry contract
     constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         superRegistry = ISuperRegistry(superRegistry_);
-
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -56,7 +70,7 @@ contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
         address approvalToken_,
         address allowanceTarget_,
         uint256 amount_
-    ) external override onlyRole(SWAPPER_ROLE) {
+    ) external override onlySwapper {
         address to = superRegistry.getBridgeAddress(bridgeId_);
         if (allowanceTarget_ != address(0)) {
             IERC20(approvalToken_).approve(allowanceTarget_, amount_);
@@ -81,7 +95,7 @@ contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
         address[] calldata approvalTokens_,
         address allowanceTarget_,
         uint256[] calldata amounts_
-    ) external override onlyRole(SWAPPER_ROLE) {
+    ) external override onlySwapper {
         address to = superRegistry.getBridgeAddress(bridgeId_);
         for (uint256 i = 0; i < txDatas_.length; i++) {
             if (allowanceTarget_ != address(0)) {
@@ -101,15 +115,17 @@ contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            Developmental Functions
+                            Dev Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev FIXME Decide to keep this?
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function withdrawToken(
+    function emergencyWithdrawToken(
         address _tokenContract,
         uint256 _amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyProtocolAdmin {
         IERC20 tokenContract = IERC20(_tokenContract);
 
         /// note: transfer the token from address of this contract
@@ -117,11 +133,13 @@ contract MultiTxProcessor is IMultiTxProcessor, AccessControl {
         tokenContract.transfer(msg.sender, _amount);
     }
 
+    /// @dev FIXME Decide to keep this?
+    /// TODO: transfer may not work in zkSync - careful
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function withdrawNativeToken(
+    function emergencyWithdrawNativeToken(
         uint256 _amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external onlyProtocolAdmin {
         payable(msg.sender).transfer(_amount);
     }
 }
