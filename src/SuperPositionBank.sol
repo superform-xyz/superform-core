@@ -30,10 +30,11 @@ contract SuperPositionBank is ERC165 {
     }
 
     /// @dev Could call SuperRouter.deposit() function from here, first transfering tokens to this contract, thus saving gas
-    // function depositToSourceDirectly() external;
-
     /// NOTE: What if we open this function to deposit here and then only make a check from SuperRouter.withdraw() if returned index matches caller of SuperRouter?
     /// NOTE: Would require users to call two separate contracts and fragments flow
+    // function depositToSourceDirectly() external;
+
+    /// @notice Create a new position in the queue for withdrawal. _owner can have multiple positions in the queue
     function acceptPosition(uint256[] memory _tokenIds, uint256[] memory _amounts, address _owner) public onlyRouter returns (uint256 index) {
         require(_tokenIds.length == _amounts.length, "LENGTH_MISMATCH");
 
@@ -44,17 +45,19 @@ contract SuperPositionBank is ERC165 {
         index = queueCounter[_owner]++;
     }
 
+    /// @notice Intended to be called in case of failure to perform Withdraw, we just return SuperPositions to owner
     function returnPosition(address _owner, uint256 positionIndex) public onlyRouter {
         Position memory position = queue[_owner][positionIndex];
         token.safeBatchTransferFrom(address(this), msg.sender, position.tokenIds, position.amounts, "");
         delete queue[_owner][positionIndex];
     }
 
-    // function burnPosition(address _owner, uint256 positionIndex) public onlyRouter {
-    //     Position memory position = queue[_owner][positionIndex];
-    //     token.burnBatch(position.tokenIds, position.amounts);
-    //     delete queue[_owner][positionIndex];
-    // }
+    /// TODO: Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
+    function burnPosition(address _owner, uint256 positionIndex) public onlyRouter {
+        Position memory position = queue[_owner][positionIndex];
+        // token.burnBatch(position.tokenIds, position.amounts); /// <== decide how/where to burn
+        delete queue[_owner][positionIndex];
+    }
 
     /// @dev Private queue requires public getter
     function getPosition(address _owner, uint256 positionIndex) public view returns (uint256[] memory tokenIds, uint256[] memory amounts) {

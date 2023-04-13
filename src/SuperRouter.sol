@@ -386,6 +386,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
         );
 
         /// @dev Should really use singleApprove here, but this will be a loop...
+        /// NOTE: Remember to remove this approval later on (at least)
         superPositions.setApprovalForAll(address(bank), true);
 
         /// Step 2: This is deposit-like action, requires approve from this contract
@@ -395,6 +396,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
             req.superFormsData.amounts,
             vars.srcSender
         );
+
+        /// Step 3: Save index of position create in SuperPositionBank in extraData (wip, extraData can contain more)
+        req.superFormsData.extraFormData = abi.encode(index);
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -901,16 +905,20 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
             /// @dev FIXME: needs to call SuperPositionBank to burn the vault positions.
 
             bytes memory extraData = singleVaultData.extraFormData; // read customForm type here
+            uint256 index = abi.decode(extraData, (uint256));
 
-            if (extraData.length == 0) {
-                ISuperPositions(superRegistry.superPositions()).burnSingleSP( // <= Err with conversion / decide on batch or single
-                    srcSender,
-                    singleVaultData.superFormId,
-                    returnData.amount
-                );
-            } else {
-                /// TODO: call with customForm returnType codes
-            }
+            SuperPositionBank bank = SuperPositionBank(
+                superRegistry.superPositionBank()
+            );
+            bank.burnPosition(srcSender, index);
+
+            /// NOTE: Worth revisitng usage of burnBatch vs burnSingleSP and it's overall consistency of usage
+            // ISuperPositions(superRegistry.superPositions()).burnSingleSP( // <= Err with conversion / decide on batch or single
+            //     srcSender,
+            //     singleVaultData.superFormId,
+            //     returnData.amount
+            // );
+
         } else {
             revert INVALID_PAYLOAD_STATUS();
         }
