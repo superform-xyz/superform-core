@@ -6,6 +6,8 @@ interface ISuperRegistry {
                                 Events
     //////////////////////////////////////////////////////////////*/
 
+    event SetChainId(uint256 indexed chainId);
+
     /// @dev is emitted when an address is set.
     event ProtocolAddressUpdated(
         bytes32 indexed protocolAddressId,
@@ -73,6 +75,14 @@ interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev sets the chain id.
+    /// @param chainId_ the superform chain id this registry is deployed on
+    function setChainId(uint16 chainId_) external;
+
+    /// @dev sets a new protocol address.
+    /// @param protocolAddressId_ the protocol address identifier
+    /// @param newAddress_ the new address
     function setNewProtocolAddress(
         bytes32 protocolAddressId_,
         address newAddress_
@@ -129,6 +139,9 @@ interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev gets the superform chainId of the protocol
+    function chainId() external view returns (uint16);
 
     /// @dev returns the id of the protocol admin
     function PROTOCOL_ADMIN() external view returns (bytes32);

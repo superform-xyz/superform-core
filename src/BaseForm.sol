@@ -41,9 +41,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev the vault this form pertains to
     address public vault;
 
-    /// @dev chainId represents the superform chain id of the specific chain.
-    uint16 public chainId;
-
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
     //////////////////////////////////////////////////////////////*/
@@ -82,20 +79,16 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         _disableInitializers();
     }
 
-    /// @param chainId_              Layerzero chain id
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
     /// @dev FIXME: missing means for admin to change implementations
     function initialize(
-        uint16 chainId_,
         address superRegistry_,
         address vault_
     ) external initializer {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
         if (ISuperRegistry(superRegistry_) != superRegistry)
             revert Error.NOT_SUPER_REGISTRY();
-        chainId = chainId_;
         vault = vault_;
     }
 

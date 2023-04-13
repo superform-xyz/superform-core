@@ -52,6 +52,7 @@ abstract contract BaseSetup is DSTest, Test {
     address public deployer = address(777);
     address[] public users;
     uint256 public trustedRemote;
+    bytes32 constant salt = "SUPERFORM";
     mapping(uint16 chainId => mapping(bytes32 implementation => address at))
         public contracts;
 
@@ -265,29 +266,32 @@ abstract contract BaseSetup is DSTest, Test {
             vm.selectFork(vars.fork);
 
             /// @dev 1.1- deploy LZ Helper from Pigeon
-            vars.lzHelper = address(new LayerZeroHelper());
+            vars.lzHelper = address(new LayerZeroHelper{salt: salt}());
             vm.allowCheatcodes(vars.lzHelper);
 
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars
                 .lzHelper;
 
+            console.log("lzhelper: ", vars.lzHelper);
+
             /// @dev 1.2- deploy Hyperlane Helper from Pigeon
-            vars.hyperlaneHelper = address(new HyperlaneHelper());
+            vars.hyperlaneHelper = address(new HyperlaneHelper{salt: salt}());
             vm.allowCheatcodes(vars.hyperlaneHelper);
 
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars
                 .hyperlaneHelper;
 
             /// @dev 2 - Deploy SuperRegistry and assign roles
-            vars.superRegistry = address(new SuperRegistry(vars.chainId));
+            vars.superRegistry = address(new SuperRegistry{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
 
+            SuperRegistry(vars.superRegistry).setChainId(vars.chainId);
             SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
 
             /// @dev 3 - Deploy SuperRBAC
             vars.superRBAC = address(
-                new SuperRBAC(vars.chainId, vars.superRegistry)
+                new SuperRBAC{salt: salt}(vars.superRegistry)
             );
             contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars
                 .superRBAC;
@@ -310,8 +314,7 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 4.1 - deploy Core State Registry
 
             vars.coreStateRegistry = address(
-                new CoreStateRegistry(
-                    vars.chainId,
+                new CoreStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry)
                 )
             );
@@ -335,10 +338,14 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 4.2- deploy Factory State Registry
 
             vars.factoryStateRegistry = address(
-                new FactoryStateRegistry(
-                    vars.chainId,
+                new FactoryStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry)
                 )
+            );
+
+            console.log(
+                "vars.factoryStateRegistry: ",
+                vars.factoryStateRegistry
             );
             contracts[vars.chainId][
                 bytes32(bytes("FactoryStateRegistry"))
@@ -371,13 +378,20 @@ abstract contract BaseSetup is DSTest, Test {
                 bytes32(bytes("HyperlaneImplementation"))
             ] = vars.hyperlaneImplementation;
 
+            console.log("i: ", i);
+            console.log("vars.lzImplementation: ", vars.lzImplementation);
+            console.log(
+                "vars.hyperlaneImplementation: ",
+                vars.hyperlaneImplementation
+            );
             if (i == 0) {
+                /// @dev FIXME
                 ambAddresses.push(vars.lzImplementation);
                 ambAddresses.push(vars.hyperlaneImplementation);
             }
 
             /// @dev 6- deploy SocketRouterMockFork
-            vars.socketRouter = address(new SocketRouterMockFork());
+            vars.socketRouter = address(new SocketRouterMockFork{salt: salt}());
             contracts[vars.chainId][
                 bytes32(bytes("SocketRouterMockFork"))
             ] = vars.socketRouter;
@@ -391,7 +405,7 @@ abstract contract BaseSetup is DSTest, Test {
             /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
-                    new MockERC20(
+                    new MockERC20{salt: salt}(
                         UNDERLYING_TOKENS[j],
                         UNDERLYING_TOKENS[j],
                         18,
@@ -435,7 +449,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 8 - Deploy SuperFormFactory
             vars.factory = address(
-                new SuperFormFactory(vars.chainId, vars.superRegistry)
+                new SuperFormFactory{salt: salt}(vars.superRegistry)
             );
 
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
@@ -446,13 +460,15 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 9 - Deploy 4626Form implementations
             // Standard ERC4626 Form
-            vars.erc4626Form = address(new ERC4626Form(vars.superRegistry));
+            vars.erc4626Form = address(
+                new ERC4626Form{salt: salt}(vars.superRegistry)
+            );
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
                 .erc4626Form;
 
             // Timelock + ERC4626 Form
             vars.erc4626TimelockForm = address(
-                new ERC4626TimelockForm(vars.superRegistry)
+                new ERC4626TimelockForm{salt: salt}(vars.superRegistry)
             );
             contracts[vars.chainId][
                 bytes32(bytes("ERC4626TimelockForm"))
@@ -471,7 +487,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 11 - Deploy TokenBank
             vars.tokenBank = address(
-                new TokenBank(vars.chainId, vars.superRegistry)
+                new TokenBank{salt: salt}(vars.superRegistry)
             );
 
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
@@ -483,7 +499,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 12 - Deploy SuperRouter
             vars.superRouter = address(
-                new SuperRouter(vars.chainId, vars.superRegistry)
+                new SuperRouter{salt: salt}(vars.superRegistry)
             );
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars
                 .superRouter;
@@ -496,11 +512,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 13 - Deploy SuperPositions
             vars.superPositions = address(
-                new SuperPositions(
-                    vars.chainId,
-                    "test.com/",
-                    vars.superRegistry
-                )
+                new SuperPositions{salt: salt}("test.com/", vars.superRegistry)
             );
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
@@ -512,7 +524,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 14 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(
-                new MultiTxProcessor(vars.chainId, vars.superRegistry)
+                new MultiTxProcessor{salt: salt}(vars.superRegistry)
             );
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
@@ -856,5 +868,23 @@ abstract contract BaseSetup is DSTest, Test {
         }
 
         return addr;
+    }
+
+    ///@dev Compute the address of the contract to be deployed
+    function getAddress(
+        bytes memory bytecode_,
+        uint salt_
+    ) public view returns (address) {
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0xff),
+                address(this),
+                salt_,
+                keccak256(bytecode_)
+            )
+        );
+
+        // NOTE: cast last 20 bytes of hash to address
+        return address(uint160(uint(hash)));
     }
 }

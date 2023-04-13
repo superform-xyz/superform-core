@@ -54,6 +54,9 @@ library Error {
     /// @dev error thrown when the safe gas param is incorrectly set
     error INVALID_GAS_OVERRIDE();
 
+    /// @dev error thrown if function callability has been disabled
+    error DISABLED();
+
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/

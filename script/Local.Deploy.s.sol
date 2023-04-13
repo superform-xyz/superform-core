@@ -88,6 +88,8 @@ contract Deploy is Script {
         "SuperRBAC"
     ];
 
+    bytes32 constant salt = "SUPERFORM";
+
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -272,14 +274,14 @@ contract Deploy is Script {
             vm.startBroadcast();
 
             /// @dev 1 - Deploy SuperRegistry and assign roles
-            vars.superRegistry = address(new SuperRegistry(vars.chainId));
+            vars.superRegistry = address(new SuperRegistry{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
             SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
 
             /// @dev 2 - Deploy SuperRBAC
             vars.superRBAC = address(
-                new SuperRBAC(vars.chainId, vars.superRegistry)
+                new SuperRBAC{salt: salt}(vars.superRegistry)
             );
             contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars
                 .superRBAC;
@@ -296,8 +298,7 @@ contract Deploy is Script {
             /// @dev 3.1 - deploy Core State Registry
 
             vars.coreStateRegistry = address(
-                new CoreStateRegistry(
-                    vars.chainId,
+                new CoreStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry)
                 )
             );
@@ -315,8 +316,7 @@ contract Deploy is Script {
             /// @dev 3.2- deploy Factory State Registry
 
             vars.factoryStateRegistry = address(
-                new FactoryStateRegistry(
-                    vars.chainId,
+                new FactoryStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry)
                 )
             );
@@ -329,7 +329,7 @@ contract Deploy is Script {
             );
             /// @dev 4.1- deploy Layerzero Implementation
             vars.lzImplementation = address(
-                new LayerzeroImplementation(
+                new LayerzeroImplementation{salt: salt}(
                     lzEndpoints[i],
                     SuperRegistry(vars.superRegistry)
                 )
@@ -342,7 +342,7 @@ contract Deploy is Script {
 
             /// @dev 4.2- deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
-                new HyperlaneImplementation(
+                new HyperlaneImplementation{salt: salt}(
                     HyperlaneMailbox,
                     HyperlaneGasPaymaster,
                     SuperRegistry(vars.superRegistry)
@@ -406,7 +406,7 @@ contract Deploy is Script {
 
             /// @dev 6 - Deploy SuperFormFactory
             vars.factory = address(
-                new SuperFormFactory(vars.chainId, vars.superRegistry)
+                new SuperFormFactory{salt: salt}(vars.superRegistry)
             );
 
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
@@ -417,13 +417,15 @@ contract Deploy is Script {
 
             /// @dev 7 - Deploy 4626Form implementations
             // Standard ERC4626 Form
-            vars.erc4626Form = address(new ERC4626Form(vars.superRegistry));
+            vars.erc4626Form = address(
+                new ERC4626Form{salt: salt}(vars.superRegistry)
+            );
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
                 .erc4626Form;
 
             // Timelock + ERC4626 Form
             vars.erc4626TimelockForm = address(
-                new ERC4626TimelockForm(vars.superRegistry)
+                new ERC4626TimelockForm{salt: salt}(vars.superRegistry)
             );
             contracts[vars.chainId][
                 bytes32(bytes("ERC4626TimelockForm"))
@@ -442,7 +444,7 @@ contract Deploy is Script {
 
             /// @dev 9 - Deploy TokenBank
             vars.tokenBank = address(
-                new TokenBank(vars.chainId, vars.superRegistry)
+                new TokenBank{salt: salt}(vars.superRegistry)
             );
 
             contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
@@ -454,7 +456,7 @@ contract Deploy is Script {
             /// @dev 10 - Deploy SuperRouter
 
             vars.superRouter = address(
-                new SuperRouter(vars.chainId, vars.superRegistry)
+                new SuperRouter{salt: salt}(vars.superRegistry)
             );
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars
                 .superRouter;
@@ -464,11 +466,7 @@ contract Deploy is Script {
 
             /// @dev 11 - Deploy SuperPositions
             vars.superPositions = address(
-                new SuperPositions(
-                    vars.chainId,
-                    "test.com/",
-                    vars.superRegistry
-                )
+                new SuperPositions{salt: salt}("test.com/", vars.superRegistry)
             );
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
@@ -478,7 +476,7 @@ contract Deploy is Script {
             );
             /// @dev 12 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(
-                new MultiTxProcessor(vars.chainId, vars.superRegistry)
+                new MultiTxProcessor{salt: salt}(vars.superRegistry)
             );
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;

@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/console.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {SuperFormFactory} from "../SuperFormFactory.sol";
 import {FactoryStateRegistry} from "../crosschain-data/FactoryStateRegistry.sol";
 import {ERC4626Form} from "../forms/ERC4626Form.sol";
@@ -39,7 +40,7 @@ contract SuperFormFactoryTest is BaseSetup {
 
         assertEq(
             chainId,
-            SuperFormFactory(getContract(chainId, "SuperFormFactory")).chainId()
+            ISuperRegistry(getContract(chainId, "SuperRegistry")).chainId()
         );
     }
 

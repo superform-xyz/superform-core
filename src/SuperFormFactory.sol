@@ -22,9 +22,6 @@ contract SuperFormFactory is ISuperFormFactory {
     //////////////////////////////////////////////////////////////*/
     uint256 constant MAX_FORM_ID = 2 ** 80 - 1;
 
-    /// @dev chainId represents the superform chain id.
-    uint16 public immutable chainId;
-
     ISuperRegistry public immutable superRegistry;
 
     address[] public formBeacons;
@@ -47,12 +44,8 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @dev sets caller as the admin of the contract.
-    /// @param chainId_ the superform? chain id this factory is deployed on
     /// @param superRegistry_ the superform registry contract
-    constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
+    constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -78,7 +71,7 @@ contract SuperFormFactory is ISuperFormFactory {
 
         /// @dev TODO - should we predict beacon address?
         beacon = address(
-            new FormBeacon(chainId, address(superRegistry), formImplementation_)
+            new FormBeacon(address(superRegistry), formImplementation_)
         );
 
         /// @dev this should instantiate the beacon for each form
@@ -121,7 +114,6 @@ contract SuperFormFactory is ISuperFormFactory {
                 address(tFormBeacon),
                 abi.encodeWithSelector(
                     BaseForm(payable(address(0))).initialize.selector,
-                    chainId,
                     superRegistry,
                     vault_
                 )
@@ -129,7 +121,11 @@ contract SuperFormFactory is ISuperFormFactory {
         );
 
         /// @dev this will always be unique because superForm is unique.
-        superFormId_ = _packSuperForm(superForm_, formBeaconId_, chainId);
+        superFormId_ = _packSuperForm(
+            superForm_,
+            formBeaconId_,
+            superRegistry.chainId()
+        );
 
         vaultToSuperForms[vault_].push(superFormId_);
 
@@ -304,6 +300,7 @@ contract SuperFormFactory is ISuperFormFactory {
         uint256 len = superFormIds_.length;
 
         uint16 chainIdRes;
+        uint16 chainId = superRegistry.chainId();
         for (uint256 i = 0; i < len; i++) {
             (, , chainIdRes) = _getSuperForm(superFormIds_[i]);
             if (chainIdRes == chainId) {

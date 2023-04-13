@@ -11,7 +11,7 @@ import {Error} from "../utils/Error.sol";
 /// @dev Keeps information on all protocolAddresses used in the SuperForms ecosystem.
 contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
-    uint16 public immutable chainId;
+    uint16 public chainId;
 
     mapping(bytes32 id => address moduleAddress) private protocolAddresses;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
@@ -31,17 +31,25 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     bytes32 public constant override SUPER_RBAC = "SUPER_RBAC";
 
     /// @dev sets caller as the admin of the contract.
-    /// @param chainId_ the superform chain id this registry is deployed on
-    constructor(uint16 chainId_) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
+    constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc ISuperRegistry
+    function setChainId(
+        uint16 chainId_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (chainId != 0) revert Error.DISABLED();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
+
+        chainId = chainId_;
+
+        emit SetChainId(chainId_);
+    }
 
     /// @inheritdoc ISuperRegistry
     function setNewProtocolAddress(
