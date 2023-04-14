@@ -913,6 +913,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler, Ownable {
             bank.burnPosition(srcSender, index);
 
             /// NOTE: Worth revisitng usage of burnBatch vs burnSingleSP and it's overall consistency of usage
+            /// NOTE: Split of singleSync and multiSync forces to also accept positions as single or batch in separate function
             // ISuperPositions(superRegistry.superPositions()).burnSingleSP( // <= Err with conversion / decide on batch or single
             //     srcSender,
             //     singleVaultData.superFormId,

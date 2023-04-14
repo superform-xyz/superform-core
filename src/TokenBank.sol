@@ -235,6 +235,7 @@ contract TokenBank is ITokenBank, AccessControl {
     ) public payable override onlyRole(STATE_REGISTRY_ROLE) {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
+        /// @dev Withdraw from Form
         IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
 
         (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(

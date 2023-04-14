@@ -15,8 +15,15 @@ contract SuperPositionBank is ERC165 {
         uint256[] tokenIds;
         uint256[] amounts;
     }
+
+    struct PositionSingle {
+        uint256 tokenId;
+        uint256 amount;
+    }
     
     mapping(address => mapping(uint256 => Position)) private queue;
+    mapping(address => mapping(uint256 => PositionSingle)) private queueSingle;
+
     mapping(address => uint256) public queueCounter;
 
     constructor(IERC1155 _token, address _superRouter) {
@@ -37,19 +44,26 @@ contract SuperPositionBank is ERC165 {
     /// @notice Create a new position in the queue for withdrawal. _owner can have multiple positions in the queue
     function acceptPosition(uint256[] memory _tokenIds, uint256[] memory _amounts, address _owner) public onlyRouter returns (uint256 index) {
         require(_tokenIds.length == _amounts.length, "LENGTH_MISMATCH");
-
         token.safeBatchTransferFrom(msg.sender, address(this), _tokenIds, _amounts, "");
-
         Position memory newPosition = Position({tokenIds: _tokenIds, amounts: _amounts});
-        queue[_owner][queueCounter[_owner]] = newPosition;
         index = queueCounter[_owner]++;
+        queue[_owner][index] = newPosition;
+    }
+
+    /// @notice Create a new position in the queue for withdrawal. _owner can have multiple positions in the queue
+    function acceptSinglePosition(uint256 _tokenId, uint256 _amount, address _owner) public onlyRouter returns (uint256 index) {
+        token.safeTransferFrom(msg.sender, address(this), _tokenId, _amount, "");
+        PositionSingle memory newPosition = PositionSingle({tokenId: _tokenId, amount: _amount});
+        index = queueCounter[_owner]++;
+        queueSingle[_owner][index] = newPosition;
     }
 
     /// @notice Intended to be called in case of failure to perform Withdraw, we just return SuperPositions to owner
     function returnPosition(address _owner, uint256 positionIndex) public onlyRouter {
         Position memory position = queue[_owner][positionIndex];
-        token.safeBatchTransferFrom(address(this), msg.sender, position.tokenIds, position.amounts, "");
+        /// @dev _owner is arbitrary argument, re-think this
         delete queue[_owner][positionIndex];
+        token.safeBatchTransferFrom(address(this), _owner, position.tokenIds, position.amounts, "");
     }
 
     /// TODO: Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
