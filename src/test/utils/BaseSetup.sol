@@ -49,6 +49,9 @@ abstract contract BaseSetup is DSTest, Test {
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev
+    address public constant CANONICAL_PERMIT2 =
+        0x000000000022D473030F116dDEE9F6B43aC78BA3;
     address public deployer = address(777);
     address[] public users;
     uint256 public trustedRemote;

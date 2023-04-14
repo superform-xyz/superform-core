@@ -93,7 +93,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
             /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
-            
+
             for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
                 if (
                     CHAIN_0 == DST_CHAINS[i] ||
@@ -133,10 +133,9 @@ abstract contract ProtocolActions is BaseSetup {
                     )
                 );
             } else {
-
                 /// FIXME: NOTE: Shouldn't we validate that at contract level?
                 /// This reverting may give us invalid sense of security. Contract should revert here, not test.
-                
+
                 // if (
                 //     !((vars.underlyingSrcToken.length ==
                 //         vars.targetSuperFormIds.length) &&
@@ -701,6 +700,7 @@ abstract contract ProtocolActions is BaseSetup {
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is Form
             from = args.toDst;
+            console.log("from todst: ", from);
         }
         /// @dev check this from down here when contracts are fixed for multi vault
         /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
@@ -717,15 +717,18 @@ abstract contract ProtocolActions is BaseSetup {
             FORKS[args.toChainId]
         );
 
+        /// @dev FIXME: currently only producing liqRequests for non-permit2 ERC20 transfers!!!
+        /// @dev TODO: need to test native requests and permit2 requests
         LiqRequest memory liqReq = LiqRequest(
             1, /// @dev FIXME: hardcoded for now
             socketTxData,
             args.underlyingToken,
-            getContract(args.srcChainId, "SocketRouterMockFork"),
+            true,
             args.sameUnderlyingCheck != address(0)
                 ? args.totalAmount
                 : args.amount,
-            0
+            0,
+            ""
         );
 
         if (args.sameUnderlyingCheck == address(0)) {
@@ -765,9 +768,10 @@ abstract contract ProtocolActions is BaseSetup {
             1, /// @dev FIXME: hardcoded for now
             socketTxData,
             args.underlyingToken,
-            getContract(args.srcChainId, "SocketRouterMockFork"),
+            true,
             args.amount,
-            0
+            0,
+            ""
         );
 
         superFormData = SingleVaultSFData(

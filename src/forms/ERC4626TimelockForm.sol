@@ -200,10 +200,12 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 ),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                singleVaultData_.liqData.allowanceTarget,
+                singleVaultData_.liqData.isERC20,
                 singleVaultData_.liqData.amount,
                 srcSender,
-                singleVaultData_.liqData.nativeAmount
+                singleVaultData_.liqData.nativeAmount,
+                "",
+                superRegistry.PERMIT2()
             );
         }
 
@@ -258,10 +260,12 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                     ),
                     singleVaultData_.liqData.txData,
                     singleVaultData_.liqData.token,
-                    singleVaultData_.liqData.allowanceTarget,
+                    singleVaultData_.liqData.isERC20,
                     singleVaultData_.liqData.amount,
                     address(this),
-                    singleVaultData_.liqData.nativeAmount
+                    singleVaultData_.liqData.nativeAmount,
+                    "",
+                    superRegistry.PERMIT2()
                 );
             }
         } else if (unlock == 1) {
@@ -354,10 +358,12 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                     ),
                     singleVaultData_.liqData.txData,
                     singleVaultData_.liqData.token,
-                    singleVaultData_.liqData.allowanceTarget,
+                    singleVaultData_.liqData.isERC20,
                     vars.dstAmount,
                     address(this),
-                    singleVaultData_.liqData.nativeAmount
+                    singleVaultData_.liqData.nativeAmount,
+                    "",
+                    superRegistry.PERMIT2()
                 );
                 vars.balanceAfter = ERC20(v.asset()).balanceOf(address(this));
 

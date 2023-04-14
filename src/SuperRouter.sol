@@ -1,10 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
@@ -23,7 +22,7 @@ import "./utils/DataPacking.sol";
 /// @dev Routes users funds and deposit information to a remote execution chain.
 /// @dev extends Liquidity Handler.
 contract SuperRouter is ISuperRouter, LiquidityHandler {
-    using SafeERC20 for IERC20;
+    using SafeTransferLib for ERC20;
     using Strings for string;
 
     /*///////////////////////////////////////////////////////////////
@@ -147,7 +146,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             emit Completed(vars.currentTotalTransactions);
         } else {
             vars.liqRequestsLen = req.superFormsData.liqRequests.length;
-
+            address permit2 = superRegistry.PERMIT2();
             /// @dev this loop is what allows to deposit to >1 different underlying on destination
             /// @dev if a loop fails in a validation the whole chain should be reverted
             for (uint256 j = 0; j < vars.liqRequestsLen; j++) {
@@ -157,10 +156,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
                     vars.liqRequest.txData,
                     vars.liqRequest.token,
-                    vars.liqRequest.allowanceTarget, /// to be removed
+                    vars.liqRequest.isERC20,
                     vars.liqRequest.amount,
                     vars.srcSender,
-                    vars.liqRequest.nativeAmount
+                    vars.liqRequest.nativeAmount,
+                    vars.liqRequest.permit2data,
+                    permit2
                 );
             }
 
@@ -266,10 +267,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
             vars.liqRequest.txData,
             vars.liqRequest.token,
-            vars.liqRequest.allowanceTarget, /// to be removed
+            vars.liqRequest.isERC20, /// to be removed
             vars.liqRequest.amount,
             vars.srcSender,
-            vars.liqRequest.nativeAmount
+            vars.liqRequest.nativeAmount,
+            vars.liqRequest.permit2data,
+            superRegistry.PERMIT2()
         );
 
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
@@ -909,7 +912,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         address _tokenContract,
         uint256 _amount
     ) external onlyProtocolAdmin {
-        IERC20 tokenContract = IERC20(_tokenContract);
+        ERC20 tokenContract = ERC20(_tokenContract);
 
         /// note: transfer the token from address of this contract
         /// note: to address of the user (executing the withdrawToken() function)

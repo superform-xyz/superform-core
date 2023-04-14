@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {IPermit2} from "../interfaces/IPermit2.sol";
 import {Error} from "../utils/Error.sol";
 
 /// @title SuperRegistry
@@ -12,6 +13,8 @@ import {Error} from "../utils/Error.sol";
 contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
     uint16 public immutable chainId;
+    /// @dev canonical permit2 contract
+    address public immutable PERMIT2;
 
     mapping(bytes32 id => address moduleAddress) private protocolAddresses;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
@@ -42,6 +45,14 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc ISuperRegistry
+    function setPermit2(
+        address permit2_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (PERMIT2 != address(0)) revert Error.ALREADY_SET();
+        PERMIT2 = permit2_;
+    }
 
     /// @inheritdoc ISuperRegistry
     function setNewProtocolAddress(

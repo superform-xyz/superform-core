@@ -73,6 +73,9 @@ interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+
+    function setPermit2(address permit2_) external;
+
     function setNewProtocolAddress(
         bytes32 protocolAddressId_,
         address newAddress_
@@ -129,6 +132,9 @@ interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev returns the permit2 address
+    function PERMIT2() external view returns (address);
 
     /// @dev returns the id of the protocol admin
     function PROTOCOL_ADMIN() external view returns (bytes32);

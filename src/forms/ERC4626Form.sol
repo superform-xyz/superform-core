@@ -169,10 +169,12 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 ),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                singleVaultData_.liqData.allowanceTarget,
+                singleVaultData_.liqData.isERC20,
                 singleVaultData_.liqData.amount,
                 srcSender,
-                singleVaultData_.liqData.nativeAmount
+                singleVaultData_.liqData.nativeAmount,
+                singleVaultData_.liqData.permit2Data,
+                superRegistry.PERMIT2()
             );
         }
 
@@ -216,10 +218,12 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 ),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                singleVaultData_.liqData.allowanceTarget,
+                singleVaultData_.liqData.isERC20,
                 singleVaultData_.liqData.amount,
                 address(this),
-                singleVaultData_.liqData.nativeAmount
+                singleVaultData_.liqData.nativeAmount,
+                "",
+                superRegistry.PERMIT2()
             );
         }
     }
@@ -293,10 +297,12 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 ),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                singleVaultData_.liqData.allowanceTarget,
+                singleVaultData_.liqData.isERC20,
                 dstAmount,
                 address(this),
-                singleVaultData_.liqData.nativeAmount
+                singleVaultData_.liqData.nativeAmount,
+                "",
+                superRegistry.PERMIT2()
             );
             uint256 balanceAfter = ERC20(v.asset()).balanceOf(address(this));
 
