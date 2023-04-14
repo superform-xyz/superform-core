@@ -6,6 +6,8 @@ interface ISuperRegistry {
                                 Events
     //////////////////////////////////////////////////////////////*/
 
+    event SetImmutables(uint256 indexed chainId, address indexed permit2);
+
     /// @dev is emitted when an address is set.
     event ProtocolAddressUpdated(
         bytes32 indexed protocolAddressId,
@@ -74,8 +76,14 @@ interface ISuperRegistry {
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
 
-    function setPermit2(address permit2_) external;
+    /// @dev sets the chain id.
+    /// @param chainId_ the superform chain id this registry is deployed on
+    /// @param permit2_ the address of the permit2 contract
+    function setImmutables(uint16 chainId_, address permit2_) external;
 
+    /// @dev sets a new protocol address.
+    /// @param protocolAddressId_ the protocol address identifier
+    /// @param newAddress_ the new address
     function setNewProtocolAddress(
         bytes32 protocolAddressId_,
         address newAddress_
@@ -132,6 +140,9 @@ interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev gets the superform chainId of the protocol
+    function chainId() external view returns (uint16);
 
     /// @dev returns the permit2 address
     function PERMIT2() external view returns (address);

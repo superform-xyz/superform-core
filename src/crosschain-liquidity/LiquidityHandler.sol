@@ -50,7 +50,7 @@ abstract contract LiquidityHandler {
                     (
                         uint256 nonce,
                         uint256 deadline,
-                        bytes calldata signature
+                        bytes memory signature
                     ) = abi.decode(permit2Data_, (uint256, uint256, bytes));
 
                     IPermit2(permit2_).permitTransferFrom(

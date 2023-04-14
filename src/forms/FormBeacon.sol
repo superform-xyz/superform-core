@@ -18,9 +18,6 @@ contract FormBeacon is IFormBeacon {
 
     UpgradeableBeacon immutable beacon;
 
-    /// @notice chainId represents unique chain id for each chains.
-    uint16 public immutable chainId;
-
     address public formLogic;
 
     bool public paused;
@@ -34,11 +31,9 @@ contract FormBeacon is IFormBeacon {
         _;
     }
 
-    /// @param chainId_              SuperForm chain id
     /// @param superRegistry_        SuperForm registry contract
     /// @param formLogic_            The initial form logic contract
-    constructor(uint16 chainId_, address superRegistry_, address formLogic_) {
-        chainId = chainId_;
+    constructor(address superRegistry_, address formLogic_) {
         superRegistry = ISuperRegistry(superRegistry_);
         beacon = new UpgradeableBeacon(formLogic_);
         formLogic = formLogic_;

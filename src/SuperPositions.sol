@@ -18,9 +18,6 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
     string public dynamicURI = "https://api.superform.xyz/superposition/";
 
-    /// @notice chainId represents unique chain id for each chains.
-    uint16 public immutable chainId;
-
     ISuperRegistry public immutable superRegistry;
 
     modifier onlySuperRouter() {
@@ -41,17 +38,9 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         _;
     }
 
-    /// @param chainId_              SuperForm chain id
     /// @param dynamicURI_              URL for external metadata of ERC1155 SuperPositions
     /// @param superRegistry_ the superform registry contract
-    constructor(
-        uint16 chainId_,
-        string memory dynamicURI_,
-        address superRegistry_
-    ) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
+    constructor(string memory dynamicURI_, address superRegistry_) {
         dynamicURI = dynamicURI_;
         superRegistry = ISuperRegistry(superRegistry_);
     }

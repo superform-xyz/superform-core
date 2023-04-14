@@ -54,7 +54,7 @@ library Error {
     /// @dev error thrown when the safe gas param is incorrectly set
     error INVALID_GAS_OVERRIDE();
 
-    error ALREADY_SET();
+    error DISABLED();
 
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS

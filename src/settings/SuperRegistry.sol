@@ -12,9 +12,9 @@ import {Error} from "../utils/Error.sol";
 /// @dev Keeps information on all protocolAddresses used in the SuperForms ecosystem.
 contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
-    uint16 public immutable chainId;
+    uint16 public chainId;
     /// @dev canonical permit2 contract
-    address public immutable PERMIT2;
+    address public PERMIT2;
 
     mapping(bytes32 id => address moduleAddress) private protocolAddresses;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
@@ -33,13 +33,9 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
     bytes32 public constant override SUPER_RBAC = "SUPER_RBAC";
 
-    /// @dev sets caller as the admin of the contract.
-    /// @param chainId_ the superform chain id this registry is deployed on
-    constructor(uint16 chainId_) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    /// @param admin_ the address of the admin.
+    constructor(address admin_) {
+        _setupRole(DEFAULT_ADMIN_ROLE, admin_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -47,11 +43,18 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRegistry
-    function setPermit2(
+    function setImmutables(
+        uint16 chainId_,
         address permit2_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (PERMIT2 != address(0)) revert Error.ALREADY_SET();
+        if (chainId != 0) revert Error.DISABLED();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
+        if (PERMIT2 != address(0)) revert Error.DISABLED();
+
+        chainId = chainId_;
         PERMIT2 = permit2_;
+
+        emit SetImmutables(chainId_, PERMIT2);
     }
 
     /// @inheritdoc ISuperRegistry

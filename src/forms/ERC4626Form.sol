@@ -173,7 +173,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 singleVaultData_.liqData.amount,
                 srcSender,
                 singleVaultData_.liqData.nativeAmount,
-                singleVaultData_.liqData.permit2Data,
+                singleVaultData_.liqData.permit2data,
                 superRegistry.PERMIT2()
             );
         }

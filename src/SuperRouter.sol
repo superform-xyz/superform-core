@@ -31,10 +31,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
     uint8 public constant STATE_REGISTRY_TYPE = 0;
 
-    /// @notice chainId represents unique chain id for each chains.
-    /// @dev maybe should be constant or immutable
-    uint16 public immutable chainId;
-
     ISuperRegistry public immutable superRegistry;
 
     uint80 public totalTransactions;
@@ -52,12 +48,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         _;
     }
 
-    /// @param chainId_              SuperForm chain id
+    /// @dev constructor
     /// @param superRegistry_ the superform registry contract
-    constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
+    constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -96,7 +89,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         InitMultiVaultData memory ambData;
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
@@ -189,7 +182,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         for (uint256 i = 0; i < nDestinations; i++) {
             dstChainId = req.dstChainIds[i];
-            if (chainId == dstChainId) {
+            if (superRegistry.chainId() == dstChainId) {
                 singleDirectSingleVaultDeposit(
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
@@ -220,7 +213,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
@@ -297,7 +290,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         if (vars.srcChainId != vars.dstChainId)
@@ -363,7 +356,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         InitMultiVaultData memory ambData;
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
@@ -442,7 +435,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             dstChainId = req.dstChainIds[i];
-            if (chainId == dstChainId) {
+            if (superRegistry.chainId() == dstChainId) {
                 singleDirectSingleVaultWithdraw(
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
@@ -474,7 +467,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
@@ -546,7 +539,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         if (vars.srcChainId != vars.dstChainId)

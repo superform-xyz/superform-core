@@ -23,9 +23,6 @@ contract MultiTxProcessor is IMultiTxProcessor {
 
     ISuperRegistry public immutable superRegistry;
 
-    /// @notice chainId represents unique chain id for each chains.
-    uint16 public immutable chainId;
-
     modifier onlySwapper() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasSwapperRole(msg.sender))
             revert Error.NOT_SWAPPER();
@@ -41,12 +38,8 @@ contract MultiTxProcessor is IMultiTxProcessor {
         _;
     }
 
-    /// @param chainId_              SuperForm chain id
     /// @param superRegistry_        SuperForm registry contract
-    constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
+    constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
