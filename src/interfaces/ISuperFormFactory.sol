@@ -39,17 +39,21 @@ interface ISuperFormFactory {
     /// @dev allows an admin to add a FormBeacon to the factory
     /// @param formImplementation_ is the address of a form implementation
     /// @param formBeaconId_ is the to-be id of the form beacon
+    /// @param salt_ is the salt for create2
     function addFormBeacon(
         address formImplementation_,
-        uint256 formBeaconId_
+        uint256 formBeaconId_,
+        bytes32 salt_
     ) external returns (address beacon);
 
     /// @dev allows an admin to add Form Beacons to the factory
     /// @param formImplementations_ are the address of form implementaions
     /// @param formBeaconIds_ are the to-be ids of the form beacons
+    /// @param salt_ is the salt for create2
     function addFormBeacons(
         address[] memory formImplementations_,
-        uint256[] memory formBeaconIds_
+        uint256[] memory formBeaconIds_,
+        bytes32 salt_
     ) external;
 
     // 5. Forms should exist based on (everything else, including deposit/withdraw/tvl etc could be done in implementations above it)

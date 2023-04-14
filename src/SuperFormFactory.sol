@@ -56,7 +56,8 @@ contract SuperFormFactory is ISuperFormFactory {
     /// @inheritdoc ISuperFormFactory
     function addFormBeacon(
         address formImplementation_,
-        uint256 formBeaconId_
+        uint256 formBeaconId_,
+        bytes32 salt_
     ) public override onlyProtocolAdmin returns (address beacon) {
         if (formImplementation_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(formImplementation_))
@@ -69,9 +70,12 @@ contract SuperFormFactory is ISuperFormFactory {
         ) revert Error.FORM_INTERFACE_UNSUPPORTED();
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
-        /// @dev TODO - should we predict beacon address?
+        /// @dev TODO - created with create2. Should allow us to broadcast contract pauses and resumes cross chain
         beacon = address(
-            new FormBeacon(address(superRegistry), formImplementation_)
+            new FormBeacon{salt: salt_}(
+                address(superRegistry),
+                formImplementation_
+            )
         );
 
         /// @dev this should instantiate the beacon for each form
@@ -85,10 +89,11 @@ contract SuperFormFactory is ISuperFormFactory {
     /// @inheritdoc ISuperFormFactory
     function addFormBeacons(
         address[] memory formImplementations_,
-        uint256[] memory formBeaconIds_
+        uint256[] memory formBeaconIds_,
+        bytes32 salt_
     ) external override onlyProtocolAdmin {
         for (uint256 i = 0; i < formImplementations_.length; i++) {
-            addFormBeacon(formImplementations_[i], formBeaconIds_[i]);
+            addFormBeacon(formImplementations_[i], formBeaconIds_[i], salt_);
         }
     }
 

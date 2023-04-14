@@ -51,7 +51,7 @@ contract SuperFormFactoryTest is BaseSetup {
         vm.prank(deployer);
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
-            .addFormBeacon(form, formId);
+            .addFormBeacon(form, formId, salt);
     }
 
     function test_revert_addForm_interfaceUnsupported() public {
@@ -61,7 +61,7 @@ contract SuperFormFactoryTest is BaseSetup {
         vm.prank(deployer);
         vm.expectRevert(Error.ERC165_UNSUPPORTED.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
-            .addFormBeacon(form, formId);
+            .addFormBeacon(form, formId, salt);
     }
 
     function test_addForm() public {
@@ -83,7 +83,7 @@ contract SuperFormFactoryTest is BaseSetup {
         emit FormCreated(form, 1);
         */
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
-            .addFormBeacon(formImplementation, formBeaconId);
+            .addFormBeacon(formImplementation, formBeaconId, salt);
 
         //assertEq(formId, 1);
     }
@@ -114,6 +114,7 @@ contract SuperFormFactoryTest is BaseSetup {
     }
 
     /// @dev FIXME: should have assertions for superForm addresses and ids (if we can predict them)
+    /// @dev TODO: requires testing of cross chain form beacon creation
     function test_base_setup_superForms() public {
         TestArgs memory vars;
         vm.startPrank(deployer);
@@ -128,9 +129,9 @@ contract SuperFormFactoryTest is BaseSetup {
         vars.formBeaconId2 = 2;
 
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
-            .addFormBeacon(vars.formImplementation1, vars.formBeaconId1);
+            .addFormBeacon(vars.formImplementation1, vars.formBeaconId1, salt);
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
-            .addFormBeacon(vars.formImplementation2, vars.formBeaconId2);
+            .addFormBeacon(vars.formImplementation2, vars.formBeaconId2, salt);
 
         /// @dev as you can see we are not testing if the vaults are eoas or actual compliant contracts
         vars.vault1 = address(0x2);

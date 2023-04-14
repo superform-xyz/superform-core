@@ -30,11 +30,11 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     ISuperRegistry public immutable superRegistry;
 
     /// @param superRegistry_ the superform registry contract
-    constructor(address superRegistry_) {
+    constructor(address superRegistry_, address admin_) {
         superRegistry = ISuperRegistry(superRegistry_);
 
         address protocolAdmin = superRegistry.protocolAdmin();
-        if (msg.sender != protocolAdmin) revert Error.INVALID_DEPLOYER();
+        if (admin_ != protocolAdmin) revert Error.INVALID_DEPLOYER();
 
         _setupRole(DEFAULT_ADMIN_ROLE, protocolAdmin);
     }

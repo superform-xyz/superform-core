@@ -52,7 +52,7 @@ abstract contract BaseSetup is DSTest, Test {
     address public deployer = address(777);
     address[] public users;
     uint256 public trustedRemote;
-    bytes32 constant salt = "SUPERFORM";
+    bytes32 public constant salt = "SUPERFORM";
     mapping(uint16 chainId => mapping(bytes32 implementation => address at))
         public contracts;
 
@@ -100,8 +100,6 @@ abstract contract BaseSetup is DSTest, Test {
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
     uint8[] public ambIds = [uint8(1), 2];
-    /// @dev amb implementations
-    address[] ambAddresses;
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -154,7 +152,7 @@ abstract contract BaseSetup is DSTest, Test {
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
     ];
     */
-    /*//////////////////////////////////////////////////////////////
+    /*////////////////////////////////////////////////////zr//////////
                         HYPERLANE VARIABLES
     //////////////////////////////////////////////////////////////*/
     IMailbox public constant HyperlaneMailbox =
@@ -263,6 +261,7 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 i = 0; i < chainIds.length; i++) {
             vars.chainId = chainIds[i];
             vars.fork = FORKS[vars.chainId];
+            vars.ambAddresses = new address[](ambIds.length);
             vm.selectFork(vars.fork);
 
             /// @dev 1.1- deploy LZ Helper from Pigeon
@@ -272,8 +271,6 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars
                 .lzHelper;
 
-            console.log("lzhelper: ", vars.lzHelper);
-
             /// @dev 1.2- deploy Hyperlane Helper from Pigeon
             vars.hyperlaneHelper = address(new HyperlaneHelper{salt: salt}());
             vm.allowCheatcodes(vars.hyperlaneHelper);
@@ -282,7 +279,9 @@ abstract contract BaseSetup is DSTest, Test {
                 .hyperlaneHelper;
 
             /// @dev 2 - Deploy SuperRegistry and assign roles
-            vars.superRegistry = address(new SuperRegistry{salt: salt}());
+            vars.superRegistry = address(
+                new SuperRegistry{salt: salt}(deployer)
+            );
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
 
@@ -291,7 +290,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 3 - Deploy SuperRBAC
             vars.superRBAC = address(
-                new SuperRBAC{salt: salt}(vars.superRegistry)
+                new SuperRBAC{salt: salt}(vars.superRegistry, deployer)
             );
             contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars
                 .superRBAC;
@@ -343,10 +342,6 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
 
-            console.log(
-                "vars.factoryStateRegistry: ",
-                vars.factoryStateRegistry
-            );
             contracts[vars.chainId][
                 bytes32(bytes("FactoryStateRegistry"))
             ] = vars.factoryStateRegistry;
@@ -356,9 +351,10 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev 5.1 - deploy Layerzero Implementation
+            /// @notice: deploying this with create2 doesn't lead to same address because of lzEndpoints being different per chain
+            /// TODO: unless we change LzApp.sol to set the lzEndpoint post deployment
             vars.lzImplementation = address(
-                new LayerzeroImplementation(
-                    lzEndpoints[i],
+                new LayerzeroImplementation{salt: salt}(
                     SuperRegistry(vars.superRegistry)
                 )
             );
@@ -366,9 +362,12 @@ abstract contract BaseSetup is DSTest, Test {
                 bytes32(bytes("LayerzeroImplementation"))
             ] = vars.lzImplementation;
 
+            LayerzeroImplementation(payable(vars.lzImplementation))
+                .setLzEndpoint(lzEndpoints[i]);
+
             /// @dev 5.2 - deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
-                new HyperlaneImplementation(
+                new HyperlaneImplementation{salt: salt}(
                     HyperlaneMailbox,
                     HyperlaneGasPaymaster,
                     SuperRegistry(vars.superRegistry)
@@ -378,17 +377,8 @@ abstract contract BaseSetup is DSTest, Test {
                 bytes32(bytes("HyperlaneImplementation"))
             ] = vars.hyperlaneImplementation;
 
-            console.log("i: ", i);
-            console.log("vars.lzImplementation: ", vars.lzImplementation);
-            console.log(
-                "vars.hyperlaneImplementation: ",
-                vars.hyperlaneImplementation
-            );
-            if (i == 0) {
-                /// @dev FIXME
-                ambAddresses.push(vars.lzImplementation);
-                ambAddresses.push(vars.hyperlaneImplementation);
-            }
+            vars.ambAddresses[0] = vars.lzImplementation;
+            vars.ambAddresses[1] = vars.hyperlaneImplementation;
 
             /// @dev 6- deploy SocketRouterMockFork
             vars.socketRouter = address(new SocketRouterMockFork{salt: salt}());
@@ -477,12 +467,14 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 10 - Add newly deployed form  implementation to Factory, formBeaconId 1
             ISuperFormFactory(vars.factory).addFormBeacon(
                 vars.erc4626Form,
-                FORM_BEACON_IDS[0]
+                FORM_BEACON_IDS[0],
+                salt
             );
 
             ISuperFormFactory(vars.factory).addFormBeacon(
                 vars.erc4626TimelockForm,
-                FORM_BEACON_IDS[1]
+                FORM_BEACON_IDS[1],
+                salt
             );
 
             /// @dev 11 - Deploy TokenBank
@@ -538,7 +530,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev configures lzImplementation and hyperlane to super registry
             SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry")))
-                .setAmbAddress(ambIds, ambAddresses);
+                .setAmbAddress(ambIds, vars.ambAddresses);
 
             /// @dev 16 Setup extra RBAC
 
@@ -591,8 +583,8 @@ abstract contract BaseSetup is DSTest, Test {
                         .setTrustedRemote(
                             vars.dstAmbChainId,
                             abi.encodePacked(
-                                vars.lzImplementation,
-                                vars.dstLzImplementation
+                                vars.dstLzImplementation,
+                                vars.lzImplementation
                             )
                         );
                     LayerzeroImplementation(payable(vars.lzImplementation))

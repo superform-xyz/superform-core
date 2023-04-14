@@ -30,9 +30,9 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
     bytes32 public constant override SUPER_RBAC = "SUPER_RBAC";
 
-    /// @dev sets caller as the admin of the contract.
-    constructor() {
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    /// @param admin_ the address of the admin.
+    constructor(address admin_) {
+        _setupRole(DEFAULT_ADMIN_ROLE, admin_);
     }
 
     /*///////////////////////////////////////////////////////////////
