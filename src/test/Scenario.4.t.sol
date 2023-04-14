@@ -20,9 +20,7 @@ contract Scenario4Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationXChainDeposit Full singleDestinationXChainWithdraw Deposit test case
 
-        primaryAMB = 1;
-
-        secondaryAMBs = [2];
+        AMBs = [1, 2];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];

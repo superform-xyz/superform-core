@@ -7,9 +7,7 @@ import "forge-std/console.sol";
 import "../../utils/DataPacking.sol";
 
 abstract contract ProtocolActions is BaseSetup {
-    uint8 public primaryAMB;
-
-    uint8[] public secondaryAMBs;
+    uint8[] public AMBs;
 
     uint16 public CHAIN_0;
 
@@ -93,7 +91,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
             /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
-            
+
             for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
                 if (
                     CHAIN_0 == DST_CHAINS[i] ||
@@ -133,10 +131,9 @@ abstract contract ProtocolActions is BaseSetup {
                     )
                 );
             } else {
-
                 /// FIXME: NOTE: Shouldn't we validate that at contract level?
                 /// This reverting may give us invalid sense of security. Contract should revert here, not test.
-                
+
                 // if (
                 //     !((vars.underlyingSrcToken.length ==
                 //         vars.targetSuperFormIds.length) &&
@@ -199,12 +196,10 @@ abstract contract ProtocolActions is BaseSetup {
                 if (vars.nDestinations == 1) {
                     vars
                         .singleDstMultiVaultStateReq = SingleDstMultiVaultsStateReq(
-                        primaryAMB,
-                        secondaryAMBs,
+                        AMBs,
                         DST_CHAINS[0],
                         multiSuperFormsData[0],
-                        action.adapterParam,
-                        action.msgValue
+                        action.adapterParam
                     );
 
                     if (action.action == Actions.Deposit)
@@ -218,12 +213,10 @@ abstract contract ProtocolActions is BaseSetup {
                 } else if (vars.nDestinations > 1) {
                     vars
                         .multiDstMultiVaultStateReq = MultiDstMultiVaultsStateReq(
-                        primaryAMB,
-                        secondaryAMBs,
+                        AMBs,
                         DST_CHAINS,
                         multiSuperFormsData,
-                        action.adapterParam,
-                        action.msgValue
+                        action.adapterParam
                     );
 
                     if (action.action == Actions.Deposit)
@@ -240,12 +233,10 @@ abstract contract ProtocolActions is BaseSetup {
                     if (CHAIN_0 != DST_CHAINS[0]) {
                         vars
                             .singleXChainSingleVaultStateReq = SingleXChainSingleVaultStateReq(
-                            primaryAMB,
-                            secondaryAMBs,
+                            AMBs,
                             DST_CHAINS[0],
                             singleSuperFormsData[0],
-                            action.adapterParam,
-                            action.msgValue
+                            action.adapterParam
                         );
 
                         if (action.action == Actions.Deposit)
@@ -261,8 +252,7 @@ abstract contract ProtocolActions is BaseSetup {
                             .singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
                             DST_CHAINS[0],
                             singleSuperFormsData[0],
-                            action.adapterParam,
-                            action.msgValue
+                            action.adapterParam
                         );
 
                         if (action.action == Actions.Deposit)
@@ -277,12 +267,10 @@ abstract contract ProtocolActions is BaseSetup {
                 } else if (vars.nDestinations > 1) {
                     vars
                         .multiDstSingleVaultStateReq = MultiDstSingleVaultStateReq(
-                        primaryAMB,
-                        secondaryAMBs,
+                        AMBs,
                         DST_CHAINS,
                         singleSuperFormsData,
-                        action.adapterParam,
-                        action.msgValue
+                        action.adapterParam
                     );
                     if (action.action == Actions.Deposit)
                         superRouter.multiDstSingleVaultDeposit{

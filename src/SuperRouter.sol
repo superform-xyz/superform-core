@@ -78,12 +78,10 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         for (uint256 i = 0; i < nDestinations; i++) {
             singleDstMultiVaultDeposit(
                 SingleDstMultiVaultsStateReq(
-                    req.primaryAmbId,
-                    req.proofAmbId,
+                    req.ambIds,
                     req.dstChainIds[i],
                     req.superFormsData[i],
-                    req.adapterParam,
-                    req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
+                    req.adapterParam
                 )
             );
         }
@@ -100,8 +98,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-            revert Error.INVALID_AMB_IDS();
+        /// @note this validation is added on the registry level
+        // if (!_validateAmbs(req.ambId[0], req.proofAmbId))
+        //     revert Error.INVALID_AMB_IDS();
 
         /// @dev validate superFormsData
 
@@ -165,9 +164,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             }
 
             IBaseStateRegistry(superRegistry.coreStateRegistry())
-                .dispatchPayload{value: req.msgValue}(
-                req.primaryAmbId,
-                req.proofAmbId,
+                .dispatchPayload{value: msg.value}(
+                req.ambIds,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
                 req.adapterParam
@@ -193,19 +191,16 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
                         req.superFormsData[i],
-                        req.adapterParam,
-                        req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
+                        req.adapterParam
                     )
                 );
             } else {
                 singleXChainSingleVaultDeposit(
                     SingleXChainSingleVaultStateReq(
-                        req.primaryAmbId,
-                        req.proofAmbId,
+                        req.ambIds,
                         dstChainId,
                         req.superFormsData[i],
-                        req.adapterParam,
-                        req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
+                        req.adapterParam
                     )
                 );
             }
@@ -222,8 +217,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-            revert Error.INVALID_AMB_IDS();
+        /// @notice these validations are added to the registry
+        // if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
+        //     revert Error.INVALID_AMB_IDS();
 
         if (vars.srcChainId == vars.dstChainId)
             revert Error.INVALID_CHAIN_IDS();
@@ -273,10 +269,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
 
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: req.msgValue
+            value: msg.value
         }(
-            req.primaryAmbId,
-            req.proofAmbId,
+            req.ambIds,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
             req.adapterParam
@@ -341,12 +336,10 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             singleDstMultiVaultWithdraw(
                 SingleDstMultiVaultsStateReq(
-                    req.primaryAmbId,
-                    req.proofAmbId,
+                    req.ambIds,
                     req.dstChainIds[i],
                     req.superFormsData[i],
-                    req.adapterParam,
-                    req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
+                    req.adapterParam
                 )
             );
         }
@@ -363,8 +356,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-            revert Error.INVALID_AMB_IDS();
+        /// @note the validations are added to the registry
+        // if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
+        //     revert Error.INVALID_AMB_IDS();
 
         /// @dev validate superFormsData
 
@@ -417,9 +411,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
             /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
             IBaseStateRegistry(superRegistry.coreStateRegistry())
-                .dispatchPayload{value: req.msgValue}(
-                req.primaryAmbId,
-                req.proofAmbId,
+                .dispatchPayload{value: msg.value}(
+                req.ambIds,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
                 req.adapterParam
@@ -444,19 +437,16 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
                         req.superFormsData[i],
-                        req.adapterParam,
-                        req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
+                        req.adapterParam
                     )
                 );
             } else {
                 singleXChainSingleVaultWithdraw(
                     SingleXChainSingleVaultStateReq(
-                        req.primaryAmbId,
-                        req.proofAmbId,
+                        req.ambIds,
                         dstChainId,
                         req.superFormsData[i],
-                        req.adapterParam,
-                        req.msgValue / nDestinations /// @dev FIXME: check if there is a better way to send msgValue to avoid issues
+                        req.adapterParam
                     )
                 );
             }
@@ -474,8 +464,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.srcChainId = chainId;
         vars.dstChainId = req.dstChainId;
 
-        if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-            revert Error.INVALID_AMB_IDS();
+        /// @note validations added to registry
+        // if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
+        //     revert Error.INVALID_AMB_IDS();
 
         if (vars.srcChainId == vars.dstChainId)
             revert Error.INVALID_CHAIN_IDS();
@@ -520,10 +511,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
 
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: req.msgValue
+            value: msg.value
         }(
-            req.primaryAmbId,
-            req.proofAmbId,
+            req.ambIds,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
             req.adapterParam

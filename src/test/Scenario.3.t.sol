@@ -20,9 +20,7 @@ contract Scenario3Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev MultiDestinationMultiVault Deposit test case
 
-        primaryAMB = 1;
-
-        secondaryAMBs = [2];
+        AMBs = [1, 2];
 
         CHAIN_0 = OP;
         DST_CHAINS = [ARBI, ETH];

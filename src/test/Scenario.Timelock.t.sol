@@ -48,8 +48,8 @@ contract ScenarioTimelockTest is ProtocolActions {
     function setUp() public override {
         super.setUp();
 
-        primaryAMB = 1;
-        secondaryAMBs = [2];
+        AMBs = [1, 2];
+
         CHAIN_0 = OP; /// @dev source chain id6
         DST_CHAINS = [POLY]; /// @dev destination chain(s) id4
 
@@ -315,13 +315,17 @@ contract ScenarioTimelockTest is ProtocolActions {
         uint256[] memory slippages_,
         Actions kind_, /// deposit or withdraw
         TestType testType /// ProtocolActions invariant
-        // bool multiVaults_
-    ) internal returns (TestAction memory action_) {
+    )
+        internal
+        returns (
+            // bool multiVaults_
+            TestAction memory action_
+        )
+    {
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         for (uint256 i = 0; i < chainID_.length; i++) {
-
             /// temp select by index. TODO: actionId mechanics requires update!
             TARGET_UNDERLYING_VAULTS[chainID_[i]][actionId] = vaultIDs_;
             TARGET_FORM_KINDS[chainID_[i]][actionId] = formIDs_; /// <= 1 for timelock, this accesses array by index (0 for standard)
@@ -358,6 +362,5 @@ contract ScenarioTimelockTest is ProtocolActions {
                 revert("Action not supported");
             }
         }
-
     }
 }

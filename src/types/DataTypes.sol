@@ -40,46 +40,37 @@ struct SingleVaultSFData {
 }
 
 struct MultiDstMultiVaultsStateReq {
-    uint8 primaryAmbId;
-    uint8[] proofAmbId;
+    uint8[] ambIds;
     uint16[] dstChainIds;
     MultiVaultsSFData[] superFormsData;
     bytes adapterParam;
-    uint256 msgValue;
 }
 
 struct SingleDstMultiVaultsStateReq {
-    uint8 primaryAmbId;
-    uint8[] proofAmbId;
+    uint8[] ambIds;
     uint16 dstChainId;
     MultiVaultsSFData superFormsData;
     bytes adapterParam;
-    uint256 msgValue;
 }
 
 struct MultiDstSingleVaultStateReq {
-    uint8 primaryAmbId;
-    uint8[] proofAmbId;
+    uint8[] ambIds;
     uint16[] dstChainIds;
     SingleVaultSFData[] superFormsData;
     bytes adapterParam;
-    uint256 msgValue;
 }
 
 struct SingleXChainSingleVaultStateReq {
-    uint8 primaryAmbId;
-    uint8[] proofAmbId;
+    uint8[] ambIds;
     uint16 dstChainId;
     SingleVaultSFData superFormData;
     bytes adapterParam;
-    uint256 msgValue;
 }
 
 struct SingleDirectSingleVaultStateReq {
     uint16 dstChainId;
     SingleVaultSFData superFormData;
     bytes adapterParam;
-    uint256 msgValue;
 }
 
 struct InitMultiVaultData {
@@ -121,8 +112,6 @@ struct ReturnSingleData {
 }
 
 struct AMBExtraData {
-    uint256 ambGas;
-    uint256[] proofAmbGas;
-    bytes ambExtraData;
-    bytes[] proofAmbExtraData;
+    uint256[] ambGas;
+    bytes[] ambExtraData;
 }

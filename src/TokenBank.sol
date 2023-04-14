@@ -119,15 +119,15 @@ contract TokenBank is ITokenBank {
         );
 
         /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8[] memory proofAmbIds = new uint8[](1);
-        proofAmbIds[0] = 2;
+        uint8[] memory ambIds = new uint8[](2);
+        ambIds[0] = 1;
+        ambIds[1] = 2;
 
         /// @notice Send Data to Source to issue superform positions.
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
             value: msg.value
         }(
-            1, /// @dev come to this later to accept any bridge id
-            proofAmbIds,
+            ambIds, /// @dev come to this later to accept any bridge id
             srcChainId,
             abi.encode(
                 AMBMessage(
@@ -186,15 +186,15 @@ contract TokenBank is ITokenBank {
         );
 
         /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8[] memory proofAmbIds = new uint8[](1);
-        proofAmbIds[0] = 2;
+        uint8[] memory ambIds = new uint8[](2);
+        ambIds[0] = 1;
+        ambIds[1] = 2;
 
         /// @notice Send Data to Source to issue superform positions.
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
             value: msg.value
         }(
-            1, /// @dev come to this later to accept any bridge id
-            proofAmbIds,
+            ambIds,
             srcChainId,
             abi.encode(
                 AMBMessage(

@@ -139,17 +139,12 @@ contract SuperFormFactory is ISuperFormFactory {
         AMBFactoryMessage memory data = AMBFactoryMessage(superFormId_, vault_);
 
         /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8 ambId = 2;
-        uint8[] memory proofAmbIds = new uint8[](1);
-        proofAmbIds[0] = 1;
+        uint8[] memory ambIds = new uint8[](2);
+        ambIds[0] = 2;
+        ambIds[1] = 1;
 
         IBaseStateRegistry(superRegistry.factoryStateRegistry())
-            .broadcastPayload{value: msg.value}(
-            ambId,
-            proofAmbIds,
-            abi.encode(data),
-            ""
-        );
+            .broadcastPayload{value: msg.value}(ambIds, abi.encode(data), "");
 
         emit SuperFormCreated(formBeaconId_, vault_, superFormId_, superForm_);
     }

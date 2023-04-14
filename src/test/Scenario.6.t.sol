@@ -20,9 +20,7 @@ contract Scenario6Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationXChainDeposit with multi tx (single processing) & batch processing
 
-        primaryAMB = 1;
-
-        secondaryAMBs = [2];
+        AMBs = [1, 2];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];
