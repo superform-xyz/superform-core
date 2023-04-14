@@ -28,19 +28,13 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override UPDATER_ROLE = keccak256("UPDATER_ROLE");
 
     ISuperRegistry public immutable superRegistry;
-    /// @dev chainId represents the superform chain id of the specific chain.
-    uint16 public immutable chainId;
 
-    /// @param chainId_              Superform chain id
     /// @param superRegistry_ the superform registry contract
-    constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
+    constructor(address superRegistry_, address admin_) {
         superRegistry = ISuperRegistry(superRegistry_);
 
         address protocolAdmin = superRegistry.protocolAdmin();
-        if (msg.sender != protocolAdmin) revert Error.INVALID_DEPLOYER();
+        if (admin_ != protocolAdmin) revert Error.INVALID_DEPLOYER();
 
         _setupRole(DEFAULT_ADMIN_ROLE, protocolAdmin);
     }
