@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {IMailbox} from "./interface/IMailbox.sol";
 import {IMessageRecipient} from "./interface/IMessageRecipient.sol";
+import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IInterchainGasPaymaster} from "./interface/IInterchainGasPaymaster.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
@@ -15,13 +15,9 @@ import "../../utils/DataPacking.sol";
 /// @author Zeropoint Labs
 ///
 /// @dev interacts with hyperlane AMB
-contract HyperlaneImplementation is
-    IAmbImplementation,
-    IMessageRecipient,
-    Ownable
-{
+contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /*///////////////////////////////////////////////////////////////
-                    State Variables
+                            State Variables
     //////////////////////////////////////////////////////////////*/
     IMailbox public immutable mailbox;
     IInterchainGasPaymaster public immutable igp;
@@ -36,7 +32,20 @@ contract HyperlaneImplementation is
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
-                    Constructor
+                                Modifiers
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyProtocolAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                                Constructor
     //////////////////////////////////////////////////////////////*/
 
     /// @param mailbox_ is the hyperlane mailbox for respective chain.
@@ -51,7 +60,7 @@ contract HyperlaneImplementation is
     }
 
     /*///////////////////////////////////////////////////////////////
-                    External Functions
+                            External Functions
     //////////////////////////////////////////////////////////////*/
 
     /// @notice receive enables processing native token transfers into the smart contract.
@@ -144,7 +153,7 @@ contract HyperlaneImplementation is
     function setChainId(
         uint16 superChainId_,
         uint32 ambChainId_
-    ) external onlyOwner {
+    ) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -161,7 +170,7 @@ contract HyperlaneImplementation is
     function setReceiver(
         uint32 domain_,
         address authorizedImpl_
-    ) external onlyOwner {
+    ) external onlyProtocolAdmin {
         if (domain_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }

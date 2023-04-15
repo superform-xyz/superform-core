@@ -94,17 +94,15 @@ struct TestAssertionVars {
 //////////////////////////////////////////////////////////////*/
 
 struct SetupVars {
-    uint16[2] chainIds;
-    address[2] lzEndpoints;
     uint16 chainId;
     uint16 dstChainId;
     uint16 dstAmbChainId;
     uint32 dstHypChainId;
     uint256 fork;
+    address[] ambAddresses;
     address tokenBank;
     address superForm;
     address factory;
-    address lzEndpoint;
     address lzHelper;
     address lzImplementation;
     address hyperlaneHelper;
