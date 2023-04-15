@@ -41,6 +41,7 @@ import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implement
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
 import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
+import "../../utils/AmbParams.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
@@ -598,21 +599,21 @@ abstract contract BaseSetup is DSTest, Test {
                     ).setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
+        }
 
-            /// @dev 17 - create superforms when the whole state registry is configured
-
+        /// @dev 17 - create superforms when the whole state registry is configured
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vm.selectFork(FORKS[chainIds[i]]);
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     vm.recordLogs();
 
                     (, vars.superForm) = ISuperFormFactory(vars.factory)
-                        .createSuperForm{
-                        value: _getPriceMultiplier(vars.chainId) * 10 ** 18
-                    }(
+                        .createSuperForm{value: 800 * 10 ** 18}(
                         FORM_BEACON_IDS[j],
-                        address(vaults[vars.chainId][FORM_BEACON_IDS[j]][k])
+                        address(vaults[vars.chainId][FORM_BEACON_IDS[j]][k]),
+                        encode(400, 400)
                     );
-                    _broadcastPayload(vars.chainId, vm.getRecordedLogs());
 
                     contracts[vars.chainId][
                         bytes32(
@@ -625,9 +626,11 @@ abstract contract BaseSetup is DSTest, Test {
                             )
                         )
                     ] = vars.superForm;
+                    _broadcastPayload(vars.chainId, vm.getRecordedLogs());
                 }
             }
         }
+
         _processFactoryPayloads(
             ((chainIds.length - 1) *
                 FORM_BEACON_IDS.length *
@@ -789,27 +792,25 @@ abstract contract BaseSetup is DSTest, Test {
     ) private {
         vm.stopPrank();
 
-        address[] memory toMailboxes = new address[](5);
-        uint32[] memory expDstDomains = new uint32[](5);
+        address[] memory toMailboxes = new address[](6);
+        uint32[] memory expDstDomains = new uint32[](6);
 
-        address[] memory endpoints = new address[](5);
-        uint16[] memory lzChainIds = new uint16[](5);
+        address[] memory endpoints = new address[](6);
+        uint16[] memory lzChainIds = new uint16[](6);
 
-        uint256[] memory forkIds = new uint256[](5);
+        uint256[] memory forkIds = new uint256[](6);
 
-        uint256 j = 0;
+        uint256 j;
         for (uint256 i = 0; i < chainIds.length; i++) {
-            if (chainIds[i] != currentChainId) {
-                toMailboxes[j] = hyperlaneMailboxes[i];
-                expDstDomains[j] = hyperlane_chainIds[i];
+            toMailboxes[j] = hyperlaneMailboxes[i];
+            expDstDomains[j] = hyperlane_chainIds[i];
 
-                endpoints[j] = lzEndpoints[i];
-                lzChainIds[j] = lz_chainIds[i];
+            endpoints[j] = lzEndpoints[i];
+            lzChainIds[j] = lz_chainIds[i];
 
-                forkIds[j] = FORKS[chainIds[i]];
+            forkIds[j] = FORKS[chainIds[i]];
 
-                j++;
-            }
+            j++;
         }
 
         HyperlaneHelper(getContract(currentChainId, "HyperlaneHelper")).help(

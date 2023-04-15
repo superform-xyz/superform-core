@@ -12,6 +12,7 @@ import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
 import {BaseForm} from "./BaseForm.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
+import "./utils/AmbParams.sol";
 
 /// @title SuperForms Factory
 /// @dev A secure, and easily queryable central point of access for all SuperForms on any given chain,
@@ -102,7 +103,8 @@ contract SuperFormFactory is ISuperFormFactory {
     /// @inheritdoc ISuperFormFactory
     function createSuperForm(
         uint256 formBeaconId_, /// TimelockedBeaconId, NormalBeaconId... etc
-        address vault_
+        address vault_,
+        bytes calldata broadcastParams_
     )
         external
         payable
@@ -144,7 +146,11 @@ contract SuperFormFactory is ISuperFormFactory {
         ambIds[1] = 1;
 
         IBaseStateRegistry(superRegistry.factoryStateRegistry())
-            .broadcastPayload{value: msg.value}(ambIds, abi.encode(data), "");
+            .broadcastPayload{value: msg.value}(
+            ambIds,
+            abi.encode(data),
+            broadcastParams_
+        );
 
         emit SuperFormCreated(formBeaconId_, vault_, superFormId_, superForm_);
     }

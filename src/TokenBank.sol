@@ -1,5 +1,6 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
+import "forge-std/console.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
@@ -161,7 +162,15 @@ contract TokenBank is ITokenBank {
     function depositSync(
         InitSingleVaultData memory singleVaultData_
     ) external payable override onlyStateRegistry {
-        (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
+        (
+            address superForm_,
+            uint256 formBeaconId_,
+            uint16 chainId_
+        ) = _getSuperForm(singleVaultData_.superFormId);
+        console.log(superForm_);
+        console.log(chainId_);
+        console.log(formBeaconId_);
+        console.log(singleVaultData_.superFormId);
         ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
         uint256 dstAmount;
         /// @dev This will revert ALL of the transactions if one of them fails.
