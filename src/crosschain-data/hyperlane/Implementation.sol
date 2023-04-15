@@ -8,6 +8,7 @@ import {IMessageRecipient} from "./interface/IMessageRecipient.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IInterchainGasPaymaster} from "./interface/IInterchainGasPaymaster.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
+import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
 
 /// @title Hyperlane implementation contract
@@ -19,7 +20,6 @@ contract HyperlaneImplementation is
     IMessageRecipient,
     Ownable
 {
-    error INVALID_RECEIVER();
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
@@ -78,7 +78,7 @@ contract HyperlaneImplementation is
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
 
         uint32 domain = ambChainId[dstChainId_];
@@ -115,7 +115,7 @@ contract HyperlaneImplementation is
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
 
         uint256 totalChains = broadcastChains.length;
@@ -146,7 +146,7 @@ contract HyperlaneImplementation is
         uint32 ambChainId_
     ) external onlyOwner {
         if (superChainId_ == 0 || ambChainId_ == 0) {
-            revert INVALID_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         ambChainId[superChainId_] = ambChainId_;
@@ -163,11 +163,11 @@ contract HyperlaneImplementation is
         address authorizedImpl_
     ) external onlyOwner {
         if (domain_ == 0) {
-            revert INVALID_CHAIN_ID();
+            revert Error.INVALID_CHAIN_ID();
         }
 
         if (authorizedImpl_ == address(0)) {
-            revert INVALID_RECEIVER();
+            revert Error.ZERO_ADDRESS();
         }
 
         authorizedImpl[domain_] = authorizedImpl_;
@@ -188,17 +188,17 @@ contract HyperlaneImplementation is
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
         if (msg.sender != address(mailbox)) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
 
         // if (sender_ != castAddr(authorizedImpl[origin_])) {
-        //     revert INVALID_CALLER();
+        //     revert Error.INVALID_CALLER();
         // }
 
         bytes32 hash = keccak256(body_);
 
         if (processedMessages[hash]) {
-            revert DUPLICATE_PAYLOAD();
+            revert Error.DUPLICATE_PAYLOAD();
         }
 
         processedMessages[hash] = true;

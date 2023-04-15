@@ -1,27 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {PayloadState, AMBMessage, AMBFactoryMessage} from "../types/DataTypes.sol";
+import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 /// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging ambs.
-abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
-    /*///////////////////////////////////////////////////////////////
-                    ACCESS CONTROL ROLE CONSTANTS
-    //////////////////////////////////////////////////////////////*/
-    bytes32 public constant CORE_CONTRACTS_ROLE =
-        keccak256("CORE_CONTRACTS_ROLE");
-    bytes32 public constant IMPLEMENTATION_CONTRACTS_ROLE =
-        keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
-    bytes32 public constant PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
-    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
-
+abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -39,16 +30,49 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     ISuperRegistry public immutable superRegistry;
 
     /*///////////////////////////////////////////////////////////////
+                                MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyProtocolAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
+
+    modifier onlyProcessor() {
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProcessorRole(msg.sender))
+            revert Error.NOT_PROCESSOR();
+        _;
+    }
+
+    modifier onlyUpdater() {
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasUpdaterRole(msg.sender))
+            revert Error.NOT_UPDATER();
+        _;
+    }
+
+    modifier onlyCoreContracts() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasCoreContractsRole(
+                msg.sender
+            )
+        ) revert Error.NOT_CORE_CONTRACTS();
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                         CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
     constructor(uint16 chainId_, ISuperRegistry superRegistry_) {
-        if (chainId_ == 0) revert INVALID_INPUT_CHAIN_ID();
+        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
 
         chainId = chainId_;
         superRegistry = superRegistry_;
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -68,7 +92,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
+    ) external payable virtual override onlyCoreContracts {
         _dispatchPayload(ambId_, dstChainId_, message_, extraData_);
         _dispatchProof(ambId_, secAmbId_, dstChainId_, message_, extraData_);
     }
@@ -79,7 +103,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         uint8[] memory secAmbId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual override onlyRole(CORE_CONTRACTS_ROLE) {
+    ) external payable virtual override onlyCoreContracts {
         _broadcastPayload(ambId_, message_, extraData_);
         _broadcastProof(ambId_, secAmbId_, message_, extraData_);
     }
@@ -113,9 +137,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
     /// NOTE: function can only process successful payloads.
     function processPayload(
         uint256 payloadId_
-    ) external payable virtual override onlyRole(PROCESSOR_ROLE) {}
+    ) external payable virtual override onlyProcessor {}
 
-    /// @dev allows accounts with {PROCESSOR_ROLE} to revert payload that fail to revert state changes on source chain.
+    /// @dev allows accounts with {PROCESSOR_ROLE} to revert Error.payload that fail to revert Error.state changes on source chain.
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// @param ambId_ is the identifier of the cross-chain amb to be used to send the acknowledgement.
     /// @param extraData_ is any message amb specific override information.
@@ -124,7 +148,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         uint256 payloadId_,
         uint256 ambId_,
         bytes memory extraData_
-    ) external payable virtual override onlyRole(PROCESSOR_ROLE) {}
+    ) external payable virtual override onlyProcessor {}
 
     function _dispatchPayload(
         uint8 ambId_,
@@ -137,7 +161,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         );
 
         if (address(ambImplementation) == address(0)) {
-            revert INVALID_BRIDGE_ID();
+            revert Error.INVALID_BRIDGE_ID();
         }
 
         ambImplementation.dispatchPayload{value: msg.value / 2}(
@@ -164,7 +188,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             uint8 tempAmbId = secAmbId_[i];
 
             if (tempAmbId == ambId_) {
-                revert INVALID_PROOF_BRIDGE_ID();
+                revert Error.INVALID_PROOF_BRIDGE_ID();
             }
 
             IAmbImplementation tempImpl = IAmbImplementation(
@@ -172,7 +196,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             );
 
             if (address(tempImpl) == address(0)) {
-                revert INVALID_BRIDGE_ID();
+                revert Error.INVALID_BRIDGE_ID();
             }
 
             /// @dev should figure out how to split message costs
@@ -200,7 +224,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
         );
 
         if (address(ambImplementation) == address(0)) {
-            revert INVALID_BRIDGE_ID();
+            revert Error.INVALID_BRIDGE_ID();
         }
 
         ambImplementation.broadcastPayload{value: msg.value / 2}(
@@ -226,7 +250,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             uint8 tempAmbId = secAmbId_[i];
 
             if (tempAmbId == ambId_) {
-                revert INVALID_PROOF_BRIDGE_ID();
+                revert Error.INVALID_PROOF_BRIDGE_ID();
             }
 
             IAmbImplementation tempImpl = IAmbImplementation(
@@ -234,7 +258,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry, AccessControl {
             );
 
             if (address(tempImpl) == address(0)) {
-                revert INVALID_BRIDGE_ID();
+                revert Error.INVALID_BRIDGE_ID();
             }
 
             /// @dev should figure out how to split message costs

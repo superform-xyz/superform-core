@@ -6,16 +6,6 @@ pragma solidity 0.8.19;
 /// @dev  extends ERC1155s to create SuperPositions which track vault shares from any originating chain
 interface ISuperPositions {
     /*///////////////////////////////////////////////////////////////
-                                ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev is emitted when the chain id input is invalid.
-    error INVALID_INPUT_CHAIN_ID();
-
-    /// @dev is emitted when an address is being set to 0
-    error ZERO_ADDRESS();
-
-    /*///////////////////////////////////////////////////////////////
                         PROTECTED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 

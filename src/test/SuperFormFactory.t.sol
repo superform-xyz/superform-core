@@ -9,6 +9,7 @@ import {ERC4626Form} from "../forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol";
 import "./utils/BaseSetup.sol";
 import "./utils/Utilities.sol";
+import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 contract SuperFormFactoryTest is BaseSetup {
@@ -47,7 +48,7 @@ contract SuperFormFactoryTest is BaseSetup {
         uint256 formId = 1;
 
         vm.prank(deployer);
-        vm.expectRevert(ISuperFormFactory.ZERO_ADDRESS.selector);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
             .addFormBeacon(form, formId);
     }
@@ -57,7 +58,7 @@ contract SuperFormFactoryTest is BaseSetup {
         uint256 formId = 1;
 
         vm.prank(deployer);
-        vm.expectRevert(ISuperFormFactory.ERC165_UNSUPPORTED.selector);
+        vm.expectRevert(Error.ERC165_UNSUPPORTED.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory"))
             .addFormBeacon(form, formId);
     }

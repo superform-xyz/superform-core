@@ -6,6 +6,7 @@ import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
+import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
 
 /// @title Layerzero implementation contract
@@ -66,7 +67,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
 
         _lzSend(
@@ -97,7 +98,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
             msg.sender != address(coreRegistry) &&
             msg.sender != address(factoryRegistry)
         ) {
-            revert INVALID_CALLER();
+            revert Error.INVALID_CALLER();
         }
 
         for (uint16 i = 0; i < broadcastChains.length; i++) {
@@ -139,7 +140,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
         bytes memory _payload
     ) internal override {
         if (isValid[_srcChainId][_nonce] == true) {
-            revert DUPLICATE_PAYLOAD();
+            revert Error.DUPLICATE_PAYLOAD();
         }
 
         /// NOTE: changing state earlier to prevent re-entrancy.
