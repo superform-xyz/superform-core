@@ -366,15 +366,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (!_validateSuperFormsWithdrawData(req.superFormsData))
             revert Error.INVALID_SUPERFORMS_DATA();
 
-        /// @dev burn SuperPositions
-        /// FIXME: Transfer shares to SuperPositionBank
-        // ISuperPositions(superRegistry.superPositions()).burnBatchSP(
-        //     vars.srcSender,
-        //     req.superFormsData.superFormIds,
-        //     req.superFormsData.amounts
-        // );
-
-        /// Step 0: Get address of SuperPositionBank for temporary hold
+        /// @dev SuperPositionBank Flow
+        /// Step 0: Create an instance of SuperPositionBank for this chainId
         address _superPositionBank = superRegistry.superPositionBank();
         ISuperPositions superPositions = ISuperPositions(
             superRegistry.superPositions()
@@ -382,8 +375,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         SuperPositionBank bank = SuperPositionBank(_superPositionBank);
 
         /// Step 1: Transfer shares to this contract
-        /// NOTE: This transfer forces further flow.
-        /// From user perspective would be better to enter through the bank.
+        /// NOTE: From the user perspective it would be better to enter through the bank directly.
         superPositions.safeBatchTransferFrom(
             vars.srcSender,
             address(this),
@@ -398,20 +390,22 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         /// Step 2: This is deposit-like action, requires approve from this contract
         /// NOTE: Regardless of final solution, this will need to track individual user request to retrive later on
-        uint256 index = bank.acceptPosition(
+        uint256 index = bank.acceptPositionBatch(
             req.superFormsData.superFormIds,
             req.superFormsData.amounts,
             vars.srcSender
         );
 
-        /// Step 3: Save index of position create in SuperPositionBank in extraData (wip, extraData can contain more)
+        superPositions.setApprovalForAll(address(bank), false);
+
+        /// Step 3: Save index of position create in SuperPositionBank in extraData 
+        /// NOTE: extraData can contain more complex type than only index value
         req.superFormsData.extraFormData = abi.encode(index);
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
 
         /// @dev write packed txData
-
         ambData = InitMultiVaultData(
             _packTxData(
                 vars.srcSender,
@@ -515,11 +509,48 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             revert Error.INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
-        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
-            vars.srcSender,
-            req.superFormData.superFormId,
-            req.superFormData.amount
+        // ISuperPositions(superRegistry.superPositions()).burnSingleSP(
+        //     vars.srcSender,
+        //     req.superFormData.superFormId,
+        //     req.superFormData.amount
+        // );
+
+        /// @dev SuperPositionBank Flow
+        /// Step 0: Create an instance of SuperPositionBank for this chainId
+        address _superPositionBank = superRegistry.superPositionBank();
+        ISuperPositions superPositions = ISuperPositions(
+            superRegistry.superPositions()
         );
+        SuperPositionBank bank = SuperPositionBank(_superPositionBank);
+
+        /// Step 1: Transfer shares to this contract
+        /// NOTE: From the user perspective it would be better to enter through the bank directly.
+        superPositions.safeTransferFrom(
+            vars.srcSender,
+            address(this),
+            req.superFormData.superFormId,
+            req.superFormData.amount,
+            ""
+        );
+
+        /// @dev Should really use singleApprove here, but this will be a loop...
+        /// NOTE: Remember to remove this approval later on (at least)
+        /// TODO: This is Single ID Withdraw, may use setApprovalForOne
+        superPositions.setApprovalForAll(address(bank), true);
+
+        /// Step 2: This is deposit-like action, requires approve from this contract
+        /// NOTE: Regardless of final solution, this will need to track individual user request to retrive later on
+        uint256 index = bank.acceptSinglePosition(
+            req.superFormData.superFormId,
+            req.superFormData.amount,
+            vars.srcSender
+        );
+
+        superPositions.setApprovalForAll(address(bank), false);
+
+        /// Step 3: Save index of position create in SuperPositionBank in extraData 
+        /// NOTE: extraData can contain more complex type than only index value
+        req.superFormData.extraFormData = abi.encode(index);
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -842,13 +873,18 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 returnData.amounts,
                 ""
             );
-        } else if (txType == uint256(TransactionType.WITHDRAW) && !status) {
-            ISuperPositions(superRegistry.superPositions()).mintBatchSP(
-                srcSender,
-                multiVaultData.superFormIds,
-                returnData.amounts,
-                ""
+        } else if (txType == uint256(TransactionType.WITHDRAW) && status) {
+            /// @dev FIXME: needs to call SuperPositionBank to burn the vault positions.
+
+            bytes memory extraData = multiVaultData.extraFormData; // TODO read customForm type here
+            uint256 index = abi.decode(extraData, (uint256));
+
+            SuperPositionBank bank = SuperPositionBank(
+                superRegistry.superPositionBank()
             );
+
+            bank.burnPositonBatch(srcSender, index);
+
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -915,21 +951,14 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         } else if (txType == uint256(TransactionType.WITHDRAW) && status) {
             /// @dev FIXME: needs to call SuperPositionBank to burn the vault positions.
 
-            bytes memory extraData = singleVaultData.extraFormData; // read customForm type here
+            bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
             uint256 index = abi.decode(extraData, (uint256));
 
             SuperPositionBank bank = SuperPositionBank(
                 superRegistry.superPositionBank()
             );
-            bank.burnPosition(srcSender, index);
 
-            /// NOTE: Worth revisitng usage of burnBatch vs burnSingleSP and it's overall consistency of usage
-            /// NOTE: Split of singleSync and multiSync forces to also accept positions as single or batch in separate function
-            // ISuperPositions(superRegistry.superPositions()).burnSingleSP( // <= Err with conversion / decide on batch or single
-            //     srcSender,
-            //     singleVaultData.superFormId,
-            //     returnData.amount
-            // );
+            bank.burnPositionSingle(srcSender, index);
 
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
