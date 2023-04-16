@@ -514,13 +514,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
             revert Error.INVALID_SUPERFORMS_DATA();
 
-        /// @dev burn SuperPositions
-        // ISuperPositions(superRegistry.superPositions()).burnSingleSP(
-        //     vars.srcSender,
-        //     req.superFormData.superFormId,
-        //     req.superFormData.amount
-        // );
-
         /// @dev SuperPositionBank Flow
         /// Step 0: Create an instance of SuperPositionBank for this chainId
         address _superPositionBank = superRegistry.superPositionBank();

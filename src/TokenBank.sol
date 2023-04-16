@@ -246,6 +246,9 @@ contract TokenBank is ITokenBank {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
         /// @dev Withdraw from Form
+        /// NOTE: Adding try/catch here doesn't give us error as return value
+        /// NOTE: Best if we could know type of error and revert with it, then create separate message
+        /// NOTE: catch could sent this message. worth remembering that stateRegistry is caller and exec context is dst chain 
         IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
 
         (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(

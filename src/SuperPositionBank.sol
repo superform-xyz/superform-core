@@ -104,6 +104,7 @@ contract SuperPositionBank is ERC165 {
 
     /// @notice Intended to be called in case of failure to perform Withdraw, we just return SuperPositions to owner
     /// TODO: Implement at the SuperRouter side!
+    /// NOTE: Relevant for Try/catch arc when messaging is solved
     function returnPositionBatch(
         address _owner,
         uint256 positionIndex
