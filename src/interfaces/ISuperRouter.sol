@@ -102,6 +102,20 @@ interface ISuperRouter {
         SingleDirectSingleVaultStateReq memory req
     ) external payable;
 
+    /// @dev Perform burn of SuperPositions initiated by SuperPositionBank (RBAC'd)
+    function burnPositionSingle(
+        address _owner,
+        uint256 _tokenId,
+        uint256 _amount
+    ) external;
+
+    /// @dev Perform burn of SuperPositions initiated by SuperPositionBank (RBAC'd)
+    function burnPositionBatch(
+        address _owner,
+        uint256[] memory _tokenIds,
+        uint256[] memory _amounts
+    ) external;
+
     /*///////////////////////////////////////////////////////////////
                         OTHER EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/

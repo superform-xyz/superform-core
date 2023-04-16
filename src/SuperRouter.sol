@@ -51,6 +51,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         _;
     }
 
+    modifier onlyBank() {
+        if (msg.sender != superRegistry.superPositionBank())
+            revert Error.NOT_SUPER_POSITION_BANK();
+        _;
+    }
+
     /// @dev constructor
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
@@ -965,6 +971,30 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
 
         emit Completed(returnDataTxId);
+    }
+
+    function burnPositionSingle(
+        address _owner,
+        uint256 _tokenId,
+        uint256 _amount
+    ) external onlyBank {
+        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
+            _owner,
+            _tokenId,
+            _amount
+        );
+    }
+
+    function burnPositionBatch(
+        address _owner,
+        uint256[] memory _tokenIds,
+        uint256[] memory _amounts
+    ) external onlyBank {
+        ISuperPositions(superRegistry.superPositions()).burnBatchSP(
+            _owner,
+            _tokenIds,
+            _amounts
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
