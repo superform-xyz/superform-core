@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
+import {TransactionType, CallbackType, ErrorType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
@@ -166,7 +166,7 @@ contract TokenBank is ITokenBank {
         /// FIXME: Add reverts at the Form level
         if (underlying.balanceOf(address(this)) >= singleVaultData_.amount) {
             underlying.transfer(superForm_, singleVaultData_.amount);
-                
+
             dstAmount = IBaseForm(superForm_).xChainDepositIntoVault(
                 singleVaultData_
             );
@@ -246,21 +246,54 @@ contract TokenBank is ITokenBank {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
         /// @dev Withdraw from Form
-        /// NOTE: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch
+        /// TODO: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch (droping revert is risky)
+        /// that's also the only way to get error type out of the try/catch 
         /// NOTE: opted for just returning CallbackType.FAIL as we always end up with SuperPositionBank.returnPosition() anyways
-        /// NOTE: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
+        /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
         try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_) {
             // Handle the case when the external call succeeds
-            _dispatchPayload(singleVaultData_, TransactionType.WITHDRAW, CallbackType.RETURN, singleVaultData_.amount); 
+            _dispatchPayload(
+                singleVaultData_,
+                TransactionType.WITHDRAW,
+                CallbackType.RETURN,
+                singleVaultData_.amount
+            );
+            
+        } catch Error(string memory reason) {
+            // Handle the case when the revert/require is caught from the external call
+            _dispatchPayload(
+                singleVaultData_,
+                TransactionType.WITHDRAW,
+                CallbackType.FAIL,
+                singleVaultData_.amount
+            );
+
+            /// @dev we could match on individual reasons, but it's expensive with strings
+            emit ErrorLog(reason);
+
         } catch {
             // Handle the case when the external call itself reverts
-            _dispatchPayload(singleVaultData_, TransactionType.WITHDRAW, CallbackType.FAIL, singleVaultData_.amount); 
+            /// TODO: E.g Panic/overflow endup here and fall through catch Error
+            /// https://solidity-by-example.org/try-catch/
+            _dispatchPayload(
+                singleVaultData_,
+                TransactionType.WITHDRAW,
+                CallbackType.FAIL,
+                singleVaultData_.amount
+            );
 
-        }        
-
+            /// @dev we could match on individual reasons, but it's hard with strings
+            emit ErrorLog("FAIL_REVERT");
+        }
     }
 
-    function _dispatchPayload(InitSingleVaultData memory singleVaultData_, TransactionType txType , CallbackType returnType, uint256 amount) internal {
+    /// @notice depositSync and withdrawSync internal method for sending message back to the source chain
+    function _dispatchPayload(
+        InitSingleVaultData memory singleVaultData_,
+        TransactionType txType,
+        CallbackType returnType,
+        uint256 amount
+    ) internal {
         (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
             singleVaultData_.txData
         );
@@ -278,12 +311,7 @@ contract TokenBank is ITokenBank {
             srcChainId,
             abi.encode(
                 AMBMessage(
-                    _packTxInfo(
-                        uint120(txType),
-                        uint120(returnType),
-                        false,
-                        0
-                    ),
+                    _packTxInfo(uint120(txType), uint120(returnType), false, 0),
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
@@ -300,7 +328,6 @@ contract TokenBank is ITokenBank {
             safeGasParam
         );
     }
-
 
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev adds the gas overrides for layerzero.

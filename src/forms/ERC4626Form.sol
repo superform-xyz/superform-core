@@ -275,11 +275,13 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         if (singleVaultData_.liqData.txData.length != 0) {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
-            dstAmount = v.redeem(
-                singleVaultData_.amount,
-                address(this),
-                address(this)
-            );
+            try
+                v.redeem(singleVaultData_.amount, address(this), address(this))
+            returns (uint256 amount) {
+                dstAmount = amount;
+            } catch {
+                revert Error.REDEEM_FAILED();
+            }
 
             uint256 balanceBefore = ERC20(v.asset()).balanceOf(address(this));
 
@@ -287,6 +289,8 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             /// FEAT Note: We could also allow to pass additional chainId arg here
             /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
             /// FIXME: bridge address should be validated at router level
+
+            /// NOTE: We can't make try/catch on internall calls!
             dispatchTokens(
                 superRegistry.getBridgeAddress(
                     singleVaultData_.liqData.bridgeId
@@ -298,6 +302,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 address(this),
                 singleVaultData_.liqData.nativeAmount
             );
+
             uint256 balanceAfter = ERC20(v.asset()).balanceOf(address(this));
 
             /// note: balance validation to prevent draining contract.
@@ -305,7 +310,11 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
         } else {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
-            v.redeem(singleVaultData_.amount, srcSender, address(this));
+            try
+                v.redeem(singleVaultData_.amount, srcSender, address(this))
+            {} catch {
+                revert Error.REDEEM_FAILED();
+            }
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount

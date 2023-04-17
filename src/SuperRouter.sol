@@ -901,6 +901,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             data_.txInfo
         );
 
+        /// TODO: Change this to recognize FAIL status
         if (callbackType != uint256(CallbackType.RETURN))
             revert Error.INVALID_PAYLOAD();
 
