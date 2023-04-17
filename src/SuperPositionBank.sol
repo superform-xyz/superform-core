@@ -42,60 +42,60 @@ contract SuperPositionBank is ERC165 {
     /// NOTE: Would require users to call two separate contracts and fragments flow
     // function depositToSourceDirectly() external;
 
-    /// @notice Create a new position in the queue for withdrawal. _owner can have multiple positions in the queue
+    /// @notice Create a new position in the queue for withdrawal. owner_ can have multiple positions in the queue
     function acceptSinglePosition(
-        uint256 _tokenId,
-        uint256 _amount,
-        address _owner
+        uint256 tokenId_,
+        uint256 amount_,
+        address owner_
     ) public onlyRouter returns (uint256 index) {
         token.safeTransferFrom(
             msg.sender,
             address(this),
-            _tokenId,
-            _amount,
+            tokenId_,
+            amount_,
             ""
         );
         PositionSingle memory newPosition = PositionSingle({
-            tokenId: _tokenId,
-            amount: _amount
+            tokenId: tokenId_,
+            amount: amount_
         });
-        index = queueCounter[_owner]++;
-        queueSingle[_owner][index] = newPosition;
+        index = queueCounter[owner_]++;
+        queueSingle[owner_][index] = newPosition;
     }
 
-    /// @notice Create a new position in the queue for withdrawal. _owner can have multiple positions in the queue
+    /// @notice Create a new position in the queue for withdrawal. owner_ can have multiple positions in the queue
     function acceptPositionBatch(
-        uint256[] memory _tokenIds,
-        uint256[] memory _amounts,
-        address _owner
+        uint256[] memory tokenIds_,
+        uint256[] memory amounts_,
+        address owner_
     ) public onlyRouter returns (uint256 index) {
-        require(_tokenIds.length == _amounts.length, "LENGTH_MISMATCH");
+        require(tokenIds_.length == amounts_.length, "LENGTH_MISMATCH");
         token.safeBatchTransferFrom(
             msg.sender,
             address(this),
-            _tokenIds,
-            _amounts,
+            tokenIds_,
+            amounts_,
             ""
         );
         PositionBatch memory newPosition = PositionBatch({
-            tokenIds: _tokenIds,
-            amounts: _amounts
+            tokenIds: tokenIds_,
+            amounts: amounts_
         });
-        index = queueCounter[_owner]++;
-        queueBatch[_owner][index] = newPosition;
+        index = queueCounter[owner_]++;
+        queueBatch[owner_][index] = newPosition;
     }
 
     /// @notice Intended to be called in case of failure to perform Withdraw, we just return SuperPositions to owner
     function returnPositionSingle(
-        address _owner,
+        address owner_,
         uint256 positionIndex
     ) public onlyRouter {
-        PositionSingle memory position = queueSingle[_owner][positionIndex];
-        /// @dev _owner is arbitrary argument, re-think this
-        delete queueSingle[_owner][positionIndex];
+        PositionSingle memory position = queueSingle[owner_][positionIndex];
+        /// @dev owner_ is arbitrary argument, re-think this
+        delete queueSingle[owner_][positionIndex];
         token.safeTransferFrom(
             address(this),
-            _owner,
+            owner_,
             position.tokenId,
             position.amount,
             ""
@@ -106,15 +106,15 @@ contract SuperPositionBank is ERC165 {
     /// TODO: Implement at the SuperRouter side!
     /// NOTE: Relevant for Try/catch arc when messaging is solved
     function returnPositionBatch(
-        address _owner,
+        address owner_,
         uint256 positionIndex
     ) public onlyRouter {
-        PositionBatch memory position = queueBatch[_owner][positionIndex];
-        /// @dev _owner is arbitrary argument, re-think this
-        delete queueBatch[_owner][positionIndex];
+        PositionBatch memory position = queueBatch[owner_][positionIndex];
+        /// @dev owner_ is arbitrary argument, re-think this
+        delete queueBatch[owner_][positionIndex];
         token.safeBatchTransferFrom(
             address(this),
-            _owner,
+            owner_,
             position.tokenIds,
             position.amounts,
             ""
@@ -123,15 +123,15 @@ contract SuperPositionBank is ERC165 {
 
     /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
     function burnPositionSingle(
-        address _owner,
+        address owner_,
         uint256 positionIndex
     ) public onlyRouter {
-        PositionSingle memory position = queueSingle[_owner][positionIndex];
-        token.burnSingleSP(_owner, position.tokenId, position.amount);
+        PositionSingle memory position = queueSingle[owner_][positionIndex];
+        token.burnSingleSP(owner_, position.tokenId, position.amount);
         /// alternative is to transfer back to source and burn there
-        delete queueSingle[_owner][positionIndex];
+        delete queueSingle[owner_][positionIndex];
         superRouter.burnPositionSingle(
-            _owner,
+            owner_,
             position.tokenId,
             position.amount
         );
@@ -139,13 +139,13 @@ contract SuperPositionBank is ERC165 {
 
     /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
     function burnPositonBatch(
-        address _owner,
+        address owner_,
         uint256 positionIndex
     ) public onlyRouter {
-        PositionBatch memory position = queueBatch[_owner][positionIndex];
-        delete queueBatch[_owner][positionIndex];
+        PositionBatch memory position = queueBatch[owner_][positionIndex];
+        delete queueBatch[owner_][positionIndex];
         superRouter.burnPositionBatch(
-            _owner,
+            owner_,
             position.tokenIds,
             position.amounts
         );
@@ -153,19 +153,19 @@ contract SuperPositionBank is ERC165 {
 
     /// @dev Private queue requires public getter
     function getPositionSingle(
-        address _owner,
+        address owner_,
         uint256 positionIndex
     ) public view returns (uint256 tokenId, uint256 amount) {
-        PositionSingle memory position = queueSingle[_owner][positionIndex];
+        PositionSingle memory position = queueSingle[owner_][positionIndex];
         return (position.tokenId, position.amount);
     }
 
     /// @dev Private queue requires public getter
     function getPositionBatch(
-        address _owner,
+        address owner_,
         uint256 positionIndex
     ) public view returns (uint256[] memory tokenIds, uint256[] memory amount) {
-        PositionBatch memory position = queueBatch[_owner][positionIndex];
+        PositionBatch memory position = queueBatch[owner_][positionIndex];
         return (position.tokenIds, position.amounts);
     }
 
