@@ -43,7 +43,7 @@ contract SuperPositionBank is ERC165 {
     // function depositToSourceDirectly() external;
 
     /// @notice Create a new position in the queue for withdrawal. owner_ can have multiple positions in the queue
-    function acceptSinglePosition(
+    function acceptPositionSingle(
         uint256 tokenId_,
         uint256 amount_,
         address owner_

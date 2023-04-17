@@ -18,7 +18,7 @@ import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
 
-import {SuperPositionBank} from "./SuperPositionBank.sol";
+import {ISuperPositionBank} from "./interfaces/ISuperPositionBank.sol";
 
 /// @title Super Router
 /// @author Zeropoint Labs.
@@ -378,7 +378,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         ISuperPositions superPositions = ISuperPositions(
             superRegistry.superPositions()
         );
-        SuperPositionBank bank = SuperPositionBank(_superPositionBank);
+        ISuperPositionBank bank = ISuperPositionBank(_superPositionBank);
 
         /// Step 1: Transfer shares to this contract
         /// NOTE: From the user perspective it would be better to enter through the bank directly.
@@ -520,7 +520,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         ISuperPositions superPositions = ISuperPositions(
             superRegistry.superPositions()
         );
-        SuperPositionBank bank = SuperPositionBank(_superPositionBank);
+        ISuperPositionBank bank = ISuperPositionBank(_superPositionBank);
 
         /// Step 1: Transfer shares to this contract
         /// NOTE: From the user perspective it would be better to enter through the bank directly.
@@ -539,7 +539,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         /// Step 2: This is deposit-like action, requires approve from this contract
         /// NOTE: Regardless of final solution, this will need to track individual user request to retrive later on
-        uint256 index = bank.acceptSinglePosition(
+        uint256 index = bank.acceptPositionSingle(
             req.superFormData.superFormId,
             req.superFormData.amount,
             vars.srcSender
@@ -878,11 +878,11 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             bytes memory extraData = multiVaultData.extraFormData; // TODO read customForm type here
             uint256 index = abi.decode(extraData, (uint256));
 
-            SuperPositionBank bank = SuperPositionBank(
+            ISuperPositionBank bank = ISuperPositionBank(
                 superRegistry.superPositionBank()
             );
 
-            bank.burnPositonBatch(srcSender, index);
+            bank.burnPositionBatch(srcSender, index);
 
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
@@ -953,7 +953,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
             uint256 index = abi.decode(extraData, (uint256));
 
-            SuperPositionBank bank = SuperPositionBank(
+            ISuperPositionBank bank = ISuperPositionBank(
                 superRegistry.superPositionBank()
             );
 
