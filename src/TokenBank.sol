@@ -166,7 +166,7 @@ contract TokenBank is ITokenBank {
         /// FIXME: Add reverts at the Form level
         if (underlying.balanceOf(address(this)) >= singleVaultData_.amount) {
             underlying.transfer(superForm_, singleVaultData_.amount);
-
+                
             dstAmount = IBaseForm(superForm_).xChainDepositIntoVault(
                 singleVaultData_
             );
@@ -246,11 +246,21 @@ contract TokenBank is ITokenBank {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
         /// @dev Withdraw from Form
-        /// NOTE: Adding try/catch here doesn't give us error as return value
-        /// NOTE: Best if we could know type of error and revert with it, then create separate message
-        /// NOTE: catch could sent this message. worth remembering that stateRegistry is caller and exec context is dst chain 
-        IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
+        /// NOTE: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch
+        /// NOTE: opted for just returning CallbackType.FAIL as we always end up with SuperPositionBank.returnPosition() anyways
+        /// NOTE: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
+        try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_) {
+            // Handle the case when the external call succeeds
+            _dispatchPayload(singleVaultData_, TransactionType.WITHDRAW, CallbackType.RETURN, singleVaultData_.amount); 
+        } catch {
+            // Handle the case when the external call itself reverts
+            _dispatchPayload(singleVaultData_, TransactionType.WITHDRAW, CallbackType.FAIL, singleVaultData_.amount); 
 
+        }        
+
+    }
+
+    function _dispatchPayload(InitSingleVaultData memory singleVaultData_, TransactionType txType , CallbackType returnType, uint256 amount) internal {
         (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
             singleVaultData_.txData
         );
@@ -269,8 +279,8 @@ contract TokenBank is ITokenBank {
             abi.encode(
                 AMBMessage(
                     _packTxInfo(
-                        uint120(TransactionType.WITHDRAW),
-                        uint120(CallbackType.RETURN),
+                        uint120(txType),
+                        uint120(returnType),
                         false,
                         0
                     ),
@@ -282,7 +292,7 @@ contract TokenBank is ITokenBank {
                                 superRegistry.chainId(),
                                 currentTotalTxs
                             ),
-                            singleVaultData_.amount /// @dev TODO: return this from Form, not InitSingleVaultData. Q: assets amount from shares or shares only?
+                            amount /// @dev TODO: return this from Form, not InitSingleVaultData. Q: assets amount from shares or shares only?
                         )
                     )
                 )
@@ -290,6 +300,7 @@ contract TokenBank is ITokenBank {
             safeGasParam
         );
     }
+
 
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev adds the gas overrides for layerzero.

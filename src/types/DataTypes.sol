@@ -12,7 +12,8 @@ enum TransactionType {
 
 enum CallbackType {
     INIT,
-    RETURN
+    RETURN,
+    FAIL
 }
 
 enum PayloadState {
