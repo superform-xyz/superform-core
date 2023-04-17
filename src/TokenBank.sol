@@ -167,10 +167,7 @@ contract TokenBank is ITokenBank {
             uint256 formBeaconId_,
             uint16 chainId_
         ) = _getSuperForm(singleVaultData_.superFormId);
-        console.log(superForm_);
-        console.log(chainId_);
-        console.log(formBeaconId_);
-        console.log(singleVaultData_.superFormId);
+
         ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
         uint256 dstAmount;
         /// @dev This will revert ALL of the transactions if one of them fails.

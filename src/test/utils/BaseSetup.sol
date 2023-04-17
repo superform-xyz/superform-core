@@ -626,6 +626,18 @@ abstract contract BaseSetup is DSTest, Test {
                             )
                         )
                     ] = vars.superForm;
+                    console.log(vars.superForm);
+                    console.logBytes32(
+                        bytes32(
+                            bytes(
+                                string.concat(
+                                    UNDERLYING_TOKENS[k],
+                                    "SuperForm",
+                                    Strings.toString(FORM_BEACON_IDS[j])
+                                )
+                            )
+                        )
+                    );
                     _broadcastPayload(vars.chainId, vm.getRecordedLogs());
                 }
             }
