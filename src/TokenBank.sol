@@ -258,7 +258,7 @@ contract TokenBank is ITokenBank {
                 CallbackType.RETURN,
                 singleVaultData_.amount
             );
-            
+
         } catch Error(string memory reason) {
             // Handle the case when the revert/require is caught from the external call
             _dispatchPayload(
@@ -315,7 +315,7 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
-                                true,
+                                CallbackType.RETURN == returnType ? true : false, /// FIXME: We may not need it, callbackType is enough of info
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs

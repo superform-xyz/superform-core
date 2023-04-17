@@ -404,7 +404,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         superPositions.setApprovalForAll(address(bank), false);
 
-        /// Step 3: Save index of position create in SuperPositionBank in extraData 
+        /// Step 3: Save index of position create in SuperPositionBank in extraData
         /// NOTE: extraData can contain more complex type than only index value
         req.superFormsData.extraFormData = abi.encode(index);
 
@@ -547,7 +547,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         superPositions.setApprovalForAll(address(bank), false);
 
-        /// Step 3: Save index of position create in SuperPositionBank in extraData 
+        /// Step 3: Save index of position create in SuperPositionBank in extraData
         /// NOTE: extraData can contain more complex type than only index value
         req.superFormData.extraFormData = abi.encode(index);
 
@@ -883,7 +883,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             );
 
             bank.burnPositionBatch(srcSender, index);
-
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -901,9 +900,10 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             data_.txInfo
         );
 
-        /// TODO: Change this to recognize FAIL status
-        if (callbackType != uint256(CallbackType.RETURN))
-            revert Error.INVALID_PAYLOAD();
+        if (
+            callbackType != uint256(CallbackType.RETURN) ||
+            callbackType != uint256(CallbackType.FAIL)
+        ) revert Error.INVALID_PAYLOAD();
 
         ReturnSingleData memory returnData = abi.decode(
             data_.params,
@@ -949,7 +949,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 ""
             );
         } else if (txType == uint256(TransactionType.WITHDRAW) && status) {
-            /// @dev FIXME: needs to call SuperPositionBank to burn the vault positions.
 
             bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
             uint256 index = abi.decode(extraData, (uint256));
@@ -960,6 +959,16 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
             bank.burnPositionSingle(srcSender, index);
 
+        /// TODO: Address discrepancy between using and not using status, check TokenBank._dispatchPayload()
+        } else if (callbackType == uint256(CallbackType.FAIL)) {
+            bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
+            uint256 index = abi.decode(extraData, (uint256));
+
+            ISuperPositionBank bank = ISuperPositionBank(
+                superRegistry.superPositionBank()
+            );
+
+            bank.returnPositionSingle(srcSender, index);
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }

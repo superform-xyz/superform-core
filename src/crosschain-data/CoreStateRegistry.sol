@@ -337,7 +337,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             ITokenBank(superRegistry.tokenBank()).withdrawSync{
                 value: msg.value
             }(singleVaultData);
-        /// TODO: else if for FAIL callbackType could save some gas for users if we process it differently than in stateSync
+        /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
         } else {
             /// @dev Withdraw SyncBack here, callbackType.return 
             ISuperRouter(superRegistry.superRouter()).stateSync{
