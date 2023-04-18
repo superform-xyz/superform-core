@@ -5,6 +5,8 @@ pragma solidity 0.8.19;
 import "./BaseSetup.sol";
 import "forge-std/console.sol";
 import "../../utils/DataPacking.sol";
+import {IPermit2} from "../../interfaces/IPermit2.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     uint8 public primaryAMB;
@@ -166,9 +168,13 @@ abstract contract ProtocolActions is BaseSetup {
                         address(0)
                     );
 
-                if (action.action == Actions.Deposit) {
+                if (
+                    action.action == Actions.Deposit ||
+                    action.action == Actions.DepositPermit2
+                ) {
                     singleSuperFormsData[i] = _buildSingleVaultDepositCallData(
-                        singleVaultCallDataArgs
+                        singleVaultCallDataArgs,
+                        action.action
                     );
                 } else {
                     singleSuperFormsData[i] = _buildSingleVaultWithdrawCallData(
@@ -191,7 +197,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[CHAIN_0]);
 
         if (action.testType != TestType.RevertMainAction) {
-            vm.prank(action.user);
+            vm.prank(users[action.user]);
             /// @dev see @pigeon for this implementation
             vm.recordLogs();
             if (action.multiVaults) {
@@ -206,7 +212,10 @@ abstract contract ProtocolActions is BaseSetup {
                         action.msgValue
                     );
 
-                    if (action.action == Actions.Deposit)
+                    if (
+                        action.action == Actions.Deposit ||
+                        action.action == Actions.DepositPermit2
+                    )
                         superRouter.singleDstMultiVaultDeposit{
                             value: action.msgValue
                         }(vars.singleDstMultiVaultStateReq);
@@ -225,7 +234,10 @@ abstract contract ProtocolActions is BaseSetup {
                         action.msgValue
                     );
 
-                    if (action.action == Actions.Deposit)
+                    if (
+                        action.action == Actions.Deposit ||
+                        action.action == Actions.DepositPermit2
+                    )
                         superRouter.multiDstMultiVaultDeposit{
                             value: action.msgValue
                         }(vars.multiDstMultiVaultStateReq);
@@ -247,7 +259,10 @@ abstract contract ProtocolActions is BaseSetup {
                             action.msgValue
                         );
 
-                        if (action.action == Actions.Deposit)
+                        if (
+                            action.action == Actions.Deposit ||
+                            action.action == Actions.DepositPermit2
+                        )
                             superRouter.singleXChainSingleVaultDeposit{
                                 value: action.msgValue
                             }(vars.singleXChainSingleVaultStateReq);
@@ -264,7 +279,10 @@ abstract contract ProtocolActions is BaseSetup {
                             action.msgValue
                         );
 
-                        if (action.action == Actions.Deposit)
+                        if (
+                            action.action == Actions.Deposit ||
+                            action.action == Actions.DepositPermit2
+                        )
                             superRouter.singleDirectSingleVaultDeposit{
                                 value: action.msgValue
                             }(vars.singleDirectSingleVaultStateReq);
@@ -283,7 +301,10 @@ abstract contract ProtocolActions is BaseSetup {
                         action.adapterParam,
                         action.msgValue
                     );
-                    if (action.action == Actions.Deposit)
+                    if (
+                        action.action == Actions.Deposit ||
+                        action.action == Actions.DepositPermit2
+                    )
                         superRouter.multiDstSingleVaultDeposit{
                             value: action.msgValue
                         }(vars.multiDstSingleVaultStateReq);
@@ -442,7 +463,10 @@ abstract contract ProtocolActions is BaseSetup {
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].toChainId = DST_CHAINS[i];
             if (CHAIN_0 != aV[i].toChainId) {
-                if (action.action == Actions.Deposit) {
+                if (
+                    action.action == Actions.Deposit ||
+                    action.action == Actions.DepositPermit2
+                ) {
                     unchecked {
                         PAYLOAD_ID[aV[i].toChainId]++;
                     }
@@ -647,8 +671,14 @@ abstract contract ProtocolActions is BaseSetup {
                 totalAmount,
                 sameUnderlyingCheck
             );
-            if (args.action == Actions.Deposit) {
-                superFormData = _buildSingleVaultDepositCallData(callDataArgs);
+            if (
+                args.action == Actions.Deposit ||
+                args.action == Actions.DepositPermit2
+            ) {
+                superFormData = _buildSingleVaultDepositCallData(
+                    callDataArgs,
+                    args.action
+                );
             } else if (args.action == Actions.Withdraw) {
                 superFormData = _buildSingleVaultWithdrawCallData(callDataArgs);
             }
@@ -672,8 +702,19 @@ abstract contract ProtocolActions is BaseSetup {
                 vm.selectFork(FORKS[args.srcChainId]);
 
                 /// @dev - APPROVE transfer to SuperRouter (because of Socket)
-                vm.prank(args.user);
-                MockERC20(args.underlyingTokens[i]).approve(from, totalAmount);
+                vm.prank(users[args.user]);
+
+                if (args.action == Actions.DepositPermit2) {
+                    MockERC20(args.underlyingTokens[i]).approve(
+                        getContract(args.srcChainId, "CanonicalPermit2"),
+                        type(uint256).max
+                    );
+                } else if (args.action == Actions.Deposit) {
+                    MockERC20(args.underlyingTokens[i]).approve(
+                        from,
+                        totalAmount
+                    );
+                }
 
                 vm.selectFork(initialFork);
             } else if (sameUnderlyingCheck == address(0)) {
@@ -691,7 +732,8 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     function _buildSingleVaultDepositCallData(
-        SingleVaultCallDataArgs memory args
+        SingleVaultCallDataArgs memory args,
+        Actions action
     ) internal returns (SingleVaultSFData memory superFormData) {
         uint256 initialFork = vm.activeFork();
 
@@ -700,7 +742,6 @@ abstract contract ProtocolActions is BaseSetup {
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is Form
             from = args.toDst;
-            console.log("from todst: ", from);
         }
         /// @dev check this from down here when contracts are fixed for multi vault
         /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
@@ -717,6 +758,31 @@ abstract contract ProtocolActions is BaseSetup {
             FORKS[args.toChainId]
         );
 
+        /// @dev permit2 calldata
+        IPermit2.PermitTransferFrom memory permit;
+        bytes memory sig;
+        bytes memory permit2Calldata;
+        if (action == Actions.DepositPermit2) {
+            permit = IPermit2.PermitTransferFrom({
+                permitted: IPermit2.TokenPermissions({
+                    token: IERC20(address(args.underlyingToken)),
+                    amount: args.sameUnderlyingCheck != address(0)
+                        ? args.totalAmount
+                        : args.amount
+                }),
+                nonce: _randomUint256(),
+                deadline: block.timestamp
+            });
+            sig = _signPermit(
+                permit,
+                from,
+                userKeys[args.user],
+                args.srcChainId
+            ); /// @dev from is either SuperRouter (xchain) or the form (direct deposit)
+
+            permit2Calldata = abi.encode(permit.nonce, permit.deadline, sig);
+        }
+
         /// @dev FIXME: currently only producing liqRequests for non-permit2 ERC20 transfers!!!
         /// @dev TODO: need to test native requests and permit2 requests
         LiqRequest memory liqReq = LiqRequest(
@@ -728,15 +794,23 @@ abstract contract ProtocolActions is BaseSetup {
                 ? args.totalAmount
                 : args.amount,
             0,
-            ""
+            permit2Calldata /// @dev will be empty if action == Actions.Deposit
         );
 
         if (args.sameUnderlyingCheck == address(0)) {
             vm.selectFork(FORKS[args.srcChainId]);
 
             /// @dev - APPROVE transfer to SuperRouter (because of Socket)
-            vm.prank(args.user);
-            MockERC20(args.underlyingToken).approve(from, args.amount);
+            vm.prank(users[args.user]);
+
+            if (action == Actions.DepositPermit2) {
+                MockERC20(args.underlyingToken).approve(
+                    getContract(args.srcChainId, "CanonicalPermit2"),
+                    type(uint256).max
+                );
+            } else {
+                MockERC20(args.underlyingToken).approve(from, args.amount);
+            }
 
             vm.selectFork(initialFork);
         }

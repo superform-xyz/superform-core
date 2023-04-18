@@ -19,6 +19,7 @@ import {VaultMock} from "../mocks/VaultMock.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import "./TestTypes.sol";
+import {Permit2Clone} from "../mocks/Permit2Clone.sol";
 
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
@@ -41,6 +42,7 @@ import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implement
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
 import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
+import {IPermit2} from "../../interfaces/IPermit2.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
@@ -48,12 +50,20 @@ abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
+    bytes32 constant TOKEN_PERMISSIONS_TYPEHASH =
+        keccak256("TokenPermissions(address token,uint256 amount)");
+    bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH =
+        keccak256(
+            "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
+        );
 
     /// @dev
     address public constant CANONICAL_PERMIT2 =
-        0x000000000022D473030F116dDEE9F6B43aC78BA3;
+        0x000000000022D473030F116dDEE9F6B43aC78BA3; /// @dev for mainnet deployment
     address public deployer = address(777);
     address[] public users;
+    uint256[] public userKeys;
+
     uint256 public trustedRemote;
     bytes32 public constant salt = "SUPERFORM";
     mapping(uint16 chainId => mapping(bytes32 implementation => address at))
@@ -267,6 +277,10 @@ abstract contract BaseSetup is DSTest, Test {
             vars.ambAddresses = new address[](ambIds.length);
             vm.selectFork(vars.fork);
 
+            vars.canonicalPermit2 = address(new Permit2Clone{salt: salt}());
+            contracts[vars.chainId][bytes32(bytes("CanonicalPermit2"))] = vars
+                .canonicalPermit2;
+
             /// @dev 1.1- deploy LZ Helper from Pigeon
             vars.lzHelper = address(new LayerZeroHelper{salt: salt}());
             vm.allowCheatcodes(vars.lzHelper);
@@ -290,7 +304,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setImmutables(
                 vars.chainId,
-                CANONICAL_PERMIT2
+                vars.canonicalPermit2
             );
             SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
 
@@ -691,9 +705,13 @@ abstract contract BaseSetup is DSTest, Test {
         bridgeIds.push(1);
 
         /// @dev setup users
-        users.push(address(1));
-        users.push(address(2));
-        users.push(address(3));
+        userKeys.push(1);
+        userKeys.push(2);
+        userKeys.push(3);
+
+        users.push(vm.addr(userKeys[0]));
+        users.push(vm.addr(userKeys[1]));
+        users.push(vm.addr(userKeys[2]));
 
         /// @dev setup vault bytecodes
         vaultBytecodes.push(type(VaultMock).creationCode);
@@ -720,9 +738,9 @@ abstract contract BaseSetup is DSTest, Test {
 
             vm.deal(deployer, amountDeployer);
 
-            vm.deal(address(1), amountUSER);
-            vm.deal(address(2), amountUSER);
-            vm.deal(address(3), amountUSER);
+            vm.deal(users[0], amountUSER);
+            vm.deal(users[1], amountUSER);
+            vm.deal(users[2], amountUSER);
         }
     }
 
@@ -785,9 +803,9 @@ abstract contract BaseSetup is DSTest, Test {
             for (uint256 i = 0; i < chainIds.length; i++) {
                 vm.selectFork(FORKS[chainIds[i]]);
                 address token = getContract(chainIds[i], UNDERLYING_TOKENS[j]);
-                deal(token, address(1), 1 ether * amount);
-                deal(token, address(2), 1 ether * amount);
-                deal(token, address(3), 1 ether * amount);
+                deal(token, users[0], 1 ether * amount);
+                deal(token, users[1], 1 ether * amount);
+                deal(token, users[2], 1 ether * amount);
             }
         }
     }
@@ -866,6 +884,70 @@ abstract contract BaseSetup is DSTest, Test {
         }
 
         return addr;
+    }
+
+    function _randomBytes32() internal view returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    tx.origin,
+                    block.number,
+                    block.timestamp,
+                    block.coinbase,
+                    address(this).codehash,
+                    gasleft()
+                )
+            );
+    }
+
+    function _randomUint256() internal view returns (uint256) {
+        return uint256(_randomBytes32());
+    }
+
+    // Generate a signature for a permit message.
+    function _signPermit(
+        IPermit2.PermitTransferFrom memory permit,
+        address spender,
+        uint256 signerKey,
+        uint16 chainId
+    ) internal returns (bytes memory sig) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            signerKey,
+            _getEIP712Hash(permit, spender, chainId)
+        );
+        return abi.encodePacked(r, s, v);
+    }
+
+    // Compute the EIP712 hash of the permit object.
+    // Normally this would be implemented off-chain.
+    function _getEIP712Hash(
+        IPermit2.PermitTransferFrom memory permit,
+        address spender,
+        uint16 chainId
+    ) internal view returns (bytes32 h) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    Permit2Clone(getContract(chainId, "CanonicalPermit2"))
+                        .DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TRANSFER_FROM_TYPEHASH,
+                            keccak256(
+                                abi.encode(
+                                    TOKEN_PERMISSIONS_TYPEHASH,
+                                    permit.permitted.token,
+                                    permit.permitted.amount
+                                )
+                            ),
+                            spender,
+                            permit.nonce,
+                            permit.deadline
+                        )
+                    )
+                )
+            );
     }
 
     ///@dev Compute the address of the contract to be deployed
