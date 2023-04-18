@@ -197,7 +197,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         }
     }
 
-    /// IT COMPLAINS ABOUT BEING ABSTRACT BECAUSE IT MOVED TO SEETINGS
     function setSuperPositionBank(
         address superPositionBank_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {

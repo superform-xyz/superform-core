@@ -93,6 +93,8 @@ contract Scenario4Test is ProtocolActions {
                 vars
             ) = _stage1_buildReqData(action, act);
 
+            // SuperPositions.approve(address(superRouter), type(uint256).max);
+
             vars = _stage2_run_src_action(
                 action,
                 multiSuperFormsData,
