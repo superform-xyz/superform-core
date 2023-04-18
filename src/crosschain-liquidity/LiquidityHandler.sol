@@ -14,13 +14,14 @@ import {Error} from "../utils/Error.sol";
 abstract contract LiquidityHandler {
     using SafeERC20 for IERC20;
 
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     /// @dev dispatches tokens via the socket bridge.
     /// Note: refer https://docs.socket.tech/socket-api/v2/guides/socket-smart-contract-integration
     /// Note: All the inputs are in array for processing multiple transactions.
     /// @param bridge_ Bridge address to pass tokens to
     /// @param txData_ Socket data
     /// @param token_ Token caller deposits into superform
-    /// @param isERC20_ address _allowanceTarget NOT NEEDED / RE-WORK TO NATIVE/NON-NATIVE CHECK
     /// @param amount_ Amount of tokens to deposit
     /// @param owner_ Owner of tokens
     /// @param nativeAmount_ msg.value or msg.value + native tokens
@@ -29,14 +30,13 @@ abstract contract LiquidityHandler {
         address bridge_,
         bytes memory txData_,
         address token_,
-        bool isERC20_,
         uint256 amount_,
         address owner_,
         uint256 nativeAmount_,
         bytes memory permit2Data_,
         address permit2_
     ) internal virtual {
-        if (isERC20_) {
+        if (token_ != NATIVE) {
             IERC20 token = IERC20(token_);
 
             /// @dev only for deposits, otherwise amount already in contract

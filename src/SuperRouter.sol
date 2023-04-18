@@ -149,7 +149,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
                     vars.liqRequest.txData,
                     vars.liqRequest.token,
-                    vars.liqRequest.isERC20,
                     vars.liqRequest.amount,
                     vars.srcSender,
                     vars.liqRequest.nativeAmount,
@@ -260,7 +259,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
             vars.liqRequest.txData,
             vars.liqRequest.token,
-            vars.liqRequest.isERC20, /// to be removed
             vars.liqRequest.amount,
             vars.srcSender,
             vars.liqRequest.nativeAmount,

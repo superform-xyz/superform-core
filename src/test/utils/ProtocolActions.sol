@@ -789,7 +789,6 @@ abstract contract ProtocolActions is BaseSetup {
             1, /// @dev FIXME: hardcoded for now
             socketTxData,
             args.underlyingToken,
-            true,
             args.sameUnderlyingCheck != address(0)
                 ? args.totalAmount
                 : args.amount,
@@ -842,7 +841,6 @@ abstract contract ProtocolActions is BaseSetup {
             1, /// @dev FIXME: hardcoded for now
             socketTxData,
             args.underlyingToken,
-            true,
             args.amount,
             0,
             ""
