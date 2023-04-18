@@ -13,15 +13,7 @@ enum TransactionType {
 enum CallbackType {
     INIT,
     RETURN,
-    FAIL
-}
-
-/// TBD! If we need it for try/catch in TokenBank
-enum ErrorType {
-    NO_ERROR, // <= required for executing further actions
-    REDEEM_ERROR,
-    DISPATCH_TOKENS_ERROR,
-    BALANCE_VALIDATION_ERROR
+    FAIL /// @dev Used only in withdraw flow now
 }
 
 enum PayloadState {

@@ -26,12 +26,10 @@ function _packTxInfo(
 }
 
 function _packReturnTxInfo(
-    bool status_,
     uint16 srcChainId_,
     uint16 dstChainId_,
     uint80 txId_
 ) pure returns (uint256 returnTxInfo) {
-    returnTxInfo = uint256(uint8(status_ ? 1 : 0));
     returnTxInfo |= uint256(srcChainId_) << 8;
     returnTxInfo |= uint256(dstChainId_) << 24;
     returnTxInfo |= uint256(txId_) << 40;
@@ -71,9 +69,8 @@ function _decodeReturnTxInfo(
     uint256 returnTxInfo_
 )
     pure
-    returns (bool status, uint16 srcChainId, uint16 dstChainId, uint80 txId)
+    returns (uint16 srcChainId, uint16 dstChainId, uint80 txId)
 {
-    status = uint256(uint8(returnTxInfo_)) == 1 ? true : false;
     srcChainId = uint16(returnTxInfo_ >> 8);
     dstChainId = uint16(returnTxInfo_ >> 24);
     txId = uint80(returnTxInfo_ >> 40);

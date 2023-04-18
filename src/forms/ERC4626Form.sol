@@ -275,13 +275,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         if (singleVaultData_.liqData.txData.length != 0) {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
-            try
-                v.redeem(singleVaultData_.amount, address(this), address(this))
-            returns (uint256 amount) {
-                dstAmount = amount;
-            } catch {
-                revert Error.REDEEM_FAILED();
-            }
+            dstAmount = v.redeem(singleVaultData_.amount, address(this), address(this));
 
             uint256 balanceBefore = ERC20(v.asset()).balanceOf(address(this));
 
@@ -289,8 +283,6 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             /// FEAT Note: We could also allow to pass additional chainId arg here
             /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
             /// FIXME: bridge address should be validated at router level
-
-            /// NOTE: We can't make try/catch on internall calls!
             dispatchTokens(
                 superRegistry.getBridgeAddress(
                     singleVaultData_.liqData.bridgeId
@@ -310,11 +302,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
         } else {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
-            try
-                v.redeem(singleVaultData_.amount, srcSender, address(this))
-            {} catch {
-                revert Error.REDEEM_FAILED();
-            }
+            dstAmount = v.redeem(singleVaultData_.amount, srcSender, address(this));
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount

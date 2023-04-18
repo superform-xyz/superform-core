@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {TransactionType, CallbackType, ErrorType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
+import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
@@ -133,7 +133,6 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnMultiData(
                             _packReturnTxInfo(
-                                true,
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs
@@ -200,7 +199,6 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
-                                true,
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs
@@ -258,19 +256,6 @@ contract TokenBank is ITokenBank {
                 CallbackType.RETURN,
                 singleVaultData_.amount
             );
-
-        } catch Error(string memory reason) {
-            // Handle the case when the revert/require is caught from the external call
-            _dispatchPayload(
-                singleVaultData_,
-                TransactionType.WITHDRAW,
-                CallbackType.FAIL,
-                singleVaultData_.amount
-            );
-
-            /// @dev we could match on individual reasons, but it's expensive with strings
-            emit ErrorLog(reason);
-
         } catch {
             // Handle the case when the external call itself reverts
             /// TODO: E.g Panic/overflow endup here and fall through catch Error
@@ -283,7 +268,7 @@ contract TokenBank is ITokenBank {
             );
 
             /// @dev we could match on individual reasons, but it's hard with strings
-            emit ErrorLog("FAIL_REVERT");
+            emit ErrorLog("FORM_REVERT");
         }
     }
 
@@ -315,7 +300,6 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
-                                CallbackType.RETURN == returnType ? true : false, /// FIXME: We may not need it, callbackType is enough of info
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs
