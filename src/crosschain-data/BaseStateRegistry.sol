@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "forge-std/console.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {PayloadState, AMBMessage, AMBFactoryMessage, AMBExtraData} from "../types/DataTypes.sol";
+import {PayloadState, AMBMessage, AMBFactoryMessage, AMBOverride} from "../types/DataTypes.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {Error} from "../utils/Error.sol";
@@ -93,8 +93,17 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyCoreContracts {
-        _dispatchPayload(ambIds_[0], dstChainId_, message_, extraData_);
-        _dispatchProof(ambIds_, dstChainId_, message_, extraData_);
+        AMBOverride memory d = abi.decode(extraData_, (AMBOverride));
+
+        _dispatchPayload(
+            ambIds_[0],
+            dstChainId_,
+            d.gas[0],
+            message_,
+            d.extraData[0]
+        );
+
+        _dispatchProof(ambIds_, dstChainId_, d.gas, message_, d.extraData);
     }
 
     /// @dev allows core contracts to send data to all available destination chains
@@ -103,8 +112,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyCoreContracts {
-        _broadcastPayload(ambIds_[0], message_, extraData_);
-        _broadcastProof(ambIds_, message_, extraData_);
+        AMBOverride memory d = abi.decode(extraData_, (AMBOverride));
+
+        _broadcastPayload(ambIds_[0], d.gas[0], message_, d.extraData[0]);
+        _broadcastProof(ambIds_, d.gas, message_, d.extraData);
     }
 
     /// @dev allows state registry to receive messages from amb implementations.
@@ -133,9 +144,11 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
+    /// @param ambOverride_ override data for AMBs to process acknowledgements.
     /// NOTE: function can only process successful payloads.
     function processPayload(
-        uint256 payloadId_
+        uint256 payloadId_,
+        bytes memory ambOverride_
     ) external payable virtual override onlyProcessor {}
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to revert Error.payload that fail to revert Error.state changes on source chain.
@@ -152,8 +165,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     function _dispatchPayload(
         uint8 ambId_,
         uint16 dstChainId_,
+        uint256 gasToPay_,
         bytes memory message_,
-        bytes memory extraData_
+        bytes memory overrideData_
     ) internal {
         IAmbImplementation ambImplementation = IAmbImplementation(
             superRegistry.getAmbAddress(ambId_)
@@ -163,27 +177,23 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             revert Error.INVALID_BRIDGE_ID();
         }
 
-        AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
-
-        ambImplementation.dispatchPayload{value: d.ambGas[0]}(
+        ambImplementation.dispatchPayload{value: gasToPay_}(
             dstChainId_,
             message_,
-            d.ambExtraData[0]
+            overrideData_
         );
     }
 
     function _dispatchProof(
         uint8[] memory ambIds_,
         uint16 dstChainId_,
+        uint256[] memory gasToPay_,
         bytes memory message_,
-        bytes memory extraData_
+        bytes[] memory overrideData_
     ) internal {
-        /// @dev generates the proof
         bytes memory proof = abi.encode(keccak256(message_));
 
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
-        AMBExtraData memory ambData = abi.decode(extraData_, (AMBExtraData));
-
         data.params = proof;
 
         for (uint8 i = 1; i < ambIds_.length; i++) {
@@ -201,18 +211,17 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                 revert Error.INVALID_BRIDGE_ID();
             }
 
-            /// @dev should figure out how to split message costs
-            /// @notice for now works if the secAmbId loop lenght == 1
-            tempImpl.dispatchPayload{value: ambData.ambGas[i]}(
+            tempImpl.dispatchPayload{value: gasToPay_[i]}(
                 dstChainId_,
                 abi.encode(data),
-                ambData.ambExtraData[i]
+                overrideData_[i]
             );
         }
     }
 
     function _broadcastPayload(
         uint8 ambId_,
+        uint256 gasToPay_,
         bytes memory message_,
         bytes memory extraData_
     ) internal {
@@ -228,18 +237,18 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         if (address(ambImplementation) == address(0)) {
             revert Error.INVALID_BRIDGE_ID();
         }
-        AMBExtraData memory ambData = abi.decode(extraData_, (AMBExtraData));
 
-        ambImplementation.broadcastPayload{value: ambData.ambGas[0]}(
+        ambImplementation.broadcastPayload{value: gasToPay_}(
             abi.encode(newData),
-            ambData.ambExtraData[0]
+            extraData_
         );
     }
 
     function _broadcastProof(
         uint8[] memory ambIds_,
+        uint256[] memory gasToPay_,
         bytes memory message_,
-        bytes memory extraData_
+        bytes[] memory extraData_
     ) internal {
         /// @dev generates the proof
         bytes memory proof = abi.encode(keccak256(message_));
@@ -247,7 +256,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             _packTxInfo(0, 0, false, 1),
             proof
         );
-        AMBExtraData memory ambData = abi.decode(extraData_, (AMBExtraData));
 
         for (uint8 i = 1; i < ambIds_.length; i++) {
             uint8 tempAmbId = ambIds_[i];
@@ -264,11 +272,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                 revert Error.INVALID_BRIDGE_ID();
             }
 
-            /// @dev should figure out how to split message costs
-            /// @notice for now works if the secAmbId loop lenght == 1
-            tempImpl.broadcastPayload{value: ambData.ambGas[i]}(
+            tempImpl.broadcastPayload{value: gasToPay_[i]}(
                 abi.encode(newData),
-                ambData.ambExtraData[i]
+                extraData_[i]
             );
         }
     }

@@ -35,9 +35,6 @@ contract TokenBank is ITokenBank {
     /// @dev chainId represents the superform chain id of the specific chain.
     uint16 public immutable chainId;
 
-    /// @dev safeGasParam is used while sending layerzero message from destination to router.
-    bytes public safeGasParam;
-
     modifier onlyStateRegistry() {
         if (
             !ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(
@@ -75,7 +72,8 @@ contract TokenBank is ITokenBank {
     /// note: called by external keepers when state is ready.
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositMultiSync(
-        InitMultiVaultData memory multiVaultData_
+        InitMultiVaultData memory multiVaultData_,
+        bytes memory ambOverride_
     ) external payable override onlyStateRegistry {
         (
             address[] memory superForms,
@@ -151,7 +149,7 @@ contract TokenBank is ITokenBank {
                     )
                 )
             ),
-            safeGasParam
+            ambOverride_
         );
     }
 
@@ -160,7 +158,8 @@ contract TokenBank is ITokenBank {
     /// note: called by external keepers when state is ready.
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositSync(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        bytes memory ambOverride_
     ) external payable override onlyStateRegistry {
         (
             address superForm_,
@@ -223,7 +222,7 @@ contract TokenBank is ITokenBank {
                     )
                 )
             ),
-            safeGasParam
+            ambOverride_
         );
     }
 
@@ -259,18 +258,5 @@ contract TokenBank is ITokenBank {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
         IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev adds the gas overrides for layerzero.
-    /// @param param_    represents adapterParams V2.0 of layerzero
-    function updateSafeGasParam(
-        bytes memory param_
-    ) external onlyProtocolAdmin {
-        if (param_.length == 0) revert Error.INVALID_GAS_OVERRIDE();
-        bytes memory oldParam = safeGasParam;
-        safeGasParam = param_;
-
-        emit SafeGasParamUpdated(oldParam, param_);
     }
 }

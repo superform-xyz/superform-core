@@ -176,9 +176,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
+    /// @param ambOverride_ is the extra data to be passed to AMB to send acknowledgement.
     /// NOTE: function can only process successful payloads.
     function processPayload(
-        uint256 payloadId_
+        uint256 payloadId_,
+        bytes memory ambOverride_
     ) external payable virtual override onlyProcessor {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
@@ -205,13 +207,23 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             if (txType == uint256(TransactionType.WITHDRAW)) {
                 _processMultiWithdrawal(payloadId_, callbackType, payloadInfo);
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                _processMultiDeposit(payloadId_, callbackType, payloadInfo);
+                _processMultiDeposit(
+                    payloadId_,
+                    callbackType,
+                    payloadInfo,
+                    ambOverride_
+                );
             }
         } else {
             if (txType == uint256(TransactionType.WITHDRAW)) {
                 _processSingleWithdrawal(payloadId_, callbackType, payloadInfo);
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                _processSingleDeposit(payloadId_, callbackType, payloadInfo);
+                _processSingleDeposit(
+                    payloadId_,
+                    callbackType,
+                    payloadInfo,
+                    ambOverride_
+                );
             }
         }
     }
@@ -294,7 +306,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _processMultiDeposit(
         uint256 payloadId_,
         uint256 callbackType_,
-        AMBMessage memory payloadInfo_
+        AMBMessage memory payloadInfo_,
+        bytes memory ambOverride_
     ) internal {
         if (callbackType_ == uint256(CallbackType.INIT)) {
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
@@ -309,7 +322,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
             ITokenBank(superRegistry.tokenBank()).depositMultiSync{
                 value: msg.value
-            }(multiVaultData);
+            }(multiVaultData, ambOverride_);
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
                 revert Error.INVALID_PAYLOAD_STATE();
@@ -347,7 +360,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _processSingleDeposit(
         uint256 payloadId_,
         uint256 callbackType_,
-        AMBMessage memory payloadInfo_
+        AMBMessage memory payloadInfo_,
+        bytes memory ambOverride
     ) internal {
         if (callbackType_ == uint256(CallbackType.INIT)) {
             InitSingleVaultData memory singleVaultData = abi.decode(
@@ -360,7 +374,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
             ITokenBank(superRegistry.tokenBank()).depositSync{value: msg.value}(
-                singleVaultData
+                singleVaultData,
+                ambOverride
             );
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {

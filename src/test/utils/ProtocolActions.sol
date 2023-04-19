@@ -990,19 +990,19 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[targetChainId_]);
 
-        uint256 msgValue = 10 * _getPriceMultiplier(targetChainId_) * 1e18;
+        uint256 msgValue = 50 * _getPriceMultiplier(targetChainId_) * 1e18;
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {
             CoreStateRegistry(
                 payable(getContract(targetChainId_, "CoreStateRegistry"))
-            ).processPayload{value: msgValue}(payloadId_);
+            ).processPayload{value: msgValue}(payloadId_, "");
         } else if (testType == TestType.RevertProcessPayload) {
             vm.expectRevert();
 
             CoreStateRegistry(
                 payable(getContract(targetChainId_, "CoreStateRegistry"))
-            ).processPayload{value: msgValue}(payloadId_);
+            ).processPayload{value: msgValue}(payloadId_, "");
 
             return false;
         }

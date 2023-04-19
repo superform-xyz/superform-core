@@ -7,7 +7,7 @@ import {IMailbox} from "./interface/IMailbox.sol";
 import {IMessageRecipient} from "./interface/IMessageRecipient.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IInterchainGasPaymaster} from "./interface/IInterchainGasPaymaster.sol";
-import {AMBMessage} from "../../types/DataTypes.sol";
+import {AMBMessage, MultiDstExtraData} from "../../types/DataTypes.sol";
 import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
 
@@ -118,6 +118,13 @@ contract HyperlaneImplementation is
             revert Error.INVALID_CALLER();
         }
 
+        MultiDstExtraData memory d = abi.decode(
+            extraData_,
+            (MultiDstExtraData)
+        );
+        /// FIXME:should we check the length ?? anyway out of index will fail if the length
+        /// mistmatches
+
         uint256 totalChains = broadcastChains.length;
         for (uint16 i = 0; i < totalChains; i++) {
             uint32 domain = broadcastChains[i];
@@ -128,11 +135,11 @@ contract HyperlaneImplementation is
                 message_
             );
 
-            igp.payForGas{value: msg.value / totalChains}(
+            igp.payForGas{value: d.gasPerDst[i]}(
                 messageId,
                 domain,
-                500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
-                msg.sender /// @dev should refund to the user, now refunds to core state registry
+                abi.decode(d.extraDataPerDst[i], (uint256)),
+                msg.sender /// @FIXME should refund to the user, now refunds to core state registry
             );
         }
     }

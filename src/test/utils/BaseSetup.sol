@@ -611,11 +611,11 @@ abstract contract BaseSetup is DSTest, Test {
                     (, vars.superForm) = ISuperFormFactory(vars.factory)
                         .createSuperForm{value: 800 * 10 ** 18}(
                         FORM_BEACON_IDS[j],
-                        address(vaults[vars.chainId][FORM_BEACON_IDS[j]][k]),
+                        address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k]),
                         encode(400, 400)
                     );
 
-                    contracts[vars.chainId][
+                    contracts[chainIds[i]][
                         bytes32(
                             bytes(
                                 string.concat(
@@ -626,18 +626,7 @@ abstract contract BaseSetup is DSTest, Test {
                             )
                         )
                     ] = vars.superForm;
-                    console.log(vars.superForm);
-                    console.logBytes32(
-                        bytes32(
-                            bytes(
-                                string.concat(
-                                    UNDERLYING_TOKENS[k],
-                                    "SuperForm",
-                                    Strings.toString(FORM_BEACON_IDS[j])
-                                )
-                            )
-                        )
-                    );
+
                     _broadcastPayload(vars.chainId, vm.getRecordedLogs());
                 }
             }
@@ -851,7 +840,7 @@ abstract contract BaseSetup is DSTest, Test {
             for (uint256 k = 1; k < superFormsToProcess_; k++) {
                 FactoryStateRegistry(
                     payable(getContract(chainIds[j], "FactoryStateRegistry"))
-                ).processPayload(k);
+                ).processPayload(k, "");
             }
         }
     }

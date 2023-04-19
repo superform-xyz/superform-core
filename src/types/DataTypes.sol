@@ -43,34 +43,34 @@ struct MultiDstMultiVaultsStateReq {
     uint8[] ambIds;
     uint16[] dstChainIds;
     MultiVaultsSFData[] superFormsData;
-    bytes adapterParam;
+    bytes extraData;
 }
 
 struct SingleDstMultiVaultsStateReq {
     uint8[] ambIds;
     uint16 dstChainId;
     MultiVaultsSFData superFormsData;
-    bytes adapterParam;
+    bytes extraData;
 }
 
 struct MultiDstSingleVaultStateReq {
     uint8[] ambIds;
     uint16[] dstChainIds;
     SingleVaultSFData[] superFormsData;
-    bytes adapterParam;
+    bytes extraData;
 }
 
 struct SingleXChainSingleVaultStateReq {
     uint8[] ambIds;
     uint16 dstChainId;
     SingleVaultSFData superFormData;
-    bytes adapterParam;
+    bytes extraData;
 }
 
 struct SingleDirectSingleVaultStateReq {
     uint16 dstChainId;
     SingleVaultSFData superFormData;
-    bytes adapterParam;
+    bytes extraData;
 }
 
 struct InitMultiVaultData {
@@ -111,7 +111,22 @@ struct ReturnSingleData {
     uint256 amount;
 }
 
-struct AMBExtraData {
-    uint256[] ambGas;
-    bytes[] ambExtraData;
+/**
+ * if let's say its multi-dst / broadcasting
+ * broadcasting is an extension of multi-dst
+ *
+ * splitting of the data types will reduce gas??
+ * what would be an ideal data type??
+ *
+ * linear waterflow model??
+ * where the top data type is encoded and the bottom level decodes it
+ */
+struct AMBOverride {
+    uint256[] gas;
+    bytes[] extraData; // encoded MultiDstExtraData
+}
+
+struct MultiDstExtraData {
+    uint256[] gasPerDst;
+    bytes[] extraDataPerDst;
 }

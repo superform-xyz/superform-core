@@ -20,19 +20,23 @@ interface ITokenBank {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev handles the state when received from the source chain.
-    /// @param multiVaultData_     represents the struct with the associated multi vault data
+    /// @param multiVaultData_     represents the struct with the associated multi vault data\
+    /// @param ambOverride_ represents the override data to pass to the state registry to send acknowledgement
     /// note: called by external keepers when state is ready.
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositMultiSync(
-        InitMultiVaultData memory multiVaultData_
+        InitMultiVaultData memory multiVaultData_,
+        bytes memory ambOverride_
     ) external payable;
 
     /// @dev handles the state when received from the source chain.
     /// @param singleVaultData_       represents the struct with the associated single vault data
+    /// @param ambOverride_ represents the override data to pass to the state registry to send acknowledgement
     /// note: called by external keepers when state is ready.
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositSync(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        bytes memory ambOverride_
     ) external payable;
 
     /// @dev handles the state when received from the source chain.

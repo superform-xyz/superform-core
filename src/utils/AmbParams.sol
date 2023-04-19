@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import {AMBExtraData} from "../types/DataTypes.sol";
+import {AMBOverride} from "../types/DataTypes.sol";
 
 pragma solidity 0.8.19;
 
@@ -12,5 +12,5 @@ function encode(uint256 m1, uint256 m2) pure returns (bytes memory) {
     b[0] = "";
     b[1] = "";
 
-    return abi.encode(AMBExtraData(a, b));
+    return abi.encode(AMBOverride(a, b));
 }

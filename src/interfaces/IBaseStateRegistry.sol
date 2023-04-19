@@ -58,8 +58,12 @@ interface IBaseStateRegistry {
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
+    /// @param ambOverride_ is the data to pass to ambs to send acknowledgement
     /// NOTE: function can only process successful payloads.
-    function processPayload(uint256 payloadId_) external payable;
+    function processPayload(
+        uint256 payloadId_,
+        bytes memory ambOverride_
+    ) external payable;
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to revert payload that fail to revert state changes on source chain.
     /// @param payloadId_ is the identifier of the cross-chain payload.

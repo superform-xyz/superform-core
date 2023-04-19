@@ -5,7 +5,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
+import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage, MultiDstExtraData} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
@@ -76,12 +76,16 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     ) external payable override {
         uint256 nDestinations = req.dstChainIds.length;
         for (uint256 i = 0; i < nDestinations; i++) {
+            MultiDstExtraData memory d = abi.decode(
+                req.extraData,
+                (MultiDstExtraData)
+            );
             singleDstMultiVaultDeposit(
                 SingleDstMultiVaultsStateReq(
                     req.ambIds,
                     req.dstChainIds[i],
                     req.superFormsData[i],
-                    req.adapterParam
+                    d.extraDataPerDst[i]
                 )
             );
         }
@@ -103,7 +107,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         //     revert Error.INVALID_AMB_IDS();
 
         /// @dev validate superFormsData
-
         if (!_validateSuperFormsDepositData(req.superFormsData))
             revert Error.INVALID_SUPERFORMS_DATA();
 
@@ -111,7 +114,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.currentTotalTransactions = totalTransactions;
 
         /// @dev write packed txData
-
         ambData = InitMultiVaultData(
             _packTxData(
                 vars.srcSender,
@@ -168,7 +170,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 req.ambIds,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
-                req.adapterParam
+                req.extraData
             );
 
             txHistory[vars.currentTotalTransactions] = vars.ambMessage;
@@ -191,7 +193,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
                         req.superFormsData[i],
-                        req.adapterParam
+                        req.extraData
                     )
                 );
             } else {
@@ -200,7 +202,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                         req.ambIds,
                         dstChainId,
                         req.superFormsData[i],
-                        req.adapterParam
+                        req.extraData
                     )
                 );
             }
@@ -274,7 +276,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             req.ambIds,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
-            req.adapterParam
+            req.extraData
         );
         txHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
@@ -339,7 +341,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     req.ambIds,
                     req.dstChainIds[i],
                     req.superFormsData[i],
-                    req.adapterParam
+                    req.extraData
                 )
             );
         }
@@ -415,7 +417,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 req.ambIds,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
-                req.adapterParam
+                req.extraData
             );
             txHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
@@ -437,7 +439,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
                         req.superFormsData[i],
-                        req.adapterParam
+                        req.extraData
                     )
                 );
             } else {
@@ -446,7 +448,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                         req.ambIds,
                         dstChainId,
                         req.superFormsData[i],
-                        req.adapterParam
+                        req.extraData
                     )
                 );
             }
@@ -516,7 +518,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             req.ambIds,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
-            req.adapterParam
+            req.extraData
         );
 
         txHistory[vars.currentTotalTransactions] = vars.ambMessage;

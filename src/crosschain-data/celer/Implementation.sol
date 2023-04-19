@@ -8,7 +8,7 @@ import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IMessageBus} from "./interface/IMessageBus.sol";
 import {IMessageReceiver} from "./interface/IMessageReceiver.sol";
 import {Error} from "../../utils/Error.sol";
-import {AMBMessage} from "../../types/DataTypes.sol";
+import {AMBMessage, MultiDstExtraData} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
 
 /// @title Celer Implementation Contract
@@ -101,11 +101,18 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
             revert Error.INVALID_CALLER();
         }
 
+        MultiDstExtraData memory d = abi.decode(
+            extraData_,
+            (MultiDstExtraData)
+        );
+        /// FIXME:should we check the length ?? anyway out of index will fail if the length
+        /// mistmatches
+
         uint256 totalChains = broadcastChains.length;
         for (uint16 i = 0; i < totalChains; i++) {
             uint64 chainId = broadcastChains[i];
 
-            messageBus.sendMessage{value: msg.value / totalChains}(
+            messageBus.sendMessage{value: d.gasPerDst[i]}(
                 authorizedImpl[chainId],
                 chainId,
                 message_
