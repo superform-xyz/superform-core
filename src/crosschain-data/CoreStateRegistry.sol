@@ -8,6 +8,7 @@ import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
@@ -125,16 +126,45 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payload[payloadId_],
             (AMBMessage)
         );
+
         (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
             payloadInfo.txInfo
         );
 
         if (
-            txType != uint256(TransactionType.DEPOSIT) &&
-            callbackType != uint256(CallbackType.INIT)
+            txType == uint256(TransactionType.DEPOSIT) &&
+            callbackType == uint256(CallbackType.INIT)
         ) {
-            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
+            _updateDepositPayload(payloadId_, finalAmount_);
         }
+
+        if (
+            txType == uint256(TransactionType.WITHDRAW) &&
+            callbackType == uint256(CallbackType.RETURN)
+        ) {
+            console.log("TransactipType.Withdraw");
+            _updateWithdrawPayload(payloadId_);
+        }
+
+        /// TODO: will be used after adding SuperRouter.stateSyncError()
+        if (
+            txType == uint256(TransactionType.WITHDRAW) &&
+            callbackType == uint256(CallbackType.FAIL)
+        ) {
+            _updateWithdrawPayload(payloadId_);
+        } 
+
+    }
+
+    function _updateDepositPayload(
+        uint256 payloadId_,
+        uint256 finalAmount_
+    ) internal {
+        AMBMessage memory payloadInfo = abi.decode(
+            payload[payloadId_],
+            (AMBMessage)
+        );
+        (, , bool multi, ) = _decodeTxInfo(payloadInfo.txInfo);
 
         if (payloadTracking[payloadId_] != PayloadState.STORED) {
             revert Error.INVALID_PAYLOAD_STATE();
@@ -173,6 +203,39 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         emit PayloadUpdated(payloadId_);
     }
 
+    function _updateWithdrawPayload(
+        uint256 payloadId_
+    ) internal {
+        AMBMessage memory payloadInfo = abi.decode(
+            payload[payloadId_],
+            (AMBMessage)
+        );
+        (, , bool multi, ) = _decodeTxInfo(payloadInfo.txInfo);
+
+        if (payloadTracking[payloadId_] != PayloadState.STORED) {
+            revert Error.INVALID_PAYLOAD_STATE();
+        }
+
+        if (multi) {
+            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
+        InitSingleVaultData memory singleVaultData = abi.decode(
+            payloadInfo.params,
+            (InitSingleVaultData)
+        );
+
+        /// FIXME: Address this discrepancy between processing deposits and withdraws, should be uniform, 0 here is bad practice
+        singleVaultData.amount = 0;
+
+        payloadInfo.params = abi.encode(singleVaultData);
+
+        payload[payloadId_] = abi.encode(payloadInfo);
+        payloadTracking[payloadId_] = PayloadState.UPDATED;
+
+        emit PayloadUpdated(payloadId_);
+    }
+
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// NOTE: function can only process successful payloads.
@@ -184,6 +247,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
+            console.log("PayloadState.PROCESSED");
             revert Error.INVALID_PAYLOAD_STATE();
         }
 
@@ -337,9 +401,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             ITokenBank(superRegistry.tokenBank()).withdrawSync{
                 value: msg.value
             }(singleVaultData);
-        /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
+            /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
         } else {
-            /// @dev Withdraw SyncBack here, callbackType.return 
+            /// @dev Withdraw SyncBack here, callbackType.return
+            console.log("_processSingleWithdrawalSyncBack");
             ISuperRouter(superRegistry.superRouter()).stateSync{
                 value: msg.value
             }(payloadInfo_);

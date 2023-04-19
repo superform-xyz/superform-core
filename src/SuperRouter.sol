@@ -898,6 +898,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
+    /// NOTE: Shouldn't this be ACCESS CONTROLed?
     function stateSync(AMBMessage memory data_) external payable override {
         if (msg.sender != superRegistry.coreStateRegistry())
             revert Error.REQUEST_DENIED();
@@ -1195,6 +1196,26 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
 
         return true;
+    }
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
     }
 
 }

@@ -284,18 +284,19 @@ contract ScenarioTimelockTest is ProtocolActions {
         console.log("stage3 done");
 
         /// TODO: Rebuild this to also process withdraw payloads
-        success = _stage4_process_src_dst_payload(
-            action,
-            vars,
-            aV,
-            singleSuperFormsData,
-            actionId
-        );
+        // success = _stage4_process_src_dst_payload(
+        //     action,
+        //     vars,
+        //     aV,
+        //     singleSuperFormsData,
+        //     actionId
+        // );
 
         console.log("stage4 done");
 
         /// @dev FIXME: Requires to updatePayload before processing, this call fails now
         success = _stage6_process_superPositions_withdraw(action, vars);
+        
         /*///////////////////////////////////////////////////////////////
                             TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/

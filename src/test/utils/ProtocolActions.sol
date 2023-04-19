@@ -466,6 +466,7 @@ abstract contract ProtocolActions is BaseSetup {
                         action.revertError,
                         action.revertRole
                     );
+
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
                             if (action.multiVaults) {
@@ -611,31 +612,45 @@ abstract contract ProtocolActions is BaseSetup {
         /// assume it will pass by default
         success = true;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        CoreStateRegistry stateRegistry = CoreStateRegistry(
+            payable(getContract(CHAIN_0, "CoreStateRegistry"))
+        );
 
-            CoreStateRegistry stateRegistry = CoreStateRegistry(
-                payable(getContract(CHAIN_0, "CoreStateRegistry"))
-            );
-
-            unchecked {
-                PAYLOAD_ID[CHAIN_0]++;
-            }
-
-            uint256 initialFork = vm.activeFork();
-
-            vm.selectFork(FORKS[CHAIN_0]);
-
-            uint256 msgValue = 10 * _getPriceMultiplier(CHAIN_0) * 1e18;
-
-            vm.prank(deployer);
-            stateRegistry.processPayload{value: msgValue}(
-                stateRegistry.payloadsCount() /// <= Err, hardcoded for now
-            );
-
-            vm.selectFork(initialFork);
-            
-            return true;
+        unchecked {
+            PAYLOAD_ID[CHAIN_0]++;
         }
+
+        console.log("PAYLOAD_ID[CHAIN_0]", PAYLOAD_ID[CHAIN_0]);
+        console.log(
+            "stateRegistry.payloadsCount()",
+            stateRegistry.payloadsCount()
+        );
+
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[CHAIN_0]);
+
+        _updateSingleVaultPayload(
+            UpdateSingleVaultPayloadArgs(
+                PAYLOAD_ID[CHAIN_0],
+                0,
+                0,
+                CHAIN_0,
+                TestType.Pass,
+                0,
+                0
+            )
+        );
+
+        _processPayload(
+            PAYLOAD_ID[CHAIN_0],
+            CHAIN_0,
+            action.testType,
+            action.revertError
+        );
+        vm.selectFork(initialFork);
+
+        return true;
     }
 
     function _buildMultiVaultCallData(

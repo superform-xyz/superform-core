@@ -175,12 +175,7 @@ contract SuperPositionBank is ERC165 {
     ) public view override returns (bool) {
         return super.supportsInterface(interfaceId);
     }
-}
 
-
-/// @notice A generic interface for a contract which properly accepts ERC1155 tokens.
-/// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/tokens/ERC1155.sol)
-abstract contract ERC1155TokenReceiver {
     function onERC1155Received(
         address,
         address,
