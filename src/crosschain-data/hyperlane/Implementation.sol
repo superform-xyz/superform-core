@@ -61,11 +61,10 @@ contract HyperlaneImplementation is
     /// @dev allows state registry to send message via implementation.
     /// @param dstChainId_ is the identifier of the destination chain
     /// @param message_ is the cross-chain message to be sent
-    /// @param extraData_ is message amb specific override information
     function dispatchPayload(
         uint16 dstChainId_,
         bytes memory message_,
-        bytes memory extraData_
+        bytes memory
     ) external payable virtual override {
         IBaseStateRegistry coreRegistry = IBaseStateRegistry(
             superRegistry.coreStateRegistry()
@@ -184,11 +183,10 @@ contract HyperlaneImplementation is
     /// @notice Only called by mailbox
     ///
     /// @param origin_ Domain ID of the chain from which the message came
-    /// @param sender_ Address of the message sender on the origin chain as bytes32
     /// @param body_ Raw bytes content of message body
     function handle(
         uint32 origin_,
-        bytes32 sender_,
+        bytes32,
         bytes calldata body_
     ) external override {
         /// @dev 1. validate caller

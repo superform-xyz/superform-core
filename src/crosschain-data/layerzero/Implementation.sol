@@ -142,7 +142,7 @@ contract LayerzeroImplementation is NonblockingLzApp, IAmbImplementation {
     /// @dev override function to process messages received via L0
     function _nonblockingLzReceive(
         uint16 _srcChainId,
-        bytes memory _srcAddress,
+        bytes memory,
         uint64 _nonce,
         bytes memory _payload
     ) internal override {

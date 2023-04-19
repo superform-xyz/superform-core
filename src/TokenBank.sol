@@ -75,11 +75,9 @@ contract TokenBank is ITokenBank {
         InitMultiVaultData memory multiVaultData_,
         bytes memory ackExtraData_
     ) external payable override onlyStateRegistry {
-        (
-            address[] memory superForms,
-            uint256[] memory formIds,
-
-        ) = _getSuperForms(multiVaultData_.superFormIds);
+        (address[] memory superForms, , ) = _getSuperForms(
+            multiVaultData_.superFormIds
+        );
         ERC20 underlying;
         uint256[] memory dstAmounts = new uint256[](
             multiVaultData_.superFormIds.length
@@ -158,11 +156,7 @@ contract TokenBank is ITokenBank {
         InitSingleVaultData memory singleVaultData_,
         bytes memory ackExtraData_
     ) external payable override onlyStateRegistry {
-        (
-            address superForm_,
-            uint256 formBeaconId_,
-            uint16 chainId_
-        ) = _getSuperForm(singleVaultData_.superFormId);
+        (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
         ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
         uint256 dstAmount;

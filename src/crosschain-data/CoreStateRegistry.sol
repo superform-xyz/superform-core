@@ -230,13 +230,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to revert Error.payload that fail to revert Error.state changes on source chain.
     /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @param ambId_ is the identifier of the cross-chain amb to be used to send the acknowledgement.
-    /// @param extraData_ is any message amb specific override information.
     /// NOTE: function can only process failing payloads.
     function revertPayload(
         uint256 payloadId_,
-        uint256 ambId_,
-        bytes memory extraData_
+        uint256,
+        bytes memory
     ) external payable virtual override onlyProcessor {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();

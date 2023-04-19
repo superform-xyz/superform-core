@@ -986,7 +986,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 payloadId_,
         uint16 targetChainId_,
         TestType testType,
-        bytes4 revertError
+        bytes4
     ) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
 
