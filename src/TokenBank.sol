@@ -187,11 +187,6 @@ contract TokenBank is ITokenBank {
             singleVaultData_.txData
         );
 
-        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8[] memory ambIds = new uint8[](2);
-        ambIds[0] = 1;
-        ambIds[1] = 2;
-
         AckExtraData memory ackData = abi.decode(ackExtraData_, (AckExtraData));
 
         /// @notice Send Data to Source to issue superform positions.
