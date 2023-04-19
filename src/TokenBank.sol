@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 import "forge-std/console.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
+import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData, AckExtraData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
@@ -73,7 +73,7 @@ contract TokenBank is ITokenBank {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositMultiSync(
         InitMultiVaultData memory multiVaultData_,
-        bytes memory ambOverride_
+        bytes memory ackExtraData_
     ) external payable override onlyStateRegistry {
         (
             address[] memory superForms,
@@ -117,16 +117,13 @@ contract TokenBank is ITokenBank {
             multiVaultData_.txData
         );
 
-        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8[] memory ambIds = new uint8[](2);
-        ambIds[0] = 1;
-        ambIds[1] = 2;
+        AckExtraData memory ackData = abi.decode(ackExtraData_, (AckExtraData));
 
         /// @notice Send Data to Source to issue superform positions.
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
             value: msg.value
         }(
-            ambIds, /// @dev come to this later to accept any bridge id
+            ackData.ambIds,
             srcChainId,
             abi.encode(
                 AMBMessage(
@@ -149,7 +146,7 @@ contract TokenBank is ITokenBank {
                     )
                 )
             ),
-            ambOverride_
+            ackData.ambOverride
         );
     }
 
@@ -159,7 +156,7 @@ contract TokenBank is ITokenBank {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositSync(
         InitSingleVaultData memory singleVaultData_,
-        bytes memory ambOverride_
+        bytes memory ackExtraData_
     ) external payable override onlyStateRegistry {
         (
             address superForm_,
@@ -195,11 +192,13 @@ contract TokenBank is ITokenBank {
         ambIds[0] = 1;
         ambIds[1] = 2;
 
+        AckExtraData memory ackData = abi.decode(ackExtraData_, (AckExtraData));
+
         /// @notice Send Data to Source to issue superform positions.
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
             value: msg.value
         }(
-            ambIds,
+            ackData.ambIds,
             srcChainId,
             abi.encode(
                 AMBMessage(
@@ -222,7 +221,7 @@ contract TokenBank is ITokenBank {
                     )
                 )
             ),
-            ambOverride_
+            ackData.ambOverride
         );
     }
 

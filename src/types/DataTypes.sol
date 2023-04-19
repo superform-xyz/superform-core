@@ -132,3 +132,8 @@ struct MultiDstExtraData {
     uint256[] gasPerDst;
     bytes[] extraDataPerDst;
 }
+
+struct AckExtraData {
+    uint8[] ambIds;
+    bytes ambOverride;
+}
