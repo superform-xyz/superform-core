@@ -49,6 +49,7 @@ struct MultiDstMultiVaultsStateReq {
 struct SingleDstMultiVaultsStateReq {
     uint8[] ambIds;
     uint16 dstChainId;
+    uint256 gasToPay;
     MultiVaultsSFData superFormsData;
     bytes extraData;
 }
@@ -63,6 +64,7 @@ struct MultiDstSingleVaultStateReq {
 struct SingleXChainSingleVaultStateReq {
     uint8[] ambIds;
     uint16 dstChainId;
+    uint256 gasToPay;
     SingleVaultSFData superFormData;
     bytes extraData;
 }

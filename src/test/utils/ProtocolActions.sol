@@ -198,6 +198,7 @@ abstract contract ProtocolActions is BaseSetup {
                         .singleDstMultiVaultStateReq = SingleDstMultiVaultsStateReq(
                         AMBs,
                         DST_CHAINS[0],
+                        50 ether, /// FIXME: GAS
                         multiSuperFormsData[0],
                         action.adapterParam
                     );
@@ -235,6 +236,7 @@ abstract contract ProtocolActions is BaseSetup {
                             .singleXChainSingleVaultStateReq = SingleXChainSingleVaultStateReq(
                             AMBs,
                             DST_CHAINS[0],
+                            50 ether, /// FIXME: GAS
                             singleSuperFormsData[0],
                             action.adapterParam
                         );
