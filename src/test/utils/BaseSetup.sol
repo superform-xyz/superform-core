@@ -1,12 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 /// @dev lib imports
 import "forge-std/Test.sol";
 import "ds-test/test.sol";
-// import "forge-std/console.sol";
 import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";

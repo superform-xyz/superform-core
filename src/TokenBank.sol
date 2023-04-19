@@ -1,6 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import "forge-std/console.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData, AckExtraData} from "./types/DataTypes.sol";

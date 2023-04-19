@@ -4,8 +4,6 @@ pragma solidity 0.8.19;
 // Contracts
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
-import "forge-std/console.sol";
-
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";

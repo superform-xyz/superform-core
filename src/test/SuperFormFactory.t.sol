@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {SuperFormFactory} from "../SuperFormFactory.sol";
 import {FactoryStateRegistry} from "../crosschain-data/FactoryStateRegistry.sol";
