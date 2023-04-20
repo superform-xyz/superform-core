@@ -917,7 +917,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             (ReturnSingleData)
         );
 
-        (, , uint80 returnTxId) = _decodeReturnTxInfo(returnData.returnTxInfo);
+        (uint16 status, , uint80 returnTxId) = _decodeReturnTxInfo(
+            returnData.returnTxInfo
+        );
         AMBMessage memory stored = txHistory[returnTxId];
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
@@ -956,11 +958,19 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
             uint256 index = abi.decode(extraData, (uint256));
 
-            ISuperPositionBank bank = ISuperPositionBank(
-                superRegistry.superPositionBank()
-            );
+            if (status == 0) {
+                ISuperPositionBank bank = ISuperPositionBank(
+                    superRegistry.superPositionBank()
+                );
 
-            bank.burnPositionSingle(srcSender, index);
+                bank.burnPositionSingle(srcSender, index);
+            } else if (status == 1) {
+                ISuperPositionBank bank = ISuperPositionBank(
+                    superRegistry.superPositionBank()
+                );
+
+                bank.holdPositionSingle(srcSender, index);
+            }
 
             /// TODO: Address discrepancy between using and not using status, check TokenBank._dispatchPayload()
         } else if (callbackType == uint256(CallbackType.FAIL)) {
@@ -1217,5 +1227,4 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     ) external virtual returns (bytes4) {
         return this.onERC1155BatchReceived.selector;
     }
-
 }

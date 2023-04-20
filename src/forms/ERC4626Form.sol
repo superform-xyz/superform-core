@@ -262,7 +262,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual override {
+    ) internal virtual override returns (uint16 status){
         (, , uint16 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
         address vaultLoc = vault;
         uint256 dstAmount;
@@ -313,6 +313,10 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             singleVaultData_.amount,
             vaultLoc
         );
+        
+        /// Here we either fully succeed of Callback.FAIL. 
+        return 0;
+
     }
 
     /*///////////////////////////////////////////////////////////////

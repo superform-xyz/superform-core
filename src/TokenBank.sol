@@ -133,6 +133,7 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnMultiData(
                             _packReturnTxInfo(
+                                0,
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs
@@ -199,6 +200,7 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
+                                0, /// <=== FIXME: status always 0 for deposit 
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs
@@ -248,13 +250,14 @@ contract TokenBank is ITokenBank {
         /// that's also the only way to get error type out of the try/catch 
         /// NOTE: opted for just returning CallbackType.FAIL as we always end up with SuperPositionBank.returnPosition() anyways
         /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
-        try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_) {
+        try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_) returns (uint16 status_) {
             // Handle the case when the external call succeeds
             _dispatchPayload(
                 singleVaultData_,
                 TransactionType.WITHDRAW,
                 CallbackType.RETURN,
-                singleVaultData_.amount
+                singleVaultData_.amount,
+                status_
             );
         } catch {
             // Handle the case when the external call itself reverts
@@ -264,7 +267,8 @@ contract TokenBank is ITokenBank {
                 singleVaultData_,
                 TransactionType.WITHDRAW,
                 CallbackType.FAIL,
-                singleVaultData_.amount
+                singleVaultData_.amount,
+                0 /// <=== FIXME: status always 0 for withdraw fail
             );
 
             /// @dev we could match on individual reasons, but it's hard with strings
@@ -277,7 +281,8 @@ contract TokenBank is ITokenBank {
         InitSingleVaultData memory singleVaultData_,
         TransactionType txType,
         CallbackType returnType,
-        uint256 amount
+        uint256 amount,
+        uint16 status
     ) internal {
         (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
             singleVaultData_.txData
@@ -300,6 +305,7 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
+                                status,
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs

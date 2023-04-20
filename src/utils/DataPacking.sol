@@ -26,13 +26,15 @@ function _packTxInfo(
 }
 
 function _packReturnTxInfo(
+    uint16 status_, /// <= we don't have access to extraData on dst, we need to pass status of custom withdraw through returnData
     uint16 srcChainId_,
     uint16 dstChainId_,
     uint80 txId_
 ) pure returns (uint256 returnTxInfo) {
-    returnTxInfo |= uint256(srcChainId_) << 8;
-    returnTxInfo |= uint256(dstChainId_) << 24;
-    returnTxInfo |= uint256(txId_) << 40;
+    returnTxInfo = uint256(status_);
+    returnTxInfo |= uint256(srcChainId_) << 16;
+    returnTxInfo |= uint256(dstChainId_) << 32;
+    returnTxInfo |= uint256(txId_) << 48;
 }
 
 function _packSuperForm(

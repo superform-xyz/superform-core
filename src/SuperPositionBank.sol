@@ -150,6 +150,22 @@ contract SuperPositionBank is ERC165 {
         );
     }
 
+    /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
+    function holdPositionSingle(
+        address owner_,
+        uint256 positionIndex
+    ) public onlyRouter {
+
+    }
+
+    /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
+    function holdPositionBatch(
+        address owner_,
+        uint256 positionIndex
+    ) public onlyRouter {
+
+    }
+
     /// @dev Private queue requires public getter
     function getPositionSingle(
         address owner_,

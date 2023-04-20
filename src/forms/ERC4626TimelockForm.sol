@@ -264,6 +264,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                     singleVaultData_.liqData.nativeAmount
                 );
             }
+            
         } else if (unlock == 1) {
             revert Error.LOCKED();
         } else if (unlock == 2) {
@@ -319,7 +320,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual override {
+    ) internal virtual override returns (uint16 status) {
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
         vars.vaultLoc = vault;
@@ -364,6 +365,8 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 /// note: balance validation to prevent draining contract.
                 if (vars.balanceAfter < vars.balanceBefore - vars.dstAmount)
                     revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+
+                return 0;
             } else {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
                 v.redeem(
@@ -371,6 +374,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                     vars.srcSender,
                     address(this)
                 );
+                return 0;
             }
         } else if (vars.unlock == 1) {
             revert Error.LOCKED();
@@ -379,6 +383,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
             /// @dev IERC4626TimelockForm could be an ERC4626 extension?
             v.requestUnlock(singleVaultData_.amount, address(this));
+            return 1;
         } else if (vars.unlock == 3) {
             revert Error.WITHDRAW_COOLDOWN_PERIOD();
         }

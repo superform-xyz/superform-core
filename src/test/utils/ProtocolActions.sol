@@ -566,6 +566,8 @@ abstract contract ProtocolActions is BaseSetup {
                     }
 
                     vm.recordLogs();
+                    /// note: this is high-lvl processPayload function, even if this happens outside of the user view
+                    /// we need to manually process payloads by invoking sending actual messages
                     success = _processPayload(
                         PAYLOAD_ID[aV[i].toChainId],
                         aV[i].toChainId,
