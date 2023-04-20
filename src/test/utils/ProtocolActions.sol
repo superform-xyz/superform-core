@@ -630,17 +630,17 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[CHAIN_0]);
 
-        _updateSingleVaultPayload(
-            UpdateSingleVaultPayloadArgs(
-                PAYLOAD_ID[CHAIN_0],
-                0,
-                0,
-                CHAIN_0,
-                TestType.Pass,
-                0,
-                0
-            )
-        );
+        // _updateSingleVaultPayload(
+        //     UpdateSingleVaultPayloadArgs(
+        //         PAYLOAD_ID[CHAIN_0], /// payloaId on chainId
+        //         0, /// amount note: deposit only
+        //         0, /// slippage note: deposit only
+        //         CHAIN_0, /// targetChainId
+        //         TestType.Pass,
+        //         "",
+        //         ""
+        //     )
+        // );
 
         _processPayload(
             PAYLOAD_ID[CHAIN_0],

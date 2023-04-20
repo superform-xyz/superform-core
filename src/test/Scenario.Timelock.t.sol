@@ -292,7 +292,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         //     actionId
         // );
 
-        console.log("stage4 done");
+        // console.log("stage4 done");
 
         /// @dev FIXME: Requires to updatePayload before processing, this call fails now
         success = _stage6_process_superPositions_withdraw(action, vars);
