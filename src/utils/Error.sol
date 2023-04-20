@@ -57,6 +57,16 @@ library Error {
     error DISABLED();
 
     /*///////////////////////////////////////////////////////////////
+                         LIQUIDITY BRIDGE ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev when the input token is not valid
+    error INVALID_INPUT_TOKEN();
+
+    /// @dev when validation of bridge txData fails due to wrong receiver
+    error INVALID_RECEIVER();
+
+    /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/
 

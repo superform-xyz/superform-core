@@ -69,6 +69,12 @@ interface ISuperRegistry {
         address indexed bridgeAddress
     );
 
+    /// @dev is emitted when a new bridge validator is configured.
+    event SetBridgeValidator(
+        uint256 indexed bridgeId,
+        address indexed bridgeValidator
+    );
+
     /// @dev is emitted when a new amb is configured.
     event SetAmbAddress(uint8 ambId_, address ambAddress_);
 
@@ -127,6 +133,14 @@ interface ISuperRegistry {
     function setBridgeAddress(
         uint8[] memory bridgeId_,
         address[] memory bridgeAddress_
+    ) external;
+
+    /// @dev allows admin to set the bridge validator for an bridge id.
+    /// @param bridgeId_         represents the bridge unqiue identifier.
+    /// @param bridgeValidator_  represents the bridge validator address.
+    function setBridgeValidator(
+        uint8[] memory bridgeId_,
+        address[] memory bridgeValidator_
     ) external;
 
     /// @dev allows admin to set the amb address for an amb id.
@@ -224,6 +238,13 @@ interface ISuperRegistry {
     function getBridgeAddress(
         uint8 bridgeId_
     ) external view returns (address bridgeAddress_);
+
+    /// @dev gets the address of a bridge validator
+    /// @param bridgeId_ is the id of a bridge
+    /// @return bridgeValidator_ is the address of the form
+    function getBridgeValidator(
+        uint8 bridgeId_
+    ) external view returns (address bridgeValidator_);
 
     /// @dev gets the address of a amb
     /// @param ambId_ is the id of a bridge

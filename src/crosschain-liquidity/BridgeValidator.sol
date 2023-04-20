@@ -3,13 +3,14 @@ pragma solidity 0.8.19;
 
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 /// @title Bridge Handler abstract contract
 /// @author Zeropoint Labs
 /// @dev To be inherited by specific bridge handlers to verify and send the call
-abstract contract BridgeHandler {
+abstract contract BridgeValidator is IBridgeValidator {
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
@@ -41,13 +42,10 @@ abstract contract BridgeHandler {
     //////////////////////////////////////////////////////////////*/
 
     function validateTxData(
-        bytes memory txData,
-        bytes memory expectedData
-    ) external view virtual returns (bool);
-
-    function performBridgeCall(
-        address to,
-        uint256 nativeAmount,
-        bytes memory txData
-    ) external virtual;
+        bytes calldata txData_,
+        uint16 srcChainId_,
+        uint16 dstChainId_,
+        bool deposit_,
+        address superForm_
+    ) external view virtual override returns (bool);
 }

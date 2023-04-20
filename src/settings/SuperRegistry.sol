@@ -19,6 +19,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     mapping(bytes32 id => address moduleAddress) private protocolAddresses;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
+    mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
     mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
 
     /// @dev core protocol addresses identifiers
@@ -187,6 +188,20 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         }
     }
 
+    function setBridgeValidator(
+        uint8[] memory bridgeId_,
+        address[] memory bridgeValidator_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        for (uint256 i = 0; i < bridgeId_.length; i++) {
+            address x = bridgeValidator_[i];
+            uint8 y = bridgeId_[i];
+            if (x == address(0)) revert Error.ZERO_ADDRESS();
+
+            bridgeValidator[y] = x;
+            emit SetBridgeValidator(y, x);
+        }
+    }
+
     /// @inheritdoc ISuperRegistry
 
     function setAmbAddress(
@@ -289,6 +304,13 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         uint8 bridgeId_
     ) external view override returns (address bridgeAddress_) {
         bridgeAddress_ = bridgeAddresses[bridgeId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getBridgeValidator(
+        uint8 bridgeId_
+    ) external view override returns (address bridgeValidator_) {
+        bridgeValidator_ = bridgeValidator[bridgeId_];
     }
 
     /// @inheritdoc ISuperRegistry
