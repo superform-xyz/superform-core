@@ -564,12 +564,34 @@ abstract contract ProtocolActions is BaseSetup {
                     unchecked {
                         PAYLOAD_ID[aV[i].toChainId]++;
                     }
-                    _processPayload(
+
+                    vm.recordLogs();
+                    success = _processPayload(
                         PAYLOAD_ID[aV[i].toChainId],
                         aV[i].toChainId,
                         action.testType,
                         action.revertError
                     );
+
+                    vars.logs = vm.getRecordedLogs();
+
+                    LayerZeroHelper(
+                        getContract(aV[i].toChainId, "LayerZeroHelper")
+                    ).helpWithEstimates(
+                            vars.lzEndpoint_0,
+                            1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                            FORKS[CHAIN_0],
+                            vars.logs
+                        );
+
+                    HyperlaneHelper(
+                        getContract(aV[i].toChainId, "HyperlaneHelper")
+                    ).help(
+                            address(HyperlaneMailbox),
+                            address(HyperlaneMailbox),
+                            FORKS[CHAIN_0],
+                            vars.logs
+                        );
                 }
             }
             vm.selectFork(aV[i].initialFork);
@@ -629,18 +651,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[CHAIN_0]);
-
-        // _updateSingleVaultPayload(
-        //     UpdateSingleVaultPayloadArgs(
-        //         PAYLOAD_ID[CHAIN_0], /// payloaId on chainId
-        //         0, /// amount note: deposit only
-        //         0, /// slippage note: deposit only
-        //         CHAIN_0, /// targetChainId
-        //         TestType.Pass,
-        //         "",
-        //         ""
-        //     )
-        // );
 
         _processPayload(
             PAYLOAD_ID[CHAIN_0],

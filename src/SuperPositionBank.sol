@@ -127,7 +127,6 @@ contract SuperPositionBank is ERC165 {
         uint256 positionIndex
     ) public onlyRouter {
         PositionSingle memory position = queueSingle[owner_][positionIndex];
-        token.burnSingleSP(owner_, position.tokenId, position.amount);
         /// alternative is to transfer back to source and burn there
         delete queueSingle[owner_][positionIndex];
         superRouter.burnPositionSingle(
