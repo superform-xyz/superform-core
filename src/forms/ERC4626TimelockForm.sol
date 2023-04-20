@@ -384,8 +384,8 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                     )
                 ).validateTxData(
                         singleVaultData_.liqData.txData,
-                        dstChainId,
-                        srcChainId,
+                        vars.dstChainId,
+                        vars.srcChainId,
                         false,
                         address(this)
                     );
