@@ -34,6 +34,9 @@ interface ISuperRouter {
     /// @dev is emitted when the super registry is updated.
     event SuperRegistryUpdated(address indexed superRegistry);
 
+    /// @dev is emitted when a cross-chain withdraw return data is received.
+    event Status(uint256 txId, uint16 status);
+
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL DEPOSIT FUNCTIONS
     //////////////////////////////////////////////////////////////*/

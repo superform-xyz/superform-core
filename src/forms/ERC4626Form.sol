@@ -283,17 +283,17 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             /// FEAT Note: We could also allow to pass additional chainId arg here
             /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
             /// FIXME: bridge address should be validated at router level
-            dispatchTokens(
-                superRegistry.getBridgeAddress(
-                    singleVaultData_.liqData.bridgeId
-                ),
-                singleVaultData_.liqData.txData,
-                singleVaultData_.liqData.token,
-                singleVaultData_.liqData.allowanceTarget,
-                dstAmount,
-                address(this),
-                singleVaultData_.liqData.nativeAmount
-            );
+            // dispatchTokens(
+            //     superRegistry.getBridgeAddress(
+            //         singleVaultData_.liqData.bridgeId
+            //     ),
+            //     singleVaultData_.liqData.txData,
+            //     singleVaultData_.liqData.token,
+            //     singleVaultData_.liqData.allowanceTarget,
+            //     dstAmount,
+            //     address(this),
+            //     singleVaultData_.liqData.nativeAmount
+            // );
 
             uint256 balanceAfter = ERC20(v.asset()).balanceOf(address(this));
 

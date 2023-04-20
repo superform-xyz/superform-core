@@ -25,6 +25,7 @@ contract SuperPositionBank is ERC165 {
         private queueBatch;
     mapping(address owner => mapping(uint256 id => PositionSingle))
         private queueSingle;
+
     mapping(address owner => uint256 id) public queueCounter;
 
     modifier onlyRouter() {

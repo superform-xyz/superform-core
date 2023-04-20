@@ -71,11 +71,12 @@ function _decodeReturnTxInfo(
     uint256 returnTxInfo_
 )
     pure
-    returns (uint16 srcChainId, uint16 dstChainId, uint80 txId)
+    returns (uint16 status, uint16 srcChainId, uint16 dstChainId, uint80 txId)
 {
-    srcChainId = uint16(returnTxInfo_ >> 8);
-    dstChainId = uint16(returnTxInfo_ >> 24);
-    txId = uint80(returnTxInfo_ >> 40);
+    status = uint16(returnTxInfo_ & 0xFFFF);
+    srcChainId = uint16((returnTxInfo_ >> 16) & 0xFFFF);
+    dstChainId = uint16((returnTxInfo_ >> 32) & 0xFFFF);
+    txId = uint80(returnTxInfo_ >> 48);
 }
 
 /// @dev returns the destination chain of a given superForm

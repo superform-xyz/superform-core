@@ -522,6 +522,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
         ISuperPositionBank bank = ISuperPositionBank(_superPositionBank);
 
+        /// FIXME: WHAT ABOUT SUPERPOSITIONS ALREADY IN THE BANK... TIMELOCK FLOW FORCES IT
+
         /// Step 1: Transfer shares to this contract
         /// NOTE: From the user perspective it would be better to enter through the bank directly.
         superPositions.safeTransferFrom(
@@ -835,18 +837,18 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             (ReturnMultiData)
         );
 
-        (, , uint80 returnTxId) = _decodeReturnTxInfo(returnData.returnTxInfo);
-        AMBMessage memory stored = txHistory[returnTxId];
+        (   uint16 status,
+            uint16 returnDataSrcChainId,
+            uint16 returnDataDstChainId,
+            uint80 returnDataTxId
+        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
+
+        AMBMessage memory stored = txHistory[returnDataTxId];
 
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (!multi) revert Error.INVALID_PAYLOAD();
 
-        (
-            uint16 returnDataSrcChainId,
-            uint16 returnDataDstChainId,
-            uint80 returnDataTxId
-        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
 
         InitMultiVaultData memory multiVaultData = abi.decode(
             stored.params,
@@ -917,19 +919,17 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             (ReturnSingleData)
         );
 
-        (uint16 status, , uint80 returnTxId) = _decodeReturnTxInfo(
-            returnData.returnTxInfo
-        );
-        AMBMessage memory stored = txHistory[returnTxId];
-        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
-
-        if (multi) revert Error.INVALID_PAYLOAD();
-
-        (
+        (   uint16 status,
             uint16 returnDataSrcChainId,
             uint16 returnDataDstChainId,
             uint80 returnDataTxId
         ) = _decodeReturnTxInfo(returnData.returnTxInfo);
+
+        AMBMessage memory stored = txHistory[returnDataTxId];
+        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
+
+        if (multi) revert Error.INVALID_PAYLOAD();
+
 
         InitSingleVaultData memory singleVaultData = abi.decode(
             stored.params,
@@ -958,6 +958,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
             uint256 index = abi.decode(extraData, (uint256));
 
+            /// FIXME: We can pack status into extraData, modify it on destination, but... should we modify it?
+            /// Everything has a drawback. Current solution with uint16 status packing is PoC.
             if (status == 0) {
                 ISuperPositionBank bank = ISuperPositionBank(
                     superRegistry.superPositionBank()
@@ -965,11 +967,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
                 bank.burnPositionSingle(srcSender, index);
             } else if (status == 1) {
-                ISuperPositionBank bank = ISuperPositionBank(
-                    superRegistry.superPositionBank()
-                );
-
-                bank.holdPositionSingle(srcSender, index);
+                /// requestUnlock happened on DST, we already hold position in superBank
+                /// TODO: NOTE: SO, now what? We need to verify _owner balance against another withdraw call!
+                emit Status(returnDataTxId, status);
+            } else {
+                /// @dev TODO: Placeholder
+                emit Status(returnDataTxId, status);
             }
 
             /// TODO: Address discrepancy between using and not using status, check TokenBank._dispatchPayload()
