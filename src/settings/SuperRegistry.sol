@@ -23,6 +23,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
 
     /// @dev core protocol addresses identifiers
+    /// @dev FIXME: we don't have AMB and liquidity bridge implementations here, should we add?
     bytes32 public constant override PROTOCOL_ADMIN = "PROTOCOL_ADMIN";
     bytes32 public constant override SUPER_ROUTER = "SUPER_ROUTER";
     bytes32 public constant override TOKEN_BANK = "TOKEN_BANK";
@@ -33,6 +34,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         "FACTORY_STATE_REGISTRY";
     bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
     bytes32 public constant override SUPER_RBAC = "SUPER_RBAC";
+    bytes32 public constant override MULTI_TX_PROCESSOR = "MULTI_TX_PROCESSOR";
 
     /// @param admin_ the address of the admin.
     constructor(address admin_) {
@@ -174,31 +176,34 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setBridgeAddress(
-        uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
+    function setMultiTxProcessor(
+        address multiTxProcessor_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i = 0; i < bridgeId_.length; i++) {
-            address x = bridgeAddress_[i];
-            uint8 y = bridgeId_[i];
-            if (x == address(0)) revert Error.ZERO_ADDRESS();
+        if (multiTxProcessor_ == address(0)) revert Error.ZERO_ADDRESS();
 
-            bridgeAddresses[y] = x;
-            emit SetBridgeAddress(y, x);
-        }
+        address oldMultiTxProcessor = protocolAddresses[MULTI_TX_PROCESSOR];
+        protocolAddresses[MULTI_TX_PROCESSOR] = multiTxProcessor_;
+
+        emit MultiTxProcessorUpdated(oldMultiTxProcessor, multiTxProcessor_);
     }
 
-    function setBridgeValidator(
+    /// @inheritdoc ISuperRegistry
+    function setBridgeAddresses(
         uint8[] memory bridgeId_,
+        address[] memory bridgeAddress_,
         address[] memory bridgeValidator_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 i = 0; i < bridgeId_.length; i++) {
-            address x = bridgeValidator_[i];
-            uint8 y = bridgeId_[i];
-            if (x == address(0)) revert Error.ZERO_ADDRESS();
+            uint8 x = bridgeId_[i];
+            address y = bridgeAddress_[i];
+            address z = bridgeValidator_[i];
+            if (y == address(0) || z == address(0)) revert Error.ZERO_ADDRESS();
 
-            bridgeValidator[y] = x;
-            emit SetBridgeValidator(y, x);
+            bridgeAddresses[x] = y;
+            bridgeValidator[x] = z;
+
+            emit SetBridgeAddress(x, y);
+            emit SetBridgeValidator(x, z);
         }
     }
 
@@ -297,6 +302,16 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @inheritdoc ISuperRegistry
     function superRBAC() external view override returns (address superRBAC_) {
         superRBAC_ = getProtocolAddress(SUPER_RBAC);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function multiTxProcessor()
+        external
+        view
+        override
+        returns (address multiTxProcessor_)
+    {
+        multiTxProcessor_ = getProtocolAddress(MULTI_TX_PROCESSOR);
     }
 
     /// @inheritdoc ISuperRegistry

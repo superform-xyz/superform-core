@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 /// @title Bridge Handler Interface
 /// @author Zeropoint Labs
-interface IBridgeValidator {
+interface ILiquidityBridgeHandler {
     /*///////////////////////////////////////////////////////////////
                             External Functions
     //////////////////////////////////////////////////////////////*/
@@ -13,7 +13,6 @@ interface IBridgeValidator {
         uint16 srcChainId_,
         uint16 dstChainId_,
         bool deposit_,
-        address superForm_,
-        address srcSender_
+        address superForm_
     ) external view returns (bool);
 }

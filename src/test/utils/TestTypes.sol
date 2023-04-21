@@ -125,6 +125,7 @@ struct SetupVars {
     address superRegistry;
     address superRBAC;
     address canonicalPermit2;
+    address socketValidator;
     Vm.Log[] logs;
     address superPositions;
 }

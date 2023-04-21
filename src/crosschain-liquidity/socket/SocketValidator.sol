@@ -27,9 +27,7 @@ contract SocketValidator is BridgeValidator {
                                 Constructor
     //////////////////////////////////////////////////////////////*/
 
-    constructor(
-        ISuperRegistry superRegistry_
-    ) BridgeValidator(superRegistry_) {}
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             External Functions
@@ -40,7 +38,8 @@ contract SocketValidator is BridgeValidator {
         uint16 srcChainId_,
         uint16 dstChainId_,
         bool deposit_,
-        address superForm_
+        address superForm_,
+        address srcSender_
     ) external view override returns (bool) {
         ISocketRegistry.UserRequest memory userRequest = _decodeCallData(
             txData_
@@ -51,18 +50,23 @@ contract SocketValidator is BridgeValidator {
             revert INVALID_SOCKET_CHAIN_ID();
 
         /// @dev receiver address validation
-        if (
-            srcChainId_ == dstChainId_ ||
-            (!deposit_ && srcChainId_ != dstChainId_)
-        ) {
+
+        if (deposit_ && srcChainId_ == dstChainId_) {
             /// @dev If action is same chain or cross chain withdraw, then receiver address must be the superform
 
             if (userRequest.receiverAddress != superForm_)
                 revert Error.INVALID_RECEIVER();
-        } else {
+        } else if (deposit_ && srcChainId_ != dstChainId_) {
             /// @dev if cross chain deposits, then receiver address must be the token bank
-
-            if (userRequest.receiverAddress != superRegistry.tokenBank())
+            if (
+                !(userRequest.receiverAddress == superRegistry.tokenBank() ||
+                    userRequest.receiverAddress ==
+                    superRegistry.multiTxProcessor())
+            ) revert Error.INVALID_RECEIVER();
+        } else if (!deposit_) {
+            /// @dev what if SrcSender is a contract? can it be used to re-enter somewhere?
+            /// https://linear.app/superform/issue/SUP-2024/reentrancy-vulnerability-prevent-crafting-arbitrary-txdata-to-reenter
+            if (userRequest.receiverAddress != srcSender_)
                 revert Error.INVALID_RECEIVER();
         }
 
@@ -70,16 +74,14 @@ contract SocketValidator is BridgeValidator {
         address vaultUnderlying = address(
             IBaseForm(superForm_).getUnderlyingOfVault()
         );
+
+        /// @dev FIXME: We can also have a middlewareRequest and bridgeRequest chained together
         if (
             srcChainId_ == dstChainId_ &&
             userRequest.middlewareRequest.inputToken != vaultUnderlying
         ) {
-            /// @dev directAction validation (MiddlewareRequest)
-
             revert Error.INVALID_INPUT_TOKEN();
         } else if (
-            /// @dev crossChainAction validation ()
-
             srcChainId_ != dstChainId_ &&
             userRequest.bridgeRequest.inputToken != vaultUnderlying
         ) {
@@ -90,19 +92,23 @@ contract SocketValidator is BridgeValidator {
     }
 
     /// @dev allows admin to add new chain ids in future
-    /// @param superChainId_ is the identifier of the chain within superform protocol
-    /// @param socketChainId_ is the identifier of the chain given by the bridge
-    function setChainId(
-        uint16 superChainId_,
-        uint256 socketChainId_
+    /// @param superChainIds_ is the identifier of the chain within superform protocol
+    /// @param socketChainIds_ is the identifier of the chain given by the bridge
+    function setChainIds(
+        uint16[] memory superChainIds_,
+        uint256[] memory socketChainIds_
     ) external onlyProtocolAdmin {
-        if (superChainId_ == 0 || superChainId_ == 0) {
-            revert Error.INVALID_CHAIN_ID();
+        for (uint256 i = 0; i < superChainIds_.length; i++) {
+            uint16 superChainIdT = superChainIds_[i];
+            uint256 socketChainIdT = socketChainIds_[i];
+            if (superChainIdT == 0 || socketChainIdT == 0) {
+                revert Error.INVALID_CHAIN_ID();
+            }
+
+            socketChainId[superChainIdT] = socketChainIdT;
+
+            emit ChainIdSet(superChainIdT, socketChainIdT);
         }
-
-        socketChainId[superChainId_] = socketChainId_;
-
-        emit ChainIdSet(superChainId_, socketChainId_);
     }
 
     /// @notice Decode the socket v2 calldata
