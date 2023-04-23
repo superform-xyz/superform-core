@@ -185,7 +185,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            console.log("PayloadState.PROCESSED");
             revert Error.INVALID_PAYLOAD_STATE();
         }
 
@@ -342,7 +341,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
         } else {
             /// @dev Withdraw SyncBack here, callbackType.return
-            console.log("_processSingleWithdrawalSyncBack");
             ISuperRouter(superRegistry.superRouter()).stateSync{
                 value: msg.value
             }(payloadInfo_);

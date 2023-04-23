@@ -55,6 +55,7 @@ contract Scenario7Test is ProtocolActions {
         MAX_SLIPPAGE[ARBI][1] = [1000, 1000, 1000];
 
         /// @dev check if we need to have this here (it's being overriden)
+        /// NOTE: aren't those different msgValues? this is used for user-paid gas, protocolAction's is used for keeper's gas
         uint256 msgValue = 10 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         /// @dev push in order the actions should be executed

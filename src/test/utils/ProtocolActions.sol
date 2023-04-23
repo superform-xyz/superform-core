@@ -581,7 +581,7 @@ abstract contract ProtocolActions is BaseSetup {
                         getContract(aV[i].toChainId, "LayerZeroHelper")
                     ).helpWithEstimates(
                             vars.lzEndpoint_0,
-                            1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                            2000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
                             FORKS[CHAIN_0],
                             vars.logs
                         );
@@ -635,20 +635,10 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal returns (bool success) {
         /// assume it will pass by default
         success = true;
-
-        CoreStateRegistry stateRegistry = CoreStateRegistry(
-            payable(getContract(CHAIN_0, "CoreStateRegistry"))
-        );
-
+        
         unchecked {
             PAYLOAD_ID[CHAIN_0]++;
         }
-
-        console.log("PAYLOAD_ID[CHAIN_0]", PAYLOAD_ID[CHAIN_0]);
-        console.log(
-            "stateRegistry.payloadsCount()",
-            stateRegistry.payloadsCount()
-        );
 
         uint256 initialFork = vm.activeFork();
 
@@ -1063,11 +1053,8 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[targetChainId_]);
 
-        uint256 msgValue = 1000 * _getPriceMultiplier(targetChainId_) * 1e18;
+        uint256 msgValue = 10 * _getPriceMultiplier(targetChainId_) * 1e18;
         
-        console.log("msgValue", msgValue);
-        console.log("deployer balance", deployer.balance);
-
         vm.prank(deployer);
         if (testType == TestType.Pass) {
             CoreStateRegistry(

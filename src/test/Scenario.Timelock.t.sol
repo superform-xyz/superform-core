@@ -283,7 +283,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage3 done");
 
-        /// TODO: Rebuild this to also process withdraw payloads
+        /// @dev Process payload stored on destination to be delivered on source (withdraw callback)
         success = _stage4_process_src_dst_payload(
             action,
             vars,
@@ -294,7 +294,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage4 done");
 
-        /// @dev FIXME: Requires to updatePayload before processing, this call fails now
+        /// @dev Process payload received on source from destination (withdraw callback)
         success = _stage6_process_superPositions_withdraw(action, vars);
         
         /*///////////////////////////////////////////////////////////////

@@ -164,7 +164,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         if (address(ambImplementation) == address(0)) {
             revert Error.INVALID_BRIDGE_ID();
         }
-        console.log("sending to dst", dstChainId_);
+        // console.log("sending to dst", dstChainId_);
         ambImplementation.dispatchPayload{value: msg.value / 2}(
             dstChainId_,
             message_,

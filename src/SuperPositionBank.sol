@@ -131,7 +131,7 @@ contract SuperPositionBank is ERC165 {
         /// alternative is to transfer back to source and burn there
         delete queueSingle[owner_][positionIndex];
         superRouter.burnPositionSingle(
-            owner_,
+            address(this),
             position.tokenId,
             position.amount
         );
@@ -145,7 +145,7 @@ contract SuperPositionBank is ERC165 {
         PositionBatch memory position = queueBatch[owner_][positionIndex];
         delete queueBatch[owner_][positionIndex];
         superRouter.burnPositionBatch(
-            owner_,
+            address(this),
             position.tokenIds,
             position.amounts
         );
