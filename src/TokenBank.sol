@@ -260,8 +260,7 @@ contract TokenBank is ITokenBank {
                 status_
             );
         } catch {
-            // Handle the case when the external call itself reverts
-            /// TODO: E.g Panic/overflow endup here and fall through catch Error
+            // Handle the case when the external call reverts for whatever reason
             /// https://solidity-by-example.org/try-catch/
             _dispatchPayload(
                 singleVaultData_,

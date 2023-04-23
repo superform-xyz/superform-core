@@ -10,9 +10,23 @@ import "forge-std/console.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 
+import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
+
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario7Test is ProtocolActions {
+    /// @dev Access SuperRouter interface
+    ISuperRouter superRouter;
+
+    /// @dev Access SuperPositions interface
+    IERC1155 superPositions;
+
+    address _superRouter;
+    address _stateRegistry;
+    address _superPositions;
+
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -41,7 +55,7 @@ contract Scenario7Test is ProtocolActions {
         MAX_SLIPPAGE[ARBI][1] = [1000, 1000, 1000];
 
         /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+        uint256 msgValue = 10 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -73,6 +87,21 @@ contract Scenario7Test is ProtocolActions {
                 msgValue: msgValue
             })
         );
+
+        /*///////////////////////////////////////////////////////////////
+                                STATE SETUP
+        //////////////////////////////////////////////////////////////*/
+
+        _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+
+        _stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
+
+        superRouter = ISuperRouter(_superRouter);
+
+        /// TODO: User ERC1155s
+        superPositions = IERC1155(
+            ISuperRegistry(_stateRegistry).superPositions()
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -93,6 +122,10 @@ contract Scenario7Test is ProtocolActions {
                 singleSuperFormsData,
                 vars
             ) = _stage1_buildReqData(action, act);
+
+            /// @dev TODO: Remove MAX APPROVE and use SINGLE APPROVE with amount
+            vm.prank(action.user);
+            superPositions.setApprovalForAll(address(superRouter), true);
 
             vars = _stage2_run_src_action(
                 action,

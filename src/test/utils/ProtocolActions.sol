@@ -1063,7 +1063,10 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[targetChainId_]);
 
-        uint256 msgValue = 10 * _getPriceMultiplier(targetChainId_) * 1e18;
+        uint256 msgValue = 1000 * _getPriceMultiplier(targetChainId_) * 1e18;
+        
+        console.log("msgValue", msgValue);
+        console.log("deployer balance", deployer.balance);
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {

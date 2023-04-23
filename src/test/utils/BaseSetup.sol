@@ -726,7 +726,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             uint256 multiplier = _getPriceMultiplier(chainIds[i]);
 
-            uint256 amountDeployer = 100000 * multiplier * 1e18;
+            uint256 amountDeployer = 10000000 * multiplier * 1e18;
             uint256 amountUSER = 1000 * multiplier * 1e18;
 
             vm.deal(deployer, amountDeployer);
