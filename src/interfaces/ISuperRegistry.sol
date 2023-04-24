@@ -6,7 +6,7 @@ interface ISuperRegistry {
                                 Events
     //////////////////////////////////////////////////////////////*/
 
-    event SetChainId(uint256 indexed chainId);
+    event SetImmutables(uint256 indexed chainId, address indexed permit2);
 
     /// @dev is emitted when an address is set.
     event ProtocolAddressUpdated(
@@ -63,6 +63,12 @@ interface ISuperRegistry {
         address indexed superRBAC
     );
 
+    /// @dev is emitted when a new multi tx processor is configured.
+    event MultiTxProcessorUpdated(
+        address indexed oldMultiTxProcessor,
+        address indexed multiTxProcessor
+    );
+
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(
         uint256 indexed bridgeId,
@@ -71,7 +77,13 @@ interface ISuperRegistry {
 
     /// @dev is emitted when a new token bridge is configured.
     event SetSuperPositionBankAddress(
+        address indexed oldBank,
         address indexed bank
+    );
+    /// @dev is emitted when a new bridge validator is configured.
+    event SetBridgeValidator(
+        uint256 indexed bridgeId,
+        address indexed bridgeValidator
     );
 
     /// @dev is emitted when a new amb is configured.
@@ -83,7 +95,8 @@ interface ISuperRegistry {
 
     /// @dev sets the chain id.
     /// @param chainId_ the superform chain id this registry is deployed on
-    function setChainId(uint16 chainId_) external;
+    /// @param permit2_ the address of the permit2 contract
+    function setImmutables(uint16 chainId_, address permit2_) external;
 
     /// @dev sets a new protocol address.
     /// @param protocolAddressId_ the protocol address identifier
@@ -121,12 +134,18 @@ interface ISuperRegistry {
     /// @param superRBAC_ the address of the super rbac
     function setSuperRBAC(address superRBAC_) external;
 
+    /// @dev allows admin to set the multi tx processor address
+    /// @param multiTxProcessor_ the address of the multi tx processor
+    function setMultiTxProcessor(address multiTxProcessor_) external;
+
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @param bridgeId_         represents the bridge unqiue identifier.
     /// @param bridgeAddress_    represents the bridge address.
-    function setBridgeAddress(
+    /// @param bridgeValidator_  represents the bridge validator address.
+    function setBridgeAddresses(
         uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
+        address[] memory bridgeAddress_,
+        address[] memory bridgeValidator_
     ) external;
 
     /// @dev allows admin to set the amb address for an amb id.
@@ -154,6 +173,9 @@ interface ISuperRegistry {
     /// @dev gets the superform chainId of the protocol
     function chainId() external view returns (uint16);
 
+    /// @dev returns the permit2 address
+    function PERMIT2() external view returns (address);
+
     /// @dev returns the id of the protocol admin
     function PROTOCOL_ADMIN() external view returns (bytes32);
 
@@ -175,8 +197,14 @@ interface ISuperRegistry {
     /// @dev returns the id of the super positions module
     function SUPER_POSITIONS() external view returns (bytes32);
 
+    /// @dev returns the id of the super position bank module
+    function SUPER_POSITION_BANK() external view returns (bytes32);
+
     /// @dev returns the id of the super rbac module
     function SUPER_RBAC() external view returns (bytes32);
+
+    /// @dev returns the id of the multi tx processor module
+    function MULTI_TX_PROCESSOR() external view returns (bytes32);
 
     /// @dev gets the address of a contract.
     /// @param protocolAddressId_ is the id of the contract
@@ -225,12 +253,26 @@ interface ISuperRegistry {
     /// @return superRBAC_ the address of the super rbac
     function superRBAC() external view returns (address superRBAC_);
 
+    /// @dev gets the multi tx processor
+    /// @return multiTxProcessor_ the address of the multi tx processor
+    function multiTxProcessor()
+        external
+        view
+        returns (address multiTxProcessor_);
+
     /// @dev gets the address of a bridge
     /// @param bridgeId_ is the id of a bridge
     /// @return bridgeAddress_ is the address of the form
     function getBridgeAddress(
         uint8 bridgeId_
     ) external view returns (address bridgeAddress_);
+
+    /// @dev gets the address of a bridge validator
+    /// @param bridgeId_ is the id of a bridge
+    /// @return bridgeValidator_ is the address of the form
+    function getBridgeValidator(
+        uint8 bridgeId_
+    ) external view returns (address bridgeValidator_);
 
     /// @dev gets the address of a amb
     /// @param ambId_ is the id of a bridge

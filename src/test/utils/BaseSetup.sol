@@ -14,11 +14,13 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev test utils & mocks
 import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
+import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import "./TestTypes.sol";
+import {Permit2Clone} from "../mocks/Permit2Clone.sol";
 
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
@@ -37,10 +39,12 @@ import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
+import {SocketValidator} from "../../crosschain-liquidity/socket/SocketValidator.sol";
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
 import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
+import {IPermit2} from "../../interfaces/IPermit2.sol";
 
 
 import {SuperPositionBank} from "../../SuperPositionBank.sol";
@@ -52,9 +56,20 @@ abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
+    bytes32 constant TOKEN_PERMISSIONS_TYPEHASH =
+        keccak256("TokenPermissions(address token,uint256 amount)");
+    bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH =
+        keccak256(
+            "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
+        );
 
+    /// @dev
+    address public constant CANONICAL_PERMIT2 =
+        0x000000000022D473030F116dDEE9F6B43aC78BA3; /// @dev for mainnet deployment
     address public deployer = address(777);
     address[] public users;
+    uint256[] public userKeys;
+
     uint256 public trustedRemote;
     bytes32 public constant salt = "SUPERFORM";
     mapping(uint16 chainId => mapping(bytes32 implementation => address at))
@@ -99,6 +114,8 @@ abstract contract BaseSetup is DSTest, Test {
     uint8[] bridgeIds;
     /// @dev liquidity bridge addresses
     address[] bridgeAddresses;
+    /// @dev liquidity validator addresses
+    address[] bridgeValidators;
 
     /// @dev setup amb bridges
     /// @notice id 1 is layerzero
@@ -127,7 +144,7 @@ abstract contract BaseSetup is DSTest, Test {
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
     /// @dev removed FTM temporarily
-    address[6] public lzEndpoints = [
+    address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -136,7 +153,7 @@ abstract contract BaseSetup is DSTest, Test {
         0x3c2269811836af69497E5F486A85D7316753cf62
     ];
 
-    address[6] public hyperlaneMailboxes = [
+    address[] public hyperlaneMailboxes = [
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
@@ -146,7 +163,7 @@ abstract contract BaseSetup is DSTest, Test {
     ];
 
     /*
-    address[7] public lzEndpoints = [
+    address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -172,7 +189,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint16 public constant OP = 6;
     //uint16 public constant FTM = 7;
 
-    uint16[6] public chainIds = [1, 2, 3, 4, 5, 6];
+    uint16[] public chainIds = [1, 2, 3, 4, 5, 6];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -183,8 +200,10 @@ abstract contract BaseSetup is DSTest, Test {
     uint16 public constant LZ_OP = 111;
     //uint16 public constant LZ_FTM = 112;
 
-    uint16[6] public lz_chainIds = [101, 102, 106, 109, 110, 111];
-    uint32[6] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
+    uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+    /// @dev FIXME to fix with correct chainIds
+    uint256[] public socketChainIds = [1, 2, 3, 4, 5, 6];
 
     // uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
     // uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
@@ -268,6 +287,10 @@ abstract contract BaseSetup is DSTest, Test {
             vars.ambAddresses = new address[](ambIds.length);
             vm.selectFork(vars.fork);
 
+            vars.canonicalPermit2 = address(new Permit2Clone{salt: salt}());
+            contracts[vars.chainId][bytes32(bytes("CanonicalPermit2"))] = vars
+                .canonicalPermit2;
+
             /// @dev 1.1- deploy LZ Helper from Pigeon
             vars.lzHelper = address(new LayerZeroHelper{salt: salt}());
             vm.allowCheatcodes(vars.lzHelper);
@@ -289,7 +312,10 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
 
-            SuperRegistry(vars.superRegistry).setChainId(vars.chainId);
+            SuperRegistry(vars.superRegistry).setImmutables(
+                vars.chainId,
+                vars.canonicalPermit2
+            );
             SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
 
             /// @dev 3 - Deploy SuperRBAC
@@ -384,15 +410,27 @@ abstract contract BaseSetup is DSTest, Test {
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
 
-            /// @dev 6- deploy SocketRouterMockFork
-            vars.socketRouter = address(new SocketRouterMockFork{salt: salt}());
-            contracts[vars.chainId][
-                bytes32(bytes("SocketRouterMockFork"))
-            ] = vars.socketRouter;
+            /// @dev 6- deploy SocketRouterMock
+            vars.socketRouter = address(new SocketRouterMock{salt: salt}());
+            contracts[vars.chainId][bytes32(bytes("SocketRouterMock"))] = vars
+                .socketRouter;
             vm.allowCheatcodes(vars.socketRouter);
+
+            /// @dev 6- deploy socket validator
+            vars.socketValidator = address(
+                new SocketValidator{salt: salt}(vars.superRegistry)
+            );
+            contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars
+                .socketValidator;
+
+            SocketValidator(vars.socketValidator).setChainIds(
+                chainIds,
+                socketChainIds
+            );
 
             if (i == 0) {
                 bridgeAddresses.push(vars.socketRouter);
+                bridgeValidators.push(vars.socketValidator);
             }
 
             /// @dev 7.1 - Deploy UNDERLYING_TOKENS and VAULTS
@@ -538,11 +576,16 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
 
+            SuperRegistry(vars.superRegistry).setMultiTxProcessor(
+                vars.multiTxProcessor
+            );
+
             /// @dev 15 - Super Registry extra setters
 
-            SuperRegistry(vars.superRegistry).setBridgeAddress(
+            SuperRegistry(vars.superRegistry).setBridgeAddresses(
                 bridgeIds,
-                bridgeAddresses
+                bridgeAddresses,
+                bridgeValidators
             );
 
             /// @dev configures lzImplementation and hyperlane to super registry
@@ -702,9 +745,13 @@ abstract contract BaseSetup is DSTest, Test {
         bridgeIds.push(1);
 
         /// @dev setup users
-        users.push(address(1));
-        users.push(address(2));
-        users.push(address(3));
+        userKeys.push(1);
+        userKeys.push(2);
+        userKeys.push(3);
+
+        users.push(vm.addr(userKeys[0]));
+        users.push(vm.addr(userKeys[1]));
+        users.push(vm.addr(userKeys[2]));
 
         /// @dev setup vault bytecodes
         vaultBytecodes.push(type(VaultMock).creationCode);
@@ -731,9 +778,9 @@ abstract contract BaseSetup is DSTest, Test {
 
             vm.deal(deployer, amountDeployer);
 
-            vm.deal(address(1), amountUSER);
-            vm.deal(address(2), amountUSER);
-            vm.deal(address(3), amountUSER);
+            vm.deal(users[0], amountUSER);
+            vm.deal(users[1], amountUSER);
+            vm.deal(users[2], amountUSER);
         }
     }
 
@@ -796,9 +843,9 @@ abstract contract BaseSetup is DSTest, Test {
             for (uint256 i = 0; i < chainIds.length; i++) {
                 vm.selectFork(FORKS[chainIds[i]]);
                 address token = getContract(chainIds[i], UNDERLYING_TOKENS[j]);
-                deal(token, address(1), 1 ether * amount);
-                deal(token, address(2), 1 ether * amount);
-                deal(token, address(3), 1 ether * amount);
+                deal(token, users[0], 1 ether * amount);
+                deal(token, users[1], 1 ether * amount);
+                deal(token, users[2], 1 ether * amount);
             }
         }
     }
@@ -877,6 +924,70 @@ abstract contract BaseSetup is DSTest, Test {
         }
 
         return addr;
+    }
+
+    function _randomBytes32() internal view returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    tx.origin,
+                    block.number,
+                    block.timestamp,
+                    block.coinbase,
+                    address(this).codehash,
+                    gasleft()
+                )
+            );
+    }
+
+    function _randomUint256() internal view returns (uint256) {
+        return uint256(_randomBytes32());
+    }
+
+    // Generate a signature for a permit message.
+    function _signPermit(
+        IPermit2.PermitTransferFrom memory permit,
+        address spender,
+        uint256 signerKey,
+        uint16 chainId
+    ) internal returns (bytes memory sig) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            signerKey,
+            _getEIP712Hash(permit, spender, chainId)
+        );
+        return abi.encodePacked(r, s, v);
+    }
+
+    // Compute the EIP712 hash of the permit object.
+    // Normally this would be implemented off-chain.
+    function _getEIP712Hash(
+        IPermit2.PermitTransferFrom memory permit,
+        address spender,
+        uint16 chainId
+    ) internal view returns (bytes32 h) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19\x01",
+                    Permit2Clone(getContract(chainId, "CanonicalPermit2"))
+                        .DOMAIN_SEPARATOR(),
+                    keccak256(
+                        abi.encode(
+                            PERMIT_TRANSFER_FROM_TYPEHASH,
+                            keccak256(
+                                abi.encode(
+                                    TOKEN_PERMISSIONS_TYPEHASH,
+                                    permit.permitted.token,
+                                    permit.permitted.amount
+                                )
+                            ),
+                            spender,
+                            permit.nonce,
+                            permit.deadline
+                        )
+                    )
+                )
+            );
     }
 
     ///@dev Compute the address of the contract to be deployed

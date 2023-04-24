@@ -13,7 +13,6 @@ import "./utils/ProtocolActions.sol";
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario1Test is ProtocolActions {
-
     /// @dev Access SuperRouter interface
     ISuperRouter superRouter;
 
@@ -46,7 +45,7 @@ contract Scenario1Test is ProtocolActions {
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: users[0],
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
@@ -63,7 +62,9 @@ contract Scenario1Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        address _superRouter = contracts[CHAIN_0][
+            bytes32(bytes("SuperRouter"))
+        ];
         superRouter = ISuperRouter(_superRouter);
 
         for (uint256 act = 0; act < actions.length; act++) {
@@ -106,13 +107,15 @@ contract Scenario1Test is ProtocolActions {
                 continue;
             }
 
-            if (action.action == Actions.Deposit) {
+            if (
+                action.action == Actions.Deposit ||
+                action.action == Actions.DepositPermit2
+            ) {
                 success = _stage5_process_superPositions_mint(action, vars);
                 if (!success) {
                     continue;
                 }
             }
         }
-
     }
 }

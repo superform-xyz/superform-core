@@ -28,6 +28,7 @@ import {SuperFormFactory} from "../src/SuperFormFactory.sol";
 import {ERC4626Form} from "../src/forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../src/forms/ERC4626TimelockForm.sol";
 import {MultiTxProcessor} from "../src/crosschain-liquidity/MultiTxProcessor.sol";
+import {SocketValidator} from "../src/crosschain-liquidity/socket/SocketValidator.sol";
 import {LayerzeroImplementation} from "../src/crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../src/crosschain-data/hyperlane/Implementation.sol";
 import {IMailbox} from "../src/crosschain-data/hyperlane/interface/IMailbox.sol";
@@ -63,6 +64,7 @@ struct SetupVars {
     address superRegistry;
     address superPositions;
     address superRBAC;
+    address socketValidator;
 }
 
 contract Deploy is Script {
@@ -70,6 +72,8 @@ contract Deploy is Script {
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
 
+    address public constant CANONICAL_PERMIT2 =
+        0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint16 chainId => mapping(bytes32 implementation => address at))
         public contracts;
     string[13] public contractNames = [
@@ -125,14 +129,17 @@ contract Deploy is Script {
     mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
 
     /// @dev liquidity bridge ids. 1,2,3 belong to socket. 4 is lifi
-    uint8[] public bridgeIds = [uint8(1), 2, 3, 4];
+    uint8[] public bridgeIds = [uint8(1), 2, 3];
     /// @dev liquidity bridge addresses
     address[] public bridgeAddresses = [
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE,
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE,
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE,
-        0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
+        // 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
     ];
+
+    /// @dev liquidity validator addresses
+    address[] bridgeValidators;
 
     /// @dev setup amb bridges
     /// @notice id 1 is layerzero
@@ -162,7 +169,7 @@ contract Deploy is Script {
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
     /// @dev removed FTM temporarily
-    address[6] public lzEndpoints = [
+    address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -172,7 +179,7 @@ contract Deploy is Script {
     ];
 
     /*
-    address[7] public lzEndpoints = [
+    address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -197,8 +204,8 @@ contract Deploy is Script {
     uint16 public constant ARBI = 5;
     uint16 public constant OP = 6;
     //uint16 public constant FTM = 7;
-    uint16[6] public chainIds = [1, 2, 3, 4, 5, 6];
-    string[6] public chainNames = ["ETH", "BSC", "AVAX", "POLY", "ARBI", "OP"];
+    uint16[] public chainIds = [1, 2, 3, 4, 5, 6];
+    string[] public chainNames = ["ETH", "BSC", "AVAX", "POLY", "ARBI", "OP"];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -209,8 +216,10 @@ contract Deploy is Script {
     uint16 public constant LZ_OP = 111;
     //uint16 public constant LZ_FTM = 112;
 
-    uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111];
-    uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
+    uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+    /// @dev FIXME to fix with correct chainIds
+    uint256[] public socketChainIds = [1, 2, 3, 4, 5, 6];
 
     uint256 public constant milionTokensE18 = 1 ether;
 
@@ -280,7 +289,10 @@ contract Deploy is Script {
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
                 .superRegistry;
 
-            SuperRegistry(vars.superRegistry).setChainId(vars.chainId);
+            SuperRegistry(vars.superRegistry).setImmutables(
+                vars.chainId,
+                CANONICAL_PERMIT2
+            );
             SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
 
             /// @dev 2 - Deploy SuperRBAC
@@ -359,6 +371,24 @@ contract Deploy is Script {
             if (i == 0) {
                 ambAddresses.push(vars.lzImplementation);
                 ambAddresses.push(vars.hyperlaneImplementation);
+            }
+
+            /// @dev 5- deploy socket validator
+            vars.socketValidator = address(
+                new SocketValidator{salt: salt}(vars.superRegistry)
+            );
+            contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars
+                .socketValidator;
+
+            SocketValidator(vars.socketValidator).setChainIds(
+                chainIds,
+                socketChainIds
+            );
+
+            if (i == 0) {
+                for (uint256 j = 0; j < 3; j++) {
+                    bridgeValidators.push(vars.socketValidator);
+                }
             }
 
             /// @dev 5 - Deploy UNDERLYING_TOKENS and VAULTS
@@ -486,13 +516,17 @@ contract Deploy is Script {
             );
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
-            SuperRBAC(vars.superRBAC).grantSwapperRole(vars.multiTxProcessor);
+
+            SuperRegistry(vars.superRegistry).setMultiTxProcessor(
+                vars.multiTxProcessor
+            );
 
             /// @dev 13 - Super Registry extra setters
 
-            SuperRegistry(vars.superRegistry).setBridgeAddress(
+            SuperRegistry(vars.superRegistry).setBridgeAddresses(
                 bridgeIds,
-                bridgeAddresses
+                bridgeAddresses,
+                bridgeValidators
             );
 
             /// @dev configures lzImplementation and hyperlane to super registry

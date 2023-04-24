@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {IPermit2} from "../interfaces/IPermit2.sol";
 import {Error} from "../utils/Error.sol";
 
 /// @title SuperRegistry
@@ -12,14 +13,18 @@ import {Error} from "../utils/Error.sol";
 contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
     uint16 public chainId;
-    address public superPositionBank;
+
+    /// @dev canonical permit2 contract
+    address public PERMIT2;
 
     mapping(bytes32 id => address moduleAddress) private protocolAddresses;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
+    mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
     mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
 
     /// @dev core protocol addresses identifiers
+    /// @dev FIXME: we don't have AMB and liquidity bridge implementations here, should we add?
     bytes32 public constant override PROTOCOL_ADMIN = "PROTOCOL_ADMIN";
     bytes32 public constant override SUPER_ROUTER = "SUPER_ROUTER";
     bytes32 public constant override TOKEN_BANK = "TOKEN_BANK";
@@ -29,7 +34,10 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     bytes32 public constant override FACTORY_STATE_REGISTRY =
         "FACTORY_STATE_REGISTRY";
     bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
+    bytes32 public constant override SUPER_POSITION_BANK =
+        "SUPER_POSITION_BANK";
     bytes32 public constant override SUPER_RBAC = "SUPER_RBAC";
+    bytes32 public constant override MULTI_TX_PROCESSOR = "MULTI_TX_PROCESSOR";
 
     /// @param admin_ the address of the admin.
     constructor(address admin_) {
@@ -41,15 +49,18 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperRegistry
-    function setChainId(
-        uint16 chainId_
+    function setImmutables(
+        uint16 chainId_,
+        address permit2_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (chainId != 0) revert Error.DISABLED();
         if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
+        if (PERMIT2 != address(0)) revert Error.DISABLED();
 
         chainId = chainId_;
+        PERMIT2 = permit2_;
 
-        emit SetChainId(chainId_);
+        emit SetImmutables(chainId_, PERMIT2);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -168,17 +179,34 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setBridgeAddress(
+    function setMultiTxProcessor(
+        address multiTxProcessor_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (multiTxProcessor_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address oldMultiTxProcessor = protocolAddresses[MULTI_TX_PROCESSOR];
+        protocolAddresses[MULTI_TX_PROCESSOR] = multiTxProcessor_;
+
+        emit MultiTxProcessorUpdated(oldMultiTxProcessor, multiTxProcessor_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setBridgeAddresses(
         uint8[] memory bridgeId_,
-        address[] memory bridgeAddress_
+        address[] memory bridgeAddress_,
+        address[] memory bridgeValidator_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         for (uint256 i = 0; i < bridgeId_.length; i++) {
-            address x = bridgeAddress_[i];
-            uint8 y = bridgeId_[i];
-            if (x == address(0)) revert Error.ZERO_ADDRESS();
+            uint8 x = bridgeId_[i];
+            address y = bridgeAddress_[i];
+            address z = bridgeValidator_[i];
+            if (y == address(0) || z == address(0)) revert Error.ZERO_ADDRESS();
 
-            bridgeAddresses[y] = x;
-            emit SetBridgeAddress(y, x);
+            bridgeAddresses[x] = y;
+            bridgeValidator[x] = z;
+
+            emit SetBridgeAddress(x, y);
+            emit SetBridgeValidator(x, z);
         }
     }
 
@@ -202,9 +230,13 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (superPositionBank_ == address(0)) revert Error.ZERO_ADDRESS();
 
-        superPositionBank = superPositionBank_;
+        address oldSuperPositionBank = protocolAddresses[SUPER_POSITION_BANK];
+        protocolAddresses[SUPER_POSITION_BANK] = superPositionBank_;
 
-        emit SetSuperPositionBankAddress(superPositionBank_);
+        emit SetSuperPositionBankAddress(
+            oldSuperPositionBank,
+            superPositionBank_
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -283,9 +315,27 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         superPositions_ = getProtocolAddress(SUPER_POSITIONS);
     }
 
+    function superPositionBank()
+        external
+        view
+        returns (address superPositionBank_)
+    {
+        superPositionBank_ = getProtocolAddress(SUPER_POSITION_BANK);
+    }
+
     /// @inheritdoc ISuperRegistry
     function superRBAC() external view override returns (address superRBAC_) {
         superRBAC_ = getProtocolAddress(SUPER_RBAC);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function multiTxProcessor()
+        external
+        view
+        override
+        returns (address multiTxProcessor_)
+    {
+        multiTxProcessor_ = getProtocolAddress(MULTI_TX_PROCESSOR);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -293,6 +343,13 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         uint8 bridgeId_
     ) external view override returns (address bridgeAddress_) {
         bridgeAddress_ = bridgeAddresses[bridgeId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getBridgeValidator(
+        uint8 bridgeId_
+    ) external view override returns (address bridgeValidator_) {
+        bridgeValidator_ = bridgeValidator[bridgeId_];
     }
 
     /// @inheritdoc ISuperRegistry
