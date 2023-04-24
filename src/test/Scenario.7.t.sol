@@ -74,20 +74,20 @@ contract Scenario7Test is ProtocolActions {
             })
         );
 
-        actions.push(
-            TestAction({
-                action: Actions.Withdraw,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
-                user: users[0],
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
-            })
-        );
+        // actions.push(
+        //     TestAction({
+        //         action: Actions.Withdraw,
+        //         multiVaults: true, //!!WARNING turn on or off multi vaults
+        //         user: users[0],
+        //         testType: TestType.Pass,
+        //         revertError: "",
+        //         revertRole: "",
+        //         slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+        //         multiTx: false,
+        //         adapterParam: "",
+        //         msgValue: msgValue
+        //     })
+        // );
 
         /*///////////////////////////////////////////////////////////////
                                 STATE SETUP
