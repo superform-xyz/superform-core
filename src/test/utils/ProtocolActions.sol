@@ -466,6 +466,7 @@ abstract contract ProtocolActions is BaseSetup {
                         action.revertError,
                         action.revertRole
                     );
+
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
                             if (action.multiVaults) {
@@ -563,12 +564,36 @@ abstract contract ProtocolActions is BaseSetup {
                     unchecked {
                         PAYLOAD_ID[aV[i].toChainId]++;
                     }
-                    _processPayload(
+
+                    vm.recordLogs();
+                    /// note: this is high-lvl processPayload function, even if this happens outside of the user view
+                    /// we need to manually process payloads by invoking sending actual messages
+                    success = _processPayload(
                         PAYLOAD_ID[aV[i].toChainId],
                         aV[i].toChainId,
                         action.testType,
                         action.revertError
                     );
+
+                    vars.logs = vm.getRecordedLogs();
+
+                    LayerZeroHelper(
+                        getContract(aV[i].toChainId, "LayerZeroHelper")
+                    ).helpWithEstimates(
+                            vars.lzEndpoint_0,
+                            2000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                            FORKS[CHAIN_0],
+                            vars.logs
+                        );
+
+                    HyperlaneHelper(
+                        getContract(aV[i].toChainId, "HyperlaneHelper")
+                    ).help(
+                            address(HyperlaneMailbox),
+                            address(HyperlaneMailbox),
+                            FORKS[CHAIN_0],
+                            vars.logs
+                        );
                 }
             }
             vm.selectFork(aV[i].initialFork);
@@ -610,32 +635,24 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal returns (bool success) {
         /// assume it will pass by default
         success = true;
-
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
-
-            CoreStateRegistry stateRegistry = CoreStateRegistry(
-                payable(getContract(CHAIN_0, "CoreStateRegistry"))
-            );
-
-            unchecked {
-                PAYLOAD_ID[CHAIN_0]++;
-            }
-
-            uint256 initialFork = vm.activeFork();
-
-            vm.selectFork(FORKS[CHAIN_0]);
-
-            uint256 msgValue = 10 * _getPriceMultiplier(CHAIN_0) * 1e18;
-
-            vm.prank(deployer);
-            stateRegistry.processPayload{value: msgValue}(
-                stateRegistry.payloadsCount() /// <= Err, hardcoded for now
-            );
-
-            vm.selectFork(initialFork);
-            
-            return true;
+        
+        unchecked {
+            PAYLOAD_ID[CHAIN_0]++;
         }
+
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[CHAIN_0]);
+
+        _processPayload(
+            PAYLOAD_ID[CHAIN_0],
+            CHAIN_0,
+            action.testType,
+            action.revertError
+        );
+        vm.selectFork(initialFork);
+
+        return true;
     }
 
     function _buildMultiVaultCallData(
@@ -1037,7 +1054,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[targetChainId_]);
 
         uint256 msgValue = 10 * _getPriceMultiplier(targetChainId_) * 1e18;
-
+        
         vm.prank(deployer);
         if (testType == TestType.Pass) {
             CoreStateRegistry(

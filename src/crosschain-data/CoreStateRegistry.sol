@@ -8,6 +8,7 @@ import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
@@ -337,8 +338,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             ITokenBank(superRegistry.tokenBank()).withdrawSync{
                 value: msg.value
             }(singleVaultData);
+            /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
         } else {
-            /// @dev Withdraw SyncBack here, callbackType.return 
+            /// @dev Withdraw SyncBack here, callbackType.return
             ISuperRouter(superRegistry.superRouter()).stateSync{
                 value: msg.value
             }(payloadInfo_);

@@ -25,6 +25,7 @@ contract SuperPositionBank is ERC165 {
         private queueBatch;
     mapping(address owner => mapping(uint256 id => PositionSingle))
         private queueSingle;
+
     mapping(address owner => uint256 id) public queueCounter;
 
     modifier onlyRouter() {
@@ -127,11 +128,10 @@ contract SuperPositionBank is ERC165 {
         uint256 positionIndex
     ) public onlyRouter {
         PositionSingle memory position = queueSingle[owner_][positionIndex];
-        token.burnSingleSP(owner_, position.tokenId, position.amount);
         /// alternative is to transfer back to source and burn there
         delete queueSingle[owner_][positionIndex];
         superRouter.burnPositionSingle(
-            owner_,
+            address(this),
             position.tokenId,
             position.amount
         );
@@ -145,10 +145,26 @@ contract SuperPositionBank is ERC165 {
         PositionBatch memory position = queueBatch[owner_][positionIndex];
         delete queueBatch[owner_][positionIndex];
         superRouter.burnPositionBatch(
-            owner_,
+            address(this),
             position.tokenIds,
             position.amounts
         );
+    }
+
+    /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
+    function holdPositionSingle(
+        address owner_,
+        uint256 positionIndex
+    ) public onlyRouter {
+
+    }
+
+    /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
+    function holdPositionBatch(
+        address owner_,
+        uint256 positionIndex
+    ) public onlyRouter {
+
     }
 
     /// @dev Private queue requires public getter
@@ -174,5 +190,25 @@ contract SuperPositionBank is ERC165 {
         bytes4 interfaceId
     ) public view override returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
     }
 }

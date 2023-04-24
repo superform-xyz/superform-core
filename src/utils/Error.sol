@@ -174,6 +174,9 @@ library Error {
     /// @dev is emitted when the amount in xchain withdraw is not correct
     error XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
+    /// @dev is emitted when redeem call to the underlying vault in form fails
+    error REDEEM_FAILED();
+
     /// @dev unlock already requested, cooldown period didn't pass yet
     error WITHDRAW_COOLDOWN_PERIOD();
 

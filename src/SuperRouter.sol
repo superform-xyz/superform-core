@@ -404,7 +404,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         superPositions.setApprovalForAll(address(bank), false);
 
-        /// Step 3: Save index of position create in SuperPositionBank in extraData 
+        /// Step 3: Save index of position create in SuperPositionBank in extraData
         /// NOTE: extraData can contain more complex type than only index value
         req.superFormsData.extraFormData = abi.encode(index);
 
@@ -522,6 +522,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
         ISuperPositionBank bank = ISuperPositionBank(_superPositionBank);
 
+        /// FIXME: WHAT ABOUT SUPERPOSITIONS ALREADY IN THE BANK... TIMELOCK FLOW FORCES IT
+
         /// Step 1: Transfer shares to this contract
         /// NOTE: From the user perspective it would be better to enter through the bank directly.
         superPositions.safeTransferFrom(
@@ -547,7 +549,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         superPositions.setApprovalForAll(address(bank), false);
 
-        /// Step 3: Save index of position create in SuperPositionBank in extraData 
+        /// Step 3: Save index of position create in SuperPositionBank in extraData
         /// NOTE: extraData can contain more complex type than only index value
         req.superFormData.extraFormData = abi.encode(index);
 
@@ -609,7 +611,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             revert Error.INVALID_CHAIN_IDS();
 
         /// @dev validate superFormsData
-
         if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
             revert Error.INVALID_SUPERFORMS_DATA();
 
@@ -817,6 +818,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
+    /// TODO: ASSES WHAT HAPPENS FOR MULTISYNC WITH CALLBACKTYPE.FAIL IN ONE OF THE IDS!!!
     function stateMultiSync(AMBMessage memory data_) external payable override {
         if (msg.sender != superRegistry.coreStateRegistry())
             revert Error.REQUEST_DENIED();
@@ -825,29 +827,28 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             data_.txInfo
         );
 
+        /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
-            revert Error.INVALID_PAYLOAD();
+            if (callbackType != uint256(CallbackType.FAIL))
+                revert Error.INVALID_PAYLOAD();
 
         ReturnMultiData memory returnData = abi.decode(
             data_.params,
             (ReturnMultiData)
         );
 
-        (, , , uint80 returnTxId) = _decodeReturnTxInfo(
-            returnData.returnTxInfo
-        );
-        AMBMessage memory stored = txHistory[returnTxId];
+        (   uint16 status,
+            uint16 returnDataSrcChainId,
+            uint16 returnDataDstChainId,
+            uint80 returnDataTxId
+        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
+
+        AMBMessage memory stored = txHistory[returnDataTxId];
 
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (!multi) revert Error.INVALID_PAYLOAD();
 
-        (
-            bool status,
-            uint16 returnDataSrcChainId,
-            uint16 returnDataDstChainId,
-            uint80 returnDataTxId
-        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
 
         InitMultiVaultData memory multiVaultData = abi.decode(
             stored.params,
@@ -865,16 +866,14 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             _getDestinationChain(multiVaultData.superFormIds[0])
         ) revert Error.DST_CHAIN_IDS_MISMATCH();
 
-        if (txType == uint256(TransactionType.DEPOSIT) && status) {
+        if (txType == uint256(TransactionType.DEPOSIT)) {
             ISuperPositions(superRegistry.superPositions()).mintBatchSP(
                 srcSender,
                 multiVaultData.superFormIds,
                 returnData.amounts,
                 ""
             );
-        } else if (txType == uint256(TransactionType.WITHDRAW) && status) {
-            /// @dev FIXME: needs to call SuperPositionBank to burn the vault positions.
-
+        } else if (txType == uint256(TransactionType.WITHDRAW)) {
             bytes memory extraData = multiVaultData.extraFormData; // TODO read customForm type here
             uint256 index = abi.decode(extraData, (uint256));
 
@@ -883,7 +882,15 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             );
 
             bank.burnPositionBatch(srcSender, index);
+        } else if (callbackType == uint256(CallbackType.FAIL)) {
+            bytes memory extraData = multiVaultData.extraFormData; // TODO read customForm type here
+            uint256 index = abi.decode(extraData, (uint256));
 
+            ISuperPositionBank bank = ISuperPositionBank(
+                superRegistry.superPositionBank()
+            );
+
+            bank.returnPositionBatch(srcSender, index);
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -893,6 +900,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
+    /// NOTE: Shouldn't this be ACCESS CONTROLed?
     function stateSync(AMBMessage memory data_) external payable override {
         if (msg.sender != superRegistry.coreStateRegistry())
             revert Error.REQUEST_DENIED();
@@ -901,28 +909,27 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             data_.txInfo
         );
 
+        /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
-            revert Error.INVALID_PAYLOAD();
+            if (callbackType != uint256(CallbackType.FAIL))
+                revert Error.INVALID_PAYLOAD();
 
         ReturnSingleData memory returnData = abi.decode(
             data_.params,
             (ReturnSingleData)
         );
 
-        (, , , uint80 returnTxId) = _decodeReturnTxInfo(
-            returnData.returnTxInfo
-        );
-        AMBMessage memory stored = txHistory[returnTxId];
-        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
-
-        if (multi) revert Error.INVALID_PAYLOAD();
-
-        (
-            bool status,
+        (   uint16 status,
             uint16 returnDataSrcChainId,
             uint16 returnDataDstChainId,
             uint80 returnDataTxId
         ) = _decodeReturnTxInfo(returnData.returnTxInfo);
+
+        AMBMessage memory stored = txHistory[returnDataTxId];
+        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
+
+        if (multi) revert Error.INVALID_PAYLOAD();
+
 
         InitSingleVaultData memory singleVaultData = abi.decode(
             stored.params,
@@ -940,16 +947,36 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             _getDestinationChain(singleVaultData.superFormId)
         ) revert Error.DST_CHAIN_IDS_MISMATCH();
 
-        if (txType == uint256(TransactionType.DEPOSIT) && status) {
+        if (txType == uint256(TransactionType.DEPOSIT)) {
             ISuperPositions(superRegistry.superPositions()).mintSingleSP(
                 srcSender,
                 singleVaultData.superFormId,
                 returnData.amount,
                 ""
             );
-        } else if (txType == uint256(TransactionType.WITHDRAW) && status) {
-            /// @dev FIXME: needs to call SuperPositionBank to burn the vault positions.
+        } else if (txType == uint256(TransactionType.WITHDRAW)) {
+            bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
+            uint256 index = abi.decode(extraData, (uint256));
 
+            /// FIXME: We can pack status into extraData, modify it on destination, but... should we modify it?
+            /// Everything has a drawback. Current solution with uint16 status packing is PoC.
+            if (status == 0) {
+                ISuperPositionBank bank = ISuperPositionBank(
+                    superRegistry.superPositionBank()
+                );
+
+                bank.burnPositionSingle(srcSender, index);
+            } else if (status == 1) {
+                /// requestUnlock happened on DST, we already hold position in superBank
+                /// TODO: NOTE: SO, now what? We need to verify _owner balance against another withdraw call!
+                emit Status(returnDataTxId, status);
+            } else {
+                /// @dev TODO: Placeholder
+                emit Status(returnDataTxId, status);
+            }
+
+            /// TODO: Address discrepancy between using and not using status, check TokenBank._dispatchPayload()
+        } else if (callbackType == uint256(CallbackType.FAIL)) {
             bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
             uint256 index = abi.decode(extraData, (uint256));
 
@@ -957,8 +984,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 superRegistry.superPositionBank()
             );
 
-            bank.burnPositionSingle(srcSender, index);
-
+            bank.returnPositionSingle(srcSender, index);
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -966,6 +992,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         emit Completed(returnDataTxId);
     }
 
+    /// @notice Executed by SuperPositionBank as callback to burn positions after withdraw cycle finishes
     function burnPositionSingle(
         address _owner,
         uint256 _tokenId,
@@ -978,6 +1005,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
     }
 
+    /// @notice Executed by SuperPositionBank as callback to burn positions after withdraw cycle finishes
     function burnPositionBatch(
         address _owner,
         uint256[] memory _tokenIds,
@@ -1181,5 +1209,25 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
 
         return true;
+    }
+
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external virtual returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
     }
 }

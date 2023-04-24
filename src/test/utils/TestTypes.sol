@@ -125,6 +125,7 @@ struct SetupVars {
     address superRBAC;
     Vm.Log[] logs;
     address superPositions;
+    address superPositionBank;
 }
 
 /*//////////////////////////////////////////////////////////////

@@ -12,7 +12,8 @@ enum TransactionType {
 
 enum CallbackType {
     INIT,
-    RETURN
+    RETURN,
+    FAIL /// @dev Used only in withdraw flow now
 }
 
 enum PayloadState {
