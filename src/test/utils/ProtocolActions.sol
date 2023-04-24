@@ -133,6 +133,8 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.vaultMock,
                         CHAIN_0,
                         DST_CHAINS[i],
+                        socketChainIds[CHAIN_0 - 1], /// @dev HACK to get socket src and dst chain ids
+                        socketChainIds[DST_CHAINS[i] - 1],
                         action.multiTx,
                         action.action
                     )
@@ -166,6 +168,8 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.vaultMock[0],
                         CHAIN_0,
                         DST_CHAINS[i],
+                        socketChainIds[CHAIN_0 - 1], /// @dev HACK to get socket src and dst chain ids
+                        socketChainIds[DST_CHAINS[i] - 1],
                         action.multiTx,
                         0,
                         address(0)
@@ -508,6 +512,7 @@ abstract contract ProtocolActions is BaseSetup {
                                 _batchProcessMultiTx(
                                     CHAIN_0,
                                     aV[i].toChainId,
+                                    socketChainIds[aV[i].toChainId - 1],
                                     vars.underlyingSrcToken,
                                     vars.amounts
                                 );
@@ -515,6 +520,7 @@ abstract contract ProtocolActions is BaseSetup {
                                 _processMultiTx(
                                     CHAIN_0,
                                     aV[i].toChainId,
+                                    socketChainIds[aV[i].toChainId - 1],
                                     singleSuperFormsData[i].liqRequest.token,
                                     singleSuperFormsData[i].amount
                                 );
@@ -672,6 +678,8 @@ abstract contract ProtocolActions is BaseSetup {
                 args.vaultMock[i],
                 args.srcChainId,
                 args.toChainId,
+                args.liquidityBridgeSrcChainId,
+                args.liquidityBridgeToChainId,
                 args.multiTx,
                 totalAmount,
                 sameUnderlyingCheck
@@ -783,7 +791,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.multiTx
                 ? getContract(args.toChainId, "MultiTxProcessor")
                 : args.toDst,
-            args.toChainId, /// @dev FIXME this must be socket's chain Id (we need to know the index to access itw)
+            args.liquidityBridgeToChainId,
             args.sameUnderlyingCheck != address(0)
                 ? args.totalAmount
                 : args.amount,
@@ -886,7 +894,7 @@ abstract contract ProtocolActions is BaseSetup {
         ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
             .UserRequest(
                 users[args.user],
-                args.srcChainId,
+                args.liquidityBridgeSrcChainId,
                 args.amount,
                 middlewareRequest,
                 bridgeRequest
@@ -1163,6 +1171,7 @@ abstract contract ProtocolActions is BaseSetup {
     function _processMultiTx(
         uint16 srcChainId_,
         uint16 targetChainId_,
+        uint256 liquidityBridgeDstChainId_,
         address underlyingToken_,
         uint256 amount_
     ) internal {
@@ -1199,7 +1208,7 @@ abstract contract ProtocolActions is BaseSetup {
         ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
             .UserRequest(
                 getContract(targetChainId_, "TokenBank"),
-                targetChainId_, /// @dev FIXME this must be socket's chain Id (we need to know the index to access itw)
+                liquidityBridgeDstChainId_,
                 amount_,
                 middlewareRequest,
                 bridgeRequest
@@ -1219,6 +1228,7 @@ abstract contract ProtocolActions is BaseSetup {
     function _batchProcessMultiTx(
         uint16 srcChainId_,
         uint16 targetChainId_,
+        uint256 liquidityBridgeDstChainId_,
         address[] memory underlyingTokens_,
         uint256[] memory amounts_
     ) internal {
@@ -1237,7 +1247,7 @@ abstract contract ProtocolActions is BaseSetup {
                     1, /// id
                     0, /// FIXME optional native amount
                     underlyingTokens_[i],
-                    abi.encode(
+                    abi.encode( /// @dev this abi.encode is only used for the mock purposes
                         getContract(targetChainId_, "MultiTxProcessor"),
                         FORKS[targetChainId_]
                     )
@@ -1247,7 +1257,7 @@ abstract contract ProtocolActions is BaseSetup {
                     1, /// id
                     0, /// FIXME optional native amount
                     underlyingTokens_[i],
-                    abi.encode(
+                    abi.encode( /// @dev this abi.encode is only used for the mock purposes
                         getContract(targetChainId_, "MultiTxProcessor"),
                         FORKS[targetChainId_]
                     )
@@ -1257,7 +1267,7 @@ abstract contract ProtocolActions is BaseSetup {
             ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
                 .UserRequest(
                     getContract(targetChainId_, "TokenBank"),
-                    targetChainId_, /// @dev FIXME this must be socket's chain Id (we need to know the index to access itw)
+                    liquidityBridgeDstChainId_,
                     amounts_[i],
                     middlewareRequest,
                     bridgeRequest

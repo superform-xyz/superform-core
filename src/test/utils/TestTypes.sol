@@ -145,6 +145,8 @@ struct SingleVaultCallDataArgs {
     address vaultMock;
     uint16 srcChainId;
     uint16 toChainId;
+    uint256 liquidityBridgeSrcChainId;
+    uint256 liquidityBridgeToChainId;
     bool multiTx;
     uint256 totalAmount;
     address sameUnderlyingCheck;
@@ -161,6 +163,8 @@ struct MultiVaultCallDataArgs {
     address[] vaultMock;
     uint16 srcChainId;
     uint16 toChainId;
+    uint256 liquidityBridgeSrcChainId;
+    uint256 liquidityBridgeToChainId;
     bool multiTx;
     Actions action;
 }
