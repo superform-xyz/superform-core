@@ -5,6 +5,11 @@ pragma solidity 0.8.19;
 import "./BaseSetup.sol";
 import "forge-std/console.sol";
 import "../../utils/DataPacking.sol";
+import {IPermit2} from "../../interfaces/IPermit2.sol";
+import {ISocketRegistry} from "../../interfaces/ISocketRegistry.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+
+import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     uint8 public primaryAMB;
@@ -93,7 +98,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
             /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
-            
+
             for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
                 if (
                     CHAIN_0 == DST_CHAINS[i] ||
@@ -128,15 +133,16 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.vaultMock,
                         CHAIN_0,
                         DST_CHAINS[i],
+                        socketChainIds[CHAIN_0 - 1], /// @dev HACK to get socket src and dst chain ids
+                        socketChainIds[DST_CHAINS[i] - 1],
                         action.multiTx,
                         action.action
                     )
                 );
             } else {
-
                 /// FIXME: NOTE: Shouldn't we validate that at contract level?
                 /// This reverting may give us invalid sense of security. Contract should revert here, not test.
-                
+
                 // if (
                 //     !((vars.underlyingSrcToken.length ==
                 //         vars.targetSuperFormIds.length) &&
@@ -162,14 +168,20 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.vaultMock[0],
                         CHAIN_0,
                         DST_CHAINS[i],
+                        socketChainIds[CHAIN_0 - 1], /// @dev HACK to get socket src and dst chain ids
+                        socketChainIds[DST_CHAINS[i] - 1],
                         action.multiTx,
                         0,
                         address(0)
                     );
 
-                if (action.action == Actions.Deposit) {
+                if (
+                    action.action == Actions.Deposit ||
+                    action.action == Actions.DepositPermit2
+                ) {
                     singleSuperFormsData[i] = _buildSingleVaultDepositCallData(
-                        singleVaultCallDataArgs
+                        singleVaultCallDataArgs,
+                        action.action
                     );
                 } else {
                     singleSuperFormsData[i] = _buildSingleVaultWithdrawCallData(
@@ -192,7 +204,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[CHAIN_0]);
 
         if (action.testType != TestType.RevertMainAction) {
-            vm.prank(action.user);
+            vm.prank(users[action.user]);
             /// @dev see @pigeon for this implementation
             vm.recordLogs();
             if (action.multiVaults) {
@@ -207,7 +219,10 @@ abstract contract ProtocolActions is BaseSetup {
                         action.msgValue
                     );
 
-                    if (action.action == Actions.Deposit)
+                    if (
+                        action.action == Actions.Deposit ||
+                        action.action == Actions.DepositPermit2
+                    )
                         superRouter.singleDstMultiVaultDeposit{
                             value: action.msgValue
                         }(vars.singleDstMultiVaultStateReq);
@@ -226,7 +241,10 @@ abstract contract ProtocolActions is BaseSetup {
                         action.msgValue
                     );
 
-                    if (action.action == Actions.Deposit)
+                    if (
+                        action.action == Actions.Deposit ||
+                        action.action == Actions.DepositPermit2
+                    )
                         superRouter.multiDstMultiVaultDeposit{
                             value: action.msgValue
                         }(vars.multiDstMultiVaultStateReq);
@@ -248,7 +266,10 @@ abstract contract ProtocolActions is BaseSetup {
                             action.msgValue
                         );
 
-                        if (action.action == Actions.Deposit)
+                        if (
+                            action.action == Actions.Deposit ||
+                            action.action == Actions.DepositPermit2
+                        )
                             superRouter.singleXChainSingleVaultDeposit{
                                 value: action.msgValue
                             }(vars.singleXChainSingleVaultStateReq);
@@ -265,7 +286,10 @@ abstract contract ProtocolActions is BaseSetup {
                             action.msgValue
                         );
 
-                        if (action.action == Actions.Deposit)
+                        if (
+                            action.action == Actions.Deposit ||
+                            action.action == Actions.DepositPermit2
+                        )
                             superRouter.singleDirectSingleVaultDeposit{
                                 value: action.msgValue
                             }(vars.singleDirectSingleVaultStateReq);
@@ -284,7 +308,10 @@ abstract contract ProtocolActions is BaseSetup {
                         action.adapterParam,
                         action.msgValue
                     );
-                    if (action.action == Actions.Deposit)
+                    if (
+                        action.action == Actions.Deposit ||
+                        action.action == Actions.DepositPermit2
+                    )
                         superRouter.multiDstSingleVaultDeposit{
                             value: action.msgValue
                         }(vars.multiDstSingleVaultStateReq);
@@ -365,7 +392,7 @@ abstract contract ProtocolActions is BaseSetup {
         LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
             internalVars.endpoints,
             internalVars.lzChainIds,
-            2000000, /// (change to 2000000) @dev FIXME: should be calculated automatically - This is the gas value to send - value needs to be tested and probably be lower
+            2500000, /// (change to 2000000) @dev FIXME: should be calculated automatically - This is the gas value to send - value needs to be tested and probably be lower
             internalVars.forkIds,
             vars.logs
         );
@@ -443,7 +470,10 @@ abstract contract ProtocolActions is BaseSetup {
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].toChainId = DST_CHAINS[i];
             if (CHAIN_0 != aV[i].toChainId) {
-                if (action.action == Actions.Deposit) {
+                if (
+                    action.action == Actions.Deposit ||
+                    action.action == Actions.DepositPermit2
+                ) {
                     unchecked {
                         PAYLOAD_ID[aV[i].toChainId]++;
                     }
@@ -480,13 +510,17 @@ abstract contract ProtocolActions is BaseSetup {
                                     actionIndex
                                 ];
                                 _batchProcessMultiTx(
+                                    CHAIN_0,
                                     aV[i].toChainId,
+                                    socketChainIds[aV[i].toChainId - 1],
                                     vars.underlyingSrcToken,
                                     vars.amounts
                                 );
                             } else {
                                 _processMultiTx(
+                                    CHAIN_0,
                                     aV[i].toChainId,
+                                    socketChainIds[aV[i].toChainId - 1],
                                     singleSuperFormsData[i].liqRequest.token,
                                     singleSuperFormsData[i].amount
                                 );
@@ -644,12 +678,20 @@ abstract contract ProtocolActions is BaseSetup {
                 args.vaultMock[i],
                 args.srcChainId,
                 args.toChainId,
+                args.liquidityBridgeSrcChainId,
+                args.liquidityBridgeToChainId,
                 args.multiTx,
                 totalAmount,
                 sameUnderlyingCheck
             );
-            if (args.action == Actions.Deposit) {
-                superFormData = _buildSingleVaultDepositCallData(callDataArgs);
+            if (
+                args.action == Actions.Deposit ||
+                args.action == Actions.DepositPermit2
+            ) {
+                superFormData = _buildSingleVaultDepositCallData(
+                    callDataArgs,
+                    args.action
+                );
             } else if (args.action == Actions.Withdraw) {
                 superFormData = _buildSingleVaultWithdrawCallData(callDataArgs);
             }
@@ -673,8 +715,19 @@ abstract contract ProtocolActions is BaseSetup {
                 vm.selectFork(FORKS[args.srcChainId]);
 
                 /// @dev - APPROVE transfer to SuperRouter (because of Socket)
-                vm.prank(args.user);
-                MockERC20(args.underlyingTokens[i]).approve(from, totalAmount);
+                vm.prank(users[args.user]);
+
+                if (args.action == Actions.DepositPermit2) {
+                    MockERC20(args.underlyingTokens[i]).approve(
+                        getContract(args.srcChainId, "CanonicalPermit2"),
+                        type(uint256).max
+                    );
+                } else if (args.action == Actions.Deposit) {
+                    MockERC20(args.underlyingTokens[i]).approve(
+                        from,
+                        totalAmount
+                    );
+                }
 
                 vm.selectFork(initialFork);
             } else if (sameUnderlyingCheck == address(0)) {
@@ -691,58 +744,128 @@ abstract contract ProtocolActions is BaseSetup {
         );
     }
 
-    function _buildSingleVaultDepositCallData(
-        SingleVaultCallDataArgs memory args
-    ) internal returns (SingleVaultSFData memory superFormData) {
-        uint256 initialFork = vm.activeFork();
+    struct SingleVaultDepositLocalVars {
+        uint256 initialFork;
+        address from;
+        ISocketRegistry.BridgeRequest bridgeRequest;
+        ISocketRegistry.MiddlewareRequest middlewareRequest;
+        ISocketRegistry.UserRequest userRequest;
+        IPermit2.PermitTransferFrom permit;
+        bytes socketTxDataV2;
+        bytes sig;
+        bytes permit2Calldata;
+        LiqRequest liqReq;
+    }
 
-        address from = args.fromSrc;
+    function _buildSingleVaultDepositCallData(
+        SingleVaultCallDataArgs memory args,
+        Actions action
+    ) internal returns (SingleVaultSFData memory superFormData) {
+        SingleVaultDepositLocalVars memory v;
+        v.initialFork = vm.activeFork();
+
+        v.from = args.fromSrc;
 
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is Form
-            from = args.toDst;
+            v.from = args.toDst;
         }
-        /// @dev check this from down here when contracts are fixed for multi vault
-        /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
-        bytes memory socketTxData = abi.encodeWithSignature(
-            "mockSocketTransfer(address,address,address,uint256,uint256)",
-            from,
+
+        if (args.srcChainId == args.toChainId) {
+            v.middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1, /// id
+                0, /// FIXME optional native amount
+                args.underlyingToken,
+                abi.encode(v.from, FORKS[args.toChainId])
+            );
+        } else {
+            v.bridgeRequest = ISocketRegistry.BridgeRequest(
+                1, /// id
+                0, /// FIXME optional native amount
+                args.underlyingToken,
+                abi.encode(v.from, FORKS[args.toChainId])
+            );
+        }
+
+        v.userRequest = ISocketRegistry.UserRequest(
             args.multiTx
                 ? getContract(args.toChainId, "MultiTxProcessor")
-                : args.toDst, /// NOTE: TokenBank address / Form address???
-            args.underlyingToken,
+                : args.toDst,
+            args.liquidityBridgeToChainId,
             args.sameUnderlyingCheck != address(0)
                 ? args.totalAmount
                 : args.amount,
-            FORKS[args.toChainId]
+            v.middlewareRequest,
+            v.bridgeRequest
         );
 
-        LiqRequest memory liqReq = LiqRequest(
+        v.socketTxDataV2 = abi.encodeWithSelector(
+            SocketRouterMock.outboundTransferTo.selector,
+            v.userRequest
+        );
+
+        /// @dev permit2 calldata
+        if (action == Actions.DepositPermit2) {
+            v.permit = IPermit2.PermitTransferFrom({
+                permitted: IPermit2.TokenPermissions({
+                    token: IERC20(address(args.underlyingToken)),
+                    amount: args.sameUnderlyingCheck != address(0)
+                        ? args.totalAmount
+                        : args.amount
+                }),
+                nonce: _randomUint256(),
+                deadline: block.timestamp
+            });
+            v.sig = _signPermit(
+                v.permit,
+                v.from,
+                userKeys[args.user],
+                args.srcChainId
+            ); /// @dev from is either SuperRouter (xchain) or the form (direct deposit)
+
+            v.permit2Calldata = abi.encode(
+                v.permit.nonce,
+                v.permit.deadline,
+                v.sig
+            );
+        }
+
+        /// @dev FIXME: currently only producing liqRequests for non-permit2 ERC20 transfers!!!
+        /// @dev TODO: need to test native requests and permit2 requests
+        v.liqReq = LiqRequest(
             1, /// @dev FIXME: hardcoded for now
-            socketTxData,
+            v.socketTxDataV2,
             args.underlyingToken,
-            getContract(args.srcChainId, "SocketRouterMockFork"),
             args.sameUnderlyingCheck != address(0)
                 ? args.totalAmount
                 : args.amount,
-            0
+            0,
+            v.permit2Calldata /// @dev will be empty if action == Actions.Deposit
         );
 
         if (args.sameUnderlyingCheck == address(0)) {
             vm.selectFork(FORKS[args.srcChainId]);
 
             /// @dev - APPROVE transfer to SuperRouter (because of Socket)
-            vm.prank(args.user);
-            MockERC20(args.underlyingToken).approve(from, args.amount);
+            vm.prank(users[args.user]);
 
-            vm.selectFork(initialFork);
+            if (action == Actions.DepositPermit2) {
+                MockERC20(args.underlyingToken).approve(
+                    getContract(args.srcChainId, "CanonicalPermit2"),
+                    type(uint256).max
+                );
+            } else {
+                MockERC20(args.underlyingToken).approve(v.from, args.amount);
+            }
+
+            vm.selectFork(v.initialFork);
         }
 
         superFormData = SingleVaultSFData(
             args.superFormId,
             args.amount,
             args.maxSlippage,
-            liqReq,
+            v.liqReq,
             ""
         );
     }
@@ -750,24 +873,45 @@ abstract contract ProtocolActions is BaseSetup {
     function _buildSingleVaultWithdrawCallData(
         SingleVaultCallDataArgs memory args
     ) internal view returns (SingleVaultSFData memory superFormData) {
-        /// @dev check this from down here when contracts are fixed for multi vault
-        /// @dev build socket tx data for a mock socket transfer (using new Mock contract because of the two forks)
-        bytes memory socketTxData = abi.encodeWithSignature(
-            "mockSocketTransfer(address,address,address,uint256,uint256)",
-            args.toDst,
-            args.user,
-            args.underlyingToken,
-            args.amount,
-            FORKS[args.toChainId]
+        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+        ISocketRegistry.BridgeRequest memory bridgeRequest;
+        if (args.srcChainId == args.toChainId) {
+            middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1, /// id
+                0, /// FIXME optional native amount
+                args.underlyingToken,
+                abi.encode(args.toDst, FORKS[args.srcChainId])
+            );
+        } else {
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                1, /// id
+                0, /// FIXME optional native amount
+                args.underlyingToken,
+                abi.encode(args.toDst, FORKS[args.srcChainId])
+            );
+        }
+
+        ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
+            .UserRequest(
+                users[args.user],
+                args.liquidityBridgeSrcChainId,
+                args.amount,
+                middlewareRequest,
+                bridgeRequest
+            );
+
+        bytes memory socketTxDataV2 = abi.encodeWithSelector(
+            SocketRouterMock.outboundTransferTo.selector,
+            userRequest
         );
 
         LiqRequest memory liqReq = LiqRequest(
             1, /// @dev FIXME: hardcoded for now
-            socketTxData,
+            socketTxDataV2,
             args.underlyingToken,
-            getContract(args.srcChainId, "SocketRouterMockFork"),
             args.amount,
-            0
+            0,
+            ""
         );
 
         superFormData = SingleVaultSFData(
@@ -1023,8 +1167,11 @@ abstract contract ProtocolActions is BaseSetup {
         return true;
     }
 
+    /// @dev FIXME: only works for socket
     function _processMultiTx(
+        uint16 srcChainId_,
         uint16 targetChainId_,
+        uint256 liquidityBridgeDstChainId_,
         address underlyingToken_,
         uint256 amount_
     ) internal {
@@ -1032,31 +1179,56 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[targetChainId_]);
 
         vm.prank(deployer);
-        /// @dev builds the data to be processed by the keeper contract.
-        /// @dev at this point the tokens are delivered to the multi-tx processor on the destination chain.
-        bytes memory socketTxData = abi.encodeWithSignature(
-            "mockSocketTransfer(address,address,address,uint256,uint256)",
-            getContract(targetChainId_, "MultiTxProcessor"),
-            getContract(targetChainId_, "TokenBank"),
-            underlyingToken_,
-            amount_, /// @dev FIXME -  not testing sum of amounts (different vaults)
-            FORKS[targetChainId_]
+
+        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+        ISocketRegistry.BridgeRequest memory bridgeRequest;
+
+        if (srcChainId_ == targetChainId_) {
+            middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1, /// id
+                0, /// FIXME optional native amount
+                underlyingToken_,
+                abi.encode(
+                    getContract(targetChainId_, "MultiTxProcessor"),
+                    FORKS[targetChainId_]
+                )
+            );
+        } else {
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                1, /// id
+                0, /// FIXME optional native amount
+                underlyingToken_,
+                abi.encode(
+                    getContract(targetChainId_, "MultiTxProcessor"),
+                    FORKS[targetChainId_]
+                )
+            );
+        }
+
+        ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
+            .UserRequest(
+                getContract(targetChainId_, "TokenBank"),
+                liquidityBridgeDstChainId_,
+                amount_,
+                middlewareRequest,
+                bridgeRequest
+            );
+
+        bytes memory socketTxDataV2 = abi.encodeWithSelector(
+            SocketRouterMock.outboundTransferTo.selector,
+            userRequest
         );
 
         MultiTxProcessor(
             payable(getContract(targetChainId_, "MultiTxProcessor"))
-        ).processTx(
-                bridgeIds[0],
-                socketTxData,
-                underlyingToken_,
-                getContract(targetChainId_, "SocketRouterMockFork"),
-                amount_
-            );
+        ).processTx(bridgeIds[0], socketTxDataV2, underlyingToken_, amount_);
         vm.selectFork(initialFork);
     }
 
     function _batchProcessMultiTx(
+        uint16 srcChainId_,
         uint16 targetChainId_,
+        uint256 liquidityBridgeDstChainId_,
         address[] memory underlyingTokens_,
         uint256[] memory amounts_
     ) internal {
@@ -1064,18 +1236,46 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[targetChainId_]);
 
         vm.prank(deployer);
-        /// @dev builds the data to be processed by the keeper contract.
-        /// @dev at this point the tokens are delivered to the multi-tx processor on the destination chain.
-        bytes[] memory socketTxDatas = new bytes[](underlyingTokens_.length);
+
+        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+        ISocketRegistry.BridgeRequest memory bridgeRequest;
+        bytes[] memory socketTxDatasV2 = new bytes[](underlyingTokens_.length);
 
         for (uint256 i = 0; i < underlyingTokens_.length; i++) {
-            socketTxDatas[i] = abi.encodeWithSignature(
-                "mockSocketTransfer(address,address,address,uint256,uint256)",
-                getContract(targetChainId_, "MultiTxProcessor"),
-                getContract(targetChainId_, "TokenBank"),
-                underlyingTokens_[i],
-                amounts_[i], /// @dev FIXME -  not testing sum of amounts (different vaults)
-                FORKS[targetChainId_]
+            if (srcChainId_ == targetChainId_) {
+                middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                    1, /// id
+                    0, /// FIXME optional native amount
+                    underlyingTokens_[i],
+                    abi.encode( /// @dev this abi.encode is only used for the mock purposes
+                        getContract(targetChainId_, "MultiTxProcessor"),
+                        FORKS[targetChainId_]
+                    )
+                );
+            } else {
+                bridgeRequest = ISocketRegistry.BridgeRequest(
+                    1, /// id
+                    0, /// FIXME optional native amount
+                    underlyingTokens_[i],
+                    abi.encode( /// @dev this abi.encode is only used for the mock purposes
+                        getContract(targetChainId_, "MultiTxProcessor"),
+                        FORKS[targetChainId_]
+                    )
+                );
+            }
+
+            ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
+                .UserRequest(
+                    getContract(targetChainId_, "TokenBank"),
+                    liquidityBridgeDstChainId_,
+                    amounts_[i],
+                    middlewareRequest,
+                    bridgeRequest
+                );
+
+            socketTxDatasV2[i] = abi.encodeWithSelector(
+                SocketRouterMock.outboundTransferTo.selector,
+                userRequest
             );
         }
 
@@ -1083,9 +1283,8 @@ abstract contract ProtocolActions is BaseSetup {
             payable(getContract(targetChainId_, "MultiTxProcessor"))
         ).batchProcessTx(
                 bridgeIds[0],
-                socketTxDatas,
+                socketTxDatasV2,
                 underlyingTokens_,
-                getContract(targetChainId_, "SocketRouterMockFork"),
                 amounts_
             );
         vm.selectFork(initialFork);

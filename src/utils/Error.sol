@@ -54,8 +54,17 @@ library Error {
     /// @dev error thrown when the safe gas param is incorrectly set
     error INVALID_GAS_OVERRIDE();
 
-    /// @dev error thrown if function callability has been disabled
     error DISABLED();
+
+    /*///////////////////////////////////////////////////////////////
+                         LIQUIDITY BRIDGE ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev when the input token is not valid
+    error INVALID_INPUT_TOKEN();
+
+    /// @dev when validation of bridge txData fails due to wrong receiver
+    error INVALID_RECEIVER();
 
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
@@ -148,6 +157,19 @@ library Error {
 
     /// @dev is emitted if the payload status is invalid
     error INVALID_PAYLOAD_STATUS();
+
+    /*///////////////////////////////////////////////////////////////
+                        LIQUIDITY HANDLER ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev is emitted if liquidity bridge fails for erc20 tokens
+    error FAILED_TO_EXECUTE_TXDATA();
+
+    /// @dev is emitted if liquidity bridge fails for native tokens
+    error FAILED_TO_EXECUTE_TXDATA_NATIVE();
+
+    /// @dev if native amount is not at least equal to the amount in the request
+    error INSUFFICIENT_NATIVE_AMOUNT();
 
     /*///////////////////////////////////////////////////////////////
                             FORM ERRORS

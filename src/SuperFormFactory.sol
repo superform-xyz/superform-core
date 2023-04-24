@@ -1,5 +1,6 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
+
 import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 import {BeaconProxy} from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
 import {FormBeacon} from "./forms/FormBeacon.sol";

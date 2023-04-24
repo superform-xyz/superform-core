@@ -41,14 +41,14 @@ contract Scenario7Test is ProtocolActions {
         MAX_SLIPPAGE[ARBI][1] = [1000, 1000, 1000];
 
         /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+        uint256 msgValue = 5 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: true, //!!WARNING turn on or off multi vaults
-                user: users[0],
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
@@ -63,7 +63,7 @@ contract Scenario7Test is ProtocolActions {
             TestAction({
                 action: Actions.Withdraw,
                 multiVaults: true, //!!WARNING turn on or off multi vaults
-                user: users[0],
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
@@ -120,7 +120,10 @@ contract Scenario7Test is ProtocolActions {
                 continue;
             }
 
-            if (action.action == Actions.Deposit) {
+            if (
+                action.action == Actions.Deposit ||
+                action.action == Actions.DepositPermit2
+            ) {
                 success = _stage5_process_superPositions_mint(action, vars);
                 if (!success) {
                     continue;

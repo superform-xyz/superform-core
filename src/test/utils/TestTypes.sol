@@ -13,7 +13,8 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 //////////////////////////////////////////////////////////////*/
 enum Actions {
     Deposit,
-    Withdraw
+    Withdraw,
+    DepositPermit2
 }
 
 enum LiquidityChange {
@@ -70,7 +71,7 @@ struct MessagingAssertVars {
 struct TestAction {
     Actions action;
     bool multiVaults;
-    address user;
+    uint256 user;
     TestType testType;
     bytes4 revertError;
     bytes32 revertRole; // temporary until errors are added to RBAC libraries
@@ -123,6 +124,8 @@ struct SetupVars {
     address multiTxProcessor;
     address superRegistry;
     address superRBAC;
+    address canonicalPermit2;
+    address socketValidator;
     Vm.Log[] logs;
     address superPositions;
 }
@@ -132,7 +135,7 @@ struct SetupVars {
 //////////////////////////////////////////////////////////////*/
 
 struct SingleVaultCallDataArgs {
-    address user;
+    uint256 user;
     address fromSrc;
     address toDst;
     address underlyingToken;
@@ -142,13 +145,15 @@ struct SingleVaultCallDataArgs {
     address vaultMock;
     uint16 srcChainId;
     uint16 toChainId;
+    uint256 liquidityBridgeSrcChainId;
+    uint256 liquidityBridgeToChainId;
     bool multiTx;
     uint256 totalAmount;
     address sameUnderlyingCheck;
 }
 
 struct MultiVaultCallDataArgs {
-    address user;
+    uint256 user;
     address fromSrc;
     address[] toDst;
     address[] underlyingTokens;
@@ -158,6 +163,8 @@ struct MultiVaultCallDataArgs {
     address[] vaultMock;
     uint16 srcChainId;
     uint16 toChainId;
+    uint256 liquidityBridgeSrcChainId;
+    uint256 liquidityBridgeToChainId;
     bool multiTx;
     Actions action;
 }
