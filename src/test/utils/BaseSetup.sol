@@ -14,6 +14,7 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev test utils & mocks
 import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
+import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
@@ -38,6 +39,7 @@ import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
+import {SocketValidator} from "../../crosschain-liquidity/socket/SocketValidator.sol";
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
 import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
@@ -108,6 +110,8 @@ abstract contract BaseSetup is DSTest, Test {
     uint8[] bridgeIds;
     /// @dev liquidity bridge addresses
     address[] bridgeAddresses;
+    /// @dev liquidity validator addresses
+    address[] bridgeValidators;
 
     /// @dev setup amb bridges
     /// @notice id 1 is layerzero
@@ -136,7 +140,7 @@ abstract contract BaseSetup is DSTest, Test {
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
     /// @dev removed FTM temporarily
-    address[6] public lzEndpoints = [
+    address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -145,7 +149,7 @@ abstract contract BaseSetup is DSTest, Test {
         0x3c2269811836af69497E5F486A85D7316753cf62
     ];
 
-    address[6] public hyperlaneMailboxes = [
+    address[] public hyperlaneMailboxes = [
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
@@ -155,7 +159,7 @@ abstract contract BaseSetup is DSTest, Test {
     ];
 
     /*
-    address[7] public lzEndpoints = [
+    address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -181,7 +185,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint16 public constant OP = 6;
     //uint16 public constant FTM = 7;
 
-    uint16[6] public chainIds = [1, 2, 3, 4, 5, 6];
+    uint16[] public chainIds = [1, 2, 3, 4, 5, 6];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -192,8 +196,10 @@ abstract contract BaseSetup is DSTest, Test {
     uint16 public constant LZ_OP = 111;
     //uint16 public constant LZ_FTM = 112;
 
-    uint16[6] public lz_chainIds = [101, 102, 106, 109, 110, 111];
-    uint32[6] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+    uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
+    uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+    /// @dev FIXME to fix with correct chainIds
+    uint256[] public socketChainIds = [1, 2, 3, 4, 5, 6];
 
     // uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
     // uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
@@ -400,15 +406,27 @@ abstract contract BaseSetup is DSTest, Test {
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
 
-            /// @dev 6- deploy SocketRouterMockFork
-            vars.socketRouter = address(new SocketRouterMockFork{salt: salt}());
-            contracts[vars.chainId][
-                bytes32(bytes("SocketRouterMockFork"))
-            ] = vars.socketRouter;
+            /// @dev 6- deploy SocketRouterMock
+            vars.socketRouter = address(new SocketRouterMock{salt: salt}());
+            contracts[vars.chainId][bytes32(bytes("SocketRouterMock"))] = vars
+                .socketRouter;
             vm.allowCheatcodes(vars.socketRouter);
+
+            /// @dev 6- deploy socket validator
+            vars.socketValidator = address(
+                new SocketValidator{salt: salt}(vars.superRegistry)
+            );
+            contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars
+                .socketValidator;
+
+            SocketValidator(vars.socketValidator).setChainIds(
+                chainIds,
+                socketChainIds
+            );
 
             if (i == 0) {
                 bridgeAddresses.push(vars.socketRouter);
+                bridgeValidators.push(vars.socketValidator);
             }
 
             /// @dev 7.1 - Deploy UNDERLYING_TOKENS and VAULTS
@@ -541,11 +559,16 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
                 .multiTxProcessor;
 
+            SuperRegistry(vars.superRegistry).setMultiTxProcessor(
+                vars.multiTxProcessor
+            );
+
             /// @dev 15 - Super Registry extra setters
 
-            SuperRegistry(vars.superRegistry).setBridgeAddress(
+            SuperRegistry(vars.superRegistry).setBridgeAddresses(
                 bridgeIds,
-                bridgeAddresses
+                bridgeAddresses,
+                bridgeValidators
             );
 
             /// @dev configures lzImplementation and hyperlane to super registry

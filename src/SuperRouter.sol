@@ -13,6 +13,7 @@ import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {IFormBeacon} from "./interfaces/IFormBeacon.sol";
+import {IBridgeValidator} from "./interfaces/IBridgeValidator.sol";
 import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
@@ -145,11 +146,25 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             for (uint256 j = 0; j < vars.liqRequestsLen; j++) {
                 vars.liqRequest = req.superFormsData.liqRequests[j];
                 /// @dev dispatch liquidity data
+                (address superForm, , ) = _getSuperForm(
+                    req.superFormsData.superFormIds[j]
+                );
+
+                IBridgeValidator(
+                    superRegistry.getBridgeValidator(vars.liqRequest.bridgeId)
+                ).validateTxData(
+                        vars.liqRequest.txData,
+                        vars.srcChainId,
+                        vars.dstChainId,
+                        true,
+                        superForm,
+                        vars.srcSender
+                    );
+
                 dispatchTokens(
                     superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
                     vars.liqRequest.txData,
                     vars.liqRequest.token,
-                    vars.liqRequest.isERC20,
                     vars.liqRequest.amount,
                     vars.srcSender,
                     vars.liqRequest.nativeAmount,
@@ -255,12 +270,25 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
 
         vars.liqRequest = req.superFormData.liqRequest;
+
+        (address superForm, , ) = _getSuperForm(req.superFormData.superFormId);
+
+        IBridgeValidator(
+            superRegistry.getBridgeValidator(vars.liqRequest.bridgeId)
+        ).validateTxData(
+                vars.liqRequest.txData,
+                vars.srcChainId,
+                vars.dstChainId,
+                true,
+                superForm,
+                vars.srcSender
+            );
+
         /// @dev dispatch liquidity data
         dispatchTokens(
             superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
             vars.liqRequest.txData,
             vars.liqRequest.token,
-            vars.liqRequest.isERC20, /// to be removed
             vars.liqRequest.amount,
             vars.srcSender,
             vars.liqRequest.nativeAmount,

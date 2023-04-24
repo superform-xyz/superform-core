@@ -9,6 +9,7 @@ import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
+import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
@@ -194,13 +195,26 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 singleVaultData_.liqData.amount
             );
         } else {
+            uint16 chainId = superRegistry.chainId();
+            IBridgeValidator(
+                superRegistry.getBridgeValidator(
+                    singleVaultData_.liqData.bridgeId
+                )
+            ).validateTxData(
+                    singleVaultData_.liqData.txData,
+                    chainId,
+                    chainId,
+                    true,
+                    address(this),
+                    srcSender
+                );
+
             dispatchTokens(
                 superRegistry.getBridgeAddress(
                     singleVaultData_.liqData.bridgeId
                 ),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                singleVaultData_.liqData.isERC20,
                 singleVaultData_.liqData.amount,
                 srcSender,
                 singleVaultData_.liqData.nativeAmount,
@@ -254,13 +268,28 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 if (singleVaultData_.liqData.amount > singleVaultData_.amount)
                     revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
+                uint16 chainId = superRegistry.chainId();
+
+                /// @dev NOTE: only allows withdraws to same chain
+                IBridgeValidator(
+                    superRegistry.getBridgeValidator(
+                        singleVaultData_.liqData.bridgeId
+                    )
+                ).validateTxData(
+                        singleVaultData_.liqData.txData,
+                        chainId,
+                        chainId,
+                        false,
+                        address(this),
+                        srcSender
+                    );
+
                 dispatchTokens(
                     superRegistry.getBridgeAddress(
                         singleVaultData_.liqData.bridgeId
                     ),
                     singleVaultData_.liqData.txData,
                     singleVaultData_.liqData.token,
-                    singleVaultData_.liqData.isERC20,
                     singleVaultData_.liqData.amount,
                     address(this),
                     singleVaultData_.liqData.nativeAmount,
@@ -349,6 +378,21 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 );
 
                 vars.balanceBefore = ERC20(v.asset()).balanceOf(address(this));
+
+                /// @dev NOTE: only allows withdraws back to source
+                IBridgeValidator(
+                    superRegistry.getBridgeValidator(
+                        singleVaultData_.liqData.bridgeId
+                    )
+                ).validateTxData(
+                        singleVaultData_.liqData.txData,
+                        vars.dstChainId,
+                        vars.srcChainId,
+                        false,
+                        address(this),
+                        vars.srcSender
+                    );
+
                 /// Note Send Tokens to Source Chain
                 /// FEAT Note: We could also allow to pass additional chainId arg here
                 /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
@@ -358,7 +402,6 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                     ),
                     singleVaultData_.liqData.txData,
                     singleVaultData_.liqData.token,
-                    singleVaultData_.liqData.isERC20,
                     vars.dstAmount,
                     address(this),
                     singleVaultData_.liqData.nativeAmount,
