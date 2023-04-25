@@ -500,7 +500,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             revert Error.INVALID_CHAIN_IDS();
 
         /// @dev validate superFormsData
-
         if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
             revert Error.INVALID_SUPERFORMS_DATA();
 
