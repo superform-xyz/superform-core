@@ -11,6 +11,10 @@ import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
+
+
 abstract contract ProtocolActions is BaseSetup {
     uint8 public primaryAMB;
 
@@ -924,9 +928,18 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _buildSingleVaultWithdrawCallData(
         SingleVaultCallDataArgs memory args
-    ) internal view returns (SingleVaultSFData memory superFormData) {
+    ) internal returns (SingleVaultSFData memory superFormData) {
         ISocketRegistry.MiddlewareRequest memory middlewareRequest;
         ISocketRegistry.BridgeRequest memory bridgeRequest;
+        
+        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        address _stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
+        IERC1155 superPositions = IERC1155(
+            ISuperRegistry(_stateRegistry).superPositions()
+        );
+        vm.prank(users[args.user]);
+        superPositions.setApprovalForAll(_superRouter, true);
+
         if (args.srcChainId == args.toChainId) {
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
                 1, /// id

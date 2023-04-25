@@ -123,9 +123,7 @@ contract Scenario7Test is ProtocolActions {
                 vars
             ) = _stage1_buildReqData(action, act);
 
-            /// @dev TODO: Remove MAX APPROVE and use SINGLE APPROVE with amount
-            vm.prank(action.user);
-            superPositions.setApprovalForAll(address(superRouter), true);
+            /// @dev NOTE: setApprovalForAll happens in _buildSingleVaultWithdrawCallData
 
             vars = _stage2_run_src_action(
                 action,
