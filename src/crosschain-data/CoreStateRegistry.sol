@@ -203,11 +203,17 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payloadInfo.txInfo
         );
 
+        bytes memory data;
+
         if (multi) {
             if (txType == uint256(TransactionType.WITHDRAW)) {
-                _processMultiWithdrawal(payloadId_, callbackType, payloadInfo);
+                data = _processMultiWithdrawal(
+                    payloadId_,
+                    callbackType,
+                    payloadInfo
+                );
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                _processMultiDeposit(
+                data = _processMultiDeposit(
                     payloadId_,
                     callbackType,
                     payloadInfo,
@@ -216,9 +222,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
         } else {
             if (txType == uint256(TransactionType.WITHDRAW)) {
-                _processSingleWithdrawal(payloadId_, callbackType, payloadInfo);
+                data = _processSingleWithdrawal(
+                    payloadId_,
+                    callbackType,
+                    payloadInfo
+                );
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                _processSingleDeposit(
+                data = _processSingleDeposit(
                     payloadId_,
                     callbackType,
                     payloadInfo,
@@ -226,6 +236,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 );
             }
         }
+        /// send the acknowledgement here
     }
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to revert Error.payload that fail to revert Error.state changes on source chain.
