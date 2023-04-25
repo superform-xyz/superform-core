@@ -23,9 +23,7 @@ contract Scenario8Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationSingleVault Deposit test case with permit2
 
-        primaryAMB = 1;
-
-        secondaryAMBs = [2];
+        AMBs = [1, 2];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];

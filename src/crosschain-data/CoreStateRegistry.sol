@@ -202,17 +202,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payloadInfo.txInfo
         );
 
-        bytes memory data;
-
         if (multi) {
             if (txType == uint256(TransactionType.WITHDRAW)) {
-                data = _processMultiWithdrawal(
-                    payloadId_,
-                    callbackType,
-                    payloadInfo
-                );
+                _processMultiWithdrawal(payloadId_, callbackType, payloadInfo);
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                data = _processMultiDeposit(
+                _processMultiDeposit(
                     payloadId_,
                     callbackType,
                     payloadInfo,
@@ -221,13 +215,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
         } else {
             if (txType == uint256(TransactionType.WITHDRAW)) {
-                data = _processSingleWithdrawal(
-                    payloadId_,
-                    callbackType,
-                    payloadInfo
-                );
+                _processSingleWithdrawal(payloadId_, callbackType, payloadInfo);
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                data = _processSingleDeposit(
+                _processSingleDeposit(
                     payloadId_,
                     callbackType,
                     payloadInfo,
@@ -235,7 +225,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 );
             }
         }
-        /// send the acknowledgement here
     }
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to revert Error.payload that fail to revert Error.state changes on source chain.
@@ -263,23 +252,26 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         (, , bool multi, ) = _decodeTxInfo(payloadInfo.txInfo);
 
-        uint16 chainId = superRegistry.chainId();
         if (multi) {
             InitMultiVaultData memory multiVaultData = abi.decode(
                 payloadInfo.params,
                 (InitMultiVaultData)
             );
 
-            if (chainId != _getDestinationChain(multiVaultData.superFormIds[0]))
-                revert Error.INVALID_PAYLOAD_STATE();
+            if (
+                superRegistry.chainId() !=
+                _getDestinationChain(multiVaultData.superFormIds[0])
+            ) revert Error.INVALID_PAYLOAD_STATE();
         } else {
             InitSingleVaultData memory singleVaultData = abi.decode(
                 payloadInfo.params,
                 (InitSingleVaultData)
             );
 
-            if (chainId != _getDestinationChain(singleVaultData.superFormId))
-                revert Error.INVALID_PAYLOAD_STATE();
+            if (
+                superRegistry.chainId() !=
+                _getDestinationChain(singleVaultData.superFormId)
+            ) revert Error.INVALID_PAYLOAD_STATE();
         }
 
         /// NOTE: Send `data` back to source based on AmbID to revert Error.the state.
