@@ -103,7 +103,7 @@ contract SuperFormFactory is ISuperFormFactory {
     function createSuperForm(
         uint256 formBeaconId_, /// TimelockedBeaconId, NormalBeaconId... etc
         address vault_,
-        bytes calldata broadcastParams_
+        bytes calldata extraData_
     )
         external
         payable
@@ -142,16 +142,16 @@ contract SuperFormFactory is ISuperFormFactory {
 
         AMBFactoryMessage memory data = AMBFactoryMessage(superFormId_, vault_);
 
-        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8[] memory ambIds = new uint8[](2);
-        ambIds[0] = 2;
-        ambIds[1] = 1;
-
+        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(
+            extraData_,
+            (uint8[], bytes)
+        );
+        /// FIXME: add validations for extra data / check if invalid data fails at registry level
         IBaseStateRegistry(superRegistry.factoryStateRegistry())
             .broadcastPayload{value: msg.value}(
             ambIds,
             abi.encode(data),
-            broadcastParams_
+            broadcastParams
         );
 
         emit SuperFormCreated(formBeaconId_, vault_, superFormId_, superForm_);
