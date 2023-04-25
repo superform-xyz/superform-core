@@ -100,6 +100,8 @@ contract Scenario8Test is ProtocolActions {
                 vars
             ) = _stage1_buildReqData(action, act);
 
+            /// @dev NOTE: setApprovalForAll happens in _buildSingleVaultWithdrawCallData
+
             vars = _stage2_run_src_action(
                 action,
                 multiSuperFormsData,
@@ -134,6 +136,11 @@ contract Scenario8Test is ProtocolActions {
                 if (!success) {
                     continue;
                 }
+            }
+
+            if (action.action == Actions.Withdraw) {
+                /// @dev Process payload received on source from destination (withdraw callback)
+                success = _stage6_process_superPositions_withdraw(action, vars);
             }
         }
     }

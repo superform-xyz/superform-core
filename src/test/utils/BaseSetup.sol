@@ -46,6 +46,10 @@ import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
 
+
+import {SuperPositionBank} from "../../SuperPositionBank.sol";
+import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
+
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
 
@@ -545,6 +549,19 @@ abstract contract BaseSetup is DSTest, Test {
                 new SuperPositions{salt: salt}("test.com/", vars.superRegistry)
             );
 
+            /// @dev 13.1 - Deploy SuperPositionsBank
+            vars.superPositionBank = address(
+                new SuperPositionBank(ISuperPositions(vars.superPositions), ISuperRouter(vars.superRouter))
+            );
+
+            /// @dev 13.2 - setSuperPositionsBank
+            SuperRegistry(vars.superRegistry).setSuperPositionBank(
+                vars.superPositionBank
+            );
+
+            contracts[vars.chainId][bytes32(bytes("SuperPositionBank"))] = vars
+                .superPositionBank;
+
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
                 .superPositions;
 
@@ -756,7 +773,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             uint256 multiplier = _getPriceMultiplier(chainIds[i]);
 
-            uint256 amountDeployer = 100000 * multiplier * 1e18;
+            uint256 amountDeployer = 10000000 * multiplier * 1e18;
             uint256 amountUSER = 1000 * multiplier * 1e18;
 
             vm.deal(deployer, amountDeployer);

@@ -292,29 +292,37 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         );
     }
 
+    /// @dev Joao- needed to add this due to stack too deep error
+    struct xChainWithdrawLocalVars {
+        uint16 dstChainId;
+        uint16 srcChainId;
+        uint80 txId;
+        address vaultLoc;
+        address srcSender;
+        uint256 dstAmount;
+        uint256 balanceBefore;
+        uint256 balanceAfter;
+    }
+
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual override {
-        (, , uint16 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
-        address vaultLoc = vault;
-        uint256 dstAmount;
+    ) internal virtual override returns (uint16 status){
+        xChainWithdrawLocalVars memory vars;
+        (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
+        vars.vaultLoc = vault;
 
-        ERC4626 v = ERC4626(vaultLoc);
+        ERC4626 v = ERC4626(vars.vaultLoc);
 
-        (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(
+        (vars.srcSender, vars.srcChainId, vars.txId) = _decodeTxData(
             singleVaultData_.txData
         );
 
         if (singleVaultData_.liqData.txData.length != 0) {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
-            dstAmount = v.redeem(
-                singleVaultData_.amount,
-                address(this),
-                address(this)
-            );
+            vars.dstAmount = v.redeem(singleVaultData_.amount, address(this), address(this));
 
-            uint256 balanceBefore = ERC20(v.asset()).balanceOf(address(this));
+            vars.balanceBefore = ERC20(v.asset()).balanceOf(address(this));
 
             /// @dev NOTE: only allows withdraws back to source
             IBridgeValidator(
@@ -323,11 +331,11 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 )
             ).validateTxData(
                     singleVaultData_.liqData.txData,
-                    dstChainId,
-                    srcChainId,
+                    vars.dstChainId,
+                    vars.srcChainId,
                     false,
                     address(this),
-                    srcSender
+                    vars.srcSender
                 );
 
             /// Note Send Tokens to Source Chain
@@ -340,30 +348,35 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 ),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                dstAmount,
+                vars.dstAmount,
                 address(this),
                 singleVaultData_.liqData.nativeAmount,
                 "",
                 superRegistry.PERMIT2()
             );
-            uint256 balanceAfter = ERC20(v.asset()).balanceOf(address(this));
+
+            vars.balanceAfter = ERC20(v.asset()).balanceOf(address(this));
 
             /// note: balance validation to prevent draining contract.
-            if (balanceAfter < balanceBefore - dstAmount)
+            if (vars.balanceAfter < vars.balanceBefore - vars.dstAmount)
                 revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
         } else {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
-            v.redeem(singleVaultData_.amount, srcSender, address(this));
+            vars.dstAmount = v.redeem(singleVaultData_.amount, vars.srcSender, address(this));
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
         emit Processed(
-            srcChainId,
-            dstChainId,
-            txId,
+            vars.srcChainId,
+            vars.dstChainId,
+            vars.txId,
             singleVaultData_.amount,
-            vaultLoc
+            vars.vaultLoc
         );
+        
+        /// Here we either fully succeed of Callback.FAIL. 
+        return 0;
+
     }
 
     /*///////////////////////////////////////////////////////////////

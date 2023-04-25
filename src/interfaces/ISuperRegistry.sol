@@ -75,6 +75,11 @@ interface ISuperRegistry {
         address indexed bridgeAddress
     );
 
+    /// @dev is emitted when a new token bridge is configured.
+    event SetSuperPositionBankAddress(
+        address indexed oldBank,
+        address indexed bank
+    );
     /// @dev is emitted when a new bridge validator is configured.
     event SetBridgeValidator(
         uint256 indexed bridgeId,
@@ -125,10 +130,6 @@ interface ISuperRegistry {
     /// @param factoryStateRegistry_ the address of the state registry
     function setFactoryStateRegistry(address factoryStateRegistry_) external;
 
-    /// @dev allows admin to set the super positions address
-    /// @param superPositions_ the address of the super positions
-    function setSuperPositions(address superPositions_) external;
-
     /// @dev allows admin to set the super rbac address
     /// @param superRBAC_ the address of the super rbac
     function setSuperRBAC(address superRBAC_) external;
@@ -154,6 +155,16 @@ interface ISuperRegistry {
         uint8[] memory ambId_,
         address[] memory ambAddress_
     ) external;
+
+    /// @dev allows admin to set the super positions address
+    /// @param superPositions_ the address of the super positions
+    function setSuperPositions(address superPositions_) external;
+
+    /// @dev allows admin to set the super positions bank address
+    /// @param superPositionBank_ the address of the super positions bank
+    function setSuperPositionBank(
+        address superPositionBank_
+    ) external; 
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -185,6 +196,9 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the super positions module
     function SUPER_POSITIONS() external view returns (bytes32);
+
+    /// @dev returns the id of the super position bank module
+    function SUPER_POSITION_BANK() external view returns (bytes32);
 
     /// @dev returns the id of the super rbac module
     function SUPER_RBAC() external view returns (bytes32);
@@ -266,4 +280,12 @@ interface ISuperRegistry {
     function getAmbAddress(
         uint8 ambId_
     ) external view returns (address ambAddress_);
+
+    /// @dev gets the super positions bank
+    /// @return superPositionBank_ the address of the super positions bank
+    function superPositionBank()
+        external
+        view
+        returns (address superPositionBank_);
+
 }

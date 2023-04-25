@@ -61,10 +61,10 @@ interface IBaseForm is IERC165Upgradeable {
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmounts  The amount of tokens withdrawn in same chain action
+    /// @return status If withdraw succeded or not (relevant for custom forms, for standard form this could be omitted as we inform about fail elsewhere)
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) external returns (uint256[] memory dstAmounts);
+    ) external returns (uint16 status);
 
     function getUnderlyingOfVault() external view returns (ERC20);
 }

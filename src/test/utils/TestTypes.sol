@@ -128,6 +128,7 @@ struct SetupVars {
     address socketValidator;
     Vm.Log[] logs;
     address superPositions;
+    address superPositionBank;
 }
 
 /*//////////////////////////////////////////////////////////////
