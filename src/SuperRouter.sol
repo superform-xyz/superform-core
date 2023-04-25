@@ -98,10 +98,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
-        /// @note this validation is added on the registry level
-        // if (!_validateAmbs(req.ambId[0], req.proofAmbId))
-        //     revert Error.INVALID_AMB_IDS();
-
         /// @dev validate superFormsData
         if (!_validateSuperFormsDepositData(req.superFormsData))
             revert Error.INVALID_SUPERFORMS_DATA();
@@ -235,10 +231,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
-
-        /// @notice these validations are added to the registry
-        // if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-        //     revert Error.INVALID_AMB_IDS();
 
         if (vars.srcChainId == vars.dstChainId)
             revert Error.INVALID_CHAIN_IDS();
@@ -395,12 +387,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
-        /// @note the validations are added to the registry
-        // if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-        //     revert Error.INVALID_AMB_IDS();
-
         /// @dev validate superFormsData
-
         if (!_validateSuperFormsWithdrawData(req.superFormsData))
             revert Error.INVALID_SUPERFORMS_DATA();
 
@@ -508,10 +495,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
-
-        /// @note validations added to registry
-        // if (!_validateAmbs(req.primaryAmbId, req.proofAmbId))
-        //     revert Error.INVALID_AMB_IDS();
 
         if (vars.srcChainId == vars.dstChainId)
             revert Error.INVALID_CHAIN_IDS();
@@ -971,18 +954,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     ) internal pure returns (bool) {
         for (uint256 i = 0; i < slippages_.length; i++) {
             if (slippages_[i] < 0 || slippages_[i] > 10000) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    function _validateAmbs(
-        uint8 primaryAmbId,
-        uint8[] memory proofAmbId
-    ) internal pure returns (bool) {
-        for (uint256 i = 0; i < proofAmbId.length; i++) {
-            if (primaryAmbId == proofAmbId[i]) {
                 return false;
             }
         }

@@ -87,6 +87,11 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyCoreContracts {
+        /// @dev atleast 2 AMBs are required
+        if (ambIds_.length < 2) {
+            revert Error.INVALID_AMB_IDS_LENGTH();
+        }
+
         AMBOverride memory d = abi.decode(extraData_, (AMBOverride));
 
         _dispatchPayload(
@@ -106,6 +111,11 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override onlyCoreContracts {
+        /// @dev atleast 2 AMBs are required
+        if (ambIds_.length < 2) {
+            revert Error.INVALID_AMB_IDS_LENGTH();
+        }
+
         AMBOverride memory d = abi.decode(extraData_, (AMBOverride));
 
         _broadcastPayload(ambIds_[0], d.gas[0], message_, d.extraData[0]);
