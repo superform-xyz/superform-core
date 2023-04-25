@@ -10,6 +10,9 @@ import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
+
 abstract contract ProtocolActions is BaseSetup {
     uint8[] public AMBs;
 
@@ -487,6 +490,7 @@ abstract contract ProtocolActions is BaseSetup {
                         action.revertError,
                         action.revertRole
                     );
+
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
                             if (action.multiVaults) {
@@ -588,12 +592,36 @@ abstract contract ProtocolActions is BaseSetup {
                     unchecked {
                         PAYLOAD_ID[aV[i].toChainId]++;
                     }
-                    _processPayload(
+
+                    vm.recordLogs();
+                    /// note: this is high-lvl processPayload function, even if this happens outside of the user view
+                    /// we need to manually process payloads by invoking sending actual messages
+                    success = _processPayload(
                         PAYLOAD_ID[aV[i].toChainId],
                         aV[i].toChainId,
                         action.testType,
                         action.revertError
                     );
+
+                    vars.logs = vm.getRecordedLogs();
+
+                    LayerZeroHelper(
+                        getContract(aV[i].toChainId, "LayerZeroHelper")
+                    ).helpWithEstimates(
+                            vars.lzEndpoint_0,
+                            2000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                            FORKS[CHAIN_0],
+                            vars.logs
+                        );
+
+                    HyperlaneHelper(
+                        getContract(aV[i].toChainId, "HyperlaneHelper")
+                    ).help(
+                            address(HyperlaneMailbox),
+                            address(HyperlaneMailbox),
+                            FORKS[CHAIN_0],
+                            vars.logs
+                        );
                 }
             }
             vm.selectFork(aV[i].initialFork);
@@ -626,6 +654,33 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
         }
+    }
+
+    /// NOTE: For 2-way comms we need to now process payload on Source again
+    function _stage6_process_superPositions_withdraw(
+        TestAction memory action,
+        StagesLocalVars memory vars
+    ) internal returns (bool success) {
+        /// assume it will pass by default
+        success = true;
+
+        unchecked {
+            PAYLOAD_ID[CHAIN_0]++;
+        }
+
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[CHAIN_0]);
+
+        _processPayload(
+            PAYLOAD_ID[CHAIN_0],
+            CHAIN_0,
+            action.testType,
+            action.revertError
+        );
+        vm.selectFork(initialFork);
+
+        return true;
     }
 
     function _buildMultiVaultCallData(
@@ -862,9 +917,22 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _buildSingleVaultWithdrawCallData(
         SingleVaultCallDataArgs memory args
-    ) internal view returns (SingleVaultSFData memory superFormData) {
+    ) internal returns (SingleVaultSFData memory superFormData) {
         ISocketRegistry.MiddlewareRequest memory middlewareRequest;
         ISocketRegistry.BridgeRequest memory bridgeRequest;
+
+        address _superRouter = contracts[CHAIN_0][
+            bytes32(bytes("SuperRouter"))
+        ];
+        address _stateRegistry = contracts[CHAIN_0][
+            bytes32(bytes("SuperRegistry"))
+        ];
+        IERC1155 superPositions = IERC1155(
+            ISuperRegistry(_stateRegistry).superPositions()
+        );
+        vm.prank(users[args.user]);
+        superPositions.setApprovalForAll(_superRouter, true);
+
         if (args.srcChainId == args.toChainId) {
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
                 1, /// id
@@ -1135,7 +1203,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[targetChainId_]);
-
         uint256 msgValue = 50 * _getPriceMultiplier(targetChainId_) * 1e18;
 
         vm.prank(deployer);

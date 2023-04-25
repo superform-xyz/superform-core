@@ -13,6 +13,7 @@ import {Error} from "../utils/Error.sol";
 contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
     uint16 public chainId;
+
     /// @dev canonical permit2 contract
     address public PERMIT2;
 
@@ -33,6 +34,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     bytes32 public constant override FACTORY_STATE_REGISTRY =
         "FACTORY_STATE_REGISTRY";
     bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
+    bytes32 public constant override SUPER_POSITION_BANK =
+        "SUPER_POSITION_BANK";
     bytes32 public constant override SUPER_RBAC = "SUPER_RBAC";
     bytes32 public constant override MULTI_TX_PROCESSOR = "MULTI_TX_PROCESSOR";
 
@@ -208,7 +211,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-
     function setAmbAddress(
         uint8[] memory ambId_,
         address[] memory ambAddress_
@@ -221,6 +223,20 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
             ambAddresses[y] = x;
             emit SetAmbAddress(y, x);
         }
+    }
+
+    function setSuperPositionBank(
+        address superPositionBank_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (superPositionBank_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address oldSuperPositionBank = protocolAddresses[SUPER_POSITION_BANK];
+        protocolAddresses[SUPER_POSITION_BANK] = superPositionBank_;
+
+        emit SetSuperPositionBankAddress(
+            oldSuperPositionBank,
+            superPositionBank_
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -297,6 +313,14 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         returns (address superPositions_)
     {
         superPositions_ = getProtocolAddress(SUPER_POSITIONS);
+    }
+
+    function superPositionBank()
+        external
+        view
+        returns (address superPositionBank_)
+    {
+        superPositionBank_ = getProtocolAddress(SUPER_POSITION_BANK);
     }
 
     /// @inheritdoc ISuperRegistry

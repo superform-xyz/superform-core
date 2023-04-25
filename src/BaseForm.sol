@@ -140,6 +140,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @return dstAmount  The amount of tokens withdrawn in same chain action
+    /// note: direct action doesn't require status reporting as xchain action does
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     ) external override onlySuperRouter returns (uint256 dstAmount) {
@@ -149,12 +150,12 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmounts  The amount of tokens withdrawn in same chain action
+    /// @return status If withdraw succeded or not (relevant for custom forms, for standard form this could be omitted as we inform about fail elsewhere
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) external override onlyTokenBank returns (uint256[] memory dstAmounts) {
+    ) external override onlyTokenBank returns (uint16 status) {
         /// @dev FIXME: not returning anything YET
-        _xChainWithdrawFromVault(singleVaultData_);
+        status = _xChainWithdrawFromVault(singleVaultData_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -250,7 +251,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev Withdraws underlying tokens from a vault
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual returns (uint256 dstAmount);
+    ) internal virtual returns (uint256 dstAmount_);
 
     /// @dev Deposits underlying tokens into a vault
     function _xChainDepositIntoVault(
@@ -260,7 +261,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual;
+    ) internal virtual returns (uint16 status);
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS

@@ -259,6 +259,8 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage1 done");
 
+        /// @dev NOTE: setApprovalForAll happens in _buildSingleVaultWithdrawCallData
+
         vars = _stage2_run_src_action(
             action,
             multiSuperFormsData,
@@ -267,7 +269,8 @@ contract ScenarioTimelockTest is ProtocolActions {
         );
 
         console.log("stage2 done");
-
+        
+        /// @dev Deliver message from source to destination (withdraw action)
         aV = _stage3_src_to_dst_amb_delivery(
             action,
             vars,
@@ -277,7 +280,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage3 done");
 
-        /// @dev TODO Repeated
+        /// @dev Process payload stored on destination to be delivered on source (withdraw callback)
         success = _stage4_process_src_dst_payload(
             action,
             vars,
@@ -287,6 +290,10 @@ contract ScenarioTimelockTest is ProtocolActions {
         );
 
         console.log("stage4 done");
+
+        /// @dev Process payload received on source from destination (withdraw callback)
+        success = _stage6_process_superPositions_withdraw(action, vars);
+        
         /*///////////////////////////////////////////////////////////////
                             TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/

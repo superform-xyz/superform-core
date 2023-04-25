@@ -27,6 +27,9 @@ library Error {
     /// @dev if the msg-sender is not token bank
     error NOT_TOKEN_BANK();
 
+    /// @dev if the msg-sender is not super position bank
+    error NOT_SUPER_POSITION_BANK();
+
     /// @dev if the msg-sender is not super form factory
     error NOT_SUPERFORM_FACTORY();
 
@@ -195,6 +198,9 @@ library Error {
 
     /// @dev is emitted when the amount in xchain withdraw is not correct
     error XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+
+    /// @dev is emitted when redeem call to the underlying vault in form fails
+    error REDEEM_FAILED();
 
     /// @dev unlock already requested, cooldown period didn't pass yet
     error WITHDRAW_COOLDOWN_PERIOD();

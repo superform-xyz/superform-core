@@ -9,9 +9,23 @@ import "../types/DataTypes.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 
+import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
+
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario7Test is ProtocolActions {
+    /// @dev Access SuperRouter interface
+    ISuperRouter superRouter;
+
+    /// @dev Access SuperPositions interface
+    IERC1155 superPositions;
+
+    address _superRouter;
+    address _stateRegistry;
+    address _superPositions;
+
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -56,19 +70,34 @@ contract Scenario7Test is ProtocolActions {
             })
         );
 
-        actions.push(
-            TestAction({
-                action: Actions.Withdraw,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
-                user: 0,
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
-            })
+        // actions.push(
+        //     TestAction({
+        //         action: Actions.Withdraw,
+        //         multiVaults: true, //!!WARNING turn on or off multi vaults
+        //         user: users[0],
+        //         testType: TestType.Pass,
+        //         revertError: "",
+        //         revertRole: "",
+        //         slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+        //         multiTx: false,
+        //         adapterParam: "",
+        //         msgValue: msgValue
+        //     })
+        // );
+
+        /*///////////////////////////////////////////////////////////////
+                                STATE SETUP
+        //////////////////////////////////////////////////////////////*/
+
+        _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+
+        _stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
+
+        superRouter = ISuperRouter(_superRouter);
+
+        /// TODO: User ERC1155s
+        superPositions = IERC1155(
+            ISuperRegistry(_stateRegistry).superPositions()
         );
     }
 
@@ -90,6 +119,8 @@ contract Scenario7Test is ProtocolActions {
                 singleSuperFormsData,
                 vars
             ) = _stage1_buildReqData(action, act);
+
+            /// @dev NOTE: setApprovalForAll happens in _buildSingleVaultWithdrawCallData
 
             vars = _stage2_run_src_action(
                 action,

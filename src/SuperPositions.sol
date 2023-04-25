@@ -11,7 +11,7 @@ import {Error} from "./utils/Error.sol";
 /// @title Super Positions
 /// @author Zeropoint Labs.
 /// @dev  extends ERC1155s to create SuperPositions which track vault shares from any originating chain
-contract SuperPositions is ISuperPositions, ERC1155s {
+contract SuperPositions is ERC1155s {
     /*///////////////////////////////////////////////////////////////
                                 State Variables
     //////////////////////////////////////////////////////////////*/
@@ -45,6 +45,22 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
+    /// FIXME: Temp extension to keep interfaces from conflict
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts,
+        bytes calldata data
+    ) public virtual override(ERC1155s) {
+        super.safeBatchTransferFrom(from, to, ids, amounts, data);
+    }
+
+    /// FIXME: Temp extension need to make approve at superRouter, may change with arch
+    function setApprovalForAll(address operator, bool approved) public virtual override {
+        super.setApprovalForAll(operator, approved);
+    }
+
     /*///////////////////////////////////////////////////////////////
                         MINT/BURN PROTECTED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -54,7 +70,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         uint256 superFormId_,
         uint256 amount_,
         bytes memory data_
-    ) external override onlySuperRouter {
+    ) external onlySuperRouter {
         _mint(srcSender_, superFormId_, amount_, data_);
     }
 
@@ -63,7 +79,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         uint256[] memory superFormIds_,
         uint256[] memory amounts_,
         bytes memory data_
-    ) external override onlySuperRouter {
+    ) external onlySuperRouter {
         _batchMint(srcSender_, superFormIds_, amounts_, data_);
     }
 
@@ -71,7 +87,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         address srcSender_,
         uint256 superFormId_,
         uint256 amount_
-    ) external override onlySuperRouter {
+    ) external onlySuperRouter {
         _burn(srcSender_, superFormId_, amount_);
     }
 
@@ -79,7 +95,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         address srcSender_,
         uint256[] memory superFormIds_,
         uint256[] memory amounts_
-    ) external override onlySuperRouter {
+    ) external onlySuperRouter {
         _batchBurn(srcSender_, superFormIds_, amounts_);
     }
 
@@ -91,7 +107,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     /// @param dynamicURI_    represents the dynamicURI for the ERC1155 super positions
     function setDynamicURI(
         string memory dynamicURI_
-    ) external override onlyProtocolAdmin {
+    ) external onlyProtocolAdmin {
         dynamicURI = dynamicURI_;
     }
 

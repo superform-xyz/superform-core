@@ -15,6 +15,9 @@ interface ITokenBank {
     /// @dev is emitted when the super registry is updated.
     event SuperRegistryUpdated(address indexed superRegistry);
 
+    /// @dev is emitted when error from form returns to TokenBank
+    event ErrorLog(string reason);
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/

@@ -126,7 +126,7 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnMultiData(
                             _packReturnTxInfo(
-                                true,
+                                0,
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs
@@ -192,7 +192,7 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
-                                true,
+                                0, /// <=== FIXME: status always 0 for deposit
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs
@@ -237,6 +237,78 @@ contract TokenBank is ITokenBank {
     ) public payable override onlyStateRegistry {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
-        IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
+        /// @dev Withdraw from Form
+        /// TODO: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch (droping revert is risky)
+        /// that's also the only way to get error type out of the try/catch
+        /// NOTE: opted for just returning CallbackType.FAIL as we always end up with SuperPositionBank.returnPosition() anyways
+        /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
+        try
+            IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_)
+        returns (uint16 status_) {
+            // Handle the case when the external call succeeds
+            _dispatchPayload(
+                singleVaultData_,
+                TransactionType.WITHDRAW,
+                CallbackType.RETURN,
+                singleVaultData_.amount,
+                status_
+            );
+        } catch {
+            // Handle the case when the external call reverts for whatever reason
+            /// https://solidity-by-example.org/try-catch/
+            _dispatchPayload(
+                singleVaultData_,
+                TransactionType.WITHDRAW,
+                CallbackType.FAIL,
+                singleVaultData_.amount,
+                0 /// <=== FIXME: status always 0 for withdraw fail
+            );
+
+            /// @dev we could match on individual reasons, but it's hard with strings
+            emit ErrorLog("FORM_REVERT");
+        }
+    }
+
+    /// @notice depositSync and withdrawSync internal method for sending message back to the source chain
+    function _dispatchPayload(
+        InitSingleVaultData memory singleVaultData_,
+        TransactionType txType,
+        CallbackType returnType,
+        uint256 amount,
+        uint16 status
+    ) internal {
+        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
+            singleVaultData_.txData
+        );
+
+        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
+        uint8[] memory ambIds = new uint8[](2);
+        ambIds[0] = 1;
+        ambIds[1] = 2;
+
+        /// @notice Send Data to Source to issue superform positions.
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
+            value: msg.value
+        }(
+            ambIds,
+            srcChainId,
+            abi.encode(
+                AMBMessage(
+                    _packTxInfo(uint120(txType), uint120(returnType), false, 0),
+                    abi.encode(
+                        ReturnSingleData(
+                            _packReturnTxInfo(
+                                status,
+                                srcChainId,
+                                superRegistry.chainId(),
+                                currentTotalTxs
+                            ),
+                            amount /// @dev TODO: return this from Form, not InitSingleVaultData. Q: assets amount from shares or shares only?
+                        )
+                    )
+                )
+            ),
+            "" /// FIXME: update extra data
+        );
     }
 }
