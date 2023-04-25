@@ -1,10 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import {ERC20} from "solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage, MultiDstExtraData} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
@@ -14,6 +13,7 @@ import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {IFormBeacon} from "./interfaces/IFormBeacon.sol";
+import {IBridgeValidator} from "./interfaces/IBridgeValidator.sol";
 import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
@@ -23,7 +23,7 @@ import "./utils/DataPacking.sol";
 /// @dev Routes users funds and deposit information to a remote execution chain.
 /// @dev extends Liquidity Handler.
 contract SuperRouter is ISuperRouter, LiquidityHandler {
-    using SafeERC20 for IERC20;
+    using SafeTransferLib for ERC20;
     using Strings for string;
 
     /*///////////////////////////////////////////////////////////////
@@ -31,10 +31,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     uint8 public constant STATE_REGISTRY_TYPE = 0;
-
-    /// @notice chainId represents unique chain id for each chains.
-    /// @dev maybe should be constant or immutable
-    uint16 public immutable chainId;
 
     ISuperRegistry public immutable superRegistry;
 
@@ -53,12 +49,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         _;
     }
 
-    /// @param chainId_              SuperForm chain id
+    /// @dev constructor
     /// @param superRegistry_ the superform registry contract
-    constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
+    constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -102,7 +95,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         InitMultiVaultData memory ambData;
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         /// @note this validation is added on the registry level
@@ -151,20 +144,36 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             emit Completed(vars.currentTotalTransactions);
         } else {
             vars.liqRequestsLen = req.superFormsData.liqRequests.length;
-
+            address permit2 = superRegistry.PERMIT2();
             /// @dev this loop is what allows to deposit to >1 different underlying on destination
             /// @dev if a loop fails in a validation the whole chain should be reverted
             for (uint256 j = 0; j < vars.liqRequestsLen; j++) {
                 vars.liqRequest = req.superFormsData.liqRequests[j];
                 /// @dev dispatch liquidity data
+                (address superForm, , ) = _getSuperForm(
+                    req.superFormsData.superFormIds[j]
+                );
+
+                IBridgeValidator(
+                    superRegistry.getBridgeValidator(vars.liqRequest.bridgeId)
+                ).validateTxData(
+                        vars.liqRequest.txData,
+                        vars.srcChainId,
+                        vars.dstChainId,
+                        true,
+                        superForm,
+                        vars.srcSender
+                    );
+
                 dispatchTokens(
                     superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
                     vars.liqRequest.txData,
                     vars.liqRequest.token,
-                    vars.liqRequest.allowanceTarget, /// to be removed
                     vars.liqRequest.amount,
                     vars.srcSender,
-                    vars.liqRequest.nativeAmount
+                    vars.liqRequest.nativeAmount,
+                    vars.liqRequest.permit2data,
+                    permit2
                 );
             }
 
@@ -195,7 +204,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
         for (uint256 i = 0; i < nDestinations; i++) {
             dstChainId = req.dstChainIds[i];
-            if (chainId == dstChainId) {
+            if (superRegistry.chainId() == dstChainId) {
                 singleDirectSingleVaultDeposit(
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
@@ -224,7 +233,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         /// @notice these validations are added to the registry
@@ -267,15 +276,30 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
 
         vars.liqRequest = req.superFormData.liqRequest;
+
+        (address superForm, , ) = _getSuperForm(req.superFormData.superFormId);
+
+        IBridgeValidator(
+            superRegistry.getBridgeValidator(vars.liqRequest.bridgeId)
+        ).validateTxData(
+                vars.liqRequest.txData,
+                vars.srcChainId,
+                vars.dstChainId,
+                true,
+                superForm,
+                vars.srcSender
+            );
+
         /// @dev dispatch liquidity data
         dispatchTokens(
             superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
             vars.liqRequest.txData,
             vars.liqRequest.token,
-            vars.liqRequest.allowanceTarget, /// to be removed
             vars.liqRequest.amount,
             vars.srcSender,
-            vars.liqRequest.nativeAmount
+            vars.liqRequest.nativeAmount,
+            vars.liqRequest.permit2data,
+            superRegistry.PERMIT2()
         );
 
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
@@ -299,7 +323,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         if (vars.srcChainId != vars.dstChainId)
@@ -368,7 +392,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         InitMultiVaultData memory ambData;
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         /// @note the validations are added to the registry
@@ -452,7 +476,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         for (uint256 i = 0; i < nDestinations; i++) {
             dstChainId = req.dstChainIds[i];
-            if (chainId == dstChainId) {
+            if (superRegistry.chainId() == dstChainId) {
                 singleDirectSingleVaultWithdraw(
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
@@ -482,7 +506,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         /// @note validations added to registry
@@ -554,7 +578,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         vars.srcSender = msg.sender;
 
-        vars.srcChainId = chainId;
+        vars.srcChainId = superRegistry.chainId();
         vars.dstChainId = req.dstChainId;
 
         if (vars.srcChainId != vars.dstChainId)
@@ -920,7 +944,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         address _tokenContract,
         uint256 _amount
     ) external onlyProtocolAdmin {
-        IERC20 tokenContract = IERC20(_tokenContract);
+        ERC20 tokenContract = ERC20(_tokenContract);
 
         /// note: transfer the token from address of this contract
         /// note: to address of the user (executing the withdrawToken() function)

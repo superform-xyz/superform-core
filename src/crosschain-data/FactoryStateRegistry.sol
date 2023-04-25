@@ -15,9 +15,8 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
 
     ///@dev set up admin during deployment.
     constructor(
-        uint16 chainId_,
         ISuperRegistry superRegistry_
-    ) BaseStateRegistry(chainId_, superRegistry_) {}
+    ) BaseStateRegistry(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS

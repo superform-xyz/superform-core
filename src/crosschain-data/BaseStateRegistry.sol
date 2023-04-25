@@ -17,8 +17,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev superformChainid
-    uint16 public immutable chainId;
     uint256 public payloadsCount;
 
     mapping(bytes => uint256) public messageQuorum;
@@ -68,10 +66,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(uint16 chainId_, ISuperRegistry superRegistry_) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
+    constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }
 
@@ -137,7 +132,11 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             ++payloadsCount;
             payload[payloadsCount] = message_;
 
-            emit PayloadReceived(srcChainId_, chainId, payloadsCount);
+            emit PayloadReceived(
+                srcChainId_,
+                superRegistry.chainId(),
+                payloadsCount
+            );
         }
     }
 

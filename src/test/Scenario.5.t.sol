@@ -45,7 +45,7 @@ contract Scenario5Test is ProtocolActions {
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: users[0],
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
@@ -59,7 +59,7 @@ contract Scenario5Test is ProtocolActions {
             TestAction({
                 action: Actions.Withdraw,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: users[0],
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
@@ -116,7 +116,10 @@ contract Scenario5Test is ProtocolActions {
                 continue;
             }
 
-            if (action.action == Actions.Deposit) {
+            if (
+                action.action == Actions.Deposit ||
+                action.action == Actions.DepositPermit2
+            ) {
                 success = _stage5_process_superPositions_mint(action, vars);
                 if (!success) {
                     continue;

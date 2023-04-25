@@ -31,9 +31,6 @@ contract TokenBank is ITokenBank {
     /// @dev superRegistry points to the super registry deployed in the respective chain.
     ISuperRegistry public immutable superRegistry;
 
-    /// @dev chainId represents the superform chain id of the specific chain.
-    uint16 public immutable chainId;
-
     modifier onlyStateRegistry() {
         if (
             !ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(
@@ -52,12 +49,8 @@ contract TokenBank is ITokenBank {
         _;
     }
 
-    /// @param chainId_              Superform chain id
     /// @param superRegistry_ the superform registry contract
-    constructor(uint16 chainId_, address superRegistry_) {
-        if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-
-        chainId = chainId_;
+    constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -135,7 +128,7 @@ contract TokenBank is ITokenBank {
                             _packReturnTxInfo(
                                 true,
                                 srcChainId,
-                                chainId,
+                                superRegistry.chainId(),
                                 currentTotalTxs
                             ),
                             dstAmounts
@@ -201,7 +194,7 @@ contract TokenBank is ITokenBank {
                             _packReturnTxInfo(
                                 true,
                                 srcChainId,
-                                chainId,
+                                superRegistry.chainId(),
                                 currentTotalTxs
                             ),
                             dstAmount

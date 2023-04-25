@@ -335,7 +335,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                 action_ = TestAction({
                     action: Actions.Deposit,
                     multiVaults: false, //!!WARNING turn on or off multi vaults
-                    user: users[0],
+                    user: 0,
                     testType: TestType.Pass, /// NOTE: TestType should be low level invariant
                     revertError: "",
                     revertRole: "",
@@ -348,7 +348,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                 action_ = TestAction({
                     action: Actions.Withdraw,
                     multiVaults: false, //!!WARNING turn on or off multi vaults
-                    user: users[0],
+                    user: 0,
                     testType: TestType.Pass, /// NOTE: TestType should be low level invariant
                     revertError: "",
                     revertRole: "",

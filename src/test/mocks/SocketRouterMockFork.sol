@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 /// Types Imports
-import {UserRequest} from "../../types/LiquidityTypes.sol";
 
 import "./MockERC20.sol";
 

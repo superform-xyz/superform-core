@@ -25,9 +25,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     ///@dev set up admin during deployment.
     constructor(
-        uint16 chainId_,
         ISuperRegistry superRegistry_
-    ) BaseStateRegistry(chainId_, superRegistry_) {}
+    ) BaseStateRegistry(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -264,6 +263,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         (, , bool multi, ) = _decodeTxInfo(payloadInfo.txInfo);
 
+        uint16 chainId = superRegistry.chainId();
         if (multi) {
             InitMultiVaultData memory multiVaultData = abi.decode(
                 payloadInfo.params,
