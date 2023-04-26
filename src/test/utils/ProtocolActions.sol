@@ -827,6 +827,8 @@ abstract contract ProtocolActions is BaseSetup {
             v.from = args.toDst;
         }
 
+        /// @dev middlware request is used if there is a swap involved before the bridging action
+        /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
         if (args.srcChainId == args.toChainId) {
             v.middlewareRequest = ISocketRegistry.MiddlewareRequest(
                 1, /// id
@@ -835,6 +837,8 @@ abstract contract ProtocolActions is BaseSetup {
                 abi.encode(v.from, FORKS[args.toChainId])
             );
         } else {
+                    /// @dev middlware request is used if there is a swap involved before the bridging action
+            /// @dev the input token is the
             v.bridgeRequest = ISocketRegistry.BridgeRequest(
                 1, /// id
                 0, /// FIXME optional native amount
@@ -899,6 +903,8 @@ abstract contract ProtocolActions is BaseSetup {
             v.permit2Calldata /// @dev will be empty if action == Actions.Deposit
         );
 
+    /// @dev FIXME: we are using underlying token and not swapping it to a different token kind
+    /// @dev FIXME: tests should have src / input token field (can we assume the same for all vaults and destinations?)
         if (args.sameUnderlyingCheck == address(0)) {
             vm.selectFork(FORKS[args.srcChainId]);
 

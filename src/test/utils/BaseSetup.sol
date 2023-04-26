@@ -13,7 +13,6 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev test utils & mocks
-import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
@@ -45,7 +44,6 @@ import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implement
 import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
-
 
 import {SuperPositionBank} from "../../SuperPositionBank.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
@@ -551,7 +549,10 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 13.1 - Deploy SuperPositionsBank
             vars.superPositionBank = address(
-                new SuperPositionBank(ISuperPositions(vars.superPositions), ISuperRouter(vars.superRouter))
+                new SuperPositionBank(
+                    ISuperPositions(vars.superPositions),
+                    ISuperRouter(vars.superRouter)
+                )
             );
 
             /// @dev 13.2 - setSuperPositionsBank
