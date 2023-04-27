@@ -121,33 +121,39 @@ contract LiFiValidator is BridgeValidator {
         uint16 dstChainId_,
         bool deposit_,
         address superForm_,
-        address srcSender_
+        address srcSender_,
+        address liqDataToken_
     ) external view override {
         ILiFi.BridgeData memory bridgeData = _decodeCallData(txData_);
 
         /// @dev 1. chainId validation
         if (lifiChainId[dstChainId_] != bridgeData.destinationChainId)
-            revert Error.INVALID_CHAIN_ID();
+            revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
 
         if (deposit_ && srcChainId_ == dstChainId_) {
-            /// @dev If action is same chain or cross chain withdraw, then receiver address must be the superform
+            /// @dev If same chain deposits then receiver address must be the superform
 
             if (bridgeData.receiver != superForm_)
-                revert Error.INVALID_RECEIVER();
+                revert Error.INVALID_TXDATA_RECEIVER();
         } else if (deposit_ && srcChainId_ != dstChainId_) {
             /// @dev if cross chain deposits, then receiver address must be the token bank
             if (
                 !(bridgeData.receiver == superRegistry.tokenBank() ||
                     bridgeData.receiver == superRegistry.multiTxProcessor())
-            ) revert Error.INVALID_RECEIVER();
+            ) revert Error.INVALID_TXDATA_RECEIVER();
         } else if (!deposit_) {
+            /// @dev if withdraws, then receiver address must be the srcSender
             /// @dev what if SrcSender is a contract? can it be used to re-enter somewhere?
             /// https://linear.app/superform/issue/SUP-2024/reentrancy-vulnerability-prevent-crafting-arbitrary-txdata-to-reenter
             if (bridgeData.receiver != srcSender_)
-                revert Error.INVALID_RECEIVER();
+                revert Error.INVALID_TXDATA_RECEIVER();
         }
+
+        /// @dev 3. token validations
+        if (liqDataToken_ != bridgeData.sendingAssetId)
+            revert Error.INVALID_TXDATA_TOKEN();
     }
 
     /// @dev allows admin to add new chain ids in future

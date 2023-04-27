@@ -28,12 +28,14 @@ interface IBridgeValidator {
     /// @param deposit_ true if the action is a deposit, false if it is a withdraw
     /// @param superForm_ the address of the superForm
     /// @param srcSender_ the address of the sender on the source chain
+    /// @param liqDataToken_ the address of the liqDataToken
     function validateTxData(
         bytes calldata txData_,
         uint16 srcChainId_,
         uint16 dstChainId_,
         bool deposit_,
         address superForm_,
-        address srcSender_
+        address srcSender_,
+        address liqDataToken_
     ) external view;
 }

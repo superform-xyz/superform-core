@@ -172,7 +172,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                         vars.dstChainId,
                         true,
                         superForm,
-                        vars.srcSender
+                        vars.srcSender,
+                        vars.liqRequest.token
                     );
 
                 dispatchTokens(
@@ -301,7 +302,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 vars.dstChainId,
                 true,
                 superForm,
-                vars.srcSender
+                vars.srcSender,
+                vars.liqRequest.token
             );
 
         /// @dev dispatch liquidity data

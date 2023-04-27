@@ -58,6 +58,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         uint16 dstChainId_,
         bool deposit_,
         address superForm_,
-        address srcSender_
+        address srcSender_,
+        address liqDataToken_
     ) external view virtual override;
 }
