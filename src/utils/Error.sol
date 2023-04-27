@@ -69,6 +69,9 @@ library Error {
     /// @dev when validation of bridge txData fails due to wrong receiver
     error INVALID_RECEIVER();
 
+    /// @dev when validation of bridge txData fails due to wrong amount
+    error INVALID_TXDATA_AMOUNTS();
+
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/

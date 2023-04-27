@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import {MultiVaultsSFData, SingleVaultSFData} from "../../types/DataTypes.sol";
 import {BridgeValidator} from "../BridgeValidator.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {ILiFi} from "../../interfaces/ILiFi.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {Error} from "../../utils/Error.sol";
+import "../../utils/DataPacking.sol";
 
 /// @title lifi verification contract
 /// @author Zeropoint Labs
@@ -28,6 +30,91 @@ contract LiFiValidator is BridgeValidator {
                             External Functions
     //////////////////////////////////////////////////////////////*/
 
+    /// @inheritdoc BridgeValidator
+    function validateTxDataDepositMultiVaultAmounts(
+        MultiVaultsSFData calldata superFormsData_
+    ) external view override returns (bool) {
+        uint256 len = superFormsData_.amounts.length;
+        uint256 liqRequestsLen = superFormsData_.liqRequests.length;
+
+        uint256 sumAmounts;
+
+        (address firstSuperForm, , ) = _getSuperForm(
+            superFormsData_.superFormIds[0]
+        );
+        address collateral = address(
+            IBaseForm(firstSuperForm).getUnderlyingOfVault()
+        );
+
+        if (collateral == address(0)) return false;
+
+        for (uint256 i = 0; i < len; i++) {
+            sumAmounts += superFormsData_.amounts[i];
+
+            /// @dev compare underlyings with the first superForm. If there is at least one different mark collateral as 0
+            if (collateral != address(0) && i + 1 < len) {
+                (address superForm, , ) = _getSuperForm(
+                    superFormsData_.superFormIds[i + 1]
+                );
+
+                if (
+                    collateral !=
+                    address(IBaseForm(superForm).getUnderlyingOfVault())
+                ) collateral = address(0);
+            }
+        }
+
+        /// @dev In multiVaults, if there is only one liqRequest, then the sum of the amounts must be equal to the amount in the liqRequest and all underlyings must be equal
+        if (
+            liqRequestsLen == 1 &&
+            (liqRequestsLen != len) &&
+            (_decodeCallData(superFormsData_.liqRequests[0].txData).minAmount ==
+                sumAmounts) &&
+            collateral == address(0)
+        ) {
+            return false;
+        } else if (liqRequestsLen > 1 && collateral != address(0)) {
+            /// @dev else if number of liq request >1, length must be equal to the number of superForms sent in this request (and all colaterals are different)
+            if (liqRequestsLen != len) {
+                return false;
+
+                /// @dev else if number of liq request >1 and  length is equal to the number of superForms sent in this request, then all amounts in liqRequest must be equal to the amounts in superformsdata
+            } else if (liqRequestsLen == len) {
+                ILiFi.BridgeData memory bridgeData;
+
+                for (uint256 i = 0; i < len; i++) {
+                    bridgeData = _decodeCallData(
+                        superFormsData_.liqRequests[i].txData
+                    );
+                    if (bridgeData.minAmount != superFormsData_.amounts[i]) {
+                        return false;
+                    }
+                }
+            }
+            /// @dev else if number of liq request >1 and all colaterals are the same, then this request should be invalid (?)
+            /// @notice we could allow it but would imply multiple bridging of the same tokens
+        } else if (liqRequestsLen > 1 && collateral == address(0)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// @inheritdoc BridgeValidator
+    function validateTxDataDepositSingleVaultAmount(
+        SingleVaultSFData calldata superFormData_
+    ) external view override returns (bool) {
+        if (
+            (_decodeCallData(superFormData_.liqRequest.txData).minAmount !=
+                superFormData_.amount)
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// @inheritdoc BridgeValidator
     function validateTxData(
         bytes calldata txData_,
         uint16 srcChainId_,
@@ -35,7 +122,7 @@ contract LiFiValidator is BridgeValidator {
         bool deposit_,
         address superForm_,
         address srcSender_
-    ) external view override returns (bool) {
+    ) external view override {
         ILiFi.BridgeData memory bridgeData = _decodeCallData(txData_);
 
         /// @dev 1. chainId validation
@@ -61,8 +148,6 @@ contract LiFiValidator is BridgeValidator {
             if (bridgeData.receiver != srcSender_)
                 revert Error.INVALID_RECEIVER();
         }
-
-        return true;
     }
 
     /// @dev allows admin to add new chain ids in future
