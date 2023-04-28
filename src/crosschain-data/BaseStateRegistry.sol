@@ -3,11 +3,12 @@ pragma solidity 0.8.19;
 
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {PayloadState, AMBMessage, AMBFactoryMessage, AMBOverride} from "../types/DataTypes.sol";
+import {PayloadState, AMBMessage, AMBFactoryMessage, AMBExtraData} from "../types/DataTypes.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
 /// @author Zeropoint Labs
@@ -92,17 +93,23 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             revert Error.INVALID_AMB_IDS_LENGTH();
         }
 
-        AMBOverride memory d = abi.decode(extraData_, (AMBOverride));
+        AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
         _dispatchPayload(
             ambIds_[0],
             dstChainId_,
-            d.gas[0],
+            d.gasPerAMB[0],
             message_,
-            d.extraData[0]
+            d.extraDataPerAMB[0]
         );
 
-        _dispatchProof(ambIds_, dstChainId_, d.gas, message_, d.extraData);
+        _dispatchProof(
+            ambIds_,
+            dstChainId_,
+            d.gasPerAMB,
+            message_,
+            d.extraDataPerAMB
+        );
     }
 
     /// @dev allows core contracts to send data to all available destination chains
@@ -116,10 +123,15 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             revert Error.INVALID_AMB_IDS_LENGTH();
         }
 
-        AMBOverride memory d = abi.decode(extraData_, (AMBOverride));
+        AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
-        _broadcastPayload(ambIds_[0], d.gas[0], message_, d.extraData[0]);
-        _broadcastProof(ambIds_, d.gas, message_, d.extraData);
+        _broadcastPayload(
+            ambIds_[0],
+            d.gasPerAMB[0],
+            message_,
+            d.extraDataPerAMB[0]
+        );
+        _broadcastProof(ambIds_, d.gasPerAMB, message_, d.extraDataPerAMB);
     }
 
     /// @dev allows state registry to receive messages from amb implementations.

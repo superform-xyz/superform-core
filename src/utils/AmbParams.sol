@@ -1,16 +1,77 @@
 // SPDX-License-Identifier: Apache-2.0
-import {AMBOverride} from "../types/DataTypes.sol";
+import {SingleDstAMBParams, AMBExtraData, BroadCastAMBExtraData, AckAMBData} from "../types/DataTypes.sol";
 
 pragma solidity 0.8.19;
 
-function encode(uint256 m1, uint256 m2) pure returns (bytes memory) {
-    uint256[] memory a = new uint256[](2);
-    a[0] = m1 * 1 ether;
-    a[1] = m2 * 1 ether;
+function generateAmbParams(
+    uint256 dstCount,
+    uint256 ambCount
+) pure returns (bytes[] memory) {
+    uint256[] memory gasPerAMB = new uint256[](ambCount);
+    gasPerAMB[0] = 1 ether;
+    gasPerAMB[1] = 1 ether;
 
-    bytes[] memory b = new bytes[](2);
-    b[0] = "";
-    b[1] = "";
+    bytes[] memory paramsPerAMB = new bytes[](ambCount);
 
-    return abi.encode(AMBOverride(a, b));
+    AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
+
+    bytes[] memory paramsPerDST = new bytes[](dstCount);
+
+    for (uint256 i; i < dstCount; i++) {
+        paramsPerDST[i] = abi.encode(
+            SingleDstAMBParams(2 ether, abi.encode(extraData))
+        );
+    }
+
+    return paramsPerDST;
+}
+
+function generateBroadcastParams(
+    uint256 dstCount,
+    uint256 ambCount
+) pure returns (bytes memory) {
+    uint8[] memory ambIds = new uint8[](ambCount);
+    ambIds[0] = 1;
+    ambIds[1] = 2;
+
+    uint256[] memory gasPerAMB = new uint256[](ambCount);
+    gasPerAMB[0] = 400 ether;
+    gasPerAMB[1] = 400 ether;
+
+    uint256[] memory gasPerDST = new uint256[](dstCount);
+    gasPerDST[0] = 80 ether;
+    gasPerDST[1] = 80 ether;
+    gasPerDST[2] = 80 ether;
+    gasPerDST[3] = 80 ether;
+    gasPerDST[4] = 80 ether;
+
+    bytes[] memory paramsPerDST = new bytes[](dstCount);
+
+    bytes[] memory paramsPerAMB = new bytes[](ambCount);
+    paramsPerAMB[0] = abi.encode(
+        BroadCastAMBExtraData(gasPerDST, paramsPerDST)
+    );
+    paramsPerAMB[1] = abi.encode(
+        BroadCastAMBExtraData(gasPerDST, paramsPerDST)
+    );
+
+    AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
+
+    return abi.encode(ambIds, abi.encode(extraData));
+}
+
+function generateAckParams(uint256 ambCount) pure returns (bytes memory) {
+    uint8[] memory ambIds = new uint8[](ambCount);
+    ambIds[0] = 1;
+    ambIds[1] = 2;
+
+    uint256[] memory gasPerAMB = new uint256[](ambCount);
+    gasPerAMB[0] = 80 ether;
+    gasPerAMB[1] = 80 ether;
+
+    bytes[] memory paramsPerAMB = new bytes[](ambCount);
+
+    AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
+
+    return abi.encode(AckAMBData(ambIds, abi.encode(extraData)));
 }

@@ -7,9 +7,7 @@ import "../../utils/DataPacking.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
 import {ISocketRegistry} from "../../interfaces/ISocketRegistry.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
-
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
-
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
@@ -83,6 +81,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
         action.msgValue =
+            action.msgValue +
             (vars.nDestinations + 1) *
             _getPriceMultiplier(CHAIN_0) *
             1e18;
@@ -213,9 +212,8 @@ abstract contract ProtocolActions is BaseSetup {
                         .singleDstMultiVaultStateReq = SingleDstMultiVaultsStateReq(
                         AMBs,
                         DST_CHAINS[0],
-                        50 ether, /// FIXME: GAS
                         multiSuperFormsData[0],
-                        action.adapterParam
+                        action.ambParams[0]
                     );
 
                     if (
@@ -235,7 +233,7 @@ abstract contract ProtocolActions is BaseSetup {
                         AMBs,
                         DST_CHAINS,
                         multiSuperFormsData,
-                        action.adapterParam
+                        action.ambParams
                     );
 
                     if (
@@ -257,9 +255,8 @@ abstract contract ProtocolActions is BaseSetup {
                             .singleXChainSingleVaultStateReq = SingleXChainSingleVaultStateReq(
                             AMBs,
                             DST_CHAINS[0],
-                            50 ether, /// FIXME: GAS
                             singleSuperFormsData[0],
-                            action.adapterParam
+                            action.ambParams[0]
                         );
 
                         if (
@@ -278,7 +275,7 @@ abstract contract ProtocolActions is BaseSetup {
                             .singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
                             DST_CHAINS[0],
                             singleSuperFormsData[0],
-                            action.adapterParam
+                            action.ambParams[0]
                         );
 
                         if (
@@ -299,7 +296,7 @@ abstract contract ProtocolActions is BaseSetup {
                         AMBs,
                         DST_CHAINS,
                         singleSuperFormsData,
-                        action.adapterParam
+                        action.ambParams
                     );
                     if (
                         action.action == Actions.Deposit ||
@@ -1203,19 +1200,19 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[targetChainId_]);
-        uint256 msgValue = 50 * _getPriceMultiplier(targetChainId_) * 1e18;
+        uint256 msgValue = 160 * 1e18; /// @FIXME: try more accurate estimations
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {
             CoreStateRegistry(
                 payable(getContract(targetChainId_, "CoreStateRegistry"))
-            ).processPayload{value: msgValue}(payloadId_, "");
+            ).processPayload{value: msgValue}(payloadId_, generateAckParams(2));
         } else if (testType == TestType.RevertProcessPayload) {
             vm.expectRevert();
 
             CoreStateRegistry(
                 payable(getContract(targetChainId_, "CoreStateRegistry"))
-            ).processPayload{value: msgValue}(payloadId_, "");
+            ).processPayload{value: msgValue}(payloadId_, generateAckParams(2));
 
             return false;
         }

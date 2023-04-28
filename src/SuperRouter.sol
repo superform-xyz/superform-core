@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage, MultiDstExtraData} from "./types/DataTypes.sol";
+import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage, SingleDstAMBParams} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
@@ -77,19 +77,13 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     ) external payable override {
         uint256 nDestinations = req.dstChainIds.length;
 
-        MultiDstExtraData memory d = abi.decode(
-            req.extraData,
-            (MultiDstExtraData)
-        );
-
         for (uint256 i = 0; i < nDestinations; i++) {
             singleDstMultiVaultDeposit(
                 SingleDstMultiVaultsStateReq(
                     req.ambIds,
                     req.dstChainIds[i],
-                    d.gasPerDst[i],
                     req.superFormsData[i],
-                    d.extraDataPerDst[i]
+                    req.extraDataPerDst[i]
                 )
             );
         }
@@ -181,12 +175,17 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 );
             }
 
+            SingleDstAMBParams memory ambParams = abi.decode(
+                req.extraData,
+                (SingleDstAMBParams)
+            );
+
             IBaseStateRegistry(superRegistry.coreStateRegistry())
-                .dispatchPayload{value: req.gasToPay}(
+                .dispatchPayload{value: ambParams.gasToPay}(
                 req.ambIds,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
-                req.extraData
+                ambParams.encodedAMBExtraData
             );
 
             txHistory[vars.currentTotalTransactions] = vars.ambMessage;
@@ -202,10 +201,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         uint16 dstChainId;
         uint256 nDestinations = req.dstChainIds.length;
 
-        MultiDstExtraData memory d = abi.decode(
-            req.extraData,
-            (MultiDstExtraData)
-        );
         for (uint256 i = 0; i < nDestinations; i++) {
             dstChainId = req.dstChainIds[i];
             if (superRegistry.chainId() == dstChainId) {
@@ -213,7 +208,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
                         req.superFormsData[i],
-                        req.extraData
+                        req.extraDataPerDst[i]
                     )
                 );
             } else {
@@ -221,9 +216,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     SingleXChainSingleVaultStateReq(
                         req.ambIds,
                         dstChainId,
-                        d.gasPerDst[i],
                         req.superFormsData[i],
-                        d.extraDataPerDst[i]
+                        req.extraDataPerDst[i]
                     )
                 );
             }
@@ -302,13 +296,18 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             superRegistry.PERMIT2()
         );
 
+        SingleDstAMBParams memory ambParams = abi.decode(
+            req.extraData,
+            (SingleDstAMBParams)
+        );
+
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: req.gasToPay
+            value: ambParams.gasToPay
         }(
             req.ambIds,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
-            req.extraData
+            ambParams.encodedAMBExtraData
         );
         txHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
@@ -367,18 +366,14 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         MultiDstMultiVaultsStateReq calldata req
     ) external payable override {
         uint256 nDestinations = req.dstChainIds.length;
-        MultiDstExtraData memory d = abi.decode(
-            req.extraData,
-            (MultiDstExtraData)
-        );
+
         for (uint256 i = 0; i < nDestinations; i++) {
             singleDstMultiVaultWithdraw(
                 SingleDstMultiVaultsStateReq(
                     req.ambIds,
                     req.dstChainIds[i],
-                    d.gasPerDst[i],
                     req.superFormsData[i],
-                    d.extraDataPerDst[i]
+                    req.extraDataPerDst[i]
                 )
             );
         }
@@ -468,16 +463,21 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             _directMultiWithdraw(req.superFormsData.liqRequests, ambData);
             emit Completed(vars.currentTotalTransactions);
         } else {
+            SingleDstAMBParams memory ambParams = abi.decode(
+                req.extraData,
+                (SingleDstAMBParams)
+            );
+
             /// @dev _liqReq should have path encoded for withdraw to SuperRouter on chain different than chainId
             /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
             /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
             /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
             IBaseStateRegistry(superRegistry.coreStateRegistry())
-                .dispatchPayload{value: req.gasToPay}(
+                .dispatchPayload{value: ambParams.gasToPay}(
                 req.ambIds,
                 vars.dstChainId,
                 abi.encode(vars.ambMessage),
-                req.extraData
+                ambParams.encodedAMBExtraData
             );
             txHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
@@ -492,11 +492,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         uint16 dstChainId;
         uint256 nDestinations = req.dstChainIds.length;
 
-        MultiDstExtraData memory d = abi.decode(
-            req.extraData,
-            (MultiDstExtraData)
-        );
-
         for (uint256 i = 0; i < nDestinations; i++) {
             dstChainId = req.dstChainIds[i];
             if (superRegistry.chainId() == dstChainId) {
@@ -504,7 +499,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     SingleDirectSingleVaultStateReq(
                         dstChainId,
                         req.superFormsData[i],
-                        req.extraData
+                        req.extraDataPerDst[i]
                     )
                 );
             } else {
@@ -512,9 +507,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                     SingleXChainSingleVaultStateReq(
                         req.ambIds,
                         dstChainId,
-                        d.gasPerDst[i],
                         req.superFormsData[i],
-                        d.extraDataPerDst[i]
+                        req.extraDataPerDst[i]
                     )
                 );
             }
@@ -605,13 +599,18 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             )
         );
 
+        SingleDstAMBParams memory ambParams = abi.decode(
+            req.extraData,
+            (SingleDstAMBParams)
+        );
+
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: req.gasToPay
+            value: ambParams.gasToPay
         }(
             req.ambIds,
             vars.dstChainId,
             abi.encode(vars.ambMessage),
-            req.extraData
+            ambParams.encodedAMBExtraData
         );
 
         txHistory[vars.currentTotalTransactions] = vars.ambMessage;
@@ -861,7 +860,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             (ReturnMultiData)
         );
 
-        (   uint16 status,
+        (
+            uint16 status,
             uint16 returnDataSrcChainId,
             uint16 returnDataDstChainId,
             uint80 returnDataTxId
@@ -872,7 +872,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (!multi) revert Error.INVALID_PAYLOAD();
-
 
         InitMultiVaultData memory multiVaultData = abi.decode(
             stored.params,
@@ -943,7 +942,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             (ReturnSingleData)
         );
 
-        (   uint16 status,
+        (
+            uint16 status,
             uint16 returnDataSrcChainId,
             uint16 returnDataDstChainId,
             uint80 returnDataTxId
@@ -953,7 +953,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (multi) revert Error.INVALID_PAYLOAD();
-
 
         InitSingleVaultData memory singleVaultData = abi.decode(
             stored.params,

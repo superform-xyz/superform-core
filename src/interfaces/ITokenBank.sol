@@ -24,23 +24,19 @@ interface ITokenBank {
 
     /// @dev handles the state when received from the source chain.
     /// @param multiVaultData_     represents the struct with the associated multi vault data\
-    /// @param ackExtraData_ represents the override data for acknowledgement
     /// note: called by external keepers when state is ready.
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositMultiSync(
-        InitMultiVaultData memory multiVaultData_,
-        bytes memory ackExtraData_
-    ) external payable;
+        InitMultiVaultData memory multiVaultData_
+    ) external payable returns (uint16, bytes memory);
 
     /// @dev handles the state when received from the source chain.
     /// @param singleVaultData_ represents the struct with the associated single vault data
-    /// @param ackExtraData_ represents the override data for acknowledgement
     /// note: called by external keepers when state is ready.
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositSync(
-        InitSingleVaultData memory singleVaultData_,
-        bytes memory ackExtraData_
-    ) external payable;
+        InitSingleVaultData memory singleVaultData_
+    ) external payable returns (uint16, bytes memory);
 
     /// @dev handles the state when received from the source chain.
     /// @param multiVaultData_       represents the struct with the associated multi vault data
@@ -48,7 +44,7 @@ interface ITokenBank {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function withdrawMultiSync(
         InitMultiVaultData memory multiVaultData_
-    ) external payable;
+    ) external payable returns (uint16, bytes memory);
 
     /// @dev handles the state when received from the source chain.
     /// @param singleVaultData_       represents the struct with the associated single vault data
@@ -56,5 +52,5 @@ interface ITokenBank {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function withdrawSync(
         InitSingleVaultData memory singleVaultData_
-    ) external payable;
+    ) external payable returns (uint16, bytes memory);
 }

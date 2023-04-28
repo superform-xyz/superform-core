@@ -34,7 +34,7 @@ contract SuperFormFactoryTest is BaseSetup {
         super.setUp();
     }
 
-    function xtest_chainId() public {
+    function test_chainId() public {
         vm.selectFork(FORKS[chainId]);
 
         assertEq(
@@ -43,7 +43,7 @@ contract SuperFormFactoryTest is BaseSetup {
         );
     }
 
-    function xtest_revert_addForm_addressZero() public {
+    function test_revert_addForm_addressZero() public {
         address form = address(0);
         uint256 formId = 1;
 
@@ -53,7 +53,7 @@ contract SuperFormFactoryTest is BaseSetup {
             .addFormBeacon(form, formId, salt);
     }
 
-    function xtest_revert_addForm_interfaceUnsupported() public {
+    function test_revert_addForm_interfaceUnsupported() public {
         address form = address(0x1);
         uint256 formId = 1;
 
@@ -63,7 +63,7 @@ contract SuperFormFactoryTest is BaseSetup {
             .addFormBeacon(form, formId, salt);
     }
 
-    function xtest_addForm() public {
+    function test_addForm() public {
         vm.startPrank(deployer);
         address formImplementation = address(
             new ERC4626Form(getContract(chainId, "SuperRegistry"))

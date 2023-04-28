@@ -44,7 +44,6 @@ import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface
 import "../../utils/AmbParams.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
 
-
 import {SuperPositionBank} from "../../SuperPositionBank.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 
@@ -549,7 +548,10 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 13.1 - Deploy SuperPositionsBank
             vars.superPositionBank = address(
-                new SuperPositionBank(ISuperPositions(vars.superPositions), ISuperRouter(vars.superRouter))
+                new SuperPositionBank(
+                    ISuperPositions(vars.superPositions),
+                    ISuperRouter(vars.superRouter)
+                )
             );
 
             /// @dev 13.2 - setSuperPositionsBank
@@ -673,7 +675,7 @@ abstract contract BaseSetup is DSTest, Test {
                         .createSuperForm{value: 800 * 10 ** 18}(
                         FORM_BEACON_IDS[j],
                         address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k]),
-                        encode(400, 400)
+                        generateBroadcastParams(5, 2)
                     );
 
                     contracts[chainIds[i]][

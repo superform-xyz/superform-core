@@ -8,6 +8,7 @@ import "../types/DataTypes.sol";
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
+import "../utils/AmbParams.sol";
 
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
@@ -65,7 +66,7 @@ contract Scenario7Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                adapterParam: "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: msgValue
             })
         );
@@ -105,7 +106,7 @@ contract Scenario7Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function xtest_scenario() public {
+    function test_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;

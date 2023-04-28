@@ -8,6 +8,7 @@ import "../types/DataTypes.sol";
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
+import "../utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
@@ -51,8 +52,8 @@ contract Scenario5Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                adapterParam: "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000de0b6b3a764000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                msgValue: msgValue
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: 50 * 10 ** 18
             })
         );
         actions.push(
@@ -65,8 +66,8 @@ contract Scenario5Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: 50 * 10 ** 18
             })
         );
     }
@@ -75,7 +76,7 @@ contract Scenario5Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function xtest_scenario() public {
+    function test_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;

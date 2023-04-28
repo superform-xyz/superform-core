@@ -5,9 +5,10 @@ import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
+import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, AckAMBData, AMBExtraData} from "../types/DataTypes.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
+
 import "forge-std/console.sol";
 
 /// @title Cross-Chain AMB Aggregator
@@ -176,11 +177,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
     /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @param ambOverride_ is the extra data to be passed to AMB to send acknowledgement.
+    /// @param ackExtraData_ is the extra data to be passed to AMB to send acknowledgement.
     /// NOTE: function can only process successful payloads.
     function processPayload(
         uint256 payloadId_,
-        bytes memory ambOverride_
+        bytes memory ackExtraData_
     ) external payable virtual override onlyProcessor {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
@@ -203,28 +204,42 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             payloadInfo.txInfo
         );
 
+        uint16 srcChainId;
+        bytes memory returnMessage;
         if (multi) {
             if (txType == uint256(TransactionType.WITHDRAW)) {
-                _processMultiWithdrawal(payloadId_, callbackType, payloadInfo);
-            } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                _processMultiDeposit(
+                (srcChainId, returnMessage) = _processMultiWithdrawal(
                     payloadId_,
                     callbackType,
                     payloadInfo,
-                    ambOverride_
+                    ackExtraData_
+                );
+            } else if (txType == uint256(TransactionType.DEPOSIT)) {
+                (srcChainId, returnMessage) = _processMultiDeposit(
+                    payloadId_,
+                    callbackType,
+                    payloadInfo
                 );
             }
         } else {
             if (txType == uint256(TransactionType.WITHDRAW)) {
-                _processSingleWithdrawal(payloadId_, callbackType, payloadInfo);
-            } else if (txType == uint256(TransactionType.DEPOSIT)) {
-                _processSingleDeposit(
+                (srcChainId, returnMessage) = _processSingleWithdrawal(
                     payloadId_,
                     callbackType,
                     payloadInfo,
-                    ambOverride_
+                    ackExtraData_
+                );
+            } else if (txType == uint256(TransactionType.DEPOSIT)) {
+                (srcChainId, returnMessage) = _processSingleDeposit(
+                    payloadId_,
+                    callbackType,
+                    payloadInfo
                 );
             }
+        }
+
+        if (srcChainId != 0 && returnMessage.length > 0) {
+            _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData_);
         }
     }
 
@@ -286,8 +301,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _processMultiWithdrawal(
         uint256 payloadId_,
         uint256 callbackType_,
-        AMBMessage memory payloadInfo_
-    ) internal {
+        AMBMessage memory payloadInfo_,
+        bytes memory ackExtraData_
+    ) internal returns (uint16, bytes memory) {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (callbackType_ == uint256(CallbackType.INIT)) {
@@ -295,22 +311,24 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 payloadInfo_.params,
                 (InitMultiVaultData)
             );
-            ITokenBank(superRegistry.tokenBank()).withdrawMultiSync{
-                value: msg.value
-            }(multiVaultData);
+            return
+                ITokenBank(superRegistry.tokenBank()).withdrawMultiSync{
+                    value: msg.value
+                }(multiVaultData);
         } else {
             ISuperRouter(superRegistry.superRouter()).stateMultiSync{
                 value: msg.value
             }(payloadInfo_);
         }
+
+        return (0, "");
     }
 
     function _processMultiDeposit(
         uint256 payloadId_,
         uint256 callbackType_,
-        AMBMessage memory payloadInfo_,
-        bytes memory ambOverride_
-    ) internal {
+        AMBMessage memory payloadInfo_
+    ) internal returns (uint16, bytes memory) {
         if (callbackType_ == uint256(CallbackType.INIT)) {
             if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
                 revert Error.PAYLOAD_NOT_UPDATED();
@@ -322,26 +340,30 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 (InitMultiVaultData)
             );
 
-            ITokenBank(superRegistry.tokenBank()).depositMultiSync{
-                value: msg.value
-            }(multiVaultData, ambOverride_);
+            return
+                ITokenBank(superRegistry.tokenBank()).depositMultiSync(
+                    multiVaultData
+                );
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
                 revert Error.INVALID_PAYLOAD_STATE();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperRouter(superRegistry.superRouter()).stateMultiSync{
-                value: msg.value
-            }(payloadInfo_);
+            ISuperRouter(superRegistry.superRouter()).stateMultiSync(
+                payloadInfo_
+            );
         }
+
+        return (0, "");
     }
 
     function _processSingleWithdrawal(
         uint256 payloadId_,
         uint256 callbackType_,
-        AMBMessage memory payloadInfo_
-    ) internal {
+        AMBMessage memory payloadInfo_,
+        bytes memory ackExtraData_
+    ) internal returns (uint16, bytes memory) {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (callbackType_ == uint256(CallbackType.INIT)) {
@@ -349,9 +371,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 payloadInfo_.params,
                 (InitSingleVaultData)
             );
-            ITokenBank(superRegistry.tokenBank()).withdrawSync{
-                value: msg.value
-            }(singleVaultData);
+            return
+                ITokenBank(superRegistry.tokenBank()).withdrawSync{
+                    value: msg.value
+                }(singleVaultData);
             /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
         } else {
             /// @dev Withdraw SyncBack here, callbackType.return
@@ -359,14 +382,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 value: msg.value
             }(payloadInfo_);
         }
+
+        return (0, "");
     }
 
     function _processSingleDeposit(
         uint256 payloadId_,
         uint256 callbackType_,
-        AMBMessage memory payloadInfo_,
-        bytes memory ambOverride
-    ) internal {
+        AMBMessage memory payloadInfo_
+    ) internal returns (uint16, bytes memory) {
         if (callbackType_ == uint256(CallbackType.INIT)) {
             InitSingleVaultData memory singleVaultData = abi.decode(
                 payloadInfo_.params,
@@ -377,19 +401,51 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ITokenBank(superRegistry.tokenBank()).depositSync{value: msg.value}(
-                singleVaultData,
-                ambOverride
-            );
+            return
+                ITokenBank(superRegistry.tokenBank()).depositSync(
+                    singleVaultData
+                );
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
                 revert Error.INVALID_PAYLOAD_STATE();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperRouter(superRegistry.superRouter()).stateSync{
-                value: msg.value
-            }(payloadInfo_);
+            ISuperRouter(superRegistry.superRouter()).stateSync(payloadInfo_);
         }
+
+        return (0, "");
+    }
+
+    function _dispatchAcknowledgement(
+        uint16 dstChainId_,
+        bytes memory message_,
+        bytes memory ackExtraData_
+    ) internal {
+        AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
+        uint8[] memory ambIds_ = ackData.ambIds;
+
+        /// @dev atleast 2 AMBs are required
+        if (ambIds_.length < 2) {
+            revert Error.INVALID_AMB_IDS_LENGTH();
+        }
+
+        AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
+
+        _dispatchPayload(
+            ambIds_[0],
+            dstChainId_,
+            d.gasPerAMB[0],
+            message_,
+            d.extraDataPerAMB[0]
+        );
+
+        _dispatchProof(
+            ambIds_,
+            dstChainId_,
+            d.gasPerAMB,
+            message_,
+            d.extraDataPerAMB
+        );
     }
 }

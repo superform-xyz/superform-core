@@ -7,7 +7,7 @@ import {IMessageRecipient} from "./interface/IMessageRecipient.sol";
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IInterchainGasPaymaster} from "./interface/IInterchainGasPaymaster.sol";
-import {AMBMessage, MultiDstExtraData} from "../../types/DataTypes.sol";
+import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
 
@@ -126,9 +126,9 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CALLER();
         }
 
-        MultiDstExtraData memory d = abi.decode(
+        BroadCastAMBExtraData memory d = abi.decode(
             extraData_,
-            (MultiDstExtraData)
+            (BroadCastAMBExtraData)
         );
         /// FIXME:should we check the length ?? anyway out of index will fail if the length
         /// mistmatches
@@ -146,7 +146,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             igp.payForGas{value: d.gasPerDst[i]}(
                 messageId,
                 domain,
-                abi.decode(d.extraDataPerDst[i], (uint256)),
+                0, /// abi.decode(d.extraDataPerDst[i], (uint256))
                 msg.sender /// @FIXME should refund to the user, now refunds to core state registry
             );
         }

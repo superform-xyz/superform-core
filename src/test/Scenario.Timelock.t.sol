@@ -14,6 +14,7 @@ import {IERC4626TimelockForm} from "./interfaces/IERC4626TimelockForm.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 import {_packSuperForm} from "../utils/DataPacking.sol";
+import "../utils/AmbParams.sol";
 
 /// @dev we can't use it because it shadows existing declaration at the BaseSetup level
 // import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol";
@@ -75,7 +76,7 @@ contract ScenarioTimelockTest is ProtocolActions {
     // function testFail_scenario_request_unlock_overwithdraw() public {}
 
     /// @dev This test uses 2 actions, rolls block between and make assertions about states in between
-    function xtest_scenario_request_unlock_full_withdraw() public {
+    function test_scenario_request_unlock_full_withdraw() public {
         /*///////////////////////////////////////////////////////////////
                                 STATE SETUP
         //////////////////////////////////////////////////////////////*/
@@ -269,7 +270,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         );
 
         console.log("stage2 done");
-        
+
         /// @dev Deliver message from source to destination (withdraw action)
         aV = _stage3_src_to_dst_amb_delivery(
             action,
@@ -293,7 +294,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev Process payload received on source from destination (withdraw callback)
         success = _stage6_process_superPositions_withdraw(action, vars);
-        
+
         /*///////////////////////////////////////////////////////////////
                             TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/
@@ -348,7 +349,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                     revertRole: "",
                     slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                     multiTx: false,
-                    adapterParam: "",
+                    ambParams: generateAmbParams(DST_CHAINS.length, 2),
                     msgValue: msgValue
                 });
             } else if (kind_ == Actions.Withdraw) {
@@ -361,7 +362,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                     revertRole: "",
                     slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                     multiTx: false,
-                    adapterParam: "",
+                    ambParams: generateAmbParams(DST_CHAINS.length, 2),
                     msgValue: msgValue
                 });
             } else {

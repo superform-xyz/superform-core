@@ -46,11 +46,8 @@ contract Scenario1Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                adapterParam: encode(
-                    _getPriceMultiplier(CHAIN_0),
-                    _getPriceMultiplier(CHAIN_0)
-                ),
-                msgValue: 50 * 10 ** 18
+                msgValue: 50 * 10 ** 18,
+                ambParams: generateAmbParams(DST_CHAINS.length, 2)
             })
         );
     }

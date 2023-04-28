@@ -44,13 +44,12 @@ struct MultiDstMultiVaultsStateReq {
     uint8[] ambIds;
     uint16[] dstChainIds;
     MultiVaultsSFData[] superFormsData;
-    bytes extraData;
+    bytes[] extraDataPerDst; /// encoded array of SingleDstAMBParams; length == no of dstChainIds
 }
 
 struct SingleDstMultiVaultsStateReq {
     uint8[] ambIds;
     uint16 dstChainId;
-    uint256 gasToPay;
     MultiVaultsSFData superFormsData;
     bytes extraData;
 }
@@ -59,13 +58,12 @@ struct MultiDstSingleVaultStateReq {
     uint8[] ambIds;
     uint16[] dstChainIds;
     SingleVaultSFData[] superFormsData;
-    bytes extraData;
+    bytes[] extraDataPerDst;
 }
 
 struct SingleXChainSingleVaultStateReq {
     uint8[] ambIds;
     uint16 dstChainId;
-    uint256 gasToPay;
     SingleVaultSFData superFormData;
     bytes extraData;
 }
@@ -124,17 +122,23 @@ struct ReturnSingleData {
  * linear waterflow model??
  * where the top data type is encoded and the bottom level decodes it
  */
-struct AMBOverride {
-    uint256[] gas;
-    bytes[] extraData; // encoded MultiDstExtraData
+struct SingleDstAMBParams {
+    uint256 gasToPay;
+    bytes encodedAMBExtraData;
 }
 
-struct MultiDstExtraData {
+struct AMBExtraData {
+    uint256[] gasPerAMB;
+    bytes[] extraDataPerAMB;
+}
+
+struct BroadCastAMBExtraData {
     uint256[] gasPerDst;
     bytes[] extraDataPerDst;
 }
 
-struct AckExtraData {
+/// acknowledgement extra data
+struct AckAMBData {
     uint8[] ambIds;
-    bytes ambOverride;
+    bytes extraData;
 }

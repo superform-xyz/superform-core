@@ -146,7 +146,7 @@ contract SuperFormFactory is ISuperFormFactory {
             extraData_,
             (uint8[], bytes)
         );
-        /// FIXME: add validations for extra data / check if invalid data fails at registry level
+        /// FIXME: add validations for extra dataˀˀ
         IBaseStateRegistry(superRegistry.factoryStateRegistry())
             .broadcastPayload{value: msg.value}(
             ambIds,
