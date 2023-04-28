@@ -157,7 +157,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         ERC4626 v = ERC4626(vars.vaultLoc);
 
         vars.collateral = address(v.asset());
-        ERC20 collateralToken = ERC20(vars.collateral);
+        vars.collateralToken = ERC20(vars.collateral);
         vars.balanceBefore = vars.collateralToken.balanceOf(address(this));
 
         (vars.srcSender, , ) = _decodeTxData(singleVaultData_.txData);

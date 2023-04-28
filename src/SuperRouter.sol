@@ -17,6 +17,7 @@ import {IBridgeValidator} from "./interfaces/IBridgeValidator.sol";
 import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 import {ISuperPositionBank} from "./interfaces/ISuperPositionBank.sol";
 
@@ -108,12 +109,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         if (!_validateSuperFormsDepositData(req.superFormsData))
             revert Error.INVALID_SUPERFORMS_DATA();
-
-        if (
-            !IBridgeValidator(
-                superRegistry.getBridgeValidator(vars.liqRequest.bridgeId)
-            ).validateTxDataDepositMultiVaultAmounts(req.superFormsData)
-        ) revert Error.INVALID_TXDATA_AMOUNTS();
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -259,8 +254,13 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         if (
             !IBridgeValidator(
-                superRegistry.getBridgeValidator(vars.liqRequest.bridgeId)
-            ).validateTxDataDepositSingleVaultAmount(req.superFormData)
+                superRegistry.getBridgeValidator(
+                    req.superFormData.liqRequest.bridgeId
+                )
+            ).validateTxDataAmount(
+                    req.superFormData.liqRequest.txData,
+                    req.superFormData.amount
+                )
         ) revert Error.INVALID_TXDATA_AMOUNTS();
 
         totalTransactions++;
@@ -353,8 +353,13 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         if (
             !IBridgeValidator(
-                superRegistry.getBridgeValidator(vars.liqRequest.bridgeId)
-            ).validateTxDataDepositSingleVaultAmount(req.superFormData)
+                superRegistry.getBridgeValidator(
+                    req.superFormData.liqRequest.bridgeId
+                )
+            ).validateTxDataAmount(
+                    req.superFormData.liqRequest.txData,
+                    req.superFormData.amount
+                )
         ) revert Error.INVALID_TXDATA_AMOUNTS();
 
         totalTransactions++;
@@ -1167,6 +1172,17 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             return false;
         }
 
+        uint256 sumAmounts;
+
+        (address firstSuperForm, , ) = _getSuperForm(
+            superFormsData_.superFormIds[0]
+        );
+        address collateral = address(
+            IBaseForm(firstSuperForm).getUnderlyingOfVault()
+        );
+
+        if (collateral == address(0)) return false;
+
         /// @dev slippage and paused validation
         for (uint256 i = 0; i < len; i++) {
             if (superFormsData_.maxSlippage[i] > 10000) return false;
@@ -1179,6 +1195,61 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                         .getFormBeacon(formBeaconId_)
                 ).paused()
             ) return false;
+
+            sumAmounts += superFormsData_.amounts[i];
+
+            /// @dev compare underlyings with the first superForm. If there is at least one different mark collateral as 0
+            if (collateral != address(0) && i + 1 < len) {
+                (address superForm, , ) = _getSuperForm(
+                    superFormsData_.superFormIds[i + 1]
+                );
+
+                if (
+                    collateral !=
+                    address(IBaseForm(superForm).getUnderlyingOfVault())
+                ) collateral = address(0);
+            }
+        }
+
+        /// @dev In multiVaults, if there is only one liqRequest, then the sum of the amounts must be equal to the amount in the liqRequest and all underlyings must be equal
+        if (
+            liqRequestsLen == 1 &&
+            (liqRequestsLen != len) &&
+            (
+                IBridgeValidator(
+                    superRegistry.getBridgeValidator(
+                        superFormsData_.liqRequests[0].bridgeId
+                    )
+                ).validateTxDataAmount(
+                        superFormsData_.liqRequests[0].txData,
+                        sumAmounts
+                    )
+            ) &&
+            collateral == address(0)
+        ) {
+            return false;
+        } else if (liqRequestsLen > 1 && collateral != address(0)) {
+            /// @dev else if number of liq request >1, length must be equal to the number of superForms sent in this request (and all colaterals are different)
+            if (liqRequestsLen != len) {
+                return false;
+
+                /// @dev else if number of liq request >1 and  length is equal to the number of superForms sent in this request, then all amounts in liqRequest must be equal to the amounts in superformsdata
+            } else if (liqRequestsLen == len) {
+                for (uint256 i = 0; i < liqRequestsLen; i++) {
+                    IBridgeValidator(
+                        superRegistry.getBridgeValidator(
+                            superFormsData_.liqRequests[i].bridgeId
+                        )
+                    ).validateTxDataAmount(
+                            superFormsData_.liqRequests[i].txData,
+                            superFormsData_.amounts[i]
+                        );
+                }
+            }
+            /// @dev else if number of liq request >1 and all colaterals are the same, then this request should be invalid (?)
+            /// @notice we could allow it but would imply multiple bridging of the same tokens
+        } else if (liqRequestsLen > 1 && collateral == address(0)) {
+            return false;
         }
 
         return true;

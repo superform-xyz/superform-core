@@ -42,13 +42,9 @@ abstract contract BridgeValidator is IBridgeValidator {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IBridgeValidator
-    function validateTxDataDepositMultiVaultAmounts(
-        MultiVaultsSFData calldata superFormsData_
-    ) external view virtual override returns (bool);
-
-    /// @inheritdoc IBridgeValidator
-    function validateTxDataDepositSingleVaultAmount(
-        SingleVaultSFData calldata superFormData_
+    function validateTxDataAmount(
+        bytes calldata txData_,
+        uint256 amount_
     ) external view virtual override returns (bool);
 
     /// @inheritdoc IBridgeValidator

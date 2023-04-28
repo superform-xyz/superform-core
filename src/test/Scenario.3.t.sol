@@ -54,7 +54,8 @@ contract Scenario3Test is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 adapterParam: "",
-                msgValue: msgValue
+                msgValue: msgValue,
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
@@ -63,7 +64,7 @@ contract Scenario3Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function xtest_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;

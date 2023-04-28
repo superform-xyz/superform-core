@@ -10,15 +10,11 @@ interface IBridgeValidator {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev validates the amounts being sent in liqRequests
-    /// @param superFormsData_ the multiVaults struct for the deposit
-    function validateTxDataDepositMultiVaultAmounts(
-        MultiVaultsSFData calldata superFormsData_
-    ) external view returns (bool);
-
-    /// @dev validates the amounts being sent in liqRequests
-    /// @param superFormData_ the singleVault struct for the deposit
-    function validateTxDataDepositSingleVaultAmount(
-        SingleVaultSFData calldata superFormData_
+    /// @param txData_ the txData of the deposit
+    /// @param amount_ the amount of the deposit
+    function validateTxDataAmount(
+        bytes calldata txData_,
+        uint256 amount_
     ) external view returns (bool);
 
     /// @dev validates the txData of a cross chain deposit

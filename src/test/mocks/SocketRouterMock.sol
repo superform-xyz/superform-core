@@ -29,7 +29,8 @@ contract SocketRouterMock is ISocketRegistry, Test {
                 userRequest_.amount,
                 userRequest_.receiverAddress,
                 userRequest_.bridgeRequest.inputToken,
-                userRequest_.bridgeRequest.data
+                userRequest_.bridgeRequest.data,
+                false
             );
         }
 
@@ -45,7 +46,8 @@ contract SocketRouterMock is ISocketRegistry, Test {
             userRequest_.amount,
             userRequest_.receiverAddress,
             userRequest_.bridgeRequest.inputToken,
-            userRequest_.bridgeRequest.data
+            userRequest_.bridgeRequest.data,
+            true
         );
     }
 
@@ -55,14 +57,16 @@ contract SocketRouterMock is ISocketRegistry, Test {
         uint256 amount_,
         address receiver_,
         address inputToken_,
-        bytes memory data_
+        bytes memory data_,
+        bool prevSwap
     ) internal {
         /// @dev encapsulating from
         (address from, uint256 toForkId) = abi.decode(
             data_,
             (address, uint256)
         );
-        MockERC20(inputToken_).transferFrom(from, address(this), amount_);
+        if (!prevSwap)
+            MockERC20(inputToken_).transferFrom(from, address(this), amount_);
         MockERC20(inputToken_).burn(address(this), amount_);
 
         uint256 prevForkId = vm.activeFork();
@@ -79,7 +83,7 @@ contract SocketRouterMock is ISocketRegistry, Test {
         bytes memory data_
     ) internal {
         /// @dev encapsulating from
-        (address from, ) = abi.decode(data_, (address, uint256));
+        address from = abi.decode(data_, (address));
         MockERC20(inputToken_).transferFrom(from, address(this), amount_);
         MockERC20(inputToken_).burn(address(this), amount_);
         /// @dev assume no swap slippage
