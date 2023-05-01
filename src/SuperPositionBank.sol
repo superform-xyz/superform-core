@@ -28,6 +28,10 @@ contract SuperPositionBank is ERC165 {
 
     mapping(address owner => uint256 id) public queueCounter;
 
+    /// @dev For all those returning messages with status 1 (requestUnlock)
+    mapping(address owner => mapping(uint256 superFormId => uint256 amount))
+        private unlocked;
+
     modifier onlyRouter() {
         require(msg.sender == address(superRouter), "DISALLOWED");
         _;
@@ -152,19 +156,26 @@ contract SuperPositionBank is ERC165 {
     }
 
     /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
-    function holdPositionSingle(
+    function lockPositionSingle(
         address owner_,
-        uint256 positionIndex
+        uint256 superFormId,
+        uint256 amount
     ) public onlyRouter {
-
+        /// @dev mark 1step as completed
+        unlocked[owner_][superFormId] = amount;
     }
 
     /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
-    function holdPositionBatch(
+    function lockPositionBatch(
         address owner_,
-        uint256 positionIndex
+        uint256[] memory superFormId,
+        uint256[] memory amount
     ) public onlyRouter {
-
+        /// @dev mark 1step as completed
+        /// note: we lose advantage of batch superformIds here
+        for (uint256 i = 0; i < superFormId.length; i++) {
+            unlocked[owner_][superFormId[i]] = amount[i];
+        }
     }
 
     /// @dev Private queue requires public getter

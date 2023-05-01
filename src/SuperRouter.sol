@@ -545,6 +545,14 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
             revert Error.INVALID_SUPERFORMS_DATA();
 
+        /// TODO: Check here if it's regular or 2step withdraw
+        /// TODO: For reg - saveTransferFrom, for 2step - keeper trigger
+        /// NOTE: This check will also work for non-keeper solution
+        /// NOTE: Can we check in anyway if superFormData.superFormId == 2step superFormId?
+        /// NOTE: Can we check in anyway if this is 1step out of 2steps or final step? (spBank.queueCounter)
+
+        // if (req.superFormData.superFormId == Type.Timelock) {}
+     
         /// @dev SuperPositionBank Flow
         /// Step 0: Create an instance of SuperPositionBank for this chainId
         address _superPositionBank = superRegistry.superPositionBank();
@@ -554,6 +562,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         ISuperPositionBank bank = ISuperPositionBank(_superPositionBank);
 
         /// FIXME: WHAT ABOUT SUPERPOSITIONS ALREADY IN THE BANK... TIMELOCK FLOW FORCES IT
+        if (bank.unlocked(vars.srcSender, req.superFormData.superFormId) >= req.superFormData.amount) {
+            /// No safeTransferFrom
+        }
 
         /// Step 1: Transfer shares to this contract
         /// NOTE: From the user perspective it would be better to enter through the bank directly.
@@ -583,6 +594,10 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         /// Step 3: Save index of position create in SuperPositionBank in extraData
         /// NOTE: extraData can contain more complex type than only index value
         req.superFormData.extraFormData = abi.encode(index);
+
+        /// init status withdraw 0, return status success 1, 2step 2
+        /// NOTE: Can keeper read and act on extraFormData?
+        /// abi.encode(index, status);
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -1000,6 +1015,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             } else if (status == 1) {
                 /// requestUnlock happened on DST, we already hold position in superBank
                 /// TODO: NOTE: SO, now what? We need to verify _owner balance against another withdraw call!
+                /// TODO: Option 1: bank.returnSinglePosition(srcSender, index);
+                /// TODO: Mark this in separate mapping so SuperRouter can access it again?
                 emit Status(returnDataTxId, status);
             } else {
                 /// @dev TODO: Placeholder
