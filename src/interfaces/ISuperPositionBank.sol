@@ -30,14 +30,12 @@ interface ISuperPositionBank {
 
     function lockPositionSingle(
         address owner_,
-        uint256 superFormId,
-        uint256 amount
+        uint256 positionIndex
     ) external;
 
     function lockPositionBatch(
         address owner_,
-        uint256[] memory superFormId,
-        uint256[] memory amount
+        uint256 positionIndex
     ) external;
 
     function unlocked(

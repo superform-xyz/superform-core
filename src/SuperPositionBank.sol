@@ -158,23 +158,24 @@ contract SuperPositionBank is ERC165 {
     /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
     function lockPositionSingle(
         address owner_,
-        uint256 superFormId,
-        uint256 amount
+        uint256 positionIndex
     ) public onlyRouter {
         /// @dev mark 1step as completed
-        unlocked[owner_][superFormId] = amount;
+        PositionSingle memory position = queueSingle[owner_][positionIndex];
+        /// NOTE: VERY important to stress test all of this for potential manipulation
+        unlocked[owner_][position.tokenId] = position.amount;
     }
 
     /// @notice Intended to be called in case Withdraw succeds and we can safely burn SuperPositions for owner
     function lockPositionBatch(
         address owner_,
-        uint256[] memory superFormId,
-        uint256[] memory amount
+        uint256 positionIndex
     ) public onlyRouter {
         /// @dev mark 1step as completed
         /// note: we lose advantage of batch superformIds here
-        for (uint256 i = 0; i < superFormId.length; i++) {
-            unlocked[owner_][superFormId[i]] = amount[i];
+        PositionBatch memory position = queueBatch[owner_][positionIndex];
+        for (uint256 i = 0; i < position.tokenIds.length; i++) {
+            unlocked[owner_][position.tokenIds[i]] = position.amounts[i];
         }
     }
 
