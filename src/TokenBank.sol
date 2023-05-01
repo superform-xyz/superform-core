@@ -191,7 +191,7 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
-                                0, /// <=== FIXME: status always 0 for deposit
+                                0,
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs
@@ -217,20 +217,54 @@ contract TokenBank is ITokenBank {
         onlyStateRegistry
         returns (uint16, bytes memory)
     {
+        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
+            multiVaultData_.txData
+        );
+
         /// @dev This will revert ALL of the transactions if one of them fails.
-        for (uint256 i = 0; i < multiVaultData_.superFormIds.length; i++) {
-            // withdrawSync(
-            //     InitSingleVaultData({
-            //         txData: multiVaultData_.txData,
-            //         superFormId: multiVaultData_.superFormIds[i],
-            //         amount: multiVaultData_.amounts[i],
-            //         maxSlippage: multiVaultData_.maxSlippage[i],
-            //         liqData: multiVaultData_.liqData[i],
-            //         extraFormData: multiVaultData_.extraFormData
-            //     })
-            // );
+        for (uint256 i; i < multiVaultData_.superFormIds.length; i++) {
+            InitSingleVaultData memory singleVaultData_ = InitSingleVaultData({
+                txData: multiVaultData_.txData,
+                superFormId: multiVaultData_.superFormIds[i],
+                amount: multiVaultData_.amounts[i],
+                maxSlippage: multiVaultData_.maxSlippage[i],
+                liqData: multiVaultData_.liqData[i],
+                extraFormData: multiVaultData_.extraFormData
+            });
+
+            (address superForm_, , ) = _getSuperForm(
+                singleVaultData_.superFormId
+            );
+
+            ///FIXME: handling failure cases
+            IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
         }
-        return (0, ""); /// FIXME: Come to this later: BLOCKED
+
+        /// @notice Send Data to Source to issue superform positions.
+        return (
+            srcChainId,
+            abi.encode(
+                AMBMessage(
+                    _packTxInfo(
+                        uint120(TransactionType.WITHDRAW),
+                        uint120(CallbackType.RETURN),
+                        true,
+                        0
+                    ),
+                    abi.encode(
+                        ReturnMultiData(
+                            _packReturnTxInfo(
+                                0,
+                                srcChainId,
+                                superRegistry.chainId(),
+                                currentTotalTxs
+                            ),
+                            multiVaultData_.amounts
+                        )
+                    )
+                )
+            )
+        );
     }
 
     /// @dev handles the state when received from the source chain.
@@ -252,7 +286,7 @@ contract TokenBank is ITokenBank {
         returns (uint16 status_) {
             // Handle the case when the external call succeeds
             return
-                _constructReturnData(
+                _constructSingleReturnData(
                     singleVaultData_,
                     TransactionType.WITHDRAW,
                     CallbackType.RETURN,
@@ -263,7 +297,7 @@ contract TokenBank is ITokenBank {
             // Handle the case when the external call reverts for whatever reason
             /// https://solidity-by-example.org/try-catch/
             return
-                _constructReturnData(
+                _constructSingleReturnData(
                     singleVaultData_,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
@@ -277,7 +311,7 @@ contract TokenBank is ITokenBank {
     }
 
     /// @notice depositSync and withdrawSync internal method for sending message back to the source chain
-    function _constructReturnData(
+    function _constructSingleReturnData(
         InitSingleVaultData memory singleVaultData_,
         TransactionType txType,
         CallbackType returnType,

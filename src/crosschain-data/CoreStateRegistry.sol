@@ -211,8 +211,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 (srcChainId, returnMessage) = _processMultiWithdrawal(
                     payloadId_,
                     callbackType,
-                    payloadInfo,
-                    ackExtraData_
+                    payloadInfo
                 );
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
                 (srcChainId, returnMessage) = _processMultiDeposit(
@@ -226,8 +225,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 (srcChainId, returnMessage) = _processSingleWithdrawal(
                     payloadId_,
                     callbackType,
-                    payloadInfo,
-                    ackExtraData_
+                    payloadInfo
                 );
             } else if (txType == uint256(TransactionType.DEPOSIT)) {
                 (srcChainId, returnMessage) = _processSingleDeposit(
@@ -301,8 +299,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _processMultiWithdrawal(
         uint256 payloadId_,
         uint256 callbackType_,
-        AMBMessage memory payloadInfo_,
-        bytes memory ackExtraData_
+        AMBMessage memory payloadInfo_
     ) internal returns (uint16, bytes memory) {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
@@ -361,8 +358,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _processSingleWithdrawal(
         uint256 payloadId_,
         uint256 callbackType_,
-        AMBMessage memory payloadInfo_,
-        bytes memory ackExtraData_
+        AMBMessage memory payloadInfo_
     ) internal returns (uint16, bytes memory) {
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
