@@ -182,7 +182,7 @@ abstract contract ProtocolActions is BaseSetup {
                         socketChainIds[CHAIN_0 - 1], /// @dev HACK to get socket src and dst chain ids
                         socketChainIds[DST_CHAINS[i] - 1],
                         action.multiTx,
-                        0,
+                        vars.amounts[0], /// @dev copying amount to total amount for the externalToken hack in _buildSingleVaultDepositCallData
                         address(0)
                     );
 
@@ -776,21 +776,23 @@ abstract contract ProtocolActions is BaseSetup {
                     from = args.toDst[i];
                 }
 
+                address liqRequestToken = args.externalToken !=
+                    args.underlyingTokens[i]
+                    ? args.externalToken
+                    : args.underlyingTokens[i];
+
                 vm.selectFork(FORKS[args.srcChainId]);
 
                 /// @dev - APPROVE transfer to SuperRouter (because of Socket)
                 vm.prank(users[args.user]);
 
                 if (args.action == Actions.DepositPermit2) {
-                    MockERC20(args.underlyingTokens[i]).approve(
+                    MockERC20(liqRequestToken).approve(
                         getContract(args.srcChainId, "CanonicalPermit2"),
                         type(uint256).max
                     );
                 } else if (args.action == Actions.Deposit) {
-                    MockERC20(args.underlyingTokens[i]).approve(
-                        from,
-                        totalAmount
-                    );
+                    MockERC20(liqRequestToken).increaseAllowance(from, totalAmount);
                 }
 
                 vm.selectFork(initialFork);
@@ -898,11 +900,15 @@ abstract contract ProtocolActions is BaseSetup {
             args.amount
         );
 
+        address liqRequestToken = args.externalToken != args.underlyingToken
+            ? args.externalToken
+            : args.underlyingToken;
+
         /// @dev permit2 calldata
         if (action == Actions.DepositPermit2) {
             v.permit = IPermit2.PermitTransferFrom({
                 permitted: IPermit2.TokenPermissions({
-                    token: IERC20(address(args.underlyingToken)),
+                    token: IERC20(address(liqRequestToken)),
                     amount: args.sameUnderlyingCheck != address(0)
                         ? args.totalAmount
                         : args.amount
@@ -929,7 +935,7 @@ abstract contract ProtocolActions is BaseSetup {
         v.liqReq = LiqRequest(
             1, /// @dev FIXME: hardcoded for now - but this should be a different bridge per type of transaction
             v.txData,
-            args.underlyingToken,
+            liqRequestToken,
             args.sameUnderlyingCheck != address(0)
                 ? args.totalAmount
                 : args.amount,
@@ -946,12 +952,30 @@ abstract contract ProtocolActions is BaseSetup {
             vm.prank(users[args.user]);
 
             if (action == Actions.DepositPermit2) {
-                MockERC20(args.underlyingToken).approve(
+                MockERC20(liqRequestToken).approve(
                     getContract(args.srcChainId, "CanonicalPermit2"),
                     type(uint256).max
                 );
-            } else {
-                MockERC20(args.underlyingToken).approve(v.from, args.amount);
+            } else if (
+                action == Actions.Deposit &&
+                liqRequestToken != args.externalToken
+            ) {
+                /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts are ordered from lowest to highest,
+                /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
+                MockERC20(liqRequestToken).increaseAllowance(
+                    v.from,
+                    args.amount
+                );
+            } else if (
+                action == Actions.Deposit &&
+                liqRequestToken == args.externalToken
+            ) {
+                /// @dev this assumes that external token has a 1:1 exchange rate with underlying tokens
+                /// @dev
+                MockERC20(liqRequestToken).increaseAllowance(
+                    v.from,
+                    args.totalAmount
+                );
             }
 
             vm.selectFork(v.initialFork);

@@ -170,7 +170,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                         vars.srcSender,
                         vars.liqRequest.token
                     );
-
                 dispatchTokens(
                     superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
                     vars.liqRequest.txData,
@@ -1189,6 +1188,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             (, uint256 formBeaconId_, ) = _getSuperForm(
                 superFormsData_.superFormIds[i]
             );
+
             if (
                 IFormBeacon(
                     ISuperFormFactory(superRegistry.superFormFactory())
@@ -1228,8 +1228,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             collateral == address(0)
         ) {
             return false;
-        } else if (liqRequestsLen > 1 && collateral != address(0)) {
+        } else if (liqRequestsLen > 1 && collateral == address(0)) {
             /// @dev else if number of liq request >1, length must be equal to the number of superForms sent in this request (and all colaterals are different)
+
             if (liqRequestsLen != len) {
                 return false;
 
@@ -1248,7 +1249,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             }
             /// @dev else if number of liq request >1 and all colaterals are the same, then this request should be invalid (?)
             /// @notice we could allow it but would imply multiple bridging of the same tokens
-        } else if (liqRequestsLen > 1 && collateral == address(0)) {
+        } else if (liqRequestsLen > 1 && collateral != address(0)) {
             return false;
         }
 

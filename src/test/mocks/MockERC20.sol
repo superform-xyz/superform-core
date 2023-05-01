@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 contract MockERC20 is ERC20 {
     constructor(
@@ -10,7 +10,7 @@ contract MockERC20 is ERC20 {
         uint8 _decimals,
         address initialAccount,
         uint256 initialBalance
-    ) ERC20(_name, _symbol, _decimals) {
+    ) ERC20(_name, _symbol) {
         _mint(initialAccount, initialBalance);
     }
 
