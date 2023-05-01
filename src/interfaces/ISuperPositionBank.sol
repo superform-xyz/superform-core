@@ -38,7 +38,7 @@ interface ISuperPositionBank {
         uint256 positionIndex
     ) external;
 
-    function unlocked(
+    function isUnlocked(
         address owner_,
         uint256 superFormId
     ) external view returns (uint256 amount);

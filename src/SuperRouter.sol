@@ -546,12 +546,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             revert Error.INVALID_SUPERFORMS_DATA();
 
         /// TODO: Check here if it's regular or 2step withdraw
-        /// TODO: For reg - saveTransferFrom, for 2step - keeper trigger
-        /// NOTE: This check will also work for non-keeper solution
         /// NOTE: Can we check in anyway if superFormData.superFormId == 2step superFormId?
         /// NOTE: Can we check in anyway if this is 1step out of 2steps or final step? (spBank.queueCounter)
-
-        // if (req.superFormData.superFormId == Type.Timelock) {}
 
         /// @dev SuperPositionBank Flow
         /// Step 0: Create an instance of SuperPositionBank for this chainId
@@ -561,87 +557,122 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
         ISuperPositionBank bank = ISuperPositionBank(_superPositionBank);
 
-        /// FIXME: WHAT ABOUT SUPERPOSITIONS ALREADY IN THE BANK... TIMELOCK FLOW FORCES IT
+        /// FIXME: This will create additional costs for non-timelock vaults, for every withdraw
+        /// FIXME: This isn't modular/uniform solution. KYC vault would need it's own condition
         if (
-            bank.unlocked(vars.srcSender, req.superFormData.superFormId) >=
+            bank.isUnlocked(vars.srcSender, req.superFormData.superFormId) >=
             req.superFormData.amount
         ) {
             /// No safeTransferFrom
-        }
+            totalTransactions++;
+            vars.currentTotalTransactions = totalTransactions;
 
-        /// Step 1: Transfer shares to this contract
-        /// NOTE: From the user perspective it would be better to enter through the bank directly.
-        superPositions.safeTransferFrom(
-            vars.srcSender,
-            address(this),
-            req.superFormData.superFormId,
-            req.superFormData.amount,
-            ""
-        );
-
-        /// @dev Should really use singleApprove here, but this will be a loop...
-        /// NOTE: Remember to remove this approval later on (at least)
-        /// TODO: This is Single ID Withdraw, may use setApprovalForOne
-        superPositions.setApprovalForAll(address(bank), true);
-
-        /// Step 2: This is deposit-like action, requires approve from this contract
-        /// NOTE: Regardless of final solution, this will need to track individual user request to retrive later on
-        uint256 index = bank.acceptPositionSingle(
-            req.superFormData.superFormId,
-            req.superFormData.amount,
-            vars.srcSender
-        );
-
-        superPositions.setApprovalForAll(address(bank), false);
-
-        /// Step 3: Save index of position create in SuperPositionBank in extraData
-        /// NOTE: extraData can contain more complex type than only index value
-        req.superFormData.extraFormData = abi.encode(index);
-
-        /// init status withdraw 0, return status success 1, 2step 2
-        /// NOTE: Can keeper read and act on extraFormData?
-        /// abi.encode(index, status);
-
-        totalTransactions++;
-        vars.currentTotalTransactions = totalTransactions;
-
-        /// @dev write amb message
-        vars.ambMessage = AMBMessage(
-            _packTxInfo(
-                uint120(TransactionType.WITHDRAW),
-                uint120(CallbackType.INIT),
-                false,
-                STATE_REGISTRY_TYPE
-            ),
-            abi.encode(
-                InitSingleVaultData(
-                    _packTxData(
-                        vars.srcSender,
-                        vars.srcChainId,
-                        vars.currentTotalTransactions
-                    ),
-                    req.superFormData.superFormId,
-                    req.superFormData.amount,
-                    req.superFormData.maxSlippage,
-                    req.superFormData.liqRequest,
-                    req.superFormData.extraFormData
+            /// @dev write amb message
+            vars.ambMessage = AMBMessage(
+                _packTxInfo(
+                    uint120(TransactionType.WITHDRAW),
+                    uint120(CallbackType.INIT),
+                    false,
+                    STATE_REGISTRY_TYPE
+                ),
+                abi.encode(
+                    InitSingleVaultData(
+                        _packTxData(
+                            vars.srcSender,
+                            vars.srcChainId,
+                            vars.currentTotalTransactions
+                        ),
+                        req.superFormData.superFormId,
+                        req.superFormData.amount,
+                        req.superFormData.maxSlippage,
+                        req.superFormData.liqRequest,
+                        req.superFormData.extraFormData
+                    )
                 )
-            )
-        );
+            );
 
-        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: req.msgValue
-        }(
-            req.primaryAmbId,
-            req.proofAmbId,
-            vars.dstChainId,
-            abi.encode(vars.ambMessage),
-            req.adapterParam
-        );
+            IBaseStateRegistry(superRegistry.coreStateRegistry())
+                .dispatchPayload{value: req.msgValue}(
+                req.primaryAmbId,
+                req.proofAmbId,
+                vars.dstChainId,
+                abi.encode(vars.ambMessage),
+                req.adapterParam
+            );
 
-        txHistory[vars.currentTotalTransactions] = vars.ambMessage;
+            txHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
-        emit CrossChainInitiated(vars.currentTotalTransactions);
+            emit CrossChainInitiated(vars.currentTotalTransactions);
+        } else {
+            /// Step 1: Transfer shares to this contract
+            /// NOTE: From the user perspective it would be better to enter through the bank directly.
+            superPositions.safeTransferFrom(
+                vars.srcSender,
+                address(this),
+                req.superFormData.superFormId,
+                req.superFormData.amount,
+                ""
+            );
+
+            /// @dev Should really use singleApprove here, but this will be a loop...
+            /// NOTE: Remember to remove this approval later on (at least)
+            /// TODO: This is Single ID Withdraw, may use setApprovalForOne
+            superPositions.setApprovalForAll(address(bank), true);
+
+            /// Step 2: This is deposit-like action, requires approve from this contract
+            /// NOTE: Regardless of final solution, this will need to track individual user request to retrive later on
+            uint256 index = bank.acceptPositionSingle(
+                req.superFormData.superFormId,
+                req.superFormData.amount,
+                vars.srcSender
+            );
+
+            superPositions.setApprovalForAll(address(bank), false);
+
+            /// Step 3: Save index of position create in SuperPositionBank in extraData
+            /// NOTE: extraData can contain more complex type than only index value
+            req.superFormData.extraFormData = abi.encode(index);
+
+            totalTransactions++;
+            vars.currentTotalTransactions = totalTransactions;
+
+            /// @dev write amb message
+            vars.ambMessage = AMBMessage(
+                _packTxInfo(
+                    uint120(TransactionType.WITHDRAW),
+                    uint120(CallbackType.INIT),
+                    false,
+                    STATE_REGISTRY_TYPE
+                ),
+                abi.encode(
+                    InitSingleVaultData(
+                        _packTxData(
+                            vars.srcSender,
+                            vars.srcChainId,
+                            vars.currentTotalTransactions
+                        ),
+                        req.superFormData.superFormId,
+                        req.superFormData.amount,
+                        req.superFormData.maxSlippage,
+                        req.superFormData.liqRequest,
+                        req.superFormData.extraFormData
+                    )
+                )
+            );
+
+            IBaseStateRegistry(superRegistry.coreStateRegistry())
+                .dispatchPayload{value: req.msgValue}(
+                req.primaryAmbId,
+                req.proofAmbId,
+                vars.dstChainId,
+                abi.encode(vars.ambMessage),
+                req.adapterParam
+            );
+
+            txHistory[vars.currentTotalTransactions] = vars.ambMessage;
+
+            emit CrossChainInitiated(vars.currentTotalTransactions);
+        }
     }
 
     /// @inheritdoc ISuperRouter
@@ -1017,11 +1048,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 bank.burnPositionSingle(srcSender, index);
             } else if (status == 1) {
                 /// requestUnlock happened on DST, we already hold position in superBank
-                bank.lockPositionSingle(
-                    srcSender,
-                    singleVaultData.superFormId,
-                    singleVaultData.amount
-                );
+                bank.lockPositionSingle(srcSender, index);
                 emit Status(returnDataTxId, status);
             } else {
                 /// @dev TODO: Placeholder

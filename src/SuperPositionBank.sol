@@ -32,6 +32,7 @@ contract SuperPositionBank is ERC165 {
     mapping(address owner => mapping(uint256 superFormId => uint256 amount))
         private unlocked;
 
+
     modifier onlyRouter() {
         require(msg.sender == address(superRouter), "DISALLOWED");
         _;
@@ -195,6 +196,14 @@ contract SuperPositionBank is ERC165 {
     ) public view returns (uint256[] memory tokenIds, uint256[] memory amount) {
         PositionBatch memory position = queueBatch[owner_][positionIndex];
         return (position.tokenIds, position.amounts);
+    }
+
+    function isUnlocked(address owner_, uint256 superFormId_)
+        public
+        view
+        returns (uint256 amount)
+    {
+        return unlocked[owner_][superFormId_];
     }
 
     /// @dev See {ERC1155s-supportsInterface}.
