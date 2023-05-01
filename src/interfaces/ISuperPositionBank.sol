@@ -28,6 +28,23 @@ interface ISuperPositionBank {
 
     function burnPositionSingle(address _owner, uint256 positionIndex) external;
 
+    function lockPositionSingle(
+        address owner_,
+        uint256 superFormId,
+        uint256 amount
+    ) external;
+
+    function lockPositionBatch(
+        address owner_,
+        uint256[] memory superFormId,
+        uint256[] memory amount
+    ) external;
+
+    function unlocked(
+        address owner_,
+        uint256 superFormId
+    ) external view returns (uint256 amount);
+
     function getPositionBatch(
         address owner,
         uint256 positionIndex

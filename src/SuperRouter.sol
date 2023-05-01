@@ -552,7 +552,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         /// NOTE: Can we check in anyway if this is 1step out of 2steps or final step? (spBank.queueCounter)
 
         // if (req.superFormData.superFormId == Type.Timelock) {}
-     
+
         /// @dev SuperPositionBank Flow
         /// Step 0: Create an instance of SuperPositionBank for this chainId
         address _superPositionBank = superRegistry.superPositionBank();
@@ -562,7 +562,10 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         ISuperPositionBank bank = ISuperPositionBank(_superPositionBank);
 
         /// FIXME: WHAT ABOUT SUPERPOSITIONS ALREADY IN THE BANK... TIMELOCK FLOW FORCES IT
-        if (bank.unlocked(vars.srcSender, req.superFormData.superFormId) >= req.superFormData.amount) {
+        if (
+            bank.unlocked(vars.srcSender, req.superFormData.superFormId) >=
+            req.superFormData.amount
+        ) {
             /// No safeTransferFrom
         }
 
@@ -883,7 +886,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             (ReturnMultiData)
         );
 
-        (   uint16 status,
+        (
+            uint16 status,
             uint16 returnDataSrcChainId,
             uint16 returnDataDstChainId,
             uint80 returnDataTxId
@@ -894,7 +898,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (!multi) revert Error.INVALID_PAYLOAD();
-
 
         InitMultiVaultData memory multiVaultData = abi.decode(
             stored.params,
@@ -965,7 +968,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             (ReturnSingleData)
         );
 
-        (   uint16 status,
+        (
+            uint16 status,
             uint16 returnDataSrcChainId,
             uint16 returnDataDstChainId,
             uint80 returnDataTxId
@@ -975,7 +979,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (multi) revert Error.INVALID_PAYLOAD();
-
 
         InitSingleVaultData memory singleVaultData = abi.decode(
             stored.params,
@@ -1004,19 +1007,21 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
             uint256 index = abi.decode(extraData, (uint256));
 
+            ISuperPositionBank bank = ISuperPositionBank(
+                superRegistry.superPositionBank()
+            );
+
             /// FIXME: We can pack status into extraData, modify it on destination, but... should we modify it?
             /// Everything has a drawback. Current solution with uint16 status packing is PoC.
             if (status == 0) {
-                ISuperPositionBank bank = ISuperPositionBank(
-                    superRegistry.superPositionBank()
-                );
-
                 bank.burnPositionSingle(srcSender, index);
             } else if (status == 1) {
                 /// requestUnlock happened on DST, we already hold position in superBank
-                /// TODO: NOTE: SO, now what? We need to verify _owner balance against another withdraw call!
-                /// TODO: Option 1: bank.returnSinglePosition(srcSender, index);
-                /// TODO: Mark this in separate mapping so SuperRouter can access it again?
+                bank.lockPositionSingle(
+                    srcSender,
+                    singleVaultData.superFormId,
+                    singleVaultData.amount
+                );
                 emit Status(returnDataTxId, status);
             } else {
                 /// @dev TODO: Placeholder
