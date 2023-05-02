@@ -8,7 +8,6 @@ import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData} from "../types/DataTypes.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs

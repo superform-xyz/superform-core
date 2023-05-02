@@ -511,13 +511,12 @@ abstract contract ProtocolActions is BaseSetup {
 
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
+                            (, vars.underlyingSrcToken, ) = _targetVaults(
+                                CHAIN_0,
+                                DST_CHAINS[i],
+                                actionIndex
+                            );
                             if (action.multiVaults) {
-                                (, vars.underlyingSrcToken, ) = _targetVaults(
-                                    CHAIN_0,
-                                    DST_CHAINS[i],
-                                    actionIndex
-                                );
-
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][
                                     actionIndex
                                 ];
@@ -533,7 +532,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     CHAIN_0,
                                     aV[i].toChainId,
                                     socketChainIds[aV[i].toChainId - 1],
-                                    singleSuperFormsData[i].liqRequest.token,
+                                    vars.underlyingSrcToken[0],
                                     singleSuperFormsData[i].amount
                                 );
                             }
@@ -792,7 +791,10 @@ abstract contract ProtocolActions is BaseSetup {
                         type(uint256).max
                     );
                 } else if (args.action == Actions.Deposit) {
-                    MockERC20(liqRequestToken).increaseAllowance(from, totalAmount);
+                    MockERC20(liqRequestToken).increaseAllowance(
+                        from,
+                        totalAmount
+                    );
                 }
 
                 vm.selectFork(initialFork);
@@ -834,6 +836,7 @@ abstract contract ProtocolActions is BaseSetup {
                 externalToken_,
                 abi.encode(from_)
             );
+
             bridgeRequest = ISocketRegistry.BridgeRequest(
                 1, /// request id
                 0, /// FIXME optional native amount
@@ -1291,6 +1294,7 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     /// @dev FIXME: only works for socket
+    /// @dev - assumption to only use MultiTxProcessor for destination chain swaps (middleware requests)
     function _processMultiTx(
         uint16 srcChainId_,
         uint16 targetChainId_,
@@ -1306,27 +1310,25 @@ abstract contract ProtocolActions is BaseSetup {
         ISocketRegistry.MiddlewareRequest memory middlewareRequest;
         ISocketRegistry.BridgeRequest memory bridgeRequest;
 
-        if (srcChainId_ == targetChainId_) {
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// id
-                0, /// FIXME optional native amount
-                underlyingToken_,
-                abi.encode(
-                    getContract(targetChainId_, "MultiTxProcessor"),
-                    FORKS[targetChainId_]
-                )
-            );
-        } else {
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                1, /// id
-                0, /// FIXME optional native amount
-                underlyingToken_,
-                abi.encode(
-                    getContract(targetChainId_, "MultiTxProcessor"),
-                    FORKS[targetChainId_]
-                )
-            );
-        }
+        middlewareRequest = ISocketRegistry.MiddlewareRequest(
+            1, /// id
+            0, /// FIXME optional native amount
+            underlyingToken_,
+            abi.encode(
+                getContract(targetChainId_, "MultiTxProcessor"),
+                FORKS[targetChainId_]
+            )
+        );
+        /// @dev empty bridge request
+        bridgeRequest = ISocketRegistry.BridgeRequest(
+            0, /// id
+            0, /// FIXME optional native amount
+            address(0),
+            abi.encode(
+                getContract(targetChainId_, "MultiTxProcessor"),
+                FORKS[targetChainId_]
+            )
+        );
 
         ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
             .UserRequest(
@@ -1365,27 +1367,24 @@ abstract contract ProtocolActions is BaseSetup {
         bytes[] memory socketTxDatasV2 = new bytes[](underlyingTokens_.length);
 
         for (uint256 i = 0; i < underlyingTokens_.length; i++) {
-            if (srcChainId_ == targetChainId_) {
-                middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                    1, /// id
-                    0, /// FIXME optional native amount
-                    underlyingTokens_[i],
-                    abi.encode( /// @dev this abi.encode is only used for the mock purposes
-                        getContract(targetChainId_, "MultiTxProcessor"),
-                        FORKS[targetChainId_]
-                    )
-                );
-            } else {
-                bridgeRequest = ISocketRegistry.BridgeRequest(
-                    1, /// id
-                    0, /// FIXME optional native amount
-                    underlyingTokens_[i],
-                    abi.encode( /// @dev this abi.encode is only used for the mock purposes
-                        getContract(targetChainId_, "MultiTxProcessor"),
-                        FORKS[targetChainId_]
-                    )
-                );
-            }
+            middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1, /// id
+                0, /// FIXME optional native amount
+                underlyingTokens_[i],
+                abi.encode( /// @dev this abi.encode is only used for the mock purposes
+                    getContract(targetChainId_, "MultiTxProcessor"),
+                    FORKS[targetChainId_]
+                )
+            );
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                0, /// id
+                0, /// FIXME optional native amount
+                address(0),
+                abi.encode( /// @dev this abi.encode is only used for the mock purposes
+                    getContract(targetChainId_, "MultiTxProcessor"),
+                    FORKS[targetChainId_]
+                )
+            );
 
             ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
                 .UserRequest(

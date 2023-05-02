@@ -23,7 +23,7 @@ contract SocketRouterMock is ISocketRegistry, Test {
         ISocketRegistry.MiddlewareRequest
             memory middlewareRequest = userRequest_.middlewareRequest;
 
-        if (middlewareRequest.id == 0) {
+        if (middlewareRequest.id == 0 && bridgeRequest.id != 0) {
             /// @dev just mock bridge
             _bridge(
                 userRequest_.amount,
@@ -32,23 +32,34 @@ contract SocketRouterMock is ISocketRegistry, Test {
                 userRequest_.bridgeRequest.data,
                 false
             );
+        } else if (middlewareRequest.id != 0 && bridgeRequest.id != 0) {
+            /// @dev else, assume according to socket a swap and bridge is involved
+            _swap(
+                userRequest_.amount,
+                userRequest_.middlewareRequest.inputToken,
+                userRequest_.bridgeRequest.inputToken,
+                userRequest_.middlewareRequest.data
+            );
+
+            _bridge(
+                userRequest_.amount,
+                userRequest_.receiverAddress,
+                userRequest_.bridgeRequest.inputToken,
+                userRequest_.bridgeRequest.data,
+                true
+            );
+        } else if (middlewareRequest.id != 0 && bridgeRequest.id == 0) {
+            /// @dev assume, for mocking purposes that cases with just swap is for the same token
+            /// @dev this is for direct actions and multiTx swap of destination
+            /// @dev bridge is used here to mint tokens in a new contract, but actually it's just a swap (chain id is the same)
+            _bridge(
+                userRequest_.amount,
+                userRequest_.receiverAddress,
+                userRequest_.middlewareRequest.inputToken,
+                userRequest_.middlewareRequest.data,
+                false
+            );
         }
-
-        /// @dev else, assume according to socket a swap and bridge is involved
-        _swap(
-            userRequest_.amount,
-            userRequest_.middlewareRequest.inputToken,
-            userRequest_.bridgeRequest.inputToken,
-            userRequest_.middlewareRequest.data
-        );
-
-        _bridge(
-            userRequest_.amount,
-            userRequest_.receiverAddress,
-            userRequest_.bridgeRequest.inputToken,
-            userRequest_.bridgeRequest.data,
-            true
-        );
     }
 
     function routes() external view override returns (RouteData[] memory) {}
@@ -71,7 +82,6 @@ contract SocketRouterMock is ISocketRegistry, Test {
 
         uint256 prevForkId = vm.activeFork();
         vm.selectFork(toForkId);
-
         MockERC20(inputToken_).mint(receiver_, amount_);
         vm.selectFork(prevForkId);
     }

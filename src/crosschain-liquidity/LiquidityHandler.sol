@@ -5,7 +5,6 @@ import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IPermit2} from "../interfaces/IPermit2.sol";
 import {Error} from "../utils/Error.sol";
-import "forge-std/console.sol";
 
 /**
  * @title Liquidity Handler.
@@ -80,7 +79,6 @@ abstract contract LiquidityHandler {
                 }
             }
             token.safeApprove(bridge_, amount_);
-            console.log(1);
 
             /// NOTE: Delegatecall is always risky. bridge_ address hardcoded now.
             /// Can't we just use bridge interface here?

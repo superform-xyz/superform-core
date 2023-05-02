@@ -17,7 +17,6 @@ import {IBridgeValidator} from "./interfaces/IBridgeValidator.sol";
 import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 import {ISuperPositionBank} from "./interfaces/ISuperPositionBank.sol";
 
