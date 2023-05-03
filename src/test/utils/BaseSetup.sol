@@ -671,8 +671,11 @@ abstract contract BaseSetup is DSTest, Test {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     vm.recordLogs();
 
-                    (, vars.superForm) = ISuperFormFactory(vars.factory)
-                        .createSuperForm{value: 800 * 10 ** 18}(
+                    (, vars.superForm) = ISuperFormFactory(
+                        contracts[chainIds[i]][
+                            bytes32(bytes("SuperFormFactory"))
+                        ]
+                    ).createSuperForm{value: 800 * 10 ** 18}(
                         FORM_BEACON_IDS[j],
                         address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k]),
                         generateBroadcastParams(5, 2)
@@ -690,7 +693,7 @@ abstract contract BaseSetup is DSTest, Test {
                         )
                     ] = vars.superForm;
 
-                    _broadcastPayload(vars.chainId, vm.getRecordedLogs());
+                    _broadcastPayload(chainIds[i], vm.getRecordedLogs());
                 }
             }
         }
