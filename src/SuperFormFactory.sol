@@ -145,7 +145,9 @@ contract SuperFormFactory is ISuperFormFactory {
             extraData_,
             (uint8[], bytes)
         );
-        /// FIXME: add validations for extra dataˀˀ
+
+        /// @dev ambIds are validated inside the factory state registry
+        /// @dev broadcastParams if wrong will revert in the amb implementation
         IBaseStateRegistry(superRegistry.factoryStateRegistry())
             .broadcastPayload{value: msg.value}(
             ambIds,
