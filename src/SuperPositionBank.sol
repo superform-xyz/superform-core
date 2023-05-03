@@ -198,13 +198,13 @@ contract SuperPositionBank is ERC165 {
         return (position.tokenIds, position.amounts);
     }
 
-    function isUnlocked(address owner_, uint256 superFormId_)
-        public
-        view
-        returns (uint256 amount)
-    {
-        return unlocked[owner_][superFormId_];
-    }
+    // function isUnlocked(address owner_, uint256 superFormId_)
+    //     public
+    //     view
+    //     returns (uint256 amount)
+    // {
+    //     return unlocked[owner_][superFormId_];
+    // }
 
     /// @dev See {ERC1155s-supportsInterface}.
     function supportsInterface(
