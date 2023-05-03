@@ -450,7 +450,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 singleVaultData_.superFormId
             );
 
-            return 1;
+            /// return 1;
         } else if (vars.unlock == 3) {
             revert Error.WITHDRAW_COOLDOWN_PERIOD();
         }
