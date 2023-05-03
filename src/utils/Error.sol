@@ -64,10 +64,19 @@ library Error {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev when the input token is not valid
-    error INVALID_INPUT_TOKEN();
+    error INVALID_BRIDGE_INPUT_TOKEN();
+
+    /// @dev when validation of bridge txData fails due to wrong amount
+    error INVALID_TXDATA_AMOUNTS();
+
+    /// @dev is emitted when the chain id in the txdata is invalid
+    error INVALID_TXDATA_CHAIN_ID();
 
     /// @dev when validation of bridge txData fails due to wrong receiver
-    error INVALID_RECEIVER();
+    error INVALID_TXDATA_RECEIVER();
+
+    /// @dev when validation of bridge txData fails due to wrong token
+    error INVALID_TXDATA_TOKEN();
 
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS

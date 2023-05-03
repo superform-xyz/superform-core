@@ -134,48 +134,62 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
 
+    struct directDepositLocalVars {
+        uint16 chainId;
+        address vaultLoc;
+        address collateral;
+        address srcSender;
+        uint256 dstAmount;
+        uint256 balanceBefore;
+        uint256 balanceAfter;
+        ERC20 collateralToken;
+    }
+
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) internal virtual override returns (uint256 dstAmount) {
-        address vaultLoc = vault;
+        directDepositLocalVars memory vars;
+
+        vars.vaultLoc = vault;
 
         /// note: checking balance
-        ERC4626 v = ERC4626(vaultLoc);
+        ERC4626 v = ERC4626(vars.vaultLoc);
 
-        address collateral = address(v.asset());
-        ERC20 collateralToken = ERC20(collateral);
-        uint256 balanceBefore = collateralToken.balanceOf(address(this));
+        vars.collateral = address(v.asset());
+        vars.collateralToken = ERC20(vars.collateral);
+        vars.balanceBefore = vars.collateralToken.balanceOf(address(this));
 
-        (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
+        (vars.srcSender, , ) = _decodeTxData(singleVaultData_.txData);
 
         /// note: handle the collateral token transfers.
         if (singleVaultData_.liqData.txData.length == 0) {
             if (
                 ERC20(singleVaultData_.liqData.token).allowance(
-                    srcSender,
+                    vars.srcSender,
                     address(this)
                 ) < singleVaultData_.liqData.amount
             ) revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
             ERC20(singleVaultData_.liqData.token).safeTransferFrom(
-                srcSender,
+                vars.srcSender,
                 address(this),
                 singleVaultData_.liqData.amount
             );
         } else {
-            uint16 chainId = superRegistry.chainId();
+            vars.chainId = superRegistry.chainId();
             IBridgeValidator(
                 superRegistry.getBridgeValidator(
                     singleVaultData_.liqData.bridgeId
                 )
             ).validateTxData(
                     singleVaultData_.liqData.txData,
-                    chainId,
-                    chainId,
+                    vars.chainId,
+                    vars.chainId,
                     true,
                     address(this),
-                    srcSender
+                    vars.srcSender,
+                    singleVaultData_.liqData.token
                 );
 
             dispatchTokens(
@@ -185,22 +199,22 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
                 singleVaultData_.liqData.amount,
-                srcSender,
+                vars.srcSender,
                 singleVaultData_.liqData.nativeAmount,
                 singleVaultData_.liqData.permit2data,
                 superRegistry.PERMIT2()
             );
         }
 
-        uint256 balanceAfter = collateralToken.balanceOf(address(this));
-        if (balanceAfter - balanceBefore < singleVaultData_.amount)
+        vars.balanceAfter = vars.collateralToken.balanceOf(address(this));
+        if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount)
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
 
-        if (address(v.asset()) != collateral)
+        if (address(v.asset()) != vars.collateral)
             revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
-        collateralToken.approve(vaultLoc, singleVaultData_.amount);
+        vars.collateralToken.approve(vars.vaultLoc, singleVaultData_.amount);
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
 
@@ -239,7 +253,8 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                     chainId,
                     false,
                     address(this),
-                    srcSender
+                    srcSender,
+                    singleVaultData_.liqData.token
                 );
 
             dispatchTokens(
@@ -292,7 +307,6 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
         );
     }
 
-    /// @dev Joao- needed to add this due to stack too deep error
     struct xChainWithdrawLocalVars {
         uint16 dstChainId;
         uint16 srcChainId;
@@ -307,7 +321,7 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual override returns (uint16 status){
+    ) internal virtual override returns (uint16 status) {
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
         vars.vaultLoc = vault;
@@ -320,7 +334,11 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         if (singleVaultData_.liqData.txData.length != 0) {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
-            vars.dstAmount = v.redeem(singleVaultData_.amount, address(this), address(this));
+            vars.dstAmount = v.redeem(
+                singleVaultData_.amount,
+                address(this),
+                address(this)
+            );
 
             vars.balanceBefore = ERC20(v.asset()).balanceOf(address(this));
 
@@ -335,7 +353,8 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                     vars.srcChainId,
                     false,
                     address(this),
-                    vars.srcSender
+                    vars.srcSender,
+                    singleVaultData_.liqData.token
                 );
 
             /// Note Send Tokens to Source Chain
@@ -362,7 +381,11 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                 revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
         } else {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
-            vars.dstAmount = v.redeem(singleVaultData_.amount, vars.srcSender, address(this));
+            vars.dstAmount = v.redeem(
+                singleVaultData_.amount,
+                vars.srcSender,
+                address(this)
+            );
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
@@ -373,10 +396,9 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
             singleVaultData_.amount,
             vars.vaultLoc
         );
-        
-        /// Here we either fully succeed of Callback.FAIL. 
-        return 0;
 
+        /// Here we either fully succeed of Callback.FAIL.
+        return 0;
     }
 
     /*///////////////////////////////////////////////////////////////

@@ -9,8 +9,6 @@ import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVault
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
-import "forge-std/console.sol";
-
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
 /// @notice stores, sends & process message sent via various messaging ambs.
