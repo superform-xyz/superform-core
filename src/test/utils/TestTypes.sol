@@ -77,7 +77,7 @@ struct TestAction {
     bytes32 revertRole; // temporary until errors are added to RBAC libraries
     int256 slippage;
     bool multiTx;
-    bytes adapterParam;
+    bytes[] ambParams;
     uint256 msgValue;
     uint256 externalToken;
 }

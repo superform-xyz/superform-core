@@ -126,6 +126,9 @@ library Error {
     /// @dev if the msg.sender is not the wormhole relayer
     error NOT_WORMHOLE_RELAYER();
 
+    /// @dev if less than 2 AMBs are passed in the state request
+    error INVALID_AMB_IDS_LENGTH();
+
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS
     //////////////////////////////////////////////////////////////*/

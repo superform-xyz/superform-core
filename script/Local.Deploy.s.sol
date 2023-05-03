@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-import "forge-std/console.sol";
 
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
