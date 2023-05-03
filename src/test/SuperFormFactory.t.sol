@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {SuperFormFactory} from "../SuperFormFactory.sol";
@@ -118,48 +117,57 @@ contract SuperFormFactoryTest is BaseSetup {
     function test_base_setup_superForms() public {
         TestArgs memory vars;
         vm.startPrank(deployer);
-        vm.selectFork(FORKS[chainId]);
-        address superRegistry = getContract(chainId, "SuperRegistry");
-        vars.formImplementation1 = address(new ERC4626Form(superRegistry));
-        vars.formImplementation2 = address(
-            new ERC4626TimelockForm(superRegistry)
-        );
+        for (uint256 i; i < chainIds.length; i++) {
+            vm.selectFork(FORKS[chainIds[i]]);
+            address superRegistry = getContract(chainId, "SuperRegistry");
+            vars.formImplementation1 = address(new ERC4626Form(superRegistry));
+            vars.formImplementation2 = address(
+                new ERC4626TimelockForm(superRegistry)
+            );
 
-        vars.formBeaconId1 = 1;
-        vars.formBeaconId2 = 2;
+            vars.formBeaconId1 = 1;
+            vars.formBeaconId2 = 2;
 
-        SuperFormFactory(getContract(chainId, "SuperFormFactory"))
-            .addFormBeacon(vars.formImplementation1, vars.formBeaconId1, salt);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory"))
-            .addFormBeacon(vars.formImplementation2, vars.formBeaconId2, salt);
+            SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+                .addFormBeacon(
+                    vars.formImplementation1,
+                    vars.formBeaconId1,
+                    salt
+                );
+            SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+                .addFormBeacon(
+                    vars.formImplementation2,
+                    vars.formBeaconId2,
+                    salt
+                );
 
-        /// @dev as you can see we are not testing if the vaults are eoas or actual compliant contracts
-        vars.vault1 = address(0x2);
-        vars.vault2 = address(0x3);
+            /// @dev as you can see we are not testing if the vaults are eoas or actual compliant contracts
+            vars.vault1 = address(0x2);
+            vars.vault2 = address(0x3);
 
-        /// @dev test getAllSuperForms
-        (
-            vars.superFormIds_,
-            vars.superForms_,
-            vars.formIds_,
-            vars.chainIds_
-        ) = SuperFormFactory(getContract(chainId, "SuperFormFactory"))
-            .getAllSuperForms();
+            /// @dev test getAllSuperForms
+            (
+                vars.superFormIds_,
+                vars.superForms_,
+                vars.formIds_,
+                vars.chainIds_
+            ) = SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+                .getAllSuperForms();
 
-        vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
+            vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
 
-        for (uint256 i = 0; i < vars.chainIds_.length; i++) {
-            vars.transformedChainIds_[i] = uint256(vars.chainIds_[i]);
-        }
+            for (uint256 j; j < vars.chainIds_.length; j++) {
+                vars.transformedChainIds_[j] = uint256(vars.chainIds_[j]);
+            }
 
-        vars.expectedFormBeaconIds = new uint256[](
-            chainIds.length * UNDERLYING_TOKENS.length
-        );
-        vars.expectedChainIds = new uint256[](
-            chainIds.length * UNDERLYING_TOKENS.length
-        );
+            vars.expectedFormBeaconIds = new uint256[](
+                chainIds.length * UNDERLYING_TOKENS.length
+            );
+            vars.expectedChainIds = new uint256[](
+                chainIds.length * UNDERLYING_TOKENS.length
+            );
 
-        /*
+            /*
         for (uint256 i = 0; i < vars.expectedFormBeaconIds.length; i++) {
             vars.expectedFormBeaconIds[i] = vars.formBeaconId;
             vars.expectedChainIds[i] = chainIds[i / 3];
@@ -169,15 +177,17 @@ contract SuperFormFactoryTest is BaseSetup {
         assertEq(vars.transformedChainIds_, vars.expectedChainIds);
 */
 
-        /// @dev 6 * 2 * 3 = 36
+            /// @dev 6 * 2 * 3 = 36
 
-        uint256 expectedNumberOfSuperforms = chainIds.length *
-            UNDERLYING_TOKENS.length *
-            FORM_BEACON_IDS.length;
-        assertEq(
-            SuperFormFactory(getContract(chainId, "SuperFormFactory"))
-                .getAllSuperFormsList(),
-            expectedNumberOfSuperforms
-        ); /// 1 chain = 3; 6 chains = 6 * 3
+            uint256 expectedNumberOfSuperforms = chainIds.length *
+                UNDERLYING_TOKENS.length *
+                FORM_BEACON_IDS.length;
+
+            assertEq(
+                SuperFormFactory(getContract(chainIds[i], "SuperFormFactory"))
+                    .getAllSuperFormsList(),
+                expectedNumberOfSuperforms
+            ); /// 1 chain = 3; 6 chains = 6 * 3
+        }
     }
 }

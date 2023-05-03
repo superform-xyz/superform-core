@@ -1,12 +1,9 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 /// @dev lib imports
 import "forge-std/Test.sol";
 import "ds-test/test.sol";
-// import "forge-std/console.sol";
 import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
@@ -44,8 +41,8 @@ import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implement
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
 import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
+import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
-
 
 import {SuperPositionBank} from "../../SuperPositionBank.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
@@ -551,7 +548,10 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 13.1 - Deploy SuperPositionsBank
             vars.superPositionBank = address(
-                new SuperPositionBank(ISuperPositions(vars.superPositions), ISuperRouter(vars.superRouter))
+                new SuperPositionBank(
+                    ISuperPositions(vars.superPositions),
+                    ISuperRouter(vars.superRouter)
+                )
             );
 
             /// @dev 13.2 - setSuperPositionsBank
@@ -662,23 +662,26 @@ abstract contract BaseSetup is DSTest, Test {
                     ).setChainId(vars.dstChainId, vars.dstHypChainId);
                 }
             }
+        }
 
-            /// @dev 17 - create superforms when the whole state registry is configured
-
+        /// @dev 17 - create superforms when the whole state registry is configured
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vm.selectFork(FORKS[chainIds[i]]);
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     vm.recordLogs();
 
-                    (, vars.superForm) = ISuperFormFactory(vars.factory)
-                        .createSuperForm{
-                        value: _getPriceMultiplier(vars.chainId) * 10 ** 18
-                    }(
+                    (, vars.superForm) = ISuperFormFactory(
+                        contracts[chainIds[i]][
+                            bytes32(bytes("SuperFormFactory"))
+                        ]
+                    ).createSuperForm{value: 800 * 10 ** 18}(
                         FORM_BEACON_IDS[j],
-                        address(vaults[vars.chainId][FORM_BEACON_IDS[j]][k])
+                        address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k]),
+                        generateBroadcastParams(5, 2)
                     );
-                    _broadcastPayload(vars.chainId, vm.getRecordedLogs());
 
-                    contracts[vars.chainId][
+                    contracts[chainIds[i]][
                         bytes32(
                             bytes(
                                 string.concat(
@@ -689,9 +692,12 @@ abstract contract BaseSetup is DSTest, Test {
                             )
                         )
                     ] = vars.superForm;
+
+                    _broadcastPayload(chainIds[i], vm.getRecordedLogs());
                 }
             }
         }
+
         _processFactoryPayloads(
             ((chainIds.length - 1) *
                 FORM_BEACON_IDS.length *
@@ -857,27 +863,25 @@ abstract contract BaseSetup is DSTest, Test {
     ) private {
         vm.stopPrank();
 
-        address[] memory toMailboxes = new address[](5);
-        uint32[] memory expDstDomains = new uint32[](5);
+        address[] memory toMailboxes = new address[](6);
+        uint32[] memory expDstDomains = new uint32[](6);
 
-        address[] memory endpoints = new address[](5);
-        uint16[] memory lzChainIds = new uint16[](5);
+        address[] memory endpoints = new address[](6);
+        uint16[] memory lzChainIds = new uint16[](6);
 
-        uint256[] memory forkIds = new uint256[](5);
+        uint256[] memory forkIds = new uint256[](6);
 
-        uint256 j = 0;
+        uint256 j;
         for (uint256 i = 0; i < chainIds.length; i++) {
-            if (chainIds[i] != currentChainId) {
-                toMailboxes[j] = hyperlaneMailboxes[i];
-                expDstDomains[j] = hyperlane_chainIds[i];
+            toMailboxes[j] = hyperlaneMailboxes[i];
+            expDstDomains[j] = hyperlane_chainIds[i];
 
-                endpoints[j] = lzEndpoints[i];
-                lzChainIds[j] = lz_chainIds[i];
+            endpoints[j] = lzEndpoints[i];
+            lzChainIds[j] = lz_chainIds[i];
 
-                forkIds[j] = FORKS[chainIds[i]];
+            forkIds[j] = FORKS[chainIds[i]];
 
-                j++;
-            }
+            j++;
         }
 
         HyperlaneHelper(getContract(currentChainId, "HyperlaneHelper")).help(
@@ -906,7 +910,7 @@ abstract contract BaseSetup is DSTest, Test {
             for (uint256 k = 1; k < superFormsToProcess_; k++) {
                 FactoryStateRegistry(
                     payable(getContract(chainIds[j], "FactoryStateRegistry"))
-                ).processPayload(k);
+                ).processPayload(k, "");
             }
         }
     }

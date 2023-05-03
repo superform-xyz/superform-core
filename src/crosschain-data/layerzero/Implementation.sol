@@ -5,12 +5,13 @@ import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {AMBMessage} from "../../types/DataTypes.sol";
+import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 import {Error} from "../../utils/Error.sol";
 import {ILayerZeroReceiver} from "./interface/ILayerZeroReceiver.sol";
 import {ILayerZeroUserApplicationConfig} from "./interface/ILayerZeroUserApplicationConfig.sol";
 import {ILayerZeroEndpoint} from "./interface/ILayerZeroEndpoint.sol";
 import "../../utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @dev FIXME: this contract could use better overrides from interfaces
 /// @title Layerzero implementation contract
@@ -138,6 +139,13 @@ contract LayerzeroImplementation is
             revert Error.INVALID_CALLER();
         }
 
+        BroadCastAMBExtraData memory d = abi.decode(
+            extraData_,
+            (BroadCastAMBExtraData)
+        );
+        /// NOTE:should we check the length ?? anyway out of index will fail if the length
+        /// mistmatches
+
         for (uint16 i = 0; i < broadcastChains.length; i++) {
             uint16 dstChainId = broadcastChains[i];
             _lzSend(
@@ -145,8 +153,8 @@ contract LayerzeroImplementation is
                 message_,
                 payable(msg.sender),
                 address(0x0),
-                extraData_,
-                msg.value / broadcastChains.length
+                d.extraDataPerDst[i],
+                d.gasPerDst[i]
             );
         }
     }
@@ -171,7 +179,7 @@ contract LayerzeroImplementation is
     //////////////////////////////////////////////////////////////*/
     function _nonblockingLzReceive(
         uint16 _srcChainId,
-        bytes memory _srcAddress,
+        bytes memory,
         uint64 _nonce,
         bytes memory _payload
     ) internal {

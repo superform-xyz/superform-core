@@ -6,7 +6,6 @@ import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
-// import "forge-std/console.sol";
 
 // Test Utils
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
@@ -15,6 +14,7 @@ import {IERC4626TimelockForm} from "./interfaces/IERC4626TimelockForm.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 import {_packSuperForm} from "../utils/DataPacking.sol";
+import "./utils/AmbParams.sol";
 
 /// @dev we can't use it because it shadows existing declaration at the BaseSetup level
 // import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol";
@@ -48,8 +48,8 @@ contract ScenarioTimelockTest is ProtocolActions {
     function setUp() public override {
         super.setUp();
 
-        primaryAMB = 1;
-        secondaryAMBs = [2];
+        AMBs = [1, 2];
+
         CHAIN_0 = OP; /// @dev source chain id6
         DST_CHAINS = [POLY]; /// @dev destination chain(s) id4
 
@@ -270,7 +270,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         );
 
         console.log("stage2 done");
-        
+
         /// @dev Deliver message from source to destination (withdraw action)
         aV = _stage3_src_to_dst_amb_delivery(
             action,
@@ -294,7 +294,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev Process payload received on source from destination (withdraw callback)
         success = _stage6_process_superPositions_withdraw(action, vars);
-        
+
         /*///////////////////////////////////////////////////////////////
                             TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/
@@ -349,7 +349,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                     revertRole: "",
                     slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                     multiTx: false,
-                    adapterParam: "",
+                    ambParams: generateAmbParams(DST_CHAINS.length, 2),
                     msgValue: msgValue
                 });
             } else if (kind_ == Actions.Withdraw) {
@@ -362,7 +362,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                     revertRole: "",
                     slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                     multiTx: false,
-                    adapterParam: "",
+                    ambParams: generateAmbParams(DST_CHAINS.length, 2),
                     msgValue: msgValue
                 });
             } else {
