@@ -1,79 +1,61 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
+
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {IMailbox} from "./interface/IMailbox.sol";
-import {IMessageRecipient} from "./interface/IMessageRecipient.sol";
-import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {IInterchainGasPaymaster} from "./interface/IInterchainGasPaymaster.sol";
-import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
+import {IMessageBus} from "./interface/IMessageBus.sol";
+import {IMessageReceiver} from "./interface/IMessageReceiver.sol";
 import {Error} from "../../utils/Error.sol";
+import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
 
-/// @title Hyperlane implementation contract
+/// @title Celer Implementation Contract
 /// @author Zeropoint Labs
 ///
-/// @dev interacts with hyperlane AMB
-contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
+/// @dev interacts with the Celer AMB
+contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
+    error INVALID_RECEIVER();
+
     /*///////////////////////////////////////////////////////////////
-                            State Variables
+                    State Variables
     //////////////////////////////////////////////////////////////*/
-    IMailbox public immutable mailbox;
-    IInterchainGasPaymaster public immutable igp;
+    IMessageBus public immutable messageBus;
     ISuperRegistry public immutable superRegistry;
 
-    uint32[] public broadcastChains;
+    uint64[] public broadcastChains;
 
-    mapping(uint16 => uint32) public ambChainId;
-    mapping(uint32 => uint16) public superChainId;
-    mapping(uint32 => address) public authorizedImpl;
+    mapping(uint16 => uint64) public ambChainId;
+    mapping(uint64 => uint16) public superChainId;
+    mapping(uint64 => address) public authorizedImpl;
 
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
-                                Modifiers
+                    Constructor
     //////////////////////////////////////////////////////////////*/
-
-    modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
-                msg.sender
-            )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
-        _;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                                Constructor
-    //////////////////////////////////////////////////////////////*/
-
-    /// @param mailbox_ is the hyperlane mailbox for respective chain.
-    constructor(
-        IMailbox mailbox_,
-        IInterchainGasPaymaster igp_,
-        ISuperRegistry superRegistry_
-    ) {
-        mailbox = mailbox_;
-        igp = igp_;
+    /// @param messageBus_ is the celer message bus contract for respective chain.
+    constructor(IMessageBus messageBus_, ISuperRegistry superRegistry_) {
+        messageBus = messageBus_;
         superRegistry = superRegistry_;
     }
 
     /*///////////////////////////////////////////////////////////////
-                            External Functions
+                    External Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice receive enables processing native token transfers into the smart contract.
-    /// @dev hyperlane gas payments/refund fails without a native receive function.
+    /// @notice receive enables refund processing for gas payments
     receive() external payable {}
 
     /// @dev allows state registry to send message via implementation.
     /// @param dstChainId_ is the identifier of the destination chain
     /// @param message_ is the cross-chain message to be sent
+    /// @param extraData_ is message amb specific override information
     function dispatchPayload(
         uint16 dstChainId_,
         bytes memory message_,
-        bytes memory
+        bytes memory extraData_
     ) external payable virtual override {
         IBaseStateRegistry coreRegistry = IBaseStateRegistry(
             superRegistry.coreStateRegistry()
@@ -89,19 +71,12 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CALLER();
         }
 
-        uint32 domain = ambChainId[dstChainId_];
+        uint64 chainId = ambChainId[dstChainId_];
         /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3
-        bytes32 messageId = mailbox.dispatch(
-            domain,
-            castAddr(authorizedImpl[domain]),
+        messageBus.sendMessage{value: msg.value}(
+            authorizedImpl[chainId],
+            chainId,
             message_
-        );
-
-        igp.payForGas{value: msg.value}(
-            messageId,
-            domain,
-            500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
-            msg.sender /// @dev should refund to the user, now refunds to core state registry
         );
     }
 
@@ -135,19 +110,12 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
         uint256 totalChains = broadcastChains.length;
         for (uint16 i = 0; i < totalChains; i++) {
-            uint32 domain = broadcastChains[i];
+            uint64 chainId = broadcastChains[i];
 
-            bytes32 messageId = mailbox.dispatch(
-                domain,
-                castAddr(authorizedImpl[domain]),
+            messageBus.sendMessage{value: d.gasPerDst[i]}(
+                authorizedImpl[chainId],
+                chainId,
                 message_
-            );
-
-            igp.payForGas{value: d.gasPerDst[i]}(
-                messageId,
-                domain,
-                0, /// abi.decode(d.extraDataPerDst[i], (uint256))
-                msg.sender /// @FIXME should refund to the user, now refunds to core state registry
             );
         }
     }
@@ -158,8 +126,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     function setChainId(
         uint16 superChainId_,
-        uint32 ambChainId_
-    ) external onlyProtocolAdmin {
+        uint64 ambChainId_
+    ) external onlyOwner {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -176,13 +144,13 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     function setReceiver(
         uint32 domain_,
         address authorizedImpl_
-    ) external onlyProtocolAdmin {
+    ) external onlyOwner {
         if (domain_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
         if (authorizedImpl_ == address(0)) {
-            revert Error.ZERO_ADDRESS();
+            revert INVALID_RECEIVER();
         }
 
         authorizedImpl[domain_] = authorizedImpl_;
@@ -191,25 +159,27 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @notice Handle an interchain message
     /// @notice Only called by mailbox
     ///
-    /// @param origin_ Domain ID of the chain from which the message came
-    /// @param body_ Raw bytes content of message body
-    function handle(
-        uint32 origin_,
-        bytes32,
-        bytes calldata body_
-    ) external override {
+    /// @param srcChainId_ ChainId ID of the chain from which the message came
+    /// @param srcContract_ Address of the message sender on the origin chain
+    /// @param message_ Raw bytes content of message body
+    function executeMessage(
+        address srcContract_,
+        uint64 srcChainId_,
+        bytes calldata message_,
+        address // executor
+    ) external payable override returns (ExecutionStatus) {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        if (msg.sender != address(mailbox)) {
+        if (msg.sender != address(messageBus)) {
             revert Error.INVALID_CALLER();
         }
 
         // if (sender_ != castAddr(authorizedImpl[origin_])) {
-        //     revert Error.INVALID_CALLER();
+        //     revert INVALID_CALLER();
         // }
 
-        bytes32 hash = keccak256(body_);
+        bytes32 hash = keccak256(message_);
 
         if (processedMessages[hash]) {
             revert Error.DUPLICATE_PAYLOAD();
@@ -218,7 +188,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         processedMessages[hash] = true;
 
         /// @dev decoding payload
-        AMBMessage memory decoded = abi.decode(body_, (AMBMessage));
+        AMBMessage memory decoded = abi.decode(message_, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
@@ -228,21 +198,18 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
                 superRegistry.coreStateRegistry()
             );
 
-            coreRegistry.receivePayload(superChainId[origin_], body_);
+            coreRegistry.receivePayload(superChainId[srcChainId_], message_);
         } else {
             IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
                 superRegistry.factoryStateRegistry()
             );
-            factoryRegistry.receivePayload(superChainId[origin_], body_);
+            factoryRegistry.receivePayload(superChainId[srcChainId_], message_);
         }
+
+        return ExecutionStatus.Success;
     }
 
     /*///////////////////////////////////////////////////////////////
                     Internal Functions
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev converts address to bytes32
-    function castAddr(address addr_) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(addr_)));
-    }
 }

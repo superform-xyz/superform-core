@@ -9,6 +9,7 @@ import "../types/DataTypes.sol";
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
+import "./utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
@@ -23,9 +24,7 @@ contract Scenario8Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationSingleVault Deposit test case with permit2
 
-        primaryAMB = 1;
-
-        secondaryAMBs = [2];
+        AMBs = [1, 2];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];
@@ -55,8 +54,9 @@ contract Scenario8Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: msgValue,
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 
@@ -70,8 +70,9 @@ contract Scenario8Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: msgValue,
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

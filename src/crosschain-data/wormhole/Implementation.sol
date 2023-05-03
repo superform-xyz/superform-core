@@ -100,32 +100,40 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
             superRegistry.factoryStateRegistry()
         );
 
-        if (msg.sender != address(coreRegistry)) {
+        if (
+            msg.sender != address(coreRegistry) ||
+            msg.sender != address(factoryRegistry)
+        ) {
             revert Error.INVALID_CALLER();
+
+            bytes memory payload = abi.encode(
+                msg.sender,
+                dstChainId_,
+                message_
+            );
+            ExtraData memory eData = abi.decode(extraData_, (ExtraData));
+
+            /// FIXME: nonce is externally generated. can also be moved inside our contracts
+            uint32 nonce = abi.decode(extraData_, (uint32));
+
+            bridge.publishMessage{value: eData.messageFee}(
+                nonce,
+                payload,
+                CONSISTENCY_LEVEL
+            );
+
+            /// @dev call relayers to publish the message
+            /// @note refund and delivery always fail if CREATE3 / CREATE2 is not used
+
+            relayer.send{value: eData.relayerFee}(
+                ambChainId[dstChainId_],
+                castAddr(address(this)),
+                castAddr(address(this)),
+                eData.relayerFee,
+                eData.airdrop,
+                nonce
+            );
         }
-        bytes memory payload = abi.encode(msg.sender, dstChainId_, message_);
-        ExtraData memory eData = abi.decode(extraData_, (ExtraData));
-
-        /// FIXME: nonce is externally generated. can also be moved inside our contracts
-        uint32 nonce = abi.decode(extraData_, (uint32));
-
-        bridge.publishMessage{value: eData.messageFee}(
-            nonce,
-            payload,
-            CONSISTENCY_LEVEL
-        );
-
-        /// @dev call relayers to publish the message
-        /// @note refund and delivery always fail if CREATE3 / CREATE2 is not used
-
-        relayer.send{value: eData.relayerFee}(
-            ambChainId[dstChainId_],
-            castAddr(address(this)),
-            castAddr(address(this)),
-            eData.relayerFee,
-            eData.airdrop,
-            nonce
-        );
     }
 
     function broadcastPayload(

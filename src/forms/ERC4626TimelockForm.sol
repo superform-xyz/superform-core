@@ -173,48 +173,61 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
+    struct directDepositLocalVars {
+        uint16 chainId;
+        address vaultLoc;
+        address collateral;
+        address srcSender;
+        uint256 dstAmount;
+        uint256 balanceBefore;
+        uint256 balanceAfter;
+        ERC20 collateralToken;
+    }
 
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) internal virtual override returns (uint256 dstAmount) {
-        address vaultLoc = vault;
+        directDepositLocalVars memory vars;
+
+        vars.vaultLoc = vault;
         /// note: checking balance
-        IERC4626Timelock v = IERC4626Timelock(vaultLoc);
+        IERC4626Timelock v = IERC4626Timelock(vars.vaultLoc);
 
-        address collateral = address(v.asset());
-        ERC20 collateralToken = ERC20(collateral);
-        uint256 balanceBefore = collateralToken.balanceOf(address(this));
+        vars.collateral = address(v.asset());
+        vars.collateralToken = ERC20(vars.collateral);
+        vars.balanceBefore = vars.collateralToken.balanceOf(address(this));
 
-        (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
+        (vars.srcSender, , ) = _decodeTxData(singleVaultData_.txData);
 
         /// note: handle the collateral token transfers.
         if (singleVaultData_.liqData.txData.length == 0) {
             if (
                 ERC20(singleVaultData_.liqData.token).allowance(
-                    srcSender,
+                    vars.srcSender,
                     address(this)
                 ) < singleVaultData_.liqData.amount
             ) revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
             ERC20(singleVaultData_.liqData.token).safeTransferFrom(
-                srcSender,
+                vars.srcSender,
                 address(this),
                 singleVaultData_.liqData.amount
             );
         } else {
-            uint16 chainId = superRegistry.chainId();
+            vars.chainId = superRegistry.chainId();
             IBridgeValidator(
                 superRegistry.getBridgeValidator(
                     singleVaultData_.liqData.bridgeId
                 )
             ).validateTxData(
                     singleVaultData_.liqData.txData,
-                    chainId,
-                    chainId,
+                    vars.chainId,
+                    vars.chainId,
                     true,
                     address(this),
-                    srcSender
+                    vars.srcSender,
+                    singleVaultData_.liqData.token
                 );
 
             dispatchTokens(
@@ -224,59 +237,74 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
                 singleVaultData_.liqData.amount,
-                srcSender,
+                vars.srcSender,
                 singleVaultData_.liqData.nativeAmount,
                 singleVaultData_.liqData.permit2data,
                 superRegistry.PERMIT2()
             );
         }
 
-        uint256 balanceAfter = collateralToken.balanceOf(address(this));
-        if (balanceAfter - balanceBefore < singleVaultData_.amount)
+        vars.balanceAfter = vars.collateralToken.balanceOf(address(this));
+        if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount)
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
 
-        if (address(v.asset()) != collateral)
+        if (address(v.asset()) != vars.collateral)
             revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
         /// DEVNOTE: allowance is modified inside of the ERC20.transferFrom() call
-        collateralToken.approve(vaultLoc, singleVaultData_.amount);
+        vars.collateralToken.approve(vars.vaultLoc, singleVaultData_.amount);
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
+    }
+
+    struct directWithdrawLocalVars {
+        uint16 unlock;
+        uint16 chainId;
+        address collateral;
+        address srcSender;
+        address receiver;
+        uint256 len1;
     }
 
     /// @inheritdoc BaseForm
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     ) internal virtual override returns (uint256 dstAmount) {
-        (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
+        directWithdrawLocalVars memory vars;
 
-        uint256 len1 = singleVaultData_.liqData.txData.length;
-        address receiver = len1 == 0 ? srcSender : address(this);
+        (vars.srcSender, , ) = _decodeTxData(singleVaultData_.txData);
+
+        vars.len1 = singleVaultData_.liqData.txData.length;
+        vars.receiver = vars.len1 == 0 ? vars.srcSender : address(this);
 
         IERC4626Timelock v = IERC4626Timelock(vault);
-        address collateral = address(v.asset());
+        vars.collateral = address(v.asset());
 
-        if (address(v.asset()) != collateral)
+        if (address(v.asset()) != vars.collateral)
             revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
 
         /// NOTE: This assumes that first transaction to this vault may just trigger the unlock with cooldown
         /// NOTE: Only next withdraw transaction would trigger the actual withdraw.
         /// TODO: Besides API making informed choice how else we can revert this better?
         /// TODO: extraData could be used to first make check at the begining of this func and revert earlier
-        uint16 unlock = checkUnlock(vault, singleVaultData_.amount, srcSender);
-        if (unlock == 0) {
+        vars.unlock = checkUnlock(
+            vault,
+            singleVaultData_.amount,
+            vars.srcSender
+        );
+        if (vars.unlock == 0) {
             dstAmount = v.redeem(
                 singleVaultData_.amount,
-                receiver,
+                vars.receiver,
                 address(this)
             );
 
-            if (len1 != 0) {
+            if (vars.len1 != 0) {
                 /// @dev this check here might be too much already, but can't hurt
                 if (singleVaultData_.liqData.amount > singleVaultData_.amount)
                     revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-                uint16 chainId = superRegistry.chainId();
+                vars.chainId = superRegistry.chainId();
 
                 /// @dev NOTE: only allows withdraws to same chain
                 IBridgeValidator(
@@ -285,11 +313,12 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                     )
                 ).validateTxData(
                         singleVaultData_.liqData.txData,
-                        chainId,
-                        chainId,
+                        vars.chainId,
+                        vars.chainId,
                         false,
                         address(this),
-                        srcSender
+                        vars.srcSender,
+                        singleVaultData_.liqData.token
                     );
 
                 dispatchTokens(
@@ -305,15 +334,14 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                     superRegistry.PERMIT2()
                 );
             }
-            
-        } else if (unlock == 1) {
+        } else if (vars.unlock == 1) {
             revert Error.LOCKED();
-        } else if (unlock == 2) {
+        } else if (vars.unlock == 2) {
             /// @dev target vault should implement requestUnlock function. with 1Form<>1Vault we can actualy re-define it though.
             /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
             /// @dev IERC4626TimelockForm could be an ERC4626 extension?
             v.requestUnlock(singleVaultData_.amount, address(this));
-        } else if (unlock == 3) {
+        } else if (vars.unlock == 3) {
             revert Error.WITHDRAW_COOLDOWN_PERIOD();
         }
     }
@@ -345,7 +373,6 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
         );
     }
 
-    /// @dev Joao- needed to add this due to stack too deep error
     struct xChainWithdrawLocalVars {
         uint16 unlock;
         uint16 dstChainId;
@@ -399,7 +426,8 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
                         vars.srcChainId,
                         false,
                         address(this),
-                        vars.srcSender
+                        vars.srcSender,
+                        singleVaultData_.liqData.token
                     );
 
                 /// Note Send Tokens to Source Chain

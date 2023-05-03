@@ -64,11 +64,13 @@ interface ISuperFormFactory {
     /// @notice Perhaps this can checked at form level
     /// @param formBeaconId_ is the form beacon we want to attach the vault to
     /// @param vault_ is the address of the vault
+    /// @param broadcastParams_ is the AMBExtraData to be sent to the AMBs
     /// @return superFormId_ is the id of the superform
     /// @dev TODO: add array version of thi
     function createSuperForm(
         uint256 formBeaconId_,
-        address vault_
+        address vault_,
+        bytes calldata broadcastParams_
     ) external payable returns (uint256 superFormId_, address superForm_);
 
     /// @dev to synchronize superforms added to different chains using factory registry

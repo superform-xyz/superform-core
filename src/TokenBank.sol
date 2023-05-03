@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData} from "./types/DataTypes.sol";
+import {TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, ReturnMultiData, ReturnSingleData, SingleDstAMBParams, AckAMBData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
@@ -30,9 +30,6 @@ contract TokenBank is ITokenBank {
 
     /// @dev superRegistry points to the super registry deployed in the respective chain.
     ISuperRegistry public immutable superRegistry;
-
-    /// @dev safeGasParam is used while sending layerzero message from destination to router.
-    bytes public safeGasParam;
 
     modifier onlyStateRegistry() {
         if (
@@ -68,12 +65,16 @@ contract TokenBank is ITokenBank {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositMultiSync(
         InitMultiVaultData memory multiVaultData_
-    ) external payable override onlyStateRegistry {
-        (
-            address[] memory superForms,
-            uint256[] memory formIds,
-
-        ) = _getSuperForms(multiVaultData_.superFormIds);
+    )
+        external
+        payable
+        override
+        onlyStateRegistry
+        returns (uint16, bytes memory)
+    {
+        (address[] memory superForms, , ) = _getSuperForms(
+            multiVaultData_.superFormIds
+        );
         ERC20 underlying;
         uint256[] memory dstAmounts = new uint256[](
             multiVaultData_.superFormIds.length
@@ -111,16 +112,8 @@ contract TokenBank is ITokenBank {
             multiVaultData_.txData
         );
 
-        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8[] memory proofAmbIds = new uint8[](1);
-        proofAmbIds[0] = 2;
-
         /// @notice Send Data to Source to issue superform positions.
-        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: msg.value
-        }(
-            1, /// @dev come to this later to accept any bridge id
-            proofAmbIds,
+        return (
             srcChainId,
             abi.encode(
                 AMBMessage(
@@ -142,8 +135,7 @@ contract TokenBank is ITokenBank {
                         )
                     )
                 )
-            ),
-            safeGasParam
+            )
         );
     }
 
@@ -153,8 +145,15 @@ contract TokenBank is ITokenBank {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function depositSync(
         InitSingleVaultData memory singleVaultData_
-    ) external payable override onlyStateRegistry {
+    )
+        external
+        payable
+        override
+        onlyStateRegistry
+        returns (uint16, bytes memory)
+    {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
+
         ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
         uint256 dstAmount;
         /// @dev This will revert ALL of the transactions if one of them fails.
@@ -178,16 +177,8 @@ contract TokenBank is ITokenBank {
             singleVaultData_.txData
         );
 
-        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8[] memory proofAmbIds = new uint8[](1);
-        proofAmbIds[0] = 2;
-
         /// @notice Send Data to Source to issue superform positions.
-        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: msg.value
-        }(
-            1, /// @dev come to this later to accept any bridge id
-            proofAmbIds,
+        return (
             srcChainId,
             abi.encode(
                 AMBMessage(
@@ -200,7 +191,7 @@ contract TokenBank is ITokenBank {
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
-                                0, /// <=== FIXME: status always 0 for deposit 
+                                0,
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs
@@ -209,8 +200,7 @@ contract TokenBank is ITokenBank {
                         )
                     )
                 )
-            ),
-            safeGasParam
+            )
         );
     }
 
@@ -220,20 +210,61 @@ contract TokenBank is ITokenBank {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function withdrawMultiSync(
         InitMultiVaultData memory multiVaultData_
-    ) external payable override onlyStateRegistry {
+    )
+        external
+        payable
+        override
+        onlyStateRegistry
+        returns (uint16, bytes memory)
+    {
+        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
+            multiVaultData_.txData
+        );
+
         /// @dev This will revert ALL of the transactions if one of them fails.
-        for (uint256 i = 0; i < multiVaultData_.superFormIds.length; i++) {
-            withdrawSync(
-                InitSingleVaultData({
-                    txData: multiVaultData_.txData,
-                    superFormId: multiVaultData_.superFormIds[i],
-                    amount: multiVaultData_.amounts[i],
-                    maxSlippage: multiVaultData_.maxSlippage[i],
-                    liqData: multiVaultData_.liqData[i],
-                    extraFormData: multiVaultData_.extraFormData
-                })
+        for (uint256 i; i < multiVaultData_.superFormIds.length; i++) {
+            InitSingleVaultData memory singleVaultData_ = InitSingleVaultData({
+                txData: multiVaultData_.txData,
+                superFormId: multiVaultData_.superFormIds[i],
+                amount: multiVaultData_.amounts[i],
+                maxSlippage: multiVaultData_.maxSlippage[i],
+                liqData: multiVaultData_.liqData[i],
+                extraFormData: multiVaultData_.extraFormData
+            });
+
+            (address superForm_, , ) = _getSuperForm(
+                singleVaultData_.superFormId
             );
+
+            ///FIXME: handling failure cases
+            IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_);
         }
+
+        /// @notice Send Data to Source to issue superform positions.
+        return (
+            srcChainId,
+            abi.encode(
+                AMBMessage(
+                    _packTxInfo(
+                        uint120(TransactionType.WITHDRAW),
+                        uint120(CallbackType.RETURN),
+                        true,
+                        0
+                    ),
+                    abi.encode(
+                        ReturnMultiData(
+                            _packReturnTxInfo(
+                                0,
+                                srcChainId,
+                                superRegistry.chainId(),
+                                currentTotalTxs
+                            ),
+                            multiVaultData_.amounts
+                        )
+                    )
+                )
+            )
+        );
     }
 
     /// @dev handles the state when received from the source chain.
@@ -242,33 +273,37 @@ contract TokenBank is ITokenBank {
     /// note: state registry sorts by deposit/withdraw txType before calling this function.
     function withdrawSync(
         InitSingleVaultData memory singleVaultData_
-    ) public payable override onlyStateRegistry {
+    ) public payable override onlyStateRegistry returns (uint16, bytes memory) {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
         /// @dev Withdraw from Form
         /// TODO: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch (droping revert is risky)
-        /// that's also the only way to get error type out of the try/catch 
+        /// that's also the only way to get error type out of the try/catch
         /// NOTE: opted for just returning CallbackType.FAIL as we always end up with SuperPositionBank.returnPosition() anyways
         /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
-        try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_) returns (uint16 status_) {
+        try
+            IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData_)
+        returns (uint16 status_) {
             // Handle the case when the external call succeeds
-            _dispatchPayload(
-                singleVaultData_,
-                TransactionType.WITHDRAW,
-                CallbackType.RETURN,
-                singleVaultData_.amount,
-                status_
-            );
+            return
+                _constructSingleReturnData(
+                    singleVaultData_,
+                    TransactionType.WITHDRAW,
+                    CallbackType.RETURN,
+                    singleVaultData_.amount,
+                    status_
+                );
         } catch {
             // Handle the case when the external call reverts for whatever reason
             /// https://solidity-by-example.org/try-catch/
-            _dispatchPayload(
-                singleVaultData_,
-                TransactionType.WITHDRAW,
-                CallbackType.FAIL,
-                singleVaultData_.amount,
-                0 /// <=== FIXME: status always 0 for withdraw fail
-            );
+            return
+                _constructSingleReturnData(
+                    singleVaultData_,
+                    TransactionType.WITHDRAW,
+                    CallbackType.FAIL,
+                    singleVaultData_.amount,
+                    0 /// <=== FIXME: status always 0 for withdraw fail
+                );
 
             /// @dev we could match on individual reasons, but it's hard with strings
             emit ErrorLog("FORM_REVERT");
@@ -276,27 +311,19 @@ contract TokenBank is ITokenBank {
     }
 
     /// @notice depositSync and withdrawSync internal method for sending message back to the source chain
-    function _dispatchPayload(
+    function _constructSingleReturnData(
         InitSingleVaultData memory singleVaultData_,
         TransactionType txType,
         CallbackType returnType,
         uint256 amount,
         uint16 status
-    ) internal {
+    ) internal view returns (uint16, bytes memory) {
         (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
             singleVaultData_.txData
         );
 
-        /// @dev FIXME HARDCODED FIX AMBMESSAGE TO HAVE THIS AND THE PRIMARY AMBID
-        uint8[] memory proofAmbIds = new uint8[](1);
-        proofAmbIds[0] = 2;
-
         /// @notice Send Data to Source to issue superform positions.
-        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: msg.value
-        }(
-            1, /// @dev come to this later to accept any bridge id
-            proofAmbIds,
+        return (
             srcChainId,
             abi.encode(
                 AMBMessage(
@@ -313,21 +340,7 @@ contract TokenBank is ITokenBank {
                         )
                     )
                 )
-            ),
-            safeGasParam
+            )
         );
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev adds the gas overrides for layerzero.
-    /// @param param_    represents adapterParams V2.0 of layerzero
-    function updateSafeGasParam(
-        bytes memory param_
-    ) external onlyProtocolAdmin {
-        if (param_.length == 0) revert Error.INVALID_GAS_OVERRIDE();
-        bytes memory oldParam = safeGasParam;
-        safeGasParam = param_;
-
-        emit SafeGasParamUpdated(oldParam, param_);
     }
 }

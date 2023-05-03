@@ -41,46 +41,37 @@ struct SingleVaultSFData {
 }
 
 struct MultiDstMultiVaultsStateReq {
-    uint8 primaryAmbId;
-    uint8[] proofAmbId;
+    uint8[] ambIds;
     uint16[] dstChainIds;
     MultiVaultsSFData[] superFormsData;
-    bytes adapterParam;
-    uint256 msgValue;
+    bytes[] extraDataPerDst; /// encoded array of SingleDstAMBParams; length == no of dstChainIds
 }
 
 struct SingleDstMultiVaultsStateReq {
-    uint8 primaryAmbId;
-    uint8[] proofAmbId;
+    uint8[] ambIds;
     uint16 dstChainId;
     MultiVaultsSFData superFormsData;
-    bytes adapterParam;
-    uint256 msgValue;
+    bytes extraData;
 }
 
 struct MultiDstSingleVaultStateReq {
-    uint8 primaryAmbId;
-    uint8[] proofAmbId;
+    uint8[] ambIds;
     uint16[] dstChainIds;
     SingleVaultSFData[] superFormsData;
-    bytes adapterParam;
-    uint256 msgValue;
+    bytes[] extraDataPerDst;
 }
 
 struct SingleXChainSingleVaultStateReq {
-    uint8 primaryAmbId;
-    uint8[] proofAmbId;
+    uint8[] ambIds;
     uint16 dstChainId;
     SingleVaultSFData superFormData;
-    bytes adapterParam;
-    uint256 msgValue;
+    bytes extraData;
 }
 
 struct SingleDirectSingleVaultStateReq {
     uint16 dstChainId;
     SingleVaultSFData superFormData;
-    bytes adapterParam;
-    uint256 msgValue;
+    bytes extraData;
 }
 
 struct InitMultiVaultData {
@@ -119,4 +110,35 @@ struct ReturnMultiData {
 struct ReturnSingleData {
     uint256 returnTxInfo; // tight packing of status, srcChainId, dstChainId and original txId
     uint256 amount;
+}
+
+/**
+ * if let's say its multi-dst / broadcasting
+ * broadcasting is an extension of multi-dst
+ *
+ * splitting of the data types will reduce gas??
+ * what would be an ideal data type??
+ *
+ * linear waterflow model??
+ * where the top data type is encoded and the bottom level decodes it
+ */
+struct SingleDstAMBParams {
+    uint256 gasToPay;
+    bytes encodedAMBExtraData;
+}
+
+struct AMBExtraData {
+    uint256[] gasPerAMB;
+    bytes[] extraDataPerAMB;
+}
+
+struct BroadCastAMBExtraData {
+    uint256[] gasPerDst;
+    bytes[] extraDataPerDst;
+}
+
+/// acknowledgement extra data
+struct AckAMBData {
+    uint8[] ambIds;
+    bytes extraData;
 }
