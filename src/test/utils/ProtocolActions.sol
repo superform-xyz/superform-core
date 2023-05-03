@@ -981,34 +981,31 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     struct SingleVaultWithdrawLocalVars {
-        uint256 initialFork;
-        address from;
-        IPermit2.PermitTransferFrom permit;
+        ISocketRegistry.MiddlewareRequest middlewareRequest;
+        ISocketRegistry.BridgeRequest bridgeRequest;
+        address superRouter;
+        address stateRegistry;
+        IERC1155 superPositions;
         bytes txData;
-        bytes sig;
-        bytes permit2Calldata;
         LiqRequest liqReq;
     }
 
     function _buildSingleVaultWithdrawCallData(
         SingleVaultCallDataArgs memory args
     ) internal returns (SingleVaultSFData memory superFormData) {
-        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-        ISocketRegistry.BridgeRequest memory bridgeRequest;
+        SingleVaultWithdrawLocalVars memory vars;
 
-        address _superRouter = contracts[CHAIN_0][
-            bytes32(bytes("SuperRouter"))
-        ];
-        address _stateRegistry = contracts[CHAIN_0][
+        vars.superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        vars.stateRegistry = contracts[CHAIN_0][
             bytes32(bytes("SuperRegistry"))
         ];
-        IERC1155 superPositions = IERC1155(
-            ISuperRegistry(_stateRegistry).superPositions()
+        vars.superPositions = IERC1155(
+            ISuperRegistry(vars.stateRegistry).superPositions()
         );
         vm.prank(users[args.user]);
-        superPositions.setApprovalForAll(_superRouter, true);
+        vars.superPositions.setApprovalForAll(vars.superRouter, true);
 
-        bytes memory txData = _buildSocketTxData(
+        vars.txData = _buildSocketTxData(
             args.underlyingToken,
             args.externalToken,
             args.toDst,
@@ -1021,9 +1018,9 @@ abstract contract ProtocolActions is BaseSetup {
             args.amount
         );
 
-        LiqRequest memory liqReq = LiqRequest(
+        vars.liqReq = LiqRequest(
             1, /// @dev FIXME: hardcoded for now
-            txData,
+            vars.txData,
             args.underlyingToken,
             args.amount,
             0,
@@ -1034,7 +1031,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.superFormId,
             args.amount,
             args.maxSlippage,
-            liqReq,
+            vars.liqReq,
             ""
         );
     }

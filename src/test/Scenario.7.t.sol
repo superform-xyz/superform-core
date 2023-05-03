@@ -76,11 +76,12 @@ contract Scenario7Test is ProtocolActions {
             TestAction({
                 action: Actions.Withdraw,
                 multiVaults: true, //!!WARNING turn on or off multi vaults
-                user: users[0],
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: msgValue,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
