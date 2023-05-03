@@ -12,6 +12,8 @@ import {Error} from "../utils/Error.sol";
 contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override CORE_STATE_REGISTRY_ROLE =
         keccak256("CORE_STATE_REGISTRY_ROLE");
+    bytes32 public constant FORM_STATE_REGISTRY_ROLE =
+        keccak256("FORM_STATE_REGISTRY_ROLE");
     bytes32 public constant override SUPER_ROUTER_ROLE =
         keccak256("SUPER_ROUTER_ROLE");
     bytes32 public constant override TOKEN_BANK_ROLE =
@@ -65,6 +67,20 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address stateRegistry_
     ) external override {
         revokeRole(CORE_STATE_REGISTRY_ROLE, stateRegistry_);
+    }
+
+    /// TODO: inheritdoc ISuperRBAC
+    function grantFormStateRegistryRole(
+        address formStateRegistry_
+    ) external {
+        grantRole(FORM_STATE_REGISTRY_ROLE, formStateRegistry_);
+    }
+
+    /// TODO: inheritdoc ISuperRBAC
+    function revokeFormStateRegistryRole(
+        address formStateRegistry_
+    ) external {
+        revokeRole(FORM_STATE_REGISTRY_ROLE, formStateRegistry_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -171,6 +187,12 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address coreStateRegistry_
     ) external view override returns (bool) {
         return hasRole(CORE_STATE_REGISTRY_ROLE, coreStateRegistry_);
+    }
+
+    function hasFormStateRegistryRole(
+        address coreStateRegistry_
+    ) external view returns (bool) {
+        return hasRole(FORM_STATE_REGISTRY_ROLE, coreStateRegistry_);
     }
 
     /// @inheritdoc ISuperRBAC

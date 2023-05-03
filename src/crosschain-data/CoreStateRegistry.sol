@@ -326,8 +326,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function _processSingleWithdrawal(
         uint256 payloadId_,
         uint256 callbackType_,
-        AMBMessage memory payloadInfo_
+        AMBMessage memory payloadInfo_ /// NOTE: var is used to track current state of action (callback, flag, multivault)
     ) internal {
+        /// NOTE: For Keeper processing, don't we need additional PayloadState?
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         if (callbackType_ == uint256(CallbackType.INIT)) {

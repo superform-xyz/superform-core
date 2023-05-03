@@ -96,6 +96,9 @@ interface ISuperRBAC {
     /// @dev returns the id of the state registry role
     function CORE_STATE_REGISTRY_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of the state registry role
+    function FORM_STATE_REGISTRY_ROLE() external view returns (bytes32);
+
     /// @dev returns the id of the super router role
     function SUPER_ROUTER_ROLE() external view returns (bytes32);
 
@@ -127,6 +130,12 @@ interface ISuperRBAC {
     /// @dev returns wether the given address has the state registry role
     /// @param coreStateRegistry_ the address to check
     function hasCoreStateRegistryRole(
+        address coreStateRegistry_
+    ) external view returns (bool);
+
+    /// @dev returns wether the given address has the state registry role
+    /// @param coreStateRegistry_ the address to check
+    function hasFormStateRegistryRole(
         address coreStateRegistry_
     ) external view returns (bool);
 

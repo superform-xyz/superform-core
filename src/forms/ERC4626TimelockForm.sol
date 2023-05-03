@@ -10,6 +10,7 @@ import {BaseForm} from "../BaseForm.sol";
 import {ERC20Form} from "./ERC20Form.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
+import {IFormStateRegistry} from "./form_keeper/IFormStateRegistry.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
@@ -18,11 +19,18 @@ import "../utils/DataPacking.sol";
 contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
+    uint256 unlockCounter;
+    mapping (uint256 => InitSingleVaultData) public unlockId;
+
+    IFormStateRegistry public formStateRegistry;
+
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) ERC20Form(superRegistry_) {}
+    constructor(address superRegistry_) ERC20Form(superRegistry_) {
+        formStateRegistry = IFormStateRegistry(superRegistry.formStateRegistry());
+    }
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
@@ -432,6 +440,16 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             /// @dev for superform it would be better to requestUnlock(amount,owner) but in-the wild impl often only have this
             /// @dev IERC4626TimelockForm could be an ERC4626 extension?
             v.requestUnlock(singleVaultData_.amount, address(this));
+            
+            /// @dev Store for FORM_KEEPER
+            unlockId[++unlockCounter] = singleVaultData_;
+
+            /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
+            formStateRegistry.receivePayload(
+                unlockCounter,
+                singleVaultData_.superFormId
+            );
+
             return 1;
         } else if (vars.unlock == 3) {
             revert Error.WITHDRAW_COOLDOWN_PERIOD();
@@ -446,6 +464,17 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             vars.vaultLoc
         );
     }
+
+
+    /*///////////////////////////////////////////////////////////////
+                RE-PROCESSING REDEEM AFTER COOLDOWN
+    //////////////////////////////////////////////////////////////*/
+
+    function processUnlock(uint256 unlockId_) external onlyFormKeeper {
+        InitSingleVaultData memory singleVaultData_ = unlockId[unlockId_];
+        _xChainWithdrawFromVault(singleVaultData_); /// conditions inside, we just re-execute same payload
+    }
+
 
     /*///////////////////////////////////////////////////////////////
                 INTERNAL VIEW VIRTUAL FUNCTIONS OVERRIDES

@@ -103,7 +103,7 @@ struct InitSingleVaultData {
 
 struct AMBMessage {
     uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag and if multi/single vault, uint8 = 1, 2, 3
-    bytes params; // abi.encode (AMBInitData)
+    bytes params; // abi.encode (AMBInitData) NOTE: this is too ambigious. document to what fields does bytes params decode exactly 
 }
 
 struct AMBFactoryMessage {
