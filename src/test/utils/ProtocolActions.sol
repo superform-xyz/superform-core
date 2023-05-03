@@ -1012,7 +1012,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.srcChainId,
             false,
             users[args.user],
-            args.liquidityBridgeToChainId,
+            args.liquidityBridgeSrcChainId,
             address(0),
             0,
             args.amount
