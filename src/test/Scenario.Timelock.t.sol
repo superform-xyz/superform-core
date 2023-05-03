@@ -14,7 +14,7 @@ import {IERC4626TimelockForm} from "./interfaces/IERC4626TimelockForm.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 import {_packSuperForm} from "../utils/DataPacking.sol";
-import "../utils/AmbParams.sol";
+import "./utils/AmbParams.sol";
 
 /// @dev we can't use it because it shadows existing declaration at the BaseSetup level
 // import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol";

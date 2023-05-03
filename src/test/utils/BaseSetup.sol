@@ -41,7 +41,7 @@ import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implement
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
 import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
-import "../../utils/AmbParams.sol";
+import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
 
 import {SuperPositionBank} from "../../SuperPositionBank.sol";

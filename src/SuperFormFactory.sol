@@ -13,7 +13,6 @@ import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
 import {BaseForm} from "./BaseForm.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
-import "./utils/AmbParams.sol";
 
 /// @title SuperForms Factory
 /// @dev A secure, and easily queryable central point of access for all SuperForms on any given chain,

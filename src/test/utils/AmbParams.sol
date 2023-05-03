@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-import {SingleDstAMBParams, AMBExtraData, BroadCastAMBExtraData, AckAMBData} from "../types/DataTypes.sol";
+import {SingleDstAMBParams, AMBExtraData, BroadCastAMBExtraData, AckAMBData} from "../../types/DataTypes.sol";
 
 pragma solidity 0.8.19;
 
