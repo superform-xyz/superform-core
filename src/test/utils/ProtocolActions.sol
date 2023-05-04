@@ -323,6 +323,8 @@ abstract contract ProtocolActions is BaseSetup {
         uint32[] expDstDomains;
         address[] endpoints;
         uint16[] lzChainIds;
+        uint64[] celerChainIds;
+        address[] celerBusses;
         uint256[] forkIds;
         uint256 k;
     }
@@ -346,6 +348,9 @@ abstract contract ProtocolActions is BaseSetup {
         internalVars.endpoints = new address[](vars.nDestinations);
         internalVars.lzChainIds = new uint16[](vars.nDestinations);
 
+        internalVars.celerBusses = new address[](vars.nDestinations);
+        internalVars.celerChainIds = new uint64[](vars.nDestinations);
+
         internalVars.forkIds = new uint256[](vars.nDestinations);
 
         internalVars.k = 0;
@@ -362,6 +367,13 @@ abstract contract ProtocolActions is BaseSetup {
                     internalVars.endpoints[internalVars.k] = lzEndpoints[i];
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
 
+                    internalVars.celerChainIds[internalVars.k] = celer_chainIds[
+                        i
+                    ];
+                    internalVars.celerBusses[
+                        internalVars.k
+                    ] = celerMessageBusses[i];
+
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
 
                     internalVars.k++;
@@ -370,22 +382,39 @@ abstract contract ProtocolActions is BaseSetup {
         }
         vars.logs = vm.getRecordedLogs();
 
-        /// @dev see pigeon for this implementation
-        HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper")).help(
-            address(HyperlaneMailbox),
-            internalVars.toMailboxes,
-            internalVars.expDstDomains,
-            internalVars.forkIds,
-            vars.logs
-        );
+        for (uint256 index; index < AMBs.length; index++) {
+            if (AMBs[index] == 1) {
+                LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
+                    internalVars.endpoints,
+                    internalVars.lzChainIds,
+                    2500000, /// (change to 2000000) @dev FIXME: should be calculated automatically - This is the gas value to send - value needs to be tested and probably be lower
+                    internalVars.forkIds,
+                    vars.logs
+                );
+            }
 
-        LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
-            internalVars.endpoints,
-            internalVars.lzChainIds,
-            2500000, /// (change to 2000000) @dev FIXME: should be calculated automatically - This is the gas value to send - value needs to be tested and probably be lower
-            internalVars.forkIds,
-            vars.logs
-        );
+            if (AMBs[index] == 2) {
+                /// @dev see pigeon for this implementation
+                HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper")).help(
+                    address(HyperlaneMailbox),
+                    internalVars.toMailboxes,
+                    internalVars.expDstDomains,
+                    internalVars.forkIds,
+                    vars.logs
+                );
+            }
+
+            if (AMBs[index] == 3) {
+                CelerHelper(getContract(CHAIN_0, "CelerHelper")).help(
+                    CELER_CHAIN_IDS[CHAIN_0],
+                    CELER_BUSSES[CHAIN_0],
+                    internalVars.celerBusses,
+                    internalVars.celerChainIds,
+                    internalVars.forkIds,
+                    vars.logs
+                );
+            }
+        }
 
         CoreStateRegistry stateRegistry;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
@@ -538,23 +567,11 @@ abstract contract ProtocolActions is BaseSetup {
 
                         vars.logs = vm.getRecordedLogs();
 
-                        LayerZeroHelper(
-                            getContract(aV[i].toChainId, "LayerZeroHelper")
-                        ).helpWithEstimates(
-                                vars.lzEndpoint_0,
-                                1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
-                                FORKS[CHAIN_0],
-                                vars.logs
-                            );
-
-                        HyperlaneHelper(
-                            getContract(aV[i].toChainId, "HyperlaneHelper")
-                        ).help(
-                                address(HyperlaneMailbox),
-                                address(HyperlaneMailbox),
-                                FORKS[CHAIN_0],
-                                vars.logs
-                            );
+                        _payloadDeliveryHelper(
+                            CHAIN_0,
+                            aV[i].toChainId,
+                            vars.logs
+                        );
                     } else if (
                         action.testType == TestType.RevertProcessPayload
                     ) {
@@ -602,23 +619,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     vars.logs = vm.getRecordedLogs();
 
-                    LayerZeroHelper(
-                        getContract(aV[i].toChainId, "LayerZeroHelper")
-                    ).helpWithEstimates(
-                            vars.lzEndpoint_0,
-                            2000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
-                            FORKS[CHAIN_0],
-                            vars.logs
-                        );
-
-                    HyperlaneHelper(
-                        getContract(aV[i].toChainId, "HyperlaneHelper")
-                    ).help(
-                            address(HyperlaneMailbox),
-                            address(HyperlaneMailbox),
-                            FORKS[CHAIN_0],
-                            vars.logs
-                        );
+                    _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
                 }
             }
             vm.selectFork(aV[i].initialFork);
@@ -1206,13 +1207,19 @@ abstract contract ProtocolActions is BaseSetup {
         if (testType == TestType.Pass) {
             CoreStateRegistry(
                 payable(getContract(targetChainId_, "CoreStateRegistry"))
-            ).processPayload{value: msgValue}(payloadId_, generateAckParams(2));
+            ).processPayload{value: msgValue}(
+                payloadId_,
+                generateAckParams(AMBs)
+            );
         } else if (testType == TestType.RevertProcessPayload) {
             vm.expectRevert();
 
             CoreStateRegistry(
                 payable(getContract(targetChainId_, "CoreStateRegistry"))
-            ).processPayload{value: msgValue}(payloadId_, generateAckParams(2));
+            ).processPayload{value: msgValue}(
+                payloadId_,
+                generateAckParams(AMBs)
+            );
 
             return false;
         }
@@ -1342,5 +1349,46 @@ abstract contract ProtocolActions is BaseSetup {
                 amounts_
             );
         vm.selectFork(initialFork);
+    }
+
+    function _payloadDeliveryHelper(
+        uint16 FROM_CHAIN,
+        uint16 TO_CHAIN,
+        Vm.Log[] memory logs
+    ) internal {
+        for (uint256 i; i < AMBs.length; i++) {
+            /// @notice ID: 1 Layerzero
+            if (AMBs[i] == 1) {
+                LayerZeroHelper(getContract(TO_CHAIN, "LayerZeroHelper"))
+                    .helpWithEstimates(
+                        LZ_ENDPOINTS[FROM_CHAIN],
+                        1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+                        FORKS[FROM_CHAIN],
+                        logs
+                    );
+            }
+
+            /// @notice ID: 2 Hyperlane
+            if (AMBs[i] == 2) {
+                HyperlaneHelper(getContract(TO_CHAIN, "HyperlaneHelper")).help(
+                    address(HyperlaneMailbox),
+                    address(HyperlaneMailbox),
+                    FORKS[FROM_CHAIN],
+                    logs
+                );
+            }
+
+            /// @notice ID: 3 Celer
+            if (AMBs[i] == 3) {
+                CelerHelper(getContract(TO_CHAIN, "CelerHelper")).help(
+                    CELER_CHAIN_IDS[TO_CHAIN],
+                    CELER_BUSSES[TO_CHAIN],
+                    CELER_BUSSES[FROM_CHAIN],
+                    CELER_CHAIN_IDS[FROM_CHAIN],
+                    FORKS[FROM_CHAIN],
+                    logs
+                );
+            }
+        }
     }
 }

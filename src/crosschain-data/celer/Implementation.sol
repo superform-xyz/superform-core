@@ -10,6 +10,7 @@ import {IMessageReceiver} from "./interface/IMessageReceiver.sol";
 import {Error} from "../../utils/Error.sol";
 import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @title Celer Implementation Contract
 /// @author Zeropoint Labs
@@ -142,10 +143,10 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
     }
 
     function setReceiver(
-        uint32 domain_,
+        uint64 dstChainId_,
         address authorizedImpl_
     ) external onlyOwner {
-        if (domain_ == 0) {
+        if (dstChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -153,7 +154,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
             revert INVALID_RECEIVER();
         }
 
-        authorizedImpl[domain_] = authorizedImpl_;
+        authorizedImpl[dstChainId_] = authorizedImpl_;
     }
 
     /// @notice Handle an interchain message
@@ -168,6 +169,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         bytes calldata message_,
         address // executor
     ) external payable override returns (ExecutionStatus) {
+        console.logBytes(message_);
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
@@ -192,12 +194,13 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
 
         /// NOTE: experimental split of registry contracts
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
+        console.log(registryId);
         /// FIXME: should migrate to support more state registry types
         if (registryId == 0) {
             IBaseStateRegistry coreRegistry = IBaseStateRegistry(
                 superRegistry.coreStateRegistry()
             );
-
+            console.log(address(coreRegistry));
             coreRegistry.receivePayload(superChainId[srcChainId_], message_);
         } else {
             IBaseStateRegistry factoryRegistry = IBaseStateRegistry(

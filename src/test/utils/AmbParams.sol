@@ -60,11 +60,8 @@ function generateBroadcastParams(
     return abi.encode(ambIds, abi.encode(extraData));
 }
 
-function generateAckParams(uint256 ambCount) pure returns (bytes memory) {
-    uint8[] memory ambIds = new uint8[](ambCount);
-    ambIds[0] = 1;
-    ambIds[1] = 2;
-
+function generateAckParams(uint8[] memory ambIds) pure returns (bytes memory) {
+    uint256 ambCount = ambIds.length;
     uint256[] memory gasPerAMB = new uint256[](ambCount);
     gasPerAMB[0] = 80 ether;
     gasPerAMB[1] = 80 ether;

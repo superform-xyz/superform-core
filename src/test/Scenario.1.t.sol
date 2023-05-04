@@ -22,7 +22,7 @@ contract Scenario1Test is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationSingleVault Deposit test case
-        AMBs = [1, 2];
+        AMBs = [2, 3];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];
