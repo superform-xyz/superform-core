@@ -276,6 +276,8 @@ contract TokenBank is ITokenBank {
     ) public payable override onlyStateRegistry returns (uint16, bytes memory) {
         (address superForm_, , ) = _getSuperForm(singleVaultData_.superFormId);
 
+        /// amount = preview()
+
         /// @dev Withdraw from Form
         /// TODO: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch (droping revert is risky)
         /// that's also the only way to get error type out of the try/catch
@@ -306,7 +308,7 @@ contract TokenBank is ITokenBank {
                 );
 
             /// @dev we could match on individual reasons, but it's hard with strings
-            emit ErrorLog("FORM_REVERT");
+            // emit ErrorLog("FORM_REVERT");
         }
     }
 

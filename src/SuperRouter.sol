@@ -495,9 +495,11 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
             /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
             /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
+            
             /// TODO: If we have formStateRegistry, it will still be IF condition for each call here
             /// NOTE: FORM_KEEPER Solution doesn't have that problem. Integrate dispatchPayload and RBAC of CoreStateReg.
-            /// NOTE: tokenBank which knows type of the Form on the other chain
+            /// NOTE: tokenBank knows type of the Form on the other chain
+            // if / else wont work multivaults
             IBaseStateRegistry(superRegistry.coreStateRegistry())
                 .dispatchPayload{value: ambParams.gasToPay}(
                 req.ambIds,
@@ -1035,6 +1037,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 superRegistry.superPositionBank()
             );
 
+            // withdrawShares[srcSender][uint]
+            
             bank.returnPositionSingle(srcSender, index);
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
