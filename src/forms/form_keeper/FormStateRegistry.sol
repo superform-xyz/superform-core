@@ -51,8 +51,13 @@ contract FormStateRegistry is IFormStateRegistry {
         (address form_, , ) = _getSuperForm(payloadStore[payloadId]);
         IERC4626Timelock(form_).processUnlock(payloadId);
         delete payloadStore[payloadId];
+        /// @dev why do we need to message back?
     }
 
+    /// NOTE: To enable FormStateRegistry messaging functionality, below functions needs to be adapted
+    /// NOTE: Those functions come from both BaseStateRegistry and TokenBank where they are used with different design in mind
+
+    /// @notice TokenBank function for build message back to the source. Called after xChainWithdraw succeds.
     // function _constructSingleReturnData(
     //     InitSingleVaultData memory singleVaultData_,
     //     uint16 status
@@ -75,7 +80,7 @@ contract FormStateRegistry is IFormStateRegistry {
     //                             superRegistry.chainId(),
     //                             currentTotalTxs
     //                         ),
-    //                         singleVaultData_.amount /// @dev TODO: return this from Form, not InitSingleVaultData. Q: assets amount from shares or shares only?
+    //                         singleVaultData_.amount
     //                     )
     //                 )
     //             )
@@ -83,6 +88,7 @@ contract FormStateRegistry is IFormStateRegistry {
     //     );
     // }
 
+    /// @notice BaseStateRegistry function for messaging back to source
     // function _dispatchAcknowledgement(
     //     uint16 dstChainId_,
     //     bytes memory message_,

@@ -24,6 +24,13 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
     IFormStateRegistry public formStateRegistry;
 
+    modifier onlyFormStateRegistry() {
+        if (
+            msg.sender != address(formStateRegistry)
+        ) revert Error.NOT_FORM_STATE_REGISTRY();
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
@@ -501,7 +508,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
     function processUnlock(
         uint256 unlockId_
-    ) external onlyFormKeeper returns (uint16 dstChainId) {
+    ) external onlyFormStateRegistry {
         InitSingleVaultData memory singleVaultData_ = unlockId[unlockId_];
         _xChainWithdrawFromVault(singleVaultData_);
     }

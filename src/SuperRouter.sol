@@ -1036,8 +1036,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             ISuperPositionBank bank = ISuperPositionBank(
                 superRegistry.superPositionBank()
             );
-
-            // withdrawShares[srcSender][uint]
             
             bank.returnPositionSingle(srcSender, index);
         } else {

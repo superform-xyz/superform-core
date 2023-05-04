@@ -60,14 +60,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         _;
     }
 
-    /// TODO: This is only needed for Timelock Forms, should we have BaseTimelockForm too?
-    modifier onlyFormKeeper() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasFormStateRegistryRole(msg.sender)
-        ) revert Error.NOT_FORM_KEEPER();
-        _;
-    }
-
     modifier onlyProtocolAdmin() {
         if (
             !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
