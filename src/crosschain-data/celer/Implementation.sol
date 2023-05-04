@@ -169,7 +169,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         bytes calldata message_,
         address // executor
     ) external payable override returns (ExecutionStatus) {
-        console.logBytes(message_);
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
@@ -194,13 +193,11 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
 
         /// NOTE: experimental split of registry contracts
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
-        console.log(registryId);
         /// FIXME: should migrate to support more state registry types
         if (registryId == 0) {
             IBaseStateRegistry coreRegistry = IBaseStateRegistry(
                 superRegistry.coreStateRegistry()
             );
-            console.log(address(coreRegistry));
             coreRegistry.receivePayload(superChainId[srcChainId_], message_);
         } else {
             IBaseStateRegistry factoryRegistry = IBaseStateRegistry(

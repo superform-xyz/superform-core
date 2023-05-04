@@ -143,7 +143,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_
     ) external virtual override {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
-        console.log(data.params.length);
+
         if (data.params.length == 32) {
             /// assuming 32 bytes length is always proof
             /// @dev should validate this later

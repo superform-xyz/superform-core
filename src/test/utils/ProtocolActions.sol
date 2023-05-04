@@ -1201,7 +1201,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[targetChainId_]);
-        uint256 msgValue = 160 * 1e18; /// @FIXME: try more accurate estimations
+        uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {
