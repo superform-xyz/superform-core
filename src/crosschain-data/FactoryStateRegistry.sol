@@ -26,7 +26,8 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// NOTE: function can only process successful payloads.
     function processPayload(
-        uint256 payloadId_
+        uint256 payloadId_,
+        bytes memory /// not useful here
     ) external payable virtual override onlyProcessor {
         /// TODO sync factory data from crosschain
         if (payloadId_ > payloadsCount) {

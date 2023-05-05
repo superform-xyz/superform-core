@@ -191,6 +191,9 @@ interface ISuperRegistry {
     /// @dev returns the id of the core state registry module
     function CORE_STATE_REGISTRY() external view returns (bytes32);
 
+    /// @dev returns the id of the form state registry module
+    function FORM_STATE_REGISTRY() external view returns (bytes32);
+
     /// @dev returns the id of the factory state registry module
     function FACTORY_STATE_REGISTRY() external view returns (bytes32);
 
@@ -237,6 +240,13 @@ interface ISuperRegistry {
         external
         view
         returns (address coreStateRegistry_);
+
+    /// @dev gets the form state registry address.
+    /// @return formStateRegistry_ the address of the state registry
+    function formStateRegistry()
+        external
+        view
+        returns (address formStateRegistry_);
 
     /// @dev gets the state registry address.
     /// @return factoryStateRegistry_ the address of the state registry

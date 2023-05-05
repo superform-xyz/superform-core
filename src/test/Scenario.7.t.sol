@@ -4,11 +4,11 @@ pragma solidity 0.8.19;
 // Contracts
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
-import "forge-std/console.sol";
 
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
+import "./utils/AmbParams.sol";
 
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
@@ -34,9 +34,7 @@ contract Scenario7Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationMultiVault, same underlying test - should test that liquidity request uses same amount
 
-        primaryAMB = 1;
-
-        secondaryAMBs = [2];
+        AMBs = [1, 2];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];
@@ -68,25 +66,27 @@ contract Scenario7Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: msgValue,
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 
-        // actions.push(
-        //     TestAction({
-        //         action: Actions.Withdraw,
-        //         multiVaults: true, //!!WARNING turn on or off multi vaults
-        //         user: users[0],
-        //         testType: TestType.Pass,
-        //         revertError: "",
-        //         revertRole: "",
-        //         slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-        //         multiTx: false,
-        //         adapterParam: "",
-        //         msgValue: msgValue
-        //     })
-        // );
+        actions.push(
+            TestAction({
+                action: Actions.Withdraw,
+                multiVaults: true, //!!WARNING turn on or off multi vaults
+                user: 0,
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: msgValue,
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+            })
+        );
 
         /*///////////////////////////////////////////////////////////////
                                 STATE SETUP

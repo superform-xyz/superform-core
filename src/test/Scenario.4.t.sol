@@ -4,11 +4,10 @@ pragma solidity 0.8.19;
 // Contracts
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
-import "forge-std/console.sol";
-
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
+import "./utils/AmbParams.sol";
 
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
@@ -19,7 +18,6 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario4Test is ProtocolActions {
-
     /// @dev Global counter for actions sent to the protocol
     uint256 actionId;
 
@@ -53,9 +51,7 @@ contract Scenario4Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationXChainDeposit Full singleDestinationXChainWithdraw Deposit test case
 
-        primaryAMB = 1;
-
-        secondaryAMBs = [2];
+        AMBs = [1, 2];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];
@@ -74,7 +70,7 @@ contract Scenario4Test is ProtocolActions {
         MAX_SLIPPAGE[ARBI][1] = [1000];
 
         /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+        // uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -87,8 +83,9 @@ contract Scenario4Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: 50 * 10 ** 18,
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
         actions.push(
@@ -101,8 +98,9 @@ contract Scenario4Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                adapterParam: "",
-                msgValue: msgValue
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: 50 * 10 ** 18,
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 

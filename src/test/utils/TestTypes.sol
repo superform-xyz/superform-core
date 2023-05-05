@@ -77,8 +77,9 @@ struct TestAction {
     bytes32 revertRole; // temporary until errors are added to RBAC libraries
     int256 slippage;
     bool multiTx;
-    bytes adapterParam;
+    bytes[] ambParams;
     uint256 msgValue;
+    uint256 externalToken;
 }
 
 struct TestAssertionVars {
@@ -138,6 +139,7 @@ struct SetupVars {
 struct SingleVaultCallDataArgs {
     uint256 user;
     address fromSrc;
+    address externalToken;
     address toDst;
     address underlyingToken;
     uint256 superFormId;
@@ -156,6 +158,7 @@ struct SingleVaultCallDataArgs {
 struct MultiVaultCallDataArgs {
     uint256 user;
     address fromSrc;
+    address externalToken;
     address[] toDst;
     address[] underlyingTokens;
     uint256[] superFormIds;

@@ -35,6 +35,9 @@ interface IERC4626Timelock is IERC20 {
     /// @notice The amount of time that must pass between a requestUnlock() and withdraw() call.
     function lockPeriod() external view returns (uint256);
 
+    /// @notice for keeper-based 2nd step withdrawal processing
+    function processUnlock(uint256 unlockId_) external;
+
     /*///////////////////////////////////////////////////////////////
                                ERC4626 SECTION
     //////////////////////////////////////////////////////////////*/
