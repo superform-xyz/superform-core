@@ -47,7 +47,8 @@ contract Scenario1Test is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 msgValue: 75 * 10 ** 18,
-                ambParams: generateAmbParams(DST_CHAINS.length, 3)
+                ambParams: generateAmbParams(DST_CHAINS.length, 3),
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

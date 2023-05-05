@@ -50,8 +50,6 @@ contract MultiTxProcessor is IMultiTxProcessor {
     /// @dev socket.tech fails without a native receive function.
     receive() external payable {}
 
-    /// @dev FIXME: NOT WORKING FOR PERMIT2!
-
     /// @dev PREVILEGED SWAPPER ONLY FUNCTION
     /// @dev would interact with socket contract to process multi-tx transactions and move the funds into destination contract.
     /// @param bridgeId_          represents the unique propreitory id of the bridge used.

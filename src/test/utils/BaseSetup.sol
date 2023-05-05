@@ -11,7 +11,6 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev test utils & mocks
-import {SocketRouterMockFork} from "../mocks/SocketRouterMockFork.sol";
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";

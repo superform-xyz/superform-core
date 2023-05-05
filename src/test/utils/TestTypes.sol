@@ -79,6 +79,7 @@ struct TestAction {
     bool multiTx;
     bytes[] ambParams;
     uint256 msgValue;
+    uint256 externalToken;
 }
 
 struct TestAssertionVars {
@@ -142,6 +143,7 @@ struct SetupVars {
 struct SingleVaultCallDataArgs {
     uint256 user;
     address fromSrc;
+    address externalToken;
     address toDst;
     address underlyingToken;
     uint256 superFormId;
@@ -160,6 +162,7 @@ struct SingleVaultCallDataArgs {
 struct MultiVaultCallDataArgs {
     uint256 user;
     address fromSrc;
+    address externalToken;
     address[] toDst;
     address[] underlyingTokens;
     uint256[] superFormIds;

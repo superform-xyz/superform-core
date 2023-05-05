@@ -8,7 +8,6 @@ import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
 /// @author Zeropoint Labs

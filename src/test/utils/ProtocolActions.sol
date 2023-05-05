@@ -124,6 +124,10 @@ abstract contract ProtocolActions is BaseSetup {
                     MultiVaultCallDataArgs(
                         action.user,
                         vars.fromSrc,
+                        getContract(
+                            CHAIN_0,
+                            UNDERLYING_TOKENS[action.externalToken]
+                        ),
                         vars.toDst,
                         vars.underlyingSrcToken,
                         vars.targetSuperFormIds,
@@ -159,6 +163,10 @@ abstract contract ProtocolActions is BaseSetup {
                     memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                         action.user,
                         vars.fromSrc,
+                        getContract(
+                            CHAIN_0,
+                            UNDERLYING_TOKENS[action.externalToken]
+                        ),
                         vars.toDst[0],
                         vars.underlyingSrcToken[0],
                         vars.targetSuperFormIds[0],
@@ -170,7 +178,7 @@ abstract contract ProtocolActions is BaseSetup {
                         socketChainIds[CHAIN_0 - 1], /// @dev HACK to get socket src and dst chain ids
                         socketChainIds[DST_CHAINS[i] - 1],
                         action.multiTx,
-                        0,
+                        vars.amounts[0], /// @dev copying amount to total amount for the externalToken hack in _buildSingleVaultDepositCallData
                         address(0)
                     );
 
@@ -519,13 +527,12 @@ abstract contract ProtocolActions is BaseSetup {
 
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
+                            (, vars.underlyingSrcToken, ) = _targetVaults(
+                                CHAIN_0,
+                                DST_CHAINS[i],
+                                actionIndex
+                            );
                             if (action.multiVaults) {
-                                (, vars.underlyingSrcToken, ) = _targetVaults(
-                                    CHAIN_0,
-                                    DST_CHAINS[i],
-                                    actionIndex
-                                );
-
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][
                                     actionIndex
                                 ];
@@ -541,7 +548,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     CHAIN_0,
                                     aV[i].toChainId,
                                     socketChainIds[aV[i].toChainId - 1],
-                                    singleSuperFormsData[i].liqRequest.token,
+                                    vars.underlyingSrcToken[0],
                                     singleSuperFormsData[i].amount
                                 );
                             }
@@ -713,6 +720,7 @@ abstract contract ProtocolActions is BaseSetup {
             callDataArgs = SingleVaultCallDataArgs(
                 args.user,
                 args.fromSrc,
+                args.externalToken,
                 args.toDst[i],
                 args.underlyingTokens[i],
                 args.superFormIds[i],
@@ -755,18 +763,23 @@ abstract contract ProtocolActions is BaseSetup {
                     from = args.toDst[i];
                 }
 
+                address liqRequestToken = args.externalToken !=
+                    args.underlyingTokens[i]
+                    ? args.externalToken
+                    : args.underlyingTokens[i];
+
                 vm.selectFork(FORKS[args.srcChainId]);
 
                 /// @dev - APPROVE transfer to SuperRouter (because of Socket)
                 vm.prank(users[args.user]);
 
                 if (args.action == Actions.DepositPermit2) {
-                    MockERC20(args.underlyingTokens[i]).approve(
+                    MockERC20(liqRequestToken).approve(
                         getContract(args.srcChainId, "CanonicalPermit2"),
                         type(uint256).max
                     );
                 } else if (args.action == Actions.Deposit) {
-                    MockERC20(args.underlyingTokens[i]).approve(
+                    MockERC20(liqRequestToken).increaseAllowance(
                         from,
                         totalAmount
                     );
@@ -787,14 +800,65 @@ abstract contract ProtocolActions is BaseSetup {
         );
     }
 
+    function _buildSocketTxData(
+        address externalToken_,
+        address underlyingToken_,
+        address from_,
+        uint16 toChainId_,
+        bool multiTx_,
+        address toDst_,
+        uint256 liqBridgeToChainId_,
+        address sameUnderlyingCheck_,
+        uint256 totalAmount_,
+        uint256 amount_
+    ) internal returns (bytes memory socketTxData) {
+        ISocketRegistry.BridgeRequest memory bridgeRequest;
+        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+        ISocketRegistry.UserRequest memory userRequest;
+        /// @dev middlware request is used if there is a swap involved before the bridging action
+        /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
+        if (externalToken_ != underlyingToken_) {
+            middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1, /// request id
+                0, /// FIXME optional native amount
+                externalToken_,
+                abi.encode(from_)
+            );
+
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                1, /// request id
+                0, /// FIXME optional native amount
+                underlyingToken_,
+                abi.encode(from_, FORKS[toChainId_])
+            );
+        } else {
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                1, /// request id
+                0, /// FIXME optional native amount
+                underlyingToken_,
+                abi.encode(from_, FORKS[toChainId_])
+            );
+        }
+
+        userRequest = ISocketRegistry.UserRequest(
+            multiTx_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+            liqBridgeToChainId_,
+            sameUnderlyingCheck_ != address(0) ? totalAmount_ : amount_,
+            middlewareRequest,
+            bridgeRequest
+        );
+
+        socketTxData = abi.encodeWithSelector(
+            SocketRouterMock.outboundTransferTo.selector,
+            userRequest
+        );
+    }
+
     struct SingleVaultDepositLocalVars {
         uint256 initialFork;
         address from;
-        ISocketRegistry.BridgeRequest bridgeRequest;
-        ISocketRegistry.MiddlewareRequest middlewareRequest;
-        ISocketRegistry.UserRequest userRequest;
         IPermit2.PermitTransferFrom permit;
-        bytes socketTxDataV2;
+        bytes txData;
         bytes sig;
         bytes permit2Calldata;
         LiqRequest liqReq;
@@ -814,44 +878,28 @@ abstract contract ProtocolActions is BaseSetup {
             v.from = args.toDst;
         }
 
-        if (args.srcChainId == args.toChainId) {
-            v.middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// id
-                0, /// FIXME optional native amount
-                args.underlyingToken,
-                abi.encode(v.from, FORKS[args.toChainId])
-            );
-        } else {
-            v.bridgeRequest = ISocketRegistry.BridgeRequest(
-                1, /// id
-                0, /// FIXME optional native amount
-                args.underlyingToken,
-                abi.encode(v.from, FORKS[args.toChainId])
-            );
-        }
-
-        v.userRequest = ISocketRegistry.UserRequest(
-            args.multiTx
-                ? getContract(args.toChainId, "MultiTxProcessor")
-                : args.toDst,
+        v.txData = _buildSocketTxData(
+            args.externalToken,
+            args.underlyingToken,
+            v.from,
+            args.toChainId,
+            args.multiTx,
+            args.toDst,
             args.liquidityBridgeToChainId,
-            args.sameUnderlyingCheck != address(0)
-                ? args.totalAmount
-                : args.amount,
-            v.middlewareRequest,
-            v.bridgeRequest
+            args.sameUnderlyingCheck,
+            args.totalAmount,
+            args.amount
         );
 
-        v.socketTxDataV2 = abi.encodeWithSelector(
-            SocketRouterMock.outboundTransferTo.selector,
-            v.userRequest
-        );
+        address liqRequestToken = args.externalToken != args.underlyingToken
+            ? args.externalToken
+            : args.underlyingToken;
 
         /// @dev permit2 calldata
         if (action == Actions.DepositPermit2) {
             v.permit = IPermit2.PermitTransferFrom({
                 permitted: IPermit2.TokenPermissions({
-                    token: IERC20(address(args.underlyingToken)),
+                    token: IERC20(address(liqRequestToken)),
                     amount: args.sameUnderlyingCheck != address(0)
                         ? args.totalAmount
                         : args.amount
@@ -876,9 +924,9 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev FIXME: currently only producing liqRequests for non-permit2 ERC20 transfers!!!
         /// @dev TODO: need to test native requests and permit2 requests
         v.liqReq = LiqRequest(
-            1, /// @dev FIXME: hardcoded for now
-            v.socketTxDataV2,
-            args.underlyingToken,
+            1, /// @dev FIXME: hardcoded for now - but this should be a different bridge per type of transaction
+            v.txData,
+            liqRequestToken,
             args.sameUnderlyingCheck != address(0)
                 ? args.totalAmount
                 : args.amount,
@@ -886,6 +934,8 @@ abstract contract ProtocolActions is BaseSetup {
             v.permit2Calldata /// @dev will be empty if action == Actions.Deposit
         );
 
+        /// @dev FIXME: we are using underlying token and not swapping it to a different token kind
+        /// @dev FIXME: tests should have src / input token field (can we assume the same for all vaults and destinations?)
         if (args.sameUnderlyingCheck == address(0)) {
             vm.selectFork(FORKS[args.srcChainId]);
 
@@ -893,12 +943,30 @@ abstract contract ProtocolActions is BaseSetup {
             vm.prank(users[args.user]);
 
             if (action == Actions.DepositPermit2) {
-                MockERC20(args.underlyingToken).approve(
+                MockERC20(liqRequestToken).approve(
                     getContract(args.srcChainId, "CanonicalPermit2"),
                     type(uint256).max
                 );
-            } else {
-                MockERC20(args.underlyingToken).approve(v.from, args.amount);
+            } else if (
+                action == Actions.Deposit &&
+                liqRequestToken != args.externalToken
+            ) {
+                /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts are ordered from lowest to highest,
+                /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
+                MockERC20(liqRequestToken).increaseAllowance(
+                    v.from,
+                    args.amount
+                );
+            } else if (
+                action == Actions.Deposit &&
+                liqRequestToken == args.externalToken
+            ) {
+                /// @dev this assumes that external token has a 1:1 exchange rate with underlying tokens
+                /// @dev
+                MockERC20(liqRequestToken).increaseAllowance(
+                    v.from,
+                    args.totalAmount
+                );
             }
 
             vm.selectFork(v.initialFork);
@@ -913,57 +981,47 @@ abstract contract ProtocolActions is BaseSetup {
         );
     }
 
+    struct SingleVaultWithdrawLocalVars {
+        ISocketRegistry.MiddlewareRequest middlewareRequest;
+        ISocketRegistry.BridgeRequest bridgeRequest;
+        address superRouter;
+        address stateRegistry;
+        IERC1155 superPositions;
+        bytes txData;
+        LiqRequest liqReq;
+    }
+
     function _buildSingleVaultWithdrawCallData(
         SingleVaultCallDataArgs memory args
     ) internal returns (SingleVaultSFData memory superFormData) {
-        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-        ISocketRegistry.BridgeRequest memory bridgeRequest;
+        SingleVaultWithdrawLocalVars memory vars;
 
-        address _superRouter = contracts[CHAIN_0][
-            bytes32(bytes("SuperRouter"))
-        ];
-        address _stateRegistry = contracts[CHAIN_0][
+        vars.superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        vars.stateRegistry = contracts[CHAIN_0][
             bytes32(bytes("SuperRegistry"))
         ];
-        IERC1155 superPositions = IERC1155(
-            ISuperRegistry(_stateRegistry).superPositions()
+        vars.superPositions = IERC1155(
+            ISuperRegistry(vars.stateRegistry).superPositions()
         );
         vm.prank(users[args.user]);
-        superPositions.setApprovalForAll(_superRouter, true);
+        vars.superPositions.setApprovalForAll(vars.superRouter, true);
 
-        if (args.srcChainId == args.toChainId) {
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// id
-                0, /// FIXME optional native amount
-                args.underlyingToken,
-                abi.encode(args.toDst, FORKS[args.srcChainId])
-            );
-        } else {
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                1, /// id
-                0, /// FIXME optional native amount
-                args.underlyingToken,
-                abi.encode(args.toDst, FORKS[args.srcChainId])
-            );
-        }
-
-        ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
-            .UserRequest(
-                users[args.user],
-                args.liquidityBridgeSrcChainId,
-                args.amount,
-                middlewareRequest,
-                bridgeRequest
-            );
-
-        bytes memory socketTxDataV2 = abi.encodeWithSelector(
-            SocketRouterMock.outboundTransferTo.selector,
-            userRequest
+        vars.txData = _buildSocketTxData(
+            args.underlyingToken,
+            args.externalToken,
+            args.toDst,
+            args.srcChainId,
+            false,
+            users[args.user],
+            args.liquidityBridgeSrcChainId,
+            address(0),
+            0,
+            args.amount
         );
 
-        LiqRequest memory liqReq = LiqRequest(
+        vars.liqReq = LiqRequest(
             1, /// @dev FIXME: hardcoded for now
-            socketTxDataV2,
+            vars.txData,
             args.underlyingToken,
             args.amount,
             0,
@@ -974,7 +1032,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.superFormId,
             args.amount,
             args.maxSlippage,
-            liqReq,
+            vars.liqReq,
             ""
         );
     }
@@ -1229,6 +1287,7 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     /// @dev FIXME: only works for socket
+    /// @dev - assumption to only use MultiTxProcessor for destination chain swaps (middleware requests)
     function _processMultiTx(
         uint16 srcChainId_,
         uint16 targetChainId_,
@@ -1244,27 +1303,25 @@ abstract contract ProtocolActions is BaseSetup {
         ISocketRegistry.MiddlewareRequest memory middlewareRequest;
         ISocketRegistry.BridgeRequest memory bridgeRequest;
 
-        if (srcChainId_ == targetChainId_) {
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// id
-                0, /// FIXME optional native amount
-                underlyingToken_,
-                abi.encode(
-                    getContract(targetChainId_, "MultiTxProcessor"),
-                    FORKS[targetChainId_]
-                )
-            );
-        } else {
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                1, /// id
-                0, /// FIXME optional native amount
-                underlyingToken_,
-                abi.encode(
-                    getContract(targetChainId_, "MultiTxProcessor"),
-                    FORKS[targetChainId_]
-                )
-            );
-        }
+        middlewareRequest = ISocketRegistry.MiddlewareRequest(
+            1, /// id
+            0, /// FIXME optional native amount
+            underlyingToken_,
+            abi.encode(
+                getContract(targetChainId_, "MultiTxProcessor"),
+                FORKS[targetChainId_]
+            )
+        );
+        /// @dev empty bridge request
+        bridgeRequest = ISocketRegistry.BridgeRequest(
+            0, /// id
+            0, /// FIXME optional native amount
+            address(0),
+            abi.encode(
+                getContract(targetChainId_, "MultiTxProcessor"),
+                FORKS[targetChainId_]
+            )
+        );
 
         ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
             .UserRequest(
@@ -1303,27 +1360,24 @@ abstract contract ProtocolActions is BaseSetup {
         bytes[] memory socketTxDatasV2 = new bytes[](underlyingTokens_.length);
 
         for (uint256 i = 0; i < underlyingTokens_.length; i++) {
-            if (srcChainId_ == targetChainId_) {
-                middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                    1, /// id
-                    0, /// FIXME optional native amount
-                    underlyingTokens_[i],
-                    abi.encode( /// @dev this abi.encode is only used for the mock purposes
-                        getContract(targetChainId_, "MultiTxProcessor"),
-                        FORKS[targetChainId_]
-                    )
-                );
-            } else {
-                bridgeRequest = ISocketRegistry.BridgeRequest(
-                    1, /// id
-                    0, /// FIXME optional native amount
-                    underlyingTokens_[i],
-                    abi.encode( /// @dev this abi.encode is only used for the mock purposes
-                        getContract(targetChainId_, "MultiTxProcessor"),
-                        FORKS[targetChainId_]
-                    )
-                );
-            }
+            middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1, /// id
+                0, /// FIXME optional native amount
+                underlyingTokens_[i],
+                abi.encode( /// @dev this abi.encode is only used for the mock purposes
+                    getContract(targetChainId_, "MultiTxProcessor"),
+                    FORKS[targetChainId_]
+                )
+            );
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                0, /// id
+                0, /// FIXME optional native amount
+                address(0),
+                abi.encode( /// @dev this abi.encode is only used for the mock purposes
+                    getContract(targetChainId_, "MultiTxProcessor"),
+                    FORKS[targetChainId_]
+                )
+            );
 
             ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
                 .UserRequest(

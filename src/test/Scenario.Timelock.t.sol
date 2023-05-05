@@ -350,7 +350,8 @@ contract ScenarioTimelockTest is ProtocolActions {
                     slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                     multiTx: false,
                     ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                    msgValue: msgValue
+                    msgValue: msgValue,
+                    externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
                 });
             } else if (kind_ == Actions.Withdraw) {
                 action_ = TestAction({
@@ -363,7 +364,8 @@ contract ScenarioTimelockTest is ProtocolActions {
                     slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                     multiTx: false,
                     ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                    msgValue: msgValue
+                    msgValue: msgValue,
+                    externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
                 });
             } else {
                 revert("Action not supported");
