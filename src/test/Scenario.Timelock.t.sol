@@ -202,10 +202,12 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage4 done");
 
-        /// @dev FIXME? SuperForm Keepers operation, not relevant to depositor, should be separated for Form testing (internal processing)
-        success = _stage5_process_superPositions_mint(action, vars);
+        if (!(action.testType == TestType.RevertXChainDeposit)) {
+            /// @dev FIXME? SuperForm Keepers operation, not relevant to depositor, should be separated for Form testing (internal processing)
+            success = _stage5_process_superPositions_mint(action, vars);
 
-        console.log("stage5 done");
+            console.log("stage5 done");
+        }
 
         /*///////////////////////////////////////////////////////////////
                             TODO: DEPOSIT ASSERTS
@@ -292,9 +294,10 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage4 done");
 
-        /// @dev Process payload received on source from destination (withdraw callback)
-        success = _stage6_process_superPositions_withdraw(action, vars);
-
+        if (action.testType == TestType.RevertXChainWithdraw) {
+            /// @dev Process payload received on source from destination (withdraw callback)
+            success = _stage6_process_superPositions_withdraw(action, vars);
+        }
         /*///////////////////////////////////////////////////////////////
                             TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/

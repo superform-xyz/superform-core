@@ -27,12 +27,6 @@ interface ISuperRegistry {
         address indexed superRouter
     );
 
-    /// @dev is emitted when the token bank address is set.
-    event TokenBankUpdated(
-        address indexed oldTokenBank,
-        address indexed tokenBank
-    );
-
     /// @dev is emitted when the superform factory address is set.
     event SuperFormFactoryUpdated(
         address indexed oldSuperFormFactory,
@@ -114,10 +108,6 @@ interface ISuperRegistry {
     /// @param superRouter_ the address of the super router
     function setSuperRouter(address superRouter_) external;
 
-    /// @dev sets the token bank address.
-    /// @param tokenBank_ the address of the token bank
-    function setTokenBank(address tokenBank_) external;
-
     /// @dev sets the superform factory address.
     /// @param superFormFactory_ the address of the superform factory
     function setSuperFormFactory(address superFormFactory_) external;
@@ -162,9 +152,7 @@ interface ISuperRegistry {
 
     /// @dev allows admin to set the super positions bank address
     /// @param superPositionBank_ the address of the super positions bank
-    function setSuperPositionBank(
-        address superPositionBank_
-    ) external; 
+    function setSuperPositionBank(address superPositionBank_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -222,10 +210,6 @@ interface ISuperRegistry {
     /// @dev gets the super router address.
     /// @return superRouter_ the address of the super router
     function superRouter() external view returns (address superRouter_);
-
-    /// @dev gets the token bank address.
-    /// @return tokenBank_ the address of the token bank
-    function tokenBank() external view returns (address tokenBank_);
 
     /// @dev gets the superform factory address.
     /// @return superFormFactory_ the address of the superform factory
@@ -297,5 +281,4 @@ interface ISuperRegistry {
         external
         view
         returns (address superPositionBank_);
-
 }

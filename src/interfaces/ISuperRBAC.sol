@@ -30,14 +30,6 @@ interface ISuperRBAC {
     /// @param superRouter_ the address to revoke the role from
     function revokeSuperRouterRole(address superRouter_) external;
 
-    /// @dev grants the TOKEN_BANK_ROLE to the given address
-    /// @param tokenBank_ the address to grant the role to
-    function grantTokenBankRole(address tokenBank_) external;
-
-    /// @dev revokes the TOKEN_BANK_ROLE from given address
-    /// @param tokenBank_ the address to revoke the role from
-    function revokeTokenBankRole(address tokenBank_) external;
-
     /// @dev grants the SUPERFORM_FACTORY_ROLE to the given address
     /// @param superformFactory_ the address to grant the role to
     function grantSuperformFactoryRole(address superformFactory_) external;
@@ -123,6 +115,9 @@ interface ISuperRBAC {
     /// @dev returns the id of the updater role
     function UPDATER_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of the super positions bank role
+    function SUPER_POSITIONS_BANK_ROLE() external view returns (bytes32);
+
     /// @dev returns wether the given address has the protocol admin role
     /// @param admin_ the address to check
     function hasProtocolAdminRole(address admin_) external view returns (bool);
@@ -144,10 +139,6 @@ interface ISuperRBAC {
     function hasSuperRouterRole(
         address superRouter_
     ) external view returns (bool);
-
-    /// @dev returns wether the given address has the token bank role
-    /// @param tokenBank_ the address to check
-    function hasTokenBankRole(address tokenBank_) external view returns (bool);
 
     /// @dev returns wether the given address has the superform factory role
     /// @param superformFactory_ the address to check

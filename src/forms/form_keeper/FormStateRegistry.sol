@@ -9,7 +9,6 @@ import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
 
 import {BaseStateRegistry} from "../../crosschain-data/BaseStateRegistry.sol";
-import {ITokenBank} from "../../interfaces/ITokenBank.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData} from "../../types/DataTypes.sol";
 import "forge-std/console.sol";

@@ -22,7 +22,7 @@ contract Scenario1Test is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationSingleVault Deposit test case
-        AMBs = [1, 2];
+        AMBs = [2, 3];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];
@@ -104,8 +104,9 @@ contract Scenario1Test is ProtocolActions {
             }
 
             if (
-                action.action == Actions.Deposit ||
-                action.action == Actions.DepositPermit2
+                (action.action == Actions.Deposit ||
+                    action.action == Actions.DepositPermit2) &&
+                !(action.testType == TestType.RevertXChainDeposit)
             ) {
                 success = _stage5_process_superPositions_mint(action, vars);
                 if (!success) {
