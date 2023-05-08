@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "ds-test/test.sol";
 import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
+import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
@@ -30,7 +31,6 @@ import {SuperRouter} from "../../SuperRouter.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
 import {SuperRBAC} from "../../settings/SuperRBAC.sol";
 import {SuperPositions} from "../../SuperPositions.sol";
-import {TokenBank} from "../../TokenBank.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
@@ -38,12 +38,12 @@ import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol"
 import {SocketValidator} from "../../crosschain-liquidity/socket/SocketValidator.sol";
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
+import {CelerImplementation} from "../../crosschain-data/celer/Implementation.sol";
 import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
+import {IMessageBus} from "../../crosschain-data/celer/interface/IMessageBus.sol";
 import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
-
-import {SuperPositionBank} from "../../SuperPositionBank.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 
 abstract contract BaseSetup is DSTest, Test {
@@ -116,13 +116,17 @@ abstract contract BaseSetup is DSTest, Test {
     /// @dev setup amb bridges
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
-    uint8[] public ambIds = [uint8(1), 2];
+    /// @notice id 3 is celer
+    uint8[] public ambIds = [uint8(1), 2, 3];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
     //////////////////////////////////////////////////////////////*/
 
     mapping(uint16 => address) public LZ_ENDPOINTS;
+    mapping(uint64 => address) public CELER_BUSSES;
+
+    mapping(uint16 => uint64) public CELER_CHAIN_IDS;
 
     address public constant ETH_lzEndpoint =
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
@@ -158,17 +162,15 @@ abstract contract BaseSetup is DSTest, Test {
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70
     ];
 
-    /*
-    address[] public lzEndpoints = [
-        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0x3c2269811836af69497E5F486A85D7316753cf62,
-        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
+    address[] public celerMessageBusses = [
+        0x4066D196A423b2b3B8B054f4F40efB47a74E200C,
+        0x95714818fdd7a5454F73Da9c777B3ee6EbAEEa6B,
+        0x5a926eeeAFc4D217ADd17e9641e8cE23Cd01Ad57,
+        0xaFDb9C40C7144022811F034EE07Ce2E110093fe6,
+        0x3Ad9d0648CDAA2426331e894e980D0a5Ed16257f,
+        0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d
     ];
-    */
+
     /*////////////////////////////////////////////////////zr//////////
                         HYPERLANE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -176,6 +178,24 @@ abstract contract BaseSetup is DSTest, Test {
         IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
     IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
         IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
+
+    /*////////////////////////////////////////////////////zr//////////
+                        CELER VARIABLES
+    //////////////////////////////////////////////////////////////*/
+    address public constant ETH_messageBus =
+        0x4066D196A423b2b3B8B054f4F40efB47a74E200C;
+    address public constant BSC_messageBus =
+        0x95714818fdd7a5454F73Da9c777B3ee6EbAEEa6B;
+    address public constant AVAX_messageBus =
+        0x5a926eeeAFc4D217ADd17e9641e8cE23Cd01Ad57;
+    address public constant POLY_messageBus =
+        0xaFDb9C40C7144022811F034EE07Ce2E110093fe6;
+    address public constant ARBI_messageBus =
+        0x3Ad9d0648CDAA2426331e894e980D0a5Ed16257f;
+    address public constant OP_messageBus =
+        0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d;
+    address public constant FTM_messageBus =
+        0xFF4E183a0Ceb4Fa98E63BbF8077B929c8E5A2bA4;
 
     uint16 public constant ETH = 1;
     uint16 public constant BSC = 2;
@@ -198,11 +218,10 @@ abstract contract BaseSetup is DSTest, Test {
 
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
     uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+    uint64[] public celer_chainIds = [1, 56, 43114, 137, 42161, 10];
+
     /// @dev FIXME to fix with correct chainIds
     uint256[] public socketChainIds = [1, 2, 3, 4, 5, 6];
-
-    // uint16[7] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
-    // uint32[7] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
 
     uint256 public constant milionTokensE18 = 1 ether;
 
@@ -300,6 +319,13 @@ abstract contract BaseSetup is DSTest, Test {
 
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars
                 .hyperlaneHelper;
+
+            /// @dev 1.3- deploy Celer Helper from Pigeon
+            vars.celerHelper = address(new CelerHelper{salt: salt}());
+            vm.allowCheatcodes(vars.celerHelper);
+
+            contracts[vars.chainId][bytes32(bytes("CelerHelper"))] = vars
+                .celerHelper;
 
             /// @dev 2 - Deploy SuperRegistry and assign roles
             vars.superRegistry = address(
@@ -403,8 +429,20 @@ abstract contract BaseSetup is DSTest, Test {
                 bytes32(bytes("HyperlaneImplementation"))
             ] = vars.hyperlaneImplementation;
 
+            /// @dev 5.3 - deploy Celer Implementation
+            vars.celerImplementation = address(
+                new CelerImplementation{salt: salt}(
+                    IMessageBus(celerMessageBusses[i]),
+                    SuperRegistry(vars.superRegistry)
+                )
+            );
+            contracts[vars.chainId][
+                bytes32(bytes("CelerImplementation"))
+            ] = vars.celerImplementation;
+
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
+            vars.ambAddresses[2] = vars.celerImplementation;
 
             /// @dev 6- deploy SocketRouterMock
             vars.socketRouter = address(new SocketRouterMock{salt: salt}());
@@ -515,18 +553,6 @@ abstract contract BaseSetup is DSTest, Test {
                 salt
             );
 
-            /// @dev 11 - Deploy TokenBank
-            vars.tokenBank = address(
-                new TokenBank{salt: salt}(vars.superRegistry)
-            );
-
-            contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
-                .tokenBank;
-
-            SuperRegistry(vars.superRegistry).setTokenBank(vars.tokenBank);
-            SuperRBAC(vars.superRBAC).grantTokenBankRole(vars.tokenBank);
-            assert(SuperRBAC(vars.superRBAC).hasTokenBankRole(vars.tokenBank));
-
             /// @dev 12 - Deploy SuperRouter
             vars.superRouter = address(
                 new SuperRouter{salt: salt}(vars.superRegistry)
@@ -544,22 +570,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superPositions = address(
                 new SuperPositions{salt: salt}("test.com/", vars.superRegistry)
             );
-
-            /// @dev 13.1 - Deploy SuperPositionsBank
-            vars.superPositionBank = address(
-                new SuperPositionBank(
-                    ISuperPositions(vars.superPositions),
-                    ISuperRouter(vars.superRouter)
-                )
-            );
-
-            /// @dev 13.2 - setSuperPositionsBank
-            SuperRegistry(vars.superRegistry).setSuperPositionBank(
-                vars.superPositionBank
-            );
-
-            contracts[vars.chainId][bytes32(bytes("SuperPositionBank"))] = vars
-                .superPositionBank;
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
                 .superPositions;
@@ -595,7 +605,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
-            SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.tokenBank);
             SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
                 vars.lzImplementation
             );
@@ -620,6 +629,11 @@ abstract contract BaseSetup is DSTest, Test {
                 "HyperlaneImplementation"
             );
 
+            vars.celerImplementation = getContract(
+                vars.chainId,
+                "CelerImplementation"
+            );
+
             vars.factory = getContract(vars.chainId, "SuperFormFactory");
 
             /// @dev Set all trusted remotes for each chain & configure amb chains ids
@@ -628,6 +642,7 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstChainId = chainIds[j];
                     vars.dstAmbChainId = lz_chainIds[j];
                     vars.dstHypChainId = hyperlane_chainIds[j];
+                    vars.dstCelerChainId = celer_chainIds[j];
 
                     vars.dstLzImplementation = getContract(
                         vars.dstChainId,
@@ -636,6 +651,10 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstHyperlaneImplementation = getContract(
                         vars.dstChainId,
                         "HyperlaneImplementation"
+                    );
+                    vars.dstCelerImplementation = getContract(
+                        vars.dstChainId,
+                        "CelerImplementation"
                     );
 
                     LayerzeroImplementation(payable(vars.lzImplementation))
@@ -659,6 +678,15 @@ abstract contract BaseSetup is DSTest, Test {
                     HyperlaneImplementation(
                         payable(vars.hyperlaneImplementation)
                     ).setChainId(vars.dstChainId, vars.dstHypChainId);
+
+                    CelerImplementation(payable(vars.celerImplementation))
+                        .setReceiver(
+                            vars.dstCelerChainId,
+                            vars.dstCelerImplementation
+                        );
+
+                    CelerImplementation(payable(vars.celerImplementation))
+                        .setChainId(vars.dstChainId, vars.dstCelerChainId);
                 }
             }
         }
@@ -692,7 +720,7 @@ abstract contract BaseSetup is DSTest, Test {
                         )
                     ] = vars.superForm;
 
-                    _broadcastPayload(chainIds[i], vm.getRecordedLogs());
+                    _broadcastPayloadHelper(chainIds[i], vm.getRecordedLogs());
                 }
             }
         }
@@ -736,6 +764,22 @@ abstract contract BaseSetup is DSTest, Test {
         lzEndpointsStorage[ARBI] = ARBI_lzEndpoint;
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         //lzEndpointsStorage[FTM] = FTM_lzEndpoint;
+
+        mapping(uint64 => address)
+            storage celerMessageBusStorage = CELER_BUSSES;
+        celerMessageBusStorage[ETH] = ETH_messageBus;
+        celerMessageBusStorage[BSC] = BSC_messageBus;
+        celerMessageBusStorage[AVAX] = AVAX_messageBus;
+        celerMessageBusStorage[POLY] = POLY_messageBus;
+        celerMessageBusStorage[ARBI] = ARBI_messageBus;
+        celerMessageBusStorage[OP] = OP_messageBus;
+
+        mapping(uint16 => uint64)
+            storage celerChainIdsStorage = CELER_CHAIN_IDS;
+
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            celerChainIdsStorage[chainIds[i]] = celer_chainIds[i];
+        }
 
         mapping(uint16 => address) storage priceFeeds = PRICE_FEEDS;
         priceFeeds[ETH] = ETHEREUM_ETH_USD_FEED;
@@ -856,7 +900,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev will sync the payloads for broadcast
-    function _broadcastPayload(
+    function _broadcastPayloadHelper(
         uint16 currentChainId,
         Vm.Log[] memory logs
     ) private {

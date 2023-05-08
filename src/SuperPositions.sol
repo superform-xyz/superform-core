@@ -1,31 +1,38 @@
-/// SPDX-License-Identifier: Apache-2.0
+///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
 import {ERC1155s} from "ERC1155s/src/ERC1155s.sol";
 import {ERC1155} from "solmate/tokens/ERC1155.sol";
-import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
-import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
+import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
+import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
+import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
+import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
+import "./utils/DataPacking.sol";
 import {Error} from "./utils/Error.sol";
 
-/// @title Super Positions
+/// @title SuperPositions
 /// @author Zeropoint Labs.
-/// @dev  extends ERC1155s to create SuperPositions which track vault shares from any originating chain
-contract SuperPositions is ERC1155s {
-    /*///////////////////////////////////////////////////////////////
-                                State Variables
-    //////////////////////////////////////////////////////////////*/
-
+contract SuperPositions is ISuperPositions, ERC1155s {
     string public dynamicURI = "https://api.superform.xyz/superposition/";
 
     ISuperRegistry public immutable superRegistry;
 
-    modifier onlySuperRouter() {
+    /// @dev maps all transaction data routed through the smart contract.
+    mapping(uint80 => AMBMessage) public txHistory;
+
+    modifier onlyRouter() {
         if (
             !ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(
                 msg.sender
             )
         ) revert Error.NOT_SUPER_ROUTER();
+        _;
+    }
+
+    modifier onlyCoreStateRegistry() {
+        if (msg.sender != superRegistry.coreStateRegistry())
+            revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 
@@ -40,54 +47,42 @@ contract SuperPositions is ERC1155s {
 
     /// @param dynamicURI_              URL for external metadata of ERC1155 SuperPositions
     /// @param superRegistry_ the superform registry contract
+
     constructor(string memory dynamicURI_, address superRegistry_) {
         dynamicURI = dynamicURI_;
+
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
-    /// FIXME: Temp extension to keep interfaces from conflict
-    function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata amounts,
-        bytes calldata data
-    ) public virtual override(ERC1155s) {
-        super.safeBatchTransferFrom(from, to, ids, amounts, data);
-    }
-
     /// FIXME: Temp extension need to make approve at superRouter, may change with arch
-    function setApprovalForAll(address operator, bool approved) public virtual override {
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual override(ISuperPositions, ERC1155) {
         super.setApprovalForAll(operator, approved);
     }
 
-    /*///////////////////////////////////////////////////////////////
-                        MINT/BURN PROTECTED FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
     function mintSingleSP(
-        address srcSender_,
+        address owner_,
         uint256 superFormId_,
-        uint256 amount_,
-        bytes memory data_
-    ) external onlySuperRouter {
-        _mint(srcSender_, superFormId_, amount_, data_);
+        uint256 amount_
+    ) external override onlyRouter {
+        _mint(owner_, superFormId_, amount_, "");
     }
 
     function mintBatchSP(
-        address srcSender_,
+        address owner_,
         uint256[] memory superFormIds_,
-        uint256[] memory amounts_,
-        bytes memory data_
-    ) external onlySuperRouter {
-        _batchMint(srcSender_, superFormIds_, amounts_, data_);
+        uint256[] memory amounts_
+    ) external override onlyRouter {
+        _batchMint(owner_, superFormIds_, amounts_, "");
     }
 
     function burnSingleSP(
         address srcSender_,
         uint256 superFormId_,
         uint256 amount_
-    ) external onlySuperRouter {
+    ) external override onlyRouter {
         _burn(srcSender_, superFormId_, amount_);
     }
 
@@ -95,8 +90,166 @@ contract SuperPositions is ERC1155s {
         address srcSender_,
         uint256[] memory superFormIds_,
         uint256[] memory amounts_
-    ) external onlySuperRouter {
+    ) external override onlyRouter {
         _batchBurn(srcSender_, superFormIds_, amounts_);
+    }
+
+    function updateTxHistory(
+        uint80 messageId_,
+        AMBMessage memory message_
+    ) external override onlyRouter {
+        txHistory[messageId_] = message_;
+    }
+
+    /// @dev allows registry contract to send payload for processing to the router contract.
+    /// @param data_ is the received information to be processed.
+    /// TODO: ASSES WHAT HAPPENS FOR MULTISYNC WITH CALLBACKTYPE.FAIL IN ONE OF THE IDS!!!
+    function stateMultiSync(
+        AMBMessage memory data_
+    ) external payable override onlyCoreStateRegistry {
+        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
+            data_.txInfo
+        );
+
+        /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
+        if (callbackType != uint256(CallbackType.RETURN))
+            if (callbackType != uint256(CallbackType.FAIL))
+                revert Error.INVALID_PAYLOAD();
+
+        ReturnMultiData memory returnData = abi.decode(
+            data_.params,
+            (ReturnMultiData)
+        );
+
+        (
+            uint16 status,
+            uint16 returnDataSrcChainId,
+            uint16 returnDataDstChainId,
+            uint80 returnDataTxId
+        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
+
+        AMBMessage memory stored = txHistory[returnDataTxId];
+
+        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
+
+        if (!multi) revert Error.INVALID_PAYLOAD();
+
+        InitMultiVaultData memory multiVaultData = abi.decode(
+            stored.params,
+            (InitMultiVaultData)
+        );
+        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
+            multiVaultData.txData
+        );
+
+        if (returnDataSrcChainId != srcChainId)
+            revert Error.SRC_CHAIN_IDS_MISMATCH();
+
+        if (
+            returnDataDstChainId !=
+            _getDestinationChain(multiVaultData.superFormIds[0])
+        ) revert Error.DST_CHAIN_IDS_MISMATCH();
+
+        if (
+            txType == uint256(TransactionType.DEPOSIT) &&
+            callbackType == uint256(CallbackType.RETURN)
+        ) {
+            _batchMint(
+                srcSender,
+                multiVaultData.superFormIds,
+                returnData.amounts,
+                ""
+            );
+        } else if (
+            txType == uint256(TransactionType.WITHDRAW) &&
+            callbackType == uint256(CallbackType.FAIL)
+        ) {
+            /// @dev mint back super positions
+            _batchMint(
+                srcSender,
+                multiVaultData.superFormIds,
+                multiVaultData.amounts,
+                ""
+            );
+        } else {
+            revert Error.INVALID_PAYLOAD_STATUS();
+        }
+
+        emit Completed(returnDataTxId);
+    }
+
+    /// @dev allows registry contract to send payload for processing to the router contract.
+    /// @param data_ is the received information to be processed.
+    /// NOTE: Shouldn't this be ACCESS CONTROLed?
+    function stateSync(
+        AMBMessage memory data_
+    ) external payable override onlyCoreStateRegistry {
+        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
+            data_.txInfo
+        );
+
+        /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
+        if (callbackType != uint256(CallbackType.RETURN))
+            if (callbackType != uint256(CallbackType.FAIL))
+                revert Error.INVALID_PAYLOAD();
+
+        ReturnSingleData memory returnData = abi.decode(
+            data_.params,
+            (ReturnSingleData)
+        );
+
+        (
+            uint16 status,
+            uint16 returnDataSrcChainId,
+            uint16 returnDataDstChainId,
+            uint80 returnDataTxId
+        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
+
+        AMBMessage memory stored = txHistory[returnDataTxId];
+        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
+
+        if (multi) revert Error.INVALID_PAYLOAD();
+
+        InitSingleVaultData memory singleVaultData = abi.decode(
+            stored.params,
+            (InitSingleVaultData)
+        );
+        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
+            singleVaultData.txData
+        );
+
+        if (returnDataSrcChainId != srcChainId)
+            revert Error.SRC_CHAIN_IDS_MISMATCH();
+
+        if (
+            returnDataDstChainId !=
+            _getDestinationChain(singleVaultData.superFormId)
+        ) revert Error.DST_CHAIN_IDS_MISMATCH();
+
+        if (
+            txType == uint256(TransactionType.DEPOSIT) &&
+            callbackType == uint256(CallbackType.RETURN)
+        ) {
+            _mint(
+                srcSender,
+                singleVaultData.superFormId,
+                returnData.amount,
+                ""
+            );
+        } else if (
+            txType == uint256(TransactionType.WITHDRAW) &&
+            callbackType == uint256(CallbackType.FAIL)
+        ) {
+            _burn(
+                srcSender,
+                singleVaultData.superFormId,
+                singleVaultData.amount
+            );
+        } else {
+            revert Error.INVALID_PAYLOAD_STATUS();
+        }
+
+        emit Completed(returnDataTxId);
     }
 
     /*///////////////////////////////////////////////////////////////

@@ -222,4 +222,11 @@ library Error {
 
     /// @dev error thrown when the unlock reques
     error LOCKED();
+
+    /*///////////////////////////////////////////////////////////////
+                        SUPER POSITION BANK ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when lenght of token ids differs from amounts
+    error SPBANK_TOKEN_AMOUNT_LENGTH_MISMATCH();
 }

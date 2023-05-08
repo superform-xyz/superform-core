@@ -130,8 +130,9 @@ contract Scenario8Test is ProtocolActions {
             }
 
             if (
-                action.action == Actions.Deposit ||
-                action.action == Actions.DepositPermit2
+                (action.action == Actions.Deposit ||
+                    action.action == Actions.DepositPermit2) &&
+                !(action.testType == TestType.RevertXChainDeposit)
             ) {
                 success = _stage5_process_superPositions_mint(action, vars);
                 if (!success) {
@@ -139,7 +140,10 @@ contract Scenario8Test is ProtocolActions {
                 }
             }
 
-            if (action.action == Actions.Withdraw) {
+            if (
+                action.action == Actions.Withdraw &&
+                action.testType == TestType.RevertXChainWithdraw
+            ) {
                 /// @dev Process payload received on source from destination (withdraw callback)
                 success = _stage6_process_superPositions_withdraw(action, vars);
             }

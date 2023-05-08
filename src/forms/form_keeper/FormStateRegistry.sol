@@ -9,37 +9,45 @@ import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
 
 import {BaseStateRegistry} from "../../crosschain-data/BaseStateRegistry.sol";
-import {ITokenBank} from "../../interfaces/ITokenBank.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData} from "../../types/DataTypes.sol";
 import "forge-std/console.sol";
 
 /// @title TimelockForm Redeemer
 /// @author Zeropoint Labs
-contract FormStateRegistry is IFormStateRegistry {
+contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
 
-    ISuperRegistry public superRegistry;
+    /// @notice Pre-compute keccak256 hash of WITHDRAW_COOLDOWN_PERIOD()
+    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD =
+        keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
 
+    /// @notice Stores 1:1 mapping with Form.unlockId(unlockCounter) without copying whole data structure
     mapping(uint256 payloadId => uint256 superFormId) public payloadStore;
 
-    /// TODO: Can this be spoofed?
+    /// @notice Checks if the caller is the form allowed to send payload
     modifier onlyForm(uint256 superFormId) {
         (address form_, , ) = _getSuperForm(superFormId);
         if (msg.sender != form_) revert Error.NOT_FORM_KEEPER();
         _;
     }
 
+    /// @notice Checks if the caller is the form keeper
     modifier onlyFormKeeper() {
         if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasFormStateRegistryRole(msg.sender)
+            !ISuperRBAC(superRegistry.superRBAC()).hasFormStateRegistryRole(
+                msg.sender
+            )
         ) revert Error.NOT_FORM_KEEPER();
         _;
     }
 
-    constructor(address superRegistry_) {
-        superRegistry = ISuperRegistry(superRegistry_);
-    }
+    constructor(
+        ISuperRegistry superRegistry_
+    ) BaseStateRegistry(superRegistry_) {}
 
+    /// @notice Receives request (payload) from TimelockForm to process later
+    /// @param payloadId is constructed on TimelockForm, data is mapped also there, we only store pointer here
+    /// @param superFormId is the id of TimelockForm sending this payloadId
     function receivePayload(
         uint256 payloadId,
         uint256 superFormId
@@ -47,78 +55,107 @@ contract FormStateRegistry is IFormStateRegistry {
         payloadStore[payloadId] = superFormId;
     }
 
-    function initPayload(uint256 payloadId) external onlyFormKeeper {
+    /// @notice Form Keeper finalizes payload to process Timelock withdraw fully
+    /// @param payloadId is the id of the payload to finalize
+    /// @param ackExtraData is the AMBMessage data to send back to the source stateSync with request to re-mint SuperPositions
+    function finalizePayload(
+        uint256 payloadId,
+        bytes memory ackExtraData
+    ) external onlyFormKeeper {
         (address form_, , ) = _getSuperForm(payloadStore[payloadId]);
-        IERC4626Timelock(form_).processUnlock(payloadId);
-        delete payloadStore[payloadId];
-        /// @dev why do we need to message back?
+        IERC4626Timelock form = IERC4626Timelock(form_);
+        try form.processUnlock(payloadId) {
+            delete payloadStore[payloadId];
+        } catch (bytes memory err) {
+            /// @dev in every other instance it's better to re-init withdraw
+            /// this catch will ALWAYS send a message back to source with exception of WITHDRAW_COOLDOWN_PERIOD error on Timelock
+            /// We do nothing then as this is KEEPER error (TBD)
+            if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
+                delete payloadStore[payloadId];
+                /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
+                InitSingleVaultData memory singleVaultData = form.unlockId(
+                    payloadId
+                );
+                (
+                    uint16 srcChainId,
+                    bytes memory returnMessage
+                ) = _constructSingleReturnData(singleVaultData);
+                _dispatchAcknowledgement(
+                    srcChainId,
+                    returnMessage,
+                    ackExtraData
+                ); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
+            }
+        }
     }
 
-    /// NOTE: To enable FormStateRegistry messaging functionality, below functions needs to be adapted
-    /// NOTE: Those functions come from both BaseStateRegistry and TokenBank where they are used with different design in mind
+    /// @notice TokenBank function for build message back to the source. In regular flow called after xChainWithdraw succeds.
+    /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
+    function _constructSingleReturnData(
+        InitSingleVaultData memory singleVaultData_
+    ) internal view returns (uint16 srcChainId, bytes memory returnMessage) {
+        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
+            singleVaultData_.txData
+        );
 
-    /// @notice TokenBank function for build message back to the source. Called after xChainWithdraw succeds.
-    // function _constructSingleReturnData(
-    //     InitSingleVaultData memory singleVaultData_,
-    //     uint16 status
-    // ) internal view returns (uint16, bytes memory) {
-    //     (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
-    //         singleVaultData_.txData
-    //     );
+        /// @notice Send Data to Source to issue superform positions.
+        return (
+            srcChainId,
+            abi.encode(
+                AMBMessage(
+                    _packTxInfo(
+                        uint120(TransactionType.WITHDRAW),
+                        uint120(CallbackType.FAIL),
+                        false,
+                        0
+                    ),
+                    abi.encode(
+                        ReturnSingleData(
+                            _packReturnTxInfo(
+                                1, /// @dev TODO: What status to return on fail?
+                                srcChainId,
+                                superRegistry.chainId(),
+                                currentTotalTxs
+                            ),
+                            singleVaultData_.amount
+                        )
+                    )
+                )
+            )
+        );
+    }
 
-    //     /// @notice Send Data to Source to issue superform positions.
-    //     return (
-    //         srcChainId,
-    //         abi.encode(
-    //             AMBMessage(
-    //                 _packTxInfo(uint120(TransactionType.WITHDRAW), uint120(CallbackType.RETURN), false, 0),
-    //                 abi.encode(
-    //                     ReturnSingleData(
-    //                         _packReturnTxInfo(
-    //                             status,
-    //                             srcChainId,
-    //                             superRegistry.chainId(),
-    //                             currentTotalTxs
-    //                         ),
-    //                         singleVaultData_.amount
-    //                     )
-    //                 )
-    //             )
-    //         )
-    //     );
-    // }
+    /// @notice In regular flow, BaseStateRegistry function for messaging back to the source
+    /// @notice Use constructed earlier return message to send acknowledgment (msg) back to the source
+    function _dispatchAcknowledgement(
+        uint16 dstChainId_,
+        bytes memory message_,
+        bytes memory ackExtraData_
+    ) internal {
+        AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
+        uint8[] memory ambIds_ = ackData.ambIds;
 
-    /// @notice BaseStateRegistry function for messaging back to source
-    // function _dispatchAcknowledgement(
-    //     uint16 dstChainId_,
-    //     bytes memory message_,
-    //     bytes memory ackExtraData_
-    // ) internal {
-    //     AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
-    //     uint8[] memory ambIds_ = ackData.ambIds;
+        /// @dev atleast 2 AMBs are required
+        if (ambIds_.length < 2) {
+            revert Error.INVALID_AMB_IDS_LENGTH();
+        }
 
-    //     /// @dev atleast 2 AMBs are required
-    //     if (ambIds_.length < 2) {
-    //         revert Error.INVALID_AMB_IDS_LENGTH();
-    //     }
+        AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
 
-    //     AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
+        _dispatchPayload(
+            ambIds_[0],
+            dstChainId_,
+            d.gasPerAMB[0],
+            message_,
+            d.extraDataPerAMB[0]
+        );
 
-    //     _dispatchPayload(
-    //         ambIds_[0],
-    //         dstChainId_,
-    //         d.gasPerAMB[0],
-    //         message_,
-    //         d.extraDataPerAMB[0]
-    //     );
-
-    //     _dispatchProof(
-    //         ambIds_,
-    //         dstChainId_,
-    //         d.gasPerAMB,
-    //         message_,
-    //         d.extraDataPerAMB
-    //     );
-    // }
-
+        _dispatchProof(
+            ambIds_,
+            dstChainId_,
+            d.gasPerAMB,
+            message_,
+            d.extraDataPerAMB
+        );
+    }
 }

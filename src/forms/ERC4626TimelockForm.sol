@@ -8,7 +8,6 @@ import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ERC20Form} from "./ERC20Form.sol";
-import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {IFormStateRegistry} from "./form_keeper/IFormStateRegistry.sol";
 import {Error} from "../utils/Error.sol";
@@ -508,9 +507,10 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
     function processUnlock(
         uint256 unlockId_
-    ) external onlyFormStateRegistry {
-        InitSingleVaultData memory singleVaultData_ = unlockId[unlockId_];
+    ) external onlyFormStateRegistry returns (InitSingleVaultData memory singleVaultData_) {
+        singleVaultData_ = unlockId[unlockId_];
         _xChainWithdrawFromVault(singleVaultData_);
+        delete unlockId[unlockId_];
     }
 
     /*///////////////////////////////////////////////////////////////
