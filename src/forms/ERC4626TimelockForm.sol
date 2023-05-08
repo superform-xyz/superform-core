@@ -508,8 +508,8 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
     function processUnlock(
         uint256 unlockId_
-    ) external onlyFormStateRegistry {
-        InitSingleVaultData memory singleVaultData_ = unlockId[unlockId_];
+    ) external onlyFormStateRegistry returns (InitSingleVaultData memory singleVaultData_) {
+        singleVaultData_ = unlockId[unlockId_];
         _xChainWithdrawFromVault(singleVaultData_);
     }
 
