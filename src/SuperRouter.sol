@@ -1,9 +1,8 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage, SingleDstAMBParams} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
@@ -16,17 +15,15 @@ import {IFormBeacon} from "./interfaces/IFormBeacon.sol";
 import {IBridgeValidator} from "./interfaces/IBridgeValidator.sol";
 import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
-import "./utils/DataPacking.sol";
-
 import {ISuperPositionBank} from "./interfaces/ISuperPositionBank.sol";
+import "./utils/DataPacking.sol";
 
 /// @title Super Router
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and deposit information to a remote execution chain.
 /// @dev extends Liquidity Handler.
 contract SuperRouter is ISuperRouter, LiquidityHandler {
-    using SafeTransferLib for ERC20;
-    using Strings for string;
+    using SafeERC20 for IERC20;
 
     /*///////////////////////////////////////////////////////////////
                                 State Variables
@@ -75,9 +72,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     function multiDstMultiVaultDeposit(
         MultiDstMultiVaultsStateReq calldata req
     ) external payable override {
-        uint256 nDestinations = req.dstChainIds.length;
-
-        for (uint256 i = 0; i < nDestinations; i++) {
+        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             singleDstMultiVaultDeposit(
                 SingleDstMultiVaultsStateReq(
                     req.ambIds,
@@ -121,17 +116,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             req.superFormsData.extraFormData
         );
 
-        /// @dev write amb message
-        vars.ambMessage = AMBMessage(
-            _packTxInfo(
-                uint120(TransactionType.DEPOSIT),
-                uint120(CallbackType.INIT),
-                true,
-                STATE_REGISTRY_TYPE
-            ),
-            abi.encode(ambData)
-        );
-
         /// @dev same chain action
         if (vars.srcChainId == vars.dstChainId) {
             _directMultiDeposit(
@@ -141,54 +125,41 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             );
             emit Completed(vars.currentTotalTransactions);
         } else {
-            vars.liqRequestsLen = req.superFormsData.liqRequests.length;
             address permit2 = superRegistry.PERMIT2();
+            address superForm;
             /// @dev this loop is what allows to deposit to >1 different underlying on destination
             /// @dev if a loop fails in a validation the whole chain should be reverted
-            for (uint256 j = 0; j < vars.liqRequestsLen; j++) {
+            for (
+                uint256 j = 0;
+                j < req.superFormsData.liqRequests.length;
+                j++
+            ) {
                 vars.liqRequest = req.superFormsData.liqRequests[j];
                 /// @dev dispatch liquidity data
-                (address superForm, , ) = _getSuperForm(
+                (superForm, , ) = _getSuperForm(
                     req.superFormsData.superFormIds[j]
                 );
 
-                IBridgeValidator(
-                    superRegistry.getBridgeValidator(vars.liqRequest.bridgeId)
-                ).validateTxData(
-                        vars.liqRequest.txData,
-                        vars.srcChainId,
-                        vars.dstChainId,
-                        true,
-                        superForm,
-                        vars.srcSender,
-                        vars.liqRequest.token
-                    );
-                dispatchTokens(
-                    superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
-                    vars.liqRequest.txData,
-                    vars.liqRequest.token,
-                    vars.liqRequest.amount,
+                _validateAndDispatchTokens(
+                    vars.liqRequest,
+                    permit2,
+                    superForm,
+                    vars.srcChainId,
+                    vars.dstChainId,
                     vars.srcSender,
-                    vars.liqRequest.nativeAmount,
-                    vars.liqRequest.permit2data,
-                    permit2
+                    true
                 );
             }
 
-            SingleDstAMBParams memory ambParams = abi.decode(
+            _dispatchAmbMessage(
+                TransactionType.DEPOSIT,
+                abi.encode(ambData),
+                true,
                 req.extraData,
-                (SingleDstAMBParams)
-            );
-
-            IBaseStateRegistry(superRegistry.coreStateRegistry())
-                .dispatchPayload{value: ambParams.gasToPay}(
                 req.ambIds,
                 vars.dstChainId,
-                abi.encode(vars.ambMessage),
-                ambParams.encodedAMBExtraData
+                vars.currentTotalTransactions
             );
-
-            txHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
             emit CrossChainInitiated(vars.currentTotalTransactions);
         }
@@ -199,9 +170,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         MultiDstSingleVaultStateReq calldata req
     ) external payable override {
         uint16 dstChainId;
-        uint256 nDestinations = req.dstChainIds.length;
 
-        for (uint256 i = 0; i < nDestinations; i++) {
+        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             dstChainId = req.dstChainIds[i];
             if (superRegistry.chainId() == dstChainId) {
                 singleDirectSingleVaultDeposit(
@@ -237,91 +207,37 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (vars.srcChainId == vars.dstChainId)
             revert Error.INVALID_CHAIN_IDS();
 
-        /// @dev validate superFormsData
-
-        if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
-            revert Error.INVALID_SUPERFORMS_DATA();
-
-        if (
-            !IBridgeValidator(
-                superRegistry.getBridgeValidator(
-                    req.superFormData.liqRequest.bridgeId
-                )
-            ).validateTxDataAmount(
-                    req.superFormData.liqRequest.txData,
-                    req.superFormData.amount
-                )
-        ) revert Error.INVALID_TXDATA_AMOUNTS();
-
-        totalTransactions++;
-        vars.currentTotalTransactions = totalTransactions;
-        LiqRequest memory emptyRequest;
-        /// @dev write amb message
-        vars.ambMessage = AMBMessage(
-            _packTxInfo(
-                uint120(TransactionType.DEPOSIT),
-                uint120(CallbackType.INIT),
-                false,
-                STATE_REGISTRY_TYPE
-            ),
-            abi.encode(
-                InitSingleVaultData(
-                    _packTxData(
-                        vars.srcSender,
-                        vars.srcChainId,
-                        vars.currentTotalTransactions
-                    ),
-                    req.superFormData.superFormId,
-                    req.superFormData.amount,
-                    req.superFormData.maxSlippage,
-                    emptyRequest,
-                    req.superFormData.extraFormData
-                )
-            )
+        InitSingleVaultData memory ambData;
+        (ambData, vars.currentTotalTransactions) = _buildDepositAmbData(
+            vars.srcSender,
+            vars.srcChainId,
+            vars.dstChainId,
+            req.superFormData
         );
 
         vars.liqRequest = req.superFormData.liqRequest;
 
         (address superForm, , ) = _getSuperForm(req.superFormData.superFormId);
 
-        IBridgeValidator(
-            superRegistry.getBridgeValidator(vars.liqRequest.bridgeId)
-        ).validateTxData(
-                vars.liqRequest.txData,
-                vars.srcChainId,
-                vars.dstChainId,
-                true,
-                superForm,
-                vars.srcSender,
-                vars.liqRequest.token
-            );
-
-        /// @dev dispatch liquidity data
-        dispatchTokens(
-            superRegistry.getBridgeAddress(vars.liqRequest.bridgeId),
-            vars.liqRequest.txData,
-            vars.liqRequest.token,
-            vars.liqRequest.amount,
+        _validateAndDispatchTokens(
+            vars.liqRequest,
+            superRegistry.PERMIT2(),
+            superForm,
+            vars.srcChainId,
+            vars.dstChainId,
             vars.srcSender,
-            vars.liqRequest.nativeAmount,
-            vars.liqRequest.permit2data,
-            superRegistry.PERMIT2()
+            true
         );
 
-        SingleDstAMBParams memory ambParams = abi.decode(
+        _dispatchAmbMessage(
+            TransactionType.DEPOSIT,
+            abi.encode(ambData),
+            false,
             req.extraData,
-            (SingleDstAMBParams)
-        );
-
-        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: ambParams.gasToPay
-        }(
             req.ambIds,
             vars.dstChainId,
-            abi.encode(vars.ambMessage),
-            ambParams.encodedAMBExtraData
+            vars.currentTotalTransactions
         );
-        txHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
         emit CrossChainInitiated(vars.currentTotalTransactions);
     }
@@ -330,7 +246,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         SingleDirectSingleVaultStateReq memory req
     ) public payable override {
         ActionLocalVars memory vars;
-        InitSingleVaultData memory ambData;
 
         vars.srcSender = msg.sender;
 
@@ -340,37 +255,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (vars.srcChainId != vars.dstChainId)
             revert Error.INVALID_CHAIN_IDS();
 
-        /// @dev validate superFormsData
-
-        if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
-            revert Error.INVALID_SUPERFORMS_DATA();
-
-        if (
-            !IBridgeValidator(
-                superRegistry.getBridgeValidator(
-                    req.superFormData.liqRequest.bridgeId
-                )
-            ).validateTxDataAmount(
-                    req.superFormData.liqRequest.txData,
-                    req.superFormData.amount
-                )
-        ) revert Error.INVALID_TXDATA_AMOUNTS();
-
-        totalTransactions++;
-        vars.currentTotalTransactions = totalTransactions;
-        LiqRequest memory emptyRequest;
-
-        ambData = InitSingleVaultData(
-            _packTxData(
-                vars.srcSender,
-                vars.srcChainId,
-                vars.currentTotalTransactions
-            ),
-            req.superFormData.superFormId,
-            req.superFormData.amount,
-            req.superFormData.maxSlippage,
-            emptyRequest,
-            req.superFormData.extraFormData
+        InitSingleVaultData memory ambData;
+        (ambData, vars.currentTotalTransactions) = _buildDepositAmbData(
+            vars.srcSender,
+            vars.srcChainId,
+            vars.dstChainId,
+            req.superFormData
         );
 
         /// @dev same chain action
@@ -470,39 +360,20 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             req.superFormsData.extraFormData
         );
 
-        /// @dev write amb message
-        vars.ambMessage = AMBMessage(
-            _packTxInfo(
-                uint120(TransactionType.WITHDRAW),
-                uint120(CallbackType.INIT),
-                true,
-                STATE_REGISTRY_TYPE
-            ),
-            abi.encode(ambData)
-        );
-
         /// @dev same chain action
         if (vars.srcChainId == vars.dstChainId) {
             _directMultiWithdraw(req.superFormsData.liqRequests, ambData);
             emit Completed(vars.currentTotalTransactions);
         } else {
-            SingleDstAMBParams memory ambParams = abi.decode(
+            _dispatchAmbMessage(
+                TransactionType.WITHDRAW,
+                abi.encode(ambData),
+                true,
                 req.extraData,
-                (SingleDstAMBParams)
-            );
-
-            /// @dev _liqReq should have path encoded for withdraw to SuperRouter on chain different than chainId
-            /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
-            /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
-            /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
-            IBaseStateRegistry(superRegistry.coreStateRegistry())
-                .dispatchPayload{value: ambParams.gasToPay}(
                 req.ambIds,
                 vars.dstChainId,
-                abi.encode(vars.ambMessage),
-                ambParams.encodedAMBExtraData
+                vars.currentTotalTransactions
             );
-            txHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
             emit CrossChainInitiated(vars.currentTotalTransactions);
         }
@@ -513,9 +384,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         MultiDstSingleVaultStateReq calldata req
     ) external payable override {
         uint16 dstChainId;
-        uint256 nDestinations = req.dstChainIds.length;
 
-        for (uint256 i = 0; i < nDestinations; i++) {
+        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             dstChainId = req.dstChainIds[i];
             if (superRegistry.chainId() == dstChainId) {
                 singleDirectSingleVaultWithdraw(
@@ -595,48 +465,24 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         /// NOTE: extraData can contain more complex type than only index value
         req.superFormData.extraFormData = abi.encode(index);
 
-        totalTransactions++;
-        vars.currentTotalTransactions = totalTransactions;
+        InitSingleVaultData memory ambData;
 
-        /// @dev write amb message
-        vars.ambMessage = AMBMessage(
-            _packTxInfo(
-                uint120(TransactionType.WITHDRAW),
-                uint120(CallbackType.INIT),
-                false,
-                STATE_REGISTRY_TYPE
-            ),
-            abi.encode(
-                InitSingleVaultData(
-                    _packTxData(
-                        vars.srcSender,
-                        vars.srcChainId,
-                        vars.currentTotalTransactions
-                    ),
-                    req.superFormData.superFormId,
-                    req.superFormData.amount,
-                    req.superFormData.maxSlippage,
-                    req.superFormData.liqRequest,
-                    req.superFormData.extraFormData
-                )
-            )
+        (ambData, vars.currentTotalTransactions) = _buildWithdrawAmbData(
+            vars.srcSender,
+            vars.srcChainId,
+            vars.dstChainId,
+            req.superFormData
         );
 
-        SingleDstAMBParams memory ambParams = abi.decode(
+        _dispatchAmbMessage(
+            TransactionType.WITHDRAW,
+            abi.encode(ambData),
+            false,
             req.extraData,
-            (SingleDstAMBParams)
-        );
-
-        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
-            value: ambParams.gasToPay
-        }(
             req.ambIds,
             vars.dstChainId,
-            abi.encode(vars.ambMessage),
-            ambParams.encodedAMBExtraData
+            vars.currentTotalTransactions
         );
-
-        txHistory[vars.currentTotalTransactions] = vars.ambMessage;
 
         emit CrossChainInitiated(vars.currentTotalTransactions);
     }
@@ -667,20 +513,11 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             req.superFormData.amount
         );
 
-        totalTransactions++;
-        vars.currentTotalTransactions = totalTransactions;
-
-        ambData = InitSingleVaultData(
-            _packTxData(
-                vars.srcSender,
-                vars.srcChainId,
-                vars.currentTotalTransactions
-            ),
-            req.superFormData.superFormId,
-            req.superFormData.amount,
-            req.superFormData.maxSlippage,
-            req.superFormData.liqRequest,
-            req.superFormData.extraFormData
+        (ambData, vars.currentTotalTransactions) = _buildWithdrawAmbData(
+            vars.srcSender,
+            vars.srcChainId,
+            vars.dstChainId,
+            req.superFormData
         );
 
         /// @dev same chain action
@@ -688,6 +525,143 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         _directSingleWithdraw(req.superFormData.liqRequest, ambData);
 
         emit Completed(vars.currentTotalTransactions);
+    }
+
+    function _buildDepositAmbData(
+        address srcSender_,
+        uint16 srcChainId_,
+        uint16 dstChainId_,
+        SingleVaultSFData memory superFormData_
+    )
+        internal
+        returns (
+            InitSingleVaultData memory ambData,
+            uint80 currentTotalTransactions
+        )
+    {
+        /// @dev validate superFormsData
+
+        if (!_validateSuperFormData(dstChainId_, superFormData_))
+            revert Error.INVALID_SUPERFORMS_DATA();
+
+        if (
+            !IBridgeValidator(
+                superRegistry.getBridgeValidator(
+                    superFormData_.liqRequest.bridgeId
+                )
+            ).validateTxDataAmount(
+                    superFormData_.liqRequest.txData,
+                    superFormData_.amount
+                )
+        ) revert Error.INVALID_TXDATA_AMOUNTS();
+
+        totalTransactions++;
+        currentTotalTransactions = totalTransactions;
+        LiqRequest memory emptyRequest;
+
+        ambData = InitSingleVaultData(
+            _packTxData(srcSender_, srcChainId_, currentTotalTransactions),
+            superFormData_.superFormId,
+            superFormData_.amount,
+            superFormData_.maxSlippage,
+            emptyRequest,
+            superFormData_.extraFormData
+        );
+    }
+
+    function _buildWithdrawAmbData(
+        address srcSender_,
+        uint16 srcChainId_,
+        uint16 dstChainId_,
+        SingleVaultSFData memory superFormData_
+    )
+        internal
+        returns (
+            InitSingleVaultData memory ambData,
+            uint80 currentTotalTransactions
+        )
+    {
+        totalTransactions++;
+        currentTotalTransactions = totalTransactions;
+
+        ambData = InitSingleVaultData(
+            _packTxData(srcSender_, srcChainId_, currentTotalTransactions),
+            superFormData_.superFormId,
+            superFormData_.amount,
+            superFormData_.maxSlippage,
+            superFormData_.liqRequest,
+            superFormData_.extraFormData
+        );
+    }
+
+    function _validateAndDispatchTokens(
+        LiqRequest memory liqRequest_,
+        address permit2_,
+        address superForm_,
+        uint16 srcChainId_,
+        uint16 dstChainId_,
+        address srcSender_,
+        bool deposit_
+    ) internal {
+        IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId))
+            .validateTxData(
+                liqRequest_.txData,
+                srcChainId_,
+                dstChainId_,
+                deposit_,
+                superForm_,
+                srcSender_,
+                liqRequest_.token
+            );
+        dispatchTokens(
+            superRegistry.getBridgeAddress(liqRequest_.bridgeId),
+            liqRequest_.txData,
+            liqRequest_.token,
+            liqRequest_.amount,
+            srcSender_,
+            liqRequest_.nativeAmount,
+            liqRequest_.permit2data,
+            permit2_
+        );
+    }
+
+    function _dispatchAmbMessage(
+        TransactionType txType_,
+        bytes memory ambData_,
+        bool multiVaults_,
+        bytes memory extraData_,
+        uint8[] memory ambIds_,
+        uint16 dstChainId_,
+        uint80 currentTotalTransactions_
+    ) internal {
+        AMBMessage memory ambMessage = AMBMessage(
+            _packTxInfo(
+                uint120(txType_),
+                uint120(CallbackType.INIT),
+                multiVaults_,
+                STATE_REGISTRY_TYPE
+            ),
+            ambData_
+        );
+        SingleDstAMBParams memory ambParams = abi.decode(
+            extraData_,
+            (SingleDstAMBParams)
+        );
+
+        /// @dev _liqReq should have path encoded for withdraw to SuperRouter on chain different than chainId
+        /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
+        /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
+        /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{
+            value: ambParams.gasToPay
+        }(
+            ambIds_,
+            dstChainId_,
+            abi.encode(ambMessage),
+            ambParams.encodedAMBExtraData
+        );
+
+        txHistory[currentTotalTransactions_] = ambMessage;
     }
 
     function _directDeposit(
@@ -1038,6 +1012,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         emit Completed(returnDataTxId);
     }
 
+    /// FIXME - burn inside superposition bank, not here, to reduce size
     /// @notice Executed by SuperPositionBank as callback to burn positions after withdraw cycle finishes
     function burnPositionSingle(
         address _owner,
@@ -1051,6 +1026,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
     }
 
+    /// FIXME - burn inside superposition bank, not here, to reduce size
     /// @notice Executed by SuperPositionBank as callback to burn positions after withdraw cycle finishes
     function burnPositionBatch(
         address _owner,
@@ -1075,7 +1051,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         address _tokenContract,
         uint256 _amount
     ) external onlyProtocolAdmin {
-        ERC20 tokenContract = ERC20(_tokenContract);
+        IERC20 tokenContract = IERC20(_tokenContract);
 
         /// note: transfer the token from address of this contract
         /// note: to address of the user (executing the withdrawToken() function)
@@ -1091,22 +1067,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev validates slippage parameter;
-    /// slippages should always be within 0 - 100
-    /// decimal is handles in the form of 10s
-    /// for eg. 0.05 = 5
-    ///       100 = 10000
-    function _validateSlippage(
-        uint256[] calldata slippages_
-    ) internal pure returns (bool) {
-        for (uint256 i = 0; i < slippages_.length; i++) {
-            if (slippages_[i] < 0 || slippages_[i] > 10000) {
-                return false;
-            }
-        }
-        return true;
-    }
 
     function _validateSuperFormData(
         uint16 dstChainId_,
