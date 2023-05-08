@@ -26,6 +26,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override PROCESSOR_ROLE =
         keccak256("PROCESSOR_ROLE");
     bytes32 public constant override UPDATER_ROLE = keccak256("UPDATER_ROLE");
+    bytes32 public constant override SUPER_POSITIONS_BANK_ROLE =
+        keccak256("SUPER_POSITIONS_BANK_ROLE");
 
     ISuperRegistry public immutable superRegistry;
 
@@ -155,6 +157,20 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(UPDATER_ROLE, updater_);
     }
 
+    /// @inheritdoc ISuperRBAC
+    function grantSuperPositionsBankRole(
+        address superPositionsBank_
+    ) external override {
+        grantRole(SUPER_POSITIONS_BANK_ROLE, superPositionsBank_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function revokeSuperPositionsBankRole(
+        address superPositionsBank_
+    ) external override {
+        revokeRole(SUPER_POSITIONS_BANK_ROLE, superPositionsBank_);
+    }
+
     /*///////////////////////////////////////////////////////////////
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -227,5 +243,12 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address updater_
     ) external view override returns (bool) {
         return hasRole(UPDATER_ROLE, updater_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasSuperPositionsBankRole(
+        address superPositionsBank_
+    ) external view override returns (bool) {
+        return hasRole(SUPER_POSITIONS_BANK_ROLE, superPositionsBank_);
     }
 }

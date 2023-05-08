@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {LiqRequest, TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage, SingleDstAMBParams} from "./types/DataTypes.sol";
+import {LiqRequest, TransactionType, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage, SingleDstAMBParams} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
@@ -34,10 +34,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     ISuperRegistry public immutable superRegistry;
 
     uint80 public totalTransactions;
-
-    /// @notice history of state sent across chains are used for debugging.
-    /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint80 => AMBMessage) public txHistory;
 
     modifier onlyProtocolAdmin() {
         if (
@@ -507,7 +503,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             revert Error.INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
-        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
+        ISuperPositionBank(superRegistry.superPositionBank()).burnSingleSP(
             vars.srcSender,
             req.superFormData.superFormId,
             req.superFormData.amount
@@ -661,7 +657,10 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             ambParams.encodedAMBExtraData
         );
 
-        txHistory[currentTotalTransactions_] = ambMessage;
+        ISuperPositionBank(superRegistry.superPositionBank()).updateTxHistory(
+            currentTotalTransactions_,
+            ambMessage
+        );
     }
 
     function _directDeposit(
@@ -716,12 +715,10 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             msg.value
         );
 
-        /// @dev TEST-CASE: msg.sender to whom we mint. use passed `admin` arg?
-        ISuperPositions(superRegistry.superPositions()).mintSingleSP(
+        ISuperPositionBank(superRegistry.superPositionBank()).mintSingleSP(
             srcSender_,
             ambData_.superFormId,
-            dstAmount,
-            ""
+            dstAmount
         );
     }
 
@@ -757,11 +754,10 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
 
         /// @dev TEST-CASE: msg.sender to whom we mint. use passed `admin` arg?
-        ISuperPositions(superRegistry.superPositions()).mintBatchSP(
+        ISuperPositionBank(superRegistry.superPositionBank()).mintBatchSP(
             srcSender_,
             ambData_.superFormIds,
-            dstAmounts,
-            ""
+            dstAmounts
         );
     }
 
@@ -834,210 +830,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                 ambData_.extraFormData
             );
         }
-    }
-
-    /// @dev allows registry contract to send payload for processing to the router contract.
-    /// @param data_ is the received information to be processed.
-    /// TODO: ASSES WHAT HAPPENS FOR MULTISYNC WITH CALLBACKTYPE.FAIL IN ONE OF THE IDS!!!
-    function stateMultiSync(AMBMessage memory data_) external payable override {
-        if (msg.sender != superRegistry.coreStateRegistry())
-            revert Error.REQUEST_DENIED();
-
-        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
-            data_.txInfo
-        );
-
-        /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
-        if (callbackType != uint256(CallbackType.RETURN))
-            if (callbackType != uint256(CallbackType.FAIL))
-                revert Error.INVALID_PAYLOAD();
-
-        ReturnMultiData memory returnData = abi.decode(
-            data_.params,
-            (ReturnMultiData)
-        );
-
-        (
-            uint16 status,
-            uint16 returnDataSrcChainId,
-            uint16 returnDataDstChainId,
-            uint80 returnDataTxId
-        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
-
-        AMBMessage memory stored = txHistory[returnDataTxId];
-
-        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
-
-        if (!multi) revert Error.INVALID_PAYLOAD();
-
-        InitMultiVaultData memory multiVaultData = abi.decode(
-            stored.params,
-            (InitMultiVaultData)
-        );
-        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
-            multiVaultData.txData
-        );
-
-        if (returnDataSrcChainId != srcChainId)
-            revert Error.SRC_CHAIN_IDS_MISMATCH();
-
-        if (
-            returnDataDstChainId !=
-            _getDestinationChain(multiVaultData.superFormIds[0])
-        ) revert Error.DST_CHAIN_IDS_MISMATCH();
-
-        if (txType == uint256(TransactionType.DEPOSIT)) {
-            ISuperPositions(superRegistry.superPositions()).mintBatchSP(
-                srcSender,
-                multiVaultData.superFormIds,
-                returnData.amounts,
-                ""
-            );
-        } else if (txType == uint256(TransactionType.WITHDRAW)) {
-            bytes memory extraData = multiVaultData.extraFormData; // TODO read customForm type here
-            uint256 index = abi.decode(extraData, (uint256));
-
-            ISuperPositionBank bank = ISuperPositionBank(
-                superRegistry.superPositionBank()
-            );
-
-            bank.burnPositionBatch(srcSender, index);
-        } else if (callbackType == uint256(CallbackType.FAIL)) {
-            bytes memory extraData = multiVaultData.extraFormData; // TODO read customForm type here
-            uint256 index = abi.decode(extraData, (uint256));
-
-            ISuperPositionBank bank = ISuperPositionBank(
-                superRegistry.superPositionBank()
-            );
-
-            bank.returnPositionBatch(srcSender, index);
-        } else {
-            revert Error.INVALID_PAYLOAD_STATUS();
-        }
-
-        emit Completed(returnDataTxId);
-    }
-
-    /// @dev allows registry contract to send payload for processing to the router contract.
-    /// @param data_ is the received information to be processed.
-    /// NOTE: Shouldn't this be ACCESS CONTROLed?
-    function stateSync(AMBMessage memory data_) external payable override {
-        if (msg.sender != superRegistry.coreStateRegistry())
-            revert Error.REQUEST_DENIED();
-
-        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
-            data_.txInfo
-        );
-
-        /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
-        if (callbackType != uint256(CallbackType.RETURN))
-            if (callbackType != uint256(CallbackType.FAIL))
-                revert Error.INVALID_PAYLOAD();
-
-        ReturnSingleData memory returnData = abi.decode(
-            data_.params,
-            (ReturnSingleData)
-        );
-
-        (
-            uint16 status,
-            uint16 returnDataSrcChainId,
-            uint16 returnDataDstChainId,
-            uint80 returnDataTxId
-        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
-
-        AMBMessage memory stored = txHistory[returnDataTxId];
-        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
-
-        if (multi) revert Error.INVALID_PAYLOAD();
-
-        InitSingleVaultData memory singleVaultData = abi.decode(
-            stored.params,
-            (InitSingleVaultData)
-        );
-        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
-            singleVaultData.txData
-        );
-
-        if (returnDataSrcChainId != srcChainId)
-            revert Error.SRC_CHAIN_IDS_MISMATCH();
-
-        if (
-            returnDataDstChainId !=
-            _getDestinationChain(singleVaultData.superFormId)
-        ) revert Error.DST_CHAIN_IDS_MISMATCH();
-
-        if (txType == uint256(TransactionType.DEPOSIT)) {
-            ISuperPositions(superRegistry.superPositions()).mintSingleSP(
-                srcSender,
-                singleVaultData.superFormId,
-                returnData.amount,
-                ""
-            );
-        } else if (txType == uint256(TransactionType.WITHDRAW)) {
-            bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
-            uint256 index = abi.decode(extraData, (uint256));
-
-            /// FIXME: We can pack status into extraData, modify it on destination, but... should we modify it?
-            /// Everything has a drawback. Current solution with uint16 status packing is PoC.
-            if (status == 0) {
-                ISuperPositionBank bank = ISuperPositionBank(
-                    superRegistry.superPositionBank()
-                );
-
-                bank.burnPositionSingle(srcSender, index);
-            } else if (status == 1) {
-                /// requestUnlock happened on DST, we already hold position in superBank
-                /// TODO: NOTE: SO, now what? We need to verify _owner balance against another withdraw call!
-                emit Status(returnDataTxId, status);
-            } else {
-                /// @dev TODO: Placeholder
-                emit Status(returnDataTxId, status);
-            }
-
-            /// TODO: Address discrepancy between using and not using status, check TokenBank._dispatchPayload()
-        } else if (callbackType == uint256(CallbackType.FAIL)) {
-            bytes memory extraData = singleVaultData.extraFormData; // TODO read customForm type here
-            uint256 index = abi.decode(extraData, (uint256));
-
-            ISuperPositionBank bank = ISuperPositionBank(
-                superRegistry.superPositionBank()
-            );
-
-            bank.returnPositionSingle(srcSender, index);
-        } else {
-            revert Error.INVALID_PAYLOAD_STATUS();
-        }
-
-        emit Completed(returnDataTxId);
-    }
-
-    /// FIXME - burn inside superposition bank, not here, to reduce size
-    /// @notice Executed by SuperPositionBank as callback to burn positions after withdraw cycle finishes
-    function burnPositionSingle(
-        address _owner,
-        uint256 _tokenId,
-        uint256 _amount
-    ) external onlyBank {
-        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
-            _owner,
-            _tokenId,
-            _amount
-        );
-    }
-
-    /// FIXME - burn inside superposition bank, not here, to reduce size
-    /// @notice Executed by SuperPositionBank as callback to burn positions after withdraw cycle finishes
-    function burnPositionBatch(
-        address _owner,
-        uint256[] memory _tokenIds,
-        uint256[] memory _amounts
-    ) external onlyBank {
-        ISuperPositions(superRegistry.superPositions()).burnBatchSP(
-            _owner,
-            _tokenIds,
-            _amounts
-        );
     }
 
     /*///////////////////////////////////////////////////////////////

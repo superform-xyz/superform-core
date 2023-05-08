@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 import {BaseStateRegistry} from "./BaseStateRegistry.sol";
 import {ITokenBank} from "../interfaces/ITokenBank.sol";
-import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ISuperPositionBank} from "../interfaces/ISuperPositionBank.sol";
 import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, AckAMBData, AMBExtraData} from "../types/DataTypes.sol";
@@ -311,9 +311,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     value: msg.value
                 }(multiVaultData);
         } else {
-            ISuperRouter(superRegistry.superRouter()).stateMultiSync{
-                value: msg.value
-            }(payloadInfo_);
+            ISuperPositionBank(superRegistry.superPositionBank())
+                .stateMultiSync{value: msg.value}(payloadInfo_);
         }
 
         return (0, "");
@@ -345,9 +344,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperRouter(superRegistry.superRouter()).stateMultiSync(
-                payloadInfo_
-            );
+            ISuperPositionBank(superRegistry.superPositionBank())
+                .stateMultiSync(payloadInfo_);
         }
 
         return (0, "");
@@ -372,7 +370,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
         } else {
             /// @dev Withdraw SyncBack here, callbackType.return
-            ISuperRouter(superRegistry.superRouter()).stateSync{
+            ISuperPositionBank(superRegistry.superPositionBank()).stateSync{
                 value: msg.value
             }(payloadInfo_);
         }
@@ -405,7 +403,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperRouter(superRegistry.superRouter()).stateSync(payloadInfo_);
+            ISuperPositionBank(superRegistry.superPositionBank()).stateSync(
+                payloadInfo_
+            );
         }
 
         return (0, "");

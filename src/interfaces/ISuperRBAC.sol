@@ -90,6 +90,14 @@ interface ISuperRBAC {
     /// @param updater_ the address to revoke the role from
     function revokeUpdaterRole(address updater_) external;
 
+    /// @dev grants the SUPER_POSITIONS_BANK_ROLE to the given address
+    /// @param superPositionsBank_ the address to grant the role to
+    function grantSuperPositionsBankRole(address superPositionsBank_) external;
+
+    /// @dev revokes the SUPER_POSITIONS_BANK_ROLE from given address
+    /// @param superPositionsBank_ the address to revoke the role from
+    function revokeSuperPositionsBankRole(address superPositionsBank_) external;
+
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
@@ -119,6 +127,9 @@ interface ISuperRBAC {
 
     /// @dev returns the id of the updater role
     function UPDATER_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of the super positions bank role
+    function SUPER_POSITIONS_BANK_ROLE() external view returns (bytes32);
 
     /// @dev returns wether the given address has the protocol admin role
     /// @param admin_ the address to check
@@ -169,4 +180,10 @@ interface ISuperRBAC {
     /// @dev returns wether the given address has the updater role
     /// @param updater_ the address to check
     function hasUpdaterRole(address updater_) external view returns (bool);
+
+    /// @dev returns wether the given address has the super positions bank role
+    /// @param superPositionsBank_ the address to check
+    function hasSuperPositionsBankRole(
+        address superPositionsBank_
+    ) external view returns (bool);
 }

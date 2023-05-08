@@ -588,15 +588,22 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 13.1 - Deploy SuperPositionsBank
             vars.superPositionBank = address(
-                new SuperPositionBank(
-                    ISuperPositions(vars.superPositions),
-                    ISuperRouter(vars.superRouter)
-                )
+                new SuperPositionBank(vars.superRegistry)
             );
 
             /// @dev 13.2 - setSuperPositionsBank
             SuperRegistry(vars.superRegistry).setSuperPositionBank(
                 vars.superPositionBank
+            );
+
+            SuperRBAC(vars.superRBAC).grantSuperPositionsBankRole(
+                vars.superPositionBank
+            );
+
+            assert(
+                SuperRBAC(vars.superRBAC).hasSuperPositionsBankRole(
+                    vars.superPositionBank
+                )
             );
 
             contracts[vars.chainId][bytes32(bytes("SuperPositionBank"))] = vars

@@ -20,9 +20,9 @@ contract SuperPositions is ERC1155s {
 
     ISuperRegistry public immutable superRegistry;
 
-    modifier onlySuperRouter() {
+    modifier onlySuperPositionBank() {
         if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(
+            !ISuperRBAC(superRegistry.superRBAC()).hasSuperPositionsBankRole(
                 msg.sender
             )
         ) revert Error.NOT_SUPER_ROUTER();
@@ -57,7 +57,10 @@ contract SuperPositions is ERC1155s {
     }
 
     /// FIXME: Temp extension need to make approve at superRouter, may change with arch
-    function setApprovalForAll(address operator, bool approved) public virtual override {
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual override {
         super.setApprovalForAll(operator, approved);
     }
 
@@ -70,7 +73,7 @@ contract SuperPositions is ERC1155s {
         uint256 superFormId_,
         uint256 amount_,
         bytes memory data_
-    ) external onlySuperRouter {
+    ) external onlySuperPositionBank {
         _mint(srcSender_, superFormId_, amount_, data_);
     }
 
@@ -79,7 +82,7 @@ contract SuperPositions is ERC1155s {
         uint256[] memory superFormIds_,
         uint256[] memory amounts_,
         bytes memory data_
-    ) external onlySuperRouter {
+    ) external onlySuperPositionBank {
         _batchMint(srcSender_, superFormIds_, amounts_, data_);
     }
 
@@ -87,7 +90,7 @@ contract SuperPositions is ERC1155s {
         address srcSender_,
         uint256 superFormId_,
         uint256 amount_
-    ) external onlySuperRouter {
+    ) external onlySuperPositionBank {
         _burn(srcSender_, superFormId_, amount_);
     }
 
@@ -95,7 +98,7 @@ contract SuperPositions is ERC1155s {
         address srcSender_,
         uint256[] memory superFormIds_,
         uint256[] memory amounts_
-    ) external onlySuperRouter {
+    ) external onlySuperPositionBank {
         _batchBurn(srcSender_, superFormIds_, amounts_);
     }
 
