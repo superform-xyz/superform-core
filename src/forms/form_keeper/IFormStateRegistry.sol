@@ -5,7 +5,6 @@ interface IFormStateRegistry {
 
     function receivePayload(uint256 payloadId, uint256 superFormId) external;
 
-    function initPayload(uint256 payloadId, bytes memory ackExtraData_) external;
+    function finalizePayload(uint256 payloadId, bytes memory ackExtraData_) external;
 
-    // function initPayload(uint256 payloadId) external;
 }

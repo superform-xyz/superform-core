@@ -511,6 +511,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     ) external onlyFormStateRegistry returns (InitSingleVaultData memory singleVaultData_) {
         singleVaultData_ = unlockId[unlockId_];
         _xChainWithdrawFromVault(singleVaultData_);
+        delete unlockId[unlockId_];
     }
 
     /*///////////////////////////////////////////////////////////////

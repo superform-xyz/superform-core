@@ -18,15 +18,21 @@ import "forge-std/console.sol";
 /// @author Zeropoint Labs
 contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
 
+    /// @notice Pre-compute keccak256 hash of WITHDRAW_COOLDOWN_PERIOD()
+    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD =
+        keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
+
+    /// @notice Stores 1:1 mapping with Form.unlockId(unlockCounter) without copying whole data structure
     mapping(uint256 payloadId => uint256 superFormId) public payloadStore;
 
-    /// TODO: Can this be spoofed?
+    /// @notice Checks if the caller is the form allowed to send payload
     modifier onlyForm(uint256 superFormId) {
         (address form_, , ) = _getSuperForm(superFormId);
         if (msg.sender != form_) revert Error.NOT_FORM_KEEPER();
         _;
     }
 
+    /// @notice Checks if the caller is the form keeper
     modifier onlyFormKeeper() {
         if (
             !ISuperRBAC(superRegistry.superRBAC()).hasFormStateRegistryRole(
@@ -36,8 +42,13 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         _;
     }
 
-    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) {}
+    constructor(
+        ISuperRegistry superRegistry_
+    ) BaseStateRegistry(superRegistry_) {}
 
+    /// @notice Receives request (payload) from TimelockForm to process later
+    /// @param payloadId is constructed on TimelockForm, data is mapped also there, we only store pointer here
+    /// @param superFormId is the id of TimelockForm sending this payloadId
     function receivePayload(
         uint256 payloadId,
         uint256 superFormId
@@ -45,22 +56,42 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         payloadStore[payloadId] = superFormId;
     }
 
-    function initPayload(uint256 payloadId, bytes memory ackExtraData) external onlyFormKeeper {
+    /// @notice Form Keeper finalizes payload to process Timelock withdraw fully
+    /// @param payloadId is the id of the payload to finalize
+    /// @param ackExtraData is the AMBMessage data to send back to the source stateSync with request to re-mint SuperPositions
+    function finalizePayload(
+        uint256 payloadId,
+        bytes memory ackExtraData
+    ) external onlyFormKeeper {
         (address form_, , ) = _getSuperForm(payloadStore[payloadId]);
         IERC4626Timelock form = IERC4626Timelock(form_);
         try form.processUnlock(payloadId) {
             delete payloadStore[payloadId];
-        } catch {
-            delete payloadStore[payloadId]; /// @dev If we want user to fully re-init withdraw
-            InitSingleVaultData memory singleVaultData = form.unlockId(payloadId);
-            (uint16 srcChainId, bytes memory returnMessage) = _constructSingleReturnData(singleVaultData); /// catch doesnt access singleVaultData
-            _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData); /// NOTE: ackExtraData needs to be specified 'just in case' if this fails
+        } catch (bytes memory err) {
+            /// @dev in every other instance it's better to re-init withdraw
+            /// this catch will ALWAYS send a message back to source with exception of WITHDRAW_COOLDOWN_PERIOD error on Timelock
+            /// We do nothing then as this is KEEPER error (TBD)
+            if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
+                delete payloadStore[payloadId];
+                /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
+                InitSingleVaultData memory singleVaultData = form.unlockId(
+                    payloadId
+                );
+                (
+                    uint16 srcChainId,
+                    bytes memory returnMessage
+                ) = _constructSingleReturnData(singleVaultData);
+                _dispatchAcknowledgement(
+                    srcChainId,
+                    returnMessage,
+                    ackExtraData
+                ); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
+            }
         }
     }
 
-
     /// @notice TokenBank function for build message back to the source. In regular flow called after xChainWithdraw succeds.
-    /// @dev Constructs return message in case of FAILURE to perform redemption of already unlocked assets
+    /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
         InitSingleVaultData memory singleVaultData_
     ) internal view returns (uint16 srcChainId, bytes memory returnMessage) {
@@ -100,7 +131,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     function _dispatchAcknowledgement(
         uint16 dstChainId_,
         bytes memory message_,
-        bytes memory ackExtraData_ /// TODO: This is only accessible to CoreStateRegistry
+        bytes memory ackExtraData_
     ) internal {
         AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
         uint8[] memory ambIds_ = ackData.ambIds;
