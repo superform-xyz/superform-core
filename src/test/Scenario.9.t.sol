@@ -22,7 +22,7 @@ contract Scenario1Test is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationSingleVault Deposit test case
-        AMBs = [2, 3];
+        AMBs = [1, 2, 3];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];
@@ -46,8 +46,8 @@ contract Scenario1Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                msgValue: 75 * 10 ** 18,
+                ambParams: generateAmbParams(DST_CHAINS.length, 3),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

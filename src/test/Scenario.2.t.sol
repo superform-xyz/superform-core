@@ -19,7 +19,7 @@ contract Scenario2Test is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationMultiVault Deposit test case
-        AMBs = [1, 2];
+        AMBs = [1, 3];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];

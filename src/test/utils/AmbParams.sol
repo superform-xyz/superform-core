@@ -8,8 +8,10 @@ function generateAmbParams(
     uint256 ambCount
 ) pure returns (bytes[] memory) {
     uint256[] memory gasPerAMB = new uint256[](ambCount);
-    gasPerAMB[0] = 1 ether;
-    gasPerAMB[1] = 1 ether;
+
+    for (uint256 index; index < ambCount; index++) {
+        gasPerAMB[index] = 1 ether;
+    }
 
     bytes[] memory paramsPerAMB = new bytes[](ambCount);
 
@@ -19,7 +21,7 @@ function generateAmbParams(
 
     for (uint256 i; i < dstCount; i++) {
         paramsPerDST[i] = abi.encode(
-            SingleDstAMBParams(2 ether, abi.encode(extraData))
+            SingleDstAMBParams(3 ether, abi.encode(extraData))
         );
     }
 
@@ -60,14 +62,13 @@ function generateBroadcastParams(
     return abi.encode(ambIds, abi.encode(extraData));
 }
 
-function generateAckParams(uint256 ambCount) pure returns (bytes memory) {
-    uint8[] memory ambIds = new uint8[](ambCount);
-    ambIds[0] = 1;
-    ambIds[1] = 2;
-
+function generateAckParams(uint8[] memory ambIds) pure returns (bytes memory) {
+    uint256 ambCount = ambIds.length;
     uint256[] memory gasPerAMB = new uint256[](ambCount);
-    gasPerAMB[0] = 80 ether;
-    gasPerAMB[1] = 80 ether;
+
+    for (uint256 index; index < ambCount; index++) {
+        gasPerAMB[index] = 80 ether;
+    }
 
     bytes[] memory paramsPerAMB = new bytes[](ambCount);
 
