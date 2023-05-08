@@ -31,7 +31,6 @@ import {SuperRouter} from "../../SuperRouter.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
 import {SuperRBAC} from "../../settings/SuperRBAC.sol";
 import {SuperPositions} from "../../SuperPositions.sol";
-import {TokenBank} from "../../TokenBank.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
@@ -45,8 +44,6 @@ import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface
 import {IMessageBus} from "../../crosschain-data/celer/interface/IMessageBus.sol";
 import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
-
-import {SuperPositionBank} from "../../SuperPositionBank.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 
 abstract contract BaseSetup is DSTest, Test {
@@ -556,18 +553,6 @@ abstract contract BaseSetup is DSTest, Test {
                 salt
             );
 
-            /// @dev 11 - Deploy TokenBank
-            vars.tokenBank = address(
-                new TokenBank{salt: salt}(vars.superRegistry)
-            );
-
-            contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
-                .tokenBank;
-
-            SuperRegistry(vars.superRegistry).setTokenBank(vars.tokenBank);
-            SuperRBAC(vars.superRBAC).grantTokenBankRole(vars.tokenBank);
-            assert(SuperRBAC(vars.superRBAC).hasTokenBankRole(vars.tokenBank));
-
             /// @dev 12 - Deploy SuperRouter
             vars.superRouter = address(
                 new SuperRouter{salt: salt}(vars.superRegistry)
@@ -585,29 +570,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superPositions = address(
                 new SuperPositions{salt: salt}("test.com/", vars.superRegistry)
             );
-
-            /// @dev 13.1 - Deploy SuperPositionsBank
-            vars.superPositionBank = address(
-                new SuperPositionBank(vars.superRegistry)
-            );
-
-            /// @dev 13.2 - setSuperPositionsBank
-            SuperRegistry(vars.superRegistry).setSuperPositionBank(
-                vars.superPositionBank
-            );
-
-            SuperRBAC(vars.superRBAC).grantSuperPositionsBankRole(
-                vars.superPositionBank
-            );
-
-            assert(
-                SuperRBAC(vars.superRBAC).hasSuperPositionsBankRole(
-                    vars.superPositionBank
-                )
-            );
-
-            contracts[vars.chainId][bytes32(bytes("SuperPositionBank"))] = vars
-                .superPositionBank;
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
                 .superPositions;
@@ -643,7 +605,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
-            SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.tokenBank);
             SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
                 vars.lzImplementation
             );

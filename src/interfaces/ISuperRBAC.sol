@@ -30,14 +30,6 @@ interface ISuperRBAC {
     /// @param superRouter_ the address to revoke the role from
     function revokeSuperRouterRole(address superRouter_) external;
 
-    /// @dev grants the TOKEN_BANK_ROLE to the given address
-    /// @param tokenBank_ the address to grant the role to
-    function grantTokenBankRole(address tokenBank_) external;
-
-    /// @dev revokes the TOKEN_BANK_ROLE from given address
-    /// @param tokenBank_ the address to revoke the role from
-    function revokeTokenBankRole(address tokenBank_) external;
-
     /// @dev grants the SUPERFORM_FACTORY_ROLE to the given address
     /// @param superformFactory_ the address to grant the role to
     function grantSuperformFactoryRole(address superformFactory_) external;
@@ -90,14 +82,6 @@ interface ISuperRBAC {
     /// @param updater_ the address to revoke the role from
     function revokeUpdaterRole(address updater_) external;
 
-    /// @dev grants the SUPER_POSITIONS_BANK_ROLE to the given address
-    /// @param superPositionsBank_ the address to grant the role to
-    function grantSuperPositionsBankRole(address superPositionsBank_) external;
-
-    /// @dev revokes the SUPER_POSITIONS_BANK_ROLE from given address
-    /// @param superPositionsBank_ the address to revoke the role from
-    function revokeSuperPositionsBankRole(address superPositionsBank_) external;
-
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
@@ -147,10 +131,6 @@ interface ISuperRBAC {
         address superRouter_
     ) external view returns (bool);
 
-    /// @dev returns wether the given address has the token bank role
-    /// @param tokenBank_ the address to check
-    function hasTokenBankRole(address tokenBank_) external view returns (bool);
-
     /// @dev returns wether the given address has the superform factory role
     /// @param superformFactory_ the address to check
     function hasSuperformFactoryRole(
@@ -180,10 +160,4 @@ interface ISuperRBAC {
     /// @dev returns wether the given address has the updater role
     /// @param updater_ the address to check
     function hasUpdaterRole(address updater_) external view returns (bool);
-
-    /// @dev returns wether the given address has the super positions bank role
-    /// @param superPositionsBank_ the address to check
-    function hasSuperPositionsBankRole(
-        address superPositionsBank_
-    ) external view returns (bool);
 }

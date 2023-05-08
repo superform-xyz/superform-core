@@ -102,18 +102,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setTokenBank(
-        address tokenBank_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (tokenBank_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        address oldTokenBank = protocolAddresses[TOKEN_BANK];
-        protocolAddresses[TOKEN_BANK] = tokenBank_;
-
-        emit TokenBankUpdated(oldTokenBank, tokenBank_);
-    }
-
-    /// @inheritdoc ISuperRegistry
     function setSuperFormFactory(
         address superFormFactory_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -268,11 +256,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         returns (address superRouter_)
     {
         superRouter_ = getProtocolAddress(SUPER_ROUTER);
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function tokenBank() external view override returns (address tokenBank_) {
-        tokenBank_ = getProtocolAddress(TOKEN_BANK);
     }
 
     /// @inheritdoc ISuperRegistry

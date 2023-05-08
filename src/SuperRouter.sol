@@ -6,7 +6,6 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {LiqRequest, TransactionType, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage, SingleDstAMBParams} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
-import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
@@ -15,7 +14,7 @@ import {IFormBeacon} from "./interfaces/IFormBeacon.sol";
 import {IBridgeValidator} from "./interfaces/IBridgeValidator.sol";
 import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
-import {ISuperPositionBank} from "./interfaces/ISuperPositionBank.sol";
+import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import "./utils/DataPacking.sol";
 
 /// @title Super Router
@@ -303,41 +302,11 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (!_validateSuperFormsWithdrawData(req.superFormsData))
             revert Error.INVALID_SUPERFORMS_DATA();
 
-        /// @dev SuperPositionBank Flow
-        /// Step 0: Create an instance of SuperPositionBank for this chainId
-        address _superPositionBank = superRegistry.superPositionBank();
-        ISuperPositions superPositions = ISuperPositions(
-            superRegistry.superPositions()
-        );
-        ISuperPositionBank bank = ISuperPositionBank(_superPositionBank);
-
-        /// Step 1: Transfer shares to this contract
-        /// NOTE: From the user perspective it would be better to enter through the bank directly.
-        superPositions.safeBatchTransferFrom(
+        ISuperPositions(superRegistry.superPositions()).burnBatchSP(
             vars.srcSender,
-            address(this),
             req.superFormsData.superFormIds,
-            req.superFormsData.amounts,
-            ""
+            req.superFormsData.amounts
         );
-
-        /// @dev Should really use singleApprove here, but this will be a loop...
-        /// NOTE: Remember to remove this approval later on (at least)
-        superPositions.setApprovalForAll(address(bank), true);
-
-        /// Step 2: This is deposit-like action, requires approve from this contract
-        /// NOTE: Regardless of final solution, this will need to track individual user request to retrive later on
-        uint256 index = bank.acceptPositionBatch(
-            req.superFormsData.superFormIds,
-            req.superFormsData.amounts,
-            vars.srcSender
-        );
-
-        superPositions.setApprovalForAll(address(bank), false);
-
-        /// Step 3: Save index of position create in SuperPositionBank in extraData
-        /// NOTE: extraData can contain more complex type than only index value
-        req.superFormsData.extraFormData = abi.encode(index);
 
         totalTransactions++;
         vars.currentTotalTransactions = totalTransactions;
@@ -422,44 +391,11 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
             revert Error.INVALID_SUPERFORMS_DATA();
 
-        /// @dev SuperPositionBank Flow
-        /// Step 0: Create an instance of SuperPositionBank for this chainId
-        address _superPositionBank = superRegistry.superPositionBank();
-        ISuperPositions superPositions = ISuperPositions(
-            superRegistry.superPositions()
-        );
-        ISuperPositionBank bank = ISuperPositionBank(_superPositionBank);
-
-        /// FIXME: WHAT ABOUT SUPERPOSITIONS ALREADY IN THE BANK... TIMELOCK FLOW FORCES IT
-
-        /// Step 1: Transfer shares to this contract
-        /// NOTE: From the user perspective it would be better to enter through the bank directly.
-        superPositions.safeTransferFrom(
+        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
             vars.srcSender,
-            address(this),
             req.superFormData.superFormId,
-            req.superFormData.amount,
-            ""
+            req.superFormData.amount
         );
-
-        /// @dev Should really use singleApprove here, but this will be a loop...
-        /// NOTE: Remember to remove this approval later on (at least)
-        /// TODO: This is Single ID Withdraw, may use setApprovalForOne
-        superPositions.setApprovalForAll(address(bank), true);
-
-        /// Step 2: This is deposit-like action, requires approve from this contract
-        /// NOTE: Regardless of final solution, this will need to track individual user request to retrive later on
-        uint256 index = bank.acceptPositionSingle(
-            req.superFormData.superFormId,
-            req.superFormData.amount,
-            vars.srcSender
-        );
-
-        superPositions.setApprovalForAll(address(bank), false);
-
-        /// Step 3: Save index of position create in SuperPositionBank in extraData
-        /// NOTE: extraData can contain more complex type than only index value
-        req.superFormData.extraFormData = abi.encode(index);
 
         InitSingleVaultData memory ambData;
 
@@ -503,7 +439,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             revert Error.INVALID_SUPERFORMS_DATA();
 
         /// @dev burn SuperPositions
-        ISuperPositionBank(superRegistry.superPositionBank()).burnSingleSP(
+        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
             vars.srcSender,
             req.superFormData.superFormId,
             req.superFormData.amount
@@ -657,7 +593,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             ambParams.encodedAMBExtraData
         );
 
-        ISuperPositionBank(superRegistry.superPositionBank()).updateTxHistory(
+        ISuperPositions(superRegistry.superPositions()).updateTxHistory(
             currentTotalTransactions_,
             ambMessage
         );
@@ -715,7 +651,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             msg.value
         );
 
-        ISuperPositionBank(superRegistry.superPositionBank()).mintSingleSP(
+        ISuperPositions(superRegistry.superPositions()).mintSingleSP(
             srcSender_,
             ambData_.superFormId,
             dstAmount
@@ -754,7 +690,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
 
         /// @dev TEST-CASE: msg.sender to whom we mint. use passed `admin` arg?
-        ISuperPositionBank(superRegistry.superPositionBank()).mintBatchSP(
+        ISuperPositions(superRegistry.superPositions()).mintBatchSP(
             srcSender_,
             ambData_.superFormIds,
             dstAmounts
@@ -1025,25 +961,5 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
 
         return true;
-    }
-
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) external virtual returns (bytes4) {
-        return this.onERC1155Received.selector;
-    }
-
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external virtual returns (bytes4) {
-        return this.onERC1155BatchReceived.selector;
     }
 }

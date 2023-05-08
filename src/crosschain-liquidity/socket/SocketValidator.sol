@@ -70,7 +70,8 @@ contract SocketValidator is BridgeValidator {
         } else if (deposit_ && srcChainId_ != dstChainId_) {
             /// @dev if cross chain deposits, then receiver address must be the token bank
             if (
-                !(userRequest.receiverAddress == superRegistry.tokenBank() ||
+                !(userRequest.receiverAddress ==
+                    superRegistry.coreStateRegistry() ||
                     userRequest.receiverAddress ==
                     superRegistry.multiTxProcessor())
             ) revert Error.INVALID_TXDATA_RECEIVER();

@@ -80,16 +80,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
-    function grantTokenBankRole(address tokenBank_) external override {
-        grantRole(TOKEN_BANK_ROLE, tokenBank_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function revokeTokenBankRole(address tokenBank_) external override {
-        revokeRole(TOKEN_BANK_ROLE, tokenBank_);
-    }
-
-    /// @inheritdoc ISuperRBAC
     function grantSuperformFactoryRole(
         address superformFactory_
     ) external override {
@@ -157,20 +147,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(UPDATER_ROLE, updater_);
     }
 
-    /// @inheritdoc ISuperRBAC
-    function grantSuperPositionsBankRole(
-        address superPositionsBank_
-    ) external override {
-        grantRole(SUPER_POSITIONS_BANK_ROLE, superPositionsBank_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function revokeSuperPositionsBankRole(
-        address superPositionsBank_
-    ) external override {
-        revokeRole(SUPER_POSITIONS_BANK_ROLE, superPositionsBank_);
-    }
-
     /*///////////////////////////////////////////////////////////////
                             VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -194,13 +170,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address superRouter_
     ) external view override returns (bool) {
         return hasRole(SUPER_ROUTER_ROLE, superRouter_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasTokenBankRole(
-        address tokenBank_
-    ) external view override returns (bool) {
-        return hasRole(TOKEN_BANK_ROLE, tokenBank_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -243,12 +212,5 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address updater_
     ) external view override returns (bool) {
         return hasRole(UPDATER_ROLE, updater_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasSuperPositionsBankRole(
-        address superPositionsBank_
-    ) external view override returns (bool) {
-        return hasRole(SUPER_POSITIONS_BANK_ROLE, superPositionsBank_);
     }
 }

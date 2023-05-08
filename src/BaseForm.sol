@@ -54,9 +54,12 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         _;
     }
 
-    modifier onlyTokenBank() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasTokenBankRole(msg.sender))
-            revert Error.NOT_TOKEN_BANK();
+    modifier onlyCoreStateRegistry() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(
+                msg.sender
+            )
+        ) revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 
@@ -131,7 +134,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev NOTE: Should this function return?
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
-    ) external override onlyTokenBank returns (uint256 dstAmount) {
+    ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
         dstAmount = _xChainDepositIntoVault(singleVaultData_);
     }
 
@@ -153,7 +156,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @return status If withdraw succeded or not (relevant for custom forms, for standard form this could be omitted as we inform about fail elsewhere
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) external override onlyTokenBank returns (uint16 status) {
+    ) external override onlyCoreStateRegistry returns (uint16 status) {
         /// @dev FIXME: not returning anything YET
         status = _xChainWithdrawFromVault(singleVaultData_);
     }
