@@ -688,6 +688,13 @@ abstract contract ProtocolActions is BaseSetup {
         return true;
     }
 
+    function _stage7_process_unlock_withdraw(
+        TestAction memory action,
+        StagesLocalVars memory vars
+    ) internal returns (bool success) {
+        vm.prank(deployer);
+    }
+
     function _buildMultiVaultCallData(
         MultiVaultCallDataArgs memory args
     ) internal returns (MultiVaultsSFData memory superFormsData) {

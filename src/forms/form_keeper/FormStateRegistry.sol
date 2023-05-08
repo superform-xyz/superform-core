@@ -115,7 +115,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
                                 1, /// @dev TODO: What status to return on fail?
                                 srcChainId,
                                 superRegistry.chainId(),
-                                currentTotalTxs
+                                currentTotalTxs /// @dev TODO: How to sync that with source now?
                             ),
                             singleVaultData_.amount
                         )

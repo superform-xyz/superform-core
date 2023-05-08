@@ -45,6 +45,7 @@ import {IMessageBus} from "../../crosschain-data/celer/interface/IMessageBus.sol
 import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
+import {FormStateRegistry} from "../../forms/form_keeper/FormStateRegistry.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
@@ -362,6 +363,12 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantUpdaterRole(deployer);
             assert(SuperRBAC(vars.superRBAC).hasUpdaterRole(deployer));
 
+            /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
+            SuperRBAC(vars.superRBAC).grantFormStateRegistryRole(deployer);
+            assert(
+                SuperRBAC(vars.superRBAC).hasFormStateRegistryRole(deployer)
+            );
+
             /// @dev 4.1 - deploy Core State Registry
 
             vars.coreStateRegistry = address(
@@ -386,7 +393,7 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
 
-            /// @dev 4.2- deploy Factory State Registry
+            /// @dev 4.2 - deploy Factory State Registry
 
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry{salt: salt}(
@@ -400,6 +407,21 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setFactoryStateRegistry(
                 vars.factoryStateRegistry
+            );
+
+            /// @dev 4.2 - deploy Form State Registry
+            vars.formStateRegistry = address(
+                new FormStateRegistry{salt: salt}(
+                    SuperRegistry(vars.superRegistry)
+                )
+            );
+
+            contracts[vars.chainId][
+                bytes32(bytes("FormStateRegistry"))
+            ] = vars.formStateRegistry;
+
+            SuperRegistry(vars.superRegistry).setFormStateRegistry(
+                vars.formStateRegistry
             );
 
             /// @dev 5.1 - deploy Layerzero Implementation

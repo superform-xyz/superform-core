@@ -118,6 +118,7 @@ struct SetupVars {
     address erc4626TimelockForm;
     address factoryStateRegistry;
     address coreStateRegistry;
+    address formStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
