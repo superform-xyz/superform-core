@@ -58,16 +58,21 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
+        /// @FIXME: this isn't scalable atm
         IBaseStateRegistry coreRegistry = IBaseStateRegistry(
             superRegistry.coreStateRegistry()
         );
         IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
             superRegistry.factoryStateRegistry()
         );
+        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+            superRegistry.rolesStateRegistry()
+        );
 
         if (
             msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry)
+            msg.sender != address(factoryRegistry) &&
+            msg.sender != address(rolesRegistry)
         ) {
             revert Error.INVALID_CALLER();
         }
@@ -94,10 +99,14 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
             superRegistry.factoryStateRegistry()
         );
+        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+            superRegistry.rolesStateRegistry()
+        );
 
         if (
             msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry)
+            msg.sender != address(factoryRegistry) &&
+            msg.sender != address(rolesRegistry)
         ) {
             revert Error.INVALID_CALLER();
         }
@@ -199,11 +208,20 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
                 superRegistry.coreStateRegistry()
             );
             coreRegistry.receivePayload(superChainId[srcChainId_], message_);
-        } else {
+        }
+
+        if (registryId == 1) {
             IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
                 superRegistry.factoryStateRegistry()
             );
             factoryRegistry.receivePayload(superChainId[srcChainId_], message_);
+        }
+
+        if (registryId == 2) {
+            IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+                superRegistry.rolesStateRegistry()
+            );
+            rolesRegistry.receivePayload(superChainId[srcChainId_], message_);
         }
 
         return ExecutionStatus.Success;

@@ -23,8 +23,9 @@ contract RolesStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     //////////////////////////////////////////////////////////////*/
     ///@dev set up admin during deployment.
     constructor(
-        ISuperRegistry superRegistry_
-    ) BaseStateRegistry(superRegistry_) {}
+        ISuperRegistry superRegistry_,
+        uint8 registryType_
+    ) BaseStateRegistry(superRegistry_, registryType_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS

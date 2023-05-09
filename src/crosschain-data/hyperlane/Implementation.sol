@@ -81,10 +81,14 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
             superRegistry.factoryStateRegistry()
         );
+        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+            superRegistry.rolesStateRegistry()
+        );
 
         if (
             msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry)
+            msg.sender != address(factoryRegistry) &&
+            msg.sender != address(rolesRegistry)
         ) {
             revert Error.INVALID_CALLER();
         }
@@ -118,10 +122,14 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
             superRegistry.factoryStateRegistry()
         );
+        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+            superRegistry.rolesStateRegistry()
+        );
 
         if (
             msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry)
+            msg.sender != address(factoryRegistry) &&
+            msg.sender != address(rolesRegistry)
         ) {
             revert Error.INVALID_CALLER();
         }
@@ -229,11 +237,20 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             );
 
             coreRegistry.receivePayload(superChainId[origin_], body_);
-        } else {
+        }
+
+        if (registryId == 1) {
             IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
                 superRegistry.factoryStateRegistry()
             );
             factoryRegistry.receivePayload(superChainId[origin_], body_);
+        }
+
+        if (registryId == 2) {
+            IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+                superRegistry.rolesStateRegistry()
+            );
+            rolesRegistry.receivePayload(superChainId[origin_], body_);
         }
     }
 

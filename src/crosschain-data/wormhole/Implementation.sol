@@ -99,10 +99,14 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
             superRegistry.factoryStateRegistry()
         );
+        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+            superRegistry.rolesStateRegistry()
+        );
 
         if (
             msg.sender != address(coreRegistry) ||
-            msg.sender != address(factoryRegistry)
+            msg.sender != address(factoryRegistry) ||
+            msg.sender != address(rolesRegistry)
         ) {
             revert Error.INVALID_CALLER();
 

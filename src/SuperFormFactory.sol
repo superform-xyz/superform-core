@@ -21,6 +21,7 @@ contract SuperFormFactory is ISuperFormFactory {
     /*///////////////////////////////////////////////////////////////
                             Constants
     //////////////////////////////////////////////////////////////*/
+    uint8 constant STATE_REGISTRY_TYPE = 1;
     uint256 constant MAX_FORM_ID = 2 ** 80 - 1;
     bytes32 constant SYNC_NEW_SUPERFORM = keccak256("SYNC_NEW_SUPERFORM");
     bytes32 constant SYNC_BEACON_STATUS = keccak256("SYNC_BEACON_STATUS");
@@ -350,6 +351,11 @@ contract SuperFormFactory is ISuperFormFactory {
             extraData_,
             (uint8[], bytes)
         );
+
+        // AMBMessage memory ambMessage = AMBMessage(
+        //     _packTxInfo(0, 0, false, STATE_REGISTRY_TYPE),
+        //     message_
+        // );
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation

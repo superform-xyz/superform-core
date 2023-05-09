@@ -100,10 +100,14 @@ contract LayerzeroImplementation is
         IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
             superRegistry.factoryStateRegistry()
         );
+        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+            superRegistry.rolesStateRegistry()
+        );
 
         if (
             msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry)
+            msg.sender != address(factoryRegistry) &&
+            msg.sender != address(rolesRegistry)
         ) {
             revert Error.INVALID_CALLER();
         }
@@ -131,10 +135,14 @@ contract LayerzeroImplementation is
         IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
             superRegistry.factoryStateRegistry()
         );
+        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+            superRegistry.rolesStateRegistry()
+        );
 
         if (
             msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry)
+            msg.sender != address(factoryRegistry) &&
+            msg.sender != address(rolesRegistry)
         ) {
             revert Error.INVALID_CALLER();
         }
@@ -195,18 +203,26 @@ contract LayerzeroImplementation is
 
         /// NOTE: experimental split of registry contracts
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
-
         /// FIXME: should migrate to support more state registry types
         if (registryId == 0) {
             IBaseStateRegistry coreRegistry = IBaseStateRegistry(
                 superRegistry.coreStateRegistry()
             );
             coreRegistry.receivePayload(superChainId[_srcChainId], _payload);
-        } else {
+        }
+
+        if (registryId == 1) {
             IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
                 superRegistry.factoryStateRegistry()
             );
             factoryRegistry.receivePayload(superChainId[_srcChainId], _payload);
+        }
+
+        if (registryId == 2) {
+            IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
+                superRegistry.rolesStateRegistry()
+            );
+            rolesRegistry.receivePayload(superChainId[_srcChainId], _payload);
         }
     }
 

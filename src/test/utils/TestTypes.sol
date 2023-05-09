@@ -115,6 +115,7 @@ struct SetupVars {
     address socketRouter;
     address erc4626Form;
     address erc4626TimelockForm;
+    address rolesStateRegistry;
     address factoryStateRegistry;
     address coreStateRegistry;
     address UNDERLYING_TOKEN;

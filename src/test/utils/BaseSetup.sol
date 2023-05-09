@@ -22,6 +22,7 @@ import {Permit2Clone} from "../mocks/Permit2Clone.sol";
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
+import {RolesStateRegistry} from "../../crosschain-data/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
@@ -369,7 +370,8 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.coreStateRegistry = address(
                 new CoreStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
+                    SuperRegistry(vars.superRegistry),
+                    0
                 )
             );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
@@ -390,10 +392,10 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev 4.2- deploy Factory State Registry
-
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
+                    SuperRegistry(vars.superRegistry),
+                    1
                 )
             );
 
@@ -403,6 +405,21 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setFactoryStateRegistry(
                 vars.factoryStateRegistry
+            );
+
+            /// @dev 4.3- deploy Roles State Registry
+            vars.rolesStateRegistry = address(
+                new RolesStateRegistry{salt: salt}(
+                    SuperRegistry(vars.superRegistry),
+                    2
+                )
+            );
+
+            contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars
+                .rolesStateRegistry;
+
+            SuperRegistry(vars.superRegistry).setRolesStateRegistry(
+                vars.rolesStateRegistry
             );
 
             /// @dev 5.1 - deploy Layerzero Implementation

@@ -16,7 +16,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-
     uint256 public payloadsCount;
 
     mapping(bytes => uint256) public messageQuorum;
@@ -26,6 +25,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     mapping(uint256 => PayloadState) public payloadTracking;
 
     ISuperRegistry public immutable superRegistry;
+    uint8 public immutable STATE_REGISTRY_TYPE;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -61,8 +61,11 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     ///@dev set up admin during deployment.
-    constructor(ISuperRegistry superRegistry_) {
+    constructor(ISuperRegistry superRegistry_, uint8 stateRegistryType_) {
         superRegistry = superRegistry_;
+
+        /// FIXME: move to super registry
+        STATE_REGISTRY_TYPE = stateRegistryType_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -240,7 +243,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory extraData_
     ) internal {
         AMBMessage memory newData = AMBMessage(
-            _packTxInfo(0, 0, false, 1),
+            _packTxInfo(0, 0, false, STATE_REGISTRY_TYPE),
             message_
         );
 
@@ -267,7 +270,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         /// @dev generates the proof
         bytes memory proof = abi.encode(keccak256(message_));
         AMBMessage memory newData = AMBMessage(
-            _packTxInfo(0, 0, false, 1),
+            _packTxInfo(0, 0, false, STATE_REGISTRY_TYPE),
             proof
         );
 
