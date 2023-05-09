@@ -10,9 +10,17 @@ import {Error} from "../utils/Error.sol";
 
 contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
+                                MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+    modifier onlySender() override {
+        if (msg.sender != superRegistry.superFormFactory())
+            revert Error.NOT_CORE_CONTRACTS();
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-
     ///@dev set up admin during deployment.
     constructor(
         ISuperRegistry superRegistry_
