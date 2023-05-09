@@ -88,10 +88,12 @@ interface ISuperFormFactory {
     /// @dev allows an admin to change the status of a form
     /// @param formBeaconId_ is the id of the form beacon
     /// @param status_ is the new status
+    /// @param extraData_ is optional & passed when broadcasting of status is needed
     function changeFormBeaconPauseStatus(
         uint256 formBeaconId_,
-        bool status_
-    ) external;
+        bool status_,
+        bytes memory extraData_
+    ) external payable;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -103,6 +105,13 @@ interface ISuperFormFactory {
     function getFormBeacon(
         uint256 formBeaconId_
     ) external view returns (address formBeacon_);
+
+    /// @dev returns the status of form beacon
+    /// @param formBeaconId_ is the id of the beacon form
+    /// @return status_ is the current status of the form beacon
+    function getFormBeaconStatus(
+        uint256 formBeaconId_
+    ) external view returns (bool status_);
 
     /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
     /// @param vault_ is the address of a vault

@@ -52,12 +52,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         _;
     }
 
-    modifier onlyCoreContracts() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasCoreContractsRole(
-                msg.sender
-            )
-        ) revert Error.NOT_CORE_CONTRACTS();
+    modifier onlySender() virtual {
         _;
     }
 
@@ -86,7 +81,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual override onlyCoreContracts {
+    ) external payable virtual override onlySender {
         /// @dev atleast 2 AMBs are required
         if (ambIds_.length < 2) {
             revert Error.INVALID_AMB_IDS_LENGTH();
@@ -116,7 +111,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         uint8[] memory ambIds_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual override onlyCoreContracts {
+    ) external payable virtual override onlySender {
         /// @dev atleast 2 AMBs are required
         if (ambIds_.length < 2) {
             revert Error.INVALID_AMB_IDS_LENGTH();

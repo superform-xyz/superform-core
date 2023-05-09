@@ -903,7 +903,7 @@ abstract contract BaseSetup is DSTest, Test {
     function _broadcastPayloadHelper(
         uint16 currentChainId,
         Vm.Log[] memory logs
-    ) private {
+    ) internal {
         vm.stopPrank();
 
         address[] memory toMailboxes = new address[](6);

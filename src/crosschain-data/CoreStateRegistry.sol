@@ -12,6 +12,7 @@ import {IBaseForm} from "../interfaces/IBaseForm.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, AckAMBData, AMBExtraData, ReturnMultiData, ReturnSingleData} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/DataTypes.sol";
+import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
@@ -28,16 +29,26 @@ contract CoreStateRegistry is
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-
     uint256 public constant REQUIRED_QUORUM = 1;
 
     mapping(uint256 payloadId => bytes failedDepositRequests)
         internal failedDepositPayloads;
 
     /*///////////////////////////////////////////////////////////////
+                                MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+    modifier onlySender() override {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasCoreContractsRole(
+                msg.sender
+            )
+        ) revert Error.NOT_CORE_CONTRACTS();
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                              CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-
     ///@dev set up admin during deployment.
     constructor(
         ISuperRegistry superRegistry_

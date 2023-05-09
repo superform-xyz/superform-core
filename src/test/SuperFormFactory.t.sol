@@ -190,4 +190,43 @@ contract SuperFormFactoryTest is BaseSetup {
             ); /// 1 chain = 3; 6 chains = 6 * 3
         }
     }
+
+    function test_pauseFormBeacon() public {
+        vm.startPrank(deployer);
+        vm.selectFork(FORKS[chainId]);
+        uint256 formBeaconId = 1;
+
+        vm.recordLogs();
+        /// setting the status as false in chain id = ETH & broadcasting it
+        SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+            .changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
+            formBeaconId,
+            true,
+            generateBroadcastParams(5, 2)
+        );
+        _broadcastPayloadHelper(chainId, vm.getRecordedLogs());
+
+        /// process the payload across all other chains
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (chainIds[i] != chainId) {
+                vm.selectFork(FORKS[chainIds[i]]);
+
+                bool statusBefore = SuperFormFactory(
+                    payable(getContract(chainIds[i], "SuperFormFactory"))
+                ).getFormBeaconStatus(1);
+
+                FactoryStateRegistry(
+                    payable(getContract(chainIds[i], "FactoryStateRegistry"))
+                ).processPayload(31, "");
+
+                bool statusAfter = SuperFormFactory(
+                    payable(getContract(chainIds[i], "SuperFormFactory"))
+                ).getFormBeaconStatus(1);
+
+                /// assert status update before and after processing the payload
+                assertEq(statusBefore, false);
+                assertEq(statusAfter, true);
+            }
+        }
+    }
 }
