@@ -51,6 +51,12 @@ interface ISuperRegistry {
         address indexed factoryStateRegistry
     );
 
+    /// @dev is emitted when the roles state registry address is set.
+    event RolesStateRegistryUpdated(
+        address indexed oldRolesStateRegistry,
+        address indexed rolesStateRegistry
+    );
+
     /// @dev is emitted when a new super positions is configured.
     event SuperPositionsUpdated(
         address indexed oldSuperPositions,
@@ -130,6 +136,10 @@ interface ISuperRegistry {
     /// @param factoryStateRegistry_ the address of the state registry
     function setFactoryStateRegistry(address factoryStateRegistry_) external;
 
+    /// @dev sets the state registry address.
+    /// @param rolesStateRegistry_ the address of the roles state registry
+    function setRolesStateRegistry(address rolesStateRegistry_) external;
+
     /// @dev allows admin to set the super rbac address
     /// @param superRBAC_ the address of the super rbac
     function setSuperRBAC(address superRBAC_) external;
@@ -162,9 +172,7 @@ interface ISuperRegistry {
 
     /// @dev allows admin to set the super positions bank address
     /// @param superPositionBank_ the address of the super positions bank
-    function setSuperPositionBank(
-        address superPositionBank_
-    ) external; 
+    function setSuperPositionBank(address superPositionBank_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -193,6 +201,9 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the factory state registry module
     function FACTORY_STATE_REGISTRY() external view returns (bytes32);
+
+    /// @dev returns the id of the factory state registry module
+    function ROLES_STATE_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the super positions module
     function SUPER_POSITIONS() external view returns (bytes32);
@@ -245,6 +256,13 @@ interface ISuperRegistry {
         view
         returns (address factoryStateRegistry_);
 
+    /// @dev gets the roles state registry address.
+    /// @return rolesStateRegistry_ the address of the state registry
+    function rolesStateRegistry()
+        external
+        view
+        returns (address rolesStateRegistry_);
+
     /// @dev gets the super positions
     /// @return superPositions_ the address of the super positions
     function superPositions() external view returns (address superPositions_);
@@ -287,5 +305,4 @@ interface ISuperRegistry {
         external
         view
         returns (address superPositionBank_);
-
 }

@@ -90,6 +90,10 @@ interface ISuperRBAC {
     /// @param updater_ the address to revoke the role from
     function revokeUpdaterRole(address updater_) external;
 
+    /// @dev allows sync of global roles from different chains
+    /// @notice may not work for all roles
+    function stateSync(bytes memory data_) external;
+
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/

@@ -33,6 +33,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         "CORE_STATE_REGISTRY";
     bytes32 public constant override FACTORY_STATE_REGISTRY =
         "FACTORY_STATE_REGISTRY";
+    bytes32 public constant override ROLES_STATE_REGISTRY =
+        "ROLES_STATE_REGISTRY";
     bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
     bytes32 public constant override SUPER_POSITION_BANK =
         "SUPER_POSITION_BANK";
@@ -151,6 +153,21 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         emit FactoryStateRegistryUpdated(
             oldFactoryStateRegistry,
             factoryStateRegistry_
+        );
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setRolesStateRegistry(
+        address rolesStateRegistry_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (rolesStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address oldRolesStateRegistry = protocolAddresses[ROLES_STATE_REGISTRY];
+        protocolAddresses[ROLES_STATE_REGISTRY] = rolesStateRegistry_;
+
+        emit RolesStateRegistryUpdated(
+            oldRolesStateRegistry,
+            rolesStateRegistry_
         );
     }
 
@@ -303,6 +320,16 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         returns (address factoryStateRegistry_)
     {
         factoryStateRegistry_ = getProtocolAddress(FACTORY_STATE_REGISTRY);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function rolesStateRegistry()
+        external
+        view
+        override
+        returns (address rolesStateRegistry_)
+    {
+        rolesStateRegistry_ = getProtocolAddress(ROLES_STATE_REGISTRY);
     }
 
     /// @inheritdoc ISuperRegistry

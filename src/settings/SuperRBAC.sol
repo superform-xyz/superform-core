@@ -5,6 +5,7 @@ import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessContr
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
+import {AMBFactoryMessage, AMBMessage} from "../types/DataTypes.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.
@@ -153,6 +154,23 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function revokeUpdaterRole(address updater_) external override {
         revokeRole(UPDATER_ROLE, updater_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function stateSync(bytes memory data_) external override {
+        if (msg.sender != superRegistry.rolesStateRegistry())
+            revert Error.NOT_ROLES_STATE_REGISTRY();
+
+        AMBMessage memory stateRegistryPayload = abi.decode(
+            data_,
+            (AMBMessage)
+        );
+        AMBFactoryMessage memory rolesPayload = abi.decode(
+            stateRegistryPayload.params,
+            (AMBFactoryMessage)
+        );
+
+        /// FIXME: add ways to process the payload
     }
 
     /*///////////////////////////////////////////////////////////////
