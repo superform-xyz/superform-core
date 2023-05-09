@@ -10,9 +10,17 @@ import {Error} from "../utils/Error.sol";
 
 contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
+                                MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+    modifier onlySender() override {
+        if (msg.sender != superRegistry.superFormFactory())
+            revert Error.NOT_CORE_CONTRACTS();
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-
     ///@dev set up admin during deployment.
     constructor(
         ISuperRegistry superRegistry_
@@ -29,7 +37,6 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         uint256 payloadId_,
         bytes memory /// not useful here
     ) external payable virtual override onlyProcessor {
-        /// TODO sync factory data from crosschain
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }

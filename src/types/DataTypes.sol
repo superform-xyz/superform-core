@@ -98,8 +98,8 @@ struct AMBMessage {
 }
 
 struct AMBFactoryMessage {
-    uint256 superFormId;
-    address vaultAddress;
+    bytes32 messageType; /// keccak("ADD_FORM"), keccak("PAUSE_FORM")
+    bytes message;
 }
 
 struct ReturnMultiData {

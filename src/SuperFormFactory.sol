@@ -19,14 +19,18 @@ import "./utils/DataPacking.sol";
 /// @author Zeropoint Labs.
 contract SuperFormFactory is ISuperFormFactory {
     /*///////////////////////////////////////////////////////////////
-                            State Variables
+                            Constants
     //////////////////////////////////////////////////////////////*/
     uint256 constant MAX_FORM_ID = 2 ** 80 - 1;
+    bytes32 constant SYNC_NEW_SUPERFORM = keccak256("SYNC_NEW_SUPERFORM");
+    bytes32 constant SYNC_BEACON_STATUS = keccak256("SYNC_BEACON_STATUS");
 
+    /*///////////////////////////////////////////////////////////////
+                            State Variables
+    //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
 
     address[] public formBeacons;
-
     uint256[] public superForms;
 
     /// @notice If formBeaconId is 0, formBeacon is not part of the protocol
@@ -135,25 +139,15 @@ contract SuperFormFactory is ISuperFormFactory {
         );
 
         vaultToSuperForms[vault_].push(superFormId_);
-
         /// @dev FIXME do we need to store info of all superforms just for external querying? Could save gas here
         superForms.push(superFormId_);
 
-        AMBFactoryMessage memory data = AMBFactoryMessage(superFormId_, vault_);
-
-        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(
-            extraData_,
-            (uint8[], bytes)
+        AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
+            SYNC_NEW_SUPERFORM,
+            abi.encode(superFormId_, vault_)
         );
 
-        /// @dev ambIds are validated inside the factory state registry
-        /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBaseStateRegistry(superRegistry.factoryStateRegistry())
-            .broadcastPayload{value: msg.value}(
-            ambIds,
-            abi.encode(data),
-            broadcastParams
-        );
+        _broadcast(abi.encode(factoryPayload), extraData_);
 
         emit SuperFormCreated(formBeaconId_, vault_, superFormId_, superForm_);
     }
@@ -181,12 +175,22 @@ contract SuperFormFactory is ISuperFormFactory {
     /// @inheritdoc ISuperFormFactory
     function changeFormBeaconPauseStatus(
         uint256 formBeaconId_,
-        bool status_
-    ) external override onlyProtocolAdmin {
+        bool status_,
+        bytes memory extraData_
+    ) external payable override onlyProtocolAdmin {
         if (formBeacon[formBeaconId_] == address(0))
             revert Error.INVALID_FORM_ID();
 
         FormBeacon(formBeacon[formBeaconId_]).changePauseStatus(status_);
+
+        if (extraData_.length > 0) {
+            AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
+                SYNC_BEACON_STATUS,
+                abi.encode(formBeaconId_, status_)
+            );
+
+            _broadcast(abi.encode(factoryPayload), extraData_);
+        }
     }
 
     /// @inheritdoc ISuperFormFactory
@@ -194,19 +198,22 @@ contract SuperFormFactory is ISuperFormFactory {
         if (msg.sender != superRegistry.factoryStateRegistry())
             revert Error.NOT_FACTORY_STATE_REGISTRY();
 
-        AMBMessage memory message = abi.decode(data_, (AMBMessage));
-
-        AMBFactoryMessage memory data = abi.decode(
-            message.params,
+        AMBMessage memory stateRegistryPayload = abi.decode(
+            data_,
+            (AMBMessage)
+        );
+        AMBFactoryMessage memory factoryPayload = abi.decode(
+            stateRegistryPayload.params,
             (AMBFactoryMessage)
         );
 
-        /// @dev TODO - do we need extra checks before pushing here?
+        if (factoryPayload.messageType == SYNC_NEW_SUPERFORM) {
+            _syncNewSuperform(factoryPayload.message);
+        }
 
-        vaultToSuperForms[data.vaultAddress].push(data.superFormId);
-
-        /// @dev do we need to store info of all superforms just for external querying? Could save gas here
-        superForms.push(data.superFormId);
+        if (factoryPayload.messageType == SYNC_BEACON_STATUS) {
+            _syncBeaconStatus(factoryPayload.message);
+        }
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -220,6 +227,15 @@ contract SuperFormFactory is ISuperFormFactory {
         uint256 formBeaconId_
     ) external view override returns (address formBeacon_) {
         formBeacon_ = formBeacon[formBeaconId_];
+    }
+
+    /// @dev returns the status of form beacon
+    /// @param formBeaconId_ is the id of the beacon form
+    /// @return status_ is the current status of the form beacon
+    function getFormBeaconStatus(
+        uint256 formBeaconId_
+    ) external view override returns (bool status_) {
+        status_ = FormBeacon(formBeacon[formBeaconId_]).paused();
     }
 
     /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
@@ -317,5 +333,61 @@ contract SuperFormFactory is ISuperFormFactory {
                 }
             }
         }
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        Internal Functions
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev interacts with factory state registry to broadcasting state changes to all connected remote chains
+    /// @param message_ is the crosschain message to be sent.
+    /// @param extraData_ is the amb override information.
+    function _broadcast(
+        bytes memory message_,
+        bytes memory extraData_
+    ) internal {
+        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(
+            extraData_,
+            (uint8[], bytes)
+        );
+
+        /// @dev ambIds are validated inside the factory state registry
+        /// @dev broadcastParams if wrong will revert in the amb implementation
+        IBaseStateRegistry(superRegistry.factoryStateRegistry())
+            .broadcastPayload{value: msg.value}(
+            ambIds,
+            message_,
+            broadcastParams
+        );
+    }
+
+    /// @dev synchornize new superform id created on a remote chain
+    /// @notice is a part of broadcasting / dispatching through factory state registry
+    /// @param message_ is the crosschain message received.
+    function _syncNewSuperform(bytes memory message_) internal {
+        (uint256 superFormId, address vaultAddress) = abi.decode(
+            message_,
+            (uint256, address)
+        );
+        /// FIXME: do we need extra checks before pushing here?
+        vaultToSuperForms[vaultAddress].push(superFormId);
+
+        /// @dev do we need to store info of all superforms just for external querying? Could save gas here
+        superForms.push(superFormId);
+    }
+
+    /// @dev synchornize beacon status update message from remote chain
+    /// @notice is a part of broadcasting / dispatching through factory state registry
+    /// @param message_ is the crosschain message received.
+    function _syncBeaconStatus(bytes memory message_) internal {
+        (uint256 formBeaconId, bool status) = abi.decode(
+            message_,
+            (uint256, bool)
+        );
+
+        if (formBeacon[formBeaconId] == address(0))
+            revert Error.INVALID_FORM_ID();
+
+        FormBeacon(formBeacon[formBeaconId]).changePauseStatus(status);
     }
 }

@@ -5,6 +5,7 @@ import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, AckAMBData, AMBExtraData} from "../types/DataTypes.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
@@ -16,13 +17,23 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-
     uint256 public constant REQUIRED_QUORUM = 1;
+
+    /*///////////////////////////////////////////////////////////////
+                                MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+    modifier onlySender() override {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasCoreContractsRole(
+                msg.sender
+            )
+        ) revert Error.NOT_CORE_CONTRACTS();
+        _;
+    }
 
     /*///////////////////////////////////////////////////////////////
                              CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-
     ///@dev set up admin during deployment.
     constructor(
         ISuperRegistry superRegistry_
