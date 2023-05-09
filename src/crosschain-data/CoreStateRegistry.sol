@@ -327,6 +327,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     extraFormData: multiVaultData.extraFormData
                 });
 
+                /// @dev Store PayloadId in extraFormData (tbd: 1-step flow doesnt need this)
+                singleVaultData.extraFormData = abi.encode(payloadId_);
+
                 (address superForm_, , ) = _getSuperForm(
                     singleVaultData.superFormId
                 );
@@ -465,6 +468,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 payloadInfo_.params,
                 (InitSingleVaultData)
             );
+
+            /// @dev Store PayloadId in extraFormData (tbd: 1-step flow doesnt need this)
+            singleVaultData.extraFormData = abi.encode(payloadId_);
 
             (address superForm_, , ) = _getSuperForm(
                 singleVaultData.superFormId

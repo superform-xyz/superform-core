@@ -480,6 +480,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             v.requestUnlock(singleVaultData_.amount, address(this));
 
             /// @dev Store for FORM_KEEPER
+            /// TODO: write payloadId to extraData here, but Form still needs to know it from CoreStateRegistry
             unlockId[++unlockCounter] = singleVaultData_;
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)

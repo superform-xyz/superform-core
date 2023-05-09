@@ -294,6 +294,12 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage4 done");
 
+        /// @dev Keeper needs to know this value to be able to process unlock
+        /// TODO: Move to protocolActions?
+        InitSingleVaultData memory unlockIdData = erc4626TimelockForm.unlockId(1);
+
+        success = _stage7_process_unlock_withdraw(action, vars, 1);
+
         if (action.testType == TestType.RevertXChainWithdraw) {
             /// @dev Process payload received on source from destination (withdraw callback)
             success = _stage6_process_superPositions_withdraw(action, vars);

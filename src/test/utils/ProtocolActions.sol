@@ -9,6 +9,7 @@ import {ISocketRegistry} from "../../interfaces/ISocketRegistry.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {IFormStateRegistry} from "../../forms/form_keeper/IFormStateRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
 abstract contract ProtocolActions is BaseSetup {
@@ -690,9 +691,21 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _stage7_process_unlock_withdraw(
         TestAction memory action,
-        StagesLocalVars memory vars
+        StagesLocalVars memory vars,
+        uint256 unlockId_
     ) internal returns (bool success) {
+        uint256 initialFork = vm.activeFork();
+
+        /// todo: loop, we loop everywhere else
         vm.prank(deployer);
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            IFormStateRegistry formStateRegistry = IFormStateRegistry(
+                contracts[DST_CHAINS[i]][bytes32(bytes("FormStateRegistry"))]
+            );
+            formStateRegistry.finalizePayload(unlockId_, "ackExtraData here");
+        }
+
+        return true;
     }
 
     function _buildMultiVaultCallData(
