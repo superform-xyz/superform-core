@@ -122,7 +122,6 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         );
 
         (
-            uint16 status,
             uint16 returnDataSrcChainId,
             uint16 returnDataDstChainId,
             uint80 returnDataTxId
@@ -168,7 +167,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
             _batchMint(
                 srcSender,
                 multiVaultData.superFormIds,
-                multiVaultData.amounts,
+                returnData.amounts,
                 ""
             );
         } else {
@@ -199,7 +198,6 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         );
 
         (
-            uint16 status,
             uint16 returnDataSrcChainId,
             uint16 returnDataDstChainId,
             uint80 returnDataTxId
@@ -240,10 +238,11 @@ contract SuperPositions is ISuperPositions, ERC1155s {
             txType == uint256(TransactionType.WITHDRAW) &&
             callbackType == uint256(CallbackType.FAIL)
         ) {
-            _burn(
+            _mint(
                 srcSender,
                 singleVaultData.superFormId,
-                singleVaultData.amount
+                singleVaultData.amount,
+                ""
             );
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();

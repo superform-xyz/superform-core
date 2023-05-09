@@ -47,6 +47,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+    /// @dev FIXME: remove all address 0 checks to block calls to a certain contract?
 
     /// @inheritdoc ISuperRegistry
     function setImmutables(
@@ -188,7 +189,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
             uint8 x = bridgeId_[i];
             address y = bridgeAddress_[i];
             address z = bridgeValidator_[i];
-            if (y == address(0) || z == address(0)) revert Error.ZERO_ADDRESS();
 
             bridgeAddresses[x] = y;
             bridgeValidator[x] = z;
