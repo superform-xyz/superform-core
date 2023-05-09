@@ -29,7 +29,6 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         uint256 payloadId_,
         bytes memory /// not useful here
     ) external payable virtual override onlyProcessor {
-        /// TODO sync factory data from crosschain
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }
