@@ -684,6 +684,7 @@ abstract contract ProtocolActions is BaseSetup {
             action.testType,
             action.revertError
         );
+
         vm.selectFork(initialFork);
 
         return true;
@@ -694,15 +695,16 @@ abstract contract ProtocolActions is BaseSetup {
         StagesLocalVars memory vars,
         uint256 unlockId_
     ) internal returns (bool success) {
-        uint256 initialFork = vm.activeFork();
 
         /// todo: loop, we loop everywhere else
         vm.prank(deployer);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
+            vm.selectFork(FORKS[DST_CHAINS[i]]);
             IFormStateRegistry formStateRegistry = IFormStateRegistry(
                 contracts[DST_CHAINS[i]][bytes32(bytes("FormStateRegistry"))]
             );
-            formStateRegistry.finalizePayload(unlockId_, "ackExtraData here");
+
+            formStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
         }
 
         return true;

@@ -12,6 +12,7 @@ import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {IFormStateRegistry} from "./form_keeper/IFormStateRegistry.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @title ERC4626TimelockForm
 /// @notice The Form implementation with timelock extension for IERC4626Timelock vaults
@@ -347,7 +348,8 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             /// NOTE: All Timelocked Forms need to go through the FORM_KEEPER, including same chain
 
             /// @dev Store for FORM_KEEPER
-            unlockId[++unlockCounter] = singleVaultData_;
+            ++unlockCounter;
+            unlockId[unlockCounter] = singleVaultData_;
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
             formStateRegistry.receivePayload(
@@ -480,11 +482,17 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             v.requestUnlock(singleVaultData_.amount, address(this));
 
             /// @dev Store for FORM_KEEPER
-            /// TODO: write payloadId to extraData here, but Form still needs to know it from CoreStateRegistry
-            unlockId[++unlockCounter] = singleVaultData_;
+            ++unlockCounter;
+            unlockId[unlockCounter] = singleVaultData_;
+
+            // console.log("superFormId", singleVaultData_.superFormId);
+            // console.log("call formStateRegistry", superRegistry.formStateRegistry());
+            // console.log("formStateRegistry", address(formStateRegistry)); /// <= this isn't set
+            /// TODO: setFormStateRegistry(address formStateRegistry_) external onlyOwner (can't do it at constructor)
+            address formStateRegistry_ = superRegistry.formStateRegistry();
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
-            formStateRegistry.receivePayload(
+            IFormStateRegistry(formStateRegistry_).receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId
             );

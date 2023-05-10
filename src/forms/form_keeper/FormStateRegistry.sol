@@ -16,7 +16,6 @@ import "forge-std/console.sol";
 /// @title TimelockForm Redeemer
 /// @author Zeropoint Labs
 contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
-
     /// @notice Pre-compute keccak256 hash of WITHDRAW_COOLDOWN_PERIOD()
     bytes32 immutable WITHDRAW_COOLDOWN_PERIOD =
         keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
@@ -52,6 +51,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         uint256 payloadId,
         uint256 superFormId
     ) external onlyForm(superFormId) {
+        console.log("payload", payloadId, "superForm", superFormId);
         payloadStore[payloadId] = superFormId;
     }
 
@@ -62,7 +62,9 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         uint256 payloadId,
         bytes memory ackExtraData
     ) external onlyFormKeeper {
-        (address form_, , ) = _getSuperForm(payloadStore[payloadId]);
+        console.log("getSuperForm", payloadStore[payloadId]);
+        (address form_, , ) = _getSuperForm(payloadStore[payloadId]); /// <= this is wrong (same in modifier)
+        console.log("form", form_);
         IERC4626Timelock form = IERC4626Timelock(form_);
         try form.processUnlock(payloadId) {
             delete payloadStore[payloadId];

@@ -12,6 +12,8 @@ import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVault
 import {LiqRequest} from "../types/DataTypes.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
+import "forge-std/console.sol";
+
 
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
@@ -475,6 +477,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             (address superForm_, , ) = _getSuperForm(
                 singleVaultData.superFormId
             );
+
+            console.log("superformId coreStateReg", singleVaultData.superFormId);
+            console.log("superForm_ coreStateReg", superForm_);
 
             /// @dev Withdraw from Form
             /// TODO: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch (droping revert is risky)
