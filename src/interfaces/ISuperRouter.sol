@@ -28,14 +28,11 @@ interface ISuperRouter {
     /// @dev is emitted when a cross-chain transaction is initiated.
     event CrossChainInitiated(uint80 indexed txId);
 
-    /// @dev is emitted when a cross-chain transaction is completed.
-    event Completed(uint256 txId);
-
     /// @dev is emitted when the super registry is updated.
     event SuperRegistryUpdated(address indexed superRegistry);
 
-    /// @dev is emitted when a cross-chain withdraw return data is received.
-    event Status(uint256 txId, uint16 status);
+    /// @dev is emitted when a cross-chain transaction is completed.
+    event Completed(uint256 txId);
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL DEPOSIT FUNCTIONS
@@ -104,32 +101,6 @@ interface ISuperRouter {
     function singleDirectSingleVaultWithdraw(
         SingleDirectSingleVaultStateReq memory req
     ) external payable;
-
-    /// @dev Perform burn of SuperPositions initiated by SuperPositionBank (RBAC'd)
-    function burnPositionSingle(
-        address _owner,
-        uint256 _tokenId,
-        uint256 _amount
-    ) external;
-
-    /// @dev Perform burn of SuperPositions initiated by SuperPositionBank (RBAC'd)
-    function burnPositionBatch(
-        address _owner,
-        uint256[] memory _tokenIds,
-        uint256[] memory _amounts
-    ) external;
-
-    /*///////////////////////////////////////////////////////////////
-                        OTHER EXTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev allows registry contract to send payload for processing to the router contract.
-    /// @param data_ is the received information to be processed.
-    function stateMultiSync(AMBMessage memory data_) external payable;
-
-    /// @dev allows registry contract to send payload for processing to the router contract.
-    /// @param data_ is the received information to be processed.
-    function stateSync(AMBMessage memory data_) external payable;
 
     /*///////////////////////////////////////////////////////////////
                         External View Functions

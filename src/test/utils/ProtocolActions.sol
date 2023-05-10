@@ -110,7 +110,7 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.toDst[k] = payable(vars.superFormT);
                 } else {
                     vars.toDst[k] = payable(
-                        getContract(DST_CHAINS[i], "TokenBank")
+                        getContract(DST_CHAINS[i], "CoreStateRegistry")
                     );
                 }
             }
@@ -1325,7 +1325,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
             .UserRequest(
-                getContract(targetChainId_, "TokenBank"),
+                getContract(targetChainId_, "CoreStateRegistry"),
                 liquidityBridgeDstChainId_,
                 amount_,
                 middlewareRequest,
@@ -1381,7 +1381,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             ISocketRegistry.UserRequest memory userRequest = ISocketRegistry
                 .UserRequest(
-                    getContract(targetChainId_, "TokenBank"),
+                    getContract(targetChainId_, "CoreStateRegistry"),
                     liquidityBridgeDstChainId_,
                     amounts_[i],
                     middlewareRequest,

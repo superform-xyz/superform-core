@@ -68,7 +68,7 @@ contract LiFiValidator is BridgeValidator {
         } else if (deposit_ && srcChainId_ != dstChainId_) {
             /// @dev if cross chain deposits, then receiver address must be the token bank
             if (
-                !(bridgeData.receiver == superRegistry.tokenBank() ||
+                !(bridgeData.receiver == superRegistry.coreStateRegistry() ||
                     bridgeData.receiver == superRegistry.multiTxProcessor())
             ) revert Error.INVALID_TXDATA_RECEIVER();
         } else if (!deposit_) {

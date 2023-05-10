@@ -8,7 +8,6 @@ import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {ERC20Form} from "./ERC20Form.sol";
-import {ITokenBank} from "../interfaces/ITokenBank.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
