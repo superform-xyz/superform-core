@@ -295,9 +295,9 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     function formStateRegistry()
         external
         view
-        returns (address coreStateRegistry_)
+        returns (address formStateRegistry)
     {
-        coreStateRegistry_ = getProtocolAddress(FORM_STATE_REGISTRY);
+        formStateRegistry = getProtocolAddress(FORM_STATE_REGISTRY);
     }
 
 

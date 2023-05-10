@@ -22,7 +22,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     uint256 unlockCounter;
     mapping(uint256 => InitSingleVaultData) public unlockId;
 
-    IFormStateRegistry public formStateRegistry;
+    IFormStateRegistry public immutable formStateRegistry;
 
     modifier onlyFormStateRegistry() {
         if (
@@ -36,9 +36,8 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_) ERC20Form(superRegistry_) {
-        formStateRegistry = IFormStateRegistry(
-            superRegistry.formStateRegistry()
-        );
+        address formStateRegistry_ = superRegistry.formStateRegistry();
+        formStateRegistry = IFormStateRegistry(formStateRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -489,10 +488,10 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             // console.log("call formStateRegistry", superRegistry.formStateRegistry());
             // console.log("formStateRegistry", address(formStateRegistry)); /// <= this isn't set
             /// TODO: setFormStateRegistry(address formStateRegistry_) external onlyOwner (can't do it at constructor)
-            address formStateRegistry_ = superRegistry.formStateRegistry();
+            // address formStateRegistry_ = superRegistry.formStateRegistry();
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
-            IFormStateRegistry(formStateRegistry_).receivePayload(
+            formStateRegistry.receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId
             );
