@@ -132,6 +132,18 @@ library Error {
     /// @dev if less than 2 AMBs are passed in the state request
     error INVALID_AMB_IDS_LENGTH();
 
+    /// @dev if trying to rescue a non multi failed deposit data
+    error NOT_MULTI_FAILURE();
+
+    /// @dev if trying to rescue a non single failed deposit data
+    error NOT_SINGLE_FAILURE();
+
+    /// @dev if deposits were already rescued
+    error ALREADY_RESCUED();
+
+    /// @dev if the rescue data lengths are invalid
+    error INVALID_RESCUE_DATA();
+
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -219,4 +231,11 @@ library Error {
 
     /// @dev error thrown when the unlock reques
     error LOCKED();
+
+    /*///////////////////////////////////////////////////////////////
+                        SUPER POSITION BANK ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when lenght of token ids differs from amounts
+    error SPBANK_TOKEN_AMOUNT_LENGTH_MISMATCH();
 }

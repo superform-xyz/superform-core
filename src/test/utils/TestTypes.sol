@@ -27,7 +27,9 @@ enum TestType {
     RevertMainAction,
     RevertProcessPayload,
     RevertUpdateStateSlippage,
-    RevertUpdateStateRBAC
+    RevertUpdateStateRBAC,
+    RevertXChainWithdraw,
+    RevertXChainDeposit
 }
 
 struct StagesLocalVars {
@@ -103,7 +105,6 @@ struct SetupVars {
     uint64 dstCelerChainId;
     uint256 fork;
     address[] ambAddresses;
-    address tokenBank;
     address superForm;
     address factory;
     address lzHelper;
@@ -121,7 +122,6 @@ struct SetupVars {
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
-    address srcTokenBank;
     address superRouter;
     address dstLzImplementation;
     address dstHyperlaneImplementation;

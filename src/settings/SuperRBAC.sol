@@ -34,6 +34,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override PROCESSOR_ROLE =
         keccak256("PROCESSOR_ROLE");
     bytes32 public constant override UPDATER_ROLE = keccak256("UPDATER_ROLE");
+    bytes32 public constant override SUPER_POSITIONS_BANK_ROLE =
+        keccak256("SUPER_POSITIONS_BANK_ROLE");
 
     ISuperRegistry public immutable superRegistry;
 
@@ -316,13 +318,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address superRouter_
     ) external view override returns (bool) {
         return hasRole(SUPER_ROUTER_ROLE, superRouter_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasTokenBankRole(
-        address tokenBank_
-    ) external view override returns (bool) {
-        return hasRole(TOKEN_BANK_ROLE, tokenBank_);
     }
 
     /// @inheritdoc ISuperRBAC

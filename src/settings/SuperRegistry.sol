@@ -49,6 +49,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+    /// @dev FIXME: remove all address 0 checks to block calls to a certain contract?
 
     /// @inheritdoc ISuperRegistry
     function setImmutables(
@@ -101,18 +102,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         protocolAddresses[SUPER_ROUTER] = superRouter_;
 
         emit SuperRouterUpdated(oldSuperRouter, superRouter_);
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function setTokenBank(
-        address tokenBank_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (tokenBank_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        address oldTokenBank = protocolAddresses[TOKEN_BANK];
-        protocolAddresses[TOKEN_BANK] = tokenBank_;
-
-        emit TokenBankUpdated(oldTokenBank, tokenBank_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -217,7 +206,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
             uint8 x = bridgeId_[i];
             address y = bridgeAddress_[i];
             address z = bridgeValidator_[i];
-            if (y == address(0) || z == address(0)) revert Error.ZERO_ADDRESS();
 
             bridgeAddresses[x] = y;
             bridgeValidator[x] = z;
@@ -285,11 +273,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         returns (address superRouter_)
     {
         superRouter_ = getProtocolAddress(SUPER_ROUTER);
-    }
-
-    /// @inheritdoc ISuperRegistry
-    function tokenBank() external view override returns (address tokenBank_) {
-        tokenBank_ = getProtocolAddress(TOKEN_BANK);
     }
 
     /// @inheritdoc ISuperRegistry

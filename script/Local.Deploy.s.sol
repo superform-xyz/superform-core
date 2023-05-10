@@ -22,7 +22,6 @@ import {SuperRouter} from "../src/SuperRouter.sol";
 import {SuperRegistry} from "../src/settings/SuperRegistry.sol";
 import {SuperRBAC} from "../src/settings/SuperRBAC.sol";
 import {SuperPositions} from "../src/SuperPositions.sol";
-import {TokenBank} from "../src/TokenBank.sol";
 import {SuperFormFactory} from "../src/SuperFormFactory.sol";
 import {ERC4626Form} from "../src/forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../src/forms/ERC4626TimelockForm.sol";
@@ -41,7 +40,6 @@ struct SetupVars {
     uint16 dstAmbChainId;
     uint32 dstHypChainId;
     uint256 fork;
-    address tokenBank;
     address superForm;
     address factory;
     address lzEndpoint;
@@ -54,7 +52,6 @@ struct SetupVars {
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
-    address srcTokenBank;
     address superRouter;
     address dstLzImplementation;
     address dstHyperlaneImplementation;
@@ -83,7 +80,6 @@ contract Deploy is Script {
         "SuperFormFactory",
         "ERC4626Form",
         "ERC4626TimelockForm",
-        "TokenBank",
         "SuperRouter",
         "SuperPositions",
         "MultiTxProcessor",
@@ -479,17 +475,6 @@ contract Deploy is Script {
                 salt
             );
 
-            /// @dev 9 - Deploy TokenBank
-            vars.tokenBank = address(
-                new TokenBank{salt: salt}(vars.superRegistry)
-            );
-
-            contracts[vars.chainId][bytes32(bytes("TokenBank"))] = vars
-                .tokenBank;
-
-            SuperRegistry(vars.superRegistry).setTokenBank(vars.tokenBank);
-            SuperRBAC(vars.superRBAC).grantTokenBankRole(vars.tokenBank);
-
             /// @dev 10 - Deploy SuperRouter
 
             vars.superRouter = address(
@@ -538,7 +523,6 @@ contract Deploy is Script {
 
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
-            SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.tokenBank);
             SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
                 vars.lzImplementation
             );
