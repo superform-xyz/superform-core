@@ -282,14 +282,14 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
             (AMBFactoryMessage)
         );
 
-        console.logBytes32(rolesPayload.messageType);
-        console.logBytes32(SYNC_REVOKE_ROLE);
         if (rolesPayload.messageType == SYNC_REVOKE_ROLE) {
             (bytes32 role, address affectedAddress) = abi.decode(
                 rolesPayload.message,
                 (bytes32, address)
             );
-            revokeRole(role, affectedAddress);
+
+            /// @dev no one can update the default admin role
+            if (role != DEFAULT_ADMIN_ROLE) revokeRole(role, affectedAddress);
         }
     }
 

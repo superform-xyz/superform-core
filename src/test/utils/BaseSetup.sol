@@ -422,6 +422,10 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.rolesStateRegistry
             );
 
+            SuperRegistry(vars.superRegistry).setRolesStateRegistry(
+                vars.rolesStateRegistry
+            );
+
             /// @dev 5.1 - deploy Layerzero Implementation
             /// @notice: deploying this with create2 doesn't lead to same address because of lzEndpoints being different per chain
             /// TODO: unless we change LzApp.sol to set the lzEndpoint post deployment
@@ -659,6 +663,11 @@ abstract contract BaseSetup is DSTest, Test {
             );
             SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
                 vars.hyperlaneImplementation
+            );
+
+            /// FIXME: check if this is safe in all aspects
+            SuperRBAC(vars.superRBAC).grantProtocolAdminRole(
+                vars.rolesStateRegistry
             );
         }
 
