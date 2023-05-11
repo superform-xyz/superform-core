@@ -696,7 +696,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 unlockId_
     ) internal returns (bool success) {
 
-        /// todo: loop, we loop everywhere else
         vm.prank(deployer);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vm.selectFork(FORKS[DST_CHAINS[i]]);

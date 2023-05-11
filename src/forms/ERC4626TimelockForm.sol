@@ -20,7 +20,9 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
     uint256 unlockCounter;
-    mapping(uint256 => InitSingleVaultData) public unlockId;
+    // mapping (address owner => mapping(uint256 unlockId => InitSingleVaultData)) public unlockId;
+    mapping(address owner => InitSingleVaultData) public unlockId;
+    // mapping(uint256 => InitSingleVaultData) public unlockId;
 
     IFormStateRegistry public immutable formStateRegistry;
 
@@ -145,16 +147,27 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
         uint256 shares_,
         address owner_
     ) public view returns (uint16) {
-        /// @dev This func call also assumes existence of userUnlockRequests mapping in the target vault
-        /// @dev We could specify something else here though
-        IERC4626Timelock.UnlockRequest memory request = IERC4626Timelock(vault_)
-            .userUnlockRequests(owner_);
+        
+        /// NOTE: here we send srcSender but real owner is the Form
+        // IERC4626Timelock.UnlockRequest memory request = IERC4626Timelock(vault_)
+            // .userUnlockRequests(owner_);
+
+        /// NOTE: User can have only 1 active unlock request at a time. 
+        /// Extending this may have security implications.
+        /// TODO: checkUnlock needs to check internal state of unlock
+        /// timelock time of user-requested-timelock needs to be compared against the external vault's timelock cooldown
+        /// checkUnlock functions will vary between different timelocked vaults, for some this mechanism may not work
+        /// ie. if underlying vault also allows only single unlock
+
+        // require(unlockId[owner_]) 
 
         if (request.startedAt == 0) {
             /// unlock not initiated. requestUnlock in return
             return 2;
         }
 
+        /// TODO: NOTE: this check is == 'does Form have enough to perform unlock at the time?'
+        /// Disregarding who's unlock is it (which user) == validate that before 
         if (
             request.startedAt + IERC4626Timelock(vault_).lockPeriod() >=
             block.timestamp
@@ -482,19 +495,15 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
             /// @dev Store for FORM_KEEPER
             ++unlockCounter;
-            unlockId[unlockCounter] = singleVaultData_;
-
-            // console.log("superFormId", singleVaultData_.superFormId);
-            // console.log("call formStateRegistry", superRegistry.formStateRegistry());
-            // console.log("formStateRegistry", address(formStateRegistry)); /// <= this isn't set
-            /// TODO: setFormStateRegistry(address formStateRegistry_) external onlyOwner (can't do it at constructor)
-            // address formStateRegistry_ = superRegistry.formStateRegistry();
+            unlockId[vars.srcSender] = singleVaultData_; /// <= requires checking for active unlock
+            // unlockId[unlockCounter] = singleVaultData_;
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
             formStateRegistry.receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId
             );
+
         } else if (vars.unlock == 3) {
             revert Error.WITHDRAW_COOLDOWN_PERIOD();
         }

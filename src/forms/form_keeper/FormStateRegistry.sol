@@ -20,8 +20,13 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     bytes32 immutable WITHDRAW_COOLDOWN_PERIOD =
         keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
 
+    struct OwnerRequest {
+        address owner;
+        uint256 superFormId;
+    }
+
     /// @notice Stores 1:1 mapping with Form.unlockId(unlockCounter) without copying whole data structure
-    mapping(uint256 payloadId => uint256 superFormId) public payloadStore;
+    mapping(uint256 payloadId => OwnerRequest) public payloadStore;
 
     /// @notice Checks if the caller is the form allowed to send payload
     modifier onlyForm(uint256 superFormId) {
@@ -49,10 +54,14 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     /// @param superFormId is the id of TimelockForm sending this payloadId
     function receivePayload(
         uint256 payloadId,
-        uint256 superFormId
+        uint256 superFormId,
+        address owner
     ) external onlyForm(superFormId) {
         console.log("payload", payloadId, "superForm", superFormId);
-        payloadStore[payloadId] = superFormId;
+        payloadStore[payloadId] = OwnerRequest({
+            owner: owner,
+            superFormId: superFormId
+        });
     }
 
     /// @notice Form Keeper finalizes payload to process Timelock withdraw fully
@@ -62,9 +71,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         uint256 payloadId,
         bytes memory ackExtraData
     ) external onlyFormKeeper {
-        console.log("getSuperForm", payloadStore[payloadId]);
-        (address form_, , ) = _getSuperForm(payloadStore[payloadId]); /// <= this is wrong (same in modifier)
-        console.log("form", form_);
+        (address form_, , ) = _getSuperForm(payloadStore[payloadId].superFormId); /// <= this is wrong (same in modifier)
         IERC4626Timelock form = IERC4626Timelock(form_);
         try form.processUnlock(payloadId) {
             delete payloadStore[payloadId];
