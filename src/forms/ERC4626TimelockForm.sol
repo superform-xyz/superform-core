@@ -177,7 +177,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
         /// Disregarding who's unlock is it (which user) == validate that before 
         /// NOTE: this check may vary Timelock implementation
         if (
-            ownerRequest.requestTimestamp + IERC4626Timelock(vault_).lockPeriod() >=
+            ownerRequest.requestTimestamp + IERC4626Timelock(vault_).getLockPeirod() >=
             block.timestamp
         ) {
             if (ownerRequest.singleVaultData_.amount >= shares_) {
@@ -191,7 +191,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
         /// check if unlock is initiated already passed and should return before reaching here
         if (
-            ownerRequest.requestTimestamp + IERC4626Timelock(vault_).lockPeriod() <
+            ownerRequest.requestTimestamp + IERC4626Timelock(vault_).getLockPeirod() <
             block.timestamp
         ) {
             /// unlock cooldown period not passed. revert Error.WITHDRAW_COOLDOWN_PERIOD

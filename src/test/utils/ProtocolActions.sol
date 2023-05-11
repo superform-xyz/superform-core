@@ -699,10 +699,10 @@ abstract contract ProtocolActions is BaseSetup {
         vm.prank(deployer);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vm.selectFork(FORKS[DST_CHAINS[i]]);
+            vm.rollFork(block.timestamp + 2000);
             IFormStateRegistry formStateRegistry = IFormStateRegistry(
                 contracts[DST_CHAINS[i]][bytes32(bytes("FormStateRegistry"))]
-            );
-
+            );            
             formStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
         }
 
