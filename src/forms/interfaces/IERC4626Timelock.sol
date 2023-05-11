@@ -36,7 +36,7 @@ interface IERC4626Timelock is IERC20 {
     function lockPeriod() external view returns (uint256);
 
     /// @notice for keeper-based 2nd step withdrawal processing
-    function processUnlock(uint256 unlockId_) external;
+    function processUnlock(address owner) external;
 
     /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
     function unlockId(uint256 unlockCounter) external view returns (InitSingleVaultData memory singleVaultData);

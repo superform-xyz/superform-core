@@ -20,8 +20,16 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
     uint256 unlockCounter;
+    
+    struct OwnerRequest {
+        uint8 status; /// is requestUnlock already initiated?
+        uint256 requestTimestamp; /// when requestUnlock was initiated
+        InitSingleVaultData singleVaultData_; /// withdraw data to re-execute
+    }
+
+    mapping(address owner => OwnerRequest) public unlockId;
+
     // mapping (address owner => mapping(uint256 unlockId => InitSingleVaultData)) public unlockId;
-    mapping(address owner => InitSingleVaultData) public unlockId;
     // mapping(uint256 => InitSingleVaultData) public unlockId;
 
     IFormStateRegistry public immutable formStateRegistry;
@@ -153,26 +161,26 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             // .userUnlockRequests(owner_);
 
         /// NOTE: User can have only 1 active unlock request at a time. 
-        /// Extending this may have security implications.
-        /// TODO: checkUnlock needs to check internal state of unlock
-        /// timelock time of user-requested-timelock needs to be compared against the external vault's timelock cooldown
-        /// checkUnlock functions will vary between different timelocked vaults, for some this mechanism may not work
-        /// ie. if underlying vault also allows only single unlock
+        /// NOTE: Extending this may have security implications. 
+        /// NOTE: checkUnlock needs to check internal state of an unlock, not external unlock as those are aggregated for the Form
+        /// NOTE: checkUnlock functions will vary between different timelocked vaults, for some this mechanism may not work
+        /// NOTE: ie. if underlying vault also allows only single unlock
 
-        // require(unlockId[owner_]) 
+        OwnerRequest memory ownerRequest = unlockId[owner_];
 
-        if (request.startedAt == 0) {
+        if (ownerRequest.status != 1) {
             /// unlock not initiated. requestUnlock in return
             return 2;
         }
 
         /// TODO: NOTE: this check is == 'does Form have enough to perform unlock at the time?'
         /// Disregarding who's unlock is it (which user) == validate that before 
+        /// NOTE: this check may vary Timelock implementation
         if (
-            request.startedAt + IERC4626Timelock(vault_).lockPeriod() >=
+            ownerRequest.requestTimestamp + IERC4626Timelock(vault_).lockPeriod() >=
             block.timestamp
         ) {
-            if (request.shareAmount >= shares_) {
+            if (ownerRequest.singleVaultData_.amount >= shares_) {
                 /// all clear. unlock after cooldown and enough of the shares. execute redeem
                 return 0;
             } else {
@@ -183,7 +191,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
         /// check if unlock is initiated already passed and should return before reaching here
         if (
-            request.startedAt + IERC4626Timelock(vault_).lockPeriod() <
+            ownerRequest.requestTimestamp + IERC4626Timelock(vault_).lockPeriod() <
             block.timestamp
         ) {
             /// unlock cooldown period not passed. revert Error.WITHDRAW_COOLDOWN_PERIOD
@@ -358,16 +366,23 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
             /// NOTE: This already burned SPs optimistically on SuperRouter
             /// NOTE: All Timelocked Forms need to go through the FORM_KEEPER, including same chain
-
             /// @dev Store for FORM_KEEPER
+            
             ++unlockCounter;
-            unlockId[unlockCounter] = singleVaultData_;
+            unlockId[vars.srcSender] = OwnerRequest({
+                status: 1,
+                requestTimestamp: block.timestamp,
+                singleVaultData_: singleVaultData_
+
+            }); 
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
             formStateRegistry.receivePayload(
                 unlockCounter,
-                singleVaultData_.superFormId
+                singleVaultData_.superFormId,
+                vars.srcSender
             );
+
         } else if (vars.unlock == 3) {
             revert Error.WITHDRAW_COOLDOWN_PERIOD();
         }
@@ -426,11 +441,14 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             singleVaultData_.txData
         );
 
+        /// NOTE: This needs to match on 1st-step against srcSender
+        /// NOTE: This needs to match on 2nd-step against payloadId
         vars.unlock = checkUnlock(
             vault,
             singleVaultData_.amount,
             vars.srcSender
         );
+
         if (vars.unlock == 0) {
             if (singleVaultData_.liqData.txData.length != 0) {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
@@ -495,13 +513,18 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
             /// @dev Store for FORM_KEEPER
             ++unlockCounter;
-            unlockId[vars.srcSender] = singleVaultData_; /// <= requires checking for active unlock
-            // unlockId[unlockCounter] = singleVaultData_;
+            unlockId[vars.srcSender] = OwnerRequest({
+                status: 1,
+                requestTimestamp: block.timestamp,
+                singleVaultData_: singleVaultData_
+
+            });
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
             formStateRegistry.receivePayload(
                 unlockCounter,
-                singleVaultData_.superFormId
+                singleVaultData_.superFormId,
+                vars.srcSender
             );
 
         } else if (vars.unlock == 3) {
@@ -523,11 +546,11 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     function processUnlock(
-        uint256 unlockId_
-    ) external onlyFormStateRegistry returns (InitSingleVaultData memory singleVaultData_) {
-        singleVaultData_ = unlockId[unlockId_];
-        _xChainWithdrawFromVault(singleVaultData_);
-        delete unlockId[unlockId_];
+        address owner_
+    ) external onlyFormStateRegistry returns (OwnerRequest memory ownerRequest) {
+        ownerRequest = unlockId[owner_];
+        _xChainWithdrawFromVault(ownerRequest.singleVaultData_);
+        delete unlockId[owner_];
     }
 
     /*///////////////////////////////////////////////////////////////

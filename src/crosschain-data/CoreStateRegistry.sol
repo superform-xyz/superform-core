@@ -12,8 +12,6 @@ import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVault
 import {LiqRequest} from "../types/DataTypes.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
-import "forge-std/console.sol";
-
 
 /// @title Cross-Chain AMB Aggregator
 /// @author Zeropoint Labs
@@ -478,9 +476,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 singleVaultData.superFormId
             );
 
-            console.log("superformId coreStateReg", singleVaultData.superFormId);
-            console.log("superForm_ coreStateReg", superForm_);
-
             /// @dev Withdraw from Form
             /// TODO: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch (droping revert is risky)
             /// that's also the only way to get error type out of the try/catch
@@ -503,11 +498,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                         0 /// <=== FIXME: status always 0 for withdraw fail
                     )
                 );
-
-                /*
-                /// @dev we could match on individual reasons, but it's hard with strings
-                emit ErrorLog("FORM_REVERT");
-                */
             }
 
             /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
