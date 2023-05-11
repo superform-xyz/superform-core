@@ -22,6 +22,7 @@ import {Permit2Clone} from "../mocks/Permit2Clone.sol";
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
+import {RolesStateRegistry} from "../../crosschain-data/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
@@ -366,7 +367,8 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.coreStateRegistry = address(
                 new CoreStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
+                    SuperRegistry(vars.superRegistry),
+                    1
                 )
             );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
@@ -387,10 +389,10 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev 4.2- deploy Factory State Registry
-
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
+                    SuperRegistry(vars.superRegistry),
+                    2
                 )
             );
 
@@ -400,6 +402,40 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setFactoryStateRegistry(
                 vars.factoryStateRegistry
+            );
+
+            /// @dev 4.3- deploy Roles State Registry
+            vars.rolesStateRegistry = address(
+                new RolesStateRegistry{salt: salt}(
+                    SuperRegistry(vars.superRegistry),
+                    3
+                )
+            );
+
+            contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars
+                .rolesStateRegistry;
+
+            SuperRegistry(vars.superRegistry).setRolesStateRegistry(
+                vars.rolesStateRegistry
+            );
+
+            SuperRegistry(vars.superRegistry).setRolesStateRegistry(
+                vars.rolesStateRegistry
+            );
+
+            address[] memory registryAddresses = new address[](3);
+            registryAddresses[0] = vars.coreStateRegistry;
+            registryAddresses[1] = vars.factoryStateRegistry;
+            registryAddresses[2] = vars.rolesStateRegistry;
+
+            uint8[] memory registryIds = new uint8[](3);
+            registryIds[0] = 1;
+            registryIds[1] = 2;
+            registryIds[2] = 3;
+
+            SuperRegistry(vars.superRegistry).setStateRegistryAddress(
+                registryIds,
+                registryAddresses
             );
 
             /// @dev 5.1 - deploy Layerzero Implementation
@@ -610,6 +646,11 @@ abstract contract BaseSetup is DSTest, Test {
             );
             SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
                 vars.hyperlaneImplementation
+            );
+
+            /// FIXME: check if this is safe in all aspects
+            SuperRBAC(vars.superRBAC).grantProtocolAdminRole(
+                vars.rolesStateRegistry
             );
         }
 

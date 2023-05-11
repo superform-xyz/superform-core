@@ -45,6 +45,12 @@ interface ISuperRegistry {
         address indexed factoryStateRegistry
     );
 
+    /// @dev is emitted when the roles state registry address is set.
+    event RolesStateRegistryUpdated(
+        address indexed oldRolesStateRegistry,
+        address indexed rolesStateRegistry
+    );
+
     /// @dev is emitted when a new super positions is configured.
     event SuperPositionsUpdated(
         address indexed oldSuperPositions,
@@ -83,6 +89,9 @@ interface ISuperRegistry {
     /// @dev is emitted when a new amb is configured.
     event SetAmbAddress(uint8 ambId_, address ambAddress_);
 
+    /// @dev is emitted when a new state registry is configured.
+    event SetStateRegistryAddress(uint8 registryId_, address registryAddress_);
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
@@ -120,6 +129,10 @@ interface ISuperRegistry {
     /// @param factoryStateRegistry_ the address of the state registry
     function setFactoryStateRegistry(address factoryStateRegistry_) external;
 
+    /// @dev sets the state registry address.
+    /// @param rolesStateRegistry_ the address of the roles state registry
+    function setRolesStateRegistry(address rolesStateRegistry_) external;
+
     /// @dev allows admin to set the super rbac address
     /// @param superRBAC_ the address of the super rbac
     function setSuperRBAC(address superRBAC_) external;
@@ -144,6 +157,14 @@ interface ISuperRegistry {
     function setAmbAddress(
         uint8[] memory ambId_,
         address[] memory ambAddress_
+    ) external;
+
+    /// @dev allows admin to set the state registry address for an state registry id.
+    /// @param registryId_    represents the state registry's unqiue identifier.
+    /// @param registryAddress_    represents the state registry's address.
+    function setStateRegistryAddress(
+        uint8[] memory registryId_,
+        address[] memory registryAddress_
     ) external;
 
     /// @dev allows admin to set the super positions address
@@ -181,6 +202,9 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the factory state registry module
     function FACTORY_STATE_REGISTRY() external view returns (bytes32);
+
+    /// @dev returns the id of the factory state registry module
+    function ROLES_STATE_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the super positions module
     function SUPER_POSITIONS() external view returns (bytes32);
@@ -229,6 +253,13 @@ interface ISuperRegistry {
         view
         returns (address factoryStateRegistry_);
 
+    /// @dev gets the roles state registry address.
+    /// @return rolesStateRegistry_ the address of the state registry
+    function rolesStateRegistry()
+        external
+        view
+        returns (address rolesStateRegistry_);
+
     /// @dev gets the super positions
     /// @return superPositions_ the address of the super positions
     function superPositions() external view returns (address superPositions_);
@@ -250,6 +281,20 @@ interface ISuperRegistry {
     function getBridgeAddress(
         uint8 bridgeId_
     ) external view returns (address bridgeAddress_);
+
+    /// @dev gets the address of the registry
+    /// @param registryId_ is the id of the state registry
+    /// @return registryAddress_ is the address of the state registry
+    function getStateRegistry(
+        uint8 registryId_
+    ) external view returns (address registryAddress_);
+
+    /// @dev helps validate if an address is a valid state registry
+    /// @param registryAddress_ is the address of the state registry
+    /// @return valid_ a flag indicating if its valid.
+    function isValidStateRegistry(
+        address registryAddress_
+    ) external view returns (bool valid_);
 
     /// @dev gets the address of a bridge validator
     /// @param bridgeId_ is the id of a bridge

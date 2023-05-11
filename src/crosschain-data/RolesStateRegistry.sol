@@ -8,12 +8,12 @@ import {PayloadState} from "../types/DataTypes.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {Error} from "../utils/Error.sol";
 
-contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
+contract RolesStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlySender() override {
-        if (msg.sender != superRegistry.superFormFactory())
+        if (msg.sender != superRegistry.superRBAC())
             revert Error.NOT_CORE_CONTRACTS();
         _;
     }
@@ -47,7 +47,7 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperFormFactory(superRegistry.superFormFactory()).stateSync(
+        ISuperFormFactory(superRegistry.superRBAC()).stateSync(
             payload[payloadId_]
         );
     }

@@ -93,47 +93,33 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
-        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-            superRegistry.coreStateRegistry()
-        );
-        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-            superRegistry.factoryStateRegistry()
-        );
-
-        if (
-            msg.sender != address(coreRegistry) ||
-            msg.sender != address(factoryRegistry)
-        ) {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
-
-            bytes memory payload = abi.encode(
-                msg.sender,
-                dstChainId_,
-                message_
-            );
-            ExtraData memory eData = abi.decode(extraData_, (ExtraData));
-
-            /// FIXME: nonce is externally generated. can also be moved inside our contracts
-            uint32 nonce = abi.decode(extraData_, (uint32));
-
-            bridge.publishMessage{value: eData.messageFee}(
-                nonce,
-                payload,
-                CONSISTENCY_LEVEL
-            );
-
-            /// @dev call relayers to publish the message
-            /// @note refund and delivery always fail if CREATE3 / CREATE2 is not used
-
-            relayer.send{value: eData.relayerFee}(
-                ambChainId[dstChainId_],
-                castAddr(address(this)),
-                castAddr(address(this)),
-                eData.relayerFee,
-                eData.airdrop,
-                nonce
-            );
         }
+
+        bytes memory payload = abi.encode(msg.sender, dstChainId_, message_);
+        ExtraData memory eData = abi.decode(extraData_, (ExtraData));
+
+        /// FIXME: nonce is externally generated. can also be moved inside our contracts
+        uint32 nonce = abi.decode(extraData_, (uint32));
+
+        bridge.publishMessage{value: eData.messageFee}(
+            nonce,
+            payload,
+            CONSISTENCY_LEVEL
+        );
+
+        /// @dev call relayers to publish the message
+        /// @note refund and delivery always fail if CREATE3 / CREATE2 is not used
+
+        relayer.send{value: eData.relayerFee}(
+            ambChainId[dstChainId_],
+            castAddr(address(this)),
+            castAddr(address(this)),
+            eData.relayerFee,
+            eData.airdrop,
+            nonce
+        );
     }
 
     function broadcastPayload(
@@ -172,24 +158,13 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         /// NOTE: experimental split of registry contracts
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
         /// FIXME: should migrate to support more state registry types
-        if (registryId == 0) {
-            IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-                superRegistry.coreStateRegistry()
-            );
+        address registryAddress = superRegistry.getStateRegistry(registryId);
+        IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
-            coreRegistry.receivePayload(
-                superChainId[vm.emitterChainId],
-                vm.payload
-            );
-        } else {
-            IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-                superRegistry.factoryStateRegistry()
-            );
-            factoryRegistry.receivePayload(
-                superChainId[vm.emitterChainId],
-                vm.payload
-            );
-        }
+        targetRegistry.receivePayload(
+            superChainId[vm.emitterChainId],
+            vm.payload
+        );
     }
 
     /// TODO: remove

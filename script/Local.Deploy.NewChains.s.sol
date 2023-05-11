@@ -255,7 +255,8 @@ contract DeployNewChains is Script {
 
             vars.coreStateRegistry = address(
                 new CoreStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
+                    SuperRegistry(vars.superRegistry),
+                    1
                 )
             );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
@@ -273,7 +274,8 @@ contract DeployNewChains is Script {
 
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
+                    SuperRegistry(vars.superRegistry),
+                    2
                 )
             );
             contracts[vars.chainId][

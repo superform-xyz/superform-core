@@ -51,8 +51,9 @@ contract CoreStateRegistry is
     //////////////////////////////////////////////////////////////*/
     ///@dev set up admin during deployment.
     constructor(
-        ISuperRegistry superRegistry_
-    ) BaseStateRegistry(superRegistry_) {}
+        ISuperRegistry superRegistry_,
+        uint8 registryType_
+    ) BaseStateRegistry(superRegistry_, registryType_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -784,7 +785,12 @@ contract CoreStateRegistry is
             srcChainId,
             abi.encode(
                 AMBMessage(
-                    _packTxInfo(uint120(txType), uint120(returnType), true, 0),
+                    _packTxInfo(
+                        uint120(txType),
+                        uint120(returnType),
+                        true,
+                        STATE_REGISTRY_TYPE
+                    ),
                     abi.encode(
                         ReturnMultiData(
                             _packReturnTxInfo(
@@ -816,7 +822,12 @@ contract CoreStateRegistry is
             srcChainId,
             abi.encode(
                 AMBMessage(
-                    _packTxInfo(uint120(txType), uint120(returnType), false, 0),
+                    _packTxInfo(
+                        uint120(txType),
+                        uint120(returnType),
+                        false,
+                        STATE_REGISTRY_TYPE
+                    ),
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(

@@ -18,6 +18,9 @@ library Error {
     /// @dev - when msg.sender is not factory state registry
     error NOT_FACTORY_STATE_REGISTRY();
 
+    /// @dev - when msg.sender is not roles state registry
+    error NOT_ROLES_STATE_REGISTRY();
+
     /// @dev - when msg.sender is not protocol admin
     error NOT_PROTOCOL_ADMIN();
 
