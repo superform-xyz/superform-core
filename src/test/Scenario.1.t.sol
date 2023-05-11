@@ -57,7 +57,7 @@ contract Scenario1Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario1() public {
         address _superRouter = contracts[CHAIN_0][
             bytes32(bytes("SuperRouter"))
         ];

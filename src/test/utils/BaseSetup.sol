@@ -368,7 +368,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.coreStateRegistry = address(
                 new CoreStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
-                    0
+                    1
                 )
             );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
@@ -392,7 +392,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
-                    1
+                    2
                 )
             );
 
@@ -408,7 +408,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.rolesStateRegistry = address(
                 new RolesStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
-                    2
+                    3
                 )
             );
 
@@ -421,6 +421,21 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(
                 vars.rolesStateRegistry
+            );
+
+            address[] memory registryAddresses = new address[](3);
+            registryAddresses[0] = vars.coreStateRegistry;
+            registryAddresses[1] = vars.factoryStateRegistry;
+            registryAddresses[2] = vars.rolesStateRegistry;
+
+            uint8[] memory registryIds = new uint8[](3);
+            registryIds[0] = 1;
+            registryIds[1] = 2;
+            registryIds[2] = 3;
+
+            SuperRegistry(vars.superRegistry).setStateRegistryAddress(
+                registryIds,
+                registryAddresses
             );
 
             /// @dev 5.1 - deploy Layerzero Implementation

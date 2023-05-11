@@ -28,7 +28,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
                                 State Variables
     //////////////////////////////////////////////////////////////*/
 
-    uint8 public constant STATE_REGISTRY_TYPE = 0;
+    uint8 public constant STATE_REGISTRY_TYPE = 1;
 
     ISuperRegistry public immutable superRegistry;
 

@@ -311,7 +311,7 @@ contract Deploy is Script {
             vars.coreStateRegistry = address(
                 new CoreStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
-                    0
+                    1
                 )
             );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
@@ -330,7 +330,7 @@ contract Deploy is Script {
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
-                    1
+                    2
                 )
             );
             contracts[vars.chainId][

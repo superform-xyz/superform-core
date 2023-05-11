@@ -11,7 +11,6 @@ import {ILayerZeroReceiver} from "./interface/ILayerZeroReceiver.sol";
 import {ILayerZeroUserApplicationConfig} from "./interface/ILayerZeroUserApplicationConfig.sol";
 import {ILayerZeroEndpoint} from "./interface/ILayerZeroEndpoint.sol";
 import "../../utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @dev FIXME: this contract could use better overrides from interfaces
 /// @title Layerzero implementation contract
@@ -94,21 +93,7 @@ contract LayerzeroImplementation is
         bytes memory message_,
         bytes memory extraData_
     ) external payable override {
-        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-            superRegistry.coreStateRegistry()
-        );
-        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-            superRegistry.factoryStateRegistry()
-        );
-        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
-            superRegistry.rolesStateRegistry()
-        );
-
-        if (
-            msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry) &&
-            msg.sender != address(rolesRegistry)
-        ) {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
 
@@ -129,21 +114,7 @@ contract LayerzeroImplementation is
         bytes memory message_,
         bytes memory extraData_
     ) external payable {
-        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-            superRegistry.coreStateRegistry()
-        );
-        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-            superRegistry.factoryStateRegistry()
-        );
-        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
-            superRegistry.rolesStateRegistry()
-        );
-
-        if (
-            msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry) &&
-            msg.sender != address(rolesRegistry)
-        ) {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
 
@@ -203,27 +174,11 @@ contract LayerzeroImplementation is
 
         /// NOTE: experimental split of registry contracts
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
-        /// FIXME: should migrate to support more state registry types
-        if (registryId == 0) {
-            IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-                superRegistry.coreStateRegistry()
-            );
-            coreRegistry.receivePayload(superChainId[_srcChainId], _payload);
-        }
 
-        if (registryId == 1) {
-            IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-                superRegistry.factoryStateRegistry()
-            );
-            factoryRegistry.receivePayload(superChainId[_srcChainId], _payload);
-        }
+        address registryAddress = superRegistry.getStateRegistry(registryId);
+        IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
-        if (registryId == 2) {
-            IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
-                superRegistry.rolesStateRegistry()
-            );
-            rolesRegistry.receivePayload(superChainId[_srcChainId], _payload);
-        }
+        targetRegistry.receivePayload(superChainId[_srcChainId], _payload);
     }
 
     /*///////////////////////////////////////////////////////////////

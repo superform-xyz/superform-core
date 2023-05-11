@@ -89,6 +89,9 @@ interface ISuperRegistry {
     /// @dev is emitted when a new amb is configured.
     event SetAmbAddress(uint8 ambId_, address ambAddress_);
 
+    /// @dev is emitted when a new state registry is configured.
+    event SetStateRegistryAddress(uint8 registryId_, address registryAddress_);
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
@@ -154,6 +157,14 @@ interface ISuperRegistry {
     function setAmbAddress(
         uint8[] memory ambId_,
         address[] memory ambAddress_
+    ) external;
+
+    /// @dev allows admin to set the state registry address for an state registry id.
+    /// @param registryId_    represents the state registry's unqiue identifier.
+    /// @param registryAddress_    represents the state registry's address.
+    function setStateRegistryAddress(
+        uint8[] memory registryId_,
+        address[] memory registryAddress_
     ) external;
 
     /// @dev allows admin to set the super positions address
@@ -270,6 +281,20 @@ interface ISuperRegistry {
     function getBridgeAddress(
         uint8 bridgeId_
     ) external view returns (address bridgeAddress_);
+
+    /// @dev gets the address of the registry
+    /// @param registryId_ is the id of the state registry
+    /// @return registryAddress_ is the address of the state registry
+    function getStateRegistry(
+        uint8 registryId_
+    ) external view returns (address registryAddress_);
+
+    /// @dev helps validate if an address is a valid state registry
+    /// @param registryAddress_ is the address of the state registry
+    /// @return valid_ a flag indicating if its valid.
+    function isValidStateRegistry(
+        address registryAddress_
+    ) external view returns (bool valid_);
 
     /// @dev gets the address of a bridge validator
     /// @param bridgeId_ is the id of a bridge

@@ -75,21 +75,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         bytes memory message_,
         bytes memory
     ) external payable virtual override {
-        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-            superRegistry.coreStateRegistry()
-        );
-        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-            superRegistry.factoryStateRegistry()
-        );
-        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
-            superRegistry.rolesStateRegistry()
-        );
-
-        if (
-            msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry) &&
-            msg.sender != address(rolesRegistry)
-        ) {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
 
@@ -116,21 +102,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual {
-        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-            superRegistry.coreStateRegistry()
-        );
-        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-            superRegistry.factoryStateRegistry()
-        );
-        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
-            superRegistry.rolesStateRegistry()
-        );
-
-        if (
-            msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry) &&
-            msg.sender != address(rolesRegistry)
-        ) {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
 
@@ -230,28 +202,10 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
         /// NOTE: experimental split of registry contracts
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
-        /// FIXME: should migrate to support more state registry types
-        if (registryId == 0) {
-            IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-                superRegistry.coreStateRegistry()
-            );
+        address registryAddress = superRegistry.getStateRegistry(registryId);
+        IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
-            coreRegistry.receivePayload(superChainId[origin_], body_);
-        }
-
-        if (registryId == 1) {
-            IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-                superRegistry.factoryStateRegistry()
-            );
-            factoryRegistry.receivePayload(superChainId[origin_], body_);
-        }
-
-        if (registryId == 2) {
-            IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
-                superRegistry.rolesStateRegistry()
-            );
-            rolesRegistry.receivePayload(superChainId[origin_], body_);
-        }
+        targetRegistry.receivePayload(superChainId[origin_], body_);
     }
 
     /*///////////////////////////////////////////////////////////////

@@ -58,22 +58,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
-        /// @FIXME: this isn't scalable atm
-        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-            superRegistry.coreStateRegistry()
-        );
-        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-            superRegistry.factoryStateRegistry()
-        );
-        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
-            superRegistry.rolesStateRegistry()
-        );
-
-        if (
-            msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry) &&
-            msg.sender != address(rolesRegistry)
-        ) {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
 
@@ -93,21 +78,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual {
-        IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-            superRegistry.coreStateRegistry()
-        );
-        IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-            superRegistry.factoryStateRegistry()
-        );
-        IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
-            superRegistry.rolesStateRegistry()
-        );
-
-        if (
-            msg.sender != address(coreRegistry) &&
-            msg.sender != address(factoryRegistry) &&
-            msg.sender != address(rolesRegistry)
-        ) {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
 
@@ -202,28 +173,10 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
 
         /// NOTE: experimental split of registry contracts
         (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
-        /// FIXME: should migrate to support more state registry types
-        if (registryId == 0) {
-            IBaseStateRegistry coreRegistry = IBaseStateRegistry(
-                superRegistry.coreStateRegistry()
-            );
-            coreRegistry.receivePayload(superChainId[srcChainId_], message_);
-        }
+        address registryAddress = superRegistry.getStateRegistry(registryId);
+        IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
-        if (registryId == 1) {
-            IBaseStateRegistry factoryRegistry = IBaseStateRegistry(
-                superRegistry.factoryStateRegistry()
-            );
-            factoryRegistry.receivePayload(superChainId[srcChainId_], message_);
-        }
-
-        if (registryId == 2) {
-            IBaseStateRegistry rolesRegistry = IBaseStateRegistry(
-                superRegistry.rolesStateRegistry()
-            );
-            rolesRegistry.receivePayload(superChainId[srcChainId_], message_);
-        }
-
+        targetRegistry.receivePayload(superChainId[srcChainId_], message_);
         return ExecutionStatus.Success;
     }
 
