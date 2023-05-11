@@ -11,6 +11,7 @@ import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IFormStateRegistry} from "../../forms/form_keeper/IFormStateRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
+import "forge-std/console.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     uint8[] public AMBs;
@@ -697,9 +698,11 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal returns (bool success) {
 
         vm.prank(deployer);
+        // console.log("block before", block.number);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vm.selectFork(FORKS[DST_CHAINS[i]]);
-            vm.rollFork(block.timestamp + 2000);
+            vm.rollFork(block.number + 2000);
+            // console.log("block after", block.number);
             IFormStateRegistry formStateRegistry = IFormStateRegistry(
                 contracts[DST_CHAINS[i]][bytes32(bytes("FormStateRegistry"))]
             );            

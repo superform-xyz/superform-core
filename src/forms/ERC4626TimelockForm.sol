@@ -157,15 +157,11 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     ) public view returns (uint16) {
         
         /// NOTE: here we send srcSender but real owner is the Form
-        // IERC4626Timelock.UnlockRequest memory request = IERC4626Timelock(vault_)
-            // .userUnlockRequests(owner_);
-
         /// NOTE: User can have only 1 active unlock request at a time. 
         /// NOTE: Extending this may have security implications. 
         /// NOTE: checkUnlock needs to check internal state of an unlock, not external unlock as those are aggregated for the Form
         /// NOTE: checkUnlock functions will vary between different timelocked vaults, for some this mechanism may not work
         /// NOTE: ie. if underlying vault also allows only single unlock
-
         OwnerRequest memory ownerRequest = unlockId[owner_];
 
         if (ownerRequest.status != 1) {
@@ -194,6 +190,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             ownerRequest.requestTimestamp + IERC4626Timelock(vault_).getLockPeirod() <
             block.timestamp
         ) {
+
             /// unlock cooldown period not passed. revert Error.WITHDRAW_COOLDOWN_PERIOD
             return 3;
         }
