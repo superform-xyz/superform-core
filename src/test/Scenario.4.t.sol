@@ -69,6 +69,9 @@ contract Scenario4Test is ProtocolActions {
         MAX_SLIPPAGE[ARBI][0] = [1000];
         MAX_SLIPPAGE[ARBI][1] = [1000];
 
+        LIQ_BRIDGES[ARBI][0] = [1];
+        LIQ_BRIDGES[ARBI][1] = [1];
+
         /// @dev check if we need to have this here (it's being overriden)
         // uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 

@@ -34,6 +34,7 @@ contract ScenarioTimelockTest is ProtocolActions {
     uint256[] dstFormID;
     uint256[] amount;
     uint256[] slippage;
+    uint16[] liqBridges;
 
     /// @dev Access SuperRouter interface
     ISuperRouter superRouter;
@@ -59,6 +60,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         dstFormID = [1]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
         amount = [1000];
         slippage = [1000];
+        liqBridges = [1];
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -119,6 +121,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         dstFormID = [1]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
         amount = [1000];
         slippage = [1000];
+        liqBridges = [1];
 
         /*///////////////////////////////////////////////////////////////
                                 DEPOSIT ACTION
@@ -143,6 +146,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
             amount,
             slippage,
+            liqBridges,
             Actions.Deposit,
             TestType.Pass
         );
@@ -239,6 +243,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         dstFormID = [1]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
         amount = [1000];
         slippage = [1000];
+        liqBridges = [1];
 
         action = _createAction(
             dstChainID,
@@ -246,6 +251,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
             amount,
             slippage,
+            liqBridges,
             Actions.Withdraw,
             TestType.Pass
         );
@@ -323,6 +329,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         uint256[] memory formIDs_,
         uint256[] memory amounts_,
         uint256[] memory slippages_,
+        uint16[] memory liqBridges_,
         Actions kind_, /// deposit or withdraw
         TestType testType /// ProtocolActions invariant
     )
@@ -341,6 +348,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             TARGET_FORM_KINDS[chainID_[i]][actionId] = formIDs_; /// <= 1 for timelock, this accesses array by index (0 for standard)
             AMOUNTS[chainID_[i]][actionId] = amounts_;
             MAX_SLIPPAGE[chainID_[i]][actionId] = slippages_;
+            LIQ_BRIDGES[chainID_[i]][actionId] = liqBridges_;
 
             if (kind_ == Actions.Deposit) {
                 action_ = TestAction({

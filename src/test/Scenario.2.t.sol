@@ -33,6 +33,9 @@ contract Scenario2Test is ProtocolActions {
 
         MAX_SLIPPAGE[POLY][0] = [1000, 1000];
 
+        /// @dev 1 for socket, 2 for lifi
+        LIQ_BRIDGES[POLY][0] = [1, 1];
+
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 2 * _getPriceMultiplier(CHAIN_0) * 1e18;
 

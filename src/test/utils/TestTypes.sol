@@ -54,6 +54,7 @@ struct StagesLocalVars {
     uint256[] targetSuperFormIds;
     uint256[] amounts;
     uint256[] maxSlippage;
+    uint16[] liqBridges;
 }
 
 struct MessagingAssertVars {
@@ -149,6 +150,7 @@ struct SingleVaultCallDataArgs {
     address underlyingToken;
     uint256 superFormId;
     uint256 amount;
+    uint16 liqBridge;
     uint256 maxSlippage;
     address vaultMock;
     uint16 srcChainId;
@@ -168,6 +170,7 @@ struct MultiVaultCallDataArgs {
     address[] underlyingTokens;
     uint256[] superFormIds;
     uint256[] amounts;
+    uint16[] liqBridges;
     uint256[] maxSlippage;
     address[] vaultMock;
     uint16 srcChainId;
@@ -185,6 +188,7 @@ struct BuildDepositCallDataArgs {
     address[] underlyingToken;
     uint256[] targetSuperFormIds;
     uint256[] amounts;
+    uint16 liqBridges;
     uint256 maxSlippage;
     uint16 srcChainId;
     uint16 toChainId;
