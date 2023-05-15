@@ -26,15 +26,13 @@ function _packTxInfo(
 }
 
 function _packReturnTxInfo(
-    uint16 status_, /// <= we don't have access to extraData on dst, we need to pass status of custom withdraw through returnData
     uint16 srcChainId_,
     uint16 dstChainId_,
     uint80 txId_
 ) pure returns (uint256 returnTxInfo) {
-    returnTxInfo = uint256(status_);
-    returnTxInfo |= uint256(srcChainId_) << 16;
-    returnTxInfo |= uint256(dstChainId_) << 32;
-    returnTxInfo |= uint256(txId_) << 48;
+    returnTxInfo = uint256(srcChainId_);
+    returnTxInfo |= uint256(dstChainId_) << 16;
+    returnTxInfo |= uint256(txId_) << 32;
 }
 
 function _packSuperForm(
@@ -69,14 +67,10 @@ function _decodeTxInfo(
 
 function _decodeReturnTxInfo(
     uint256 returnTxInfo_
-)
-    pure
-    returns (uint16 status, uint16 srcChainId, uint16 dstChainId, uint80 txId)
-{
-    status = uint16(returnTxInfo_ & 0xFFFF);
-    srcChainId = uint16((returnTxInfo_ >> 16) & 0xFFFF);
-    dstChainId = uint16((returnTxInfo_ >> 32) & 0xFFFF);
-    txId = uint80(returnTxInfo_ >> 48);
+) pure returns (uint16 srcChainId, uint16 dstChainId, uint80 txId) {
+    srcChainId = uint16((returnTxInfo_) & 0xFFFF);
+    dstChainId = uint16((returnTxInfo_ >> 16) & 0xFFFF);
+    txId = uint80(returnTxInfo_ >> 32);
 }
 
 /// @dev returns the destination chain of a given superForm

@@ -24,6 +24,9 @@ library Error {
     /// @dev - when msg.sender is not factory state registry
     error NOT_FACTORY_STATE_REGISTRY();
 
+    /// @dev - when msg.sender is not roles state registry
+    error NOT_ROLES_STATE_REGISTRY();
+
     /// @dev - when msg.sender is not protocol admin
     error NOT_PROTOCOL_ADMIN();
 
@@ -134,6 +137,18 @@ library Error {
 
     /// @dev if less than 2 AMBs are passed in the state request
     error INVALID_AMB_IDS_LENGTH();
+
+    /// @dev if trying to rescue a non multi failed deposit data
+    error NOT_MULTI_FAILURE();
+
+    /// @dev if trying to rescue a non single failed deposit data
+    error NOT_SINGLE_FAILURE();
+
+    /// @dev if deposits were already rescued
+    error ALREADY_RESCUED();
+
+    /// @dev if the rescue data lengths are invalid
+    error INVALID_RESCUE_DATA();
 
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS

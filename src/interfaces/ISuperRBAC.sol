@@ -20,7 +20,12 @@ interface ISuperRBAC {
 
     /// @dev revokes the CORE_STATE_REGISTRY_ROLE from given address
     /// @param coreStateRegistry_ the address to revoke the role from
-    function revokeCoreStateRegistryRole(address coreStateRegistry_) external;
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeCoreStateRegistryRole(
+        address coreStateRegistry_,
+        bytes memory extraData_
+    ) external payable;
 
     /// @dev grants the SUPER_ROUTER_ROLE to the given address
     /// @param superRouter_ the address to grant the role to
@@ -28,7 +33,25 @@ interface ISuperRBAC {
 
     /// @dev revokes the SUPER_ROUTER_ROLE from given address
     /// @param superRouter_ the address to revoke the role from
-    function revokeSuperRouterRole(address superRouter_) external;
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeSuperRouterRole(
+        address superRouter_,
+        bytes memory extraData_
+    ) external payable;
+
+    /// @dev grants the TOKEN_BANK_ROLE to the given address
+    /// @param tokenBank_ the address to grant the role to
+    function grantTokenBankRole(address tokenBank_) external;
+
+    /// @dev revokes the TOKEN_BANK_ROLE from given address
+    /// @param tokenBank_ the address to revoke the role from
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeTokenBankRole(
+        address tokenBank_,
+        bytes memory extraData_
+    ) external payable;
 
     /// @dev grants the SUPERFORM_FACTORY_ROLE to the given address
     /// @param superformFactory_ the address to grant the role to
@@ -36,7 +59,12 @@ interface ISuperRBAC {
 
     /// @dev revokes the SUPERFORM_FACTORY_ROLE from given address
     /// @param superformFactory_ the address to revoke the role from
-    function revokeSuperformFactoryRole(address superformFactory_) external;
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeSuperformFactoryRole(
+        address superformFactory_,
+        bytes memory extraData_
+    ) external payable;
 
     /// @dev grants the SWAPPER_ROLE to the given address
     /// @param swapper_ the address to grant the role to
@@ -44,7 +72,12 @@ interface ISuperRBAC {
 
     /// @dev revokes the SWAPPER_ROLE from given address
     /// @param swapper_ the address to revoke the role from
-    function revokeSwapperRole(address swapper_) external;
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeSwapperRole(
+        address swapper_,
+        bytes memory extraData_
+    ) external payable;
 
     /// @dev grants the CORE_CONTRACTS_ROLE to the given address
     /// @param coreContracts_ the address to grant the role to
@@ -52,7 +85,12 @@ interface ISuperRBAC {
 
     /// @dev revokes the CORE_CONTRACTS_ROLE from given address
     /// @param coreContracts_ the address to revoke the role from
-    function revokeCoreContractsRole(address coreContracts_) external;
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeCoreContractsRole(
+        address coreContracts_,
+        bytes memory extraData_
+    ) external payable;
 
     /// @dev grants the IMPLEMENTATION_CONTRACTS_ROLE to the given address
     /// @param implementationContracts_ the address to grant the role to
@@ -62,9 +100,12 @@ interface ISuperRBAC {
 
     /// @dev revokes the IMPLEMENTATION_CONTRACTS_ROLE from given address
     /// @param implementationContracts_ the address to revoke the role from
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
     function revokeImplementationContractsRole(
-        address implementationContracts_
-    ) external;
+        address implementationContracts_,
+        bytes memory extraData_
+    ) external payable;
 
     /// @dev grants the PROCESSOR_ROLE to the given address
     /// @param processor_ the address to grant the role to
@@ -72,7 +113,12 @@ interface ISuperRBAC {
 
     /// @dev revokes the PROCESSOR_ROLE from given address
     /// @param processor_ the address to revoke the role from
-    function revokeProcessorRole(address processor_) external;
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeProcessorRole(
+        address processor_,
+        bytes memory extraData_
+    ) external payable;
 
     /// @dev grants the UPDATER_ROLE to the given address
     /// @param updater_ the address to grant the role to
@@ -80,7 +126,16 @@ interface ISuperRBAC {
 
     /// @dev revokes the UPDATER_ROLE from given address
     /// @param updater_ the address to revoke the role from
-    function revokeUpdaterRole(address updater_) external;
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeUpdaterRole(
+        address updater_,
+        bytes memory extraData_
+    ) external payable;
+
+    /// @dev allows sync of global roles from different chains
+    /// @notice may not work for all roles
+    function stateSync(bytes memory data_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions

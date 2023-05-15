@@ -22,6 +22,11 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
     mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
     mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
+    mapping(uint8 registryId => address registryAddress)
+        public registryAddresses;
+    /// @dev is the reverse mapping of registryAddresses
+    mapping(address registryAddress => uint8 registryId)
+        public stateRegistryIds;
 
     /// @dev core protocol addresses identifiers
     /// @dev FIXME: we don't have AMB and liquidity bridge implementations here, should we add?
@@ -34,6 +39,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     bytes32 public constant FORM_STATE_REGISTRY = "FORM_STATE_REGISTRY";
     bytes32 public constant override FACTORY_STATE_REGISTRY =
         "FACTORY_STATE_REGISTRY";
+    bytes32 public constant override ROLES_STATE_REGISTRY =
+        "ROLES_STATE_REGISTRY";
     bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
     bytes32 public constant override SUPER_POSITION_BANK =
         "SUPER_POSITION_BANK";
@@ -48,6 +55,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+    /// @dev FIXME: remove all address 0 checks to block calls to a certain contract?
 
     /// @inheritdoc ISuperRegistry
     function setImmutables(
@@ -156,6 +164,21 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
+    function setRolesStateRegistry(
+        address rolesStateRegistry_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (rolesStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address oldRolesStateRegistry = protocolAddresses[ROLES_STATE_REGISTRY];
+        protocolAddresses[ROLES_STATE_REGISTRY] = rolesStateRegistry_;
+
+        emit RolesStateRegistryUpdated(
+            oldRolesStateRegistry,
+            rolesStateRegistry_
+        );
+    }
+
+    /// @inheritdoc ISuperRegistry
     function setSuperPositions(
         address superPositions_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -201,7 +224,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
             uint8 x = bridgeId_[i];
             address y = bridgeAddress_[i];
             address z = bridgeValidator_[i];
-            if (y == address(0) || z == address(0)) revert Error.ZERO_ADDRESS();
 
             bridgeAddresses[x] = y;
             bridgeValidator[x] = z;
@@ -216,13 +238,29 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         uint8[] memory ambId_,
         address[] memory ambAddress_
     ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        for (uint256 i = 0; i < ambId_.length; i++) {
+        for (uint256 i; i < ambId_.length; i++) {
             address x = ambAddress_[i];
             uint8 y = ambId_[i];
             if (x == address(0)) revert Error.ZERO_ADDRESS();
 
             ambAddresses[y] = x;
             emit SetAmbAddress(y, x);
+        }
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setStateRegistryAddress(
+        uint8[] memory registryId_,
+        address[] memory registryAddress_
+    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+        for (uint256 i; i < registryId_.length; i++) {
+            address x = registryAddress_[i];
+            uint8 y = registryId_[i];
+            if (x == address(0)) revert Error.ZERO_ADDRESS();
+
+            registryAddresses[y] = x;
+            stateRegistryIds[x] = y;
+            emit SetStateRegistryAddress(y, x);
         }
     }
 
@@ -312,6 +350,16 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
+    function rolesStateRegistry()
+        external
+        view
+        override
+        returns (address rolesStateRegistry_)
+    {
+        rolesStateRegistry_ = getProtocolAddress(ROLES_STATE_REGISTRY);
+    }
+
+    /// @inheritdoc ISuperRegistry
     function superPositions()
         external
         view
@@ -363,5 +411,21 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         uint8 ambId_
     ) external view override returns (address ambAddress_) {
         ambAddress_ = ambAddresses[ambId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getStateRegistry(
+        uint8 registryId_
+    ) external view override returns (address registryAddress_) {
+        registryAddress_ = registryAddresses[registryId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function isValidStateRegistry(
+        address registryAddress_
+    ) external view override returns (bool valid_) {
+        if (stateRegistryIds[registryAddress_] != 0) return true;
+
+        return false;
     }
 }
