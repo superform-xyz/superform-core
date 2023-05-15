@@ -16,7 +16,7 @@ contract ERC4626TimelockMock is ERC4626 {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
-    uint256 public lockPeriod = 1800;
+    uint256 public lockPeriod = 100;
     uint256 public requestId;
 
     struct UnlockRequest {

@@ -310,6 +310,17 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// FIXME: 0 Set only so test would pass!!! This is upstream problem!!!
         assertEq(currentBalanceOfAliceSP, 0);
 
+        currentBalanceOfAliceUnderlying = IERC20(
+            erc4626TimelockForm.getUnderlyingOfVault()
+        ).balanceOf(users[0]);
+
+        console.log("alice balance after 2step tx", currentBalanceOfAliceUnderlying);
+
+        assertEq(
+            currentBalanceOfAliceUnderlying,
+            newBalanceOfAliceUnderlying + amount[0] /// temp select by index
+        );
+
         /// TODO:
         /// assert alice balanceOf SuperPositions before && after
         /// assert alice balanceOf underlying token before && after

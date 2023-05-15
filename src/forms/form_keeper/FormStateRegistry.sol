@@ -29,6 +29,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     mapping(uint256 payloadId => OwnerRequest) public payloadStore;
 
     /// @notice Checks if the caller is the form allowed to send payload
+    /// TODO: Test this modifier
     modifier onlyForm(uint256 superFormId) {
         (address form_, , ) = _getSuperForm(superFormId);
         if (msg.sender != form_) revert Error.NOT_FORM_KEEPER();
@@ -70,17 +71,19 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         uint256 payloadId,
         bytes memory ackExtraData
     ) external onlyFormKeeper {
-        (address form_, , ) = _getSuperForm(payloadStore[payloadId].superFormId); /// <= this is wrong (same in modifier)
+        (address form_, , ) = _getSuperForm(payloadStore[payloadId].superFormId);
         IERC4626Timelock form = IERC4626Timelock(form_);
 
         /// @dev try to processUnlock for this srcSender
         try form.processUnlock(payloadStore[payloadId].owner) {
             delete payloadStore[payloadId];
         } catch (bytes memory err) {
+
             /// @dev in every other instance it's better to re-init withdraw
             /// this catch will ALWAYS send a message back to source with exception of WITHDRAW_COOLDOWN_PERIOD error on Timelock
-            /// We do nothing then as this is KEEPER error (TBD)
+            /// TODO: Test this case (test messaging back to src)
             if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
+
                 delete payloadStore[payloadId];
                 /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
                 InitSingleVaultData memory singleVaultData = form.unlockId(
@@ -97,6 +100,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
                 ); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
             }
 
+            /// TODO: Emit something in case of WITHDRAW_COOLDOWN_PERIOD. We don't want to delete payload then
             // emit()
         }
     }
