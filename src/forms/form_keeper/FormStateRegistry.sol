@@ -47,8 +47,9 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     }
 
     constructor(
-        ISuperRegistry superRegistry_
-    ) BaseStateRegistry(superRegistry_) {}
+        ISuperRegistry superRegistry_,
+        uint8 registryType_
+    ) BaseStateRegistry(superRegistry_, registryType_) {}
 
     /// @notice Receives request (payload) from TimelockForm to process later
     /// @param payloadId is constructed on TimelockForm, data is mapped also there, we only store pointer here
@@ -128,7 +129,6 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
-                                1, /// @dev TODO: What status to return on fail?
                                 srcChainId,
                                 superRegistry.chainId(),
                                 currentTotalTxs /// @dev TODO: How to sync that with source now?

@@ -415,7 +415,8 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 4.2 - deploy Form State Registry
             vars.formStateRegistry = address(
                 new FormStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
+                    SuperRegistry(vars.superRegistry),
+                    1
                 )
             );
 
@@ -425,6 +426,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setFormStateRegistry(
                 vars.formStateRegistry
+            );
 
             /// @dev 4.3- deploy Roles State Registry
             vars.rolesStateRegistry = address(
