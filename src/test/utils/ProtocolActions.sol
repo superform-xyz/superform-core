@@ -33,7 +33,7 @@ abstract contract ProtocolActions is BaseSetup {
         public MAX_SLIPPAGE;
 
     /// @dev 1 for socket, 2 for lifi
-    mapping(uint16 chainId => mapping(uint256 index => uint16[] liqBridgeId))
+    mapping(uint16 chainId => mapping(uint256 index => uint8[] liqBridgeId))
         public LIQ_BRIDGES;
 
     /// NOTE: Now that we can pass individual actions, this array is only useful for more extended simulations
@@ -726,6 +726,8 @@ abstract contract ProtocolActions is BaseSetup {
             liqRequests = new LiqRequest[](1);
         }
 
+        console.log("same underlying ", sameUnderlyingCheck);
+
         for (uint i = 0; i < len; i++) {
             callDataArgs = SingleVaultCallDataArgs(
                 args.user,
@@ -867,10 +869,10 @@ abstract contract ProtocolActions is BaseSetup {
             );
         } else if (liqBridgeKind_ == 2) {
             ILiFi.BridgeData memory bridgeData;
-            ILiFi.SwapData memory swapData;
+            ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
             if (externalToken_ != underlyingToken_) {
-                swapData = ILiFi.SwapData(
+                swapData[0] = ILiFi.SwapData(
                     address(0), /// callTo (arbitrary)
                     address(0), /// callTo (approveTo)
                     externalToken_,
@@ -990,7 +992,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev FIXME: currently only producing liqRequests for non-permit2 ERC20 transfers!!!
         /// @dev TODO: need to test native requests and permit2 requests
         v.liqReq = LiqRequest(
-            1, /// @dev FIXME: hardcoded for now - but this should be a different bridge per type of transaction
+            args.liqBridge, /// @dev FIXME: hardcoded for now - but this should be a different bridge per type of transaction
             v.txData,
             liqRequestToken,
             args.sameUnderlyingCheck != address(0)
@@ -1087,7 +1089,7 @@ abstract contract ProtocolActions is BaseSetup {
         );
 
         vars.liqReq = LiqRequest(
-            1, /// @dev FIXME: hardcoded for now
+            args.liqBridge, /// @dev FIXME: hardcoded for now
             vars.txData,
             args.underlyingToken,
             args.amount,

@@ -34,7 +34,7 @@ contract ScenarioTimelockTest is ProtocolActions {
     uint256[] dstFormID;
     uint256[] amount;
     uint256[] slippage;
-    uint16[] liqBridges;
+    uint8[] liqBridges;
 
     /// @dev Access SuperRouter interface
     ISuperRouter superRouter;
@@ -329,7 +329,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         uint256[] memory formIDs_,
         uint256[] memory amounts_,
         uint256[] memory slippages_,
-        uint16[] memory liqBridges_,
+        uint8[] memory liqBridges_,
         Actions kind_, /// deposit or withdraw
         TestType testType /// ProtocolActions invariant
     )

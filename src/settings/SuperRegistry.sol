@@ -214,7 +214,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
             bridgeAddresses[x] = y;
             bridgeValidator[x] = z;
-
             emit SetBridgeAddress(x, y);
             emit SetBridgeValidator(x, z);
         }
