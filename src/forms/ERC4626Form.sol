@@ -8,14 +8,13 @@ import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
-import {ERC20Form} from "./ERC20Form.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for ERC4626 vaults
-contract ERC4626Form is ERC20Form, LiquidityHandler {
+contract ERC4626Form is BaseForm, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
     /*///////////////////////////////////////////////////////////////
@@ -29,27 +28,11 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) ERC20Form(superRegistry_) {}
+    constructor(address superRegistry_) BaseForm(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
     //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc BaseForm
-    function vaultSharesIsERC20() public pure virtual override returns (bool) {
-        return false;
-    }
-
-    /// @inheritdoc BaseForm
-    function vaultSharesIsERC4626()
-        public
-        pure
-        virtual
-        override
-        returns (bool)
-    {
-        return true;
-    }
 
     /// @inheritdoc BaseForm
     /// @dev asset() or some similar function should return all possible tokens that can be deposited into the vault so that BE can grab that properly
@@ -398,6 +381,43 @@ contract ERC4626Form is ERC20Form, LiquidityHandler {
 
         /// Here we either fully succeed of Callback.FAIL.
         return 0;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                EXTERNAL VIEW VIRTUAL FUNCTIONS OVERRIDES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc BaseForm
+    function superformYieldTokenName()
+        external
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return string(abi.encodePacked("Superform ", ERC20(vault).name()));
+    }
+
+    /// @inheritdoc BaseForm
+    function superformYieldTokenSymbol()
+        external
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return string(abi.encodePacked("SUP-", ERC20(vault).symbol()));
+    }
+
+    /// @inheritdoc BaseForm
+    function superformYieldTokenDecimals()
+        external
+        view
+        virtual
+        override
+        returns (uint256 underlyingDecimals)
+    {
+        return ERC20(vault).decimals();
     }
 
     /*///////////////////////////////////////////////////////////////

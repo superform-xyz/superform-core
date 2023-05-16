@@ -165,18 +165,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
                     PURE/VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @return True if the vaults supported by this form use transferrable ERC20 tokens
-    /// to represent shares, false otherwise.
-    function vaultSharesIsERC20() public pure virtual returns (bool);
-
-    /// @return True if the vaults supported by this form use transferrable ERC20 tokens
-    /// to represent shares, false otherwise.
-    function vaultSharesIsERC4626() public pure virtual returns (bool);
-
-    /// @return True if the vaults supported by this form use transferrable ERC20 tokens
-    /// to represent shares, false otherwise.
-    function vaultSharesIsERC721() public pure virtual returns (bool);
-
     /// @notice get Superform name of the ERC20 vault representation
     /// @return The ERC20 name
     function superformYieldTokenName()
