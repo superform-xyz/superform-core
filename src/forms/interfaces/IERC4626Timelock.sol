@@ -39,7 +39,7 @@ interface IERC4626Timelock is IERC20 {
     function processUnlock(address owner) external;
 
     /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
-    function unlockId(uint256 unlockCounter) external view returns (InitSingleVaultData memory singleVaultData);
+    function unlockId(address owner) external view returns (InitSingleVaultData memory singleVaultData);
 
     /*///////////////////////////////////////////////////////////////
                                ERC4626 SECTION

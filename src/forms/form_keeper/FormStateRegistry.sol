@@ -25,7 +25,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         uint256 superFormId;
     }
 
-    /// @notice Stores 1:1 mapping with Form.unlockId(unlockCounter) without copying whole data structure
+    /// @notice Stores 1:1 mapping with Form.unlockId(srcSender) without copying the whole data structure
     mapping(uint256 payloadId => OwnerRequest) public payloadStore;
 
     /// @notice Checks if the caller is the form allowed to send payload
@@ -85,11 +85,13 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
             /// TODO: Test this case (test messaging back to src)
             if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
 
-                delete payloadStore[payloadId];
                 /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
                 InitSingleVaultData memory singleVaultData = form.unlockId(
-                    payloadId
+                    payloadStore[payloadId].owner
                 );
+
+                delete payloadStore[payloadId];
+
                 (
                     uint16 srcChainId,
                     bytes memory returnMessage
