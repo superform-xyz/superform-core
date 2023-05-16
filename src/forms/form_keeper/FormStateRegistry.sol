@@ -32,7 +32,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     /// TODO: Test this modifier
     modifier onlyForm(uint256 superFormId) {
         (address form_, , ) = _getSuperForm(superFormId);
-        if (msg.sender != form_) revert Error.NOT_FORM_KEEPER();
+        if (msg.sender != form_) revert Error.NOT_FORM();
         _;
     }
 
