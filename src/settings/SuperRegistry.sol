@@ -337,7 +337,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         formStateRegistry = getProtocolAddress(FORM_STATE_REGISTRY);
     }
 
-
     /// @inheritdoc ISuperRegistry
     function factoryStateRegistry()
         external

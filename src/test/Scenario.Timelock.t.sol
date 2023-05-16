@@ -320,7 +320,10 @@ contract ScenarioTimelockTest is ProtocolActions {
             erc4626TimelockForm.getUnderlyingOfVault()
         ).balanceOf(users[0]);
 
-        console.log("alice balance after 2step tx", currentBalanceOfAliceUnderlying);
+        console.log(
+            "alice balance after 2step tx",
+            currentBalanceOfAliceUnderlying
+        );
 
         assertEq(
             currentBalanceOfAliceUnderlying,

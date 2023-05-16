@@ -9,7 +9,7 @@ import {Error} from "../utils/Error.sol";
 
 /// @title Bridge Handler abstract contract
 /// @author Zeropoint Labs
-/// @dev To be inherited by specific bridge handlers to verify and send the call
+/// @dev To be inherited by specific bridge handlers to verify the calldata being sent
 abstract contract BridgeValidator is IBridgeValidator {
     /*///////////////////////////////////////////////////////////////
                             State Variables

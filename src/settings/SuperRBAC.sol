@@ -8,7 +8,6 @@ import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 import {AMBFactoryMessage, AMBMessage} from "../types/DataTypes.sol";
 import "../utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.
@@ -90,16 +89,12 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// TODO: inheritdoc ISuperRBAC
-    function grantFormStateRegistryRole(
-        address formStateRegistry_
-    ) external {
+    function grantFormStateRegistryRole(address formStateRegistry_) external {
         grantRole(FORM_STATE_REGISTRY_ROLE, formStateRegistry_);
     }
 
     /// TODO: inheritdoc ISuperRBAC
-    function revokeFormStateRegistryRole(
-        address formStateRegistry_
-    ) external {
+    function revokeFormStateRegistryRole(address formStateRegistry_) external {
         revokeRole(FORM_STATE_REGISTRY_ROLE, formStateRegistry_);
     }
 

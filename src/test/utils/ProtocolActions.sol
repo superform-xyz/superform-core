@@ -11,9 +11,8 @@ import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {LiFiMock} from "../mocks/LiFiMock.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {IFormStateRegistry} from "../../forms/form_keeper/IFormStateRegistry.sol";
+import {IFormStateRegistry} from "../../interfaces/IFormStateRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
-import "forge-std/console.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     uint8[] public AMBs;
@@ -706,18 +705,20 @@ abstract contract ProtocolActions is BaseSetup {
         StagesLocalVars memory vars,
         uint256 unlockId_
     ) internal returns (bool success) {
-
         vm.prank(deployer);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vm.selectFork(FORKS[DST_CHAINS[i]]);
             IFormStateRegistry formStateRegistry = IFormStateRegistry(
                 contracts[DST_CHAINS[i]][bytes32(bytes("FormStateRegistry"))]
             );
-            vm.rollFork(block.number + 20000);            
-            formStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
+            vm.rollFork(block.number + 20000);
+            formStateRegistry.finalizePayload(
+                unlockId_,
+                generateAckParams(AMBs)
+            );
         }
 
-        /// TODO: msg back to source 
+        /// TODO: msg back to source
 
         return true;
     }
@@ -749,8 +750,6 @@ abstract contract ProtocolActions is BaseSetup {
         if (sameUnderlyingCheck != address(0)) {
             liqRequests = new LiqRequest[](1);
         }
-
-        console.log("same underlying ", sameUnderlyingCheck);
 
         for (uint i = 0; i < len; i++) {
             callDataArgs = SingleVaultCallDataArgs(
