@@ -36,6 +36,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     bytes32 public constant override SUPERFORM_FACTORY = "SUPERFORM_FACTORY";
     bytes32 public constant override CORE_STATE_REGISTRY =
         "CORE_STATE_REGISTRY";
+    bytes32 public constant FORM_STATE_REGISTRY = "FORM_STATE_REGISTRY";
     bytes32 public constant override FACTORY_STATE_REGISTRY =
         "FACTORY_STATE_REGISTRY";
     bytes32 public constant override ROLES_STATE_REGISTRY =
@@ -131,6 +132,18 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         protocolAddresses[CORE_STATE_REGISTRY] = coreStateRegistry_;
 
         emit CoreStateRegistryUpdated(oldCoreStateRegistry, coreStateRegistry_);
+    }
+
+    /// TODO: add to ISuperRegistry
+    function setFormStateRegistry(
+        address formStateRegistry_
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (formStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        address oldFormStateRegistry = protocolAddresses[FORM_STATE_REGISTRY];
+        protocolAddresses[FORM_STATE_REGISTRY] = formStateRegistry_;
+
+        emit CoreStateRegistryUpdated(oldFormStateRegistry, formStateRegistry_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -314,6 +327,16 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     {
         coreStateRegistry_ = getProtocolAddress(CORE_STATE_REGISTRY);
     }
+
+    /// TODO: inheritdoc ISuperRegistry
+    function formStateRegistry()
+        external
+        view
+        returns (address formStateRegistry)
+    {
+        formStateRegistry = getProtocolAddress(FORM_STATE_REGISTRY);
+    }
+
 
     /// @inheritdoc ISuperRegistry
     function factoryStateRegistry()

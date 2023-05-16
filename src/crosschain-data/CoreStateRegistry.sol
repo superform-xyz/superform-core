@@ -505,6 +505,9 @@ contract CoreStateRegistry is
                     extraFormData: multiVaultData.extraFormData
                 });
 
+                /// @dev Store PayloadId in extraFormData (tbd: 1-step flow doesnt need this)
+                singleVaultData.extraFormData = abi.encode(payloadId_);
+
                 (address superForm_, , ) = _getSuperForm(
                     singleVaultData.superFormId
                 );
@@ -658,6 +661,9 @@ contract CoreStateRegistry is
                 (InitSingleVaultData)
             );
 
+            /// @dev Store PayloadId in extraFormData (tbd: 1-step flow doesnt need this)
+            singleVaultData.extraFormData = abi.encode(payloadId_);
+
             (address superForm_, , ) = _getSuperForm(
                 singleVaultData.superFormId
             );
@@ -683,11 +689,6 @@ contract CoreStateRegistry is
                         singleVaultData.amount
                     )
                 );
-
-                /*
-                /// @dev we could match on individual reasons, but it's hard with strings
-                emit ErrorLog("FORM_REVERT");
-                */
             }
 
             /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
@@ -844,7 +845,7 @@ contract CoreStateRegistry is
     }
 
     function _dispatchAcknowledgement(
-        uint16 dstChainId_,
+        uint16 dstChainId_, /// TODO: here it's dstChainId but when it's called it's srcChainId
         bytes memory message_,
         bytes memory ackExtraData_
     ) internal {

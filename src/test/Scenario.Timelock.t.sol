@@ -300,6 +300,9 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         console.log("stage4 done");
 
+        /// @dev Keeper needs to know this value to be able to process unlock
+        success = _stage7_process_unlock_withdraw(action, vars, 1);
+
         if (action.testType == TestType.RevertXChainWithdraw) {
             /// @dev Process payload received on source from destination (withdraw callback)
             success = _stage6_process_superPositions_withdraw(action, vars);
@@ -312,6 +315,17 @@ contract ScenarioTimelockTest is ProtocolActions {
         currentBalanceOfAliceSP = superPositions.balanceOf(users[0], _formId);
         /// FIXME: 0 Set only so test would pass!!! This is upstream problem!!!
         assertEq(currentBalanceOfAliceSP, 0);
+
+        currentBalanceOfAliceUnderlying = IERC20(
+            erc4626TimelockForm.getUnderlyingOfVault()
+        ).balanceOf(users[0]);
+
+        console.log("alice balance after 2step tx", currentBalanceOfAliceUnderlying);
+
+        assertEq(
+            currentBalanceOfAliceUnderlying,
+            newBalanceOfAliceUnderlying + amount[0] /// temp select by index
+        );
 
         /// TODO:
         /// assert alice balanceOf SuperPositions before && after

@@ -15,6 +15,12 @@ library Error {
     /// @dev - when msg.sender is not core state registry
     error NOT_CORE_STATE_REGISTRY();
 
+    /// @dev - when msg.sender is not form keeper
+    error NOT_FORM_KEEPER();
+
+    /// @dev - when msg.sender is not form state registry
+    error NOT_FORM_STATE_REGISTRY();
+
     /// @dev - when msg.sender is not factory state registry
     error NOT_FACTORY_STATE_REGISTRY();
 

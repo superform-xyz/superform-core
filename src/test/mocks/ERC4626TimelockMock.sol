@@ -16,8 +16,8 @@ contract ERC4626TimelockMock is ERC4626 {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
-    uint256 lockPeriod = 1800;
-    uint256 requestId;
+    uint256 public lockPeriod = 100;
+    uint256 public requestId;
 
     struct UnlockRequest {
         /// Unique id of the request
@@ -45,6 +45,10 @@ contract ERC4626TimelockMock is ERC4626 {
         address owner
     ) external view returns (UnlockRequest memory) {
         return requests[owner];
+    }
+
+    function getLockPeirod() external view returns (uint256) {
+        return lockPeriod;
     }
 
     /// @notice Mock Timelock-like behavior (a need for two separate calls to withdraw)
