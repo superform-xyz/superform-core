@@ -12,6 +12,7 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 /// @dev test utils & mocks
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
+import {LiFiMock} from "../mocks/LiFiMock.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
@@ -36,6 +37,7 @@ import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
+import {LiFiValidator} from "../../crosschain-liquidity/lifi/LiFiValidator.sol";
 import {SocketValidator} from "../../crosschain-liquidity/socket/SocketValidator.sol";
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
@@ -223,6 +225,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev FIXME to fix with correct chainIds
     uint256[] public socketChainIds = [1, 2, 3, 4, 5, 6];
+    uint256[] public lifiChainIds = [1, 2, 3, 4, 5, 6];
 
     uint256 public constant milionTokensE18 = 1 ether;
 
@@ -480,13 +483,18 @@ abstract contract BaseSetup is DSTest, Test {
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
             vars.ambAddresses[2] = vars.celerImplementation;
 
-            /// @dev 6- deploy SocketRouterMock
+            /// @dev 6.1 deploy SocketRouterMock and LiFiRouterMock
             vars.socketRouter = address(new SocketRouterMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("SocketRouterMock"))] = vars
                 .socketRouter;
             vm.allowCheatcodes(vars.socketRouter);
 
-            /// @dev 6- deploy socket validator
+            vars.lifiRouter = address(new LiFiMock{salt: salt}());
+            contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars
+                .lifiRouter;
+            vm.allowCheatcodes(vars.lifiRouter);
+
+            /// @dev 6.2- deploy socke and lifi validator
             vars.socketValidator = address(
                 new SocketValidator{salt: salt}(vars.superRegistry)
             );
@@ -498,9 +506,22 @@ abstract contract BaseSetup is DSTest, Test {
                 socketChainIds
             );
 
+            vars.lifiValidator = address(
+                new LiFiValidator{salt: salt}(vars.superRegistry)
+            );
+            contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars
+                .lifiValidator;
+
+            LiFiValidator(vars.lifiValidator).setChainIds(
+                chainIds,
+                lifiChainIds
+            );
+
             if (i == 0) {
                 bridgeAddresses.push(vars.socketRouter);
                 bridgeValidators.push(vars.socketValidator);
+                bridgeAddresses.push(vars.lifiRouter);
+                bridgeValidators.push(vars.lifiValidator);
             }
 
             /// @dev 7.1 - Deploy UNDERLYING_TOKENS and VAULTS
@@ -833,6 +854,7 @@ abstract contract BaseSetup is DSTest, Test {
 
         /// @dev setup bridges. 1 is the socket mock
         bridgeIds.push(1);
+        bridgeIds.push(2);
 
         /// @dev setup users
         userKeys.push(1);

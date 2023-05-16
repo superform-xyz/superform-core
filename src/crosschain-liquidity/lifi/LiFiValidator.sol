@@ -34,8 +34,10 @@ contract LiFiValidator is BridgeValidator {
     function validateTxDataAmount(
         bytes calldata txData_,
         uint256 amount_
-    ) external view override returns (bool) {
-        if ((_decodeCallData(txData_).minAmount != amount_)) {
+    ) external pure override returns (bool) {
+        (ILiFi.BridgeData memory bridgeData, ) = _decodeCallData(txData_);
+
+        if ((bridgeData.minAmount != amount_)) {
             return false;
         }
 
@@ -43,6 +45,7 @@ contract LiFiValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
+    /// @dev FIXME: do we want to disable destination calls?
     function validateTxData(
         bytes calldata txData_,
         uint16 srcChainId_,
@@ -52,7 +55,17 @@ contract LiFiValidator is BridgeValidator {
         address srcSender_,
         address liqDataToken_
     ) external view override {
-        ILiFi.BridgeData memory bridgeData = _decodeCallData(txData_);
+        (
+            ILiFi.BridgeData memory bridgeData,
+            ILiFi.SwapData[] memory swapData
+        ) = _decodeCallData(txData_);
+
+        address sendingAssetId;
+        if (bridgeData.hasSourceSwaps) {
+            sendingAssetId = swapData[0].sendingAssetId;
+        } else {
+            sendingAssetId = bridgeData.sendingAssetId;
+        }
 
         /// @dev 1. chainId validation
         if (lifiChainId[dstChainId_] != bridgeData.destinationChainId)
@@ -80,7 +93,7 @@ contract LiFiValidator is BridgeValidator {
         }
 
         /// @dev 3. token validations
-        if (liqDataToken_ != bridgeData.sendingAssetId)
+        if (liqDataToken_ != sendingAssetId)
             revert Error.INVALID_TXDATA_TOKEN();
     }
 
@@ -109,7 +122,21 @@ contract LiFiValidator is BridgeValidator {
     /// @return bridgeData LiFi BridgeData
     function _decodeCallData(
         bytes calldata data
-    ) internal pure returns (ILiFi.BridgeData memory bridgeData) {
+    )
+        internal
+        pure
+        returns (
+            ILiFi.BridgeData memory bridgeData,
+            ILiFi.SwapData[] memory swapData
+        )
+    {
         (bridgeData) = abi.decode(data[4:], (ILiFi.BridgeData));
+
+        if (bridgeData.hasSourceSwaps) {
+            (, swapData) = abi.decode(
+                data[4:],
+                (ILiFi.BridgeData, ILiFi.SwapData[])
+            );
+        }
     }
 }

@@ -54,6 +54,7 @@ struct StagesLocalVars {
     uint256[] targetSuperFormIds;
     uint256[] amounts;
     uint256[] maxSlippage;
+    uint8[] liqBridges;
 }
 
 struct MessagingAssertVars {
@@ -114,6 +115,7 @@ struct SetupVars {
     address celerHelper;
     address celerImplementation;
     address socketRouter;
+    address lifiRouter;
     address erc4626Form;
     address erc4626TimelockForm;
     address rolesStateRegistry;
@@ -132,6 +134,7 @@ struct SetupVars {
     address superRBAC;
     address canonicalPermit2;
     address socketValidator;
+    address lifiValidator;
     Vm.Log[] logs;
     address superPositions;
     address superPositionBank;
@@ -149,6 +152,7 @@ struct SingleVaultCallDataArgs {
     address underlyingToken;
     uint256 superFormId;
     uint256 amount;
+    uint8 liqBridge;
     uint256 maxSlippage;
     address vaultMock;
     uint16 srcChainId;
@@ -168,6 +172,7 @@ struct MultiVaultCallDataArgs {
     address[] underlyingTokens;
     uint256[] superFormIds;
     uint256[] amounts;
+    uint8[] liqBridges;
     uint256[] maxSlippage;
     address[] vaultMock;
     uint16 srcChainId;
@@ -185,6 +190,7 @@ struct BuildDepositCallDataArgs {
     address[] underlyingToken;
     uint256[] targetSuperFormIds;
     uint256[] amounts;
+    uint8 liqBridges;
     uint256 maxSlippage;
     uint16 srcChainId;
     uint16 toChainId;

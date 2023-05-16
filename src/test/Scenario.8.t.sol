@@ -42,6 +42,9 @@ contract Scenario8Test is ProtocolActions {
         MAX_SLIPPAGE[POLY][0] = [1000];
         MAX_SLIPPAGE[POLY][1] = [1000];
 
+        LIQ_BRIDGES[POLY][0] = [1];
+        LIQ_BRIDGES[POLY][1] = [1];
+
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
         actions.push(

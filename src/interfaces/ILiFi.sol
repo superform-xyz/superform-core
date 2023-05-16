@@ -2,8 +2,6 @@
 pragma solidity 0.8.19;
 
 interface ILiFi {
-    /// Structs ///
-
     struct BridgeData {
         bytes32 transactionId;
         string bridge;
@@ -14,26 +12,16 @@ interface ILiFi {
         uint256 minAmount;
         uint256 destinationChainId;
         bool hasSourceSwaps;
-        bool hasDestinationCall;
+        bool hasDestinationCall; // is there a destination call? we should disable this
     }
 
-    /// Events ///
-
-    event LiFiTransferStarted(ILiFi.BridgeData bridgeData);
-
-    event LiFiTransferCompleted(
-        bytes32 indexed transactionId,
-        address receivingAssetId,
-        address receiver,
-        uint256 amount,
-        uint256 timestamp
-    );
-
-    event LiFiTransferRecovered(
-        bytes32 indexed transactionId,
-        address receivingAssetId,
-        address receiver,
-        uint256 amount,
-        uint256 timestamp
-    );
+    struct SwapData {
+        address callTo;
+        address approveTo;
+        address sendingAssetId;
+        address receivingAssetId;
+        uint256 fromAmount;
+        bytes callData;
+        bool requiresDeposit;
+    }
 }

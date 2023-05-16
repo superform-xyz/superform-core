@@ -34,7 +34,7 @@ contract SocketValidator is BridgeValidator {
     function validateTxDataAmount(
         bytes calldata txData_,
         uint256 amount_
-    ) external view override returns (bool) {
+    ) external pure override returns (bool) {
         if ((_decodeCallData(txData_).amount != amount_)) {
             return false;
         }

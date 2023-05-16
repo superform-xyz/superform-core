@@ -36,6 +36,8 @@ contract Scenario1Test is ProtocolActions {
 
         MAX_SLIPPAGE[POLY][0] = [1000];
 
+        LIQ_BRIDGES[POLY][0] = [1];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
