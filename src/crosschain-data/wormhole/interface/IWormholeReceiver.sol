@@ -1,11 +1,7 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: Apache 2
+pragma solidity ^0.8.0;
 
-pragma solidity 0.8.19;
-
-/// @dev are inherited contracts for wormhole bridge
-///
-/// @notice see https://github.com/wormhole-foundation/trustless-generic-relayer/blob/main/ethereum/contracts/interfaces/IWormholeReceiver.sol
-/// for more information
+/// @dev is imported from (https://github.com/wormhole-foundation/trustless-generic-relayer/blob/main/ethereum/contracts/interfaces/IWormholeReceiver.sol)
 interface IWormholeReceiver {
     function receiveWormholeMessages(
         bytes[] memory vaas,

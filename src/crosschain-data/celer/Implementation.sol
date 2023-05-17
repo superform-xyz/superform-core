@@ -1,24 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
-
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {IMessageBus} from "./interface/IMessageBus.sol";
 import {IMessageReceiver} from "./interface/IMessageReceiver.sol";
 import {Error} from "../../utils/Error.sol";
 import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
-import "forge-std/console.sol";
 
-/// @title Celer Implementation Contract
+/// @title CelerImplementation
 /// @author Zeropoint Labs
-///
-/// @dev interacts with the Celer AMB
-contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
-    error INVALID_RECEIVER();
-
+/// @dev allows state registries to use celer for crosschain communication
+contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
@@ -34,6 +29,18 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
+                                Modifiers
+    //////////////////////////////////////////////////////////////*/
+    modifier onlyProtocolAdmin() {
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                     Constructor
     //////////////////////////////////////////////////////////////*/
     /// @param messageBus_ is the celer message bus contract for respective chain.
@@ -47,12 +54,10 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice receive enables refund processing for gas payments
+    /// @dev FIXME: check for re-entrancy in all gas refunds
     receive() external payable {}
 
-    /// @dev allows state registry to send message via implementation.
-    /// @param dstChainId_ is the identifier of the destination chain
-    /// @param message_ is the cross-chain message to be sent
-    /// @param extraData_ is message amb specific override information
+    /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         uint16 dstChainId_,
         bytes memory message_,
@@ -71,9 +76,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         );
     }
 
-    /// @dev allows state registry to send multiple messages via implementation
-    /// @param message_ is the cross-chain message to be sent
-    /// @param extraData_ is the message amb specific override information
+    /// @inheritdoc IAmbImplementation
     function broadcastPayload(
         bytes memory message_,
         bytes memory extraData_
@@ -101,14 +104,14 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         }
     }
 
-    /// @notice to add access based controls over here
-    /// @dev allows admin to add new chain ids in future
+    /// @dev allows protocol admin to configure new chain id
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
+    /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
     function setChainId(
         uint16 superChainId_,
         uint64 ambChainId_
-    ) external onlyOwner {
+    ) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -116,33 +119,32 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
 
-        /// NOTE: @dev should handle a way to pop
+        /// FIXME: @dev should handle a way to pop
         broadcastChains.push(ambChainId_);
 
         emit ChainAdded(superChainId_);
     }
 
+    /// @dev allows protocol admin to set receiver implmentation on a new chain id
+    /// @param dstChainId_ is the identifier of the destination chain in celer
+    /// @param authorizedImpl_ is the implementation of the celer message bridge on the specified destination
+    /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
     function setReceiver(
         uint64 dstChainId_,
         address authorizedImpl_
-    ) external onlyOwner {
+    ) external onlyProtocolAdmin {
         if (dstChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
 
         if (authorizedImpl_ == address(0)) {
-            revert INVALID_RECEIVER();
+            revert Error.ZERO_ADDRESS();
         }
 
         authorizedImpl[dstChainId_] = authorizedImpl_;
     }
 
-    /// @notice Handle an interchain message
-    /// @notice Only called by mailbox
-    ///
-    /// @param srcChainId_ ChainId ID of the chain from which the message came
-    /// @param srcContract_ Address of the message sender on the origin chain
-    /// @param message_ Raw bytes content of message body
+    /// @inheritdoc IMessageReceiver
     function executeMessage(
         address srcContract_,
         uint64 srcChainId_,
@@ -156,6 +158,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
             revert Error.INVALID_CALLER();
         }
 
+        /// FIXME: check why this fails
         // if (sender_ != castAddr(authorizedImpl[origin_])) {
         //     revert INVALID_CALLER();
         // }
@@ -179,8 +182,4 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver, Ownable {
         targetRegistry.receivePayload(superChainId[srcChainId_], message_);
         return ExecutionStatus.Success;
     }
-
-    /*///////////////////////////////////////////////////////////////
-                    Internal Functions
-    //////////////////////////////////////////////////////////////*/
 }

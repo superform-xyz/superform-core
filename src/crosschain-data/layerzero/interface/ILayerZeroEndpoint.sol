@@ -1,8 +1,9 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity >=0.5.0;
 
 import "./ILayerZeroUserApplicationConfig.sol";
 
+/// @dev is imported from (https://github.com/LayerZero-Labs/LayerZero/blob/main/contracts/interfaces/ILayerZeroEndpoint.sol)
 interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @notice send a LayerZero message to the specified address at a LayerZero endpoint.
     // @param dstChainId_ - the destination chain identifier
@@ -39,17 +40,17 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @notice get the inboundNonce of a lzApp from a source chain which could be EVM or non-EVM chain
     // @param srcChainId_ - the source chain identifier
     // @param srcAddress_ - the source chain contract address
-    function getInboundNonce(uint16 srcChainId_, bytes calldata srcAddress_)
-        external
-        view
-        returns (uint64);
+    function getInboundNonce(
+        uint16 srcChainId_,
+        bytes calldata srcAddress_
+    ) external view returns (uint64);
 
     // @notice get the outboundNonce from this source chain which, consequently, is always an EVM
     // @param srcAddress_ - the source chain contract address
-    function getOutboundNonce(uint16 dstChainId_, address srcAddress_)
-        external
-        view
-        returns (uint64);
+    function getOutboundNonce(
+        uint16 dstChainId_,
+        address srcAddress_
+    ) external view returns (uint64);
 
     // @notice gets a quote in source native gas, for the amount that send() requires to pay for message delivery
     // @param dstChainId_ - the destination chain identifier
@@ -81,24 +82,22 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
     // @notice query if any STORED payload (message blocking) at the endpoint.
     // @param srcChainId_ - the source chain identifier
     // @param srcAddress_ - the source chain contract address
-    function hasStoredPayload(uint16 srcChainId_, bytes calldata srcAddress_)
-        external
-        view
-        returns (bool);
+    function hasStoredPayload(
+        uint16 srcChainId_,
+        bytes calldata srcAddress_
+    ) external view returns (bool);
 
     // @notice query if the _libraryAddress is valid for sending msgs.
     // @param userApplication_ - the user app address on this EVM chain
-    function getSendLibraryAddress(address userApplication_)
-        external
-        view
-        returns (address);
+    function getSendLibraryAddress(
+        address userApplication_
+    ) external view returns (address);
 
     // @notice query if the _libraryAddress is valid for receiving msgs.
     // @param userApplication_ - the user app address on this EVM chain
-    function getReceiveLibraryAddress(address userApplication_)
-        external
-        view
-        returns (address);
+    function getReceiveLibraryAddress(
+        address userApplication_
+    ) external view returns (address);
 
     // @notice query if the non-reentrancy guard for send() is on
     // @return true if the guard is on. false otherwise
@@ -122,15 +121,13 @@ interface ILayerZeroEndpoint is ILayerZeroUserApplicationConfig {
 
     // @notice get the send() LayerZero messaging library version
     // @param userApplication_ - the contract address of the user application
-    function getSendVersion(address userApplication_)
-        external
-        view
-        returns (uint16);
+    function getSendVersion(
+        address userApplication_
+    ) external view returns (uint16);
 
     // @notice get the lzReceive() LayerZero messaging library version
     // @param userApplication_ - the contract address of the user application
-    function getReceiveVersion(address userApplication_)
-        external
-        view
-        returns (uint16);
+    function getReceiveVersion(
+        address userApplication_
+    ) external view returns (uint16);
 }
