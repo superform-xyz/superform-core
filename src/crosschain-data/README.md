@@ -16,11 +16,11 @@ The following components are a key part of superform's robust crosschain communi
 
 Each individual AMB wrapper will be placed inside a folder named after the Arbitrary Message Bridge (AMB).
 
-* **[CelerImplementation.sol](./celer/CelerImplementation.sol)**: Wrapper for Celer AMB
+* **[CelerImplementation.sol](./celer/Implementation.sol)**: Wrapper for Celer AMB
 
-* **[LayerzeroImplementation.sol](./layerzero/LayerzeroImplementation.sol)**: Wrapper for Layerzero AMB
+* **[LayerzeroImplementation.sol](./layerzero/Implementation.sol)**: Wrapper for Layerzero AMB
 
-* **[HyperlaneImplementation.sol](./hyperlane/HyperlaneImplementation.sol)**: Wrapper for Hyperlane AMB
+* **[HyperlaneImplementation.sol](./hyperlane/Implementation.sol)**: Wrapper for Hyperlane AMB
 
 ## Architecture
 
@@ -57,6 +57,7 @@ Every AMB has their identifier for different chains/networks. In state registrie
 ## Security Assumptions: A Primer
 
 ---
+
 * Only AMB implementation contracts can write new messages into state registry
 * Sender should be authenticated to interact with the AMB implmenetation contract
 * Processing & Updation of payload can only be made by keepers with special previlages
