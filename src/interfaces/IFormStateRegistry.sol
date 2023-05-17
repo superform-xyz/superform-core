@@ -17,7 +17,7 @@ interface IFormStateRegistry {
 
     /// @notice Form Keeper finalizes payload to process Timelock withdraw fully
     /// @param payloadId is the id of the payload to finalize
-    /// @param ackExtraData is the AMBMessage data to send back to the source stateSync with request to re-mint SuperPositions
+    /// @param ackExtraData_ is the AMBMessage data to send back to the source stateSync with request to re-mint SuperPositions
     function finalizePayload(
         uint256 payloadId,
         bytes memory ackExtraData_
