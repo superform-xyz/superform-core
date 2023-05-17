@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.4;
 
+/// @title ISocketRegistry
+/// @notice Interface for socket's Router contract
+/// @notice taken from https://etherscan.io/address/0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0#code
 interface ISocketRegistry {
     /// @param id route id of middleware to be used
     /// @param optionalNativeAmount is the amount of native asset that the route requires

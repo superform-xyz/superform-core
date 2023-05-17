@@ -13,6 +13,7 @@ import {ERC4626TimelockMock} from "../src/test/mocks/ERC4626TimelockMock.sol";
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../src/interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../src/crosschain-data/CoreStateRegistry.sol";
+import {RolesStateRegistry} from "../src/crosschain-data/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../src/crosschain-data/FactoryStateRegistry.sol";
 import {ISuperRouter} from "../src/interfaces/ISuperRouter.sol";
 import {ISuperFormFactory} from "../src/interfaces/ISuperFormFactory.sol";
@@ -26,11 +27,15 @@ import {SuperFormFactory} from "../src/SuperFormFactory.sol";
 import {ERC4626Form} from "../src/forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../src/forms/ERC4626TimelockForm.sol";
 import {MultiTxProcessor} from "../src/crosschain-liquidity/MultiTxProcessor.sol";
+import {LiFiValidator} from "../src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import {SocketValidator} from "../src/crosschain-liquidity/socket/SocketValidator.sol";
 import {LayerzeroImplementation} from "../src/crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../src/crosschain-data/hyperlane/Implementation.sol";
+import {CelerImplementation} from "../src/crosschain-data/celer/Implementation.sol";
 import {IMailbox} from "../src/vendor/hyperlane/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../src/vendor/hyperlane/IInterchainGasPaymaster.sol";
+import {IMessageBus} from "../src/vendor/celer/IMessageBus.sol";
+import {FormStateRegistry} from "../src/crosschain-data/FormStateRegistry.sol";
 
 struct SetupVars {
     uint16[2] chainIds;
@@ -45,9 +50,12 @@ struct SetupVars {
     address lzEndpoint;
     address lzImplementation;
     address hyperlaneImplementation;
+    address celerImplementation;
     address erc4626Form;
     address erc4626TimelockForm;
     address factoryStateRegistry;
+    address formStateRegistry;
+    address rolesStateRegistry;
     address coreStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
@@ -61,6 +69,7 @@ struct SetupVars {
     address superPositions;
     address superRBAC;
     address socketValidator;
+    address lifiValidator;
 }
 
 contract Deploy is Script {
@@ -125,12 +134,13 @@ contract Deploy is Script {
 
     /// @dev liquidity bridge ids. 1,2,3 belong to socket. 4 is lifi
     uint8[] public bridgeIds = [uint8(1), 2, 3];
-    /// @dev liquidity bridge addresses
+
+    /// @dev liquidity bridge addresses - NOTE this is a todo for all chains
     address[] public bridgeAddresses = [
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE,
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE,
+        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE,
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
-        // 0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
     ];
 
     /// @dev liquidity validator addresses
@@ -173,6 +183,15 @@ contract Deploy is Script {
         0x3c2269811836af69497E5F486A85D7316753cf62
     ];
 
+    address[] public celerMessageBusses = [
+        0x4066D196A423b2b3B8B054f4F40efB47a74E200C,
+        0x95714818fdd7a5454F73Da9c777B3ee6EbAEEa6B,
+        0x5a926eeeAFc4D217ADd17e9641e8cE23Cd01Ad57,
+        0xaFDb9C40C7144022811F034EE07Ce2E110093fe6,
+        0x3Ad9d0648CDAA2426331e894e980D0a5Ed16257f,
+        0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d
+    ];
+
     /*
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -184,6 +203,7 @@ contract Deploy is Script {
         0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7
     ];
     */
+
     /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -213,8 +233,11 @@ contract Deploy is Script {
 
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
     uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+
     /// @dev FIXME to fix with correct chainIds
     uint256[] public socketChainIds = [1, 2, 3, 4, 5, 6];
+    /// @dev FIXME to fix with correct chainIds
+    uint256[] public lifiChainIds = [1, 2, 3, 4, 5, 6];
 
     uint256 public constant milionTokensE18 = 1 ether;
 
@@ -305,6 +328,8 @@ contract Deploy is Script {
             SuperRBAC(vars.superRBAC).grantProcessorRole(deployer);
             /// @dev FIXME: in reality who should have the UPDATER_ROLE for state registry?
             SuperRBAC(vars.superRBAC).grantUpdaterRole(deployer);
+            /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
+            SuperRBAC(vars.superRBAC).grantFormStateRegistryRole(deployer);
 
             /// @dev 3.1 - deploy Core State Registry
 
@@ -340,6 +365,55 @@ contract Deploy is Script {
             SuperRegistry(vars.superRegistry).setFactoryStateRegistry(
                 vars.factoryStateRegistry
             );
+
+            /// @dev 3.3 - deploy Form State Registry
+            vars.formStateRegistry = address(
+                new FormStateRegistry{salt: salt}(
+                    SuperRegistry(vars.superRegistry),
+                    1
+                )
+            );
+
+            contracts[vars.chainId][bytes32(bytes("FormStateRegistry"))] = vars
+                .formStateRegistry;
+
+            SuperRegistry(vars.superRegistry).setFormStateRegistry(
+                vars.formStateRegistry
+            );
+
+            /// @dev 3.4- deploy Roles State Registry
+            vars.rolesStateRegistry = address(
+                new RolesStateRegistry{salt: salt}(
+                    SuperRegistry(vars.superRegistry),
+                    3
+                )
+            );
+
+            contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars
+                .rolesStateRegistry;
+
+            SuperRegistry(vars.superRegistry).setRolesStateRegistry(
+                vars.rolesStateRegistry
+            );
+
+            SuperRegistry(vars.superRegistry).setRolesStateRegistry(
+                vars.rolesStateRegistry
+            );
+
+            address[] memory registryAddresses = new address[](3);
+            registryAddresses[0] = vars.coreStateRegistry;
+            registryAddresses[1] = vars.factoryStateRegistry;
+            registryAddresses[2] = vars.rolesStateRegistry;
+
+            uint8[] memory registryIds = new uint8[](3);
+            registryIds[0] = 1;
+            registryIds[1] = 2;
+            registryIds[2] = 3;
+
+            SuperRegistry(vars.superRegistry).setStateRegistryAddress(
+                registryIds,
+                registryAddresses
+            );
             /// @dev 4.1- deploy Layerzero Implementation
             vars.lzImplementation = address(
                 new LayerzeroImplementation{salt: salt}(
@@ -365,9 +439,21 @@ contract Deploy is Script {
                 bytes32(bytes("HyperlaneImplementation"))
             ] = vars.hyperlaneImplementation;
 
+            /// @dev 4.3 - deploy Celer Implementation
+            vars.celerImplementation = address(
+                new CelerImplementation{salt: salt}(
+                    IMessageBus(celerMessageBusses[i]),
+                    SuperRegistry(vars.superRegistry)
+                )
+            );
+            contracts[vars.chainId][
+                bytes32(bytes("CelerImplementation"))
+            ] = vars.celerImplementation;
+
             if (i == 0) {
                 ambAddresses.push(vars.lzImplementation);
                 ambAddresses.push(vars.hyperlaneImplementation);
+                ambAddresses.push(vars.celerImplementation);
             }
 
             /// @dev 5- deploy socket validator
@@ -382,10 +468,23 @@ contract Deploy is Script {
                 socketChainIds
             );
 
+            vars.lifiValidator = address(
+                new LiFiValidator{salt: salt}(vars.superRegistry)
+            );
+            contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars
+                .lifiValidator;
+
+            LiFiValidator(vars.lifiValidator).setChainIds(
+                chainIds,
+                lifiChainIds
+            );
+
+            /// @dev can do this in first loop because of create2
             if (i == 0) {
                 for (uint256 j = 0; j < 3; j++) {
                     bridgeValidators.push(vars.socketValidator);
                 }
+                bridgeValidators.push(vars.lifiValidator);
             }
 
             /// @dev 5 - Deploy UNDERLYING_TOKENS and VAULTS
@@ -396,7 +495,6 @@ contract Deploy is Script {
                     new MockERC20(
                         UNDERLYING_TOKENS[j],
                         UNDERLYING_TOKENS[j],
-                        18,
                         deployer,
                         milionTokensE18
                     )
@@ -528,6 +626,10 @@ contract Deploy is Script {
             );
             SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
                 vars.hyperlaneImplementation
+            );
+            /// FIXME: check if this is safe in all aspects
+            SuperRBAC(vars.superRBAC).grantProtocolAdminRole(
+                vars.rolesStateRegistry
             );
 
             vm.stopBroadcast();

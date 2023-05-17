@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+/// @title ISuperRBAC
+/// @author Zeropoint Labs.
+/// @dev interface for Super RBAC
 interface ISuperRBAC {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
@@ -26,6 +29,14 @@ interface ISuperRBAC {
         address coreStateRegistry_,
         bytes memory extraData_
     ) external payable;
+
+    /// @dev grants the FORM_STATE_REGISTRY_ROLE to the given address
+    /// @param formStateRegistry_ the address to grant the role to
+    function grantFormStateRegistryRole(address formStateRegistry_) external;
+
+    /// @dev revokes the FORM_STATE_REGISTRY_ROLE from given address
+    /// @param formStateRegistry_ the address to revoke the role from
+    function revokeFormStateRegistryRole(address formStateRegistry_) external;
 
     /// @dev grants the SUPER_ROUTER_ROLE to the given address
     /// @param superRouter_ the address to grant the role to

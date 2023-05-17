@@ -19,7 +19,7 @@ import "./utils/DataPacking.sol";
 
 /// @title Super Router
 /// @author Zeropoint Labs.
-/// @dev Routes users funds and deposit information to a remote execution chain.
+/// @dev Routes users funds and action information to a remote execution chain.
 /// @dev extends Liquidity Handler.
 contract SuperRouter is ISuperRouter, LiquidityHandler {
     using SafeERC20 for IERC20;
@@ -43,12 +43,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         _;
     }
 
-    modifier onlyBank() {
-        if (msg.sender != superRegistry.superPositionBank())
-            revert Error.NOT_SUPER_POSITION_BANK();
-        _;
-    }
-
     /// @dev constructor
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
@@ -60,7 +54,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice receive enables processing native token transfers into the smart contract.
-    /// @dev socket.tech fails without a native receive function.
+    /// @notice liquidity bridge tech fails without a native receive function.
     receive() external payable {}
 
     /// @inheritdoc ISuperRouter
@@ -111,8 +105,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             req.superFormsData.extraFormData
         );
 
-        /// @dev same chain action
         if (vars.srcChainId == vars.dstChainId) {
+            /// @dev same chain action
             _directMultiDeposit(
                 vars.srcSender,
                 req.superFormsData.liqRequests,
@@ -120,6 +114,8 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             );
             emit Completed(vars.currentTotalTransactions);
         } else {
+            /// @dev cross chain action
+
             address permit2 = superRegistry.PERMIT2();
             address superForm;
             /// @dev this loop is what allows to deposit to >1 different underlying on destination
@@ -189,6 +185,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
     }
 
+    /// @inheritdoc ISuperRouter
     function singleXChainSingleVaultDeposit(
         SingleXChainSingleVaultStateReq memory req
     ) public payable override {
@@ -237,6 +234,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         emit CrossChainInitiated(vars.currentTotalTransactions);
     }
 
+    /// @inheritdoc ISuperRouter
     function singleDirectSingleVaultDeposit(
         SingleDirectSingleVaultStateReq memory req
     ) public payable override {
@@ -387,16 +385,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (vars.srcChainId == vars.dstChainId)
             revert Error.INVALID_CHAIN_IDS();
 
-        /// @dev validate superFormsData
-        if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
-            revert Error.INVALID_SUPERFORMS_DATA();
-
-        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
-            vars.srcSender,
-            req.superFormData.superFormId,
-            req.superFormData.amount
-        );
-
         InitSingleVaultData memory ambData;
 
         (ambData, vars.currentTotalTransactions) = _buildWithdrawAmbData(
@@ -424,7 +412,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         SingleDirectSingleVaultStateReq memory req
     ) public payable override {
         ActionLocalVars memory vars;
-        InitSingleVaultData memory ambData;
 
         vars.srcSender = msg.sender;
 
@@ -434,16 +421,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (vars.srcChainId != vars.dstChainId)
             revert Error.INVALID_CHAIN_IDS();
 
-        /// @dev validate superFormsData
-        if (!_validateSuperFormData(vars.dstChainId, req.superFormData))
-            revert Error.INVALID_SUPERFORMS_DATA();
-
-        /// @dev burn SuperPositions
-        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
-            vars.srcSender,
-            req.superFormData.superFormId,
-            req.superFormData.amount
-        );
+        InitSingleVaultData memory ambData;
 
         (ambData, vars.currentTotalTransactions) = _buildWithdrawAmbData(
             vars.srcSender,
@@ -513,6 +491,16 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             uint80 currentTotalTransactions
         )
     {
+        /// @dev validate superFormsData
+        if (!_validateSuperFormData(dstChainId_, superFormData_))
+            revert Error.INVALID_SUPERFORMS_DATA();
+
+        ISuperPositions(superRegistry.superPositions()).burnSingleSP(
+            srcSender_,
+            superFormData_.superFormId,
+            superFormData_.amount
+        );
+
         totalTransactions++;
         currentTotalTransactions = totalTransactions;
 
@@ -768,34 +756,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
     }
 
-    /*///////////////////////////////////////////////////////////////
-                            DEV FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @notice should be removed after end-to-end testing.
-    /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function withdrawToken(
-        address _tokenContract,
-        uint256 _amount
-    ) external onlyProtocolAdmin {
-        IERC20 tokenContract = IERC20(_tokenContract);
-
-        /// note: transfer the token from address of this contract
-        /// note: to address of the user (executing the withdrawToken() function)
-        tokenContract.safeTransfer(superRegistry.protocolAdmin(), _amount);
-    }
-
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function withdrawNativeToken(uint256 _amount) external onlyProtocolAdmin {
-        payable(superRegistry.protocolAdmin()).transfer(_amount);
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
     function _validateSuperFormData(
         uint16 dstChainId_,
         SingleVaultSFData memory superFormData_
@@ -961,5 +921,29 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
 
         return true;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            DEV FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev PREVILEGED admin ONLY FUNCTION.
+    /// @notice should be removed after end-to-end testing.
+    /// @dev allows admin to withdraw lost tokens in the smart contract.
+    function withdrawToken(
+        address _tokenContract,
+        uint256 _amount
+    ) external onlyProtocolAdmin {
+        IERC20 tokenContract = IERC20(_tokenContract);
+
+        /// note: transfer the token from address of this contract
+        /// note: to address of the user (executing the withdrawToken() function)
+        tokenContract.safeTransfer(superRegistry.protocolAdmin(), _amount);
+    }
+
+    /// @dev PREVILEGED admin ONLY FUNCTION.
+    /// @dev allows admin to withdraw lost native tokens in the smart contract.
+    function withdrawNativeToken(uint256 _amount) external onlyProtocolAdmin {
+        payable(superRegistry.protocolAdmin()).transfer(_amount);
     }
 }

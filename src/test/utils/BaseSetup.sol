@@ -414,7 +414,7 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.factoryStateRegistry
             );
 
-            /// @dev 4.2 - deploy Form State Registry
+            /// @dev 4.3 - deploy Form State Registry
             vars.formStateRegistry = address(
                 new FormStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
@@ -429,7 +429,7 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.formStateRegistry
             );
 
-            /// @dev 4.3- deploy Roles State Registry
+            /// @dev 4.4- deploy Roles State Registry
             vars.rolesStateRegistry = address(
                 new RolesStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
@@ -464,8 +464,6 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev 5.1 - deploy Layerzero Implementation
-            /// @notice: deploying this with create2 doesn't lead to same address because of lzEndpoints being different per chain
-            /// TODO: unless we change LzApp.sol to set the lzEndpoint post deployment
             vars.lzImplementation = address(
                 new LayerzeroImplementation{salt: salt}(
                     SuperRegistry(vars.superRegistry)
@@ -516,7 +514,7 @@ abstract contract BaseSetup is DSTest, Test {
                 .lifiRouter;
             vm.allowCheatcodes(vars.lifiRouter);
 
-            /// @dev 6.2- deploy socke and lifi validator
+            /// @dev 6.2- deploy socket and lifi validator
             vars.socketValidator = address(
                 new SocketValidator{salt: salt}(vars.superRegistry)
             );
@@ -553,7 +551,6 @@ abstract contract BaseSetup is DSTest, Test {
                     new MockERC20{salt: salt}(
                         UNDERLYING_TOKENS[j],
                         UNDERLYING_TOKENS[j],
-                        18,
                         deployer,
                         milionTokensE18
                     )
