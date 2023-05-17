@@ -1,13 +1,7 @@
-// SPDX-License-Identifier: Apache-2.0
-
-pragma solidity 0.8.19;
-
-/// @dev are inherited contracts for wormhole bridge
-///
-/// @notice see https://github.com/wormhole-foundation/trustless-generic-relayer/blob/main/ethereum/contracts/interfaces/IWormhole.sol
-/// for more information
+// SPDX-License-Identifier: Apache 2
 pragma solidity ^0.8.0;
 
+/// @dev is imported from (https://github.com/wormhole-foundation/trustless-generic-relayer/blob/main/ethereum/contracts/interfaces/IWormhole.sol)
 interface IWormhole {
     struct GuardianSet {
         address[] keys;

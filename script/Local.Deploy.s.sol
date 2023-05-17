@@ -32,9 +32,9 @@ import {SocketValidator} from "../src/crosschain-liquidity/socket/SocketValidato
 import {LayerzeroImplementation} from "../src/crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../src/crosschain-data/hyperlane/Implementation.sol";
 import {CelerImplementation} from "../src/crosschain-data/celer/Implementation.sol";
-import {IMailbox} from "../src/crosschain-data/hyperlane/interface/IMailbox.sol";
-import {IInterchainGasPaymaster} from "../src/crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
-import {IMessageBus} from "../src/crosschain-data/celer/interface/IMessageBus.sol";
+import {IMailbox} from "../src/vendor/hyperlane/IMailbox.sol";
+import {IInterchainGasPaymaster} from "../src/vendor/hyperlane/IInterchainGasPaymaster.sol";
+import {IMessageBus} from "../src/vendor/celer/IMessageBus.sol";
 import {FormStateRegistry} from "../src/crosschain-data/FormStateRegistry.sol";
 
 struct SetupVars {
