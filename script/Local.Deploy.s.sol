@@ -29,8 +29,8 @@ import {MultiTxProcessor} from "../src/crosschain-liquidity/MultiTxProcessor.sol
 import {SocketValidator} from "../src/crosschain-liquidity/socket/SocketValidator.sol";
 import {LayerzeroImplementation} from "../src/crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../src/crosschain-data/hyperlane/Implementation.sol";
-import {IMailbox} from "../src/crosschain-data/hyperlane/interface/IMailbox.sol";
-import {IInterchainGasPaymaster} from "../src/crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
+import {IMailbox} from "../src/vendor/hyperlane/IMailbox.sol";
+import {IInterchainGasPaymaster} from "../src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 
 struct SetupVars {
     uint16[2] chainIds;
