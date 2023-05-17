@@ -1,22 +1,15 @@
 # Superform Smart Contracts
 
-![Coverage](https://img.shields.io/badge/coverage-100-success) [![built-with openzeppelin](https://img.shields.io/badge/built%20with-OpenZeppelin-3677FF)](https://docs.openzeppelin.com/)
-
 This repository contains the core protocol smart contracts of [Superform](https://app.superform.xyz/).
 
 ### Table of contents
 
-- [Getting Started](#getting-started)
 - [Prerequisites](#prerequisites)
 - [Project structure](#project-structure)
 - [Installation](#installation)
 - [Testing](#testing)
-
-### Built with
-
-- [LayerZero](https://layerzero.network/) - OmniChain communication Protocol
-- [Foundry](https://book.getfoundry.sh) - Smart Contract Development Suite
-- [Solidity](https://docs.soliditylang.org/en/v0.8.19/) - Smart Contract Programming Language
+- [Useful-info](#useful-info)
+- [Action-flows](#action-flows)
 
 ### Prerequisites
 
@@ -40,24 +33,7 @@ foundryup
 
 🎉 Foundry is installed! 🎉
 
-### Installation
-
-Step by step instructions on setting up the project and running it
-
-1. Set the env variables as per the dev instructions
-
-2. Install submodules and dependencies
-
-Or, if your repo already exists, run:
-
-```sh
-git submodule update --init --recursive
-forge install
-```
-
-3. Run `forge test` to run tests against the contracts
-
-### Project Folder layout & Structure
+### Project structure
 
     .
     ├── src
@@ -78,17 +54,20 @@ It makes our project structure easily scannable:
 - `interface` are where we add our custom written interfaces as well as external protocol interfaces [/src/interface](./src/interface).
 - `types` is where all re-used types are written and used across different smart contracts. [/src/types](./src/types)
 
-### Sorting Your Imports
+### Installation
 
-I sort imports in this order:
+Step by step instructions on setting up the project and running it
 
-1. Openzeppelin (or) NPM Contracts
-2. Current Contract's Interfaces
-3. Other Local Interfaces
-4. Library Contracts/Interfaces
-5. Tunnel Contracts/Interfaces
-6. Type Contract
-7. Error Contract
+1. Set the env variables as per the dev instructions
+
+2. Install submodules and dependencies:
+
+```sh
+foundryup
+forge install
+```
+
+3. Run `forge test` to run some scenario tests against the contracts
 
 ### Testing
 
@@ -103,3 +82,38 @@ To run coverage:
 ```sh
 $  forge coverage
 ```
+
+### Useful-info
+
+1. All external actions, except SuperForm creation, start in `SuperRouter.sol`;
+2. Deposits/withdraws can be single or multiple destination, single or multi vault, cross-chain or direct chain;
+3. Multi-vault actions can contain vaults of different kinds.
+4. The vaults themselves are wrapped by Forms - code implementations that adapt to the needs of a given vault. This wrapping action leads to the creation of SuperForms (the triplet of superForm address, form id and chain id).
+5. Any user can wrap a vault into a SuperForm.
+6. Any individual tx must be of a specific kind, either all deposits or all withdraws, for all vaults and destinations
+
+### Action-flows
+
+1. A user with no SuperPositions starts by depositing using the most optimized entry point for his needs
+2. For such purpose, has to provide a "StateRequest" containing the amounts being actioned into each vault in each chain, as well as liquidity information, about how the actual deposit/withdraw process will be handled.
+3. For deposit actions, the user can provide a different input token on a source chain and receive the actual underlying token (different than input token) on the destination chain, after swapping and bridging in a single call. Sometimes it is also needed to perform another extra swap at the destination for tokens with low bridge liquidity, through the usage of `MultiTxProcessor.sol`
+4. For withdraw actions, user can choose to receive a different token than the one redeemed for from the vault, back at the source chain
+
+5. The typical flow for a deposit xchain transaction is:
+
+- Validation of the input data in `SuperRouter.sol`
+- Dispatching the input tokens to the liquidity bridge using an implementation of a `BridgeValidator.sol` and `LiquidityHandler.sol`
+- Creating the `AMBMessage` with the information about what is going to be deposited and by whom
+- Messaging the information about the deposits to the vaults using `CoreStateRegistry.sol`. Typically this is done with the combination of two different AMBs by splitting the message and the proof for added security.
+- Receive the information on the destination chain's `CoreStateRegistry.sol`. At this step, a keeper updates the messaged amounts to-be deposited with the actual amounts received through the liquidity bridge using one of the `updatePayload` functions.
+- The keeper can then process the received message using `processPayload`. Here the deposit action is try-catched for errors. Should the action pass, a message is sent back to source acknowledging the action and minting SuperPositions to the user. If the action fails, no message is sent back and no SuperPositions are minted.
+- Funds bridged can be automatically recovered by the keeper in case of error catching and sent back to source using one of `rescueFailedDeposit` functions
+
+6. The typical flow for a withdraw xchain transaction is:
+
+- Validation of the input data in `SuperRouter.sol`
+- Burning the corresponding SuperPositions owned by the user in accordance to the input data.
+- Creating the `AMBMessage` with the information about what is going to be withdrawn and by whom
+- Messaging the information about the withdraws to the vaults using `CoreStateRegistry.sol`. The process follows the same pattern as above
+- Receive the information on the destination chain's `CoreStateRegistry.sol`.
+- The keeper can then process the received message using `processPayload`. Here the withdraw action is try-catched for errors. Should the action pass, the underlying obtained is bridged back to the user in the form of the desired tokens to be received. If the action fails, a message is sent back indicating that SuperPositions need to be re-minted for the user according to the original amounts that were burned.
