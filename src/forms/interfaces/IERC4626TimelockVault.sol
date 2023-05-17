@@ -6,7 +6,7 @@ import {InitSingleVaultData} from "../../types/DataTypes.sol";
 
 /// @notice Interface for ERC4626 extended with Timelock design (ERC4626MockVault)
 /// NOTE: Not a Form interface!
-interface IERC4626Timelock is IERC20 {
+interface IERC4626TimelockVault is IERC20 {
     /*///////////////////////////////////////////////////////////////
                             TIMELOCK SECTION
     //////////////////////////////////////////////////////////////*/
@@ -21,11 +21,11 @@ interface IERC4626Timelock is IERC20 {
         uint shareAmount;
     }
 
-    /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
+    /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626TimelockVault target vault
     /// @dev Owner first submits request for unlock and only after specified cooldown passes, can withdraw
     function requestUnlock(uint shareAmount, address owner) external;
 
-    /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
+    /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626TimelockVault target vault
     /// @dev Owner can resign from unlock request. In production vaults have differing mechanism for this
     function cancelUnlock(address owner) external;
 

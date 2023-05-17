@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IERC4626Timelock} from "../forms/interfaces/IERC4626Timelock.sol";
+import {IERC4626TimelockVault} from "../forms/interfaces/IERC4626TimelockVault.sol";
 import {IFormStateRegistry} from "../interfaces/IFormStateRegistry.sol";
 import {Error} from "../utils/Error.sol";
 import {BaseStateRegistry} from "../crosschain-data/BaseStateRegistry.sol";
@@ -75,7 +75,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         (address form_, , ) = _getSuperForm(
             payloadStore[payloadId].superFormId
         );
-        IERC4626Timelock form = IERC4626Timelock(form_);
+        IERC4626TimelockVault form = IERC4626TimelockVault(form_);
 
         /// @dev try to processUnlock for this srcSender
         try form.processUnlock(payloadStore[payloadId].owner) {

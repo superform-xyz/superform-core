@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {ERC4626} from "solmate/mixins/ERC4626.sol";
-import {IERC4626Timelock} from "./interfaces/IERC4626Timelock.sol";
+import {IERC4626TimelockVault} from "./interfaces/IERC4626TimelockVault.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
@@ -150,7 +150,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         }
 
         uint256 unlockTime = ownerRequest.requestTimestamp +
-            IERC4626Timelock(vault_).getLockPeirod();
+            IERC4626TimelockVault(vault_).getLockPeirod();
 
         if (block.timestamp < unlockTime) {
             /// unlock cooldown period not passed. revert Error.WITHDRAW_COOLDOWN_PERIOD
@@ -190,7 +190,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
 
         vars.vaultLoc = vault;
         /// note: checking balance
-        IERC4626Timelock v = IERC4626Timelock(vars.vaultLoc);
+        IERC4626TimelockVault v = IERC4626TimelockVault(vars.vaultLoc);
 
         vars.collateral = address(v.asset());
         vars.collateralToken = ERC20(vars.collateral);
@@ -276,7 +276,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         vars.len1 = singleVaultData_.liqData.txData.length;
         vars.receiver = vars.len1 == 0 ? vars.srcSender : address(this);
 
-        IERC4626Timelock v = IERC4626Timelock(vault);
+        IERC4626TimelockVault v = IERC4626TimelockVault(vault);
         vars.collateral = address(v.asset());
 
         if (address(v.asset()) != vars.collateral)
@@ -360,7 +360,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     ) internal virtual override returns (uint256 dstAmount) {
         (, , uint16 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
         address vaultLoc = vault;
-        IERC4626Timelock v = IERC4626Timelock(vaultLoc);
+        IERC4626TimelockVault v = IERC4626TimelockVault(vaultLoc);
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
         /// DEVNOTE: allowance is modified inside of the ERC20.transferFrom() call
@@ -403,7 +403,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
         vars.vaultLoc = vault;
 
-        IERC4626Timelock v = IERC4626Timelock(vars.vaultLoc);
+        IERC4626TimelockVault v = IERC4626TimelockVault(vars.vaultLoc);
 
         (vars.srcSender, vars.srcChainId, vars.txId) = _decodeTxData(
             singleVaultData_.txData
