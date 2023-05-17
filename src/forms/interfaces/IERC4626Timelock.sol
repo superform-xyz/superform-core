@@ -4,6 +4,8 @@ pragma solidity 0.8.19;
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {InitSingleVaultData} from "../../types/DataTypes.sol";
 
+/// @notice Interface for ERC4626 extended with Timelock design (ERC4626MockVault)
+/// NOTE: Not a Form interface!
 interface IERC4626Timelock is IERC20 {
     /*///////////////////////////////////////////////////////////////
                             TIMELOCK SECTION

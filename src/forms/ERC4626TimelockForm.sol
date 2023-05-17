@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC4626} from "solmate/mixins/ERC4626.sol";
 import {IERC4626Timelock} from "./interfaces/IERC4626Timelock.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
@@ -14,7 +15,7 @@ import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 /// @title ERC4626TimelockForm
-/// @notice The Form implementation with timelock extension for IERC4626Timelock vaults
+/// @notice The Form implementation with timelock extension for ERC4626 vaults
 contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
@@ -47,7 +48,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) ERC20Form(superRegistry_) {
+    constructor(address superRegistry_) BaseForm(superRegistry_) {
         address formStateRegistry_ = superRegistry.twoStepsFormStateRegistry();
         twoStepsFormStateRegistry = IFormStateRegistry(formStateRegistry_);
     }
@@ -65,7 +66,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         override
         returns (ERC20)
     {
-        return ERC20(IERC4626Timelock(vault).asset());
+        return ERC20(ERC4626(vault).asset());
     }
 
     /// @inheritdoc BaseForm
@@ -77,7 +78,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         returns (uint256)
     {
         uint256 vaultDecimals = ERC20(vault).decimals();
-        return IERC4626Timelock(vault).convertToAssets(10 ** vaultDecimals);
+        return ERC4626(vault).convertToAssets(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
@@ -88,12 +89,12 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         override
         returns (uint256)
     {
-        return IERC4626Timelock(vault).balanceOf(address(this));
+        return ERC4626(vault).balanceOf(address(this));
     }
 
     /// @inheritdoc BaseForm
     function getTotalAssets() public view virtual override returns (uint256) {
-        return IERC4626Timelock(vault).totalAssets();
+        return ERC4626(vault).totalAssets();
     }
 
     /// @inheritdoc BaseForm
@@ -105,7 +106,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         returns (uint256)
     {
         uint256 vaultDecimals = ERC20(vault).decimals();
-        return IERC4626Timelock(vault).convertToAssets(10 ** vaultDecimals);
+        return ERC4626(vault).convertToAssets(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
@@ -117,21 +118,21 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         returns (uint256)
     {
         uint256 vaultDecimals = ERC20(vault).decimals();
-        return IERC4626Timelock(vault).previewRedeem(10 ** vaultDecimals);
+        return ERC4626(vault).previewRedeem(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
     function previewDepositTo(
         uint256 assets_
     ) public view virtual override returns (uint256) {
-        return IERC4626Timelock(vault).convertToShares(assets_);
+        return ERC4626(vault).convertToShares(assets_);
     }
 
     /// @inheritdoc BaseForm
     function previewWithdrawFrom(
         uint256 assets_
     ) public view virtual override returns (uint256) {
-        return IERC4626Timelock(vault).previewWithdraw(assets_);
+        return ERC4626(vault).previewWithdraw(assets_);
     }
 
     /// @notice ERC4626TimelockFork getter
@@ -567,7 +568,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         uint256 vaultSharesAmount_,
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
-        return IERC4626Timelock(vault).convertToAssets(vaultSharesAmount_);
+        return ERC4626(vault).convertToAssets(vaultSharesAmount_);
     }
 
     /// @inheritdoc BaseForm
@@ -575,7 +576,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         uint256 vaultSharesAmount_,
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
-        return IERC4626Timelock(vault).previewMint(vaultSharesAmount_);
+        return ERC4626(vault).previewMint(vaultSharesAmount_);
     }
 
     /// @inheritdoc BaseForm
@@ -583,6 +584,6 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         uint256 underlyingAmount_,
         uint256 /*pricePerVaultShare*/
     ) internal view virtual override returns (uint256) {
-        return IERC4626Timelock(vault).convertToShares(underlyingAmount_);
+        return ERC4626(vault).convertToShares(underlyingAmount_);
     }
 }
