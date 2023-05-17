@@ -4,7 +4,6 @@ import "./LiquidityTypes.sol";
 
 /// @dev contains all the common struct and enums used for data communication between chains.
 
-/// @notice We should optimize those types more
 enum TransactionType {
     DEPOSIT,
     WITHDRAW
@@ -94,7 +93,7 @@ struct InitSingleVaultData {
 
 struct AMBMessage {
     uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag and if multi/single vault, uint8 = 1, 2, 3
-    bytes params; // abi.encode (AMBInitData) NOTE: this is too ambigious. document to what fields does bytes params decode exactly 
+    bytes params; // abi.encode (AMBInitData) NOTE: this is too ambigious. document to what fields does bytes params decode exactly
 }
 
 struct AMBFactoryMessage {

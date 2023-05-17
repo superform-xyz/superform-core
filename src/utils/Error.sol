@@ -63,17 +63,11 @@ library Error {
     /// @dev error thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
 
-    /// @dev error thrown when the safe gas param is incorrectly set
-    error INVALID_GAS_OVERRIDE();
-
     error DISABLED();
 
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev when the input token is not valid
-    error INVALID_BRIDGE_INPUT_TOKEN();
 
     /// @dev when validation of bridge txData fails due to wrong amount
     error INVALID_TXDATA_AMOUNTS();
@@ -170,17 +164,11 @@ library Error {
     /// @dev emitted when form id is larger than max uint16
     error INVALID_FORM_ID();
 
-    /// @dev is emitted when the amb ids input is invalid.
-    error INVALID_AMB_IDS();
-
     /// @dev is emitted when the vaults data is invalid
     error INVALID_SUPERFORMS_DATA();
 
     /// @dev is emitted when the chain ids data is invalid
     error INVALID_CHAIN_IDS();
-
-    /// @dev is emitted if anything other than state Registry calls stateSync
-    error REQUEST_DENIED();
 
     /// @dev is emitted when the payload is invalid
     error INVALID_PAYLOAD();
@@ -229,19 +217,9 @@ library Error {
     /// @dev is emitted when the amount in xchain withdraw is not correct
     error XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
-    /// @dev is emitted when redeem call to the underlying vault in form fails
-    error REDEEM_FAILED();
-
     /// @dev unlock already requested, cooldown period didn't pass yet
     error WITHDRAW_COOLDOWN_PERIOD();
 
     /// @dev error thrown when the unlock reques
     error LOCKED();
-
-    /*///////////////////////////////////////////////////////////////
-                        SUPER POSITION BANK ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev thrown when lenght of token ids differs from amounts
-    error SPBANK_TOKEN_AMOUNT_LENGTH_MISMATCH();
 }
