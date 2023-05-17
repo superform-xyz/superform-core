@@ -38,13 +38,6 @@ interface IERC4626TimelockVault is IERC20 {
     /// @notice The amount of time that must pass between a requestUnlock() and withdraw() call.
     function getLockPeirod() external view returns (uint256);
 
-    /// @notice for keeper-based 2nd step withdrawal processing
-    function processUnlock(address owner) external;
-
-    /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
-    function unlockId(address owner) external view returns (InitSingleVaultData memory singleVaultData);
-
-
     /*///////////////////////////////////////////////////////////////
                                ERC4626 SECTION
     //////////////////////////////////////////////////////////////*/
