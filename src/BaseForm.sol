@@ -85,7 +85,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    /// @dev FIXME: missing means for admin to change implementations
     function initialize(
         address superRegistry_,
         address vault_
@@ -114,46 +113,28 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
             super.supportsInterface(interfaceId);
     }
 
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process same chain id deposits
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev NOTE: Should this function return?
+    /// @inheritdoc IBaseForm
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) external payable override onlySuperRouter returns (uint256 dstAmount) {
         dstAmount = _directDepositIntoVault(singleVaultData_);
     }
 
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process same chain id deposits
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev NOTE: Should this function return?
+    /// @inheritdoc IBaseForm
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
         dstAmount = _xChainDepositIntoVault(singleVaultData_);
     }
 
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process withdrawal of collateral from a vault
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmount  The amount of tokens withdrawn in same chain action
-    /// note: direct action doesn't require status reporting as xchain action does
+    /// @inheritdoc IBaseForm
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     ) external override onlySuperRouter returns (uint256 dstAmount) {
         dstAmount = _directWithdrawFromVault(singleVaultData_);
     }
 
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process withdrawal of collateral from a vault
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return status If withdraw succeded or not (relevant for custom forms, for standard form this could be omitted as we inform about fail elsewhere
+    /// @inheritdoc IBaseForm
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     ) external override onlyCoreStateRegistry returns (uint16 status) {
@@ -293,6 +274,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev FIXME Decide to keep this?
+    /// @dev FIXME: transfer may not work in certain chains
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
@@ -308,7 +290,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     }
 
     /// @dev FIXME Decide to keep this?
-    /// TODO: transfer may not work in zkSync - careful
+    /// @dev FIXME: transfer may not work in certain chains
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
     function emergencyWithdrawNativeToken(

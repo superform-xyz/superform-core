@@ -2,12 +2,10 @@
 pragma solidity 0.8.19;
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
-/**
- * @title Liquidity Handler.
- * @author https://github.com/dragonfly-xyz/useful-solidity-patterns/blob/main/patterns/permit2/Permit2Vault.sol
- * @dev Minimal Permit2 interface, derived from
- * @dev https://github.com/Uniswap/permit2/blob/main/src/interfaces/ISignatureTransfer.sol
- */
+/// @title Liquidity Handler.
+/// @author https://github.com/dragonfly-xyz/useful-solidity-patterns/blob/main/patterns/permit2/Permit2Vault.sol
+/// @dev Minimal Permit2 interface, derived from
+/// @dev https://github.com/Uniswap/permit2/blob/main/src/interfaces/ISignatureTransfer.sol
 interface IPermit2 {
     // Token and amount in a permit message.
     struct TokenPermissions {
