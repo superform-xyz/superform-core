@@ -153,12 +153,12 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return status If withdraw succeded or not (relevant for custom forms, for standard form this could be omitted as we inform about fail elsewhere
+    /// @return dstAmount The amount of tokens withdrawn 
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) external override onlyCoreStateRegistry returns (uint16 status) {
+    ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
         /// @dev FIXME: not returning anything YET
-        status = _xChainWithdrawFromVault(singleVaultData_);
+        dstAmount = _xChainWithdrawFromVault(singleVaultData_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -252,7 +252,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual returns (uint16 status);
+    ) internal virtual returns (uint256 dstAmount);
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS

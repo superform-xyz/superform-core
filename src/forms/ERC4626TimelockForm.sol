@@ -383,7 +383,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual override returns (uint16 status) {
+    ) internal virtual override returns (uint256 dstAmount) {
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
         vars.vaultLoc = vault;
@@ -430,8 +430,6 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                     );
 
                 /// Note Send Tokens to Source Chain
-                /// FEAT Note: We could also allow to pass additional chainId arg here
-                /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
                 dispatchTokens(
                     superRegistry.getBridgeAddress(
                         singleVaultData_.liqData.bridgeId
@@ -495,6 +493,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                 RE-PROCESSING REDEEM AFTER COOLDOWN
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice Called by FormStateRegistry to process 2nd step of redeem after cooldown
     function processUnlock(
         address owner_
     )

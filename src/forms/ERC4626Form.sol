@@ -303,7 +303,7 @@ contract ERC4626Form is BaseForm, LiquidityHandler {
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual override returns (uint16 status) {
+    ) internal virtual override returns (uint256 dstAmount) {
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
         vars.vaultLoc = vault;
