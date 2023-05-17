@@ -25,6 +25,8 @@ interface ILayerZeroUserApplicationConfig {
     // @notice Only when the UA needs to resume the message flow in blocking mode and clear the stored payload
     // @param srcChainId_ - the chainId of the source chain
     // @param srcAddress_ - the contract address of the source contract at the source chain
-    function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_)
-        external;
+    function forceResumeReceive(
+        uint16 srcChainId_,
+        bytes calldata srcAddress_
+    ) external;
 }

@@ -48,7 +48,7 @@ import {IMessageBus} from "../../crosschain-data/celer/interface/IMessageBus.sol
 import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
-import {FormStateRegistry} from "../../forms/form_keeper/FormStateRegistry.sol";
+import {FormStateRegistry} from "../../crosschain-data/FormStateRegistry.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
@@ -414,7 +414,6 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.factoryStateRegistry
             );
 
-
             /// @dev 4.2 - deploy Form State Registry
             vars.formStateRegistry = address(
                 new FormStateRegistry{salt: salt}(
@@ -423,9 +422,8 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
 
-            contracts[vars.chainId][
-                bytes32(bytes("FormStateRegistry"))
-            ] = vars.formStateRegistry;
+            contracts[vars.chainId][bytes32(bytes("FormStateRegistry"))] = vars
+                .formStateRegistry;
 
             SuperRegistry(vars.superRegistry).setFormStateRegistry(
                 vars.formStateRegistry

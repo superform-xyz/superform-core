@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {InitSingleVaultData} from "../../types/DataTypes.sol";
+
 interface IERC4626Timelock is IERC20 {
     /*///////////////////////////////////////////////////////////////
                             TIMELOCK SECTION
@@ -40,6 +41,7 @@ interface IERC4626Timelock is IERC20 {
 
     /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
     function unlockId(address owner) external view returns (InitSingleVaultData memory singleVaultData);
+
 
     /*///////////////////////////////////////////////////////////////
                                ERC4626 SECTION

@@ -10,7 +10,6 @@ import {IMessageReceiver} from "./interface/IMessageReceiver.sol";
 import {Error} from "../../utils/Error.sol";
 import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @title Celer Implementation Contract
 /// @author Zeropoint Labs
