@@ -35,9 +35,10 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     }
 
     /// @notice Checks if the caller is the form keeper
+    /// NOTE: Uses PROCESSOR_ROLE from SuperRBAC, who should be a form keeper?
     modifier onlyFormKeeper() {
         if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasFormStateRegistryRole(
+            !ISuperRBAC(superRegistry.superRBAC()).hasProcessorRole(
                 msg.sender
             )
         ) revert Error.NOT_FORM_KEEPER();

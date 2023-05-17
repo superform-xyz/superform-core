@@ -9,6 +9,7 @@ import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {IFormStateRegistry} from "../interfaces/IFormStateRegistry.sol";
+import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
@@ -17,8 +18,10 @@ import "../utils/DataPacking.sol";
 contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     using SafeTransferLib for ERC20;
 
+    /// @dev Internal counter of all unlock requests to be processed
     uint256 unlockCounter;
 
+    /// @dev Internal struct to store individual user's request to unlock
     struct OwnerRequest {
         uint256 requestTimestamp; /// when requestUnlock was initiated
         InitSingleVaultData singleVaultData_; /// withdraw data to re-execute
@@ -26,13 +29,19 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
 
     mapping(address owner => OwnerRequest) public unlockId;
 
+    /// @dev FormStateRegistry implementation, calls processUnlock()
     IFormStateRegistry public immutable formStateRegistry;
 
+    /// @dev FormStateRegistry modifier for calling processUnlock()
     modifier onlyFormStateRegistry() {
-        if (msg.sender != address(formStateRegistry))
-            revert Error.NOT_FORM_STATE_REGISTRY();
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasFormStateRegistryRole(
+                msg.sender
+            )
+        ) revert Error.NOT_FORM_STATE_REGISTRY();
         _;
     }
+
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
@@ -125,8 +134,8 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         return IERC4626Timelock(vault).previewWithdraw(assets_);
     }
 
-    /// @dev ERC4626TimelockFork getter
-    /// NOTE: Designed to act like a standardized function to return true/false for withdraw action on underlying Timelock Vault
+    /// @notice ERC4626TimelockFork getter
+    /// @dev Standardized function returning what step of a timelock withdraw process are we to execute
     function checkUnlock(
         address vault_,
         uint256 shares_,
@@ -159,6 +168,8 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev Stack too deep workaround
     struct directDepositLocalVars {
         uint16 chainId;
         address vaultLoc;
@@ -238,11 +249,12 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
             revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
-        /// DEVNOTE: allowance is modified inside of the ERC20.transferFrom() call
+        /// NOTE: allowance is modified inside of the ERC20.transferFrom() call
         vars.collateralToken.approve(vars.vaultLoc, singleVaultData_.amount);
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
 
+    /// @dev Stack too deep workaround
     struct directWithdrawLocalVars {
         uint16 unlock;
         uint16 chainId;
@@ -321,16 +333,16 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         } else if (vars.unlock == 2) {
             v.requestUnlock(singleVaultData_.amount, address(this));
 
-            /// NOTE: This already burned SPs optimistically on SuperRouter
-            /// NOTE: All Timelocked Forms need to go through the FORM_KEEPER, including same chain
-            /// @dev Store for FORM_KEEPER
+            /// NOTE: We already burned SPs optimistically on SuperRouter
+            /// NOTE: All Timelocked Forms need to go through the FormStateRegistry, including same chain
+            /// @dev Store for FormStateRegistry
             ++unlockCounter;
             unlockId[vars.srcSender] = OwnerRequest({
                 requestTimestamp: block.timestamp,
                 singleVaultData_: singleVaultData_
             });
 
-            /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
+            /// @dev Sent unlockCounter (id) to the FormStateRegistry (contract on this chain)
             formStateRegistry.receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId,
@@ -341,6 +353,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         }
     }
 
+    /// @inheritdoc BaseForm
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) internal virtual override returns (uint256 dstAmount) {
@@ -368,6 +381,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         );
     }
 
+    /// @dev Stack too deep workaround
     struct xChainWithdrawLocalVars {
         uint16 unlock;
         uint16 dstChainId;
@@ -462,14 +476,14 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
             /// @dev on ERC4626Timelock (wrappers) controlled by SuperForm we can use this function
             v.requestUnlock(singleVaultData_.amount, address(this));
 
-            /// @dev Store for FORM_KEEPER
+            /// @dev Store for FormStateRegistry
             ++unlockCounter;
             unlockId[vars.srcSender] = OwnerRequest({
                 requestTimestamp: block.timestamp,
                 singleVaultData_: singleVaultData_
             });
 
-            /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
+            /// @dev Sent unlockCounter (id) to the FormStateRegistry (contract on this chain)
             formStateRegistry.receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId,
@@ -493,7 +507,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                 RE-PROCESSING REDEEM AFTER COOLDOWN
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Called by FormStateRegistry to process 2nd step of redeem after cooldown
+    /// @notice Called by FormStateRegistry to process 2nd step of redeem after cooldown period passes
     function processUnlock(
         address owner_
     )
