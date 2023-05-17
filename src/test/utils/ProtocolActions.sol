@@ -4,9 +4,9 @@ pragma solidity 0.8.19;
 /// @dev lib imports
 import "./BaseSetup.sol";
 import "../../utils/DataPacking.sol";
-import {IPermit2} from "../../interfaces/IPermit2.sol";
-import {ISocketRegistry} from "../../interfaces/ISocketRegistry.sol";
-import {ILiFi} from "../../interfaces/ILiFi.sol";
+import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
+import {ISocketRegistry} from "../../vendor/socket/ISocketRegistry.sol";
+import {ILiFi} from "../../vendor/lifi/ILiFi.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {LiFiMock} from "../mocks/LiFiMock.sol";
@@ -708,11 +708,13 @@ abstract contract ProtocolActions is BaseSetup {
         vm.prank(deployer);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vm.selectFork(FORKS[DST_CHAINS[i]]);
-            IFormStateRegistry formStateRegistry = IFormStateRegistry(
-                contracts[DST_CHAINS[i]][bytes32(bytes("FormStateRegistry"))]
+            IFormStateRegistry twoStepsFormStateRegistry = IFormStateRegistry(
+                contracts[DST_CHAINS[i]][
+                    bytes32(bytes("TwoStepsFormStateRegistry"))
+                ]
             );
             vm.rollFork(block.number + 20000);
-            formStateRegistry.finalizePayload(
+            twoStepsFormStateRegistry.finalizePayload(
                 unlockId_,
                 generateAckParams(AMBs)
             );

@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 /// Types Imports
-import {ISocketRegistry} from "../../interfaces/ISocketRegistry.sol";
+import {ISocketRegistry} from "../../vendor/socket/ISocketRegistry.sol";
 
 import "./MockERC20.sol";
 

@@ -258,7 +258,7 @@ interface ISuperRegistry {
 
     /// @dev gets the form state registry address.
     /// @return formStateRegistry_ the address of the state registry
-    function formStateRegistry()
+    function twoStepsFormStateRegistry()
         external
         view
         returns (address formStateRegistry_);

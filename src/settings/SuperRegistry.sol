@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IPermit2} from "../interfaces/IPermit2.sol";
+import {IPermit2} from "../vendor/dragonfly-xyz/IPermit2.sol";
 import {Error} from "../utils/Error.sol";
 
 /// @title SuperRegistry
@@ -329,7 +329,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function formStateRegistry()
+    function twoStepsFormStateRegistry()
         external
         view
         returns (address formStateRegistry_)

@@ -11,9 +11,10 @@ import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData} from "../types/DataTypes.sol";
 import "../utils/DataPacking.sol";
 
-/// @title TimelockForm Redeemer
+/// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
-contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
+/// @notice handles communication in two stepped forms
+contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     /// @notice Pre-compute keccak256 hash of WITHDRAW_COOLDOWN_PERIOD()
     bytes32 immutable WITHDRAW_COOLDOWN_PERIOD =
         keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));

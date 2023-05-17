@@ -27,7 +27,7 @@ import {RolesStateRegistry} from "../../crosschain-data/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
-import {IERC4626} from "../../interfaces/IERC4626.sol";
+import {IERC4626} from "../../vendor/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {SuperRouter} from "../../SuperRouter.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
@@ -46,9 +46,9 @@ import {IMailbox} from "../../vendor/hyperlane/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../vendor/hyperlane/IInterchainGasPaymaster.sol";
 import {IMessageBus} from "../../vendor/celer/IMessageBus.sol";
 import ".././utils/AmbParams.sol";
-import {IPermit2} from "../../interfaces/IPermit2.sol";
+import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
-import {FormStateRegistry} from "../../crosschain-data/FormStateRegistry.sol";
+import {TwoStepsFormStateRegistry} from "../../crosschain-data/TwoStepsFormStateRegistry.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
@@ -415,18 +415,19 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev 4.3 - deploy Form State Registry
-            vars.formStateRegistry = address(
-                new FormStateRegistry{salt: salt}(
+            vars.twoStepsFormStateRegistry = address(
+                new TwoStepsFormStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
                     1
                 )
             );
 
-            contracts[vars.chainId][bytes32(bytes("FormStateRegistry"))] = vars
-                .formStateRegistry;
+            contracts[vars.chainId][
+                bytes32(bytes("TwoStepsFormStateRegistry"))
+            ] = vars.twoStepsFormStateRegistry;
 
             SuperRegistry(vars.superRegistry).setFormStateRegistry(
-                vars.formStateRegistry
+                vars.twoStepsFormStateRegistry
             );
 
             /// @dev 4.4- deploy Roles State Registry

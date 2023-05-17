@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {MultiVaultsSFData, SingleVaultSFData} from "../../types/DataTypes.sol";
 import {BridgeValidator} from "../BridgeValidator.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {ISocketRegistry} from "../../interfaces/ISocketRegistry.sol";
+import {ISocketRegistry} from "../../vendor/socket/ISocketRegistry.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";

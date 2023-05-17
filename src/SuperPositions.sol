@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import {ERC1155s} from "ERC1155s/src/ERC1155s.sol";
 import {ERC1155} from "solmate/tokens/ERC1155.sol";
+import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
-import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import "./utils/DataPacking.sol";
 import {Error} from "./utils/Error.sol";
 

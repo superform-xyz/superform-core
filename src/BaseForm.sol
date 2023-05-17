@@ -274,7 +274,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev FIXME Decide to keep this?
-    /// @dev FIXME: transfer may not work in certain chains
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
@@ -290,12 +289,12 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     }
 
     /// @dev FIXME Decide to keep this?
-    /// @dev FIXME: transfer may not work in certain chains
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
     function emergencyWithdrawNativeToken(
         uint256 amount
     ) external onlyProtocolAdmin {
-        payable(msg.sender).transfer(amount);
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
     }
 }

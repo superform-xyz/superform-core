@@ -708,7 +708,7 @@ contract CoreStateRegistry is
 
             ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
 
-            /// DEVNOTE: This will revert with an error only descriptive of the first possible revert out of many
+            /// @dev NOTE: This will revert with an error only descriptive of the first possible revert out of many
             /// 1. Not enough tokens on this contract == BRIDGE_TOKENS_PENDING
             /// 2. Fail to .transfer() == BRIDGE_TOKENS_PENDING
             /// 3. xChainDepositIntoVault() reverting on anything == BRIDGE_TOKENS_PENDING

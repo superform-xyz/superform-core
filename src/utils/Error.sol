@@ -65,6 +65,9 @@ library Error {
 
     error DISABLED();
 
+    /// @dev when the native tokens transfer has failed
+    error NATIVE_TOKEN_TRANSFER_FAILURE();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/

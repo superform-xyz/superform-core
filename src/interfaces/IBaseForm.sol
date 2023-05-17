@@ -6,7 +6,7 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
-import {IERC4626} from "./IERC4626.sol";
+import {IERC4626} from "../vendor/IERC4626.sol";
 
 /// @title IBaseForm
 /// @author ZeroPoint Labs

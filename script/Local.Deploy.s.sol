@@ -17,7 +17,7 @@ import {RolesStateRegistry} from "../src/crosschain-data/RolesStateRegistry.sol"
 import {FactoryStateRegistry} from "../src/crosschain-data/FactoryStateRegistry.sol";
 import {ISuperRouter} from "../src/interfaces/ISuperRouter.sol";
 import {ISuperFormFactory} from "../src/interfaces/ISuperFormFactory.sol";
-import {IERC4626} from "../src/interfaces/IERC4626.sol";
+import {IERC4626} from "../src/vendor/IERC4626.sol";
 import {IBaseForm} from "../src/interfaces/IBaseForm.sol";
 import {SuperRouter} from "../src/SuperRouter.sol";
 import {SuperRegistry} from "../src/settings/SuperRegistry.sol";
@@ -35,7 +35,7 @@ import {CelerImplementation} from "../src/crosschain-data/celer/Implementation.s
 import {IMailbox} from "../src/vendor/hyperlane/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import {IMessageBus} from "../src/vendor/celer/IMessageBus.sol";
-import {FormStateRegistry} from "../src/crosschain-data/FormStateRegistry.sol";
+import {TwoStepsFormStateRegistry} from "../src/crosschain-data/TwoStepsFormStateRegistry.sol";
 
 struct SetupVars {
     uint16[2] chainIds;
@@ -368,14 +368,15 @@ contract Deploy is Script {
 
             /// @dev 3.3 - deploy Form State Registry
             vars.formStateRegistry = address(
-                new FormStateRegistry{salt: salt}(
+                new TwoStepsFormStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
                     1
                 )
             );
 
-            contracts[vars.chainId][bytes32(bytes("FormStateRegistry"))] = vars
-                .formStateRegistry;
+            contracts[vars.chainId][
+                bytes32(bytes("TwoStepsFormStateRegistry"))
+            ] = vars.formStateRegistry;
 
             SuperRegistry(vars.superRegistry).setFormStateRegistry(
                 vars.formStateRegistry

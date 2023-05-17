@@ -31,10 +31,10 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     // mapping (address owner => mapping(uint256 unlockId => InitSingleVaultData)) public unlockId;
     // mapping(uint256 => InitSingleVaultData) public unlockId;
 
-    IFormStateRegistry public immutable formStateRegistry;
+    IFormStateRegistry public immutable twoStepsFormStateRegistry;
 
     modifier onlyFormStateRegistry() {
-        if (msg.sender != address(formStateRegistry))
+        if (msg.sender != address(twoStepsFormStateRegistry))
             revert Error.NOT_FORM_STATE_REGISTRY();
         _;
     }
@@ -44,8 +44,8 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_) ERC20Form(superRegistry_) {
-        address formStateRegistry_ = superRegistry.formStateRegistry();
-        formStateRegistry = IFormStateRegistry(formStateRegistry_);
+        address formStateRegistry_ = superRegistry.twoStepsFormStateRegistry();
+        twoStepsFormStateRegistry = IFormStateRegistry(formStateRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -353,7 +353,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             });
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
-            formStateRegistry.receivePayload(
+            twoStepsFormStateRegistry.receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId,
                 vars.srcSender
@@ -418,7 +418,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
 
         /// NOTE: This needs to match on 1st-step against srcSender
         /// NOTE: This needs to match on 2nd-step against payloadId
-        /// NOTE: We have no payloadId (for formStateRegistry) at 1st step
+        /// NOTE: We have no payloadId (for twoStepsFormStateRegistry) at 1st step
         vars.unlock = checkUnlock(
             vault,
             singleVaultData_.amount,
@@ -495,7 +495,7 @@ contract ERC4626TimelockForm is ERC20Form, LiquidityHandler {
             });
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
-            formStateRegistry.receivePayload(
+            twoStepsFormStateRegistry.receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId,
                 vars.srcSender
