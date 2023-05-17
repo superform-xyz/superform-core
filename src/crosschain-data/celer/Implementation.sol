@@ -61,7 +61,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     function dispatchPayload(
         uint16 dstChainId_,
         bytes memory message_,
-        bytes memory extraData_
+        bytes memory /// extraData_
     ) external payable virtual override {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
@@ -146,7 +146,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
     /// @inheritdoc IMessageReceiver
     function executeMessage(
-        address srcContract_,
+        address, /// srcContract_
         uint64 srcChainId_,
         bytes calldata message_,
         address // executor

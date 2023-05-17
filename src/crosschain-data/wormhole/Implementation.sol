@@ -131,7 +131,9 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         (IWormhole.VM memory vm, bool valid, string memory reason) = bridge
             .parseAndVerifyVM(whMessages[0]);
 
-        require(valid, reason);
+        if (!valid) {
+            revert Error.INVALID_WORMHOLE_PAYLOAD(reason);
+        }
 
         /// @dev 1.should validate sender
         /// @dev 2.should validate message uniqueness

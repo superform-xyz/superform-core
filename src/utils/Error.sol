@@ -89,6 +89,12 @@ library Error {
     /// TODO: all errors that throw this should be refactored into more specific error messages
     error INVALID_CALLER();
 
+    /// @dev general error when src chain sender is not valid
+    error INVALID_SRC_SENDER();
+
+    /// @dev general error when src chain is blocked from messaging
+    error INVALID_SRC_CHAIN_ID();
+
     /// @dev uniqueness check for paylaods
     error DUPLICATE_PAYLOAD();
 
@@ -143,6 +149,9 @@ library Error {
 
     /// @dev if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
+
+    /// @dev if wormhole fails to verify payload
+    error INVALID_WORMHOLE_PAYLOAD(string reason_);
 
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS

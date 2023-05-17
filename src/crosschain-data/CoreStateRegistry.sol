@@ -476,11 +476,7 @@ contract CoreStateRegistry is
                 (InitMultiVaultData)
             );
 
-            (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
-                multiVaultData.txData
-            );
             InitSingleVaultData memory singleVaultData;
-
             bool errors;
 
             /// @dev This will revert ALL of the transactions if one of them fails.

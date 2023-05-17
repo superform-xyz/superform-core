@@ -109,9 +109,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     function _constructSingleReturnData(
         InitSingleVaultData memory singleVaultData_
     ) internal view returns (uint16 srcChainId, bytes memory returnMessage) {
-        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
-            singleVaultData_.txData
-        );
+        (, , uint80 currentTotalTxs) = _decodeTxData(singleVaultData_.txData);
 
         /// @notice Send Data to Source to issue superform positions.
         return (
