@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+/// @title ILiFi
+/// @notice Interface containing useful structs when using LiFi as a bridge
+/// @notice taken from LiFi contracts https://github.com/lifinance/contracts
 interface ILiFi {
     struct BridgeData {
         bytes32 transactionId;

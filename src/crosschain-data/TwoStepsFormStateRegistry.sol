@@ -11,9 +11,10 @@ import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData} from "../types/DataTypes.sol";
 import "../utils/DataPacking.sol";
 
-/// @title TimelockForm Redeemer
+/// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
-contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
+/// @notice handles communication in two stepped forms
+contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     /// @notice Pre-compute keccak256 hash of WITHDRAW_COOLDOWN_PERIOD()
     bytes32 immutable WITHDRAW_COOLDOWN_PERIOD =
         keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
@@ -112,9 +113,7 @@ contract FormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     function _constructSingleReturnData(
         InitSingleVaultData memory singleVaultData_
     ) internal view returns (uint16 srcChainId, bytes memory returnMessage) {
-        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
-            singleVaultData_.txData
-        );
+        (, , uint80 currentTotalTxs) = _decodeTxData(singleVaultData_.txData);
 
         /// @notice Send Data to Source to issue superform positions.
         return (

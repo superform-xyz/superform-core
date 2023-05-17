@@ -5,6 +5,7 @@ import {LiqRequest, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, M
 
 /// @title ISuperRouter
 /// @author Zeropoint Labs.
+/// @dev interface for Super Router
 interface ISuperRouter {
     /*///////////////////////////////////////////////////////////////
                                 STRUCTS

@@ -16,15 +16,15 @@ import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
-/// @title Cross-Chain AMB Aggregator
+/// @title CoreStateRegistry
 /// @author Zeropoint Labs
-/// @notice stores, sends & process message sent via various messaging ambs.
+/// @dev enables communication between SuperForm Core Contracts deployed on all supported networks
 contract CoreStateRegistry is
     LiquidityHandler,
     BaseStateRegistry,
     ICoreStateRegistry
 {
-    /// @dev FIXME: are we using safe transfers?
+    /// FIXME: are we using safe transfers?
     using SafeTransferLib for ERC20;
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
@@ -47,7 +47,7 @@ contract CoreStateRegistry is
     }
 
     /*///////////////////////////////////////////////////////////////
-                             CONSTRUCTOR
+                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     ///@dev set up admin during deployment.
     constructor(
@@ -59,10 +59,7 @@ contract CoreStateRegistry is
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
-    /// @param finalAmounts_ is the amount to be updated.
-    /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
+    /// @inheritdoc ICoreStateRegistry
     function updateMultiVaultPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
@@ -132,10 +129,7 @@ contract CoreStateRegistry is
         emit PayloadUpdated(payloadId_);
     }
 
-    /// @dev allows accounts with {UPDATER_ROLE} to modify a received cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
-    /// @param finalAmount_ is the amount to be updated.
-    /// NOTE: amounts cannot be updated beyond user specified safe slippage limit.
+    /// @inheritdoc ICoreStateRegistry
     function updateSingleVaultPayload(
         uint256 payloadId_,
         uint256 finalAmount_
@@ -196,10 +190,7 @@ contract CoreStateRegistry is
         emit PayloadUpdated(payloadId_);
     }
 
-    /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @param ackExtraData_ is the extra data to be passed to AMB to send acknowledgement.
-    /// NOTE: function can only process successful payloads.
+    /// @inheritdoc BaseStateRegistry
     function processPayload(
         uint256 payloadId_,
         bytes memory ackExtraData_
@@ -262,9 +253,7 @@ contract CoreStateRegistry is
         }
     }
 
-    /// @dev allows accounts with {PROCESSOR_ROLE} to revert Error.payload that fail to revert Error.state changes on source chain.
-    /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// NOTE: function can only process failing payloads.
+    /// @inheritdoc BaseStateRegistry
     function revertPayload(
         uint256 payloadId_,
         uint256,
@@ -309,8 +298,8 @@ contract CoreStateRegistry is
             ) revert Error.INVALID_PAYLOAD_STATE();
         }
 
-        /// NOTE: Send `data` back to source based on AmbID to revert Error.the state.
-        /// NOTE: chain_ids conflict should be addresses here.
+        /// FIXME: Send `data` back to source based on AmbID to revert Error.the state.
+        /// FIXME: chain_ids conflict should be addresses here.
         // amb[ambId_].dispatchPayload(formData.dstChainId_, message_, extraData_);
     }
 
@@ -487,11 +476,7 @@ contract CoreStateRegistry is
                 (InitMultiVaultData)
             );
 
-            (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(
-                multiVaultData.txData
-            );
             InitSingleVaultData memory singleVaultData;
-
             bool errors;
 
             /// @dev This will revert ALL of the transactions if one of them fails.
@@ -722,7 +707,7 @@ contract CoreStateRegistry is
 
             ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
 
-            /// DEVNOTE: This will revert with an error only descriptive of the first possible revert out of many
+            /// @dev NOTE: This will revert with an error only descriptive of the first possible revert out of many
             /// 1. Not enough tokens on this contract == BRIDGE_TOKENS_PENDING
             /// 2. Fail to .transfer() == BRIDGE_TOKENS_PENDING
             /// 3. xChainDepositIntoVault() reverting on anything == BRIDGE_TOKENS_PENDING

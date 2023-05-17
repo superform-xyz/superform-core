@@ -3,9 +3,9 @@ pragma solidity 0.8.19;
 
 import {AMBMessage} from "../types/DataTypes.sol";
 
-/// @title Super Positions
+/// @title ISuperPositions
 /// @author Zeropoint Labs.
-/// @dev  extends ERC1155s to create SuperPositions which track vault shares from any originating chain
+/// @dev interface for Super Positions
 interface ISuperPositions {
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
@@ -21,24 +21,40 @@ interface ISuperPositions {
                         PROTECTED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev mints a single super position
+    /// @param owner_ is the address of the owner of the super position
+    /// @param superFormId_ is the id of the super position being minted
+    /// @param amount_ is the amount of the super position being minted
     function mintSingleSP(
         address owner_,
         uint256 superFormId_,
         uint256 amount_
     ) external;
 
+    /// @dev mints a batch of super positions
+    /// @param owner_ is the address of the owner of the super positions
+    /// @param superFormIds_ are the ids of the super positions being minted
+    /// @param amounts_ are the amounts of the super positions being minted
     function mintBatchSP(
         address owner_,
         uint256[] memory superFormIds_,
         uint256[] memory amounts_
     ) external;
 
+    /// @dev burns a single super position
+    /// @param srcSender_ is the address of the sender of the super position
+    /// @param superFormId_ is the id of the super position being burned
+    /// @param amount_ is the amount of the super position being burned
     function burnSingleSP(
         address srcSender_,
         uint256 superFormId_,
         uint256 amount_
     ) external;
 
+    /// @dev burns a batch of super positions
+    /// @param srcSender_ is the address of the sender of the super positions
+    /// @param superFormIds_ are the ids of the super positions being burned
+    /// @param amounts_ are the amounts of the super positions being burned
     function burnBatchSP(
         address srcSender_,
         uint256[] memory superFormIds_,

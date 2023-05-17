@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 /// Types Imports
-import {ILiFi} from "../../interfaces/ILiFi.sol";
+import {ILiFi} from "../../vendor/lifi/ILiFi.sol";
 import "./MockERC20.sol";
 
 /// @title Socket Router Mock

@@ -6,8 +6,11 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 
 import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
-import {IERC4626} from "./IERC4626.sol";
+import {IERC4626} from "../vendor/IERC4626.sol";
 
+/// @title IBaseForm
+/// @author ZeroPoint Labs
+/// @notice Interface for Base Form
 interface IBaseForm is IERC165Upgradeable {
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
@@ -34,7 +37,6 @@ interface IBaseForm is IERC165Upgradeable {
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev NOTE: Should this function return?
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) external payable returns (uint256 dstAmount);
@@ -44,7 +46,6 @@ interface IBaseForm is IERC165Upgradeable {
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev NOTE: Should this function return?
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) external returns (uint256 dstAmount);

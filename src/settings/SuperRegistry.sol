@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IPermit2} from "../interfaces/IPermit2.sol";
+import {IPermit2} from "../vendor/dragonfly-xyz/IPermit2.sol";
 import {Error} from "../utils/Error.sol";
 
 /// @title SuperRegistry
@@ -134,7 +134,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         emit CoreStateRegistryUpdated(oldCoreStateRegistry, coreStateRegistry_);
     }
 
-    /// TODO: add to ISuperRegistry
+    /// @inheritdoc ISuperRegistry
     function setFormStateRegistry(
         address formStateRegistry_
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -328,13 +328,13 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         coreStateRegistry_ = getProtocolAddress(CORE_STATE_REGISTRY);
     }
 
-    /// TODO: inheritdoc ISuperRegistry
-    function formStateRegistry()
+    /// @inheritdoc ISuperRegistry
+    function twoStepsFormStateRegistry()
         external
         view
-        returns (address formStateRegistry)
+        returns (address formStateRegistry_)
     {
-        formStateRegistry = getProtocolAddress(FORM_STATE_REGISTRY);
+        formStateRegistry_ = getProtocolAddress(FORM_STATE_REGISTRY);
     }
 
     /// @inheritdoc ISuperRegistry

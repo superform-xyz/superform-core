@@ -2,8 +2,11 @@
 pragma solidity 0.8.19;
 import {LiqRequest} from "../types/DataTypes.sol";
 
+/// @title ICoreStateRegistry
+/// @author ZeroPoint Labs
+/// @notice Interface for Core State Registry
 interface ICoreStateRegistry {
-    /// @dev emited if any deposit fails
+    /// @dev is emitted when any deposit fails
     event FailedXChainDeposits(uint256 indexed payloadId);
 
     /*///////////////////////////////////////////////////////////////

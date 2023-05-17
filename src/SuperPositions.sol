@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import {ERC1155s} from "ERC1155s/src/ERC1155s.sol";
 import {ERC1155} from "solmate/tokens/ERC1155.sol";
+import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
-import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import "./utils/DataPacking.sol";
 import {Error} from "./utils/Error.sol";
 
@@ -19,7 +19,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint80 => AMBMessage) public txHistory;
+    mapping(uint80 transactionId => AMBMessage ambMessage) public txHistory;
 
     modifier onlyRouter() {
         if (
@@ -31,8 +31,11 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     modifier onlyCoreStateRegistry() {
-        if (msg.sender != superRegistry.coreStateRegistry())
-            revert Error.NOT_CORE_STATE_REGISTRY();
+        if (
+            !ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(
+                msg.sender
+            )
+        ) revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 
@@ -62,6 +65,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         super.setApprovalForAll(operator, approved);
     }
 
+    /// @inheritdoc ISuperPositions
     function mintSingleSP(
         address owner_,
         uint256 superFormId_,
@@ -70,6 +74,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         _mint(owner_, superFormId_, amount_, "");
     }
 
+    /// @inheritdoc ISuperPositions
     function mintBatchSP(
         address owner_,
         uint256[] memory superFormIds_,
@@ -78,6 +83,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         _batchMint(owner_, superFormIds_, amounts_, "");
     }
 
+    /// @inheritdoc ISuperPositions
     function burnSingleSP(
         address srcSender_,
         uint256 superFormId_,
@@ -86,6 +92,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         _burn(srcSender_, superFormId_, amount_);
     }
 
+    /// @inheritdoc ISuperPositions
     function burnBatchSP(
         address srcSender_,
         uint256[] memory superFormIds_,
@@ -94,6 +101,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         _batchBurn(srcSender_, superFormIds_, amounts_);
     }
 
+    /// @inheritdoc ISuperPositions
     function updateTxHistory(
         uint80 messageId_,
         AMBMessage memory message_
@@ -101,9 +109,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         txHistory[messageId_] = message_;
     }
 
-    /// @dev allows registry contract to send payload for processing to the router contract.
-    /// @param data_ is the received information to be processed.
-    /// TODO: ASSES WHAT HAPPENS FOR MULTISYNC WITH CALLBACKTYPE.FAIL IN ONE OF THE IDS!!!
+    /// @inheritdoc ISuperPositions
     function stateMultiSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry {
@@ -177,9 +183,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         emit Completed(returnDataTxId);
     }
 
-    /// @dev allows registry contract to send payload for processing to the router contract.
-    /// @param data_ is the received information to be processed.
-    /// NOTE: Shouldn't this be ACCESS CONTROLed?
+    /// @inheritdoc ISuperPositions
     function stateSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry {

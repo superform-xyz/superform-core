@@ -88,13 +88,17 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         }
     }
 
-    /// TODO: inheritdoc ISuperRBAC
-    function grantFormStateRegistryRole(address formStateRegistry_) external {
+    /// @inheritdoc ISuperRBAC
+    function grantFormStateRegistryRole(
+        address formStateRegistry_
+    ) external override {
         grantRole(FORM_STATE_REGISTRY_ROLE, formStateRegistry_);
     }
 
-    /// TODO: inheritdoc ISuperRBAC
-    function revokeFormStateRegistryRole(address formStateRegistry_) external {
+    /// @inheritdoc ISuperRBAC
+    function revokeFormStateRegistryRole(
+        address formStateRegistry_
+    ) external override {
         revokeRole(FORM_STATE_REGISTRY_ROLE, formStateRegistry_);
     }
 

@@ -30,7 +30,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     mapping(address owner => OwnerRequest) public unlockId;
 
     /// @dev FormStateRegistry implementation, calls processUnlock()
-    IFormStateRegistry public immutable formStateRegistry;
+    IFormStateRegistry public immutable twoStepsFormStateRegistry;
 
     /// @dev FormStateRegistry modifier for calling processUnlock()
     modifier onlyFormStateRegistry() {
@@ -47,9 +47,9 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) BaseForm(superRegistry_) {
-        address formStateRegistry_ = superRegistry.formStateRegistry();
-        formStateRegistry = IFormStateRegistry(formStateRegistry_);
+    constructor(address superRegistry_) ERC20Form(superRegistry_) {
+        address formStateRegistry_ = superRegistry.twoStepsFormStateRegistry();
+        twoStepsFormStateRegistry = IFormStateRegistry(formStateRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -342,8 +342,8 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                 singleVaultData_: singleVaultData_
             });
 
-            /// @dev Sent unlockCounter (id) to the FormStateRegistry (contract on this chain)
-            formStateRegistry.receivePayload(
+            /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
+            twoStepsFormStateRegistry.receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId,
                 vars.srcSender
@@ -410,7 +410,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
 
         /// NOTE: This needs to match on 1st-step against srcSender
         /// NOTE: This needs to match on 2nd-step against payloadId
-        /// NOTE: We have no payloadId (for formStateRegistry) at 1st step
+        /// NOTE: We have no payloadId (for twoStepsFormStateRegistry) at 1st step
         vars.unlock = checkUnlock(
             vault,
             singleVaultData_.amount,
@@ -483,8 +483,8 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                 singleVaultData_: singleVaultData_
             });
 
-            /// @dev Sent unlockCounter (id) to the FormStateRegistry (contract on this chain)
-            formStateRegistry.receivePayload(
+            /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
+            twoStepsFormStateRegistry.receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId,
                 vars.srcSender

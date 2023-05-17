@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+/// @title ISuperRegistry
+/// @author Zeropoint Labs.
+/// @dev interface for Super Registry
 interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
                                 Events
@@ -124,6 +127,10 @@ interface ISuperRegistry {
     /// @dev sets the state registry address.
     /// @param coreStateRegistry_ the address of the state registry
     function setCoreStateRegistry(address coreStateRegistry_) external;
+
+    /// @dev sets the state registry address.
+    /// @param formStateRegistry_ the address of the state registry
+    function setFormStateRegistry(address formStateRegistry_) external;
 
     /// @dev sets the state registry address.
     /// @param factoryStateRegistry_ the address of the state registry
@@ -251,7 +258,7 @@ interface ISuperRegistry {
 
     /// @dev gets the form state registry address.
     /// @return formStateRegistry_ the address of the state registry
-    function formStateRegistry()
+    function twoStepsFormStateRegistry()
         external
         view
         returns (address formStateRegistry_);
