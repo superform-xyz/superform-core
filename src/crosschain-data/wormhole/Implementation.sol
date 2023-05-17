@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IWormhole} from "./interface/IWormhole.sol";
-import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
-import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
+import {IWormhole} from "../../vendor/wormhole/IWormhole.sol";
+import {IWormholeReceiver} from "../../vendor/wormhole/IWormholeReceiver.sol";
+import {IWormholeRelayer} from "../../vendor/wormhole/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";

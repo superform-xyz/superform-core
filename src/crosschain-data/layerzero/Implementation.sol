@@ -7,9 +7,9 @@ import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 import {Error} from "../../utils/Error.sol";
-import {ILayerZeroReceiver} from "./interface/ILayerZeroReceiver.sol";
-import {ILayerZeroUserApplicationConfig} from "./interface/ILayerZeroUserApplicationConfig.sol";
-import {ILayerZeroEndpoint} from "./interface/ILayerZeroEndpoint.sol";
+import {ILayerZeroReceiver} from "../../vendor/layerzero/ILayerZeroReceiver.sol";
+import {ILayerZeroUserApplicationConfig} from "../../vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
+import {ILayerZeroEndpoint} from "../../vendor/layerzero/ILayerZeroEndpoint.sol";
 import "../../utils/DataPacking.sol";
 
 /// @dev FIXME: this contract could use better overrides from interfaces

@@ -2,11 +2,11 @@
 pragma solidity 0.8.19;
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {IMailbox} from "./interface/IMailbox.sol";
-import {IMessageRecipient} from "./interface/IMessageRecipient.sol";
+import {IMailbox} from "../../vendor/hyperlane/IMailbox.sol";
+import {IMessageRecipient} from "../../vendor/hyperlane/IMessageRecipient.sol";
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {IInterchainGasPaymaster} from "./interface/IInterchainGasPaymaster.sol";
+import {IInterchainGasPaymaster} from "../../vendor/hyperlane/IInterchainGasPaymaster.sol";
 import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";

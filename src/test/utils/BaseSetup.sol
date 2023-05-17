@@ -42,9 +42,9 @@ import {SocketValidator} from "../../crosschain-liquidity/socket/SocketValidator
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
 import {CelerImplementation} from "../../crosschain-data/celer/Implementation.sol";
-import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
-import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
-import {IMessageBus} from "../../crosschain-data/celer/interface/IMessageBus.sol";
+import {IMailbox} from "../../vendor/hyperlane/IMailbox.sol";
+import {IInterchainGasPaymaster} from "../../vendor/hyperlane/IInterchainGasPaymaster.sol";
+import {IMessageBus} from "../../vendor/celer/IMessageBus.sol";
 import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../interfaces/IPermit2.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
