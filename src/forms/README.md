@@ -12,3 +12,5 @@ Here's what's included in this directory:
 **ERC4626TimelockForm.sol:** A variant of the standard Form contract that includes timelock functionality. This Form contract is utilized when time-based conditions need to be met during the deposit or withdrawal process. This Form requires a [TwoStepsFormRegistry](../crosschain-data/TwoStepsFormStateRegistry.sol) *(also known as FormStateRegistry)* to execute redemption at a later time through the processUnlock() function.
 
 **FormBeacon.sol:** Implements a Beacon Proxy pattern for each Form for improved management. Each Form is deployed as part of Beacon Proxy logic through the SuperFormFactory.
+
+**IERC4626TimelockVault:** "Mock" interface used to simulate some implementation of underlying "timelock vault", where depositor is expected to issue two transaction for full redemption of assets from the vault.
