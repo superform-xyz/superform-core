@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+/// @title ISuperFormFactory
+/// @author ZeroPoint Labs
+/// @notice Interface for SuperForm Factory
 interface ISuperFormFactory {
     /*///////////////////////////////////////////////////////////////
                                 Events
@@ -66,7 +69,7 @@ interface ISuperFormFactory {
     /// @param vault_ is the address of the vault
     /// @param broadcastParams_ is the AMBExtraData to be sent to the AMBs
     /// @return superFormId_ is the id of the superform
-    /// @dev TODO: add array version of thi
+    /// @dev TODO: add array version of this
     function createSuperForm(
         uint256 formBeaconId_,
         address vault_,

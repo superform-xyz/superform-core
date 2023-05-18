@@ -1,36 +1,40 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import {Error} from "../utils/Error.sol";
+import "../utils/DataPacking.sol";
+import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {PayloadState, AMBMessage, AMBFactoryMessage, AMBExtraData} from "../types/DataTypes.sol";
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {Error} from "../utils/Error.sol";
-import "../utils/DataPacking.sol";
 
-/// @title Cross-Chain AMB (Arbitrary Message Bridge) Aggregator Base
+/// @title BaseStateRegistry
 /// @author Zeropoint Labs
-/// @notice stores, sends & process message sent via various messaging ambs.
+/// @dev contract module that allows children to implement crosschain messaging
+/// & processing mechanisms. This is a lightweight version that allows only dispatching and receiving crosschain
+/// payloads (messages). Inheriting children contracts has the flexibility to define their own processing mechanisms.
 abstract contract BaseStateRegistry is IBaseStateRegistry {
+    /*///////////////////////////////////////////////////////////////
+                            CONSTANTS
+    //////////////////////////////////////////////////////////////*/
+    uint8 public immutable STATE_REGISTRY_TYPE;
+    ISuperRegistry public immutable superRegistry;
+
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     uint256 public payloadsCount;
 
     mapping(bytes => uint256) public messageQuorum;
-    /// @dev stores all received payloads after assigning them an unique identifier upon receiving.
+    /// @dev stores all received payloads after assigning them an unique identifier upon receiving
     mapping(uint256 => bytes) public payload;
-    /// @dev maps payloads to their status
+    /// @dev maps payloads to their current status
     mapping(uint256 => PayloadState) public payloadTracking;
-
-    ISuperRegistry public immutable superRegistry;
-    uint8 public immutable STATE_REGISTRY_TYPE;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
-
     modifier onlyProtocolAdmin() {
         if (
             !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
@@ -52,6 +56,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         _;
     }
 
+    /// @dev sender varies based on functionality
+    /// NOTE: children contracts should override this function (else not safe)
     modifier onlySender() virtual {
         _;
     }
@@ -59,12 +65,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                         CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-
-    ///@dev set up admin during deployment.
     constructor(ISuperRegistry superRegistry_, uint8 stateRegistryType_) {
         superRegistry = superRegistry_;
 
-        /// FIXME: move to super registry
+        /// TODO: move state registry type to superregistry??
         STATE_REGISTRY_TYPE = stateRegistryType_;
     }
 
@@ -73,19 +77,14 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     //////////////////////////////////////////////////////////////*/
     receive() external payable {}
 
-    /// @dev allows core contracts to send data to a destination chain.
-    /// @param ambIds_ is the identifier of the message amb to be used.
-    /// @param dstChainId_ is the internal chainId used throughtout the protocol.
-    /// @param message_ is the crosschain data to be sent.
-    /// @param extraData_ defines all the message amb specific information.
-    /// NOTE: dstChainId maps with the message amb's propreitory chain Id.
+    /// @inheritdoc IBaseStateRegistry
     function dispatchPayload(
         uint8[] memory ambIds_,
         uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual override onlySender {
-        /// @dev atleast 2 AMBs are required
+    ) external payable override onlySender {
+        /// TODO: [SUP-2586] remove minimum dependency
         if (ambIds_.length < 2) {
             revert Error.INVALID_AMB_IDS_LENGTH();
         }
@@ -109,13 +108,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         );
     }
 
-    /// @dev allows core contracts to send data to all available destination chains
+    /// @inheritdoc IBaseStateRegistry
     function broadcastPayload(
         uint8[] memory ambIds_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual override onlySender {
-        /// @dev atleast 2 AMBs are required
+    ) external payable override onlySender {
+        /// TODO: [SUP-2586] remove minimum dependency
         if (ambIds_.length < 2) {
             revert Error.INVALID_AMB_IDS_LENGTH();
         }
@@ -131,19 +130,16 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         _broadcastProof(ambIds_, d.gasPerAMB, message_, d.extraDataPerAMB);
     }
 
-    /// @dev allows state registry to receive messages from amb implementations.
-    /// @param srcChainId_ is the internal chainId from which the data is sent.
-    /// @param message_ is the crosschain data received.
-    /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
+    /// @inheritdoc IBaseStateRegistry
     function receivePayload(
         uint16 srcChainId_,
         bytes memory message_
-    ) external virtual override {
+    ) external override {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
 
         if (data.params.length == 32) {
-            /// assuming 32 bytes length is always proof
-            /// @dev should validate this later
+            /// FIXME: assuming 32 bytes length is always proof
+            /// NOTE: should validate this assumption
             messageQuorum[data.params] += 1;
 
             emit ProofReceived(data.params);
@@ -159,26 +155,23 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         }
     }
 
-    /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @param ambOverride_ override data for AMBs to process acknowledgements.
-    /// NOTE: function can only process successful payloads.
+    /// @inheritdoc IBaseStateRegistry
     function processPayload(
         uint256 payloadId_,
         bytes memory ambOverride_
     ) external payable virtual override onlyProcessor {}
 
-    /// @dev allows accounts with {PROCESSOR_ROLE} to revert Error.payload that fail to revert Error.state changes on source chain.
-    /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @param ambId_ is the identifier of the cross-chain amb to be used to send the acknowledgement.
-    /// @param extraData_ is any message amb specific override information.
-    /// NOTE: function can only process failing payloads.
+    /// @inheritdoc IBaseStateRegistry
     function revertPayload(
         uint256 payloadId_,
         uint256 ambId_,
         bytes memory extraData_
     ) external payable virtual override onlyProcessor {}
 
+    /*///////////////////////////////////////////////////////////////
+                            INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+    /// @dev dispatches the payload(message_) through individual message bridge implementations
     function _dispatchPayload(
         uint8 ambId_,
         uint16 dstChainId_,
@@ -201,6 +194,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         );
     }
 
+    /// @dev dispatches the proof(hash of the message_) through individual message bridge implementations
     function _dispatchProof(
         uint8[] memory ambIds_,
         uint16 dstChainId_,
@@ -236,6 +230,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         }
     }
 
+    /// @dev broadcasts the payload(message_) through individual message bridge implementations
     function _broadcastPayload(
         uint8 ambId_,
         uint256 gasToPay_,
@@ -261,13 +256,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         );
     }
 
+    /// @dev broadcasts the proof(hash of the message_) through individual message bridge implementations
     function _broadcastProof(
         uint8[] memory ambIds_,
         uint256[] memory gasToPay_,
         bytes memory message_,
         bytes[] memory extraData_
     ) internal {
-        /// @dev generates the proof
         bytes memory proof = abi.encode(keccak256(message_));
         AMBMessage memory newData = AMBMessage(
             _packTxInfo(0, 0, false, STATE_REGISTRY_TYPE),

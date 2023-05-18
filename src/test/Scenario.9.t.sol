@@ -12,7 +12,7 @@ import "./utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario1Test is ProtocolActions {
+contract Scenario9Test is ProtocolActions {
     /// @dev Access SuperRouter interface
     ISuperRouter superRouter;
 

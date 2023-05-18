@@ -85,7 +85,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    /// @dev FIXME: missing means for admin to change implementations
     function initialize(
         address superRegistry_,
         address vault_
@@ -114,68 +113,38 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
             super.supportsInterface(interfaceId);
     }
 
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process same chain id deposits
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev NOTE: Should this function return?
+    /// @inheritdoc IBaseForm
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) external payable override onlySuperRouter returns (uint256 dstAmount) {
         dstAmount = _directDepositIntoVault(singleVaultData_);
     }
 
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process same chain id deposits
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @dev NOTE: Should this function return?
+    /// @inheritdoc IBaseForm
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_
     ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
         dstAmount = _xChainDepositIntoVault(singleVaultData_);
     }
 
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process withdrawal of collateral from a vault
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmount  The amount of tokens withdrawn in same chain action
-    /// note: direct action doesn't require status reporting as xchain action does
+    /// @inheritdoc IBaseForm
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
     ) external override onlySuperRouter returns (uint256 dstAmount) {
         dstAmount = _directWithdrawFromVault(singleVaultData_);
     }
 
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process withdrawal of collateral from a vault
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return status If withdraw succeded or not (relevant for custom forms, for standard form this could be omitted as we inform about fail elsewhere
+    /// @inheritdoc IBaseForm
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) external override onlyCoreStateRegistry returns (uint16 status) {
+    ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
         /// @dev FIXME: not returning anything YET
-        status = _xChainWithdrawFromVault(singleVaultData_);
+        dstAmount = _xChainWithdrawFromVault(singleVaultData_);
     }
 
     /*///////////////////////////////////////////////////////////////
                     PURE/VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @return True if the vaults supported by this form use transferrable ERC20 tokens
-    /// to represent shares, false otherwise.
-    function vaultSharesIsERC20() public pure virtual returns (bool);
-
-    /// @return True if the vaults supported by this form use transferrable ERC20 tokens
-    /// to represent shares, false otherwise.
-    function vaultSharesIsERC4626() public pure virtual returns (bool);
-
-    /// @return True if the vaults supported by this form use transferrable ERC20 tokens
-    /// to represent shares, false otherwise.
-    function vaultSharesIsERC721() public pure virtual returns (bool);
 
     /// @notice get Superform name of the ERC20 vault representation
     /// @return The ERC20 name
@@ -264,7 +233,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual returns (uint16 status);
+    ) internal virtual returns (uint256 dstAmount);
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS
@@ -308,12 +277,12 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     }
 
     /// @dev FIXME Decide to keep this?
-    /// TODO: transfer may not work in zkSync - careful
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
     function emergencyWithdrawNativeToken(
         uint256 amount
     ) external onlyProtocolAdmin {
-        payable(msg.sender).transfer(amount);
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
     }
 }

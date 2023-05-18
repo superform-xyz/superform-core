@@ -2,13 +2,15 @@
 pragma solidity 0.8.19;
 
 import {BaseStateRegistry} from "./BaseStateRegistry.sol";
-import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
-import {IFactoryStateRegistry} from "../interfaces/IFactoryStateRegistry.sol";
+import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {PayloadState} from "../types/DataTypes.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {Error} from "../utils/Error.sol";
 
-contract RolesStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
+/// @title RolesStateRegistry
+/// @author Zeropoint Labs
+/// @dev enables communication between SuperRBAC deployed on all supported networks
+contract RolesStateRegistry is BaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
@@ -21,7 +23,6 @@ contract RolesStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    ///@dev set up admin during deployment.
     constructor(
         ISuperRegistry superRegistry_,
         uint8 registryType_
@@ -31,9 +32,7 @@ contract RolesStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// NOTE: function can only process successful payloads.
+    /// @inheritdoc BaseStateRegistry
     function processPayload(
         uint256 payloadId_,
         bytes memory /// not useful here
@@ -47,8 +46,6 @@ contract RolesStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperFormFactory(superRegistry.superRBAC()).stateSync(
-            payload[payloadId_]
-        );
+        ISuperRBAC(superRegistry.superRBAC()).stateSync(payload[payloadId_]);
     }
 }

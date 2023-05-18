@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IPermit2} from "../interfaces/IPermit2.sol";
+import {IPermit2} from "../vendor/dragonfly-xyz/IPermit2.sol";
 import {Error} from "../utils/Error.sol";
 
 /**
@@ -16,9 +16,7 @@ abstract contract LiquidityHandler {
 
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    /// @dev dispatches tokens via the socket bridge.
-    /// Note: refer https://docs.socket.tech/socket-api/v2/guides/socket-smart-contract-integration
-    /// Note: All the inputs are in array for processing multiple transactions.
+    /// @dev dispatches tokens via a liquidity bridge bridge.
     /// @param bridge_ Bridge address to pass tokens to
     /// @param txData_ Socket data
     /// @param token_ Token caller deposits into superform
@@ -42,9 +40,6 @@ abstract contract LiquidityHandler {
             /// @dev only for deposits, otherwise amount already in contract
             if (owner_ != address(this)) {
                 if (permit2Data_.length == 0) {
-                    /// NOTE: Investiage if this can be consolidated in 1 op (permit? only approve to bridge?)
-                    /// @dev FIXME: this fails with solmate safeTransferFrom on direct actions (transfer to beaconProxy 1st) - could it be because of beaconProxy?
-                    // !! Warning: reported here https://github.com/transmissions11/solmate/issues/370
                     token.safeTransferFrom(owner_, address(this), amount_);
                 } else {
                     (
@@ -79,9 +74,6 @@ abstract contract LiquidityHandler {
                 }
             }
             token.safeApprove(bridge_, amount_);
-
-            /// NOTE: Delegatecall is always risky. bridge_ address hardcoded now.
-            /// Can't we just use bridge interface here?
             unchecked {
                 (bool success, ) = payable(bridge_).call{value: nativeAmount_}(
                     txData_
@@ -93,8 +85,6 @@ abstract contract LiquidityHandler {
             if (nativeAmount_ < amount_)
                 revert Error.INSUFFICIENT_NATIVE_AMOUNT();
 
-            /// NOTE: Delegatecall is always risky. bridge_ address hardcoded now.
-            /// Can't we just use bridge interface here?
             unchecked {
                 (bool success, ) = payable(bridge_).call{value: nativeAmount_}(
                     txData_

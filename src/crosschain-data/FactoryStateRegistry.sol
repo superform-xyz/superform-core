@@ -8,6 +8,9 @@ import {PayloadState} from "../types/DataTypes.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {Error} from "../utils/Error.sol";
 
+/// @title FactoryStateRegistry
+/// @author Zeropoint Labs
+/// @dev enables communication between SuperFormFactory deployed on all supported networks
 contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -21,7 +24,6 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    ///@dev set up admin during deployment.
     constructor(
         ISuperRegistry superRegistry_,
         uint8 registryType_
@@ -31,9 +33,7 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev allows accounts with {PROCESSOR_ROLE} to process any successful cross-chain payload.
-    /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// NOTE: function can only process successful payloads.
+    /// @inheritdoc BaseStateRegistry
     function processPayload(
         uint256 payloadId_,
         bytes memory /// not useful here

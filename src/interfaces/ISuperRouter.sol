@@ -5,6 +5,7 @@ import {LiqRequest, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, M
 
 /// @title ISuperRouter
 /// @author Zeropoint Labs.
+/// @dev interface for Super Router
 interface ISuperRouter {
     /*///////////////////////////////////////////////////////////////
                                 STRUCTS
@@ -21,9 +22,6 @@ interface ISuperRouter {
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev FIXME: to remove? - is emitted when a cross-chain transaction is initiated.
-    event Initiated(uint256 txId, address fromToken, uint256 fromAmount);
 
     /// @dev is emitted when a cross-chain transaction is initiated.
     event CrossChainInitiated(uint80 indexed txId);

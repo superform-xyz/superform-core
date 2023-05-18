@@ -3,14 +3,14 @@ pragma solidity 0.8.19;
 
 import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 import {BeaconProxy} from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
+import {BaseForm} from "./BaseForm.sol";
 import {FormBeacon} from "./forms/FormBeacon.sol";
+import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
-import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
-import {BaseForm} from "./BaseForm.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
 
@@ -75,7 +75,6 @@ contract SuperFormFactory is ISuperFormFactory {
         ) revert Error.FORM_INTERFACE_UNSUPPORTED();
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
-        /// @dev TODO - created with create2. Should allow us to broadcast contract pauses and resumes cross chain
         beacon = address(
             new FormBeacon{salt: salt_}(
                 address(superRegistry),
@@ -119,7 +118,6 @@ contract SuperFormFactory is ISuperFormFactory {
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
         /// @dev TODO - should we predict superform address?
-        /// @dev we just grab initialize selector from baseform, don't need to grab from a specific form
         superForm_ = address(
             new BeaconProxy(
                 address(tFormBeacon),
@@ -220,29 +218,21 @@ contract SuperFormFactory is ISuperFormFactory {
                         External View Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev returns the address of a form beacon
-    /// @param formBeaconId_ is the id of the beacon form
-    /// @return formBeacon_ is the address of the beacon form
+    /// @inheritdoc ISuperFormFactory
     function getFormBeacon(
         uint256 formBeaconId_
     ) external view override returns (address formBeacon_) {
         formBeacon_ = formBeacon[formBeaconId_];
     }
 
-    /// @dev returns the status of form beacon
-    /// @param formBeaconId_ is the id of the beacon form
-    /// @return status_ is the current status of the form beacon
+    /// @inheritdoc ISuperFormFactory
     function getFormBeaconStatus(
         uint256 formBeaconId_
     ) external view override returns (bool status_) {
         status_ = FormBeacon(formBeacon[formBeaconId_]).paused();
     }
 
-    /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
-    /// @param vault_ is the address of a vault
-    /// @return superFormIds_ is the id of the superform
-    /// @return formBeaconIds_ is the form id
-    /// @return chainIds_ is the chain id
+    /// @inheritdoc ISuperFormFactory
     function getAllSuperFormsFromVault(
         address vault_
     )
@@ -267,11 +257,7 @@ contract SuperFormFactory is ISuperFormFactory {
         }
     }
 
-    /// @dev Returns all SuperForms
-    /// @return superFormIds_ is the id of the superform
-    /// @return superForms_ is the address of the vault
-    /// @return formBeaconIds_ is the form beacon id
-    /// @return chainIds_ is the chain id
+    /// @inheritdoc ISuperFormFactory
     function getAllSuperForms()
         external
         view
@@ -296,14 +282,12 @@ contract SuperFormFactory is ISuperFormFactory {
         }
     }
 
-    /// @dev returns the number of formbeacons
-    /// @return forms_ is the number of formbeacons
+    /// @inheritdoc ISuperFormFactory
     function getAllFormsList() external view override returns (uint256 forms_) {
         forms_ = formBeacons.length;
     }
 
-    /// @dev returns the number of superforms
-    /// @return superForms_ is the number of superforms
+    /// @inheritdoc ISuperFormFactory
     function getAllSuperFormsList()
         external
         view
@@ -313,7 +297,7 @@ contract SuperFormFactory is ISuperFormFactory {
         superForms_ = superForms.length;
     }
 
-    /// @dev returns the number of superforms for the given chain (where this call is made)
+    /// @inheritdoc ISuperFormFactory
     function getAllChainSuperFormsList()
         external
         view

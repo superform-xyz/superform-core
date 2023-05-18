@@ -27,7 +27,7 @@ import {RolesStateRegistry} from "../../crosschain-data/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
 import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
-import {IERC4626} from "../../interfaces/IERC4626.sol";
+import {IERC4626} from "../../vendor/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {SuperRouter} from "../../SuperRouter.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
@@ -42,13 +42,13 @@ import {SocketValidator} from "../../crosschain-liquidity/socket/SocketValidator
 import {LayerzeroImplementation} from "../../crosschain-data/layerzero/Implementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/Implementation.sol";
 import {CelerImplementation} from "../../crosschain-data/celer/Implementation.sol";
-import {IMailbox} from "../../crosschain-data/hyperlane/interface/IMailbox.sol";
-import {IInterchainGasPaymaster} from "../../crosschain-data/hyperlane/interface/IInterchainGasPaymaster.sol";
-import {IMessageBus} from "../../crosschain-data/celer/interface/IMessageBus.sol";
+import {IMailbox} from "../../vendor/hyperlane/IMailbox.sol";
+import {IInterchainGasPaymaster} from "../../vendor/hyperlane/IInterchainGasPaymaster.sol";
+import {IMessageBus} from "../../vendor/celer/IMessageBus.sol";
 import ".././utils/AmbParams.sol";
-import {IPermit2} from "../../interfaces/IPermit2.sol";
+import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
-import {FormStateRegistry} from "../../forms/form_keeper/FormStateRegistry.sol";
+import {TwoStepsFormStateRegistry} from "../../crosschain-data/TwoStepsFormStateRegistry.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     using FixedPointMathLib for uint256;
@@ -367,12 +367,21 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantUpdaterRole(deployer);
             assert(SuperRBAC(vars.superRBAC).hasUpdaterRole(deployer));
 
-            /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
-            SuperRBAC(vars.superRBAC).grantFormStateRegistryRole(deployer);
+            /// @dev FIXME: in reality who should have the TWOSTEPS_PROCESSOR_ROLE for state registry?
+            SuperRBAC(vars.superRBAC).grantTwoStepsProcessorRole(deployer);
             assert(
-                SuperRBAC(vars.superRBAC).hasFormStateRegistryRole(deployer)
+                SuperRBAC(vars.superRBAC).hasTwoStepsProcessorRole(deployer)
             );
 
+            /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
+            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
+                deployer
+            );
+            assert(
+                SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(
+                    deployer
+                )
+            );
             /// @dev 4.1 - deploy Core State Registry
 
             vars.coreStateRegistry = address(
@@ -414,24 +423,32 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.factoryStateRegistry
             );
 
-
-            /// @dev 4.2 - deploy Form State Registry
-            vars.formStateRegistry = address(
-                new FormStateRegistry{salt: salt}(
+            /// @dev 4.3 - deploy Form State Registry
+            vars.twoStepsFormStateRegistry = address(
+                new TwoStepsFormStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
                     1
                 )
             );
 
-            contracts[vars.chainId][
-                bytes32(bytes("FormStateRegistry"))
-            ] = vars.formStateRegistry;
-
-            SuperRegistry(vars.superRegistry).setFormStateRegistry(
-                vars.formStateRegistry
+            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
+                vars.twoStepsFormStateRegistry
+            );
+            assert(
+                SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(
+                    vars.twoStepsFormStateRegistry
+                )
             );
 
-            /// @dev 4.3- deploy Roles State Registry
+            contracts[vars.chainId][
+                bytes32(bytes("TwoStepsFormStateRegistry"))
+            ] = vars.twoStepsFormStateRegistry;
+
+            SuperRegistry(vars.superRegistry).setFormStateRegistry(
+                vars.twoStepsFormStateRegistry
+            );
+
+            /// @dev 4.4- deploy Roles State Registry
             vars.rolesStateRegistry = address(
                 new RolesStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry),
@@ -466,8 +483,6 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev 5.1 - deploy Layerzero Implementation
-            /// @notice: deploying this with create2 doesn't lead to same address because of lzEndpoints being different per chain
-            /// TODO: unless we change LzApp.sol to set the lzEndpoint post deployment
             vars.lzImplementation = address(
                 new LayerzeroImplementation{salt: salt}(
                     SuperRegistry(vars.superRegistry)
@@ -518,7 +533,7 @@ abstract contract BaseSetup is DSTest, Test {
                 .lifiRouter;
             vm.allowCheatcodes(vars.lifiRouter);
 
-            /// @dev 6.2- deploy socke and lifi validator
+            /// @dev 6.2- deploy socket and lifi validator
             vars.socketValidator = address(
                 new SocketValidator{salt: salt}(vars.superRegistry)
             );
@@ -555,7 +570,6 @@ abstract contract BaseSetup is DSTest, Test {
                     new MockERC20{salt: salt}(
                         UNDERLYING_TOKENS[j],
                         UNDERLYING_TOKENS[j],
-                        18,
                         deployer,
                         milionTokensE18
                     )
@@ -686,12 +700,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
-            SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
-                vars.lzImplementation
-            );
-            SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
-                vars.hyperlaneImplementation
-            );
 
             /// FIXME: check if this is safe in all aspects
             SuperRBAC(vars.superRBAC).grantProtocolAdminRole(

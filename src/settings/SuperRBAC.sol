@@ -8,7 +8,6 @@ import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 import {AMBFactoryMessage, AMBMessage} from "../types/DataTypes.sol";
 import "../utils/DataPacking.sol";
-import "forge-std/console.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.
@@ -20,24 +19,20 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     bytes32 public constant override CORE_STATE_REGISTRY_ROLE =
         keccak256("CORE_STATE_REGISTRY_ROLE");
-    bytes32 public constant FORM_STATE_REGISTRY_ROLE =
-        keccak256("FORM_STATE_REGISTRY_ROLE");
+    bytes32 public constant TWOSTEPS_FORM_STATE_REGISTRY_ROLE =
+        keccak256("TWOSTEPS_FORM_STATE_REGISTRY_ROLE");
     bytes32 public constant override SUPER_ROUTER_ROLE =
         keccak256("SUPER_ROUTER_ROLE");
-    bytes32 public constant override TOKEN_BANK_ROLE =
-        keccak256("TOKEN_BANK_ROLE");
     bytes32 public constant override SUPERFORM_FACTORY_ROLE =
         keccak256("SUPERFORM_FACTORY_ROLE");
     bytes32 public constant override SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
     bytes32 public constant override CORE_CONTRACTS_ROLE =
         keccak256("CORE_CONTRACTS_ROLE");
-    bytes32 public constant override IMPLEMENTATION_CONTRACTS_ROLE =
-        keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
     bytes32 public constant override PROCESSOR_ROLE =
         keccak256("PROCESSOR_ROLE");
+    bytes32 public constant override TWOSTEPS_PROCESSOR_ROLE =
+        keccak256("TWOSTEPS_PROCESSOR_ROLE");
     bytes32 public constant override UPDATER_ROLE = keccak256("UPDATER_ROLE");
-    bytes32 public constant override SUPER_POSITIONS_BANK_ROLE =
-        keccak256("SUPER_POSITIONS_BANK_ROLE");
 
     ISuperRegistry public immutable superRegistry;
 
@@ -89,18 +84,24 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         }
     }
 
-    /// TODO: inheritdoc ISuperRBAC
-    function grantFormStateRegistryRole(
-        address formStateRegistry_
-    ) external {
-        grantRole(FORM_STATE_REGISTRY_ROLE, formStateRegistry_);
+    /// @inheritdoc ISuperRBAC
+    function grantTwoStepsFormStateRegistryRole(
+        address twoStepsformStateRegistry_
+    ) external override {
+        grantRole(
+            TWOSTEPS_FORM_STATE_REGISTRY_ROLE,
+            twoStepsformStateRegistry_
+        );
     }
 
-    /// TODO: inheritdoc ISuperRBAC
-    function revokeFormStateRegistryRole(
-        address formStateRegistry_
-    ) external {
-        revokeRole(FORM_STATE_REGISTRY_ROLE, formStateRegistry_);
+    /// @inheritdoc ISuperRBAC
+    function revokeTwoStepsFormStateRegistryRole(
+        address twoStepsformStateRegistry_
+    ) external override {
+        revokeRole(
+            TWOSTEPS_FORM_STATE_REGISTRY_ROLE,
+            twoStepsformStateRegistry_
+        );
     }
 
     /// @inheritdoc ISuperRBAC
@@ -119,28 +120,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
             AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
                 SYNC_REVOKE_ROLE,
                 abi.encode(SUPER_ROUTER_ROLE, superRouter_)
-            );
-
-            _broadcast(abi.encode(rolesPayload), extraData_);
-        }
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function grantTokenBankRole(address tokenBank_) external override {
-        grantRole(TOKEN_BANK_ROLE, tokenBank_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function revokeTokenBankRole(
-        address tokenBank_,
-        bytes memory extraData_
-    ) external payable override {
-        revokeRole(TOKEN_BANK_ROLE, tokenBank_);
-
-        if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
-                abi.encode(TOKEN_BANK_ROLE, tokenBank_)
             );
 
             _broadcast(abi.encode(rolesPayload), extraData_);
@@ -216,33 +195,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
-    function grantImplementationContractsRole(
-        address implementationContracts_
-    ) external override {
-        grantRole(IMPLEMENTATION_CONTRACTS_ROLE, implementationContracts_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function revokeImplementationContractsRole(
-        address implementationContracts_,
-        bytes memory extraData_
-    ) external payable override {
-        revokeRole(IMPLEMENTATION_CONTRACTS_ROLE, implementationContracts_);
-
-        if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
-                abi.encode(
-                    IMPLEMENTATION_CONTRACTS_ROLE,
-                    implementationContracts_
-                )
-            );
-
-            _broadcast(abi.encode(rolesPayload), extraData_);
-        }
-    }
-
-    /// @inheritdoc ISuperRBAC
     function grantProcessorRole(address processor_) external override {
         grantRole(PROCESSOR_ROLE, processor_);
     }
@@ -258,6 +210,30 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
             AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
                 SYNC_REVOKE_ROLE,
                 abi.encode(PROCESSOR_ROLE, processor_)
+            );
+
+            _broadcast(abi.encode(rolesPayload), extraData_);
+        }
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function grantTwoStepsProcessorRole(
+        address twoStepsProcessor_
+    ) external override {
+        grantRole(TWOSTEPS_PROCESSOR_ROLE, twoStepsProcessor_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function revokeTwoStepsProcessorRole(
+        address twoStepsProcessor_,
+        bytes memory extraData_
+    ) external payable override {
+        revokeRole(TWOSTEPS_PROCESSOR_ROLE, twoStepsProcessor_);
+
+        if (extraData_.length > 0) {
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
+                SYNC_REVOKE_ROLE,
+                abi.encode(TWOSTEPS_PROCESSOR_ROLE, twoStepsProcessor_)
             );
 
             _broadcast(abi.encode(rolesPayload), extraData_);
@@ -329,10 +305,14 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         return hasRole(CORE_STATE_REGISTRY_ROLE, coreStateRegistry_);
     }
 
-    function hasFormStateRegistryRole(
-        address coreStateRegistry_
+    function hasTwoStepsFormStateRegistryRole(
+        address twoStepsFormStateRegistry_
     ) external view returns (bool) {
-        return hasRole(FORM_STATE_REGISTRY_ROLE, coreStateRegistry_);
+        return
+            hasRole(
+                TWOSTEPS_FORM_STATE_REGISTRY_ROLE,
+                twoStepsFormStateRegistry_
+            );
     }
 
     /// @inheritdoc ISuperRBAC
@@ -364,17 +344,17 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
-    function hasImplementationContractsRole(
-        address implementationContracts_
-    ) external view override returns (bool) {
-        return hasRole(IMPLEMENTATION_CONTRACTS_ROLE, implementationContracts_);
-    }
-
-    /// @inheritdoc ISuperRBAC
     function hasProcessorRole(
         address processor_
     ) external view override returns (bool) {
         return hasRole(PROCESSOR_ROLE, processor_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasTwoStepsProcessorRole(
+        address twoStepsProcessor_
+    ) external view override returns (bool) {
+        return hasRole(TWOSTEPS_PROCESSOR_ROLE, twoStepsProcessor_);
     }
 
     /// @inheritdoc ISuperRBAC

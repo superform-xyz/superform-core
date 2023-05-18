@@ -7,15 +7,15 @@ import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 import {Error} from "../../utils/Error.sol";
-import {ILayerZeroReceiver} from "./interface/ILayerZeroReceiver.sol";
-import {ILayerZeroUserApplicationConfig} from "./interface/ILayerZeroUserApplicationConfig.sol";
-import {ILayerZeroEndpoint} from "./interface/ILayerZeroEndpoint.sol";
+import {ILayerZeroReceiver} from "../../vendor/layerzero/ILayerZeroReceiver.sol";
+import {ILayerZeroUserApplicationConfig} from "../../vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
+import {ILayerZeroEndpoint} from "../../vendor/layerzero/ILayerZeroEndpoint.sol";
 import "../../utils/DataPacking.sol";
 
 /// @dev FIXME: this contract could use better overrides from interfaces
-/// @title Layerzero implementation contract
-/// @author Zeropoint Labs.
-/// @dev interacts with Layerzero AMB.
+/// @title LayerzeroImplementation
+/// @author Zeropoint Labs
+/// @dev allows state registries to use hyperlane for crosschain communication
 contract LayerzeroImplementation is
     IAmbImplementation,
     ILayerZeroUserApplicationConfig,
@@ -84,10 +84,7 @@ contract LayerzeroImplementation is
     /// @dev layerzero gas payments/refund fails without a native receive function.
     receive() external payable {}
 
-    /// @dev allows state registry to send message via implementation.
-    /// @param dstChainId_ is the identifier of the destination chain
-    /// @param message_ is the cross-chain message to be sent
-    /// @param extraData_ is message amb specific override information
+    /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         uint16 dstChainId_,
         bytes memory message_,
@@ -107,9 +104,7 @@ contract LayerzeroImplementation is
         );
     }
 
-    /// @dev allows state registry to send multiple messages via implementation
-    /// @param message_ is the cross-chain message to be sent
-    /// @param extraData_ is the message amb specific override information
+    /// @inheritdoc IAmbImplementation
     function broadcastPayload(
         bytes memory message_,
         bytes memory extraData_
@@ -138,10 +133,10 @@ contract LayerzeroImplementation is
         }
     }
 
-    /// @notice to add access based controls over here
-    /// @dev allows admin to add new chain ids in future
+    /// @dev allows protocol admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
+    /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
     function setChainId(
         uint16 superChainId_,
         uint16 ambChainId_
@@ -154,7 +149,7 @@ contract LayerzeroImplementation is
     }
 
     /*///////////////////////////////////////////////////////////////
-                       Core Internal Functions
+                        Core Internal Functions
     //////////////////////////////////////////////////////////////*/
     function _nonblockingLzReceive(
         uint16 _srcChainId,
@@ -185,6 +180,7 @@ contract LayerzeroImplementation is
                         LZ External Functions
     //////////////////////////////////////////////////////////////*/
 
+    /// @inheritdoc ILayerZeroReceiver
     function lzReceive(
         uint16 srcChainId_,
         bytes memory srcAddress_,
@@ -192,18 +188,18 @@ contract LayerzeroImplementation is
         bytes memory payload_
     ) public override {
         // lzReceive must be called by the endpoint for security
-        require(
-            msg.sender == address(lzEndpoint),
-            "LzApp: invalid endpoint caller"
-        );
+        if (msg.sender != address(lzEndpoint)) {
+            revert Error.INVALID_CALLER();
+        }
 
         bytes memory trustedRemote = trustedRemoteLookup[srcChainId_];
         // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
-        require(
-            srcAddress_.length == trustedRemote.length &&
-                keccak256(srcAddress_) == keccak256(trustedRemote),
-            "LzApp: invalid source sending contract"
-        );
+        if (
+            srcAddress_.length != trustedRemote.length &&
+            keccak256(srcAddress_) != keccak256(trustedRemote)
+        ) {
+            revert Error.INVALID_SRC_SENDER();
+        }
 
         _blockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_);
     }
@@ -215,10 +211,9 @@ contract LayerzeroImplementation is
         bytes memory payload_
     ) public {
         // only internal transaction
-        require(
-            msg.sender == address(this),
-            "NonblockingLzApp: caller must be LzApp"
-        );
+        if (msg.sender != address(this)) {
+            revert Error.INVALID_CALLER();
+        }
         _nonblockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_);
     }
 
@@ -230,14 +225,12 @@ contract LayerzeroImplementation is
     ) public payable {
         // assert there is message to retry
         bytes32 payloadHash = failedMessages[srcChainId_][srcAddress_][nonce_];
-        require(
-            payloadHash != bytes32(0),
-            "NonblockingLzApp: no stored message"
-        );
-        require(
-            keccak256(payload_) == payloadHash,
-            "NonblockingLzApp: invalid payload"
-        );
+        if (payloadHash == bytes32(0)) {
+            revert Error.INVALID_PAYLOAD_STATE();
+        }
+        if (keccak256(payload_) != payloadHash) {
+            revert Error.INVALID_PAYLOAD();
+        }
         // clear the stored message
         failedMessages[srcChainId_][srcAddress_][nonce_] = bytes32(0);
         // execute the message. revert if it fails again
@@ -257,10 +250,9 @@ contract LayerzeroImplementation is
         uint256 msgValue_
     ) internal {
         bytes memory trustedRemote = trustedRemoteLookup[dstChainId_];
-        require(
-            trustedRemote.length != 0,
-            "LzApp: destination chain is not a trusted source"
-        );
+        if (trustedRemote.length == 0) {
+            revert Error.INVALID_SRC_CHAIN_ID();
+        }
 
         lzEndpoint.send{value: msgValue_}(
             dstChainId_,
@@ -301,6 +293,8 @@ contract LayerzeroImplementation is
                             LZ Application config
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev allows protocol admin to configure layerzero endpoint
+    /// @param endpoint_ is the layerzero endpoint on the deployed network
     function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
         if (address(lzEndpoint) == address(0)) {
             lzEndpoint = ILayerZeroEndpoint(endpoint_);
@@ -322,7 +316,7 @@ contract LayerzeroImplementation is
             );
     }
 
-    // generic config for LayerZero user Application
+    /// @dev allows protocol admin to configure UA on layerzero
     function setConfig(
         uint16 version_,
         uint16 chainId_,

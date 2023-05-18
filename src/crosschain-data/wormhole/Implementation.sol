@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IWormhole} from "./interface/IWormhole.sol";
-import {IWormholeReceiver} from "./interface/IWormholeReceiver.sol";
-import {IWormholeRelayer} from "./interface/IWormholeRelayer.sol";
+import {IWormhole} from "../../vendor/wormhole/IWormhole.sol";
+import {IWormholeReceiver} from "../../vendor/wormhole/IWormholeReceiver.sol";
+import {IWormholeRelayer} from "../../vendor/wormhole/IWormholeRelayer.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {AMBMessage} from "../../types/DataTypes.sol";
@@ -12,12 +12,10 @@ import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
 
-/// @title Wormhole implementation contract
-/// @author Zeropoint Labs.
-/// @dev interacts with Wormhole AMB.
-///
-/// @notice https://book.wormhole.com/wormhole/3_coreLayerContracts.html#multicasting
-/// this contract uses multi-casting feature from wormhole
+/// @dev FIXME: this contract is WIP; not completed yet
+/// @title WormholeImplementation
+/// @author Zeropoint Labs
+/// @dev allows state registries to use wormhole for crosschain communication
 contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     struct ExtraData {
         uint256 messageFee;
@@ -84,10 +82,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     /// @dev socket.tech fails without a native receive function.
     receive() external payable {}
 
-    /// @dev allows state registry to send message via implementation.
-    /// @param dstChainId_ is the identifier of the destination chain
-    /// @param message_ is the cross-chain message to be sent
-    /// @param extraData_ is message amb specific override information
+    /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         uint16 dstChainId_,
         bytes memory message_,
@@ -122,11 +117,13 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         );
     }
 
+    /// @inheritdoc IAmbImplementation
     function broadcastPayload(
         bytes memory message_,
         bytes memory extraData_
     ) external payable override {}
 
+    /// @inheritdoc IWormholeReceiver
     function receiveWormholeMessages(
         bytes[] memory whMessages,
         bytes[] memory
@@ -134,7 +131,9 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         (IWormhole.VM memory vm, bool valid, string memory reason) = bridge
             .parseAndVerifyVM(whMessages[0]);
 
-        require(valid, reason);
+        if (!valid) {
+            revert Error.INVALID_WORMHOLE_PAYLOAD(reason);
+        }
 
         /// @dev 1.should validate sender
         /// @dev 2.should validate message uniqueness
@@ -167,11 +166,10 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         );
     }
 
-    /// TODO: remove
-    /// @notice to add access based controls over here
     /// @dev allows admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
+    /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
     function setChainId(
         uint16 superChainId_,
         uint16 ambChainId_
@@ -187,7 +185,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     }
 
     /// @notice relayer contracts are used to forward messages
-    /// @dev allows admin to set the core relayer
+    /// @dev allows protocol admin to set the core relayer
     /// @param relayer_ is the identifier of the relayer address
     function setRelayer(IWormholeRelayer relayer_) external onlyProtocolAdmin {
         if (address(relayer_) == address(0)) {
@@ -202,7 +200,9 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev FIXME: should go into utils
-    /// @dev converts address to bytes32
+    /// @dev casts an address to bytes32
+    /// @param addr_ is the address to be casted
+    /// @return a bytes32 casted variable of the address passed in params
     function castAddr(address addr_) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(addr_)) << 96);
     }
