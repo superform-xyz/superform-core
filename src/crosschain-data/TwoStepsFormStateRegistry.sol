@@ -38,9 +38,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     /// @notice Checks if the caller is the form keeper
     modifier onlyFormKeeper() {
         if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasFormStateRegistryRole(
-                msg.sender
-            )
+            !ISuperRBAC(superRegistry.superRBAC())
+                .hasTwoStepsFormStateRegistryRole(msg.sender)
         ) revert Error.NOT_FORM_KEEPER();
         _;
     }

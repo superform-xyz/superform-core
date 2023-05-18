@@ -368,9 +368,13 @@ abstract contract BaseSetup is DSTest, Test {
             assert(SuperRBAC(vars.superRBAC).hasUpdaterRole(deployer));
 
             /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
-            SuperRBAC(vars.superRBAC).grantFormStateRegistryRole(deployer);
+            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
+                deployer
+            );
             assert(
-                SuperRBAC(vars.superRBAC).hasFormStateRegistryRole(deployer)
+                SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(
+                    deployer
+                )
             );
 
             /// @dev 4.1 - deploy Core State Registry
@@ -682,12 +686,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
-            SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
-                vars.lzImplementation
-            );
-            SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
-                vars.hyperlaneImplementation
-            );
 
             /// FIXME: check if this is safe in all aspects
             SuperRBAC(vars.superRBAC).grantProtocolAdminRole(

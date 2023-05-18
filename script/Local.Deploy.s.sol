@@ -329,7 +329,9 @@ contract Deploy is Script {
             /// @dev FIXME: in reality who should have the UPDATER_ROLE for state registry?
             SuperRBAC(vars.superRBAC).grantUpdaterRole(deployer);
             /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
-            SuperRBAC(vars.superRBAC).grantFormStateRegistryRole(deployer);
+            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
+                deployer
+            );
 
             /// @dev 3.1 - deploy Core State Registry
 
@@ -622,12 +624,7 @@ contract Deploy is Script {
 
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
-            SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
-                vars.lzImplementation
-            );
-            SuperRBAC(vars.superRBAC).grantImplementationContractsRole(
-                vars.hyperlaneImplementation
-            );
+
             /// FIXME: check if this is safe in all aspects
             SuperRBAC(vars.superRBAC).grantProtocolAdminRole(
                 vars.rolesStateRegistry
