@@ -8,8 +8,7 @@ This repository contains the core protocol smart contracts of [Superform](https:
 - [Project structure](#project-structure)
 - [Installation](#installation)
 - [Testing](#testing)
-- [Useful-info](#useful-info)
-- [Action-flows](#action-flows)
+- [Documentation](#documentation)
 
 ### Prerequisites
 
@@ -77,25 +76,24 @@ forge install
 $ forge test
 ```
 
-### Useful-info
+### Documentation
 
-<img width="4245" alt="Superform v1 Smart Contract Architecture (3)" src="https://github.com/superform-xyz/superform-core/assets/33469661/a9532701-0152-45bb-88ea-594fc5577b59">
+#### Contract Architecture
 
-1. All external actions, except SuperForm creation, start in `SuperRouter.sol`;
-2. Deposits/withdraws can be single or multiple destination, single or multi vault, cross-chain or direct chain;
-3. Multi-vault actions can contain vaults of different kinds.
-4. The vaults themselves are wrapped by Forms - code implementations that adapt to the needs of a given vault. This wrapping action leads to the creation of SuperForms (the triplet of superForm address, form id and chain id).
-5. Any user can wrap a vault into a SuperForm.
-6. Any individual tx must be of a specific kind, either all deposits or all withdraws, for all vaults and destinations
 
-### Action-flows
+<img width="4245" alt="Superform v1 Smart Contract Architecture (4)" src="https://github.com/superform-xyz/superform-core/assets/33469661/0b057534-20ea-4871-8655-89454c366bf2">
 
-1. A user with no SuperPositions starts by depositing using the most optimized entry point for his needs.
-2. For such purpose, the user has to provide a "StateRequest" containing the amounts being actioned into each vault in each chain, as well as liquidity information, about how the actual deposit/withdraw process will be handled.
-3. For deposit actions, the user can provide a different input token on a source chain and receive the actual underlying token (different than input token) on the destination chain, after swapping and bridging in a single call. Sometimes it is also needed to perform another extra swap at the destination for tokens with low bridge liquidity, through the usage of `MultiTxProcessor.sol`.
-4. For withdraw actions, user can choose to receive a different token than the one redeemed for from the vault, back at the source chain.
 
-5. The typical flow for a deposit xchain transaction is:
+1. All external actions, except SuperForm creation, start in `SuperRouter.sol`. The user has to provide a "StateRequest" containing the amounts being    actioned into each vault in each chain, as well as liquidity information, about how the actual deposit/withdraw process will be handled
+2. Deposits/withdraws can be single or multiple destination, single or multi vault, cross-chain or direct chain. For deposit actions, the user can provide a different input token on a source chain and receive the actual underlying token (different than input token) on the destination chain, after swapping and bridging in a single call. Sometimes it is also needed to perform another extra swap at the destination for tokens with low bridge liquidity, through the usage of `MultiTxProcessor.sol`. For withdraw actions, user can choose to receive a different token than the one redeemed for from the vault, back at the source chain.
+3. The vaults themselves are wrapped by Forms - code implementations that adapt to the needs of a given vault. This wrapping action leads to the creation of SuperForms (the triplet of superForm address, form id and chain id).
+4. Any user can wrap a vault into a SuperForm using the SuperForm Factory but only the protocol may add new Form implementations. 
+5. Any individual tx must be of a specific kind, either all deposits or all withdraws, for all vaults and destinations
+6. Users are minted SuperPositions on successful deposits, a type of ERC-1155 we modified called ERC-1155S. On withdrawals these are burned.
+
+#### Transaction Flow
+
+The typical flow for a deposit xchain transaction is:
 
 - Validation of the input data in `SuperRouter.sol`.
 - Dispatching the input tokens to the liquidity bridge using an implementation of a `BridgeValidator.sol` and `LiquidityHandler.sol`.
@@ -105,7 +103,7 @@ $ forge test
 - The keeper can then process the received message using `processPayload`. Here the deposit action is try-catched for errors. Should the action pass, a message is sent back to source acknowledging the action and minting SuperPositions to the user. If the action fails, no message is sent back and no SuperPositions are minted.
 - Funds bridged can be automatically recovered by the keeper in case of error catching and sent back to source using one of `rescueFailedDeposit` functions.
 
-6. The typical flow for a withdraw xchain transaction is:
+The typical flow for a withdraw xchain transaction is:
 
 - Validation of the input data in `SuperRouter.sol`.
 - Burning the corresponding SuperPositions owned by the user in accordance to the input data.
@@ -114,7 +112,7 @@ $ forge test
 - Receive the information on the destination chain's `CoreStateRegistry.sol`.
 - The keeper can then process the received message using `processPayload`. Here the withdraw action is try-catched for errors. Should the action pass, the underlying obtained is bridged back to the user in the form of the desired tokens to be received. If the action fails, a message is sent back indicating that SuperPositions need to be re-minted for the user according to the original amounts that were burned.
 
-### Read more about our protocol
+#### Read more about our protocol
 
 - [State Registry](https://github.com/superform-xyz/superform-core/tree/develop/src/crosschain-data/README.md)
 - [Forms](https://github.com/superform-xyz/superform-core/tree/develop/src/forms/README.md)
