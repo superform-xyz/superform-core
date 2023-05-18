@@ -367,6 +367,11 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantUpdaterRole(deployer);
             assert(SuperRBAC(vars.superRBAC).hasUpdaterRole(deployer));
 
+            /// @dev FIXME: in reality who should have the TWOSTEPS_PROCESSOR_ROLE for state registry?
+            SuperRBAC(vars.superRBAC).grantTwoStepsProcessorRole(deployer);
+            assert(
+                SuperRBAC(vars.superRBAC).hasTwoStepsProcessorRole(deployer)
+            );
 
             /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
             SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
@@ -426,9 +431,13 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
 
-            SuperRBAC(vars.superRBAC).grantFormStateRegistryRole(vars.twoStepsFormStateRegistry);
+            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
+                vars.twoStepsFormStateRegistry
+            );
             assert(
-                SuperRBAC(vars.superRBAC).hasFormStateRegistryRole(vars.twoStepsFormStateRegistry)
+                SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(
+                    vars.twoStepsFormStateRegistry
+                )
             );
 
             contracts[vars.chainId][

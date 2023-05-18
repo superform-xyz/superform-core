@@ -107,6 +107,19 @@ interface ISuperRBAC {
         bytes memory extraData_
     ) external payable;
 
+    /// @dev grants the TWO_STEPS_PROCESSOR_ROLE to the given address
+    /// @param twoStepsProcessor_ the address to grant the role to
+    function grantTwoStepsProcessorRole(address twoStepsProcessor_) external;
+
+    /// @dev revokes the TWO_STEPS_PROCESSOR_ROLE from given address
+    /// @param twoStepsProcessor_ the address to revoke the role from
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeTwoStepsProcessorRole(
+        address twoStepsProcessor_,
+        bytes memory extraData_
+    ) external payable;
+
     /// @dev grants the UPDATER_ROLE to the given address
     /// @param updater_ the address to grant the role to
     function grantUpdaterRole(address updater_) external;
@@ -150,6 +163,9 @@ interface ISuperRBAC {
 
     /// @dev returns the id of the processor role
     function PROCESSOR_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of the two steps processor role
+    function TWOSTEPS_PROCESSOR_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the updater role
     function UPDATER_ROLE() external view returns (bytes32);
@@ -195,6 +211,12 @@ interface ISuperRBAC {
     /// @dev returns wether the given address has the processor role
     /// @param processor_ the address to check
     function hasProcessorRole(address processor_) external view returns (bool);
+
+    /// @dev returns wether the given address has the two steps processor role
+    /// @param twoStepsProcessor_ the address to check
+    function hasTwoStepsProcessorRole(
+        address twoStepsProcessor_
+    ) external view returns (bool);
 
     /// @dev returns wether the given address has the updater role
     /// @param updater_ the address to check

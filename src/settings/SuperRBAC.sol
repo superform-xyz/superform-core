@@ -30,6 +30,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         keccak256("CORE_CONTRACTS_ROLE");
     bytes32 public constant override PROCESSOR_ROLE =
         keccak256("PROCESSOR_ROLE");
+    bytes32 public constant override TWOSTEPS_PROCESSOR_ROLE =
+        keccak256("TWOSTEPS_PROCESSOR_ROLE");
     bytes32 public constant override UPDATER_ROLE = keccak256("UPDATER_ROLE");
 
     ISuperRegistry public immutable superRegistry;
@@ -215,6 +217,30 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
+    function grantTwoStepsProcessorRole(
+        address twoStepsProcessor_
+    ) external override {
+        grantRole(TWOSTEPS_PROCESSOR_ROLE, twoStepsProcessor_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function revokeTwoStepsProcessorRole(
+        address twoStepsProcessor_,
+        bytes memory extraData_
+    ) external payable override {
+        revokeRole(TWOSTEPS_PROCESSOR_ROLE, twoStepsProcessor_);
+
+        if (extraData_.length > 0) {
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
+                SYNC_REVOKE_ROLE,
+                abi.encode(TWOSTEPS_PROCESSOR_ROLE, twoStepsProcessor_)
+            );
+
+            _broadcast(abi.encode(rolesPayload), extraData_);
+        }
+    }
+
+    /// @inheritdoc ISuperRBAC
     function grantUpdaterRole(address updater_) external override {
         grantRole(UPDATER_ROLE, updater_);
     }
@@ -322,6 +348,13 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address processor_
     ) external view override returns (bool) {
         return hasRole(PROCESSOR_ROLE, processor_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasTwoStepsProcessorRole(
+        address twoStepsProcessor_
+    ) external view override returns (bool) {
+        return hasRole(TWOSTEPS_PROCESSOR_ROLE, twoStepsProcessor_);
     }
 
     /// @inheritdoc ISuperRBAC

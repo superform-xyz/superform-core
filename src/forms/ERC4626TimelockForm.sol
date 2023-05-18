@@ -34,15 +34,13 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     IFormStateRegistry public immutable twoStepsFormStateRegistry;
 
     /// @dev TwoStepsFormStateRegistry modifier for calling processUnlock()
-    modifier onlyFormStateRegistry() {
+    modifier onlyTwoStepsFormStateRegistry() {
         if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasFormStateRegistryRole(
-                msg.sender
-            )
+            !ISuperRBAC(superRegistry.superRBAC())
+                .hasTwoStepsFormStateRegistryRole(msg.sender)
         ) revert Error.NOT_FORM_STATE_REGISTRY();
         _;
     }
-
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
@@ -513,14 +511,13 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         address owner_
     )
         external
-        onlyFormStateRegistry
+        onlyTwoStepsFormStateRegistry
         returns (OwnerRequest memory ownerRequest)
     {
         ownerRequest = unlockId[owner_];
         _xChainWithdrawFromVault(ownerRequest.singleVaultData_);
         delete unlockId[owner_];
     }
-
 
     /*///////////////////////////////////////////////////////////////
                 EXTERNAL VIEW VIRTUAL FUNCTIONS OVERRIDES

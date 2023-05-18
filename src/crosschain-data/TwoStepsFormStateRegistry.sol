@@ -36,13 +36,13 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         _;
     }
 
-    /// @notice Checks if the caller is the form keeper
-    /// NOTE: Uses PROCESSOR_ROLE from SuperRBAC, who should be a form keeper?
-    modifier onlyFormKeeper() {
+    /// @notice Checks if the caller is the two steps processor
+    modifier onlyTwoStepsProcessor() {
         if (
-            !ISuperRBAC(superRegistry.superRBAC())
-                .hasTwoStepsFormStateRegistryRole(msg.sender)
-        ) revert Error.NOT_FORM_KEEPER();
+            !ISuperRBAC(superRegistry.superRBAC()).hasTwoStepsProcessorRole(
+                msg.sender
+            )
+        ) revert Error.NOT_TWO_STEPS_PROCESSOR();
         _;
     }
 
@@ -64,10 +64,10 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     }
 
     /// @inheritdoc IFormStateRegistry
-     function finalizePayload(
+    function finalizePayload(
         uint256 payloadId,
         bytes memory ackExtraData
-    ) external onlyFormKeeper {
+    ) external onlyTwoStepsProcessor {
         (address form_, , ) = _getSuperForm(
             payloadStore[payloadId].superFormId
         );

@@ -328,6 +328,8 @@ contract Deploy is Script {
             SuperRBAC(vars.superRBAC).grantProcessorRole(deployer);
             /// @dev FIXME: in reality who should have the UPDATER_ROLE for state registry?
             SuperRBAC(vars.superRBAC).grantUpdaterRole(deployer);
+            /// @dev FIXME: in reality who should have the TWOSTEPS_PROCESSOR_ROLE for state registry?
+            SuperRBAC(vars.superRBAC).grantTwoStepsProcessorRole(deployer);
             /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
             SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
                 deployer

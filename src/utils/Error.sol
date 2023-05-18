@@ -15,8 +15,8 @@ library Error {
     /// @dev - when msg.sender is not core state registry
     error NOT_CORE_STATE_REGISTRY();
 
-    /// @dev - when msg.sender is not form keeper
-    error NOT_FORM_KEEPER();
+    /// @dev - when msg.sender is not two steps form processor
+    error NOT_TWO_STEPS_PROCESSOR();
 
     /// @dev - when msg.sender is not form
     error NOT_FORM();
