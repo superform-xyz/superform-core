@@ -79,6 +79,8 @@ $ forge test
 
 ### Useful-info
 
+<img width="4245" alt="Superform v1 Smart Contract Architecture (3)" src="https://github.com/superform-xyz/superform-core/assets/33469661/a9532701-0152-45bb-88ea-594fc5577b59">
+
 1. All external actions, except SuperForm creation, start in `SuperRouter.sol`;
 2. Deposits/withdraws can be single or multiple destination, single or multi vault, cross-chain or direct chain;
 3. Multi-vault actions can contain vaults of different kinds.
