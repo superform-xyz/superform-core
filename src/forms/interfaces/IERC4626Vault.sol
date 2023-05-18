@@ -1,58 +1,18 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {InitSingleVaultData} from "../../types/DataTypes.sol";
 
-interface IERC4626Timelock is IERC20 {
-    /*///////////////////////////////////////////////////////////////
-                            TIMELOCK SECTION
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Data structure for unlock request. In production vaults have differing mechanism for this
-    struct UnlockRequest {
-        /// Unique id of the request
-        uint id;
-        // The timestamp at which the `shareAmount` was requested to be unlocked
-        uint startedAt;
-        // The amount of shares to burn
-        uint shareAmount;
-    }
-
-    /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
-    /// @dev Owner first submits request for unlock and only after specified cooldown passes, can withdraw
-    function requestUnlock(uint shareAmount, address owner) external;
-
-    /// @notice Abstract function, demonstrating a need for two separate calls to withdraw from IERC4626Timelock target vault
-    /// @dev Owner can resign from unlock request. In production vaults have differing mechanism for this
-    function cancelUnlock(address owner) external;
-
-    /// @notice Check outstanding unlock request for the owner
-    /// @dev Mock Timelocked Vault uses single UnlockRequest. In production vaults have differing mechanism for this
-    function userUnlockRequests(
-        address owner
-    ) external view returns (UnlockRequest memory);
-
-    /// @notice The amount of time that must pass between a requestUnlock() and withdraw() call.
-    function getLockPeirod() external view returns (uint256);
-
-    /// @notice for keeper-based 2nd step withdrawal processing
-    function processUnlock(address owner) external;
-
-    /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
-    function unlockId(
-        uint256 unlockCounter
-    ) external view returns (InitSingleVaultData memory singleVaultData);
-
-    /*///////////////////////////////////////////////////////////////
-                               ERC4626 SECTION
-    //////////////////////////////////////////////////////////////*/
+/// @notice Interface for ERC4626 extended with Timelock design (ERC4626MockVault)
+/// NOTE: Not a Form interface!
+interface IERC4626 is IERC20{
 
     /// @notice The address of the underlying token used by the Vault for valuing, depositing, and withdrawing.
-    function asset() external view returns (address assetTokenAddress);
+    function asset() external view returns (address asset);
 
     /// @notice Total amount of the underlying asset that is “managed” by vault.
-    function totalAssets() external view returns (uint256 totalManagedAssets);
+    function totalAssets() external view returns (uint256 assets);
 
     /**
      * @notice The amount of shares that the Vault would exchange for the amount of assets provided, in an ideal scenario where all the conditions are met.

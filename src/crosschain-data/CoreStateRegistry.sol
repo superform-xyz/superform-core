@@ -659,10 +659,9 @@ contract CoreStateRegistry is
             /// NOTE: opted for just returning CallbackType.FAIL as we always end up with superPositions.returnPosition() anyways
             /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
             try
-                IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData)
-            returns (uint16 status) {
+                IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData) {
                 // Handle the case when the external call succeeds
-                return (status, "");
+                return (0, "");
             } catch {
                 // Handle the case when the external call reverts for whatever reason
                 /// https://solidity-by-example.org/try-catch/

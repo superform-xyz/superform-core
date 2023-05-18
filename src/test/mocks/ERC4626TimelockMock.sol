@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC4626} from "solmate/mixins/ERC4626.sol";
-import {IERC4626Timelock} from "../../forms/interfaces/IERC4626Timelock.sol";
+import {IERC4626TimelockVault} from "../../forms/interfaces/IERC4626TimelockVault.sol";
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";

@@ -18,6 +18,9 @@ library Error {
     /// @dev - when msg.sender is not form keeper
     error NOT_FORM_KEEPER();
 
+    /// @dev - when msg.sender is not form
+    error NOT_FORM();
+
     /// @dev - when msg.sender is not form state registry
     error NOT_FORM_STATE_REGISTRY();
 

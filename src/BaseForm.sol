@@ -137,26 +137,14 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @inheritdoc IBaseForm
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) external override onlyCoreStateRegistry returns (uint16 status) {
+    ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
         /// @dev FIXME: not returning anything YET
-        status = _xChainWithdrawFromVault(singleVaultData_);
+        dstAmount = _xChainWithdrawFromVault(singleVaultData_);
     }
 
     /*///////////////////////////////////////////////////////////////
                     PURE/VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @return True if the vaults supported by this form use transferrable ERC20 tokens
-    /// to represent shares, false otherwise.
-    function vaultSharesIsERC20() public pure virtual returns (bool);
-
-    /// @return True if the vaults supported by this form use transferrable ERC20 tokens
-    /// to represent shares, false otherwise.
-    function vaultSharesIsERC4626() public pure virtual returns (bool);
-
-    /// @return True if the vaults supported by this form use transferrable ERC20 tokens
-    /// to represent shares, false otherwise.
-    function vaultSharesIsERC721() public pure virtual returns (bool);
 
     /// @notice get Superform name of the ERC20 vault representation
     /// @return The ERC20 name
@@ -245,7 +233,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_
-    ) internal virtual returns (uint16 status);
+    ) internal virtual returns (uint256 dstAmount);
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS

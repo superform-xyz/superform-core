@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IERC4626Timelock} from "../forms/interfaces/IERC4626Timelock.sol";
+import {IERC4626TimelockForm} from "../forms/interfaces/IERC4626TimelockForm.sol";
 import {IFormStateRegistry} from "../interfaces/IFormStateRegistry.sol";
 import {Error} from "../utils/Error.sol";
 import {BaseStateRegistry} from "../crosschain-data/BaseStateRegistry.sol";
@@ -19,23 +19,25 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     bytes32 immutable WITHDRAW_COOLDOWN_PERIOD =
         keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
 
+    /// @dev Stores individual user request to process unlock
     struct OwnerRequest {
         address owner;
         uint256 superFormId;
     }
 
-    /// @notice Stores 1:1 mapping with Form.unlockId(unlockCounter) without copying whole data structure
+    /// @notice Stores 1:1 mapping with Form.unlockId(srcSender) without copying the whole data structure
     mapping(uint256 payloadId => OwnerRequest) public payloadStore;
 
-    /// @notice Checks if the caller is the form allowed to send payload
+    /// @notice Checks if the caller is form allowed to send payload to this contract (only Forms are allowed)
     /// TODO: Test this modifier
     modifier onlyForm(uint256 superFormId) {
         (address form_, , ) = _getSuperForm(superFormId);
-        if (msg.sender != form_) revert Error.NOT_FORM_KEEPER();
+        if (msg.sender != form_) revert Error.NOT_FORM();
         _;
     }
 
     /// @notice Checks if the caller is the form keeper
+    /// NOTE: Uses PROCESSOR_ROLE from SuperRBAC, who should be a form keeper?
     modifier onlyFormKeeper() {
         if (
             !ISuperRBAC(superRegistry.superRBAC())
@@ -49,9 +51,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         uint8 registryType_
     ) BaseStateRegistry(superRegistry_, registryType_) {}
 
-    /// @notice Receives request (payload) from TimelockForm to process later
-    /// @param payloadId is constructed on TimelockForm, data is mapped also there, we only store pointer here
-    /// @param superFormId is the id of TimelockForm sending this payloadId
+    /// @inheritdoc IFormStateRegistry
     function receivePayload(
         uint256 payloadId,
         uint256 superFormId,
@@ -63,31 +63,33 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         });
     }
 
-    /// @notice Form Keeper finalizes payload to process Timelock withdraw fully
-    /// @param payloadId is the id of the payload to finalize
-    /// @param ackExtraData is the AMBMessage data to send back to the source stateSync with request to re-mint SuperPositions
-    function finalizePayload(
+    /// @inheritdoc IFormStateRegistry
+     function finalizePayload(
         uint256 payloadId,
         bytes memory ackExtraData
     ) external onlyFormKeeper {
         (address form_, , ) = _getSuperForm(
             payloadStore[payloadId].superFormId
         );
-        IERC4626Timelock form = IERC4626Timelock(form_);
+
+        /// NOTE: ERC4626TimelockForm is the only form that uses processUnlock function
+        IERC4626TimelockForm form = IERC4626TimelockForm(form_);
 
         /// @dev try to processUnlock for this srcSender
         try form.processUnlock(payloadStore[payloadId].owner) {
             delete payloadStore[payloadId];
         } catch (bytes memory err) {
-            /// @dev in every other instance it's better to re-init withdraw
-            /// this catch will ALWAYS send a message back to source with exception of WITHDRAW_COOLDOWN_PERIOD error on Timelock
+            /// NOTE: in every other instance it's better to re-init withdraw
+            /// NOTE: this catch will ALWAYS send a message back to source with exception of WITHDRAW_COOLDOWN_PERIOD error on Timelock
             /// TODO: Test this case (test messaging back to src)
             if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
-                delete payloadStore[payloadId];
                 /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
                 InitSingleVaultData memory singleVaultData = form.unlockId(
-                    payloadId
+                    payloadStore[payloadId].owner
                 );
+
+                delete payloadStore[payloadId];
+
                 (
                     uint16 srcChainId,
                     bytes memory returnMessage
@@ -104,7 +106,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
         }
     }
 
-    /// @notice TokenBank function for build message back to the source. In regular flow called after xChainWithdraw succeds.
+    /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after xChainWithdraw succeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
         InitSingleVaultData memory singleVaultData_

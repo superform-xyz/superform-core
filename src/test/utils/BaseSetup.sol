@@ -367,6 +367,7 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantUpdaterRole(deployer);
             assert(SuperRBAC(vars.superRBAC).hasUpdaterRole(deployer));
 
+
             /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
             SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
                 deployer
@@ -376,7 +377,6 @@ abstract contract BaseSetup is DSTest, Test {
                     deployer
                 )
             );
-
             /// @dev 4.1 - deploy Core State Registry
 
             vars.coreStateRegistry = address(
@@ -424,6 +424,11 @@ abstract contract BaseSetup is DSTest, Test {
                     SuperRegistry(vars.superRegistry),
                     1
                 )
+            );
+
+            SuperRBAC(vars.superRBAC).grantFormStateRegistryRole(vars.twoStepsFormStateRegistry);
+            assert(
+                SuperRBAC(vars.superRBAC).hasFormStateRegistryRole(vars.twoStepsFormStateRegistry)
             );
 
             contracts[vars.chainId][

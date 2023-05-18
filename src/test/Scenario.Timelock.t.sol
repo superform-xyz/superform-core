@@ -10,7 +10,7 @@ import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.
 // Test Utils
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IERC4626TimelockForm} from "./interfaces/IERC4626TimelockForm.sol";
+import {IERC4626Form} from "./interfaces/IERC4626Form.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 import {_packSuperForm} from "../utils/DataPacking.sol";
@@ -43,7 +43,8 @@ contract ScenarioTimelockTest is ProtocolActions {
     IERC1155 superPositions;
 
     /// @dev Access Form interface to call form functions for assertions
-    IERC4626TimelockForm public erc4626TimelockForm;
+    /// @dev IERC4626Form has same interface as TimelockForm from perspective of available external functions
+    IERC4626Form public erc4626TimelockForm;
 
     /// @dev singleDestinationSingleVault Deposit test case
     function setUp() public override {
@@ -106,7 +107,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             .superPositions();
 
         superPositions = IERC1155(_superPositions);
-        erc4626TimelockForm = IERC4626TimelockForm(_superForm);
+        erc4626TimelockForm = IERC4626Form(_superForm);
 
         /// @dev Here, however, dstFormId == 2, as that's the indexing inside of an array. 1 = erc4626form, 2 = erc4626timelockform
         uint256 _formId = _packSuperForm(
@@ -134,6 +135,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         uint256 currentBalanceOfAliceUnderlying = IERC20(
             erc4626TimelockForm.getUnderlyingOfVault()
         ).balanceOf(users[0]);
+
         uint256 previewDepositToExpectedAmountOfSP = erc4626TimelockForm
             .previewDepositTo(amount[0]); /// temp select by index
 
