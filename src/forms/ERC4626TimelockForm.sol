@@ -2,8 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
-import {ERC4626} from "solmate/mixins/ERC4626.sol";
-import {IERC4626} from "../vendor/IERC4626.sol";
+import {IERC4626} from "./interfaces/IERC4626Vault.sol";
 import {IERC4626TimelockVault} from "./interfaces/IERC4626TimelockVault.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
@@ -31,10 +30,10 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
 
     mapping(address owner => OwnerRequest) public unlockId;
 
-    /// @dev FormStateRegistry implementation, calls processUnlock()
+    /// @dev TwoStepsFormStateRegistry implementation, calls processUnlock()
     IFormStateRegistry public immutable twoStepsFormStateRegistry;
 
-    /// @dev FormStateRegistry modifier for calling processUnlock()
+    /// @dev TwoStepsFormStateRegistry modifier for calling processUnlock()
     modifier onlyFormStateRegistry() {
         if (
             !ISuperRBAC(superRegistry.superRBAC()).hasFormStateRegistryRole(
@@ -336,8 +335,8 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
             v.requestUnlock(singleVaultData_.amount, address(this));
 
             /// NOTE: We already burned SPs optimistically on SuperRouter
-            /// NOTE: All Timelocked Forms need to go through the FormStateRegistry, including same chain
-            /// @dev Store for FormStateRegistry
+            /// NOTE: All Timelocked Forms need to go through the TwoStepsFormStateRegistry, including same chain
+            /// @dev Store for TwoStepsFormStateRegistry
             ++unlockCounter;
             unlockId[vars.srcSender] = OwnerRequest({
                 requestTimestamp: block.timestamp,
@@ -478,7 +477,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
             /// @dev on ERC4626Timelock (wrappers) controlled by SuperForm we can use this function
             v.requestUnlock(singleVaultData_.amount, address(this));
 
-            /// @dev Store for FormStateRegistry
+            /// @dev Store for TwoStepsFormStateRegistry
             ++unlockCounter;
             unlockId[vars.srcSender] = OwnerRequest({
                 requestTimestamp: block.timestamp,
@@ -509,7 +508,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                 RE-PROCESSING REDEEM AFTER COOLDOWN
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Called by FormStateRegistry to process 2nd step of redeem after cooldown period passes
+    /// @notice Called by TwoStepsFormStateRegistry to process 2nd step of redeem after cooldown period passes
     function processUnlock(
         address owner_
     )
