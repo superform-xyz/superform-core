@@ -34,7 +34,7 @@ abstract contract IERC4626 is ERC20 {
 
     /// @notice The address of the underlying ERC20 token used for
     /// the Vault for accounting, depositing, and withdrawing.
-    function asset() external view virtual returns (address asset);
+    function asset() external view virtual returns (ERC20 asset);
 
     /// @notice Total amount of the underlying asset that
     /// is "managed" by Vault.
