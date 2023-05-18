@@ -40,9 +40,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     /// NOTE: Uses PROCESSOR_ROLE from SuperRBAC, who should be a form keeper?
     modifier onlyFormKeeper() {
         if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProcessorRole(
-                msg.sender
-            )
+            !ISuperRBAC(superRegistry.superRBAC())
+                .hasTwoStepsFormStateRegistryRole(msg.sender)
         ) revert Error.NOT_FORM_KEEPER();
         _;
     }

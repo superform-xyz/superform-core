@@ -52,7 +52,7 @@ foundryup
 It makes our project structure easily scannable:
 
 - `src` are self-explanatory. All Smart Contract Codes are found inside [/src](./src)
-- `interfacse` are where we add our custom written interfaces [/src/interfaces](./src/interfaces).
+- `interfaces` are where we add our custom written interfaces [/src/interfaces](./src/interfaces).
 - `types` is where all re-used types are written and used across different smart contracts. [/src/types](./src/types)
 - `vendor` is where all externally written interfaces reside. [/src/vendor](./src/vendor)
 
@@ -111,3 +111,8 @@ $ forge test
 - Messaging the information about the withdraws to the vaults using `CoreStateRegistry.sol`. The process follows the same pattern as above
 - Receive the information on the destination chain's `CoreStateRegistry.sol`.
 - The keeper can then process the received message using `processPayload`. Here the withdraw action is try-catched for errors. Should the action pass, the underlying obtained is bridged back to the user in the form of the desired tokens to be received. If the action fails, a message is sent back indicating that SuperPositions need to be re-minted for the user according to the original amounts that were burned.
+
+### Read more about our protocol
+
+- [State Registry](https://github.com/superform-xyz/superform-core/tree/develop/src/crosschain-data/README.md)
+- [Forms](https://github.com/superform-xyz/superform-core/tree/develop/src/forms/README.md)
