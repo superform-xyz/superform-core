@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {ERC20} from "solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {BaseStateRegistry} from "./BaseStateRegistry.sol";
+import {QuorumManager} from "./utils/QuorumManager.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {ISuperPositions} from "../interfaces/ISuperPositions.sol";
 import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
@@ -22,6 +23,7 @@ import "../utils/DataPacking.sol";
 contract CoreStateRegistry is
     LiquidityHandler,
     BaseStateRegistry,
+    QuorumManager,
     ICoreStateRegistry
 {
     /// FIXME: are we using safe transfers?
@@ -58,6 +60,14 @@ contract CoreStateRegistry is
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc QuorumManager
+    function setCrossChainMessagingQuorum(
+        uint16 srcChainId_,
+        uint256 quorum_
+    ) external override onlyProtocolAdmin {
+        messagingQuorum[srcChainId_] = quorum_;
+    }
 
     /// @inheritdoc ICoreStateRegistry
     function updateMultiVaultPayload(
@@ -206,7 +216,10 @@ contract CoreStateRegistry is
         bytes memory _payload = payload[payloadId_];
         bytes memory _proof = abi.encode(keccak256(_payload));
 
-        if (messageQuorum[_proof] < REQUIRED_QUORUM) {
+        if (
+            messageQuorum[_proof] <
+            getCrossChainMessagingQuorum(payloadSrcChain[payloadId_])
+        ) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
@@ -658,8 +671,7 @@ contract CoreStateRegistry is
             /// that's also the only way to get error type out of the try/catch
             /// NOTE: opted for just returning CallbackType.FAIL as we always end up with superPositions.returnPosition() anyways
             /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
-            try
-                IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData) {
+            try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData) {
                 // Handle the case when the external call succeeds
                 return (0, "");
             } catch {
@@ -836,11 +848,6 @@ contract CoreStateRegistry is
         AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
         uint8[] memory ambIds_ = ackData.ambIds;
 
-        /// @dev atleast 2 AMBs are required
-        if (ambIds_.length < 2) {
-            revert Error.INVALID_AMB_IDS_LENGTH();
-        }
-
         AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
 
         _dispatchPayload(
@@ -851,12 +858,14 @@ contract CoreStateRegistry is
             d.extraDataPerAMB[0]
         );
 
-        _dispatchProof(
-            ambIds_,
-            dstChainId_,
-            d.gasPerAMB,
-            message_,
-            d.extraDataPerAMB
-        );
+        if (ambIds_.length > 1) {
+            _dispatchProof(
+                ambIds_,
+                dstChainId_,
+                d.gasPerAMB,
+                message_,
+                d.extraDataPerAMB
+            );
+        }
     }
 }

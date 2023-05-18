@@ -730,7 +730,13 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.factory = getContract(vars.chainId, "SuperFormFactory");
 
+            vars.coreStateRegistry = getContract(
+                vars.chainId,
+                "CoreStateRegistry"
+            );
+
             /// @dev Set all trusted remotes for each chain & configure amb chains ids
+            /// @dev Set message quorum for all chain ids (as 1)
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (vars.chainId != chainIds[j]) {
                     vars.dstChainId = chainIds[j];
@@ -781,6 +787,9 @@ abstract contract BaseSetup is DSTest, Test {
 
                     CelerImplementation(payable(vars.celerImplementation))
                         .setChainId(vars.dstChainId, vars.dstCelerChainId);
+
+                    CoreStateRegistry(payable(vars.coreStateRegistry))
+                        .setCrossChainMessagingQuorum(vars.dstChainId, 1);
                 }
             }
         }

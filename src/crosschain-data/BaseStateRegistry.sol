@@ -31,6 +31,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     mapping(uint256 => bytes) public payload;
     /// @dev maps payloads to their current status
     mapping(uint256 => PayloadState) public payloadTracking;
+    /// @dev maps payloads to their src chain id
+    mapping(uint256 => uint16) public payloadSrcChain;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -84,11 +86,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes memory extraData_
     ) external payable override onlySender {
-        /// TODO: [SUP-2586] remove minimum dependency
-        if (ambIds_.length < 2) {
-            revert Error.INVALID_AMB_IDS_LENGTH();
-        }
-
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
         _dispatchPayload(
@@ -99,13 +96,15 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             d.extraDataPerAMB[0]
         );
 
-        _dispatchProof(
-            ambIds_,
-            dstChainId_,
-            d.gasPerAMB,
-            message_,
-            d.extraDataPerAMB
-        );
+        if (ambIds_.length > 1) {
+            _dispatchProof(
+                ambIds_,
+                dstChainId_,
+                d.gasPerAMB,
+                message_,
+                d.extraDataPerAMB
+            );
+        }
     }
 
     /// @inheritdoc IBaseStateRegistry
@@ -114,11 +113,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes memory extraData_
     ) external payable override onlySender {
-        /// TODO: [SUP-2586] remove minimum dependency
-        if (ambIds_.length < 2) {
-            revert Error.INVALID_AMB_IDS_LENGTH();
-        }
-
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
         _broadcastPayload(
@@ -127,7 +121,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             message_,
             d.extraDataPerAMB[0]
         );
-        _broadcastProof(ambIds_, d.gasPerAMB, message_, d.extraDataPerAMB);
+
+        if (ambIds_.length > 1) {
+            _broadcastProof(ambIds_, d.gasPerAMB, message_, d.extraDataPerAMB);
+        }
     }
 
     /// @inheritdoc IBaseStateRegistry
@@ -146,6 +143,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         } else {
             ++payloadsCount;
             payload[payloadsCount] = message_;
+            payloadSrcChain[payloadsCount] = srcChainId_;
 
             emit PayloadReceived(
                 srcChainId_,
