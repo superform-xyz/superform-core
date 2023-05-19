@@ -31,8 +31,6 @@ contract CoreStateRegistry is
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    uint256 public constant REQUIRED_QUORUM = 1;
-
     mapping(uint256 payloadId => bytes failedDepositRequests)
         internal failedDepositPayloads;
 
