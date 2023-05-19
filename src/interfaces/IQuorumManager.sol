@@ -6,7 +6,7 @@ interface IQuorumManager {
     /// @param srcChainId_ is the chain id from which the message (payload) is sent
     /// @param quorum_ the minimum number of message bridges required for processing
     /// NOTE: overriding child contracts should handle the sender validation & setting of message quorum
-    function setCrossChainMessagingQuorum(
+    function setRequiredMessagingQuorum(
         uint16 srcChainId_,
         uint256 quorum_
     ) external;
@@ -14,7 +14,7 @@ interface IQuorumManager {
     /// @dev returns the required quorum for the srcChain & dstChain
     /// @param srcChainId_ is the chain id from which the message (payload) is sent
     /// @return quorum_ the minimum number of message bridges required for processing
-    function getCrossChainMessagingQuorum(
+    function getRequiredMessagingQuorum(
         uint16 srcChainId_
     ) external view returns (uint256 quorum_);
 }

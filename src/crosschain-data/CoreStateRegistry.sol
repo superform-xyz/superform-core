@@ -60,11 +60,11 @@ contract CoreStateRegistry is
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc QuorumManager
-    function setCrossChainMessagingQuorum(
+    function setRequiredMessagingQuorum(
         uint16 srcChainId_,
         uint256 quorum_
     ) external override onlyProtocolAdmin {
-        messagingQuorum[srcChainId_] = quorum_;
+        requiredQuorum[srcChainId_] = quorum_;
     }
 
     /// @inheritdoc ICoreStateRegistry
@@ -216,7 +216,7 @@ contract CoreStateRegistry is
 
         if (
             messageQuorum[_proof] <
-            getCrossChainMessagingQuorum(payloadSrcChain[payloadId_])
+            getRequiredMessagingQuorum(payloadSrcChain[payloadId_])
         ) {
             revert Error.QUORUM_NOT_REACHED();
         }
@@ -259,7 +259,7 @@ contract CoreStateRegistry is
             }
         }
 
-        if (srcChainId != 0 && returnMessage.length > 0) {
+        if (returnMessage.length > 0) {
             _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData_);
         }
     }

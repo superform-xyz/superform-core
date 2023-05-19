@@ -789,7 +789,7 @@ abstract contract BaseSetup is DSTest, Test {
                         .setChainId(vars.dstChainId, vars.dstCelerChainId);
 
                     CoreStateRegistry(payable(vars.coreStateRegistry))
-                        .setCrossChainMessagingQuorum(vars.dstChainId, 1);
+                        .setRequiredMessagingQuorum(vars.dstChainId, 1);
                 }
             }
         }
