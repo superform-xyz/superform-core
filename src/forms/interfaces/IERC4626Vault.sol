@@ -6,8 +6,7 @@ import {InitSingleVaultData} from "../../types/DataTypes.sol";
 
 /// @notice Interface for ERC4626 extended with Timelock design (ERC4626MockVault)
 /// NOTE: Not a Form interface!
-interface IERC4626 is IERC20{
-
+interface IERC4626 is IERC20 {
     /// @notice The address of the underlying token used by the Vault for valuing, depositing, and withdrawing.
     function asset() external view returns (address asset);
 
@@ -19,36 +18,28 @@ interface IERC4626 is IERC20{
      * @param assets The amount of underlying assets to be convert to vault shares.
      * @return shares The amount of vault shares converted from the underlying assets.
      */
-    function convertToShares(
-        uint256 assets
-    ) external view returns (uint256 shares);
+    function convertToShares(uint256 assets) external view returns (uint256 shares);
 
     /**
      * @notice The amount of assets that the Vault would exchange for the amount of shares provided, in an ideal scenario where all the conditions are met.
      * @param shares The amount of vault shares to be converted to the underlying assets.
      * @return assets The amount of underlying assets converted from the vault shares.
      */
-    function convertToAssets(
-        uint256 shares
-    ) external view returns (uint256 assets);
+    function convertToAssets(uint256 shares) external view returns (uint256 assets);
 
     /**
      * @notice The maximum number of underlying assets that caller can deposit.
      * @param caller Account that the assets will be transferred from.
      * @return maxAssets The maximum amount of underlying assets the caller can deposit.
      */
-    function maxDeposit(
-        address caller
-    ) external view returns (uint256 maxAssets);
+    function maxDeposit(address caller) external view returns (uint256 maxAssets);
 
     /**
      * @notice Allows an on-chain or off-chain user to simulate the effects of their deposit at the current transaction, given current on-chain conditions.
      * @param assets The amount of underlying assets to be transferred.
      * @return shares The amount of vault shares that will be minted.
      */
-    function previewDeposit(
-        uint256 assets
-    ) external view returns (uint256 shares);
+    function previewDeposit(uint256 assets) external view returns (uint256 shares);
 
     /**
      * @notice Mint vault shares to receiver by transferring exact amount of underlying asset tokens from the caller.
@@ -56,10 +47,7 @@ interface IERC4626 is IERC20{
      * @param receiver The account that the vault shares will be minted to.
      * @return shares The amount of vault shares that were minted.
      */
-    function deposit(
-        uint256 assets,
-        address receiver
-    ) external returns (uint256 shares);
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
 
     /**
      * @notice The maximum number of vault shares that caller can mint.
@@ -81,28 +69,21 @@ interface IERC4626 is IERC20{
      * @param receiver The account the vault shares will be minted to.
      * @return assets The amount of underlying assets that were transferred from the caller.
      */
-    function mint(
-        uint256 shares,
-        address receiver
-    ) external returns (uint256 assets);
+    function mint(uint256 shares, address receiver) external returns (uint256 assets);
 
     /**
      * @notice The maximum number of underlying assets that owner can withdraw.
      * @param owner Account that owns the vault shares.
      * @return maxAssets The maximum amount of underlying assets the owner can withdraw.
      */
-    function maxWithdraw(
-        address owner
-    ) external view returns (uint256 maxAssets);
+    function maxWithdraw(address owner) external view returns (uint256 maxAssets);
 
     /**
      * @notice Allows an on-chain or off-chain user to simulate the effects of their withdrawal at the current transaction, given current on-chain conditions.
      * @param assets The amount of underlying assets to be withdrawn.
      * @return shares The amount of vault shares that will be burnt.
      */
-    function previewWithdraw(
-        uint256 assets
-    ) external view returns (uint256 shares);
+    function previewWithdraw(uint256 assets) external view returns (uint256 shares);
 
     /**
      * @notice Burns enough vault shares from owner and transfers the exact amount of underlying asset tokens to the receiver.
@@ -111,11 +92,7 @@ interface IERC4626 is IERC20{
      * @param owner Account that owns the vault shares to be burnt.
      * @return shares The amount of vault shares that were burnt.
      */
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) external returns (uint256 shares);
+    function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
 
     /**
      * @notice The maximum number of shares an owner can redeem for underlying assets.
@@ -129,9 +106,7 @@ interface IERC4626 is IERC20{
      * @param shares The amount of vault shares to be burnt.
      * @return assets The amount of underlying assests that will transferred to the receiver.
      */
-    function previewRedeem(
-        uint256 shares
-    ) external view returns (uint256 assets);
+    function previewRedeem(uint256 shares) external view returns (uint256 assets);
 
     /**
      * @notice Burns exact amount of vault shares from owner and transfers the underlying asset tokens to the receiver.
@@ -140,23 +115,14 @@ interface IERC4626 is IERC20{
      * @param owner The account that owns the vault shares to be burnt.
      * @return assets The amount of underlying assets that were transferred to the receiver.
      */
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
-    ) external returns (uint256 assets);
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
 
     /**
      * @dev Emitted when sender has exchanged assets for shares, and transferred those shares to receiver.
      *
      * Note It must be emitted when tokens are deposited into the Vault in ERC4626.mint or ERC4626.deposit methods.
      */
-    event Deposit(
-        address indexed sender,
-        address indexed receiver,
-        uint256 assets,
-        uint256 shares
-    );
+    event Deposit(address indexed sender, address indexed receiver, uint256 assets, uint256 shares);
 
     /**
      * @dev Emitted when owner has exchanged shares for assets, and transferred those assets to receiver.

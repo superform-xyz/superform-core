@@ -29,7 +29,7 @@ contract Scenario2Test is ProtocolActions {
 
         TARGET_FORM_KINDS[POLY][0] = [0, 0];
 
-        AMOUNTS[POLY][0] = [1000, 500];
+        AMOUNTS[POLY][0] = [3213, 12];
 
         MAX_SLIPPAGE[POLY][0] = [1000, 1000];
 

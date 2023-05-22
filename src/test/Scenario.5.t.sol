@@ -32,8 +32,8 @@ contract Scenario5Test is ProtocolActions {
         TARGET_UNDERLYING_VAULTS[ETH][1] = [2];
         TARGET_FORM_KINDS[ETH][1] = [0];
 
-        AMOUNTS[ETH][0] = [1000];
-        AMOUNTS[ETH][1] = [1000];
+        AMOUNTS[ETH][0] = [9831];
+        AMOUNTS[ETH][1] = [9831];
 
         MAX_SLIPPAGE[ETH][0] = [1000];
         MAX_SLIPPAGE[ETH][1] = [1000];

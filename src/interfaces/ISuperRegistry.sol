@@ -19,75 +19,39 @@ interface ISuperRegistry {
     );
 
     /// @dev is emitted when the protocol admin address is set.
-    event ProtocolAdminUpdated(
-        address indexed oldProtocolAdmin,
-        address indexed protocolAdmin
-    );
+    event ProtocolAdminUpdated(address indexed oldProtocolAdmin, address indexed protocolAdmin);
 
     /// @dev is emitted when the super router address is set.
-    event SuperRouterUpdated(
-        address indexed oldSuperRouter,
-        address indexed superRouter
-    );
+    event SuperRouterUpdated(address indexed oldSuperRouter, address indexed superRouter);
 
     /// @dev is emitted when the superform factory address is set.
-    event SuperFormFactoryUpdated(
-        address indexed oldSuperFormFactory,
-        address indexed superFormFactory
-    );
+    event SuperFormFactoryUpdated(address indexed oldSuperFormFactory, address indexed superFormFactory);
 
     /// @dev is emitted when the state registry address is set.
-    event CoreStateRegistryUpdated(
-        address indexed oldCoreStateRegistry,
-        address indexed coreStateRegistry
-    );
+    event CoreStateRegistryUpdated(address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
 
     /// @dev is emitted when the state registry address is set.
-    event FactoryStateRegistryUpdated(
-        address indexed oldFactoryStateRegistry,
-        address indexed factoryStateRegistry
-    );
+    event FactoryStateRegistryUpdated(address indexed oldFactoryStateRegistry, address indexed factoryStateRegistry);
 
     /// @dev is emitted when the roles state registry address is set.
-    event RolesStateRegistryUpdated(
-        address indexed oldRolesStateRegistry,
-        address indexed rolesStateRegistry
-    );
+    event RolesStateRegistryUpdated(address indexed oldRolesStateRegistry, address indexed rolesStateRegistry);
 
     /// @dev is emitted when a new super positions is configured.
-    event SuperPositionsUpdated(
-        address indexed oldSuperPositions,
-        address indexed superPositions
-    );
+    event SuperPositionsUpdated(address indexed oldSuperPositions, address indexed superPositions);
 
     /// @dev is emitted when a new super rbac is configured.
-    event SuperRBACUpdated(
-        address indexed oldSuperRBAC,
-        address indexed superRBAC
-    );
+    event SuperRBACUpdated(address indexed oldSuperRBAC, address indexed superRBAC);
 
     /// @dev is emitted when a new multi tx processor is configured.
-    event MultiTxProcessorUpdated(
-        address indexed oldMultiTxProcessor,
-        address indexed multiTxProcessor
-    );
+    event MultiTxProcessorUpdated(address indexed oldMultiTxProcessor, address indexed multiTxProcessor);
 
     /// @dev is emitted when a new token bridge is configured.
-    event SetBridgeAddress(
-        uint256 indexed bridgeId,
-        address indexed bridgeAddress
-    );
+    event SetBridgeAddress(uint256 indexed bridgeId, address indexed bridgeAddress);
 
     /// @dev is emitted when a new token bridge is configured.
-    event SetSuperPositionBankAddress(
-        address indexed oldBank,
-        address indexed bank
-    );
+    event SetSuperPositionBankAddress(address indexed oldBank, address indexed bank);
     /// @dev is emitted when a new bridge validator is configured.
-    event SetBridgeValidator(
-        uint256 indexed bridgeId,
-        address indexed bridgeValidator
-    );
+    event SetBridgeValidator(uint256 indexed bridgeId, address indexed bridgeValidator);
 
     /// @dev is emitted when a new amb is configured.
     event SetAmbAddress(uint8 ambId_, address ambAddress_);
@@ -107,10 +71,7 @@ interface ISuperRegistry {
     /// @dev sets a new protocol address.
     /// @param protocolAddressId_ the protocol address identifier
     /// @param newAddress_ the new address
-    function setNewProtocolAddress(
-        bytes32 protocolAddressId_,
-        address newAddress_
-    ) external;
+    function setNewProtocolAddress(bytes32 protocolAddressId_, address newAddress_) external;
 
     /// @dev sets the protocol admin address
     /// @param admin_ the address of the protocol admin
@@ -161,18 +122,12 @@ interface ISuperRegistry {
     /// @dev allows admin to set the amb address for an amb id.
     /// @param ambId_         represents the bridge unqiue identifier.
     /// @param ambAddress_    represents the bridge address.
-    function setAmbAddress(
-        uint8[] memory ambId_,
-        address[] memory ambAddress_
-    ) external;
+    function setAmbAddress(uint8[] memory ambId_, address[] memory ambAddress_) external;
 
     /// @dev allows admin to set the state registry address for an state registry id.
     /// @param registryId_    represents the state registry's unqiue identifier.
     /// @param registryAddress_    represents the state registry's address.
-    function setStateRegistryAddress(
-        uint8[] memory registryId_,
-        address[] memory registryAddress_
-    ) external;
+    function setStateRegistryAddress(uint8[] memory registryId_, address[] memory registryAddress_) external;
 
     /// @dev allows admin to set the super positions address
     /// @param superPositions_ the address of the super positions
@@ -230,9 +185,7 @@ interface ISuperRegistry {
 
     /// @dev gets the address of a contract.
     /// @param protocolAddressId_ is the id of the contract
-    function getProtocolAddress(
-        bytes32 protocolAddressId_
-    ) external view returns (address);
+    function getProtocolAddress(bytes32 protocolAddressId_) external view returns (address);
 
     /// @dev gets the protocol admin address.
     /// @return protocolAdmin_ the address of the protocol admin
@@ -244,38 +197,23 @@ interface ISuperRegistry {
 
     /// @dev gets the superform factory address.
     /// @return superFormFactory_ the address of the superform factory
-    function superFormFactory()
-        external
-        view
-        returns (address superFormFactory_);
+    function superFormFactory() external view returns (address superFormFactory_);
 
     /// @dev gets the state registry address.
     /// @return coreStateRegistry_ the address of the state registry
-    function coreStateRegistry()
-        external
-        view
-        returns (address coreStateRegistry_);
+    function coreStateRegistry() external view returns (address coreStateRegistry_);
 
     /// @dev gets the form state registry address.
     /// @return formStateRegistry_ the address of the state registry
-    function twoStepsFormStateRegistry()
-        external
-        view
-        returns (address formStateRegistry_);
+    function twoStepsFormStateRegistry() external view returns (address formStateRegistry_);
 
     /// @dev gets the state registry address.
     /// @return factoryStateRegistry_ the address of the state registry
-    function factoryStateRegistry()
-        external
-        view
-        returns (address factoryStateRegistry_);
+    function factoryStateRegistry() external view returns (address factoryStateRegistry_);
 
     /// @dev gets the roles state registry address.
     /// @return rolesStateRegistry_ the address of the state registry
-    function rolesStateRegistry()
-        external
-        view
-        returns (address rolesStateRegistry_);
+    function rolesStateRegistry() external view returns (address rolesStateRegistry_);
 
     /// @dev gets the super positions
     /// @return superPositions_ the address of the super positions
@@ -287,50 +225,34 @@ interface ISuperRegistry {
 
     /// @dev gets the multi tx processor
     /// @return multiTxProcessor_ the address of the multi tx processor
-    function multiTxProcessor()
-        external
-        view
-        returns (address multiTxProcessor_);
+    function multiTxProcessor() external view returns (address multiTxProcessor_);
 
     /// @dev gets the address of a bridge
     /// @param bridgeId_ is the id of a bridge
     /// @return bridgeAddress_ is the address of the form
-    function getBridgeAddress(
-        uint8 bridgeId_
-    ) external view returns (address bridgeAddress_);
+    function getBridgeAddress(uint8 bridgeId_) external view returns (address bridgeAddress_);
 
     /// @dev gets the address of the registry
     /// @param registryId_ is the id of the state registry
     /// @return registryAddress_ is the address of the state registry
-    function getStateRegistry(
-        uint8 registryId_
-    ) external view returns (address registryAddress_);
+    function getStateRegistry(uint8 registryId_) external view returns (address registryAddress_);
 
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry
     /// @return valid_ a flag indicating if its valid.
-    function isValidStateRegistry(
-        address registryAddress_
-    ) external view returns (bool valid_);
+    function isValidStateRegistry(address registryAddress_) external view returns (bool valid_);
 
     /// @dev gets the address of a bridge validator
     /// @param bridgeId_ is the id of a bridge
     /// @return bridgeValidator_ is the address of the form
-    function getBridgeValidator(
-        uint8 bridgeId_
-    ) external view returns (address bridgeValidator_);
+    function getBridgeValidator(uint8 bridgeId_) external view returns (address bridgeValidator_);
 
     /// @dev gets the address of a amb
     /// @param ambId_ is the id of a bridge
     /// @return ambAddress_ is the address of the form
-    function getAmbAddress(
-        uint8 ambId_
-    ) external view returns (address ambAddress_);
+    function getAmbAddress(uint8 ambId_) external view returns (address ambAddress_);
 
     /// @dev gets the super positions bank
     /// @return superPositionBank_ the address of the super positions bank
-    function superPositionBank()
-        external
-        view
-        returns (address superPositionBank_);
+    function superPositionBank() external view returns (address superPositionBank_);
 }

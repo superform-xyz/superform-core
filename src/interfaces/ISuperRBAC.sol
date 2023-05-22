@@ -25,22 +25,15 @@ interface ISuperRBAC {
     /// @param coreStateRegistry_ the address to revoke the role from
     /// @param extraData_ amb config if broadcasting is required
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
-    function revokeCoreStateRegistryRole(
-        address coreStateRegistry_,
-        bytes memory extraData_
-    ) external payable;
+    function revokeCoreStateRegistryRole(address coreStateRegistry_, bytes memory extraData_) external payable;
 
     /// @dev grants the TWOSTEPS_FORM_STATE_REGISTRY_ROLE to the given address
     /// @param twoStepsformStateRegistry_ the address to grant the role to
-    function grantTwoStepsFormStateRegistryRole(
-        address twoStepsformStateRegistry_
-    ) external;
+    function grantTwoStepsFormStateRegistryRole(address twoStepsformStateRegistry_) external;
 
     /// @dev revokes the TWOSTEPS_FORM_STATE_REGISTRY_ROLE from given address
     /// @param twoStepsformStateRegistry_ the address to revoke the role from
-    function revokeTwoStepsFormStateRegistryRole(
-        address twoStepsformStateRegistry_
-    ) external;
+    function revokeTwoStepsFormStateRegistryRole(address twoStepsformStateRegistry_) external;
 
     /// @dev grants the SUPER_ROUTER_ROLE to the given address
     /// @param superRouter_ the address to grant the role to
@@ -50,10 +43,7 @@ interface ISuperRBAC {
     /// @param superRouter_ the address to revoke the role from
     /// @param extraData_ amb config if broadcasting is required
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
-    function revokeSuperRouterRole(
-        address superRouter_,
-        bytes memory extraData_
-    ) external payable;
+    function revokeSuperRouterRole(address superRouter_, bytes memory extraData_) external payable;
 
     /// @dev grants the SUPERFORM_FACTORY_ROLE to the given address
     /// @param superformFactory_ the address to grant the role to
@@ -63,10 +53,7 @@ interface ISuperRBAC {
     /// @param superformFactory_ the address to revoke the role from
     /// @param extraData_ amb config if broadcasting is required
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
-    function revokeSuperformFactoryRole(
-        address superformFactory_,
-        bytes memory extraData_
-    ) external payable;
+    function revokeSuperformFactoryRole(address superformFactory_, bytes memory extraData_) external payable;
 
     /// @dev grants the SWAPPER_ROLE to the given address
     /// @param swapper_ the address to grant the role to
@@ -76,10 +63,7 @@ interface ISuperRBAC {
     /// @param swapper_ the address to revoke the role from
     /// @param extraData_ amb config if broadcasting is required
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
-    function revokeSwapperRole(
-        address swapper_,
-        bytes memory extraData_
-    ) external payable;
+    function revokeSwapperRole(address swapper_, bytes memory extraData_) external payable;
 
     /// @dev grants the CORE_CONTRACTS_ROLE to the given address
     /// @param coreContracts_ the address to grant the role to
@@ -89,10 +73,7 @@ interface ISuperRBAC {
     /// @param coreContracts_ the address to revoke the role from
     /// @param extraData_ amb config if broadcasting is required
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
-    function revokeCoreContractsRole(
-        address coreContracts_,
-        bytes memory extraData_
-    ) external payable;
+    function revokeCoreContractsRole(address coreContracts_, bytes memory extraData_) external payable;
 
     /// @dev grants the PROCESSOR_ROLE to the given address
     /// @param processor_ the address to grant the role to
@@ -102,10 +83,7 @@ interface ISuperRBAC {
     /// @param processor_ the address to revoke the role from
     /// @param extraData_ amb config if broadcasting is required
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
-    function revokeProcessorRole(
-        address processor_,
-        bytes memory extraData_
-    ) external payable;
+    function revokeProcessorRole(address processor_, bytes memory extraData_) external payable;
 
     /// @dev grants the TWO_STEPS_PROCESSOR_ROLE to the given address
     /// @param twoStepsProcessor_ the address to grant the role to
@@ -115,10 +93,7 @@ interface ISuperRBAC {
     /// @param twoStepsProcessor_ the address to revoke the role from
     /// @param extraData_ amb config if broadcasting is required
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
-    function revokeTwoStepsProcessorRole(
-        address twoStepsProcessor_,
-        bytes memory extraData_
-    ) external payable;
+    function revokeTwoStepsProcessorRole(address twoStepsProcessor_, bytes memory extraData_) external payable;
 
     /// @dev grants the UPDATER_ROLE to the given address
     /// @param updater_ the address to grant the role to
@@ -128,10 +103,7 @@ interface ISuperRBAC {
     /// @param updater_ the address to revoke the role from
     /// @param extraData_ amb config if broadcasting is required
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
-    function revokeUpdaterRole(
-        address updater_,
-        bytes memory extraData_
-    ) external payable;
+    function revokeUpdaterRole(address updater_, bytes memory extraData_) external payable;
 
     /// @dev allows sync of global roles from different chains
     /// @notice may not work for all roles
@@ -144,10 +116,7 @@ interface ISuperRBAC {
     function CORE_STATE_REGISTRY_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the state registry role
-    function TWOSTEPS_FORM_STATE_REGISTRY_ROLE()
-        external
-        view
-        returns (bytes32);
+    function TWOSTEPS_FORM_STATE_REGISTRY_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the super router role
     function SUPER_ROUTER_ROLE() external view returns (bytes32);
@@ -176,27 +145,19 @@ interface ISuperRBAC {
 
     /// @dev returns wether the given address has the core state registry role
     /// @param coreStateRegistry_ the address to check
-    function hasCoreStateRegistryRole(
-        address coreStateRegistry_
-    ) external view returns (bool);
+    function hasCoreStateRegistryRole(address coreStateRegistry_) external view returns (bool);
 
     /// @dev returns wether the given address has the two steps form state registry role
     /// @param twoStepsFormStateRegistry_ the address to check
-    function hasTwoStepsFormStateRegistryRole(
-        address twoStepsFormStateRegistry_
-    ) external view returns (bool);
+    function hasTwoStepsFormStateRegistryRole(address twoStepsFormStateRegistry_) external view returns (bool);
 
     /// @dev returns wether the given address has the super router role
     /// @param superRouter_ the address to check
-    function hasSuperRouterRole(
-        address superRouter_
-    ) external view returns (bool);
+    function hasSuperRouterRole(address superRouter_) external view returns (bool);
 
     /// @dev returns wether the given address has the superform factory role
     /// @param superformFactory_ the address to check
-    function hasSuperformFactoryRole(
-        address superformFactory_
-    ) external view returns (bool);
+    function hasSuperformFactoryRole(address superformFactory_) external view returns (bool);
 
     /// @dev returns wether the given address has the swapper role
     /// @param swapper_ the address to check
@@ -204,9 +165,7 @@ interface ISuperRBAC {
 
     /// @dev returns wether the given address has the core contracts role
     /// @param coreContracts_ the address to check
-    function hasCoreContractsRole(
-        address coreContracts_
-    ) external view returns (bool);
+    function hasCoreContractsRole(address coreContracts_) external view returns (bool);
 
     /// @dev returns wether the given address has the processor role
     /// @param processor_ the address to check
@@ -214,9 +173,7 @@ interface ISuperRBAC {
 
     /// @dev returns wether the given address has the two steps processor role
     /// @param twoStepsProcessor_ the address to check
-    function hasTwoStepsProcessorRole(
-        address twoStepsProcessor_
-    ) external view returns (bool);
+    function hasTwoStepsProcessorRole(address twoStepsProcessor_) external view returns (bool);
 
     /// @dev returns wether the given address has the updater role
     /// @param updater_ the address to check

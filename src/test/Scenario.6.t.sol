@@ -32,8 +32,8 @@ contract Scenario6Test is ProtocolActions {
         TARGET_UNDERLYING_VAULTS[ARBI][1] = [0, 1];
         TARGET_FORM_KINDS[ARBI][1] = [0, 0];
 
-        AMOUNTS[ARBI][0] = [7000];
-        AMOUNTS[ARBI][1] = [1000, 2000];
+        AMOUNTS[ARBI][0] = [12337];
+        AMOUNTS[ARBI][1] = [721, 13];
 
         MAX_SLIPPAGE[ARBI][0] = [1000];
         MAX_SLIPPAGE[ARBI][1] = [1000, 1000];

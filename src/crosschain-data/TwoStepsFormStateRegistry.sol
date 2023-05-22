@@ -16,8 +16,7 @@ import "../utils/DataPacking.sol";
 /// @notice handles communication in two stepped forms
 contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     /// @notice Pre-compute keccak256 hash of WITHDRAW_COOLDOWN_PERIOD()
-    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD =
-        keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
+    bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
 
     /// @dev Stores individual user request to process unlock
     struct OwnerRequest {
@@ -38,39 +37,21 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
 
     /// @notice Checks if the caller is the two steps processor
     modifier onlyTwoStepsProcessor() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasTwoStepsProcessorRole(
-                msg.sender
-            )
-        ) revert Error.NOT_TWO_STEPS_PROCESSOR();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasTwoStepsProcessorRole(msg.sender))
+            revert Error.NOT_TWO_STEPS_PROCESSOR();
         _;
     }
 
-    constructor(
-        ISuperRegistry superRegistry_,
-        uint8 registryType_
-    ) BaseStateRegistry(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
 
     /// @inheritdoc IFormStateRegistry
-    function receivePayload(
-        uint256 payloadId,
-        uint256 superFormId,
-        address owner
-    ) external onlyForm(superFormId) {
-        payloadStore[payloadId] = OwnerRequest({
-            owner: owner,
-            superFormId: superFormId
-        });
+    function receivePayload(uint256 payloadId, uint256 superFormId, address owner) external onlyForm(superFormId) {
+        payloadStore[payloadId] = OwnerRequest({owner: owner, superFormId: superFormId});
     }
 
     /// @inheritdoc IFormStateRegistry
-    function finalizePayload(
-        uint256 payloadId,
-        bytes memory ackExtraData
-    ) external onlyTwoStepsProcessor {
-        (address form_, , ) = _getSuperForm(
-            payloadStore[payloadId].superFormId
-        );
+    function finalizePayload(uint256 payloadId, bytes memory ackExtraData) external onlyTwoStepsProcessor {
+        (address form_, , ) = _getSuperForm(payloadStore[payloadId].superFormId);
 
         /// NOTE: ERC4626TimelockForm is the only form that uses processUnlock function
         IERC4626TimelockForm form = IERC4626TimelockForm(form_);
@@ -84,21 +65,12 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
             /// TODO: Test this case (test messaging back to src)
             if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
                 /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
-                InitSingleVaultData memory singleVaultData = form.unlockId(
-                    payloadStore[payloadId].owner
-                );
+                InitSingleVaultData memory singleVaultData = form.unlockId(payloadStore[payloadId].owner);
 
                 delete payloadStore[payloadId];
 
-                (
-                    uint16 srcChainId,
-                    bytes memory returnMessage
-                ) = _constructSingleReturnData(singleVaultData);
-                _dispatchAcknowledgement(
-                    srcChainId,
-                    returnMessage,
-                    ackExtraData
-                ); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
+                (uint16 srcChainId, bytes memory returnMessage) = _constructSingleReturnData(singleVaultData);
+                _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
             }
 
             /// TODO: Emit something in case of WITHDRAW_COOLDOWN_PERIOD. We don't want to delete payload then
@@ -118,12 +90,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
             srcChainId,
             abi.encode(
                 AMBMessage(
-                    _packTxInfo(
-                        uint120(TransactionType.WITHDRAW),
-                        uint120(CallbackType.FAIL),
-                        false,
-                        0
-                    ),
+                    _packTxInfo(uint120(TransactionType.WITHDRAW), uint120(CallbackType.FAIL), false, 0),
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
@@ -141,11 +108,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
 
     /// @notice In regular flow, BaseStateRegistry function for messaging back to the source
     /// @notice Use constructed earlier return message to send acknowledgment (msg) back to the source
-    function _dispatchAcknowledgement(
-        uint16 dstChainId_,
-        bytes memory message_,
-        bytes memory ackExtraData_
-    ) internal {
+    function _dispatchAcknowledgement(uint16 dstChainId_, bytes memory message_, bytes memory ackExtraData_) internal {
         AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
         uint8[] memory ambIds_ = ackData.ambIds;
 
@@ -156,20 +119,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
 
         AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
 
-        _dispatchPayload(
-            ambIds_[0],
-            dstChainId_,
-            d.gasPerAMB[0],
-            message_,
-            d.extraDataPerAMB[0]
-        );
+        _dispatchPayload(ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
 
-        _dispatchProof(
-            ambIds_,
-            dstChainId_,
-            d.gasPerAMB,
-            message_,
-            d.extraDataPerAMB
-        );
+        _dispatchProof(ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
     }
 }

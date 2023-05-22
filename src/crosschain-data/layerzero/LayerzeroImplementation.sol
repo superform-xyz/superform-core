@@ -16,11 +16,7 @@ import "../../utils/DataPacking.sol";
 /// @title LayerzeroImplementation
 /// @author Zeropoint Labs
 /// @dev allows state registries to use hyperlane for crosschain communication
-contract LayerzeroImplementation is
-    IAmbImplementation,
-    ILayerZeroUserApplicationConfig,
-    ILayerZeroReceiver
-{
+contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicationConfig, ILayerZeroReceiver {
     uint256 private constant RECEIVER_OFFSET = 1;
 
     /*///////////////////////////////////////////////////////////////
@@ -44,26 +40,16 @@ contract LayerzeroImplementation is
 
     event SetTrustedRemote(uint16 _srcChainId, bytes _srcAddress);
 
-    mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32)))
-        public failedMessages;
+    mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32))) public failedMessages;
 
-    event MessageFailed(
-        uint16 _srcChainId,
-        bytes _srcAddress,
-        uint64 _nonce,
-        bytes _payload
-    );
+    event MessageFailed(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload);
 
     /*///////////////////////////////////////////////////////////////
                                 Modifiers
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
-                msg.sender
-            )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
@@ -94,42 +80,22 @@ contract LayerzeroImplementation is
             revert Error.INVALID_CALLER();
         }
 
-        _lzSend(
-            ambChainId[dstChainId_],
-            message_,
-            payable(msg.sender),
-            address(0x0),
-            extraData_,
-            msg.value
-        );
+        _lzSend(ambChainId[dstChainId_], message_, payable(msg.sender), address(0x0), extraData_, msg.value);
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(
-        bytes memory message_,
-        bytes memory extraData_
-    ) external payable {
+    function broadcastPayload(bytes memory message_, bytes memory extraData_) external payable {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
 
-        BroadCastAMBExtraData memory d = abi.decode(
-            extraData_,
-            (BroadCastAMBExtraData)
-        );
+        BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
         /// NOTE:should we check the length ?? anyway out of index will fail if the length
         /// mistmatches
 
         for (uint16 i = 0; i < broadcastChains.length; i++) {
             uint16 dstChainId = broadcastChains[i];
-            _lzSend(
-                dstChainId,
-                message_,
-                payable(msg.sender),
-                address(0x0),
-                d.extraDataPerDst[i],
-                d.gasPerDst[i]
-            );
+            _lzSend(dstChainId, message_, payable(msg.sender), address(0x0), d.extraDataPerDst[i], d.gasPerDst[i]);
         }
     }
 
@@ -137,10 +103,7 @@ contract LayerzeroImplementation is
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setChainId(
-        uint16 superChainId_,
-        uint16 ambChainId_
-    ) external onlyProtocolAdmin {
+    function setChainId(uint16 superChainId_, uint16 ambChainId_) external onlyProtocolAdmin {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
 
@@ -151,12 +114,7 @@ contract LayerzeroImplementation is
     /*///////////////////////////////////////////////////////////////
                         Core Internal Functions
     //////////////////////////////////////////////////////////////*/
-    function _nonblockingLzReceive(
-        uint16 _srcChainId,
-        bytes memory,
-        uint64 _nonce,
-        bytes memory _payload
-    ) internal {
+    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, uint64 _nonce, bytes memory _payload) internal {
         if (isValid[_srcChainId][_nonce] == true) {
             revert Error.DUPLICATE_PAYLOAD();
         }
@@ -194,10 +152,7 @@ contract LayerzeroImplementation is
 
         bytes memory trustedRemote = trustedRemoteLookup[srcChainId_];
         // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
-        if (
-            srcAddress_.length != trustedRemote.length &&
-            keccak256(srcAddress_) != keccak256(trustedRemote)
-        ) {
+        if (srcAddress_.length != trustedRemote.length && keccak256(srcAddress_) != keccak256(trustedRemote)) {
             revert Error.INVALID_SRC_SENDER();
         }
 
@@ -271,20 +226,11 @@ contract LayerzeroImplementation is
         bytes memory payload_
     ) internal {
         // try-catch all errors/exceptions
-        try
-            this.nonblockingLzReceive(
-                srcChainId_,
-                srcAddress_,
-                nonce_,
-                payload_
-            )
-        {
+        try this.nonblockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_) {
             // do nothing
         } catch {
             // error / exception
-            failedMessages[srcChainId_][srcAddress_][nonce_] = keccak256(
-                payload_
-            );
+            failedMessages[srcChainId_][srcAddress_][nonce_] = keccak256(payload_);
             emit MessageFailed(srcChainId_, srcAddress_, nonce_, payload_);
         }
     }
@@ -307,13 +253,7 @@ contract LayerzeroImplementation is
         address,
         uint256 configType_
     ) external view returns (bytes memory) {
-        return
-            lzEndpoint.getConfig(
-                version_,
-                chainId_,
-                address(this),
-                configType_
-            );
+        return lzEndpoint.getConfig(version_, chainId_, address(this), configType_);
     }
 
     /// @dev allows protocol admin to configure UA on layerzero
@@ -326,38 +266,25 @@ contract LayerzeroImplementation is
         lzEndpoint.setConfig(version_, chainId_, configType_, config_);
     }
 
-    function setSendVersion(
-        uint16 version_
-    ) external override onlyProtocolAdmin {
+    function setSendVersion(uint16 version_) external override onlyProtocolAdmin {
         lzEndpoint.setSendVersion(version_);
     }
 
-    function setReceiveVersion(
-        uint16 version_
-    ) external override onlyProtocolAdmin {
+    function setReceiveVersion(uint16 version_) external override onlyProtocolAdmin {
         lzEndpoint.setReceiveVersion(version_);
     }
 
-    function forceResumeReceive(
-        uint16 srcChainId_,
-        bytes calldata srcAddress_
-    ) external override onlyProtocolAdmin {
+    function forceResumeReceive(uint16 srcChainId_, bytes calldata srcAddress_) external override onlyProtocolAdmin {
         lzEndpoint.forceResumeReceive(srcChainId_, srcAddress_);
     }
 
     // allow owner to set it multiple times.
-    function setTrustedRemote(
-        uint16 srcChainId_,
-        bytes calldata srcAddress_
-    ) external onlyProtocolAdmin {
+    function setTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external onlyProtocolAdmin {
         trustedRemoteLookup[srcChainId_] = srcAddress_;
         emit SetTrustedRemote(srcChainId_, srcAddress_);
     }
 
-    function isTrustedRemote(
-        uint16 srcChainId_,
-        bytes calldata srcAddress_
-    ) external view returns (bool) {
+    function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
         bytes memory trustedSource = trustedRemoteLookup[srcChainId_];
         return keccak256(trustedSource) == keccak256(srcAddress_);
     }

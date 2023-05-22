@@ -31,8 +31,8 @@ contract Scenario3Test is ProtocolActions {
         TARGET_UNDERLYING_VAULTS[ETH][0] = [0];
         TARGET_FORM_KINDS[ETH][0] = [0];
 
-        AMOUNTS[ARBI][0] = [1000, 500];
-        AMOUNTS[ETH][0] = [100];
+        AMOUNTS[ARBI][0] = [8422, 321];
+        AMOUNTS[ETH][0] = [2];
 
         MAX_SLIPPAGE[ARBI][0] = [1000, 1000];
         MAX_SLIPPAGE[ETH][0] = [1000];

@@ -36,8 +36,8 @@ contract Scenario8Test is ProtocolActions {
         TARGET_UNDERLYING_VAULTS[POLY][1] = [1];
         TARGET_FORM_KINDS[POLY][1] = [0];
 
-        AMOUNTS[POLY][0] = [1000];
-        AMOUNTS[POLY][1] = [1000];
+        AMOUNTS[POLY][0] = [47212];
+        AMOUNTS[POLY][1] = [47212];
 
         MAX_SLIPPAGE[POLY][0] = [1000];
         MAX_SLIPPAGE[POLY][1] = [1000];

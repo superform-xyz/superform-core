@@ -42,27 +42,20 @@ abstract contract LiquidityHandler {
                 if (permit2Data_.length == 0) {
                     token.safeTransferFrom(owner_, address(this), amount_);
                 } else {
-                    (
-                        uint256 nonce,
-                        uint256 deadline,
-                        bytes memory signature
-                    ) = abi.decode(permit2Data_, (uint256, uint256, bytes));
+                    (uint256 nonce, uint256 deadline, bytes memory signature) = abi.decode(
+                        permit2Data_,
+                        (uint256, uint256, bytes)
+                    );
 
                     IPermit2(permit2_).permitTransferFrom(
                         // The permit message.
                         IPermit2.PermitTransferFrom({
-                            permitted: IPermit2.TokenPermissions({
-                                token: token,
-                                amount: amount_
-                            }),
+                            permitted: IPermit2.TokenPermissions({token: token, amount: amount_}),
                             nonce: nonce,
                             deadline: deadline
                         }),
                         // The transfer recipient and amount.
-                        IPermit2.SignatureTransferDetails({
-                            to: address(this),
-                            requestedAmount: amount_
-                        }),
+                        IPermit2.SignatureTransferDetails({to: address(this), requestedAmount: amount_}),
                         // The owner of the tokens, which must also be
                         // the signer of the message, otherwise this call
                         // will fail.
@@ -75,20 +68,15 @@ abstract contract LiquidityHandler {
             }
             token.safeApprove(bridge_, amount_);
             unchecked {
-                (bool success, ) = payable(bridge_).call{value: nativeAmount_}(
-                    txData_
-                );
+                (bool success, ) = payable(bridge_).call{value: nativeAmount_}(txData_);
                 if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
             }
         } else {
             /// NOTE: Test if this is reachable
-            if (nativeAmount_ < amount_)
-                revert Error.INSUFFICIENT_NATIVE_AMOUNT();
+            if (nativeAmount_ < amount_) revert Error.INSUFFICIENT_NATIVE_AMOUNT();
 
             unchecked {
-                (bool success, ) = payable(bridge_).call{value: nativeAmount_}(
-                    txData_
-                );
+                (bool success, ) = payable(bridge_).call{value: nativeAmount_}(txData_);
                 if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
             }
         }

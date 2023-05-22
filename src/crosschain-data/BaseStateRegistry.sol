@@ -36,23 +36,17 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
-                msg.sender
-            )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
     modifier onlyProcessor() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasProcessorRole(msg.sender))
-            revert Error.NOT_PROCESSOR();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProcessorRole(msg.sender)) revert Error.NOT_PROCESSOR();
         _;
     }
 
     modifier onlyUpdater() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasUpdaterRole(msg.sender))
-            revert Error.NOT_UPDATER();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasUpdaterRole(msg.sender)) revert Error.NOT_UPDATER();
         _;
     }
 
@@ -91,21 +85,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
-        _dispatchPayload(
-            ambIds_[0],
-            dstChainId_,
-            d.gasPerAMB[0],
-            message_,
-            d.extraDataPerAMB[0]
-        );
+        _dispatchPayload(ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
 
-        _dispatchProof(
-            ambIds_,
-            dstChainId_,
-            d.gasPerAMB,
-            message_,
-            d.extraDataPerAMB
-        );
+        _dispatchProof(ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
     }
 
     /// @inheritdoc IBaseStateRegistry
@@ -121,20 +103,12 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
-        _broadcastPayload(
-            ambIds_[0],
-            d.gasPerAMB[0],
-            message_,
-            d.extraDataPerAMB[0]
-        );
+        _broadcastPayload(ambIds_[0], d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
         _broadcastProof(ambIds_, d.gasPerAMB, message_, d.extraDataPerAMB);
     }
 
     /// @inheritdoc IBaseStateRegistry
-    function receivePayload(
-        uint16 srcChainId_,
-        bytes memory message_
-    ) external override {
+    function receivePayload(uint16 srcChainId_, bytes memory message_) external override {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
 
         if (data.params.length == 32) {
@@ -147,11 +121,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             ++payloadsCount;
             payload[payloadsCount] = message_;
 
-            emit PayloadReceived(
-                srcChainId_,
-                superRegistry.chainId(),
-                payloadsCount
-            );
+            emit PayloadReceived(srcChainId_, superRegistry.chainId(), payloadsCount);
         }
     }
 
@@ -179,19 +149,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes memory overrideData_
     ) internal {
-        IAmbImplementation ambImplementation = IAmbImplementation(
-            superRegistry.getAmbAddress(ambId_)
-        );
+        IAmbImplementation ambImplementation = IAmbImplementation(superRegistry.getAmbAddress(ambId_));
 
         if (address(ambImplementation) == address(0)) {
             revert Error.INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.dispatchPayload{value: gasToPay_}(
-            dstChainId_,
-            message_,
-            overrideData_
-        );
+        ambImplementation.dispatchPayload{value: gasToPay_}(dstChainId_, message_, overrideData_);
     }
 
     /// @dev dispatches the proof(hash of the message_) through individual message bridge implementations
@@ -214,19 +178,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                 revert Error.INVALID_PROOF_BRIDGE_ID();
             }
 
-            IAmbImplementation tempImpl = IAmbImplementation(
-                superRegistry.getAmbAddress(tempAmbId)
-            );
+            IAmbImplementation tempImpl = IAmbImplementation(superRegistry.getAmbAddress(tempAmbId));
 
             if (address(tempImpl) == address(0)) {
                 revert Error.INVALID_BRIDGE_ID();
             }
 
-            tempImpl.dispatchPayload{value: gasToPay_[i]}(
-                dstChainId_,
-                abi.encode(data),
-                overrideData_[i]
-            );
+            tempImpl.dispatchPayload{value: gasToPay_[i]}(dstChainId_, abi.encode(data), overrideData_[i]);
         }
     }
 
@@ -237,23 +195,15 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes memory extraData_
     ) internal {
-        AMBMessage memory newData = AMBMessage(
-            _packTxInfo(0, 0, false, STATE_REGISTRY_TYPE),
-            message_
-        );
+        AMBMessage memory newData = AMBMessage(_packTxInfo(0, 0, false, STATE_REGISTRY_TYPE), message_);
 
-        IAmbImplementation ambImplementation = IAmbImplementation(
-            superRegistry.getAmbAddress(ambId_)
-        );
+        IAmbImplementation ambImplementation = IAmbImplementation(superRegistry.getAmbAddress(ambId_));
 
         if (address(ambImplementation) == address(0)) {
             revert Error.INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.broadcastPayload{value: gasToPay_}(
-            abi.encode(newData),
-            extraData_
-        );
+        ambImplementation.broadcastPayload{value: gasToPay_}(abi.encode(newData), extraData_);
     }
 
     /// @dev broadcasts the proof(hash of the message_) through individual message bridge implementations
@@ -264,10 +214,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes[] memory extraData_
     ) internal {
         bytes memory proof = abi.encode(keccak256(message_));
-        AMBMessage memory newData = AMBMessage(
-            _packTxInfo(0, 0, false, STATE_REGISTRY_TYPE),
-            proof
-        );
+        AMBMessage memory newData = AMBMessage(_packTxInfo(0, 0, false, STATE_REGISTRY_TYPE), proof);
 
         for (uint8 i = 1; i < ambIds_.length; i++) {
             uint8 tempAmbId = ambIds_[i];
@@ -276,18 +223,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                 revert Error.INVALID_PROOF_BRIDGE_ID();
             }
 
-            IAmbImplementation tempImpl = IAmbImplementation(
-                superRegistry.getAmbAddress(tempAmbId)
-            );
+            IAmbImplementation tempImpl = IAmbImplementation(superRegistry.getAmbAddress(tempAmbId));
 
             if (address(tempImpl) == address(0)) {
                 revert Error.INVALID_BRIDGE_ID();
             }
 
-            tempImpl.broadcastPayload{value: gasToPay_[i]}(
-                abi.encode(newData),
-                extraData_[i]
-            );
+            tempImpl.broadcastPayload{value: gasToPay_[i]}(abi.encode(newData), extraData_[i]);
         }
     }
 }

@@ -35,10 +35,8 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
 
     /// @dev TwoStepsFormStateRegistry modifier for calling processUnlock()
     modifier onlyTwoStepsFormStateRegistry() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC())
-                .hasTwoStepsFormStateRegistryRole(msg.sender)
-        ) revert Error.NOT_FORM_STATE_REGISTRY();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasTwoStepsFormStateRegistryRole(msg.sender))
+            revert Error.NOT_FORM_STATE_REGISTRY();
         _;
     }
 
@@ -57,36 +55,18 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     /// @dev asset() or some similar function should return all possible tokens that can be deposited into the vault so that BE can grab that properly
-    function getUnderlyingOfVault()
-        public
-        view
-        virtual
-        override
-        returns (ERC20)
-    {
+    function getUnderlyingOfVault() public view virtual override returns (ERC20) {
         return ERC20(IERC4626(vault).asset());
     }
 
     /// @inheritdoc BaseForm
-    function getPricePerVaultShare()
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function getPricePerVaultShare() public view virtual override returns (uint256) {
         uint256 vaultDecimals = ERC20(vault).decimals();
         return IERC4626(vault).convertToAssets(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
-    function getVaultShareBalance()
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function getVaultShareBalance() public view virtual override returns (uint256) {
         return IERC4626(vault).balanceOf(address(this));
     }
 
@@ -96,50 +76,30 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
-    function getConvertPricePerVaultShare()
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function getConvertPricePerVaultShare() public view virtual override returns (uint256) {
         uint256 vaultDecimals = ERC20(vault).decimals();
         return IERC4626(vault).convertToAssets(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
-    function getPreviewPricePerVaultShare()
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function getPreviewPricePerVaultShare() public view virtual override returns (uint256) {
         uint256 vaultDecimals = ERC20(vault).decimals();
         return IERC4626(vault).previewRedeem(10 ** vaultDecimals);
     }
 
     /// @inheritdoc BaseForm
-    function previewDepositTo(
-        uint256 assets_
-    ) public view virtual override returns (uint256) {
+    function previewDepositTo(uint256 assets_) public view virtual override returns (uint256) {
         return IERC4626(vault).convertToShares(assets_);
     }
 
     /// @inheritdoc BaseForm
-    function previewWithdrawFrom(
-        uint256 assets_
-    ) public view virtual override returns (uint256) {
+    function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256) {
         return IERC4626(vault).previewWithdraw(assets_);
     }
 
     /// @notice ERC4626TimelockFork getter
     /// @dev Standardized function returning what step of a timelock withdraw process are we to execute
-    function checkUnlock(
-        address vault_,
-        uint256 shares_,
-        address owner_
-    ) public view returns (uint16) {
+    function checkUnlock(address vault_, uint256 shares_, address owner_) public view returns (uint16) {
         OwnerRequest memory ownerRequest = unlockId[owner_];
 
         if (ownerRequest.requestTimestamp == 0) {
@@ -147,8 +107,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
             return 2;
         }
 
-        uint256 unlockTime = ownerRequest.requestTimestamp +
-            IERC4626TimelockVault(vault_).getLockPeirod();
+        uint256 unlockTime = ownerRequest.requestTimestamp + IERC4626TimelockVault(vault_).getLockPeirod();
 
         if (block.timestamp < unlockTime) {
             /// unlock cooldown period not passed. revert Error.WITHDRAW_COOLDOWN_PERIOD
@@ -199,10 +158,8 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         /// note: handle the collateral token transfers.
         if (singleVaultData_.liqData.txData.length == 0) {
             if (
-                ERC20(singleVaultData_.liqData.token).allowance(
-                    vars.srcSender,
-                    address(this)
-                ) < singleVaultData_.liqData.amount
+                ERC20(singleVaultData_.liqData.token).allowance(vars.srcSender, address(this)) <
+                singleVaultData_.liqData.amount
             ) revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
             ERC20(singleVaultData_.liqData.token).safeTransferFrom(
@@ -212,24 +169,18 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
             );
         } else {
             vars.chainId = superRegistry.chainId();
-            IBridgeValidator(
-                superRegistry.getBridgeValidator(
-                    singleVaultData_.liqData.bridgeId
-                )
-            ).validateTxData(
-                    singleVaultData_.liqData.txData,
-                    vars.chainId,
-                    vars.chainId,
-                    true,
-                    address(this),
-                    vars.srcSender,
-                    singleVaultData_.liqData.token
-                );
+            IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
+                singleVaultData_.liqData.txData,
+                vars.chainId,
+                vars.chainId,
+                true,
+                address(this),
+                vars.srcSender,
+                singleVaultData_.liqData.token
+            );
 
             dispatchTokens(
-                superRegistry.getBridgeAddress(
-                    singleVaultData_.liqData.bridgeId
-                ),
+                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
                 singleVaultData_.liqData.amount,
@@ -244,8 +195,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount)
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
 
-        if (address(v.asset()) != vars.collateral)
-            revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
+        if (address(v.asset()) != vars.collateral) revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
         /// NOTE: allowance is modified inside of the ERC20.transferFrom() call
@@ -277,20 +227,11 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
         IERC4626TimelockVault v = IERC4626TimelockVault(vault);
         vars.collateral = address(v.asset());
 
-        if (address(v.asset()) != vars.collateral)
-            revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
+        if (address(v.asset()) != vars.collateral) revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
 
-        vars.unlock = checkUnlock(
-            vault,
-            singleVaultData_.amount,
-            vars.srcSender
-        );
+        vars.unlock = checkUnlock(vault, singleVaultData_.amount, vars.srcSender);
         if (vars.unlock == 0) {
-            dstAmount = v.redeem(
-                singleVaultData_.amount,
-                vars.receiver,
-                address(this)
-            );
+            dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
 
             if (vars.len1 != 0) {
                 /// @dev this check here might be too much already, but can't hurt
@@ -300,24 +241,18 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                 vars.chainId = superRegistry.chainId();
 
                 /// @dev NOTE: only allows withdraws to same chain
-                IBridgeValidator(
-                    superRegistry.getBridgeValidator(
-                        singleVaultData_.liqData.bridgeId
-                    )
-                ).validateTxData(
-                        singleVaultData_.liqData.txData,
-                        vars.chainId,
-                        vars.chainId,
-                        false,
-                        address(this),
-                        vars.srcSender,
-                        singleVaultData_.liqData.token
-                    );
+                IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
+                    singleVaultData_.liqData.txData,
+                    vars.chainId,
+                    vars.chainId,
+                    false,
+                    address(this),
+                    vars.srcSender,
+                    singleVaultData_.liqData.token
+                );
 
                 dispatchTokens(
-                    superRegistry.getBridgeAddress(
-                        singleVaultData_.liqData.bridgeId
-                    ),
+                    superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                     singleVaultData_.liqData.txData,
                     singleVaultData_.liqData.token,
                     singleVaultData_.liqData.amount,
@@ -342,11 +277,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
             });
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
-            twoStepsFormStateRegistry.receivePayload(
-                unlockCounter,
-                singleVaultData_.superFormId,
-                vars.srcSender
-            );
+            twoStepsFormStateRegistry.receivePayload(unlockCounter, singleVaultData_.superFormId, vars.srcSender);
         } else if (vars.unlock == 3) {
             revert Error.WITHDRAW_COOLDOWN_PERIOD();
         }
@@ -366,18 +297,10 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
 
         /// DEVNOTE: This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
-        (, uint16 srcChainId, uint80 txId) = _decodeTxData(
-            singleVaultData_.txData
-        );
+        (, uint16 srcChainId, uint80 txId) = _decodeTxData(singleVaultData_.txData);
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
-        emit Processed(
-            srcChainId,
-            dstChainId,
-            txId,
-            singleVaultData_.amount,
-            vaultLoc
-        );
+        emit Processed(srcChainId, dstChainId, txId, singleVaultData_.amount, vaultLoc);
     }
 
     /// @dev Stack too deep workaround
@@ -403,50 +326,34 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
 
         IERC4626TimelockVault v = IERC4626TimelockVault(vars.vaultLoc);
 
-        (vars.srcSender, vars.srcChainId, vars.txId) = _decodeTxData(
-            singleVaultData_.txData
-        );
+        (vars.srcSender, vars.srcChainId, vars.txId) = _decodeTxData(singleVaultData_.txData);
 
         /// NOTE: This needs to match on 1st-step against srcSender
         /// NOTE: This needs to match on 2nd-step against payloadId
         /// NOTE: We have no payloadId (for twoStepsFormStateRegistry) at 1st step
-        vars.unlock = checkUnlock(
-            vault,
-            singleVaultData_.amount,
-            vars.srcSender
-        );
+        vars.unlock = checkUnlock(vault, singleVaultData_.amount, vars.srcSender);
 
         if (vars.unlock == 0) {
             if (singleVaultData_.liqData.txData.length != 0) {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
-                vars.dstAmount = v.redeem(
-                    singleVaultData_.amount,
-                    address(this),
-                    address(this)
-                );
+                vars.dstAmount = v.redeem(singleVaultData_.amount, address(this), address(this));
 
                 vars.balanceBefore = ERC20(v.asset()).balanceOf(address(this));
 
                 /// @dev NOTE: only allows withdraws back to source
-                IBridgeValidator(
-                    superRegistry.getBridgeValidator(
-                        singleVaultData_.liqData.bridgeId
-                    )
-                ).validateTxData(
-                        singleVaultData_.liqData.txData,
-                        vars.dstChainId,
-                        vars.srcChainId,
-                        false,
-                        address(this),
-                        vars.srcSender,
-                        singleVaultData_.liqData.token
-                    );
+                IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
+                    singleVaultData_.liqData.txData,
+                    vars.dstChainId,
+                    vars.srcChainId,
+                    false,
+                    address(this),
+                    vars.srcSender,
+                    singleVaultData_.liqData.token
+                );
 
                 /// Note Send Tokens to Source Chain
                 dispatchTokens(
-                    superRegistry.getBridgeAddress(
-                        singleVaultData_.liqData.bridgeId
-                    ),
+                    superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                     singleVaultData_.liqData.txData,
                     singleVaultData_.liqData.token,
                     vars.dstAmount,
@@ -462,11 +369,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
                     revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
             } else {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
-                v.redeem(
-                    singleVaultData_.amount,
-                    vars.srcSender,
-                    address(this)
-                );
+                v.redeem(singleVaultData_.amount, vars.srcSender, address(this));
             }
         } else if (vars.unlock == 1) {
             revert Error.LOCKED();
@@ -483,23 +386,13 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
             });
 
             /// @dev Sent unlockCounter (id) to the FORM_KEEPER (contract on this chain)
-            twoStepsFormStateRegistry.receivePayload(
-                unlockCounter,
-                singleVaultData_.superFormId,
-                vars.srcSender
-            );
+            twoStepsFormStateRegistry.receivePayload(unlockCounter, singleVaultData_.superFormId, vars.srcSender);
         } else if (vars.unlock == 3) {
             revert Error.WITHDRAW_COOLDOWN_PERIOD();
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
-        emit Processed(
-            vars.srcChainId,
-            vars.dstChainId,
-            vars.txId,
-            singleVaultData_.amount,
-            vars.vaultLoc
-        );
+        emit Processed(vars.srcChainId, vars.dstChainId, vars.txId, singleVaultData_.amount, vars.vaultLoc);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -509,11 +402,7 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     /// @notice Called by TwoStepsFormStateRegistry to process 2nd step of redeem after cooldown period passes
     function processUnlock(
         address owner_
-    )
-        external
-        onlyTwoStepsFormStateRegistry
-        returns (OwnerRequest memory ownerRequest)
-    {
+    ) external onlyTwoStepsFormStateRegistry returns (OwnerRequest memory ownerRequest) {
         ownerRequest = unlockId[owner_];
         _xChainWithdrawFromVault(ownerRequest.singleVaultData_);
         delete unlockId[owner_];
@@ -524,35 +413,17 @@ contract ERC4626TimelockForm is BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc BaseForm
-    function superformYieldTokenName()
-        external
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function superformYieldTokenName() external view virtual override returns (string memory) {
         return string(abi.encodePacked("Superform ", ERC20(vault).name()));
     }
 
     /// @inheritdoc BaseForm
-    function superformYieldTokenSymbol()
-        external
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function superformYieldTokenSymbol() external view virtual override returns (string memory) {
         return string(abi.encodePacked("SUP-", ERC20(vault).symbol()));
     }
 
     /// @inheritdoc BaseForm
-    function superformYieldTokenDecimals()
-        external
-        view
-        virtual
-        override
-        returns (uint256 underlyingDecimals)
-    {
+    function superformYieldTokenDecimals() external view virtual override returns (uint256 underlyingDecimals) {
         return ERC20(vault).decimals();
     }
 
