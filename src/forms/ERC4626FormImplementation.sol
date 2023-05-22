@@ -12,8 +12,8 @@ import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
-/// @title ERC4626Implementation
-/// @notice Has common internal functions that can be re-used by form implementations
+/// @title ERC4626FormImplementation
+/// @notice Has common internal functions that can be re-used by actual form implementations
 abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     using SafeTransferLib for ERC20;
 

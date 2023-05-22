@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
-
+import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {ERC4626FormImplementation} from "./ERC4626FormImplementation.sol";
-
 import {BaseForm} from "../BaseForm.sol";
-
 import {IKycValidity} from "../vendor/kycDAO/IKycValidity.sol";
-
 import {Error} from "../utils/Error.sol";
-
 import "../utils/DataPacking.sol";
 
 /// @title ERC4626KYCDaoForm
