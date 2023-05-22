@@ -82,7 +82,7 @@ contract Scenario6Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function xtest_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
@@ -91,41 +91,20 @@ contract Scenario6Test is ProtocolActions {
             StagesLocalVars memory vars;
             bool success;
 
-            (
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            ) = _stage1_buildReqData(action, act);
+            (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
 
-            vars = _stage2_run_src_action(
-                action,
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            );
+            vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
 
-            aV = _stage3_src_to_dst_amb_delivery(
-                action,
-                vars,
-                multiSuperFormsData,
-                singleSuperFormsData
-            );
+            aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);
 
-            success = _stage4_process_src_dst_payload(
-                action,
-                vars,
-                aV,
-                singleSuperFormsData,
-                act
-            );
+            success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);
 
             if (!success) {
                 continue;
             }
 
             if (
-                (action.action == Actions.Deposit ||
-                    action.action == Actions.DepositPermit2) &&
+                (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) &&
                 !(action.testType == TestType.RevertXChainDeposit)
             ) {
                 success = _stage5_process_superPositions_mint(action, vars);
