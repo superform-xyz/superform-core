@@ -58,6 +58,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
+        address srcSender_,
         uint16 dstChainId_,
         bytes memory message_,
         bytes memory
@@ -79,7 +80,11 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(bytes memory message_, bytes memory extraData_) external payable virtual {
+    function broadcastPayload(
+        address srcSender_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable virtual {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }

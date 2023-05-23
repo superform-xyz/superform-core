@@ -29,6 +29,7 @@ interface IBaseStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev allows core contracts to send payload to a destination chain.
+    /// @param srcSender_ is the caller of the function (used for gas refunds).
     /// @param ambIds_ is the identifier of the arbitrary message bridge to be used
     /// @param dstChainId_ is the internal chainId used throughtout the protocol
     /// @param message_ is the crosschain payload to be sent
@@ -36,6 +37,7 @@ interface IBaseStateRegistry {
     /// NOTE: dstChainId_ is mapped to message bridge's destination id inside it's implementation contract
     /// NOTE: ambIds_ are superform assigned unique identifier for arbitrary message bridges
     function dispatchPayload(
+        address srcSender_,
         uint8[] memory ambIds_,
         uint16 dstChainId_,
         bytes memory message_,
@@ -43,10 +45,16 @@ interface IBaseStateRegistry {
     ) external payable;
 
     /// @dev allows core contracts to send payload to all configured destination chain.
+    /// @param srcSender_ is the caller of the function (used for gas refunds).
     /// @param ambIds_ is the identifier of the arbitrary message bridge to be used
     /// @param message_ is the crosschain payload to be broadcasted
     /// @param extraData_ defines all the message bridge realted overrides
-    function broadcastPayload(uint8[] memory ambIds_, bytes memory message_, bytes memory extraData_) external payable;
+    function broadcastPayload(
+        address srcSender_,
+        uint8[] memory ambIds_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable;
 
     /// @dev allows state registry to receive messages from message bridge implementations
     /// @param srcChainId_ is the superform chainId from which the payload is dispatched/sent
