@@ -9,6 +9,7 @@ import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {IERC721} from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 
 /// @dev test utils & mocks
@@ -476,7 +477,7 @@ abstract contract BaseSetup is DSTest, Test {
                         );
 
                         vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                    } else if (j == 2 && i == 3) {
+                    } else {
                         /// deploy the kycDAOVault wrapper with different args only in Polygon
 
                         bytecodeWithArgs = abi.encodePacked(
@@ -488,8 +489,6 @@ abstract contract BaseSetup is DSTest, Test {
                         );
 
                         vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                    } else {
-                        vars.vault = address(0);
                     }
 
                     /// @dev Add ERC4626Vault
@@ -633,29 +632,35 @@ abstract contract BaseSetup is DSTest, Test {
                     vm.recordLogs();
                     address vault = address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k]);
 
-                    if (vault != address(0)) {
-                        (, vars.superForm) = ISuperFormFactory(
-                            contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))]
-                        ).createSuperForm{value: 800 * 10 ** 18}(
-                            FORM_BEACON_IDS[j],
-                            vault,
-                            generateBroadcastParams(5, 2)
+                    (, vars.superForm) = ISuperFormFactory(contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))])
+                        .createSuperForm{value: 800 * 10 ** 18}(
+                        FORM_BEACON_IDS[j],
+                        vault,
+                        generateBroadcastParams(5, 2)
+                    );
+
+                    /*
+                    if (FORM_BEACON_IDS[j] == 3 && i == 3) {
+                        /// high kycDAONFT holder
+                        vm.prank(0x4f52d5D407e15c8b936302365cD84011a15284F2);
+
+                        /// transfer a kycDAO Nft to form
+                        IERC721(kycDAOValidityAddresses[i]).transferFrom(
+                            0x4f52d5D407e15c8b936302365cD84011a15284F2,
+                            vars.superForm,
+                            41
                         );
-
-                        contracts[chainIds[i]][
-                            bytes32(
-                                bytes(
-                                    string.concat(
-                                        UNDERLYING_TOKENS[k],
-                                        "SuperForm",
-                                        Strings.toString(FORM_BEACON_IDS[j])
-                                    )
-                                )
-                            )
-                        ] = vars.superForm;
-
-                        _broadcastPayloadHelper(chainIds[i], vm.getRecordedLogs());
                     }
+                    */
+                    contracts[chainIds[i]][
+                        bytes32(
+                            bytes(
+                                string.concat(UNDERLYING_TOKENS[k], "SuperForm", Strings.toString(FORM_BEACON_IDS[j]))
+                            )
+                        )
+                    ] = vars.superForm;
+
+                    _broadcastPayloadHelper(chainIds[i], vm.getRecordedLogs());
                 }
             }
         }
@@ -762,6 +767,7 @@ abstract contract BaseSetup is DSTest, Test {
             vm.deal(users[0], amountUSER);
             vm.deal(users[1], amountUSER);
             vm.deal(users[2], amountUSER);
+            vm.deal(users[3], amountUSER);
         }
     }
 
@@ -819,6 +825,7 @@ abstract contract BaseSetup is DSTest, Test {
                 deal(token, users[0], 1 ether * amount);
                 deal(token, users[1], 1 ether * amount);
                 deal(token, users[2], 1 ether * amount);
+                deal(token, users[3], 1 ether * amount);
             }
         }
     }
