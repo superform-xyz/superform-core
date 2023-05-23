@@ -6,9 +6,5 @@ interface IMessageRecipient {
     /// @param _origin Domain ID of the chain from which the message came
     /// @param _sender Address of the message sender on the origin chain as bytes32
     /// @param _message Raw bytes content of message body
-    function handle(
-        uint32 _origin,
-        bytes32 _sender,
-        bytes calldata _message
-    ) external;
+    function handle(uint32 _origin, bytes32 _sender, bytes calldata _message) external;
 }

@@ -25,41 +25,25 @@ interface ISuperPositions {
     /// @param owner_ is the address of the owner of the super position
     /// @param superFormId_ is the id of the super position being minted
     /// @param amount_ is the amount of the super position being minted
-    function mintSingleSP(
-        address owner_,
-        uint256 superFormId_,
-        uint256 amount_
-    ) external;
+    function mintSingleSP(address owner_, uint256 superFormId_, uint256 amount_) external;
 
     /// @dev mints a batch of super positions
     /// @param owner_ is the address of the owner of the super positions
     /// @param superFormIds_ are the ids of the super positions being minted
     /// @param amounts_ are the amounts of the super positions being minted
-    function mintBatchSP(
-        address owner_,
-        uint256[] memory superFormIds_,
-        uint256[] memory amounts_
-    ) external;
+    function mintBatchSP(address owner_, uint256[] memory superFormIds_, uint256[] memory amounts_) external;
 
     /// @dev burns a single super position
     /// @param srcSender_ is the address of the sender of the super position
     /// @param superFormId_ is the id of the super position being burned
     /// @param amount_ is the amount of the super position being burned
-    function burnSingleSP(
-        address srcSender_,
-        uint256 superFormId_,
-        uint256 amount_
-    ) external;
+    function burnSingleSP(address srcSender_, uint256 superFormId_, uint256 amount_) external;
 
     /// @dev burns a batch of super positions
     /// @param srcSender_ is the address of the sender of the super positions
     /// @param superFormIds_ are the ids of the super positions being burned
     /// @param amounts_ are the amounts of the super positions being burned
-    function burnBatchSP(
-        address srcSender_,
-        uint256[] memory superFormIds_,
-        uint256[] memory amounts_
-    ) external;
+    function burnBatchSP(address srcSender_, uint256[] memory superFormIds_, uint256[] memory amounts_) external;
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
@@ -78,10 +62,7 @@ interface ISuperPositions {
     /// @dev saves the AMB message being sent together with the associated id formulated in super router
     /// @param messageId_ is the id of the message being sent
     /// @param message_ is the message being sent
-    function updateTxHistory(
-        uint80 messageId_,
-        AMBMessage memory message_
-    ) external;
+    function updateTxHistory(uint80 messageId_, AMBMessage memory message_) external;
 
     function setDynamicURI(string memory dynamicURI_) external;
 

@@ -23,11 +23,8 @@ contract FormBeacon is IFormBeacon {
     bool public paused;
 
     modifier onlySuperFormFactory() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasSuperformFactoryRole(
-                msg.sender
-            )
-        ) revert Error.NOT_SUPERFORM_FACTORY();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasSuperformFactoryRole(msg.sender))
+            revert Error.NOT_SUPERFORM_FACTORY();
         _;
     }
 
@@ -49,9 +46,7 @@ contract FormBeacon is IFormBeacon {
     }
 
     /// @inheritdoc IFormBeacon
-    function changePauseStatus(
-        bool newStatus_
-    ) external override onlySuperFormFactory {
+    function changePauseStatus(bool newStatus_) external override onlySuperFormFactory {
         paused = newStatus_;
         emit FormBeaconStatus(newStatus_);
     }

@@ -46,8 +46,8 @@ contract Scenario7Test is ProtocolActions {
         TARGET_UNDERLYING_VAULTS[ARBI][1] = [1, 1, 1];
         TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0];
 
-        AMOUNTS[ARBI][0] = [7000, 1000, 2000];
-        AMOUNTS[ARBI][1] = [7000, 1000, 2000];
+        AMOUNTS[ARBI][0] = [714, 1111, 43125];
+        AMOUNTS[ARBI][1] = [714, 1111, 43125];
 
         MAX_SLIPPAGE[ARBI][0] = [1000, 1000, 1000];
         MAX_SLIPPAGE[ARBI][1] = [1000, 1000, 1000];
@@ -102,9 +102,7 @@ contract Scenario7Test is ProtocolActions {
         superRouter = ISuperRouter(_superRouter);
 
         /// TODO: User ERC1155s
-        superPositions = IERC1155(
-            ISuperRegistry(_stateRegistry).superPositions()
-        );
+        superPositions = IERC1155(ISuperRegistry(_stateRegistry).superPositions());
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -120,43 +118,22 @@ contract Scenario7Test is ProtocolActions {
             StagesLocalVars memory vars;
             bool success;
 
-            (
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            ) = _stage1_buildReqData(action, act);
+            (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
 
             /// @dev NOTE: setApprovalForAll happens in _buildSingleVaultWithdrawCallData
 
-            vars = _stage2_run_src_action(
-                action,
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            );
+            vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
 
-            aV = _stage3_src_to_dst_amb_delivery(
-                action,
-                vars,
-                multiSuperFormsData,
-                singleSuperFormsData
-            );
+            aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);
 
-            success = _stage4_process_src_dst_payload(
-                action,
-                vars,
-                aV,
-                singleSuperFormsData,
-                act
-            );
+            success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);
 
             if (!success) {
                 continue;
             }
 
             if (
-                (action.action == Actions.Deposit ||
-                    action.action == Actions.DepositPermit2) &&
+                (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) &&
                 !(action.testType == TestType.RevertXChainDeposit)
             ) {
                 success = _stage5_process_superPositions_mint(action, vars);

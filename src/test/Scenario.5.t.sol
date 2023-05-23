@@ -32,8 +32,8 @@ contract Scenario5Test is ProtocolActions {
         TARGET_UNDERLYING_VAULTS[ETH][1] = [2];
         TARGET_FORM_KINDS[ETH][1] = [0];
 
-        AMOUNTS[ETH][0] = [1000];
-        AMOUNTS[ETH][1] = [1000];
+        AMOUNTS[ETH][0] = [9831];
+        AMOUNTS[ETH][1] = [9831];
 
         MAX_SLIPPAGE[ETH][0] = [1000];
         MAX_SLIPPAGE[ETH][1] = [1000];
@@ -90,41 +90,20 @@ contract Scenario5Test is ProtocolActions {
             StagesLocalVars memory vars;
             bool success;
 
-            (
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            ) = _stage1_buildReqData(action, act);
+            (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
 
-            vars = _stage2_run_src_action(
-                action,
-                multiSuperFormsData,
-                singleSuperFormsData,
-                vars
-            );
+            vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
 
-            aV = _stage3_src_to_dst_amb_delivery(
-                action,
-                vars,
-                multiSuperFormsData,
-                singleSuperFormsData
-            );
+            aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);
 
-            success = _stage4_process_src_dst_payload(
-                action,
-                vars,
-                aV,
-                singleSuperFormsData,
-                act
-            );
+            success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);
 
             if (!success) {
                 continue;
             }
 
             if (
-                (action.action == Actions.Deposit ||
-                    action.action == Actions.DepositPermit2) &&
+                (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) &&
                 !(action.testType == TestType.RevertXChainDeposit)
             ) {
                 success = _stage5_process_superPositions_mint(action, vars);

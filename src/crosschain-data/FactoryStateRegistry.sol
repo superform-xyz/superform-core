@@ -16,18 +16,14 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlySender() override {
-        if (msg.sender != superRegistry.superFormFactory())
-            revert Error.NOT_CORE_CONTRACTS();
+        if (msg.sender != superRegistry.superFormFactory()) revert Error.NOT_CORE_CONTRACTS();
         _;
     }
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(
-        ISuperRegistry superRegistry_,
-        uint8 registryType_
-    ) BaseStateRegistry(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -47,8 +43,6 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperFormFactory(superRegistry.superFormFactory()).stateSync(
-            payload[payloadId_]
-        );
+        ISuperFormFactory(superRegistry.superFormFactory()).stateSync(payload[payloadId_]);
     }
 }

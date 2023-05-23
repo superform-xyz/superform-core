@@ -22,29 +22,18 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     mapping(uint80 transactionId => AMBMessage ambMessage) public txHistory;
 
     modifier onlyRouter() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(
-                msg.sender
-            )
-        ) revert Error.NOT_SUPER_ROUTER();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(msg.sender)) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyCoreStateRegistry() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(
-                msg.sender
-            )
-        ) revert Error.NOT_CORE_STATE_REGISTRY();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(msg.sender))
+            revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 
     modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
-                msg.sender
-            )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
@@ -58,19 +47,12 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// FIXME: Temp extension need to make approve at superRouter, may change with arch
-    function setApprovalForAll(
-        address operator,
-        bool approved
-    ) public virtual override(ISuperPositions, ERC1155) {
+    function setApprovalForAll(address operator, bool approved) public virtual override(ISuperPositions, ERC1155) {
         super.setApprovalForAll(operator, approved);
     }
 
     /// @inheritdoc ISuperPositions
-    function mintSingleSP(
-        address owner_,
-        uint256 superFormId_,
-        uint256 amount_
-    ) external override onlyRouter {
+    function mintSingleSP(address owner_, uint256 superFormId_, uint256 amount_) external override onlyRouter {
         _mint(owner_, superFormId_, amount_, "");
     }
 
@@ -84,11 +66,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// @inheritdoc ISuperPositions
-    function burnSingleSP(
-        address srcSender_,
-        uint256 superFormId_,
-        uint256 amount_
-    ) external override onlyRouter {
+    function burnSingleSP(address srcSender_, uint256 superFormId_, uint256 amount_) external override onlyRouter {
         _burn(srcSender_, superFormId_, amount_);
     }
 
@@ -102,42 +80,25 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// @inheritdoc ISuperPositions
-    function updateTxHistory(
-        uint80 messageId_,
-        AMBMessage memory message_
-    ) external override onlyRouter {
+    function updateTxHistory(uint80 messageId_, AMBMessage memory message_) external override onlyRouter {
         txHistory[messageId_] = message_;
     }
 
     /// @inheritdoc ISuperPositions
     function stateMultiSync(
         AMBMessage memory data_
-    )
-        external
-        payable
-        override
-        onlyCoreStateRegistry
-        returns (uint16 srcChainId_)
-    {
-        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
-            data_.txInfo
-        );
+    ) external payable override onlyCoreStateRegistry returns (uint16 srcChainId_) {
+        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(data_.txInfo);
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
-            if (callbackType != uint256(CallbackType.FAIL))
-                revert Error.INVALID_PAYLOAD();
+            if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
 
-        ReturnMultiData memory returnData = abi.decode(
-            data_.params,
-            (ReturnMultiData)
+        ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
+
+        (uint16 returnDataSrcChainId, uint16 returnDataDstChainId, uint80 returnDataTxId) = _decodeReturnTxInfo(
+            returnData.returnTxInfo
         );
-
-        (
-            uint16 returnDataSrcChainId,
-            uint16 returnDataDstChainId,
-            uint80 returnDataTxId
-        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
 
         AMBMessage memory stored = txHistory[returnDataTxId];
 
@@ -145,43 +106,19 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         if (!multi) revert Error.INVALID_PAYLOAD();
 
-        InitMultiVaultData memory multiVaultData = abi.decode(
-            stored.params,
-            (InitMultiVaultData)
-        );
-        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
-            multiVaultData.txData
-        );
+        InitMultiVaultData memory multiVaultData = abi.decode(stored.params, (InitMultiVaultData));
+        (address srcSender, uint16 srcChainId, ) = _decodeTxData(multiVaultData.txData);
 
-        if (returnDataSrcChainId != srcChainId)
-            revert Error.SRC_CHAIN_IDS_MISMATCH();
+        if (returnDataSrcChainId != srcChainId) revert Error.SRC_CHAIN_IDS_MISMATCH();
 
-        if (
-            returnDataDstChainId !=
-            _getDestinationChain(multiVaultData.superFormIds[0])
-        ) revert Error.DST_CHAIN_IDS_MISMATCH();
+        if (returnDataDstChainId != _getDestinationChain(multiVaultData.superFormIds[0]))
+            revert Error.DST_CHAIN_IDS_MISMATCH();
 
-        if (
-            txType == uint256(TransactionType.DEPOSIT) &&
-            callbackType == uint256(CallbackType.RETURN)
-        ) {
-            _batchMint(
-                srcSender,
-                multiVaultData.superFormIds,
-                returnData.amounts,
-                ""
-            );
-        } else if (
-            txType == uint256(TransactionType.WITHDRAW) &&
-            callbackType == uint256(CallbackType.FAIL)
-        ) {
+        if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
+            _batchMint(srcSender, multiVaultData.superFormIds, returnData.amounts, "");
+        } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
             /// @dev mint back super positions
-            _batchMint(
-                srcSender,
-                multiVaultData.superFormIds,
-                returnData.amounts,
-                ""
-            );
+            _batchMint(srcSender, multiVaultData.superFormIds, returnData.amounts, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -193,74 +130,36 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     /// @inheritdoc ISuperPositions
     function stateSync(
         AMBMessage memory data_
-    )
-        external
-        payable
-        override
-        onlyCoreStateRegistry
-        returns (uint16 srcChainId_)
-    {
-        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
-            data_.txInfo
-        );
+    ) external payable override onlyCoreStateRegistry returns (uint16 srcChainId_) {
+        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(data_.txInfo);
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
-            if (callbackType != uint256(CallbackType.FAIL))
-                revert Error.INVALID_PAYLOAD();
+            if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
 
-        ReturnSingleData memory returnData = abi.decode(
-            data_.params,
-            (ReturnSingleData)
+        ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
+
+        (uint16 returnDataSrcChainId, uint16 returnDataDstChainId, uint80 returnDataTxId) = _decodeReturnTxInfo(
+            returnData.returnTxInfo
         );
-
-        (
-            uint16 returnDataSrcChainId,
-            uint16 returnDataDstChainId,
-            uint80 returnDataTxId
-        ) = _decodeReturnTxInfo(returnData.returnTxInfo);
 
         AMBMessage memory stored = txHistory[returnDataTxId];
         (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
 
         if (multi) revert Error.INVALID_PAYLOAD();
 
-        InitSingleVaultData memory singleVaultData = abi.decode(
-            stored.params,
-            (InitSingleVaultData)
-        );
-        (address srcSender, uint16 srcChainId, ) = _decodeTxData(
-            singleVaultData.txData
-        );
+        InitSingleVaultData memory singleVaultData = abi.decode(stored.params, (InitSingleVaultData));
+        (address srcSender, uint16 srcChainId, ) = _decodeTxData(singleVaultData.txData);
 
-        if (returnDataSrcChainId != srcChainId)
-            revert Error.SRC_CHAIN_IDS_MISMATCH();
+        if (returnDataSrcChainId != srcChainId) revert Error.SRC_CHAIN_IDS_MISMATCH();
 
-        if (
-            returnDataDstChainId !=
-            _getDestinationChain(singleVaultData.superFormId)
-        ) revert Error.DST_CHAIN_IDS_MISMATCH();
+        if (returnDataDstChainId != _getDestinationChain(singleVaultData.superFormId))
+            revert Error.DST_CHAIN_IDS_MISMATCH();
 
-        if (
-            txType == uint256(TransactionType.DEPOSIT) &&
-            callbackType == uint256(CallbackType.RETURN)
-        ) {
-            _mint(
-                srcSender,
-                singleVaultData.superFormId,
-                returnData.amount,
-                ""
-            );
-        } else if (
-            txType == uint256(TransactionType.WITHDRAW) &&
-            callbackType == uint256(CallbackType.FAIL)
-        ) {
-            _mint(
-                srcSender,
-                singleVaultData.superFormId,
-                singleVaultData.amount,
-                ""
-            );
+        if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
+            _mint(srcSender, singleVaultData.superFormId, returnData.amount, "");
+        } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
+            _mint(srcSender, singleVaultData.superFormId, singleVaultData.amount, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -275,9 +174,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @param dynamicURI_    represents the dynamicURI for the ERC1155 super positions
-    function setDynamicURI(
-        string memory dynamicURI_
-    ) external onlyProtocolAdmin {
+    function setDynamicURI(string memory dynamicURI_) external onlyProtocolAdmin {
         dynamicURI = dynamicURI_;
     }
 
@@ -293,9 +190,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     /**
      * @dev See {ERC1155s-supportsInterface}.
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC1155) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

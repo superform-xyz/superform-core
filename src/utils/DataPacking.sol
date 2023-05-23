@@ -3,11 +3,7 @@ pragma solidity 0.8.19;
 
 /// @dev TODO: needs testing
 
-function _packTxData(
-    address srcSender_,
-    uint16 srcChainId_,
-    uint80 currentTotalTxs_
-) pure returns (uint256 txData) {
+function _packTxData(address srcSender_, uint16 srcChainId_, uint80 currentTotalTxs_) pure returns (uint256 txData) {
     txData = uint256(uint160(srcSender_));
     txData |= uint256(srcChainId_) << 160;
     txData |= uint256(currentTotalTxs_) << 176;
@@ -25,11 +21,7 @@ function _packTxInfo(
     txInfo |= uint256(registryId_) << 248;
 }
 
-function _packReturnTxInfo(
-    uint16 srcChainId_,
-    uint16 dstChainId_,
-    uint80 txId_
-) pure returns (uint256 returnTxInfo) {
+function _packReturnTxInfo(uint16 srcChainId_, uint16 dstChainId_, uint80 txId_) pure returns (uint256 returnTxInfo) {
     returnTxInfo = uint256(srcChainId_);
     returnTxInfo |= uint256(dstChainId_) << 16;
     returnTxInfo |= uint256(txId_) << 32;
@@ -45,9 +37,7 @@ function _packSuperForm(
     superFormId_ |= uint256(chainId_) << 240;
 }
 
-function _decodeTxData(
-    uint256 txData_
-) pure returns (address srcSender, uint16 srcChainId, uint80 currentTotalTxs) {
+function _decodeTxData(uint256 txData_) pure returns (address srcSender, uint16 srcChainId, uint80 currentTotalTxs) {
     srcSender = address(uint160(txData_));
     srcChainId = uint16(txData_ >> 160);
     currentTotalTxs = uint80(txData_ >> 176);
@@ -55,19 +45,14 @@ function _decodeTxData(
 
 function _decodeTxInfo(
     uint256 txInfo_
-)
-    pure
-    returns (uint256 txType, uint256 callbackType, bool multi, uint8 registryId)
-{
+) pure returns (uint256 txType, uint256 callbackType, bool multi, uint8 registryId) {
     txType = uint256(uint120(txInfo_));
     callbackType = uint256(uint120(txInfo_ >> 120));
     multi = uint256(uint8(txInfo_ >> 240)) == 1 ? true : false;
     registryId = uint8(txInfo_ >> 248);
 }
 
-function _decodeReturnTxInfo(
-    uint256 returnTxInfo_
-) pure returns (uint16 srcChainId, uint16 dstChainId, uint80 txId) {
+function _decodeReturnTxInfo(uint256 returnTxInfo_) pure returns (uint16 srcChainId, uint16 dstChainId, uint80 txId) {
     srcChainId = uint16((returnTxInfo_) & 0xFFFF);
     dstChainId = uint16((returnTxInfo_ >> 16) & 0xFFFF);
     txId = uint80(returnTxInfo_ >> 32);
@@ -76,9 +61,7 @@ function _decodeReturnTxInfo(
 /// @dev returns the destination chain of a given superForm
 /// @param superFormId_ is the id of the superform
 /// @return chainId_ is the chain id
-function _getDestinationChain(
-    uint256 superFormId_
-) pure returns (uint16 chainId_) {
+function _getDestinationChain(uint256 superFormId_) pure returns (uint16 chainId_) {
     chainId_ = uint16(superFormId_ >> 240);
 }
 
@@ -87,9 +70,7 @@ function _getDestinationChain(
 /// @return superForm_ is the address of the superform
 /// @return formBeaconId_ is the form id
 /// @return chainId_ is the chain id
-function _getSuperForm(
-    uint256 superFormId_
-) pure returns (address superForm_, uint256 formBeaconId_, uint16 chainId_) {
+function _getSuperForm(uint256 superFormId_) pure returns (address superForm_, uint256 formBeaconId_, uint16 chainId_) {
     superForm_ = address(uint160(superFormId_));
     formBeaconId_ = uint256(uint80(superFormId_ >> 160));
     chainId_ = uint16(superFormId_ >> 240);
@@ -107,9 +88,7 @@ function _getSuperForms(
     uint256[] memory formIds_ = new uint256[](superFormIds_.length);
     uint16[] memory chainIds_ = new uint16[](superFormIds_.length);
     for (uint256 i = 0; i < superFormIds_.length; i++) {
-        (superForms_[i], formIds_[i], chainIds_[i]) = _getSuperForm(
-            superFormIds_[i]
-        );
+        (superForms_[i], formIds_[i], chainIds_[i]) = _getSuperForm(superFormIds_[i]);
     }
 
     return (superForms_, formIds_, chainIds_);

@@ -13,11 +13,7 @@ interface ISuperFormFactory {
     /// @param formImplementation is the address of the new form implementation
     /// @param beacon is the address of the beacon
     /// @param formBeaconId is the id of the new form beacon
-    event FormBeaconAdded(
-        address indexed formImplementation,
-        address indexed beacon,
-        uint256 indexed formBeaconId
-    );
+    event FormBeaconAdded(address indexed formImplementation, address indexed beacon, uint256 indexed formBeaconId);
 
     /// @dev emitted when a new SuperForm is created
     /// @param formBeaconId is the id of the form beacon
@@ -83,20 +79,13 @@ interface ISuperFormFactory {
     /// @dev allows an admin to update the logic of a form
     /// @param formBeaconId_ is the id of the form beacon
     /// @param newFormLogic_ is the address of the new form logic
-    function updateFormBeaconLogic(
-        uint256 formBeaconId_,
-        address newFormLogic_
-    ) external;
+    function updateFormBeaconLogic(uint256 formBeaconId_, address newFormLogic_) external;
 
     /// @dev allows an admin to change the status of a form
     /// @param formBeaconId_ is the id of the form beacon
     /// @param status_ is the new status
     /// @param extraData_ is optional & passed when broadcasting of status is needed
-    function changeFormBeaconPauseStatus(
-        uint256 formBeaconId_,
-        bool status_,
-        bytes memory extraData_
-    ) external payable;
+    function changeFormBeaconPauseStatus(uint256 formBeaconId_, bool status_, bytes memory extraData_) external payable;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -105,16 +94,12 @@ interface ISuperFormFactory {
     /// @dev returns the address of a form beacon
     /// @param formBeaconId_ is the id of the beacon form
     /// @return formBeacon_ is the address of the beacon form
-    function getFormBeacon(
-        uint256 formBeaconId_
-    ) external view returns (address formBeacon_);
+    function getFormBeacon(uint256 formBeaconId_) external view returns (address formBeacon_);
 
     /// @dev returns the status of form beacon
     /// @param formBeaconId_ is the id of the beacon form
     /// @return status_ is the current status of the form beacon
-    function getFormBeaconStatus(
-        uint256 formBeaconId_
-    ) external view returns (bool status_);
+    function getFormBeaconStatus(uint256 formBeaconId_) external view returns (bool status_);
 
     /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
     /// @param vault_ is the address of a vault
@@ -126,11 +111,7 @@ interface ISuperFormFactory {
     )
         external
         view
-        returns (
-            uint256[] memory superFormIds_,
-            uint256[] memory formBeaconIds_,
-            uint16[] memory chainIds_
-        );
+        returns (uint256[] memory superFormIds_, uint256[] memory formBeaconIds_, uint16[] memory chainIds_);
 
     /// @dev Returns all SuperForms
     /// @return superFormIds_ is the id of the superform
@@ -156,8 +137,5 @@ interface ISuperFormFactory {
     function getAllSuperFormsList() external view returns (uint256 superForms_);
 
     /// @dev returns the number of superforms for the given chain (where this call is made)
-    function getAllChainSuperFormsList()
-        external
-        view
-        returns (uint256 superForms_);
+    function getAllChainSuperFormsList() external view returns (uint256 superForms_);
 }

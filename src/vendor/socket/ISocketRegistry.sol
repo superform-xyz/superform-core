@@ -50,7 +50,5 @@ interface ISocketRegistry {
 
     function routes() external view returns (RouteData[] memory);
 
-    function outboundTransferTo(
-        UserRequest calldata _userRequest
-    ) external payable;
+    function outboundTransferTo(UserRequest calldata _userRequest) external payable;
 }

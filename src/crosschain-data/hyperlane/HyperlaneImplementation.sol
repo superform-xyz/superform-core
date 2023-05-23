@@ -34,11 +34,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
                                 Modifiers
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
-                msg.sender
-            )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
@@ -46,11 +42,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
                                 Constructor
     //////////////////////////////////////////////////////////////*/
     /// @param mailbox_ is the hyperlane mailbox for respective chain.
-    constructor(
-        IMailbox mailbox_,
-        IInterchainGasPaymaster igp_,
-        ISuperRegistry superRegistry_
-    ) {
+    constructor(IMailbox mailbox_, IInterchainGasPaymaster igp_, ISuperRegistry superRegistry_) {
         mailbox = mailbox_;
         igp = igp_;
         superRegistry = superRegistry_;
@@ -76,11 +68,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
         uint32 domain = ambChainId[dstChainId_];
         /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3
-        bytes32 messageId = mailbox.dispatch(
-            domain,
-            castAddr(authorizedImpl[domain]),
-            message_
-        );
+        bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
 
         igp.payForGas{value: msg.value}(
             messageId,
@@ -91,18 +79,12 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(
-        bytes memory message_,
-        bytes memory extraData_
-    ) external payable virtual {
+    function broadcastPayload(bytes memory message_, bytes memory extraData_) external payable virtual {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
 
-        BroadCastAMBExtraData memory d = abi.decode(
-            extraData_,
-            (BroadCastAMBExtraData)
-        );
+        BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
         /// FIXME:should we check the length ?? anyway out of index will fail if the length
         /// mistmatches
 
@@ -110,11 +92,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         for (uint16 i = 0; i < totalChains; i++) {
             uint32 domain = broadcastChains[i];
 
-            bytes32 messageId = mailbox.dispatch(
-                domain,
-                castAddr(authorizedImpl[domain]),
-                message_
-            );
+            bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
 
             igp.payForGas{value: d.gasPerDst[i]}(
                 messageId,
@@ -129,10 +107,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setChainId(
-        uint16 superChainId_,
-        uint32 ambChainId_
-    ) external onlyProtocolAdmin {
+    function setChainId(uint16 superChainId_, uint32 ambChainId_) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -150,10 +125,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @param domain_ is the identifier of the destination chain within hyperlane
     /// @param authorizedImpl_ is the implementation of the hyperlane message bridge on the specified destination
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setReceiver(
-        uint32 domain_,
-        address authorizedImpl_
-    ) external onlyProtocolAdmin {
+    function setReceiver(uint32 domain_, address authorizedImpl_) external onlyProtocolAdmin {
         if (domain_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -166,11 +138,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /// @inheritdoc IMessageRecipient
-    function handle(
-        uint32 origin_,
-        bytes32,
-        bytes calldata body_
-    ) external override {
+    function handle(uint32 origin_, bytes32, bytes calldata body_) external override {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
