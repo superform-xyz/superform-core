@@ -31,8 +31,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     mapping(uint256 => bytes) public payload;
     /// @dev maps payloads to their current status
     mapping(uint256 => PayloadState) public payloadTracking;
-    /// @dev maps payloads to their src chain id
-    mapping(uint256 => uint16) public payloadSrcChain;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -143,7 +141,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         } else {
             ++payloadsCount;
             payload[payloadsCount] = message_;
-            payloadSrcChain[payloadsCount] = srcChainId_;
 
             emit PayloadReceived(
                 srcChainId_,

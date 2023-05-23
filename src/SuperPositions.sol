@@ -112,7 +112,13 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     /// @inheritdoc ISuperPositions
     function stateMultiSync(
         AMBMessage memory data_
-    ) external payable override onlyCoreStateRegistry {
+    )
+        external
+        payable
+        override
+        onlyCoreStateRegistry
+        returns (uint16 srcChainId_)
+    {
         (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
             data_.txInfo
         );
@@ -181,12 +187,19 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         }
 
         emit Completed(returnDataTxId);
+        return srcChainId;
     }
 
     /// @inheritdoc ISuperPositions
     function stateSync(
         AMBMessage memory data_
-    ) external payable override onlyCoreStateRegistry {
+    )
+        external
+        payable
+        override
+        onlyCoreStateRegistry
+        returns (uint16 srcChainId_)
+    {
         (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(
             data_.txInfo
         );
@@ -253,6 +266,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         }
 
         emit Completed(returnDataTxId);
+        return srcChainId;
     }
 
     /*///////////////////////////////////////////////////////////////

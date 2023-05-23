@@ -214,13 +214,6 @@ contract CoreStateRegistry is
         bytes memory _payload = payload[payloadId_];
         bytes memory _proof = abi.encode(keccak256(_payload));
 
-        if (
-            messageQuorum[_proof] <
-            getRequiredMessagingQuorum(payloadSrcChain[payloadId_])
-        ) {
-            revert Error.QUORUM_NOT_REACHED();
-        }
-
         AMBMessage memory payloadInfo = abi.decode(_payload, (AMBMessage));
 
         (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(
@@ -257,6 +250,10 @@ contract CoreStateRegistry is
                     payloadInfo
                 );
             }
+        }
+
+        if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
+            revert Error.QUORUM_NOT_REACHED();
         }
 
         if (returnMessage.length > 0) {
@@ -531,13 +528,15 @@ contract CoreStateRegistry is
                         multiVaultData.amounts
                     );
             }
-        } else {
-            ISuperPositions(superRegistry.superPositions()).stateMultiSync(
-                payloadInfo_
-            );
-        }
 
-        return (0, "");
+            (, uint16 srcChainId, ) = _decodeTxData(singleVaultData.txData);
+            return (srcChainId, "");
+        } else {
+            uint16 srcChainId = ISuperPositions(superRegistry.superPositions())
+                .stateMultiSync(payloadInfo_);
+
+            return (srcChainId, "");
+        }
     }
 
     function _processMultiDeposit(
@@ -630,18 +629,20 @@ contract CoreStateRegistry is
 
                 emit FailedXChainDeposits(payloadId_);
             }
+
+            (, uint16 srcChainId, ) = _decodeTxData(multiVaultData.txData);
+            return (srcChainId, "");
         } else {
             if (payloadTracking[payloadId_] != PayloadState.STORED) {
                 revert Error.INVALID_PAYLOAD_STATE();
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperPositions(superRegistry.superPositions()).stateMultiSync(
-                payloadInfo_
-            );
-        }
+            uint16 srcChainId = ISuperPositions(superRegistry.superPositions())
+                .stateMultiSync(payloadInfo_);
 
-        return (0, "");
+            return (srcChainId, "");
+        }
     }
 
     function _processSingleWithdrawal(
@@ -671,7 +672,9 @@ contract CoreStateRegistry is
             /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
             try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData) {
                 // Handle the case when the external call succeeds
-                return (0, "");
+                (, uint16 srcChainId, ) = _decodeTxData(singleVaultData.txData);
+
+                return (srcChainId, "");
             } catch {
                 // Handle the case when the external call reverts for whatever reason
                 /// https://solidity-by-example.org/try-catch/
@@ -688,12 +691,11 @@ contract CoreStateRegistry is
             /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
         } else {
             /// @dev Withdraw SyncBack here, callbackType.return
-            ISuperPositions(superRegistry.superPositions()).stateSync(
-                payloadInfo_
-            );
-        }
+            uint16 srcChainId = ISuperPositions(superRegistry.superPositions())
+                .stateSync(payloadInfo_);
 
-        return (0, "");
+            return (srcChainId, "");
+        }
     }
 
     function _processSingleDeposit(
@@ -745,7 +747,11 @@ contract CoreStateRegistry is
                     );
                     emit FailedXChainDeposits(payloadId_);
 
-                    return (0, "");
+                    (, uint16 srcChainId, ) = _decodeTxData(
+                        singleVaultData.txData
+                    );
+
+                    return (srcChainId, "");
                 }
             } else {
                 revert Error.BRIDGE_TOKENS_PENDING();
@@ -756,12 +762,11 @@ contract CoreStateRegistry is
             }
             payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-            ISuperPositions(superRegistry.superPositions()).stateSync(
-                payloadInfo_
-            );
-        }
+            uint16 srcChainId = ISuperPositions(superRegistry.superPositions())
+                .stateSync(payloadInfo_);
 
-        return (0, "");
+            return (srcChainId, "");
+        }
     }
 
     /// @notice depositSync and withdrawSync internal method for sending message back to the source chain
