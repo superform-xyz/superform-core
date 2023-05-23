@@ -31,10 +31,7 @@ contract LiFiValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc BridgeValidator
-    function validateTxDataAmount(
-        bytes calldata txData_,
-        uint256 amount_
-    ) external pure override returns (bool) {
+    function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external pure override returns (bool) {
         (ILiFi.BridgeData memory bridgeData, ) = _decodeCallData(txData_);
 
         if ((bridgeData.minAmount != amount_)) {
@@ -55,10 +52,7 @@ contract LiFiValidator is BridgeValidator {
         address srcSender_,
         address liqDataToken_
     ) external view override {
-        (
-            ILiFi.BridgeData memory bridgeData,
-            ILiFi.SwapData[] memory swapData
-        ) = _decodeCallData(txData_);
+        (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData) = _decodeCallData(txData_);
 
         address sendingAssetId;
         if (bridgeData.hasSourceSwaps) {
@@ -68,16 +62,14 @@ contract LiFiValidator is BridgeValidator {
         }
 
         /// @dev 1. chainId validation
-        if (lifiChainId[dstChainId_] != bridgeData.destinationChainId)
-            revert Error.INVALID_TXDATA_CHAIN_ID();
+        if (lifiChainId[dstChainId_] != bridgeData.destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
 
         if (deposit_ && srcChainId_ == dstChainId_) {
             /// @dev If same chain deposits then receiver address must be the superform
 
-            if (bridgeData.receiver != superForm_)
-                revert Error.INVALID_TXDATA_RECEIVER();
+            if (bridgeData.receiver != superForm_) revert Error.INVALID_TXDATA_RECEIVER();
         } else if (deposit_ && srcChainId_ != dstChainId_) {
             /// @dev if cross chain deposits, then receiver address must be the token bank
             if (
@@ -88,22 +80,17 @@ contract LiFiValidator is BridgeValidator {
             /// @dev if withdraws, then receiver address must be the srcSender
             /// @dev what if SrcSender is a contract? can it be used to re-enter somewhere?
             /// https://linear.app/superform/issue/SUP-2024/reentrancy-vulnerability-prevent-crafting-arbitrary-txdata-to-reenter
-            if (bridgeData.receiver != srcSender_)
-                revert Error.INVALID_TXDATA_RECEIVER();
+            if (bridgeData.receiver != srcSender_) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
         /// @dev 3. token validations
-        if (liqDataToken_ != sendingAssetId)
-            revert Error.INVALID_TXDATA_TOKEN();
+        if (liqDataToken_ != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
     }
 
     /// @dev allows admin to add new chain ids in future
     /// @param superChainIds_ is the identifier of the chain within superform protocol
     /// @param lifiChainIds_ is the identifier of the chain given by the bridge
-    function setChainIds(
-        uint16[] memory superChainIds_,
-        uint256[] memory lifiChainIds_
-    ) external onlyProtocolAdmin {
+    function setChainIds(uint16[] memory superChainIds_, uint256[] memory lifiChainIds_) external onlyProtocolAdmin {
         for (uint256 i = 0; i < superChainIds_.length; i++) {
             uint16 superChainIdT = superChainIds_[i];
             uint256 lifiChainIdT = lifiChainIds_[i];
@@ -122,21 +109,11 @@ contract LiFiValidator is BridgeValidator {
     /// @return bridgeData LiFi BridgeData
     function _decodeCallData(
         bytes calldata data
-    )
-        internal
-        pure
-        returns (
-            ILiFi.BridgeData memory bridgeData,
-            ILiFi.SwapData[] memory swapData
-        )
-    {
+    ) internal pure returns (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData) {
         (bridgeData) = abi.decode(data[4:], (ILiFi.BridgeData));
 
         if (bridgeData.hasSourceSwaps) {
-            (, swapData) = abi.decode(
-                data[4:],
-                (ILiFi.BridgeData, ILiFi.SwapData[])
-            );
+            (, swapData) = abi.decode(data[4:], (ILiFi.BridgeData, ILiFi.SwapData[]));
         }
     }
 }

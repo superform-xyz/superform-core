@@ -15,18 +15,14 @@ contract RolesStateRegistry is BaseStateRegistry {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlySender() override {
-        if (msg.sender != superRegistry.superRBAC())
-            revert Error.NOT_CORE_CONTRACTS();
+        if (msg.sender != superRegistry.superRBAC()) revert Error.NOT_CORE_CONTRACTS();
         _;
     }
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(
-        ISuperRegistry superRegistry_,
-        uint8 registryType_
-    ) BaseStateRegistry(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS

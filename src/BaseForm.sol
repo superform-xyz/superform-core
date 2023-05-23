@@ -46,29 +46,18 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlySuperRouter() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(
-                msg.sender
-            )
-        ) revert Error.NOT_SUPER_ROUTER();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(msg.sender)) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyCoreStateRegistry() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(
-                msg.sender
-            )
-        ) revert Error.NOT_CORE_STATE_REGISTRY();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(msg.sender))
+            revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 
     modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
-                msg.sender
-            )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
@@ -85,12 +74,8 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    function initialize(
-        address superRegistry_,
-        address vault_
-    ) external initializer {
-        if (ISuperRegistry(superRegistry_) != superRegistry)
-            revert Error.NOT_SUPER_REGISTRY();
+    function initialize(address superRegistry_, address vault_) external initializer {
+        if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
         vault = vault_;
     }
 
@@ -101,16 +86,8 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     function supportsInterface(
         bytes4 interfaceId
-    )
-        public
-        view
-        virtual
-        override(ERC165Upgradeable, IERC165Upgradeable)
-        returns (bool)
-    {
-        return
-            interfaceId == type(IBaseForm).interfaceId ||
-            super.supportsInterface(interfaceId);
+    ) public view virtual override(ERC165Upgradeable, IERC165Upgradeable) returns (bool) {
+        return interfaceId == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc IBaseForm
@@ -148,26 +125,14 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     /// @notice get Superform name of the ERC20 vault representation
     /// @return The ERC20 name
-    function superformYieldTokenName()
-        external
-        view
-        virtual
-        returns (string memory);
+    function superformYieldTokenName() external view virtual returns (string memory);
 
     /// @notice get Superform symbol of the ERC20 vault representation
     /// @return The ERC20 symbol
-    function superformYieldTokenSymbol()
-        external
-        view
-        virtual
-        returns (string memory);
+    function superformYieldTokenSymbol() external view virtual returns (string memory);
 
     /// @notice get Supershare decimals of the ERC20 vault representation
-    function superformYieldTokenDecimals()
-        external
-        view
-        virtual
-        returns (uint256);
+    function superformYieldTokenDecimals() external view virtual returns (uint256);
 
     /// @notice Returns the underlying token of a vault.
     /// @return The underlying token
@@ -186,30 +151,18 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function getTotalAssets() public view virtual returns (uint256);
 
     /// @notice get the total amount of assets received if shares are converted
-    function getConvertPricePerVaultShare()
-        public
-        view
-        virtual
-        returns (uint256);
+    function getConvertPricePerVaultShare() public view virtual returns (uint256);
 
     /// @notice get the total amount of assets received if shares are actually redeemed
     /// @notice https://eips.ethereum.org/EIPS/eip-4626
-    function getPreviewPricePerVaultShare()
-        public
-        view
-        virtual
-        returns (uint256);
+    function getPreviewPricePerVaultShare() public view virtual returns (uint256);
 
     /// @dev API may need to know state of funds deployed
-    function previewDepositTo(
-        uint256 assets_
-    ) public view virtual returns (uint256);
+    function previewDepositTo(uint256 assets_) public view virtual returns (uint256);
 
     /// @notice positionBalance() -> .vaultIds&destAmounts
     /// @return how much of an asset + interest (accrued) is to withdraw from the Vault
-    function previewWithdrawFrom(
-        uint256 assets_
-    ) public view virtual returns (uint256);
+    function previewWithdrawFrom(uint256 assets_) public view virtual returns (uint256);
 
     /*///////////////////////////////////////////////////////////////
                 INTERNAL STATE CHANGING VIRTUAL FUNCTIONS
@@ -265,10 +218,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function emergencyWithdrawToken(
-        address tokenContract_,
-        uint256 amount
-    ) external onlyProtocolAdmin {
+    function emergencyWithdrawToken(address tokenContract_, uint256 amount) external onlyProtocolAdmin {
         ERC20 tokenContract = ERC20(tokenContract_);
 
         /// note: transfer the token from address of this contract
@@ -279,9 +229,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev FIXME Decide to keep this?
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function emergencyWithdrawNativeToken(
-        uint256 amount
-    ) external onlyProtocolAdmin {
+    function emergencyWithdrawNativeToken(uint256 amount) external onlyProtocolAdmin {
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
     }

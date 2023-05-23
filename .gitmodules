@@ -16,3 +16,6 @@
 [submodule "lib/ERC1155s"]
 	path = lib/ERC1155s
 	url = https://github.com/superform-xyz/ERC1155s
+[submodule "lib/super-vaults"]
+	path = lib/super-vaults
+	url = https://github.com/superform-xyz/super-vaults

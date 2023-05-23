@@ -118,6 +118,7 @@ struct SetupVars {
     address lifiRouter;
     address erc4626Form;
     address erc4626TimelockForm;
+    address kycDao4626Form;
     address rolesStateRegistry;
     address factoryStateRegistry;
     address coreStateRegistry;
@@ -138,7 +139,7 @@ struct SetupVars {
     address lifiValidator;
     Vm.Log[] logs;
     address superPositions;
-    address superPositionBank;
+    address kycDAOMock;
 }
 
 /*//////////////////////////////////////////////////////////////

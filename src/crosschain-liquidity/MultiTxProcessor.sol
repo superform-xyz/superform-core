@@ -23,17 +23,12 @@ contract MultiTxProcessor is IMultiTxProcessor {
     ISuperRegistry public immutable superRegistry;
 
     modifier onlySwapper() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasSwapperRole(msg.sender))
-            revert Error.NOT_SWAPPER();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasSwapperRole(msg.sender)) revert Error.NOT_SWAPPER();
         _;
     }
 
     modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
-                msg.sender
-            )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
@@ -81,9 +76,7 @@ contract MultiTxProcessor is IMultiTxProcessor {
                 (bool success, ) = payable(to).call(txDatas_[i]);
                 if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
             } else {
-                (bool success, ) = payable(to).call{value: amounts_[i]}(
-                    txDatas_[i]
-                );
+                (bool success, ) = payable(to).call{value: amounts_[i]}(txDatas_[i]);
                 if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
             }
         }
@@ -97,10 +90,7 @@ contract MultiTxProcessor is IMultiTxProcessor {
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @notice should be removed after end-to-end testing.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function emergencyWithdrawToken(
-        address tokenContract_,
-        uint256 amount_
-    ) external onlyProtocolAdmin {
+    function emergencyWithdrawToken(address tokenContract_, uint256 amount_) external onlyProtocolAdmin {
         IERC20 tokenContract = IERC20(tokenContract_);
 
         /// note: transfer the token from address of this contract
@@ -111,9 +101,7 @@ contract MultiTxProcessor is IMultiTxProcessor {
     /// @dev FIXME Decide to keep this?
     /// @dev PREVILEGED admin ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function emergencyWithdrawNativeToken(
-        uint256 amount_
-    ) external onlyProtocolAdmin {
+    function emergencyWithdrawNativeToken(uint256 amount_) external onlyProtocolAdmin {
         (bool success, ) = payable(msg.sender).call{value: amount_}("");
         if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
     }

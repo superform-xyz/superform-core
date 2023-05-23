@@ -31,10 +31,7 @@ contract SocketValidator is BridgeValidator {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc BridgeValidator
-    function validateTxDataAmount(
-        bytes calldata txData_,
-        uint256 amount_
-    ) external pure override returns (bool) {
+    function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external pure override returns (bool) {
         if ((_decodeCallData(txData_).amount != amount_)) {
             return false;
         }
@@ -52,47 +49,34 @@ contract SocketValidator is BridgeValidator {
         address srcSender_,
         address liqDataToken_
     ) external view override {
-        ISocketRegistry.UserRequest memory userRequest = _decodeCallData(
-            txData_
-        );
+        ISocketRegistry.UserRequest memory userRequest = _decodeCallData(txData_);
 
         /// @dev 1. chainId validation
-        if (socketChainId[dstChainId_] != userRequest.toChainId)
-            revert Error.INVALID_TXDATA_CHAIN_ID();
+        if (socketChainId[dstChainId_] != userRequest.toChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
 
         if (deposit_ && srcChainId_ == dstChainId_) {
             /// @dev If same chain deposits then receiver address must be the superform
 
-            if (userRequest.receiverAddress != superForm_)
-                revert Error.INVALID_TXDATA_RECEIVER();
+            if (userRequest.receiverAddress != superForm_) revert Error.INVALID_TXDATA_RECEIVER();
         } else if (deposit_ && srcChainId_ != dstChainId_) {
             /// @dev if cross chain deposits, then receiver address must be the token bank
             if (
-                !(userRequest.receiverAddress ==
-                    superRegistry.coreStateRegistry() ||
-                    userRequest.receiverAddress ==
-                    superRegistry.multiTxProcessor())
+                !(userRequest.receiverAddress == superRegistry.coreStateRegistry() ||
+                    userRequest.receiverAddress == superRegistry.multiTxProcessor())
             ) revert Error.INVALID_TXDATA_RECEIVER();
         } else if (!deposit_) {
             /// @dev if withdraws, then receiver address must be the srcSender
             /// @dev what if SrcSender is a contract? can it be used to re-enter somewhere?
             /// https://linear.app/superform/issue/SUP-2024/reentrancy-vulnerability-prevent-crafting-arbitrary-txdata-to-reenter
-            if (userRequest.receiverAddress != srcSender_)
-                revert Error.INVALID_TXDATA_RECEIVER();
+            if (userRequest.receiverAddress != srcSender_) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
         /// @dev 3. token validation
-        if (
-            userRequest.middlewareRequest.id == 0 &&
-            liqDataToken_ != userRequest.bridgeRequest.inputToken
-        ) {
+        if (userRequest.middlewareRequest.id == 0 && liqDataToken_ != userRequest.bridgeRequest.inputToken) {
             revert Error.INVALID_TXDATA_TOKEN();
-        } else if (
-            userRequest.middlewareRequest.id != 0 &&
-            liqDataToken_ != userRequest.middlewareRequest.inputToken
-        ) {
+        } else if (userRequest.middlewareRequest.id != 0 && liqDataToken_ != userRequest.middlewareRequest.inputToken) {
             revert Error.INVALID_TXDATA_TOKEN();
         }
     }
@@ -100,10 +84,7 @@ contract SocketValidator is BridgeValidator {
     /// @dev allows admin to add new chain ids in future
     /// @param superChainIds_ is the identifier of the chain within superform protocol
     /// @param socketChainIds_ is the identifier of the chain given by the bridge
-    function setChainIds(
-        uint16[] memory superChainIds_,
-        uint256[] memory socketChainIds_
-    ) external onlyProtocolAdmin {
+    function setChainIds(uint16[] memory superChainIds_, uint256[] memory socketChainIds_) external onlyProtocolAdmin {
         for (uint256 i = 0; i < superChainIds_.length; i++) {
             uint16 superChainIdT = superChainIds_[i];
             uint256 socketChainIdT = socketChainIds_[i];

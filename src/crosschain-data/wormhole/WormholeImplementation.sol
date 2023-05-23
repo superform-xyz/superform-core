@@ -44,11 +44,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
-                msg.sender
-            )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
@@ -64,11 +60,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     /// @param bridge_ is the wormhole implementation for respective chain.
     /// @param relayer_ is the wormhole relayer for respective chain.
     /// @param superRegistry_ is the superform registry.
-    constructor(
-        IWormhole bridge_,
-        IWormholeRelayer relayer_,
-        ISuperRegistry superRegistry_
-    ) {
+    constructor(IWormhole bridge_, IWormholeRelayer relayer_, ISuperRegistry superRegistry_) {
         bridge = bridge_;
         relayer = relayer_;
         superRegistry = superRegistry_;
@@ -98,11 +90,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         /// FIXME: nonce is externally generated. can also be moved inside our contracts
         uint32 nonce = abi.decode(extraData_, (uint32));
 
-        bridge.publishMessage{value: eData.messageFee}(
-            nonce,
-            payload,
-            CONSISTENCY_LEVEL
-        );
+        bridge.publishMessage{value: eData.messageFee}(nonce, payload, CONSISTENCY_LEVEL);
 
         /// @dev call relayers to publish the message
         /// @note refund and delivery always fail if CREATE3 / CREATE2 is not used
@@ -118,18 +106,11 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(
-        bytes memory message_,
-        bytes memory extraData_
-    ) external payable override {}
+    function broadcastPayload(bytes memory message_, bytes memory extraData_) external payable override {}
 
     /// @inheritdoc IWormholeReceiver
-    function receiveWormholeMessages(
-        bytes[] memory whMessages,
-        bytes[] memory
-    ) public payable override onlyRelayer {
-        (IWormhole.VM memory vm, bool valid, string memory reason) = bridge
-            .parseAndVerifyVM(whMessages[0]);
+    function receiveWormholeMessages(bytes[] memory whMessages, bytes[] memory) public payable override onlyRelayer {
+        (IWormhole.VM memory vm, bool valid, string memory reason) = bridge.parseAndVerifyVM(whMessages[0]);
 
         if (!valid) {
             revert Error.INVALID_WORMHOLE_PAYLOAD(reason);
@@ -160,20 +141,14 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
-        targetRegistry.receivePayload(
-            superChainId[vm.emitterChainId],
-            vm.payload
-        );
+        targetRegistry.receivePayload(superChainId[vm.emitterChainId], vm.payload);
     }
 
     /// @dev allows admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setChainId(
-        uint16 superChainId_,
-        uint16 ambChainId_
-    ) external onlyProtocolAdmin {
+    function setChainId(uint16 superChainId_, uint16 ambChainId_) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }

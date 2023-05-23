@@ -32,11 +32,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
                                 Modifiers
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(
-                msg.sender
-            )
-        ) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
@@ -69,26 +65,16 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
         uint64 chainId = ambChainId[dstChainId_];
         /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3
-        messageBus.sendMessage{value: msg.value}(
-            authorizedImpl[chainId],
-            chainId,
-            message_
-        );
+        messageBus.sendMessage{value: msg.value}(authorizedImpl[chainId], chainId, message_);
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(
-        bytes memory message_,
-        bytes memory extraData_
-    ) external payable virtual {
+    function broadcastPayload(bytes memory message_, bytes memory extraData_) external payable virtual {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
 
-        BroadCastAMBExtraData memory d = abi.decode(
-            extraData_,
-            (BroadCastAMBExtraData)
-        );
+        BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
         /// FIXME:should we check the length ?? anyway out of index will fail if the length
         /// mistmatches
 
@@ -96,11 +82,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         for (uint16 i = 0; i < totalChains; i++) {
             uint64 chainId = broadcastChains[i];
 
-            messageBus.sendMessage{value: d.gasPerDst[i]}(
-                authorizedImpl[chainId],
-                chainId,
-                message_
-            );
+            messageBus.sendMessage{value: d.gasPerDst[i]}(authorizedImpl[chainId], chainId, message_);
         }
     }
 
@@ -108,10 +90,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setChainId(
-        uint16 superChainId_,
-        uint64 ambChainId_
-    ) external onlyProtocolAdmin {
+    function setChainId(uint16 superChainId_, uint64 ambChainId_) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -129,10 +108,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     /// @param dstChainId_ is the identifier of the destination chain in celer
     /// @param authorizedImpl_ is the implementation of the celer message bridge on the specified destination
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setReceiver(
-        uint64 dstChainId_,
-        address authorizedImpl_
-    ) external onlyProtocolAdmin {
+    function setReceiver(uint64 dstChainId_, address authorizedImpl_) external onlyProtocolAdmin {
         if (dstChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }

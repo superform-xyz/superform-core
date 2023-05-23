@@ -21,11 +21,7 @@ interface IWormholeRelayer {
         bytes relayParameters;
     }
 
-    function send(
-        Send memory request,
-        uint32 nonce,
-        address relayProvider
-    ) external payable returns (uint64 sequence);
+    function send(Send memory request, uint32 nonce, address relayProvider) external payable returns (uint64 sequence);
 
     function forward(
         uint16 targetChain,
@@ -36,11 +32,7 @@ interface IWormholeRelayer {
         uint32 nonce
     ) external payable;
 
-    function forward(
-        Send memory request,
-        uint32 nonce,
-        address relayProvider
-    ) external payable;
+    function forward(Send memory request, uint32 nonce, address relayProvider) external payable;
 
     struct MultichainSend {
         address relayProviderAddress;
@@ -52,10 +44,7 @@ interface IWormholeRelayer {
         uint32 nonce
     ) external payable returns (uint64 sequence);
 
-    function multichainForward(
-        MultichainSend memory requests,
-        uint32 nonce
-    ) external payable;
+    function multichainForward(MultichainSend memory requests, uint32 nonce) external payable;
 
     struct ResendByTx {
         uint16 sourceChain;
@@ -69,10 +58,7 @@ interface IWormholeRelayer {
         bytes newRelayParameters;
     }
 
-    function resend(
-        ResendByTx memory request,
-        address relayProvider
-    ) external payable returns (uint64 sequence);
+    function resend(ResendByTx memory request, address relayProvider) external payable returns (uint64 sequence);
 
     function quoteGas(
         uint16 targetChain,
@@ -92,23 +78,13 @@ interface IWormholeRelayer {
         address relayProvider
     ) external pure returns (uint256 receiverValue);
 
-    function toWormholeFormat(
-        address addr
-    ) external pure returns (bytes32 whFormat);
+    function toWormholeFormat(address addr) external pure returns (bytes32 whFormat);
 
-    function fromWormholeFormat(
-        bytes32 whFormatAddress
-    ) external pure returns (address addr);
+    function fromWormholeFormat(bytes32 whFormatAddress) external pure returns (address addr);
 
-    function getDefaultRelayProvider()
-        external
-        view
-        returns (address relayProvider);
+    function getDefaultRelayProvider() external view returns (address relayProvider);
 
-    function getDefaultRelayParams()
-        external
-        pure
-        returns (bytes memory relayParams);
+    function getDefaultRelayParams() external pure returns (bytes memory relayParams);
 
     error FundsTooMuch(uint8 multisendIndex); // (maxTransactionFee, converted to target chain currency) + (receiverValue, converted to target chain currency) is greater than what your chosen relay provider allows
     error MaxTransactionFeeNotEnough(uint8 multisendIndex); // maxTransactionFee is less than the minimum needed by your chosen relay provider

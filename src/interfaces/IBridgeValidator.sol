@@ -12,10 +12,7 @@ interface IBridgeValidator {
     /// @dev validates the amounts being sent in liqRequests
     /// @param txData_ the txData of the deposit
     /// @param amount_ the amount of the deposit
-    function validateTxDataAmount(
-        bytes calldata txData_,
-        uint256 amount_
-    ) external view returns (bool);
+    function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external view returns (bool);
 
     /// @dev validates the txData of a cross chain deposit
     /// @param txData_ the txData of the cross chain deposit

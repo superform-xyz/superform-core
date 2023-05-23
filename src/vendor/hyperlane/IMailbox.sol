@@ -9,12 +9,7 @@ interface IMailbox {
     /// @param destination The destination domain of the message
     /// @param recipient The message recipient address on `destination`
     /// @param message Raw bytes of message
-    event Dispatch(
-        address indexed sender,
-        uint32 indexed destination,
-        bytes32 indexed recipient,
-        bytes message
-    );
+    event Dispatch(address indexed sender, uint32 indexed destination, bytes32 indexed recipient, bytes message);
 
     /// @notice Emitted when a new message is dispatched via Hyperlane
     /// @param messageId The unique message identifier
@@ -28,11 +23,7 @@ interface IMailbox {
     /// @param origin The origin domain of the message
     /// @param sender The message sender address on `origin`
     /// @param recipient The address that handled the message
-    event Process(
-        uint32 indexed origin,
-        bytes32 indexed sender,
-        address indexed recipient
-    );
+    event Process(uint32 indexed origin, bytes32 indexed sender, address indexed recipient);
 
     function localDomain() external view returns (uint32);
 
@@ -44,10 +35,7 @@ interface IMailbox {
         bytes calldata _messageBody
     ) external returns (bytes32);
 
-    function process(
-        bytes calldata _metadata,
-        bytes calldata _message
-    ) external;
+    function process(bytes calldata _metadata, bytes calldata _message) external;
 
     function count() external view returns (uint32);
 

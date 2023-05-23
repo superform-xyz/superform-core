@@ -4,11 +4,13 @@ pragma solidity 0.8.19;
 /// @dev lib imports
 import "forge-std/Test.sol";
 import "ds-test/test.sol";
+import "./TestTypes.sol";
 import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 
 /// @dev test utils & mocks
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
@@ -17,8 +19,8 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
-import "./TestTypes.sol";
 import {Permit2Clone} from "../mocks/Permit2Clone.sol";
+import {KYCDaoNFTMock} from "../mocks/KYCDaoNFTMock.sol";
 
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
@@ -36,6 +38,7 @@ import {SuperPositions} from "../../SuperPositions.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
+import {ERC4626KYCDaoForm} from "../../forms/ERC4626KYCDaoForm.sol";
 import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
 import {LiFiValidator} from "../../crosschain-liquidity/lifi/LiFiValidator.sol";
 import {SocketValidator} from "../../crosschain-liquidity/socket/SocketValidator.sol";
@@ -56,56 +59,49 @@ abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
-    bytes32 constant TOKEN_PERMISSIONS_TYPEHASH =
-        keccak256("TokenPermissions(address token,uint256 amount)");
+    bytes32 constant TOKEN_PERMISSIONS_TYPEHASH = keccak256("TokenPermissions(address token,uint256 amount)");
     bytes32 constant PERMIT_TRANSFER_FROM_TYPEHASH =
         keccak256(
             "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
         );
 
     /// @dev
-    address public constant CANONICAL_PERMIT2 =
-        0x000000000022D473030F116dDEE9F6B43aC78BA3; /// @dev for mainnet deployment
+    address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3; /// @dev for mainnet deployment
     address public deployer = address(777);
     address[] public users;
     uint256[] public userKeys;
 
     uint256 public trustedRemote;
     bytes32 public constant salt = "SUPERFORM";
-    mapping(uint16 chainId => mapping(bytes32 implementation => address at))
-        public contracts;
+    mapping(uint16 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
 
     bytes32 public constant SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
-    bytes32 public constant CORE_CONTRACTS_ROLE =
-        keccak256("CORE_CONTRACTS_ROLE");
-    bytes32 public constant IMPLEMENTATION_CONTRACTS_ROLE =
-        keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
+    bytes32 public constant CORE_CONTRACTS_ROLE = keccak256("CORE_CONTRACTS_ROLE");
+    bytes32 public constant IMPLEMENTATION_CONTRACTS_ROLE = keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
     bytes32 public constant PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
     bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
     bytes32 public constant ROUTER_ROLE = keccak256("ROUTER_ROLE");
     bytes32 public constant SUPER_ROUTER_ROLE = keccak256("SUPER_ROUTER_ROLE");
     bytes32 public constant TOKEN_BANK_ROLE = keccak256("TOKEN_BANK_ROLE");
-    bytes32 public constant STATE_REGISTRY_ROLE =
-        keccak256("STATE_REGISTRY_ROLE");
+    bytes32 public constant STATE_REGISTRY_ROLE = keccak256("STATE_REGISTRY_ROLE");
 
     /// @dev we should fork these instead of mocking
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
 
-    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm
-    uint256[] public FORM_BEACON_IDS = [uint256(1), uint256(2)];
-    string[] public VAULT_KINDS = ["Vault", "TimelockedVault"];
+    /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
+    uint256[] public FORM_BEACON_IDS = [uint256(1), uint256(2), uint256(3)];
+    string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
     bytes[] public vaultBytecodes;
     // formbeacon id => vault name
     mapping(uint256 formBeaconId => string[] names) VAULT_NAMES;
     // chainId => formbeacon id => vault
     /// FIXME: We need to map individual formBeaconId to individual vault to have access to ERC4626Form previewFunctions
-    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults))
-        public vaults;
+    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults)) public vaults;
     // chainId => formbeacon id => vault id
     mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
     mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
@@ -132,20 +128,13 @@ abstract contract BaseSetup is DSTest, Test {
 
     mapping(uint16 => uint64) public CELER_CHAIN_IDS;
 
-    address public constant ETH_lzEndpoint =
-        0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
-    address public constant BSC_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant AVAX_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant POLY_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant ARBI_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant OP_lzEndpoint =
-        0x3c2269811836af69497E5F486A85D7316753cf62;
-    address public constant FTM_lzEndpoint =
-        0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
+    address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
+    address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant AVAX_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant POLY_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant ARBI_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
+    address public constant FTM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
     /// @dev removed FTM temporarily
     address[] public lzEndpoints = [
@@ -178,28 +167,20 @@ abstract contract BaseSetup is DSTest, Test {
     /*////////////////////////////////////////////////////zr//////////
                         HYPERLANE VARIABLES
     //////////////////////////////////////////////////////////////*/
-    IMailbox public constant HyperlaneMailbox =
-        IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
+    IMailbox public constant HyperlaneMailbox = IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
     IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
         IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
 
     /*////////////////////////////////////////////////////zr//////////
                         CELER VARIABLES
     //////////////////////////////////////////////////////////////*/
-    address public constant ETH_messageBus =
-        0x4066D196A423b2b3B8B054f4F40efB47a74E200C;
-    address public constant BSC_messageBus =
-        0x95714818fdd7a5454F73Da9c777B3ee6EbAEEa6B;
-    address public constant AVAX_messageBus =
-        0x5a926eeeAFc4D217ADd17e9641e8cE23Cd01Ad57;
-    address public constant POLY_messageBus =
-        0xaFDb9C40C7144022811F034EE07Ce2E110093fe6;
-    address public constant ARBI_messageBus =
-        0x3Ad9d0648CDAA2426331e894e980D0a5Ed16257f;
-    address public constant OP_messageBus =
-        0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d;
-    address public constant FTM_messageBus =
-        0xFF4E183a0Ceb4Fa98E63BbF8077B929c8E5A2bA4;
+    address public constant ETH_messageBus = 0x4066D196A423b2b3B8B054f4F40efB47a74E200C;
+    address public constant BSC_messageBus = 0x95714818fdd7a5454F73Da9c777B3ee6EbAEEa6B;
+    address public constant AVAX_messageBus = 0x5a926eeeAFc4D217ADd17e9641e8cE23Cd01Ad57;
+    address public constant POLY_messageBus = 0xaFDb9C40C7144022811F034EE07Ce2E110093fe6;
+    address public constant ARBI_messageBus = 0x3Ad9d0648CDAA2426331e894e980D0a5Ed16257f;
+    address public constant OP_messageBus = 0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d;
+    address public constant FTM_messageBus = 0xFF4E183a0Ceb4Fa98E63BbF8077B929c8E5A2bA4;
 
     uint16 public constant ETH = 1;
     uint16 public constant BSC = 2;
@@ -236,16 +217,11 @@ abstract contract BaseSetup is DSTest, Test {
 
     mapping(uint16 => address) public PRICE_FEEDS;
 
-    address public constant ETHEREUM_ETH_USD_FEED =
-        0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-    address public constant BSC_BNB_USD_FEED =
-        0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
-    address public constant AVALANCHE_AVAX_USD_FEED =
-        0x0A77230d17318075983913bC2145DB16C7366156;
-    address public constant POLYGON_MATIC_USD_FEED =
-        0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
-    address public constant FANTOM_FTM_USD_FEED =
-        0xf4766552D15AE4d256Ad41B6cf2933482B0680dc;
+    address public constant ETHEREUM_ETH_USD_FEED = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address public constant BSC_BNB_USD_FEED = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
+    address public constant AVALANCHE_AVAX_USD_FEED = 0x0A77230d17318075983913bC2145DB16C7366156;
+    address public constant POLYGON_MATIC_USD_FEED = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
+    address public constant FANTOM_FTM_USD_FEED = 0xf4766552D15AE4d256Ad41B6cf2933482B0680dc;
 
     /*//////////////////////////////////////////////////////////////
                         RPC VARIABLES
@@ -263,6 +239,19 @@ abstract contract BaseSetup is DSTest, Test {
     string public OPTIMISM_RPC_URL = vm.envString("OPTIMISM_RPC_URL"); // Native token: ETH
     string public FANTOM_RPC_URL = vm.envString("FANTOM_RPC_URL"); // Native token: FTM
 
+    /*//////////////////////////////////////////////////////////////
+                        KYC DAO VALIDITY VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    address[] public kycDAOValidityAddresses = [
+        address(0),
+        address(0),
+        address(0),
+        0x205E10d3c4C87E26eB66B1B270b71b7708494dB9,
+        address(0),
+        address(0)
+    ];
+
     function setUp() public virtual {
         _preDeploymentSetup();
 
@@ -273,17 +262,11 @@ abstract contract BaseSetup is DSTest, Test {
         _fundUnderlyingTokens(100);
     }
 
-    function getContract(
-        uint16 chainId,
-        string memory _name
-    ) public view returns (address) {
+    function getContract(uint16 chainId, string memory _name) public view returns (address) {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
-    function getAccessControlErrorMsg(
-        address _addr,
-        bytes32 _role
-    ) public pure returns (bytes memory errorMsg) {
+    function getAccessControlErrorMsg(address _addr, bytes32 _role) public pure returns (bytes memory errorMsg) {
         errorMsg = abi.encodePacked(
             "AccessControl: account ",
             Strings.toHexString(uint160(_addr), 20),
@@ -308,49 +291,36 @@ abstract contract BaseSetup is DSTest, Test {
             vm.selectFork(vars.fork);
 
             vars.canonicalPermit2 = address(new Permit2Clone{salt: salt}());
-            contracts[vars.chainId][bytes32(bytes("CanonicalPermit2"))] = vars
-                .canonicalPermit2;
+            contracts[vars.chainId][bytes32(bytes("CanonicalPermit2"))] = vars.canonicalPermit2;
 
             /// @dev 1.1- deploy LZ Helper from Pigeon
             vars.lzHelper = address(new LayerZeroHelper{salt: salt}());
             vm.allowCheatcodes(vars.lzHelper);
 
-            contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars
-                .lzHelper;
+            contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars.lzHelper;
 
             /// @dev 1.2- deploy Hyperlane Helper from Pigeon
             vars.hyperlaneHelper = address(new HyperlaneHelper{salt: salt}());
             vm.allowCheatcodes(vars.hyperlaneHelper);
 
-            contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars
-                .hyperlaneHelper;
+            contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars.hyperlaneHelper;
 
             /// @dev 1.3- deploy Celer Helper from Pigeon
             vars.celerHelper = address(new CelerHelper{salt: salt}());
             vm.allowCheatcodes(vars.celerHelper);
 
-            contracts[vars.chainId][bytes32(bytes("CelerHelper"))] = vars
-                .celerHelper;
+            contracts[vars.chainId][bytes32(bytes("CelerHelper"))] = vars.celerHelper;
 
             /// @dev 2 - Deploy SuperRegistry and assign roles
-            vars.superRegistry = address(
-                new SuperRegistry{salt: salt}(deployer)
-            );
-            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars
-                .superRegistry;
+            vars.superRegistry = address(new SuperRegistry{salt: salt}(deployer));
+            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
 
-            SuperRegistry(vars.superRegistry).setImmutables(
-                vars.chainId,
-                vars.canonicalPermit2
-            );
+            SuperRegistry(vars.superRegistry).setImmutables(vars.chainId, vars.canonicalPermit2);
             SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
 
             /// @dev 3 - Deploy SuperRBAC
-            vars.superRBAC = address(
-                new SuperRBAC{salt: salt}(vars.superRegistry, deployer)
-            );
-            contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars
-                .superRBAC;
+            vars.superRBAC = address(new SuperRBAC{salt: salt}(vars.superRegistry, deployer));
+            contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
 
             SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
             assert(SuperRBAC(vars.superRBAC).hasProtocolAdminRole(deployer));
@@ -369,103 +339,51 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev FIXME: in reality who should have the TWOSTEPS_PROCESSOR_ROLE for state registry?
             SuperRBAC(vars.superRBAC).grantTwoStepsProcessorRole(deployer);
-            assert(
-                SuperRBAC(vars.superRBAC).hasTwoStepsProcessorRole(deployer)
-            );
+            assert(SuperRBAC(vars.superRBAC).hasTwoStepsProcessorRole(deployer));
 
             /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
-            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
-                deployer
-            );
-            assert(
-                SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(
-                    deployer
-                )
-            );
+            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(deployer);
+            assert(SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(deployer));
             /// @dev 4.1 - deploy Core State Registry
 
-            vars.coreStateRegistry = address(
-                new CoreStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry),
-                    1
-                )
-            );
-            contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars
-                .coreStateRegistry;
+            vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1));
+            contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
-            SuperRegistry(vars.superRegistry).setCoreStateRegistry(
-                vars.coreStateRegistry
-            );
+            SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
 
-            SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(
-                vars.coreStateRegistry
-            );
+            SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(vars.coreStateRegistry);
 
-            assert(
-                SuperRBAC(vars.superRBAC).hasCoreStateRegistryRole(
-                    vars.coreStateRegistry
-                )
-            );
+            assert(SuperRBAC(vars.superRBAC).hasCoreStateRegistryRole(vars.coreStateRegistry));
 
             /// @dev 4.2- deploy Factory State Registry
             vars.factoryStateRegistry = address(
-                new FactoryStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry),
-                    2
-                )
+                new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 2)
             );
 
-            contracts[vars.chainId][
-                bytes32(bytes("FactoryStateRegistry"))
-            ] = vars.factoryStateRegistry;
+            contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
 
-            SuperRegistry(vars.superRegistry).setFactoryStateRegistry(
-                vars.factoryStateRegistry
-            );
+            SuperRegistry(vars.superRegistry).setFactoryStateRegistry(vars.factoryStateRegistry);
 
             /// @dev 4.3 - deploy Form State Registry
             vars.twoStepsFormStateRegistry = address(
-                new TwoStepsFormStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry),
-                    1
-                )
+                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1)
             );
 
-            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(
-                vars.twoStepsFormStateRegistry
-            );
-            assert(
-                SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(
-                    vars.twoStepsFormStateRegistry
-                )
-            );
+            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry);
+            assert(SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry));
 
-            contracts[vars.chainId][
-                bytes32(bytes("TwoStepsFormStateRegistry"))
-            ] = vars.twoStepsFormStateRegistry;
+            contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
-            SuperRegistry(vars.superRegistry).setFormStateRegistry(
-                vars.twoStepsFormStateRegistry
-            );
+            SuperRegistry(vars.superRegistry).setFormStateRegistry(vars.twoStepsFormStateRegistry);
 
             /// @dev 4.4- deploy Roles State Registry
-            vars.rolesStateRegistry = address(
-                new RolesStateRegistry{salt: salt}(
-                    SuperRegistry(vars.superRegistry),
-                    3
-                )
-            );
+            vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 3));
 
-            contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars
-                .rolesStateRegistry;
+            contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
 
-            SuperRegistry(vars.superRegistry).setRolesStateRegistry(
-                vars.rolesStateRegistry
-            );
+            SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
-            SuperRegistry(vars.superRegistry).setRolesStateRegistry(
-                vars.rolesStateRegistry
-            );
+            SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
             address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;
@@ -477,23 +395,13 @@ abstract contract BaseSetup is DSTest, Test {
             registryIds[1] = 2;
             registryIds[2] = 3;
 
-            SuperRegistry(vars.superRegistry).setStateRegistryAddress(
-                registryIds,
-                registryAddresses
-            );
+            SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
 
             /// @dev 5.1 - deploy Layerzero Implementation
-            vars.lzImplementation = address(
-                new LayerzeroImplementation{salt: salt}(
-                    SuperRegistry(vars.superRegistry)
-                )
-            );
-            contracts[vars.chainId][
-                bytes32(bytes("LayerzeroImplementation"))
-            ] = vars.lzImplementation;
+            vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
+            contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
-            LayerzeroImplementation(payable(vars.lzImplementation))
-                .setLzEndpoint(lzEndpoints[i]);
+            LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
             /// @dev 5.2 - deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
@@ -503,9 +411,7 @@ abstract contract BaseSetup is DSTest, Test {
                     SuperRegistry(vars.superRegistry)
                 )
             );
-            contracts[vars.chainId][
-                bytes32(bytes("HyperlaneImplementation"))
-            ] = vars.hyperlaneImplementation;
+            contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
             /// @dev 5.3 - deploy Celer Implementation
             vars.celerImplementation = address(
@@ -514,9 +420,7 @@ abstract contract BaseSetup is DSTest, Test {
                     SuperRegistry(vars.superRegistry)
                 )
             );
-            contracts[vars.chainId][
-                bytes32(bytes("CelerImplementation"))
-            ] = vars.celerImplementation;
+            contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
 
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
@@ -524,37 +428,26 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 6.1 deploy SocketRouterMock and LiFiRouterMock
             vars.socketRouter = address(new SocketRouterMock{salt: salt}());
-            contracts[vars.chainId][bytes32(bytes("SocketRouterMock"))] = vars
-                .socketRouter;
+            contracts[vars.chainId][bytes32(bytes("SocketRouterMock"))] = vars.socketRouter;
             vm.allowCheatcodes(vars.socketRouter);
 
             vars.lifiRouter = address(new LiFiMock{salt: salt}());
-            contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars
-                .lifiRouter;
+            contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
             vm.allowCheatcodes(vars.lifiRouter);
 
             /// @dev 6.2- deploy socket and lifi validator
-            vars.socketValidator = address(
-                new SocketValidator{salt: salt}(vars.superRegistry)
-            );
-            contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars
-                .socketValidator;
+            vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
 
-            SocketValidator(vars.socketValidator).setChainIds(
-                chainIds,
-                socketChainIds
-            );
+            SocketValidator(vars.socketValidator).setChainIds(chainIds, socketChainIds);
 
-            vars.lifiValidator = address(
-                new LiFiValidator{salt: salt}(vars.superRegistry)
-            );
-            contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars
-                .lifiValidator;
+            vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
-            LiFiValidator(vars.lifiValidator).setChainIds(
-                chainIds,
-                lifiChainIds
-            );
+            LiFiValidator(vars.lifiValidator).setChainIds(chainIds, lifiChainIds);
+
+            vars.kycDAOMock = address(new KYCDaoNFTMock{salt: salt}());
+            contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
 
             if (i == 0) {
                 bridgeAddresses.push(vars.socketRouter);
@@ -567,134 +460,100 @@ abstract contract BaseSetup is DSTest, Test {
             /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
-                    new MockERC20{salt: salt}(
-                        UNDERLYING_TOKENS[j],
-                        UNDERLYING_TOKENS[j],
-                        deployer,
-                        milionTokensE18
-                    )
+                    new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, milionTokensE18)
                 );
-                contracts[vars.chainId][
-                    bytes32(bytes(UNDERLYING_TOKENS[j]))
-                ] = vars.UNDERLYING_TOKEN;
+                contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
             uint256 vaultId = 0;
+            bytes memory bytecodeWithArgs;
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     /// @dev 7.2 - Deploy mock Vault
+                    if (j != 2) {
+                        bytecodeWithArgs = abi.encodePacked(
+                            vaultBytecodes[j],
+                            abi.encode(
+                                MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
+                                VAULT_NAMES[j][k],
+                                VAULT_NAMES[j][k]
+                            )
+                        );
 
-                    bytes memory bytecodeWithArgs = abi.encodePacked(
-                        vaultBytecodes[j],
-                        abi.encode(
-                            MockERC20(
-                                getContract(vars.chainId, UNDERLYING_TOKENS[k])
-                            ),
-                            VAULT_NAMES[j][k],
-                            VAULT_NAMES[j][k]
-                        )
-                    );
+                        vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                    } else {
+                        /// deploy the kycDAOVault wrapper with different args only in Polygon
 
-                    vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                        bytecodeWithArgs = abi.encodePacked(
+                            vaultBytecodes[j],
+                            abi.encode(MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock)
+                        );
+
+                        vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                    }
 
                     /// @dev Add ERC4626Vault
-                    contracts[vars.chainId][
-                        bytes32(bytes(string.concat(VAULT_NAMES[j][k])))
-                    ] = vars.vault;
+                    contracts[vars.chainId][bytes32(bytes(string.concat(VAULT_NAMES[j][k])))] = vars.vault;
 
-                    vaults[vars.chainId][FORM_BEACON_IDS[j]].push(
-                        IERC4626(vars.vault)
-                    );
+                    vaults[vars.chainId][FORM_BEACON_IDS[j]].push(IERC4626(vars.vault));
                     vaultIds[vars.chainId][FORM_BEACON_IDS[j]].push(vaultId++);
                 }
             }
 
             /// @dev 8 - Deploy SuperFormFactory
-            vars.factory = address(
-                new SuperFormFactory{salt: salt}(vars.superRegistry)
-            );
+            vars.factory = address(new SuperFormFactory{salt: salt}(vars.superRegistry));
 
-            contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars
-                .factory;
+            contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars.factory;
 
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
             SuperRBAC(vars.superRBAC).grantSuperformFactoryRole(vars.factory);
 
             /// @dev 9 - Deploy 4626Form implementations
             // Standard ERC4626 Form
-            vars.erc4626Form = address(
-                new ERC4626Form{salt: salt}(vars.superRegistry)
-            );
-            contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars
-                .erc4626Form;
+            vars.erc4626Form = address(new ERC4626Form{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
 
             // Timelock + ERC4626 Form
-            vars.erc4626TimelockForm = address(
-                new ERC4626TimelockForm{salt: salt}(vars.superRegistry)
-            );
-            contracts[vars.chainId][
-                bytes32(bytes("ERC4626TimelockForm"))
-            ] = vars.erc4626TimelockForm;
+            vars.erc4626TimelockForm = address(new ERC4626TimelockForm{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
 
             /// @dev 10 - Add newly deployed form  implementation to Factory, formBeaconId 1
-            ISuperFormFactory(vars.factory).addFormBeacon(
-                vars.erc4626Form,
-                FORM_BEACON_IDS[0],
-                salt
-            );
+            ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
 
-            ISuperFormFactory(vars.factory).addFormBeacon(
-                vars.erc4626TimelockForm,
-                FORM_BEACON_IDS[1],
-                salt
-            );
+            ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
+
+            // KYCDao ERC4626 Form (only for Polygon)
+            vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry, vars.kycDAOMock));
+            contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
+
+            ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
             /// @dev 12 - Deploy SuperRouter
-            vars.superRouter = address(
-                new SuperRouter{salt: salt}(vars.superRegistry)
-            );
-            contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars
-                .superRouter;
+            vars.superRouter = address(new SuperRouter{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars.superRouter;
 
             SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
             SuperRBAC(vars.superRBAC).grantSuperRouterRole(vars.superRouter);
-            assert(
-                SuperRBAC(vars.superRBAC).hasSuperRouterRole(vars.superRouter)
-            );
+            assert(SuperRBAC(vars.superRBAC).hasSuperRouterRole(vars.superRouter));
 
             /// @dev 13 - Deploy SuperPositions
-            vars.superPositions = address(
-                new SuperPositions{salt: salt}("test.com/", vars.superRegistry)
-            );
+            vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));
 
-            contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars
-                .superPositions;
+            contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
 
-            SuperRegistry(vars.superRegistry).setSuperPositions(
-                vars.superPositions
-            );
+            SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
             /// @dev 14 - Deploy MultiTx Processor
-            vars.multiTxProcessor = address(
-                new MultiTxProcessor{salt: salt}(vars.superRegistry)
-            );
-            contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars
-                .multiTxProcessor;
+            vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars.multiTxProcessor;
 
-            SuperRegistry(vars.superRegistry).setMultiTxProcessor(
-                vars.multiTxProcessor
-            );
+            SuperRegistry(vars.superRegistry).setMultiTxProcessor(vars.multiTxProcessor);
 
             /// @dev 15 - Super Registry extra setters
 
-            SuperRegistry(vars.superRegistry).setBridgeAddresses(
-                bridgeIds,
-                bridgeAddresses,
-                bridgeValidators
-            );
+            SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
 
             /// @dev configures lzImplementation and hyperlane to super registry
-            SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry")))
-                .setAmbAddress(ambIds, vars.ambAddresses);
+            SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
             /// @dev 16 Setup extra RBAC
 
@@ -702,9 +561,7 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
             /// FIXME: check if this is safe in all aspects
-            SuperRBAC(vars.superRBAC).grantProtocolAdminRole(
-                vars.rolesStateRegistry
-            );
+            SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
         }
 
         /// @dev 16 - Setup trusted remotes and deploy superforms. This must be done after the rest of the protocol has been deployed on all chains
@@ -713,20 +570,11 @@ abstract contract BaseSetup is DSTest, Test {
             vars.fork = FORKS[vars.chainId];
             vm.selectFork(vars.fork);
 
-            vars.lzImplementation = getContract(
-                vars.chainId,
-                "LayerzeroImplementation"
-            );
+            vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
 
-            vars.hyperlaneImplementation = getContract(
-                vars.chainId,
-                "HyperlaneImplementation"
-            );
+            vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
 
-            vars.celerImplementation = getContract(
-                vars.chainId,
-                "CelerImplementation"
-            );
+            vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
 
             vars.factory = getContract(vars.chainId, "SuperFormFactory");
 
@@ -738,49 +586,38 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstHypChainId = hyperlane_chainIds[j];
                     vars.dstCelerChainId = celer_chainIds[j];
 
-                    vars.dstLzImplementation = getContract(
-                        vars.dstChainId,
-                        "LayerzeroImplementation"
+                    vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
+                    vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
+                    vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
+
+                    LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
+                        vars.dstAmbChainId,
+                        abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                     );
-                    vars.dstHyperlaneImplementation = getContract(
+                    LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(
                         vars.dstChainId,
-                        "HyperlaneImplementation"
-                    );
-                    vars.dstCelerImplementation = getContract(
-                        vars.dstChainId,
-                        "CelerImplementation"
+                        vars.dstAmbChainId
                     );
 
-                    LayerzeroImplementation(payable(vars.lzImplementation))
-                        .setTrustedRemote(
-                            vars.dstAmbChainId,
-                            abi.encodePacked(
-                                vars.dstLzImplementation,
-                                vars.lzImplementation
-                            )
-                        );
-                    LayerzeroImplementation(payable(vars.lzImplementation))
-                        .setChainId(vars.dstChainId, vars.dstAmbChainId);
+                    HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
+                        vars.dstHypChainId,
+                        vars.dstHyperlaneImplementation
+                    );
 
-                    HyperlaneImplementation(
-                        payable(vars.hyperlaneImplementation)
-                    ).setReceiver(
-                            vars.dstHypChainId,
-                            vars.dstHyperlaneImplementation
-                        );
+                    HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
+                        vars.dstChainId,
+                        vars.dstHypChainId
+                    );
 
-                    HyperlaneImplementation(
-                        payable(vars.hyperlaneImplementation)
-                    ).setChainId(vars.dstChainId, vars.dstHypChainId);
+                    CelerImplementation(payable(vars.celerImplementation)).setReceiver(
+                        vars.dstCelerChainId,
+                        vars.dstCelerImplementation
+                    );
 
-                    CelerImplementation(payable(vars.celerImplementation))
-                        .setReceiver(
-                            vars.dstCelerChainId,
-                            vars.dstCelerImplementation
-                        );
-
-                    CelerImplementation(payable(vars.celerImplementation))
-                        .setChainId(vars.dstChainId, vars.dstCelerChainId);
+                    CelerImplementation(payable(vars.celerImplementation)).setChainId(
+                        vars.dstChainId,
+                        vars.dstCelerChainId
+                    );
                 }
             }
         }
@@ -791,25 +628,24 @@ abstract contract BaseSetup is DSTest, Test {
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     vm.recordLogs();
+                    address vault = address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k]);
 
-                    (, vars.superForm) = ISuperFormFactory(
-                        contracts[chainIds[i]][
-                            bytes32(bytes("SuperFormFactory"))
-                        ]
-                    ).createSuperForm{value: 800 * 10 ** 18}(
+                    (, vars.superForm) = ISuperFormFactory(contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))])
+                        .createSuperForm{value: 800 * 10 ** 18}(
                         FORM_BEACON_IDS[j],
-                        address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k]),
+                        vault,
                         generateBroadcastParams(5, 2)
                     );
+
+                    if (FORM_BEACON_IDS[j] == 3 && i == 3) {
+                        /// mint a kycDAO Nft to superForm on polygon
+                        KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(vars.superForm);
+                    }
 
                     contracts[chainIds[i]][
                         bytes32(
                             bytes(
-                                string.concat(
-                                    UNDERLYING_TOKENS[k],
-                                    "SuperForm",
-                                    Strings.toString(FORM_BEACON_IDS[j])
-                                )
+                                string.concat(UNDERLYING_TOKENS[k], "SuperForm", Strings.toString(FORM_BEACON_IDS[j]))
                             )
                         )
                     ] = vars.superForm;
@@ -817,13 +653,16 @@ abstract contract BaseSetup is DSTest, Test {
                     _broadcastPayloadHelper(chainIds[i], vm.getRecordedLogs());
                 }
             }
+
+            if (i == 3) {
+                /// mint a kycDAO Nft to a few users
+                KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[0]);
+                KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[1]);
+                KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
+            }
         }
 
-        _processFactoryPayloads(
-            ((chainIds.length - 1) *
-                FORM_BEACON_IDS.length *
-                UNDERLYING_TOKENS.length) + 1
-        );
+        _processFactoryPayloads(((chainIds.length - 1) * FORM_BEACON_IDS.length * UNDERLYING_TOKENS.length) + 1);
         vm.stopPrank();
     }
 
@@ -859,8 +698,7 @@ abstract contract BaseSetup is DSTest, Test {
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         //lzEndpointsStorage[FTM] = FTM_lzEndpoint;
 
-        mapping(uint64 => address)
-            storage celerMessageBusStorage = CELER_BUSSES;
+        mapping(uint64 => address) storage celerMessageBusStorage = CELER_BUSSES;
         celerMessageBusStorage[ETH] = ETH_messageBus;
         celerMessageBusStorage[BSC] = BSC_messageBus;
         celerMessageBusStorage[AVAX] = AVAX_messageBus;
@@ -868,8 +706,7 @@ abstract contract BaseSetup is DSTest, Test {
         celerMessageBusStorage[ARBI] = ARBI_messageBus;
         celerMessageBusStorage[OP] = OP_messageBus;
 
-        mapping(uint16 => uint64)
-            storage celerChainIdsStorage = CELER_CHAIN_IDS;
+        mapping(uint16 => uint64) storage celerChainIdsStorage = CELER_CHAIN_IDS;
 
         for (uint256 i = 0; i < chainIds.length; i++) {
             celerChainIdsStorage[chainIds[i]] = celer_chainIds[i];
@@ -898,15 +735,15 @@ abstract contract BaseSetup is DSTest, Test {
         users.push(vm.addr(userKeys[2]));
 
         /// @dev setup vault bytecodes
+        /// @dev NOTE: do not change order of these pushes
         vaultBytecodes.push(type(VaultMock).creationCode);
         vaultBytecodes.push(type(ERC4626TimelockMock).creationCode);
+        vaultBytecodes.push(type(kycDAO4626).creationCode);
 
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
         for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
             for (uint256 j = 0; j < underlyingTokens.length; j++) {
-                VAULT_NAMES[i].push(
-                    string.concat(underlyingTokens[j], VAULT_KINDS[i])
-                );
+                VAULT_NAMES[i].push(string.concat(underlyingTokens[j], VAULT_KINDS[i]));
             }
         }
     }
@@ -928,16 +765,10 @@ abstract contract BaseSetup is DSTest, Test {
         }
     }
 
-    function _getPriceMultiplier(
-        uint16 targetChainId_
-    ) internal returns (uint256) {
+    function _getPriceMultiplier(uint16 targetChainId_) internal returns (uint256) {
         uint256 multiplier;
 
-        if (
-            targetChainId_ == ETH ||
-            targetChainId_ == ARBI ||
-            targetChainId_ == OP
-        ) {
+        if (targetChainId_ == ETH || targetChainId_ == ARBI || targetChainId_ == OP) {
             /// @dev default multiplier for chains with ETH native token
 
             multiplier = 1;
@@ -961,9 +792,7 @@ abstract contract BaseSetup is DSTest, Test {
         return multiplier;
     }
 
-    function _getLatestPrice(
-        address priceFeed_
-    ) internal view returns (int256) {
+    function _getLatestPrice(address priceFeed_) internal view returns (int256) {
         // prettier-ignore
         (
             /* uint80 roundID */
@@ -995,10 +824,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev will sync the payloads for broadcast
-    function _broadcastPayloadHelper(
-        uint16 currentChainId,
-        Vm.Log[] memory logs
-    ) internal {
+    function _broadcastPayloadHelper(uint16 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
         address[] memory toMailboxes = new address[](6);
@@ -1046,17 +872,12 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 j = 0; j < chainIds.length; j++) {
             vm.selectFork(FORKS[chainIds[j]]);
             for (uint256 k = 1; k < superFormsToProcess_; k++) {
-                FactoryStateRegistry(
-                    payable(getContract(chainIds[j], "FactoryStateRegistry"))
-                ).processPayload(k, "");
+                FactoryStateRegistry(payable(getContract(chainIds[j], "FactoryStateRegistry"))).processPayload(k, "");
             }
         }
     }
 
-    function _deployWithCreate2(
-        bytes memory bytecode_,
-        uint256 salt_
-    ) internal returns (address addr) {
+    function _deployWithCreate2(bytes memory bytecode_, uint256 salt_) internal returns (address addr) {
         assembly {
             addr := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
 
@@ -1071,14 +892,7 @@ abstract contract BaseSetup is DSTest, Test {
     function _randomBytes32() internal view returns (bytes32) {
         return
             keccak256(
-                abi.encode(
-                    tx.origin,
-                    block.number,
-                    block.timestamp,
-                    block.coinbase,
-                    address(this).codehash,
-                    gasleft()
-                )
+                abi.encode(tx.origin, block.number, block.timestamp, block.coinbase, address(this).codehash, gasleft())
             );
     }
 
@@ -1093,10 +907,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 signerKey,
         uint16 chainId
     ) internal returns (bytes memory sig) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-            signerKey,
-            _getEIP712Hash(permit, spender, chainId)
-        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _getEIP712Hash(permit, spender, chainId));
         return abi.encodePacked(r, s, v);
     }
 
@@ -1111,17 +922,12 @@ abstract contract BaseSetup is DSTest, Test {
             keccak256(
                 abi.encodePacked(
                     "\x19\x01",
-                    Permit2Clone(getContract(chainId, "CanonicalPermit2"))
-                        .DOMAIN_SEPARATOR(),
+                    Permit2Clone(getContract(chainId, "CanonicalPermit2")).DOMAIN_SEPARATOR(),
                     keccak256(
                         abi.encode(
                             PERMIT_TRANSFER_FROM_TYPEHASH,
                             keccak256(
-                                abi.encode(
-                                    TOKEN_PERMISSIONS_TYPEHASH,
-                                    permit.permitted.token,
-                                    permit.permitted.amount
-                                )
+                                abi.encode(TOKEN_PERMISSIONS_TYPEHASH, permit.permitted.token, permit.permitted.amount)
                             ),
                             spender,
                             permit.nonce,
@@ -1133,18 +939,8 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     ///@dev Compute the address of the contract to be deployed
-    function getAddress(
-        bytes memory bytecode_,
-        uint salt_
-    ) public view returns (address) {
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                bytes1(0xff),
-                address(this),
-                salt_,
-                keccak256(bytecode_)
-            )
-        );
+    function getAddress(bytes memory bytecode_, uint salt_) public view returns (address) {
+        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt_, keccak256(bytecode_)));
 
         // NOTE: cast last 20 bytes of hash to address
         return address(uint160(uint(hash)));

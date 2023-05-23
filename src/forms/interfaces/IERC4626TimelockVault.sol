@@ -6,8 +6,7 @@ import {IERC4626} from "./IERC4626Vault.sol";
 
 /// @notice Interface for ERC4626 extended with Timelock design (ERC4626MockVault)
 /// NOTE: Not a Form interface!
-interface IERC4626TimelockVault is IERC4626{
-
+interface IERC4626TimelockVault is IERC4626 {
     /*///////////////////////////////////////////////////////////////
                             TIMELOCK SECTION
     //////////////////////////////////////////////////////////////*/
@@ -32,11 +31,8 @@ interface IERC4626TimelockVault is IERC4626{
 
     /// @notice Check outstanding unlock request for the owner
     /// @dev Mock Timelocked Vault uses single UnlockRequest. In production vaults have differing mechanism for this
-    function userUnlockRequests(
-        address owner
-    ) external view returns (UnlockRequest memory);
+    function userUnlockRequests(address owner) external view returns (UnlockRequest memory);
 
     /// @notice The amount of time that must pass between a requestUnlock() and withdraw() call.
     function getLockPeirod() external view returns (uint256);
-
 }
