@@ -139,7 +139,7 @@ struct SetupVars {
     address lifiValidator;
     Vm.Log[] logs;
     address superPositions;
-    address superPositionBank;
+    address kycDAOMock;
 }
 
 /*//////////////////////////////////////////////////////////////

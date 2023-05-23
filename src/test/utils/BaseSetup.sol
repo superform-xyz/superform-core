@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 /// @dev lib imports
 import "forge-std/Test.sol";
 import "ds-test/test.sol";
+import "./TestTypes.sol";
 import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {IERC721} from "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 
 /// @dev test utils & mocks
@@ -19,8 +19,8 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
-import "./TestTypes.sol";
 import {Permit2Clone} from "../mocks/Permit2Clone.sol";
+import {KYCDaoNFTMock} from "../mocks/KYCDaoNFTMock.sol";
 
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
@@ -446,6 +446,9 @@ abstract contract BaseSetup is DSTest, Test {
 
             LiFiValidator(vars.lifiValidator).setChainIds(chainIds, lifiChainIds);
 
+            vars.kycDAOMock = address(new KYCDaoNFTMock{salt: salt}());
+            contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
+
             if (i == 0) {
                 bridgeAddresses.push(vars.socketRouter);
                 bridgeValidators.push(vars.socketValidator);
@@ -482,10 +485,7 @@ abstract contract BaseSetup is DSTest, Test {
 
                         bytecodeWithArgs = abi.encodePacked(
                             vaultBytecodes[j],
-                            abi.encode(
-                                MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
-                                kycDAOValidityAddresses[i]
-                            )
+                            abi.encode(MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock)
                         );
 
                         vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
@@ -522,9 +522,7 @@ abstract contract BaseSetup is DSTest, Test {
             ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
 
             // KYCDao ERC4626 Form (only for Polygon)
-            vars.kycDao4626Form = address(
-                new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry, kycDAOValidityAddresses[i])
-            );
+            vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry, vars.kycDAOMock));
             contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
             ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
@@ -639,19 +637,11 @@ abstract contract BaseSetup is DSTest, Test {
                         generateBroadcastParams(5, 2)
                     );
 
-                    /*
                     if (FORM_BEACON_IDS[j] == 3 && i == 3) {
-                        /// high kycDAONFT holder
-                        vm.prank(0x4f52d5D407e15c8b936302365cD84011a15284F2);
-
-                        /// transfer a kycDAO Nft to form
-                        IERC721(kycDAOValidityAddresses[i]).transferFrom(
-                            0x4f52d5D407e15c8b936302365cD84011a15284F2,
-                            vars.superForm,
-                            41
-                        );
+                        /// mint a kycDAO Nft to superForm on polygon
+                        KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(vars.superForm);
                     }
-                    */
+
                     contracts[chainIds[i]][
                         bytes32(
                             bytes(
@@ -662,6 +652,13 @@ abstract contract BaseSetup is DSTest, Test {
 
                     _broadcastPayloadHelper(chainIds[i], vm.getRecordedLogs());
                 }
+            }
+
+            if (i == 3) {
+                /// mint a kycDAO Nft to a few users
+                KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[0]);
+                KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[1]);
+                KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
             }
         }
 
@@ -732,12 +729,10 @@ abstract contract BaseSetup is DSTest, Test {
         userKeys.push(1);
         userKeys.push(2);
         userKeys.push(3);
-        userKeys.push(4);
 
         users.push(vm.addr(userKeys[0]));
         users.push(vm.addr(userKeys[1]));
         users.push(vm.addr(userKeys[2]));
-        users.push(0x4f52d5D407e15c8b936302365cD84011a15284F2); /// kycNFTHolder
 
         /// @dev setup vault bytecodes
         /// @dev NOTE: do not change order of these pushes
@@ -767,7 +762,6 @@ abstract contract BaseSetup is DSTest, Test {
             vm.deal(users[0], amountUSER);
             vm.deal(users[1], amountUSER);
             vm.deal(users[2], amountUSER);
-            vm.deal(users[3], amountUSER);
         }
     }
 
@@ -825,7 +819,6 @@ abstract contract BaseSetup is DSTest, Test {
                 deal(token, users[0], 1 ether * amount);
                 deal(token, users[1], 1 ether * amount);
                 deal(token, users[2], 1 ether * amount);
-                deal(token, users[3], 1 ether * amount);
             }
         }
     }

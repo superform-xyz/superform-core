@@ -44,11 +44,17 @@ contract ScenarioKYCDaoTest is ProtocolActions {
         TARGET_UNDERLYING_VAULTS[POLY][0] = [1];
         TARGET_FORM_KINDS[POLY][0] = [2];
 
+        TARGET_UNDERLYING_VAULTS[POLY][1] = [1];
+        TARGET_FORM_KINDS[POLY][1] = [2];
+
         AMOUNTS[POLY][0] = [7722];
+        AMOUNTS[POLY][1] = [7722];
 
         MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE[POLY][1] = [1000];
 
         LIQ_BRIDGES[POLY][0] = [1];
+        LIQ_BRIDGES[POLY][1] = [1];
 
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 5 * _getPriceMultiplier(CHAIN_0) * 1e18;
@@ -58,7 +64,23 @@ contract ScenarioKYCDaoTest is ProtocolActions {
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 3,
+                user: 1,
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: msgValue,
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+            })
+        );
+
+        actions.push(
+            TestAction({
+                action: Actions.Withdraw,
+                multiVaults: false, //!!WARNING turn on or off multi vaults
+                user: 1,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
@@ -88,7 +110,7 @@ contract ScenarioKYCDaoTest is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function xtest_scenario() public {
+    function test_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
