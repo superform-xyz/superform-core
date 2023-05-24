@@ -628,13 +628,15 @@ abstract contract BaseSetup is DSTest, Test {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     vm.recordLogs();
                     address vault = address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k]);
+                    uint256 superFormId;
+                    (superFormId, vars.superForm) = ISuperFormFactory(
+                        contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))]
+                    ).createSuperForm{value: 800 * 10 ** 18}(FORM_BEACON_IDS[j], vault, generateBroadcastParams(5, 2));
 
-                    (, vars.superForm) = ISuperFormFactory(contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))])
-                        .createSuperForm{value: 800 * 10 ** 18}(
-                        FORM_BEACON_IDS[j],
-                        vault,
-                        generateBroadcastParams(5, 2)
-                    );
+                    console.log("SuperFormId :", superFormId);
+                    console.log("SuperForm Address :", vars.superForm);
+                    console.log("Form Beacon Id :", FORM_BEACON_IDS[j]);
+                    console.log("Chain Id :", chainIds[i]);
 
                     if (FORM_BEACON_IDS[j] == 3 && i == 3) {
                         /// mint a kycDAO Nft to superForm on polygon
