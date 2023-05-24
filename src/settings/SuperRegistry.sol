@@ -25,6 +25,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     mapping(uint8 registryId => address registryAddress) public registryAddresses;
     /// @dev is the reverse mapping of registryAddresses
     mapping(address registryAddress => uint8 registryId) public stateRegistryIds;
+    /// @dev is the reverse mapping of ambAddresses
+    mapping(address ambAddress => uint8 bridgeId) public ambIds;
 
     /// @dev core protocol addresses identifiers
     /// @dev FIXME: we don't have AMB and liquidity bridge implementations here, should we add?
@@ -201,6 +203,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
             if (x == address(0)) revert Error.ZERO_ADDRESS();
 
             ambAddresses[y] = x;
+            ambIds[x] = y;
             emit SetAmbAddress(y, x);
         }
     }
@@ -316,6 +319,13 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @inheritdoc ISuperRegistry
     function isValidStateRegistry(address registryAddress_) external view override returns (bool valid_) {
         if (stateRegistryIds[registryAddress_] != 0) return true;
+
+        return false;
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function isValidAmbImpl(address ambAddress_) external view override returns (bool valid_) {
+        if (ambIds[ambAddress_] != 0) return true;
 
         return false;
     }
