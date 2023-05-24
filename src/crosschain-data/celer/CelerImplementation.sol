@@ -65,8 +65,19 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         }
 
         uint64 chainId = ambChainId[dstChainId_];
+
+        /// calculate the exact fee needed
+        uint256 feesReq = messageBus.calcFee(message_);
         /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3
-        messageBus.sendMessage{value: msg.value}(authorizedImpl[chainId], chainId, message_);
+        messageBus.sendMessage{value: feesReq}(authorizedImpl[chainId], chainId, message_);
+
+        /// Refund unused fees
+        /// NOTE: check security implications here
+        (bool success, ) = payable(srcSender_).call{value: msg.value - feesReq}("");
+
+        if (!success) {
+            revert Error.GAS_REFUND_FAILED();
+        }
     }
 
     /// @inheritdoc IAmbImplementation
@@ -82,12 +93,24 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
         /// FIXME:should we check the length ?? anyway out of index will fail if the length
         /// mistmatches
-
         uint256 totalChains = broadcastChains.length;
+
+        /// calculate the exact fee needed
+        uint256 feesReq = messageBus.calcFee(message_);
+        feesReq = feesReq * totalChains;
+
         for (uint16 i = 0; i < totalChains; i++) {
             uint64 chainId = broadcastChains[i];
 
             messageBus.sendMessage{value: d.gasPerDst[i]}(authorizedImpl[chainId], chainId, message_);
+        }
+
+        /// Refund unused fees
+        /// NOTE: check security implications here
+        (bool success, ) = payable(srcSender_).call{value: msg.value - feesReq}("");
+
+        if (!success) {
+            revert Error.GAS_REFUND_FAILED();
         }
     }
 
