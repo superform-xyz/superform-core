@@ -76,6 +76,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
+        address srcSender_,
         uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
@@ -106,7 +107,11 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(bytes memory message_, bytes memory extraData_) external payable override {}
+    function broadcastPayload(
+        address srcSender_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable override {}
 
     /// @inheritdoc IWormholeReceiver
     function receiveWormholeMessages(bytes[] memory whMessages, bytes[] memory) public payable override onlyRelayer {

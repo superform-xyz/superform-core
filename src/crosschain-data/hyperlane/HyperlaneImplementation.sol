@@ -58,6 +58,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
+        address srcSender_,
         uint16 dstChainId_,
         bytes memory message_,
         bytes memory
@@ -74,12 +75,16 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             messageId,
             domain,
             500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
-            msg.sender /// @dev should refund to the user, now refunds to core state registry
+            srcSender_ /// @dev should refund to the user, now refunds to core state registry
         );
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(bytes memory message_, bytes memory extraData_) external payable virtual {
+    function broadcastPayload(
+        address srcSender_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable virtual {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
