@@ -72,6 +72,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
+        address srcSender_,
         uint16 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
@@ -80,11 +81,11 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
             revert Error.INVALID_CALLER();
         }
 
-        _lzSend(ambChainId[dstChainId_], message_, payable(msg.sender), address(0x0), extraData_, msg.value);
+        _lzSend(ambChainId[dstChainId_], message_, payable(srcSender_), address(0x0), extraData_, msg.value);
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(bytes memory message_, bytes memory extraData_) external payable {
+    function broadcastPayload(address srcSender_, bytes memory message_, bytes memory extraData_) external payable {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
@@ -95,7 +96,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
 
         for (uint16 i = 0; i < broadcastChains.length; i++) {
             uint16 dstChainId = broadcastChains[i];
-            _lzSend(dstChainId, message_, payable(msg.sender), address(0x0), d.extraDataPerDst[i], d.gasPerDst[i]);
+            _lzSend(dstChainId, message_, payable(srcSender_), address(0x0), d.extraDataPerDst[i], d.gasPerDst[i]);
         }
     }
 

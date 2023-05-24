@@ -55,6 +55,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
+        address srcSender_,
         uint16 dstChainId_,
         bytes memory message_,
         bytes memory /// extraData_
@@ -64,12 +65,27 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         }
 
         uint64 chainId = ambChainId[dstChainId_];
+
+        /// calculate the exact fee needed
+        uint256 feesReq = messageBus.calcFee(message_);
         /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3
-        messageBus.sendMessage{value: msg.value}(authorizedImpl[chainId], chainId, message_);
+        messageBus.sendMessage{value: feesReq}(authorizedImpl[chainId], chainId, message_);
+
+        /// Refund unused fees
+        /// NOTE: check security implications here
+        (bool success, ) = payable(srcSender_).call{value: msg.value - feesReq}("");
+
+        if (!success) {
+            revert Error.GAS_REFUND_FAILED();
+        }
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(bytes memory message_, bytes memory extraData_) external payable virtual {
+    function broadcastPayload(
+        address srcSender_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable virtual {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
@@ -77,12 +93,24 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
         /// FIXME:should we check the length ?? anyway out of index will fail if the length
         /// mistmatches
-
         uint256 totalChains = broadcastChains.length;
+
+        /// calculate the exact fee needed
+        uint256 feesReq = messageBus.calcFee(message_);
+        feesReq = feesReq * totalChains;
+
         for (uint16 i = 0; i < totalChains; i++) {
             uint64 chainId = broadcastChains[i];
 
             messageBus.sendMessage{value: d.gasPerDst[i]}(authorizedImpl[chainId], chainId, message_);
+        }
+
+        /// Refund unused fees
+        /// NOTE: check security implications here
+        (bool success, ) = payable(srcSender_).call{value: msg.value - feesReq}("");
+
+        if (!success) {
+            revert Error.GAS_REFUND_FAILED();
         }
     }
 
