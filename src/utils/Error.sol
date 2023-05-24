@@ -172,6 +172,9 @@ library Error {
     /// @dev emitted when a form does not exist
     error FORM_DOES_NOT_EXIST();
 
+    /// @dev emitted when a vault has already been added to a form kind
+    error VAULT_ALREADY_HAS_FORM();
+
     /*///////////////////////////////////////////////////////////////
                         SUPER ROUTER ERRORS
     //////////////////////////////////////////////////////////////*/

@@ -195,7 +195,6 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         uint80 txId;
         address vaultLoc;
         address srcSender;
-        uint256 dstAmount;
         uint256 balanceBefore;
         uint256 balanceAfter;
     }
@@ -220,7 +219,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         if (vars.unlock == 0) {
             if (singleVaultData_.liqData.txData.length != 0) {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
-                vars.dstAmount = v.redeem(singleVaultData_.amount, address(this), address(this));
+                dstAmount = v.redeem(singleVaultData_.amount, address(this), address(this));
 
                 vars.balanceBefore = ERC20(v.asset()).balanceOf(address(this));
 
@@ -240,7 +239,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                     superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                     singleVaultData_.liqData.txData,
                     singleVaultData_.liqData.token,
-                    vars.dstAmount,
+                    dstAmount,
                     address(this),
                     singleVaultData_.liqData.nativeAmount,
                     "",
@@ -249,7 +248,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                 vars.balanceAfter = ERC20(v.asset()).balanceOf(address(this));
 
                 /// note: balance validation to prevent draining contract.
-                if (vars.balanceAfter < vars.balanceBefore - vars.dstAmount)
+                if (vars.balanceAfter < vars.balanceBefore - dstAmount)
                     revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
             } else {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)

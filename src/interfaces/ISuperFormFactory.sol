@@ -101,9 +101,19 @@ interface ISuperFormFactory {
     /// @return status_ is the current status of the form beacon
     function getFormBeaconStatus(uint256 formBeaconId_) external view returns (bool status_);
 
+    /// @dev returns the address of a superform
+    /// @param superFormId_ is the id of the superform
+    /// @return superForm_ is the address of the superform
+    /// @return formBeaconId_ is the id of the form beacon
+    /// @return chainId_ is the chain id
+    function getSuperForm(
+        uint256 superFormId_
+    ) external pure returns (address superForm_, uint256 formBeaconId_, uint16 chainId_);
+
     /// @dev Reverse query of getSuperForm, returns all superforms for a given vault
     /// @param vault_ is the address of a vault
     /// @return superFormIds_ is the id of the superform
+    /// @return superForms_ is the address of the superform
     /// @return formBeaconIds_ is the form id
     /// @return chainIds_ is the chain id
     function getAllSuperFormsFromVault(
@@ -111,7 +121,12 @@ interface ISuperFormFactory {
     )
         external
         view
-        returns (uint256[] memory superFormIds_, uint256[] memory formBeaconIds_, uint16[] memory chainIds_);
+        returns (
+            uint256[] memory superFormIds_,
+            address[] memory superForms_,
+            uint256[] memory formBeaconIds_,
+            uint16[] memory chainIds_
+        );
 
     /// @dev Returns all SuperForms
     /// @return superFormIds_ is the id of the superform

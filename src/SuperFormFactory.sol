@@ -38,6 +38,8 @@ contract SuperFormFactory is ISuperFormFactory {
 
     mapping(address vault => uint256[] superFormIds) public vaultToSuperForms;
 
+    mapping(address vault => uint256 formBeaconId) public vaultToFormBeaconId;
+
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
@@ -86,6 +88,9 @@ contract SuperFormFactory is ISuperFormFactory {
         }
     }
 
+    // vault
+    /// superFormAddress formBeaconId chainId
+
     /// @inheritdoc ISuperFormFactory
     function createSuperForm(
         uint256 formBeaconId_, /// TimelockedBeaconId, NormalBeaconId... etc
@@ -94,6 +99,7 @@ contract SuperFormFactory is ISuperFormFactory {
     ) external payable override returns (uint256 superFormId_, address superForm_) {
         address tFormBeacon = formBeacon[formBeaconId_];
         if (vault_ == address(0)) revert Error.ZERO_ADDRESS();
+        if (vaultToFormBeaconId[vault_] != 0) revert Error.VAULT_ALREADY_HAS_FORM();
         if (tFormBeacon == address(0)) revert Error.FORM_DOES_NOT_EXIST();
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
@@ -111,6 +117,8 @@ contract SuperFormFactory is ISuperFormFactory {
         vaultToSuperForms[vault_].push(superFormId_);
         /// @dev FIXME do we need to store info of all superforms just for external querying? Could save gas here
         superForms.push(superFormId_);
+
+        vaultToFormBeaconId[vault_] = formBeaconId_;
 
         AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
             SYNC_NEW_SUPERFORM,
@@ -190,16 +198,29 @@ contract SuperFormFactory is ISuperFormFactory {
         external
         view
         override
-        returns (uint256[] memory superFormIds_, uint256[] memory formBeaconIds_, uint16[] memory chainIds_)
+        returns (
+            uint256[] memory superFormIds_,
+            address[] memory superForms_,
+            uint256[] memory formBeaconIds_,
+            uint16[] memory chainIds_
+        )
     {
         superFormIds_ = vaultToSuperForms[vault_];
         uint256 len = superFormIds_.length;
+        superForms_ = new address[](len);
         formBeaconIds_ = new uint256[](len);
         chainIds_ = new uint16[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (, formBeaconIds_[i], chainIds_[i]) = _getSuperForm(superFormIds_[i]);
+            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = _getSuperForm(superFormIds_[i]);
         }
+    }
+
+    /// @inheritdoc ISuperFormFactory
+    function getSuperForm(
+        uint256 superFormId
+    ) external pure override returns (address superForm_, uint256 formBeaconId_, uint16 chainId_) {
+        (superForm_, formBeaconId_, chainId_) = _getSuperForm(superFormId);
     }
 
     /// @inheritdoc ISuperFormFactory

@@ -124,7 +124,6 @@ abstract contract BaseSetup is DSTest, Test {
 
     mapping(uint16 => address) public LZ_ENDPOINTS;
     mapping(uint64 => address) public CELER_BUSSES;
-
     mapping(uint16 => uint64) public CELER_CHAIN_IDS;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
@@ -340,9 +339,6 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantTwoStepsProcessorRole(deployer);
             assert(SuperRBAC(vars.superRBAC).hasTwoStepsProcessorRole(deployer));
 
-            /// @dev FIXME: in reality who should have the FORM_STATE_REGISTRY_ROLE for state registry?
-            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(deployer);
-            assert(SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(deployer));
             /// @dev 4.1 - deploy Core State Registry
 
             vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1));
@@ -373,7 +369,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
-            SuperRegistry(vars.superRegistry).setFormStateRegistry(vars.twoStepsFormStateRegistry);
+            SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
 
             /// @dev 4.4- deploy Roles State Registry
             vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 3));
@@ -384,15 +380,17 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
-            address[] memory registryAddresses = new address[](3);
+            address[] memory registryAddresses = new address[](4);
             registryAddresses[0] = vars.coreStateRegistry;
             registryAddresses[1] = vars.factoryStateRegistry;
             registryAddresses[2] = vars.rolesStateRegistry;
+            registryAddresses[3] = vars.twoStepsFormStateRegistry;
 
-            uint8[] memory registryIds = new uint8[](3);
+            uint8[] memory registryIds = new uint8[](4);
             registryIds[0] = 1;
             registryIds[1] = 2;
             registryIds[2] = 3;
+            registryIds[3] = 4;
 
             SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
 
