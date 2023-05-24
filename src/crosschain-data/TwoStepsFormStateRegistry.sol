@@ -119,8 +119,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
 
         AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
 
-        _dispatchPayload(ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
+        _dispatchPayload(msg.sender, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
 
-        _dispatchProof(ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
+        _dispatchProof(msg.sender, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
     }
 }

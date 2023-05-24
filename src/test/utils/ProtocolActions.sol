@@ -335,7 +335,7 @@ abstract contract ProtocolActions is BaseSetup {
                 LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
                     internalVars.endpoints,
                     internalVars.lzChainIds,
-                    2500000, /// (change to 2000000) @dev FIXME: should be calculated automatically - This is the gas value to send - value needs to be tested and probably be lower
+                    1000000, /// (change to 2000000) @dev FIXME: should be calculated automatically - This is the gas value to send - value needs to be tested and probably be lower
                     internalVars.forkIds,
                     vars.logs
                 );

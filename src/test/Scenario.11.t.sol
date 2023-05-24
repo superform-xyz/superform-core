@@ -35,7 +35,7 @@ contract Scenario11Test is ProtocolActions {
         /// @dev singleDestinationMultiVault, same underlying test.
         /// @dev FIXME: currently not testing the case where we mix liq bridges but underlyings are the same (protocol actions is only picking up the first liq bridge kind)
 
-        AMBs = [1, 2];
+        AMBs = [3, 1];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];

@@ -120,6 +120,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             }
 
             _dispatchAmbMessage(
+                vars.srcSender,
                 TransactionType.DEPOSIT,
                 abi.encode(ambData),
                 true,
@@ -190,6 +191,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
 
         _dispatchAmbMessage(
+            vars.srcSender,
             TransactionType.DEPOSIT,
             abi.encode(ambData),
             false,
@@ -281,6 +283,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             emit Completed(vars.currentTotalTransactions);
         } else {
             _dispatchAmbMessage(
+                vars.srcSender,
                 TransactionType.WITHDRAW,
                 abi.encode(ambData),
                 true,
@@ -338,6 +341,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
 
         _dispatchAmbMessage(
+            vars.srcSender,
             TransactionType.WITHDRAW,
             abi.encode(ambData),
             false,
@@ -465,6 +469,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     }
 
     function _dispatchAmbMessage(
+        address srcSender_,
         TransactionType txType_,
         bytes memory ambData_,
         bool multiVaults_,
@@ -484,6 +489,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
         /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{value: ambParams.gasToPay}(
+            srcSender_,
             ambIds_,
             dstChainId_,
             abi.encode(ambMessage),

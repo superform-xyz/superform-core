@@ -34,7 +34,7 @@ contract Scenario7Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationMultiVault, same underlying test - should test that liquidity request uses same amount
 
-        AMBs = [1, 2];
+        AMBs = [3, 2];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];

@@ -135,6 +135,9 @@ library Error {
     /// @dev if message hasn't reached the specified level of quorum needed
     error QUORUM_NOT_REACHED();
 
+    /// @dev is gas refunds failed
+    error GAS_REFUND_FAILED();
+
     /// TODO: insert description
     error INVALID_PROOF_BRIDGE_ID();
 
