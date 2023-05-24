@@ -242,6 +242,11 @@ interface ISuperRegistry {
     /// @return valid_ a flag indicating if its valid.
     function isValidStateRegistry(address registryAddress_) external view returns (bool valid_);
 
+    /// @dev helps validate if an address is a valid amb implementation
+    /// @param ambAddress_ is the address of the amb implementation
+    /// @return valid_ a flag indicating if its valid.
+    function isValidAmbImpl(address ambAddress_) external view returns (bool valid_);
+
     /// @dev gets the address of a bridge validator
     /// @param bridgeId_ is the id of a bridge
     /// @return bridgeValidator_ is the address of the form
