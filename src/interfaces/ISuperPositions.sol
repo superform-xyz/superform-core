@@ -48,16 +48,12 @@ interface ISuperPositions {
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
     /// @return srcChainId_ is the decoded srcChainId.
-    function stateMultiSync(
-        AMBMessage memory data_
-    ) external payable returns (uint16 srcChainId_);
+    function stateMultiSync(AMBMessage memory data_) external payable returns (uint16 srcChainId_);
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
     /// @return srcChainId_ is the decoded srcChainId.
-    function stateSync(
-        AMBMessage memory data_
-    ) external payable returns (uint16 srcChainId_);
+    function stateSync(AMBMessage memory data_) external payable returns (uint16 srcChainId_);
 
     /// @dev saves the AMB message being sent together with the associated id formulated in super router
     /// @param messageId_ is the id of the message being sent
