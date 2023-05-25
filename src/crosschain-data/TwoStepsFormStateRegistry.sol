@@ -10,6 +10,7 @@ import {BaseStateRegistry} from "../crosschain-data/BaseStateRegistry.sol";
 import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData} from "../types/DataTypes.sol";
 import "../utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
@@ -50,7 +51,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     }
 
     /// @inheritdoc IFormStateRegistry
-    function finalizePayload(uint256 payloadId, bytes memory ackExtraData) external onlyTwoStepsProcessor {
+    function finalizePayload(uint256 payloadId, bytes memory ackExtraData) external payable onlyTwoStepsProcessor {
         (address form_, , ) = _getSuperForm(payloadStore[payloadId].superFormId);
 
         /// NOTE: ERC4626TimelockForm is the only form that uses processUnlock function
@@ -63,15 +64,15 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
             /// NOTE: in every other instance it's better to re-init withdraw
             /// NOTE: this catch will ALWAYS send a message back to source with exception of WITHDRAW_COOLDOWN_PERIOD error on Timelock
             /// TODO: Test this case (test messaging back to src)
-            if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
-                /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
-                InitSingleVaultData memory singleVaultData = form.unlockId(payloadStore[payloadId].owner);
+            // if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
+            /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
+            (, InitSingleVaultData memory singleVaultData) = form.unlockId(payloadStore[payloadId].owner);
 
-                delete payloadStore[payloadId];
+            delete payloadStore[payloadId];
 
-                (uint16 srcChainId, bytes memory returnMessage) = _constructSingleReturnData(singleVaultData);
-                _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
-            }
+            (uint16 srcChainId, bytes memory returnMessage) = _constructSingleReturnData(singleVaultData);
+            _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
+            // }
 
             /// TODO: Emit something in case of WITHDRAW_COOLDOWN_PERIOD. We don't want to delete payload then
             // emit()
@@ -82,15 +83,20 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
         InitSingleVaultData memory singleVaultData_
-    ) internal view returns (uint16 srcChainId, bytes memory returnMessage) {
-        (, , uint80 currentTotalTxs) = _decodeTxData(singleVaultData_.txData);
+    ) internal view returns (uint16, bytes memory returnMessage) {
+        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(singleVaultData_.txData);
 
         /// @notice Send Data to Source to issue superform positions.
         return (
             srcChainId,
             abi.encode(
                 AMBMessage(
-                    _packTxInfo(uint120(TransactionType.WITHDRAW), uint120(CallbackType.FAIL), false, 0),
+                    _packTxInfo(
+                        uint120(TransactionType.WITHDRAW),
+                        uint120(CallbackType.FAIL),
+                        false,
+                        STATE_REGISTRY_TYPE
+                    ),
                     abi.encode(
                         ReturnSingleData(
                             _packReturnTxInfo(
@@ -111,16 +117,12 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
     function _dispatchAcknowledgement(uint16 dstChainId_, bytes memory message_, bytes memory ackExtraData_) internal {
         AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
         uint8[] memory ambIds_ = ackData.ambIds;
-
-        /// @dev atleast 2 AMBs are required
-        if (ambIds_.length < 2) {
-            revert Error.INVALID_AMB_IDS_LENGTH();
-        }
-
         AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
 
         _dispatchPayload(msg.sender, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
 
-        _dispatchProof(msg.sender, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
+        if (ambIds_.length > 1) {
+            _dispatchProof(msg.sender, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
+        }
     }
 }

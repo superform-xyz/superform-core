@@ -79,7 +79,7 @@ contract ScenarioTimelockTest is ProtocolActions {
     // function testFail_scenario_request_unlock_overwithdraw() public {}
 
     /// @dev This test uses 2 actions, rolls block between and make assertions about states in between
-    function xtest_scenario_request_unlock_full_withdraw() public {
+    function test_scenario_request_unlock_full_withdraw() public {
         /*///////////////////////////////////////////////////////////////
                                 STATE SETUP
         //////////////////////////////////////////////////////////////*/
@@ -254,10 +254,14 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// @dev Keeper needs to know this value to be able to process unlock
         success = _stage7_process_unlock_withdraw(action, vars, 1);
 
-        if (action.testType == TestType.RevertXChainWithdraw) {
-            /// @dev Process payload received on source from destination (withdraw callback)
-            success = _stage6_process_superPositions_withdraw(action, vars);
-        }
+        console.log("stage7 done");
+
+        // if (action.testType == TestType.RevertXChainWithdraw) {
+        /// @dev Process payload received on source from destination (withdraw callback)
+        success = _stage8_process_2step_payload(action, vars);
+
+        console.log("stage8 done");
+        // }
         /*///////////////////////////////////////////////////////////////
                             TODO: WITHDRAW ASSERTS
         //////////////////////////////////////////////////////////////*/

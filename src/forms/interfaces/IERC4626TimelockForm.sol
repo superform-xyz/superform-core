@@ -12,5 +12,7 @@ interface IERC4626TimelockForm is IERC4626Form {
     function processUnlock(address owner) external;
 
     /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
-    function unlockId(address owner) external view returns (InitSingleVaultData memory singleVaultData);
+    function unlockId(
+        address owner
+    ) external view returns (uint256 requestTimestamp, InitSingleVaultData memory singleVaultData);
 }

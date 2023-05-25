@@ -105,6 +105,7 @@ abstract contract BaseSetup is DSTest, Test {
     // chainId => formbeacon id => vault id
     mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
     mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
+    mapping(uint16 chainId => uint256 payloadId) TWO_STEP_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -366,7 +367,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 4.3 - deploy Form State Registry
             vars.twoStepsFormStateRegistry = address(
-                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1)
+                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 4)
             );
 
             SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry);
@@ -385,15 +386,17 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
-            address[] memory registryAddresses = new address[](3);
+            address[] memory registryAddresses = new address[](4);
             registryAddresses[0] = vars.coreStateRegistry;
             registryAddresses[1] = vars.factoryStateRegistry;
             registryAddresses[2] = vars.rolesStateRegistry;
+            registryAddresses[3] = vars.twoStepsFormStateRegistry;
 
-            uint8[] memory registryIds = new uint8[](3);
+            uint8[] memory registryIds = new uint8[](4);
             registryIds[0] = 1;
             registryIds[1] = 2;
             registryIds[2] = 3;
+            registryIds[3] = 4;
 
             SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
 
