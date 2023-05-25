@@ -12,7 +12,7 @@ import {Error} from "../utils/Error.sol";
 /// @dev Keeps information on all protocolAddresses used in the SuperForms ecosystem.
 contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
-    uint16 public chainId;
+    uint64 public chainId;
 
     /// @dev canonical permit2 contract
     address public PERMIT2;
@@ -54,7 +54,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev FIXME: remove all address 0 checks to block calls to a certain contract?
 
     /// @inheritdoc ISuperRegistry
-    function setImmutables(uint16 chainId_, address permit2_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setImmutables(uint64 chainId_, address permit2_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (chainId != 0) revert Error.DISABLED();
         if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
         if (PERMIT2 != address(0)) revert Error.DISABLED();

@@ -46,8 +46,8 @@ abstract contract BridgeValidator is IBridgeValidator {
     /// @inheritdoc IBridgeValidator
     function validateTxData(
         bytes calldata txData_,
-        uint16 srcChainId_,
-        uint16 dstChainId_,
+        uint64 srcChainId_,
+        uint64 dstChainId_,
         bool deposit_,
         address superForm_,
         address srcSender_,

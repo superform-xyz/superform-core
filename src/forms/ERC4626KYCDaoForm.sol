@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {ERC4626FormImplementation} from "./ERC4626FormImplementation.sol";
 import {BaseForm} from "../BaseForm.sol";
-import {IKycValidity} from "../vendor/kycDAO/IKycValidity.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
@@ -19,68 +19,58 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     /// @dev error thrown when the sender doesn't the KYCDAO
     error NO_VALID_KYC_TOKEN();
 
-    /*//////////////////////////////////////////////////////////////
-                                VARIABLES
-    //////////////////////////////////////////////////////////////*/
-
-    IKycValidity public immutable kycValidity;
-
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_, address kycValidity_) ERC4626FormImplementation(superRegistry_) {
-        kycValidity = IKycValidity(kycValidity_);
-    }
+    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
 
     function _kycCheck(address srcSender_) internal view {
-        if (!kycValidity.hasValidToken(srcSender_)) revert NO_VALID_KYC_TOKEN();
+        if (!kycDAO4626(vault).kycCheck(srcSender_)) revert NO_VALID_KYC_TOKEN();
     }
 
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     ) internal override returns (uint256 dstAmount) {
-        (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
+        _kycCheck(srcSender_);
 
-        _kycCheck(srcSender);
-
-        dstAmount = _processDirectDeposit(singleVaultData_, srcSender);
+        dstAmount = _processDirectDeposit(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc BaseForm
     function _directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     ) internal override returns (uint256 dstAmount) {
-        (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
+        _kycCheck(srcSender_);
 
-        _kycCheck(srcSender);
-
-        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender);
+        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
     }
 
     function _xChainDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_
     ) internal override returns (uint256 dstAmount) {
-        (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(singleVaultData_.txData);
+        _kycCheck(srcSender_);
 
-        _kycCheck(srcSender);
-
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId, txId);
+        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_
     ) internal override returns (uint256 dstAmount) {
-        (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(singleVaultData_.txData);
+        _kycCheck(srcSender_);
 
-        _kycCheck(srcSender);
-
-        dstAmount = _processXChainWithdraw(singleVaultData_, srcSender, srcChainId, txId);
+        dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
     }
 }

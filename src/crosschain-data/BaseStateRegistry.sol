@@ -75,7 +75,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     function dispatchPayload(
         address srcSender_,
         uint8[] memory ambIds_,
-        uint16 dstChainId_,
+        uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable override onlySender {
@@ -105,7 +105,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     }
 
     /// @inheritdoc IBaseStateRegistry
-    function receivePayload(uint16 srcChainId_, bytes memory message_) external override {
+    function receivePayload(uint64 srcChainId_, bytes memory message_) external override {
         if (!superRegistry.isValidAmbImpl(msg.sender)) {
             revert Error.INVALID_CALLER();
         }
@@ -146,7 +146,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     function _dispatchPayload(
         address srcSender_,
         uint8 ambId_,
-        uint16 dstChainId_,
+        uint64 dstChainId_,
         uint256 gasToPay_,
         bytes memory message_,
         bytes memory overrideData_
@@ -164,7 +164,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     function _dispatchProof(
         address srcSender_,
         uint8[] memory ambIds_,
-        uint16 dstChainId_,
+        uint64 dstChainId_,
         uint256[] memory gasToPay_,
         bytes memory message_,
         bytes[] memory overrideData_
@@ -199,7 +199,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes memory extraData_
     ) internal {
-        AMBMessage memory newData = AMBMessage(_packTxInfo(0, 0, false, STATE_REGISTRY_TYPE), message_);
+        AMBMessage memory newData = AMBMessage(
+            _packTxInfo(0, 0, 0, STATE_REGISTRY_TYPE, srcSender_, superRegistry.chainId()),
+            message_
+        );
 
         IAmbImplementation ambImplementation = IAmbImplementation(superRegistry.getAmbAddress(ambId_));
 
@@ -219,7 +222,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes[] memory extraData_
     ) internal {
         bytes memory proof = abi.encode(keccak256(message_));
-        AMBMessage memory newData = AMBMessage(_packTxInfo(0, 0, false, STATE_REGISTRY_TYPE), proof);
+        AMBMessage memory newData = AMBMessage(
+            _packTxInfo(0, 0, 0, STATE_REGISTRY_TYPE, srcSender_, superRegistry.chainId()),
+            proof
+        );
 
         for (uint8 i = 1; i < ambIds_.length; i++) {
             uint8 tempAmbId = ambIds_[i];

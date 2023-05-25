@@ -71,7 +71,7 @@ interface ISuperRegistry {
     /// @dev sets the chain id.
     /// @param chainId_ the superform chain id this registry is deployed on
     /// @param permit2_ the address of the permit2 contract
-    function setImmutables(uint16 chainId_, address permit2_) external;
+    function setImmutables(uint64 chainId_, address permit2_) external;
 
     /// @dev sets a new protocol address.
     /// @param protocolAddressId_ the protocol address identifier
@@ -147,7 +147,7 @@ interface ISuperRegistry {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev gets the superform chainId of the protocol
-    function chainId() external view returns (uint16);
+    function chainId() external view returns (uint64);
 
     /// @dev returns the permit2 address
     function PERMIT2() external view returns (address);

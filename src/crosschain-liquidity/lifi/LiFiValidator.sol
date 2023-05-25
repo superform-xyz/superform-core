@@ -13,12 +13,12 @@ import "../../utils/DataPacking.sol";
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
 contract LiFiValidator is BridgeValidator {
-    mapping(uint16 => uint256) public lifiChainId;
+    mapping(uint64 => uint256) public lifiChainId;
 
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
-    event ChainIdSet(uint16 superChainId, uint256 lifiChainId);
+    event ChainIdSet(uint64 superChainId, uint256 lifiChainId);
 
     /*///////////////////////////////////////////////////////////////
                                 Constructor
@@ -45,8 +45,8 @@ contract LiFiValidator is BridgeValidator {
     /// @dev FIXME: do we want to disable destination calls?
     function validateTxData(
         bytes calldata txData_,
-        uint16 srcChainId_,
-        uint16 dstChainId_,
+        uint64 srcChainId_,
+        uint64 dstChainId_,
         bool deposit_,
         address superForm_,
         address srcSender_,
@@ -90,9 +90,9 @@ contract LiFiValidator is BridgeValidator {
     /// @dev allows admin to add new chain ids in future
     /// @param superChainIds_ is the identifier of the chain within superform protocol
     /// @param lifiChainIds_ is the identifier of the chain given by the bridge
-    function setChainIds(uint16[] memory superChainIds_, uint256[] memory lifiChainIds_) external onlyProtocolAdmin {
+    function setChainIds(uint64[] memory superChainIds_, uint256[] memory lifiChainIds_) external onlyProtocolAdmin {
         for (uint256 i = 0; i < superChainIds_.length; i++) {
-            uint16 superChainIdT = superChainIds_[i];
+            uint64 superChainIdT = superChainIds_[i];
             uint256 lifiChainIdT = lifiChainIds_[i];
             if (superChainIdT == 0 || lifiChainIdT == 0) {
                 revert Error.INVALID_CHAIN_ID();

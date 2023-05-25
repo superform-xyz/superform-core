@@ -20,15 +20,15 @@ contract LocalDeploy is AbstractDeploy {
     // formbeacon id => vault name
     mapping(uint256 formBeaconId => string[] names) VAULT_NAMES;
     // chainId => formbeacon id => vault
-    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults)) public vaults;
+    mapping(uint64 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults)) public vaults;
     // chainId => formbeacon id => vault id
-    mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
+    mapping(uint64 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
 
     /*//////////////////////////////////////////////////////////////
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint16[] SELECTED_CHAIN_IDS = [2, 4, 7]; /// @dev BSC, POLY & FTM
+    uint64[] SELECTED_CHAIN_IDS = [56, 137, 250]; /// @dev BSC, POLY & FTM
     uint256[] EVM_CHAIN_IDS = [56, 137, 250]; /// @dev BSC, POLY & FTM
     Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc_Fork, Chains.Polygon_Fork, Chains.Fantom_Fork];
 
@@ -36,7 +36,7 @@ contract LocalDeploy is AbstractDeploy {
                         CHAINLINK VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint16 => address) public PRICE_FEEDS;
+    mapping(uint64 => address) public PRICE_FEEDS;
 
     address public constant ETHEREUM_ETH_USD_FEED = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address public constant BSC_BNB_USD_FEED = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
@@ -48,7 +48,7 @@ contract LocalDeploy is AbstractDeploy {
     function run() external {
         uint256[] memory forkIds = _preDeploymentSetup(SELECTED_CHAIN_NAMES, Cycle.Dev);
 
-        mapping(uint16 => address) storage priceFeeds = PRICE_FEEDS;
+        mapping(uint64 => address) storage priceFeeds = PRICE_FEEDS;
         priceFeeds[ETH] = ETHEREUM_ETH_USD_FEED;
         priceFeeds[BSC] = BSC_BNB_USD_FEED;
         priceFeeds[AVAX] = AVALANCHE_AVAX_USD_FEED;
@@ -75,10 +75,17 @@ contract LocalDeploy is AbstractDeploy {
         address vault;
         address UNDERLYING_TOKEN;
         uint256 vaultId;
+        uint256 chainIdIndex;
 
         /// @dev Deployment stage 1
         for (uint256 i = 0; i < SELECTED_CHAIN_IDS.length; i++) {
-            _setupStage1(SELECTED_CHAIN_IDS[i] - 1, Cycle.Dev, SELECTED_CHAIN_IDS, EVM_CHAIN_IDS, forkIds[i]);
+            for (uint256 j = 0; j < chainIds.length; j++) {
+                if (chainIds[j] == SELECTED_CHAIN_IDS[i]) {
+                    chainIdIndex = j;
+                    break;
+                }
+            }
+            _setupStage1(chainIdIndex, Cycle.Dev, SELECTED_CHAIN_IDS, EVM_CHAIN_IDS, forkIds[i]);
 
             /// @dev 5 - Deploy UNDERLYING_TOKENS and VAULTS
             /// @dev FIXME grab testnet tokens
@@ -131,12 +138,18 @@ contract LocalDeploy is AbstractDeploy {
 
         /// @dev Deployment Stage 2 - Setup trusted remotes and deploy superforms. This must be done after the rest of the protocol has been deployed on all chains
         for (uint256 i = 0; i < SELECTED_CHAIN_IDS.length; i++) {
-            _setupStage2(SELECTED_CHAIN_IDS[i] - 1, Cycle.Dev, SELECTED_CHAIN_IDS, forkIds[i]);
+            for (uint256 j = 0; j < chainIds.length; j++) {
+                if (chainIds[j] == SELECTED_CHAIN_IDS[i]) {
+                    chainIdIndex = j;
+                    break;
+                }
+            }
+            _setupStage2(chainIdIndex, Cycle.Dev, SELECTED_CHAIN_IDS, forkIds[i]);
         }
     }
 
     function _getPriceMultiplier(
-        uint16 targetChainId_,
+        uint64 targetChainId_,
         uint256 targetForkId_,
         uint256 ethForkId_
     ) internal returns (uint256) {
@@ -192,7 +205,7 @@ contract LocalDeploy is AbstractDeploy {
 
     function _fundNativeTokens(
         uint256[] memory forkIds,
-        uint16[] memory s_superFormChainIds
+        uint64[] memory s_superFormChainIds
     ) internal setEnvDeploy(Cycle.Dev) {
         for (uint256 i = 0; i < s_superFormChainIds.length; i++) {
             uint256 multiplier = _getPriceMultiplier(s_superFormChainIds[i], forkIds[i], forkIds[forkIds.length - 1]);
