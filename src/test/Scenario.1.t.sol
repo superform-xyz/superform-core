@@ -71,9 +71,7 @@ contract Scenario1Test is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
-
             (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
-
             vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
 
             aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);

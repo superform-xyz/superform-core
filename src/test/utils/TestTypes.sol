@@ -55,6 +55,8 @@ struct StagesLocalVars {
     uint256[] amounts;
     uint256[] maxSlippage;
     uint8[] liqBridges;
+    uint256 chain0Index;
+    uint256 chainDstIndex;
 }
 
 struct MessagingAssertVars {

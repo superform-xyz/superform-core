@@ -375,8 +375,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                 _constructMultiReturnData(
                     srcChainId_,
                     srcSender_,
-                    payloadId_,
-                    multiVaultData,
+                    multiVaultData.payloadId,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
                     multiVaultData.amounts
@@ -453,8 +452,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                 _constructMultiReturnData(
                     srcChainId_,
                     srcSender_,
-                    payloadId_,
-                    multiVaultData,
+                    multiVaultData.payloadId,
                     TransactionType.DEPOSIT,
                     CallbackType.RETURN,
                     dstAmounts
@@ -502,7 +500,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                 _constructSingleReturnData(
                     srcChainId_,
                     srcSender_,
-                    payloadId_,
+                    singleVaultData.payloadId,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
                     singleVaultData.amount
@@ -543,7 +541,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                     _constructSingleReturnData(
                         srcChainId_,
                         srcSender_,
-                        payloadId_,
+                        singleVaultData.payloadId,
                         TransactionType.DEPOSIT,
                         CallbackType.RETURN,
                         dstAmount
@@ -570,7 +568,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         uint64 srcChainId_,
         address srcSender_,
         uint256 payloadId_,
-        InitMultiVaultData memory multiVaultData_,
         TransactionType txType,
         CallbackType returnType,
         uint256[] memory amounts

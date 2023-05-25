@@ -79,7 +79,7 @@ contract ScenarioTimelockTest is ProtocolActions {
     // function testFail_scenario_request_unlock_overwithdraw() public {}
 
     /// @dev This test uses 2 actions, rolls block between and make assertions about states in between
-    function xtest_scenario_request_unlock_full_withdraw() public {
+    function test_scenario_request_unlock_full_withdraw() public {
         /*///////////////////////////////////////////////////////////////
                                 STATE SETUP
         //////////////////////////////////////////////////////////////*/

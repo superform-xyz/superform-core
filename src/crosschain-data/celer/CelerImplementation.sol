@@ -17,7 +17,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
-    IMessageBus public immutable messageBus;
+    IMessageBus public messageBus;
     ISuperRegistry public immutable superRegistry;
 
     uint64[] public broadcastChains;
@@ -39,9 +39,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     /*///////////////////////////////////////////////////////////////
                     Constructor
     //////////////////////////////////////////////////////////////*/
-    /// @param messageBus_ is the celer message bus contract for respective chain.
-    constructor(IMessageBus messageBus_, ISuperRegistry superRegistry_) {
-        messageBus = messageBus_;
+    constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }
 
@@ -185,5 +183,16 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
         targetRegistry.receivePayload(superChainId[srcChainId_], message_);
         return ExecutionStatus.Success;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            Celer Application config
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows protocol admin to configure the celer message bus
+    /// @param messageBus_ is the celer message bus on the deployed network
+    function setCelerBus(address messageBus_) external onlyProtocolAdmin {
+        if (messageBus_ == address(0)) revert();
+        messageBus = IMessageBus(messageBus_);
     }
 }

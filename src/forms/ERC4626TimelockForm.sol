@@ -185,7 +185,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
+        address,
         uint64 srcChainId_
     ) internal virtual override returns (uint256 dstAmount) {
         dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);

@@ -203,9 +203,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
     uint64[] public celer_chainIds = [1, 56, 43114, 137, 42161, 10];
 
-    /// @dev FIXME to fix with correct chainIds
-    uint256[] public socketChainIds = [1, 2, 3, 4, 5, 6];
-    uint256[] public lifiChainIds = [1, 2, 3, 4, 5, 6];
+    uint256[] public llChainIds = [1, 56, 43114, 137, 42161, 10];
 
     uint256 public constant milionTokensE18 = 1 ether;
 
@@ -361,7 +359,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 4.3 - deploy Form State Registry
             vars.twoStepsFormStateRegistry = address(
-                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1)
+                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 4)
             );
 
             SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry);
@@ -411,13 +409,10 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
             /// @dev 5.3 - deploy Celer Implementation
-            vars.celerImplementation = address(
-                new CelerImplementation{salt: salt}(
-                    IMessageBus(celerMessageBusses[i]),
-                    SuperRegistry(vars.superRegistry)
-                )
-            );
+            vars.celerImplementation = address(new CelerImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
             contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
+
+            CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[i]);
 
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
@@ -436,12 +431,12 @@ abstract contract BaseSetup is DSTest, Test {
             vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
 
-            SocketValidator(vars.socketValidator).setChainIds(chainIds, socketChainIds);
+            SocketValidator(vars.socketValidator).setChainIds(chainIds, llChainIds);
 
             vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
-            LiFiValidator(vars.lifiValidator).setChainIds(chainIds, lifiChainIds);
+            LiFiValidator(vars.lifiValidator).setChainIds(chainIds, llChainIds);
 
             vars.kycDAOMock = address(new KYCDaoNFTMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
@@ -519,7 +514,7 @@ abstract contract BaseSetup is DSTest, Test {
             ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
 
             // KYCDao ERC4626 Form (only for Polygon)
-            vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry, vars.kycDAOMock));
+            vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
             ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
@@ -640,11 +635,6 @@ abstract contract BaseSetup is DSTest, Test {
                     (superFormId, vars.superForm) = ISuperFormFactory(
                         contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))]
                     ).createSuperForm{value: 800 * 10 ** 18}(FORM_BEACON_IDS[j], vault, generateBroadcastParams(5, 2));
-
-                    console.log("SuperFormId :", superFormId);
-                    console.log("SuperForm Address :", vars.superForm);
-                    console.log("Form Beacon Id :", FORM_BEACON_IDS[j]);
-                    console.log("Chain Id :", chainIds[i]);
 
                     if (FORM_BEACON_IDS[j] == 3 && i == 3) {
                         /// mint a kycDAO Nft to superForm on polygon

@@ -97,6 +97,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
 
         AMBMessage memory stored = txHistory[returnData.payloadId];
+
         uint8 multi;
         address srcSender;
         (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(stored.txInfo);

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {ERC4626FormImplementation} from "./ERC4626FormImplementation.sol";
 import {BaseForm} from "../BaseForm.sol";
-import {IKycValidity} from "../vendor/kycDAO/IKycValidity.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
@@ -19,26 +19,18 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     /// @dev error thrown when the sender doesn't the KYCDAO
     error NO_VALID_KYC_TOKEN();
 
-    /*//////////////////////////////////////////////////////////////
-                                VARIABLES
-    //////////////////////////////////////////////////////////////*/
-
-    IKycValidity public immutable kycValidity;
-
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_, address kycValidity_) ERC4626FormImplementation(superRegistry_) {
-        kycValidity = IKycValidity(kycValidity_);
-    }
+    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
 
     function _kycCheck(address srcSender_) internal view {
-        if (!kycValidity.hasValidToken(srcSender_)) revert NO_VALID_KYC_TOKEN();
+        if (!kycDAO4626(vault).kycCheck(srcSender_)) revert NO_VALID_KYC_TOKEN();
     }
 
     /// @inheritdoc BaseForm

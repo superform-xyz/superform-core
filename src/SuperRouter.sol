@@ -121,12 +121,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
             _dispatchAmbMessage(
                 DispatchAMBMessageVars(
-                    vars.srcSender,
                     TransactionType.DEPOSIT,
                     abi.encode(ambData),
-                    1,
                     req.extraData,
+                    vars.srcSender,
                     req.ambIds,
+                    1,
                     vars.srcChainId,
                     vars.dstChainId,
                     vars.currentPayloadId
@@ -172,12 +172,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (vars.srcChainId == vars.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
-        (ambData, vars.currentPayloadId) = _buildDepositAmbData(
-            vars.srcSender,
-            vars.srcChainId,
-            vars.dstChainId,
-            req.superFormData
-        );
+        (ambData, vars.currentPayloadId) = _buildDepositAmbData(vars.dstChainId, req.superFormData);
 
         vars.liqRequest = req.superFormData.liqRequest;
 
@@ -195,12 +190,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         _dispatchAmbMessage(
             DispatchAMBMessageVars(
-                vars.srcSender,
                 TransactionType.DEPOSIT,
                 abi.encode(ambData),
-                0,
                 req.extraData,
+                vars.srcSender,
                 req.ambIds,
+                0,
                 vars.srcChainId,
                 vars.dstChainId,
                 vars.currentPayloadId
@@ -222,12 +217,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         if (vars.srcChainId != vars.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
-        (ambData, vars.currentPayloadId) = _buildDepositAmbData(
-            vars.srcSender,
-            vars.srcChainId,
-            vars.dstChainId,
-            req.superFormData
-        );
+        (ambData, vars.currentPayloadId) = _buildDepositAmbData(vars.dstChainId, req.superFormData);
 
         /// @dev same chain action
 
@@ -291,12 +281,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         } else {
             _dispatchAmbMessage(
                 DispatchAMBMessageVars(
-                    vars.srcSender,
                     TransactionType.WITHDRAW,
                     abi.encode(ambData),
-                    1,
                     req.extraData,
+                    vars.srcSender,
                     req.ambIds,
+                    1,
                     vars.srcChainId,
                     vars.dstChainId,
                     vars.currentPayloadId
@@ -343,21 +333,16 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         InitSingleVaultData memory ambData;
 
-        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(
-            vars.srcSender,
-            vars.srcChainId,
-            vars.dstChainId,
-            req.superFormData
-        );
+        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(vars.srcSender, vars.dstChainId, req.superFormData);
 
         _dispatchAmbMessage(
             DispatchAMBMessageVars(
-                vars.srcSender,
                 TransactionType.WITHDRAW,
                 abi.encode(ambData),
-                0,
                 req.extraData,
+                vars.srcSender,
                 req.ambIds,
+                0,
                 vars.srcChainId,
                 vars.dstChainId,
                 vars.currentPayloadId
@@ -380,12 +365,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
         InitSingleVaultData memory ambData;
 
-        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(
-            vars.srcSender,
-            vars.srcChainId,
-            vars.dstChainId,
-            req.superFormData
-        );
+        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(vars.srcSender, vars.dstChainId, req.superFormData);
 
         /// @dev same chain action
 
@@ -395,8 +375,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     }
 
     function _buildDepositAmbData(
-        address srcSender_,
-        uint64 srcChainId_,
         uint64 dstChainId_,
         SingleVaultSFData memory superFormData_
     ) internal returns (InitSingleVaultData memory ambData, uint256 currentPayloadId) {
@@ -425,7 +403,6 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
 
     function _buildWithdrawAmbData(
         address srcSender_,
-        uint64 srcChainId_,
         uint64 dstChainId_,
         SingleVaultSFData memory superFormData_
     ) internal returns (InitSingleVaultData memory ambData, uint256 currentPayloadId) {
@@ -482,12 +459,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     }
 
     struct DispatchAMBMessageVars {
-        address srcSender;
         TransactionType txType;
         bytes ambData;
-        uint8 multiVaults;
         bytes extraData;
+        address srcSender;
         uint8[] ambIds;
+        uint8 multiVaults;
         uint64 srcChainId;
         uint64 dstChainId;
         uint256 currentPayloadId;

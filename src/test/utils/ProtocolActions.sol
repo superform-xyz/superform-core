@@ -66,6 +66,13 @@ abstract contract ProtocolActions is BaseSetup {
             (action.testType == TestType.RevertUpdateStateRBAC && action.revertRole == bytes32(0))
         ) revert MISMATCH_RBAC_TEST();
 
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (CHAIN_0 == chainIds[i]) {
+                vars.chain0Index = i;
+                break;
+            }
+        }
+
         vars.lzEndpoint_0 = LZ_ENDPOINTS[CHAIN_0];
         vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
 
@@ -75,19 +82,26 @@ abstract contract ProtocolActions is BaseSetup {
         vars.toDst = new address[](vars.nDestinations);
         multiSuperFormsData = new MultiVaultsSFData[](vars.nDestinations);
         singleSuperFormsData = new SingleVaultSFData[](vars.nDestinations);
-
         /// @dev FIXME this probably needs to be tailored for NATIVE DEPOSITS
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
         action.msgValue = action.msgValue + (vars.nDestinations + 1) * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
+            for (uint256 j = 0; j < chainIds.length; j++) {
+                if (DST_CHAINS[i] == chainIds[j]) {
+                    vars.chainDstIndex = j;
+                    break;
+                }
+            }
+
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
             (vars.targetSuperFormIds, vars.underlyingSrcToken, vars.vaultMock) = _targetVaults(
                 CHAIN_0,
                 DST_CHAINS[i],
                 actionIndex
             );
+
             vars.toDst = new address[](vars.targetSuperFormIds.length);
 
             /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
@@ -123,29 +137,13 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.vaultMock,
                         CHAIN_0,
                         DST_CHAINS[i],
-                        socketChainIds[CHAIN_0 - 1], /// @dev HACK to get socket src and dst chain ids
-                        socketChainIds[DST_CHAINS[i] - 1],
+                        llChainIds[vars.chain0Index],
+                        llChainIds[vars.chainDstIndex],
                         action.multiTx,
                         action.action
                     )
                 );
             } else {
-                /// FIXME: NOTE: Shouldn't we validate that at contract level?
-                /// This reverting may give us invalid sense of security. Contract should revert here, not test.
-
-                // if (
-                //     !((vars.underlyingSrcToken.length ==
-                //         vars.targetSuperFormIds.length) &&
-
-                //         (vars.underlyingSrcToken.length ==
-                //             vars.amounts.length) &&
-
-                //         (vars.underlyingSrcToken.length ==
-                //             vars.maxSlippage.length) &&
-
-                //         (vars.underlyingSrcToken.length == 1))
-                // ) revert INVALID_AMOUNTS_LENGTH();
-
                 SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                     action.user,
                     vars.fromSrc,
@@ -159,8 +157,8 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.vaultMock[0],
                     CHAIN_0,
                     DST_CHAINS[i],
-                    socketChainIds[CHAIN_0 - 1], /// @dev HACK to get socket src and dst chain ids
-                    socketChainIds[DST_CHAINS[i] - 1],
+                    llChainIds[vars.chain0Index],
+                    llChainIds[vars.chainDstIndex],
                     action.multiTx
                 );
 
@@ -447,7 +445,7 @@ abstract contract ProtocolActions is BaseSetup {
                                 _batchProcessMultiTx(
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    socketChainIds[aV[i].toChainId - 1],
+                                    llChainIds[vars.chainDstIndex],
                                     vars.underlyingSrcToken,
                                     vars.amounts
                                 );
@@ -455,7 +453,7 @@ abstract contract ProtocolActions is BaseSetup {
                                 _processMultiTx(
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    socketChainIds[aV[i].toChainId - 1],
+                                    llChainIds[vars.chainDstIndex],
                                     vars.underlyingSrcToken[0],
                                     singleSuperFormsData[i].amount
                                 );

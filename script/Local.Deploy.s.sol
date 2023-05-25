@@ -75,10 +75,17 @@ contract LocalDeploy is AbstractDeploy {
         address vault;
         address UNDERLYING_TOKEN;
         uint256 vaultId;
+        uint256 chainIdIndex;
 
         /// @dev Deployment stage 1
         for (uint256 i = 0; i < SELECTED_CHAIN_IDS.length; i++) {
-            _setupStage1(SELECTED_CHAIN_IDS[i] - 1, Cycle.Dev, SELECTED_CHAIN_IDS, EVM_CHAIN_IDS, forkIds[i]);
+            for (uint256 j = 0; j < chainIds.length; j++) {
+                if (chainIds[j] == SELECTED_CHAIN_IDS[i]) {
+                    chainIdIndex = j;
+                    break;
+                }
+            }
+            _setupStage1(chainIdIndex, Cycle.Dev, SELECTED_CHAIN_IDS, EVM_CHAIN_IDS, forkIds[i]);
 
             /// @dev 5 - Deploy UNDERLYING_TOKENS and VAULTS
             /// @dev FIXME grab testnet tokens
@@ -131,7 +138,13 @@ contract LocalDeploy is AbstractDeploy {
 
         /// @dev Deployment Stage 2 - Setup trusted remotes and deploy superforms. This must be done after the rest of the protocol has been deployed on all chains
         for (uint256 i = 0; i < SELECTED_CHAIN_IDS.length; i++) {
-            _setupStage2(SELECTED_CHAIN_IDS[i] - 1, Cycle.Dev, SELECTED_CHAIN_IDS, forkIds[i]);
+            for (uint256 j = 0; j < chainIds.length; j++) {
+                if (chainIds[j] == SELECTED_CHAIN_IDS[i]) {
+                    chainIdIndex = j;
+                    break;
+                }
+            }
+            _setupStage2(chainIdIndex, Cycle.Dev, SELECTED_CHAIN_IDS, forkIds[i]);
         }
     }
 

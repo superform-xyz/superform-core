@@ -298,6 +298,7 @@ abstract contract AbstractDeploy is Script {
         SetupVars memory vars;
         /// @dev liquidity validator addresses
         address[] memory bridgeValidators = new address[](bridgeIds.length);
+
         vars.chainId = chainIds[i];
 
         vars.ambAddresses = new address[](ambIds.length);
@@ -347,7 +348,7 @@ abstract contract AbstractDeploy is Script {
 
         /// @dev 3.3 - deploy Form State Registry
         vars.twoStepsFormStateRegistry = address(
-            new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1)
+            new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 4)
         );
 
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
@@ -394,10 +395,10 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
         /// @dev 4.3 - deploy Celer Implementation
-        vars.celerImplementation = address(
-            new CelerImplementation{salt: salt}(IMessageBus(celerMessageBusses[i]), SuperRegistry(vars.superRegistry))
-        );
+        vars.celerImplementation = address(new CelerImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
         contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
+
+        CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[i]);
 
         vars.ambAddresses[0] = vars.lzImplementation;
         vars.ambAddresses[1] = vars.hyperlaneImplementation;
@@ -444,9 +445,7 @@ abstract contract AbstractDeploy is Script {
         ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
 
         /// @dev 9 KYCDao ERC4626 Form (only for Polygon)
-        vars.kycDao4626Form = address(
-            new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry, kycDAOValidityAddresses[i])
-        );
+        vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
         ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);

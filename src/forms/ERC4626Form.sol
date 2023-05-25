@@ -38,7 +38,7 @@ contract ERC4626Form is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_,
+        address,
         uint64 srcChainId_
     ) internal override returns (uint256 dstAmount) {
         dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);

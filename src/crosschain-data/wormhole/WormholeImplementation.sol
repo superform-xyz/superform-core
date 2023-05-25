@@ -76,7 +76,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
-        address srcSender_,
+        address,
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
