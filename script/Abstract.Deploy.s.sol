@@ -97,7 +97,7 @@ abstract contract AbstractDeploy is Script {
         "SuperRBAC"
     ];
 
-    bytes32 constant salt = "SUPERFORM";
+    bytes32 constant salt = "SUPERFORM1";
 
     enum Chains {
         Ethereum,

@@ -8,5 +8,5 @@ source .env
 echo Running Script: ...
 
 forge script script/Test.Mainnet.Deploy.s.sol \
-    --broadcast \
-    -vvvv
+    --resume \
+    --multi

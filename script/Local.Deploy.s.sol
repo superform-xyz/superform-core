@@ -28,10 +28,9 @@ contract LocalDeploy is AbstractDeploy {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] SELECTED_CHAIN_IDS = [56, 137, 250]; /// @dev BSC, POLY & FTM
-    uint256[] EVM_CHAIN_IDS = [56, 137, 250]; /// @dev BSC, POLY & FTM
-    Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc_Fork, Chains.Polygon_Fork, Chains.Fantom_Fork];
-
+    uint64[] SELECTED_CHAIN_IDS = [56, 137, 43114]; /// @dev BSC, POLY & AVAX
+    uint256[] EVM_CHAIN_IDS = [56, 137, 43114]; /// @dev BSC, POLY & AVAX
+    Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc_Fork, Chains.Polygon_Fork, Chains.Avalanche_Fork];
     /*//////////////////////////////////////////////////////////////
                         CHAINLINK VARIABLES
     //////////////////////////////////////////////////////////////*/
