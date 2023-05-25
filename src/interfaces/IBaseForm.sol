@@ -20,7 +20,7 @@ interface IBaseForm is IERC165Upgradeable {
     event VaultAdded(uint256 id, IERC4626 vault);
 
     /// @dev is emitted when a payload is processed by the destination contract.
-    event Processed(uint16 srcChainID, uint16 dstChainId, uint80 txId, uint256 amount, address vault);
+    event Processed(uint64 srcChainID, uint64 dstChainId, uint256 txId, uint256 amount, address vault);
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL WRITE FUNCTONS
@@ -30,30 +30,52 @@ interface IBaseForm is IERC165Upgradeable {
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @param srcSender_ The address of the sender of the transaction
     /// @return dstAmount  The amount of tokens deposited in same chain action
     function directDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     ) external payable returns (uint256 dstAmount);
+
+    /// @dev PREVILEGED router ONLY FUNCTION.
+    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
+    /// @dev process withdrawal of collateral from a vault
+    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @param srcSender_ The address of the sender of the transaction
+    /// @return dstAmount  The amount of tokens withdrawn in same chain action
+    function directWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
+    ) external returns (uint256 dstAmount);
 
     /// @dev PREVILEGED router ONLY FUNCTION.
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @param srcSender_ The address of the sender of the transaction
+    /// @param srcChainId_ The chain id of the source chain
+    /// @param payloadId_ The id of the payload
     /// @return dstAmount  The amount of tokens deposited in same chain action
-    function xChainDepositIntoVault(InitSingleVaultData memory singleVaultData_) external returns (uint256 dstAmount);
-
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
-    /// @dev process withdrawal of collateral from a vault
-    /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
-    /// @return dstAmount  The amount of tokens withdrawn in same chain action
-    function directWithdrawFromVault(InitSingleVaultData memory singleVaultData_) external returns (uint256 dstAmount);
+    function xChainDepositIntoVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint256 payloadId_
+    ) external returns (uint256 dstAmount);
 
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
+    /// @param srcSender_ The address of the sender of the transaction
+    /// @param srcChainId_ The chain id of the source chain
+    /// @param payloadId_ The id of the payload
     /// @return dstAmount The amount of tokens withdrawn
-    function xChainWithdrawFromVault(InitSingleVaultData memory singleVaultData_) external returns (uint256 dstAmount);
+    function xChainWithdrawFromVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint256 payloadId_
+    ) external returns (uint256 dstAmount);
 
     function getUnderlyingOfVault() external view returns (ERC20);
 }

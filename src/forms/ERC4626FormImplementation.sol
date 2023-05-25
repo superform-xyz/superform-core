@@ -75,7 +75,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     struct directDepositLocalVars {
-        uint16 chainId;
+        uint64 chainId;
         address vaultLoc;
         address collateral;
         uint256 dstAmount;
@@ -165,7 +165,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             if (singleVaultData_.liqData.amount > singleVaultData_.amount)
                 revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            uint16 chainId = superRegistry.chainId();
+            uint64 chainId = superRegistry.chainId();
 
             /// @dev NOTE: only allows withdraws to same chain
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
@@ -193,10 +193,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processXChainDeposit(
         InitSingleVaultData memory singleVaultData_,
-        uint16 srcChainId,
-        uint80 txId
+        uint64 srcChainId,
+        uint256 payloadId
     ) internal returns (uint256 dstAmount) {
-        (, , uint16 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
+        (, , uint64 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
         address vaultLoc = vault;
 
         IERC4626 v = IERC4626(vaultLoc);
@@ -209,11 +209,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
-        emit Processed(srcChainId, dstChainId, txId, singleVaultData_.amount, vaultLoc);
+        emit Processed(srcChainId, dstChainId, payloadId, singleVaultData_.amount, vaultLoc);
     }
 
     struct xChainWithdrawLocalVars {
-        uint16 dstChainId;
+        uint64 dstChainId;
         address vaultLoc;
         uint256 dstAmount;
         uint256 balanceBefore;
@@ -223,8 +223,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     function _processXChainWithdraw(
         InitSingleVaultData memory singleVaultData_,
         address srcSender,
-        uint16 srcChainId,
-        uint80 txId
+        uint64 srcChainId,
+        uint256 payloadId
     ) internal returns (uint256 dstAmount) {
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
@@ -275,7 +275,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
-        emit Processed(srcChainId, vars.dstChainId, txId, singleVaultData_.amount, vars.vaultLoc);
+        emit Processed(srcChainId, vars.dstChainId, payloadId, singleVaultData_.amount, vars.vaultLoc);
 
         /// Here we either fully succeed of Callback.FAIL.
         return 0;

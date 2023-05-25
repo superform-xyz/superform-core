@@ -43,44 +43,44 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
 
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     ) internal override returns (uint256 dstAmount) {
-        (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
+        _kycCheck(srcSender_);
 
-        _kycCheck(srcSender);
-
-        dstAmount = _processDirectDeposit(singleVaultData_, srcSender);
+        dstAmount = _processDirectDeposit(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc BaseForm
     function _directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     ) internal override returns (uint256 dstAmount) {
-        (address srcSender, , ) = _decodeTxData(singleVaultData_.txData);
+        _kycCheck(srcSender_);
 
-        _kycCheck(srcSender);
-
-        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender);
+        dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
     }
 
     function _xChainDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint256 payloadId_
     ) internal override returns (uint256 dstAmount) {
-        (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(singleVaultData_.txData);
+        _kycCheck(srcSender_);
 
-        _kycCheck(srcSender);
-
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId, txId);
+        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_, payloadId_);
     }
 
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint256 payloadId_
     ) internal override returns (uint256 dstAmount) {
-        (address srcSender, uint16 srcChainId, uint80 txId) = _decodeTxData(singleVaultData_.txData);
+        _kycCheck(srcSender_);
 
-        _kycCheck(srcSender);
-
-        dstAmount = _processXChainWithdraw(singleVaultData_, srcSender, srcChainId, txId);
+        dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_, payloadId_);
     }
 }

@@ -54,7 +54,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc QuorumManager
-    function setRequiredMessagingQuorum(uint16 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
+    function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
         requiredQuorum[srcChainId_] = quorum_;
     }
 
@@ -66,7 +66,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         AMBMessage memory payloadInfo = abi.decode(payload[payloadId_], (AMBMessage));
         InitMultiVaultData memory multiVaultData = abi.decode(payloadInfo.params, (InitMultiVaultData));
 
-        _validatePayloadUpdate(payloadInfo.txInfo, payloadId_, true);
+        _validatePayloadUpdate(payloadInfo.txInfo, payloadId_, 1);
 
         uint256 l1 = multiVaultData.amounts.length;
         uint256 l2 = finalAmounts_.length;
@@ -97,7 +97,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         AMBMessage memory payloadInfo = abi.decode(payload[payloadId_], (AMBMessage));
         InitSingleVaultData memory singleVaultData = abi.decode(payloadInfo.params, (InitSingleVaultData));
 
-        _validatePayloadUpdate(payloadInfo.txInfo, payloadId_, false);
+        _validatePayloadUpdate(payloadInfo.txInfo, payloadId_, 0);
         _validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage);
 
         singleVaultData.amount = finalAmount_;
@@ -121,27 +121,28 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         bytes memory _payload = payload[payloadId_];
         AMBMessage memory payloadInfo = abi.decode(_payload, (AMBMessage));
 
-        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(payloadInfo.txInfo);
-        uint16 srcChainId;
+        (uint8 txType, uint8 callbackType, uint8 multi, , address srcSender, uint64 srcChainId) = _decodeTxInfo(
+            payloadInfo.txInfo
+        );
         bytes memory returnMessage;
 
         if (callbackType == uint256(CallbackType.RETURN)) {
-            srcChainId = multi
+            multi == 1
                 ? ISuperPositions(superRegistry.superPositions()).stateMultiSync(payloadInfo)
                 : ISuperPositions(superRegistry.superPositions()).stateSync(payloadInfo);
         }
 
-        if (callbackType == uint256(CallbackType.INIT)) {
-            if (txType == uint256(TransactionType.WITHDRAW)) {
-                (srcChainId, returnMessage) = multi
-                    ? _processMultiWithdrawal(payloadId_, payloadInfo.params)
-                    : _processSingleWithdrawal(payloadId_, payloadInfo.params);
+        if (callbackType == uint8(CallbackType.INIT)) {
+            if (txType == uint8(TransactionType.WITHDRAW)) {
+                returnMessage = multi == 1
+                    ? _processMultiWithdrawal(payloadId_, payloadInfo.param, srcSender, srcChainId)
+                    : _processSingleWithdrawal(payloadId_, payloadInfo.params, srcSender, srcChainId);
             }
 
-            if (txType == uint256(TransactionType.DEPOSIT)) {
-                (srcChainId, returnMessage) = multi
-                    ? _processMultiDeposit(payloadId_, payloadInfo.params)
-                    : _processSingleDeposit(payloadId_, payloadInfo.params);
+            if (txType == uint8(TransactionType.DEPOSIT)) {
+                returnMessage = multi == 1
+                    ? _processMultiDeposit(payloadId_, payloadInfo.params, srcSender, srcChainId)
+                    : _processSingleDeposit(payloadId_, payloadInfo.params, srcSender, srcChainId);
             }
         }
 
@@ -174,14 +175,14 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
         AMBMessage memory payloadInfo = abi.decode(payload[payloadId_], (AMBMessage));
 
-        (, , bool multi, ) = _decodeTxInfo(payloadInfo.txInfo);
+        (, , uint8 multi, ) = _decodeTxInfo(payloadInfo.txInfo);
 
-        if (multi) {
+        if (multi == 1) {
             InitMultiVaultData memory multiVaultData = abi.decode(payloadInfo.params, (InitMultiVaultData));
 
             if (superRegistry.chainId() != _getDestinationChain(multiVaultData.superFormIds[0]))
                 revert Error.INVALID_PAYLOAD_STATE();
-        } else {
+        } else if (multi == 0) {
             InitSingleVaultData memory singleVaultData = abi.decode(payloadInfo.params, (InitSingleVaultData));
 
             if (superRegistry.chainId() != _getDestinationChain(singleVaultData.superFormId))
@@ -194,10 +195,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
     }
 
     struct RescueFaileDepositsLocalVars {
-        bool multi;
+        uint8 multi;
         bool rescued;
-        uint16 dstChainId;
-        uint16 srcChainId;
+        uint64 dstChainId;
+        uint64 srcChainId;
         address srcSender;
         address superForm;
         bytes failedData;
@@ -213,8 +214,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         LiqRequest[] memory liqDatas_
     ) external payable override onlyProcessor {
         RescueFaileDepositsLocalVars memory v;
-        (v.multi, v.rescued, v.failedData) = abi.decode(failedDepositPayloads[payloadId_], (bool, bool, bytes));
-        if (!v.multi) revert Error.NOT_MULTI_FAILURE();
+        (v.multi, v.rescued, v.failedData, v.srcSender, v.srcChainId) = abi.decode(
+            failedDepositPayloads[payloadId_],
+            (uint8, bool, bytes, uint64, address)
+        );
+        if (v.multi == 0) revert Error.NOT_MULTI_FAILURE();
         if (v.rescued) revert Error.ALREADY_RESCUED();
 
         failedDepositPayloads[payloadId_] = abi.encode(v.multi, true, v.failedData);
@@ -232,7 +236,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         ) revert Error.INVALID_RESCUE_DATA();
 
         v.dstChainId = superRegistry.chainId();
-        (v.srcSender, v.srcChainId, ) = _decodeTxData(v.multiVaultData.txData);
 
         v.superForm;
         for (uint256 i = 0; i < v.multiVaultData.liqData.length; i++) {
@@ -264,10 +267,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
     }
 
     struct RescueFailedDepositLocalVars {
-        bool multi;
+        uint8 multi;
         bool rescued;
-        uint16 dstChainId;
-        uint16 srcChainId;
+        uint64 dstChainId;
+        uint64 srcChainId;
         address srcSender;
         address superForm;
         bytes failedData;
@@ -283,8 +286,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         LiqRequest memory liqData_
     ) external payable override onlyProcessor {
         RescueFailedDepositLocalVars memory v;
-        (v.multi, v.rescued, v.failedData) = abi.decode(failedDepositPayloads[payloadId_], (bool, bool, bytes));
-        if (v.multi) revert Error.NOT_SINGLE_FAILURE();
+        (v.multi, v.rescued, v.failedData, v.srcSender, v.srcChainId) = abi.decode(
+            failedDepositPayloads[payloadId_],
+            (uint8, bool, bytes, uint64, address)
+        );
+        if (v.multi == 1) revert Error.NOT_SINGLE_FAILURE();
         if (v.rescued) revert Error.ALREADY_RESCUED();
 
         failedDepositPayloads[payloadId_] = abi.encode(v.multi, true, v.failedData);
@@ -297,7 +303,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         v.singleVaultData = abi.decode(v.payloadInfo.params, (InitSingleVaultData));
 
         v.dstChainId = superRegistry.chainId();
-        (v.srcSender, v.srcChainId, ) = _decodeTxData(v.singleVaultData.txData);
 
         if (v.singleVaultData.superFormId == v.failedSuperFormId) {
             (v.superForm, , ) = _getSuperForm(v.failedSuperFormId);
@@ -330,8 +335,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
     //////////////////////////////////////////////////////////////*/
     function _processMultiWithdrawal(
         uint256 payloadId_,
-        bytes memory payload_
-    ) internal returns (uint16, bytes memory) {
+        bytes memory payload_,
+        address srcSender_,
+        uint64 srcChainId_
+    ) internal returns (bytes memory) {
         InitMultiVaultData memory multiVaultData = abi.decode(payload_, (InitMultiVaultData));
 
         InitSingleVaultData memory singleVaultData;
@@ -353,7 +360,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
             (address superForm_, , ) = _getSuperForm(singleVaultData.superFormId);
 
-            try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData) {
+            try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_, payloadId_) {
                 /// @dev marks the indexes that don't require a callback re-mint of SuperPositions
                 multiVaultData.amounts[i] = 0;
             } catch {
@@ -362,14 +369,13 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
             }
         }
 
-        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(singleVaultData.txData);
-
         /// @dev if at least one error happens, the shares will be re-minted for the affected superFormIds
         if (errors) {
             return
                 _constructMultiReturnData(
-                    srcChainId,
-                    currentTotalTxs,
+                    srcChainId_,
+                    srcSender_,
+                    payloadId_,
                     multiVaultData,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
@@ -377,10 +383,15 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                 );
         }
 
-        return (srcChainId, "");
+        return "";
     }
 
-    function _processMultiDeposit(uint256 payloadId_, bytes memory payload_) internal returns (uint16, bytes memory) {
+    function _processMultiDeposit(
+        uint256 payloadId_,
+        bytes memory payload_,
+        address srcSender_,
+        uint64 srcChainId_
+    ) internal returns (bytes memory) {
         if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
             revert Error.PAYLOAD_NOT_UPDATED();
         }
@@ -415,7 +426,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                             maxSlippage: multiVaultData.maxSlippage[i],
                             liqData: emptyRequest,
                             extraFormData: multiVaultData.extraFormData
-                        })
+                        }),
+                        srcSender_,
+                        srcChainId_,
+                        payloadId_
                     )
                 returns (uint256 dstAmount) {
                     if (!fulfilment) fulfilment = true;
@@ -434,15 +448,13 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
             }
         }
 
-        (, uint16 srcChainId, ) = _decodeTxData(multiVaultData.txData);
-
         /// @dev issue superPositions if at least one vault deposit passed
         if (fulfilment) {
-            (, , uint80 currentTotalTxs) = _decodeTxData(multiVaultData.txData);
             return
                 _constructMultiReturnData(
-                    srcChainId,
-                    currentTotalTxs,
+                    srcChainId_,
+                    srcSender_,
+                    payloadId_,
                     multiVaultData,
                     TransactionType.DEPOSIT,
                     CallbackType.RETURN,
@@ -451,17 +463,24 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         }
 
         if (errors) {
-            failedDepositPayloads[payloadId_] = abi.encode(true, abi.encode(failedSuperFormIds));
+            failedDepositPayloads[payloadId_] = abi.encode(
+                true,
+                abi.encode(failedSuperFormIds),
+                srcChainId_,
+                srcSender_
+            );
             emit FailedXChainDeposits(payloadId_);
         }
 
-        return (srcChainId, "");
+        return "";
     }
 
     function _processSingleWithdrawal(
         uint256 payloadId_,
-        bytes memory payload_
-    ) internal returns (uint16, bytes memory) {
+        bytes memory payload_,
+        address srcSender_,
+        uint64 srcChainId_
+    ) internal returns (bytes memory) {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
         /// @dev Store PayloadId in extraFormData (tbd: 1-step flow doesnt need this)
@@ -469,21 +488,21 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
         (address superForm_, , ) = _getSuperForm(singleVaultData.superFormId);
 
-        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(singleVaultData.txData);
         /// @dev Withdraw from Form
         /// TODO: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch (droping revert is risky)
         /// that's also the only way to get error type out of the try/catch
         /// NOTE: opted for just returning CallbackType.FAIL as we always end up with superPositions.returnPosition() anyways
         /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
-        try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData) {
+        try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_, payloadId_) {
             // Handle the case when the external call succeeds
         } catch {
             // Handle the case when the external call reverts for whatever reason
             /// https://solidity-by-example.org/try-catch/
             return
                 _constructSingleReturnData(
-                    srcChainId,
-                    currentTotalTxs,
+                    srcChainId_,
+                    srcSender_,
+                    payloadId__,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
                     singleVaultData.amount
@@ -491,10 +510,15 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         }
 
         /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
-        return (srcChainId, "");
+        return "";
     }
 
-    function _processSingleDeposit(uint256 payloadId_, bytes memory payload_) internal returns (uint16, bytes memory) {
+    function _processSingleDeposit(
+        uint256 payloadId_,
+        bytes memory payload_,
+        address srcSender_,
+        uint64 srcChainId_
+    ) internal returns (bytes memory) {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
         if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
             revert Error.PAYLOAD_NOT_UPDATED();
@@ -503,7 +527,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         (address superForm_, , ) = _getSuperForm(singleVaultData.superFormId);
 
         ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
-        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(singleVaultData.txData);
 
         /// @dev NOTE: This will revert with an error only descriptive of the first possible revert out of many
         /// 1. Not enough tokens on this contract == BRIDGE_TOKENS_PENDING
@@ -513,79 +536,75 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.transfer(superForm_, singleVaultData.amount);
 
-            try IBaseForm(superForm_).xChainDepositIntoVault(singleVaultData) returns (uint256 dstAmount) {
+            try
+                IBaseForm(superForm_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_, payloadId_)
+            returns (uint256 dstAmount) {
                 return
                     _constructSingleReturnData(
-                        srcChainId,
-                        currentTotalTxs,
+                        srcChainId_,
+                        srcSender_,
+                        payloadId_,
                         TransactionType.DEPOSIT,
                         CallbackType.RETURN,
                         dstAmount
                     );
             } catch {
-                failedDepositPayloads[payloadId_] = abi.encode(false, abi.encode(singleVaultData.superFormId));
+                failedDepositPayloads[payloadId_] = abi.encode(
+                    false,
+                    abi.encode(singleVaultData.superFormId),
+                    srcChainId_,
+                    srcSender_
+                );
                 emit FailedXChainDeposits(payloadId_);
             }
         } else {
             revert Error.BRIDGE_TOKENS_PENDING();
         }
 
-        return (srcChainId, "");
+        return "";
     }
 
     /// @notice depositSync and withdrawSync internal method for sending message back to the source chain
     function _constructMultiReturnData(
-        uint16 srcChainId_,
-        uint80 currentTotalTxs_,
+        uint64 srcChainId_,
+        address srcSender_,
+        uint256 payloadId_,
         InitMultiVaultData memory multiVaultData_,
         TransactionType txType,
         CallbackType returnType,
         uint256[] memory amounts
-    ) internal view returns (uint16, bytes memory) {
+    ) internal view returns (bytes memory) {
         /// @notice Send Data to Source to issue superform positions.
-        return (
-            srcChainId_,
+        return
             abi.encode(
                 AMBMessage(
-                    _packTxInfo(uint120(txType), uint120(returnType), true, STATE_REGISTRY_TYPE),
-                    abi.encode(
-                        ReturnMultiData(
-                            _packReturnTxInfo(srcChainId_, superRegistry.chainId(), currentTotalTxs_),
-                            amounts
-                        )
-                    )
+                    _packTxInfo(uint8(txType), uint8(returnType), 1, STATE_REGISTRY_TYPE, srcSender_, srcChainId_),
+                    abi.encode(ReturnMultiData(payloadId_, amounts))
                 )
-            )
-        );
+            );
     }
 
     /// @notice depositSync and withdrawSync internal method for sending message back to the source chain
     function _constructSingleReturnData(
-        uint16 srcChainId_,
-        uint80 currentTotalTxs_,
+        uint64 srcChainId_,
+        address srcSender_,
+        uint256 payloadId_,
         TransactionType txType,
         CallbackType returnType,
         uint256 amount
-    ) internal view returns (uint16, bytes memory) {
+    ) internal view returns (bytes memory) {
         /// @notice Send Data to Source to issue superform positions.
-        return (
-            srcChainId_,
+        return
             abi.encode(
                 AMBMessage(
-                    _packTxInfo(uint120(txType), uint120(returnType), false, STATE_REGISTRY_TYPE),
-                    abi.encode(
-                        ReturnSingleData(
-                            _packReturnTxInfo(srcChainId_, superRegistry.chainId(), currentTotalTxs_),
-                            amount
-                        )
-                    )
+                    _packTxInfo(uint8(txType), uint8(returnType), 0, STATE_REGISTRY_TYPE, srcSender_, srcChainId_),
+                    abi.encode(ReturnSingleData(payloadId_, amount))
                 )
-            )
-        );
+            );
     }
 
     function _dispatchAcknowledgement(
-        uint16 dstChainId_, /// TODO: here it's dstChainId but when it's called it's srcChainId
+        uint64 dstChainId_, /// TODO: here it's dstChainId but when it's called it's srcChainId
         bytes memory message_,
         bytes memory ackExtraData_
     ) internal {
@@ -601,8 +620,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         }
     }
 
-    function _validatePayloadUpdate(uint256 txInfo_, uint256 payloadId_, bool isMulti) internal view {
-        (uint256 txType, uint256 callbackType, bool multi, ) = _decodeTxInfo(txInfo_);
+    function _validatePayloadUpdate(uint256 txInfo_, uint256 payloadId_, uint8 isMulti) internal view {
+        (uint256 txType, uint256 callbackType, uint8 multi, , , ) = _decodeTxInfo(txInfo_);
 
         if (txType != uint256(TransactionType.DEPOSIT) && callbackType != uint256(CallbackType.INIT)) {
             revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();

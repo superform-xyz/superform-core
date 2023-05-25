@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-/// @title IFormStateRegistry
+/// @title ITwoStepsFormStateRegistry
 /// @author ZeroPoint Labs
 /// @notice Interface for Form State Registry
-interface IFormStateRegistry {
+interface ITwoStepsFormStateRegistry {
     /// @notice Receives request (payload) from TimelockForm to process later
     /// @param payloadId is constructed on TimelockForm, data is mapped also there, we only store pointer here
     /// @param superFormId is the id of TimelockForm sending this payloadId
-    function receivePayload(uint256 payloadId, uint256 superFormId, address owner) external;
+    function receivePayload(uint256 payloadId, uint256 superFormId, address owner, uint64 srcChainId) external;
 
     /// @notice Form Keeper finalizes payload to process Timelock withdraw fully
     /// @param payloadId is the id of the payload to finalize

@@ -92,31 +92,39 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     /// @inheritdoc IBaseForm
     function directDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     ) external payable override onlySuperRouter returns (uint256 dstAmount) {
-        dstAmount = _directDepositIntoVault(singleVaultData_);
-    }
-
-    /// @inheritdoc IBaseForm
-    function xChainDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_
-    ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
-        dstAmount = _xChainDepositIntoVault(singleVaultData_);
+        dstAmount = _directDepositIntoVault(singleVaultData_, srcSender_);
     }
 
     /// @inheritdoc IBaseForm
     function directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     ) external override onlySuperRouter returns (uint256 dstAmount) {
-        dstAmount = _directWithdrawFromVault(singleVaultData_);
+        dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
+    }
+
+    /// @inheritdoc IBaseForm
+    function xChainDepositIntoVault(
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint256 payloadId_
+    ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
+        dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_, payloadId_);
     }
 
     /// @inheritdoc IBaseForm
     function xChainWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint256 payloadId_
     ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
         /// @dev FIXME: not returning anything YET
-        dstAmount = _xChainWithdrawFromVault(singleVaultData_);
+        dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_, payloadId_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -170,22 +178,30 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     /// @dev Deposits underlying tokens into a vault
     function _directDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     ) internal virtual returns (uint256 dstAmount);
 
     /// @dev Withdraws underlying tokens from a vault
     function _directWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_
     ) internal virtual returns (uint256 dstAmount_);
 
     /// @dev Deposits underlying tokens into a vault
     function _xChainDepositIntoVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint256 payloadId_
     ) internal virtual returns (uint256 dstAmount);
 
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
-        InitSingleVaultData memory singleVaultData_
+        InitSingleVaultData memory singleVaultData_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint256 payloadId_
     ) internal virtual returns (uint256 dstAmount);
 
     /*///////////////////////////////////////////////////////////////

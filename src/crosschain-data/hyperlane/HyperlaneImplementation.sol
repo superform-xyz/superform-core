@@ -24,8 +24,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
     uint32[] public broadcastChains;
 
-    mapping(uint16 => uint32) public ambChainId;
-    mapping(uint32 => uint16) public superChainId;
+    mapping(uint64 => uint32) public ambChainId;
+    mapping(uint32 => uint64) public superChainId;
     mapping(uint32 => address) public authorizedImpl;
 
     mapping(bytes32 => bool) public processedMessages;
@@ -59,7 +59,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         address srcSender_,
-        uint16 dstChainId_,
+        uint64 dstChainId_,
         bytes memory message_,
         bytes memory
     ) external payable virtual override {
@@ -94,7 +94,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         /// mistmatches
 
         uint256 totalChains = broadcastChains.length;
-        for (uint16 i = 0; i < totalChains; i++) {
+        for (uint64 i = 0; i < totalChains; i++) {
             uint32 domain = broadcastChains[i];
 
             bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
@@ -112,7 +112,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setChainId(uint16 superChainId_, uint32 ambChainId_) external onlyProtocolAdmin {
+    function setChainId(uint64 superChainId_, uint32 ambChainId_) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }

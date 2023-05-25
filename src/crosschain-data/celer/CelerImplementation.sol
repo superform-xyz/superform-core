@@ -22,8 +22,8 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
     uint64[] public broadcastChains;
 
-    mapping(uint16 => uint64) public ambChainId;
-    mapping(uint64 => uint16) public superChainId;
+    mapping(uint64 => uint64) public ambChainId;
+    mapping(uint64 => uint64) public superChainId;
     mapping(uint64 => address) public authorizedImpl;
 
     mapping(bytes32 => bool) public processedMessages;
@@ -56,7 +56,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         address srcSender_,
-        uint16 dstChainId_,
+        uint64 dstChainId_,
         bytes memory message_,
         bytes memory /// extraData_
     ) external payable virtual override {
@@ -99,7 +99,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         uint256 feesReq = messageBus.calcFee(message_);
         feesReq = feesReq * totalChains;
 
-        for (uint16 i = 0; i < totalChains; i++) {
+        for (uint64 i = 0; i < totalChains; i++) {
             uint64 chainId = broadcastChains[i];
 
             messageBus.sendMessage{value: d.gasPerDst[i]}(authorizedImpl[chainId], chainId, message_);
@@ -118,7 +118,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setChainId(uint16 superChainId_, uint64 ambChainId_) external onlyProtocolAdmin {
+    function setChainId(uint64 superChainId_, uint64 ambChainId_) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }

@@ -74,25 +74,25 @@ struct SingleDirectSingleVaultStateReq {
 }
 
 struct InitMultiVaultData {
-    uint256 txData; // <- tight packing of (address srcSender (160 bits), srcChainId(uint16), txId (80bits))
+    uint256 payloadId;
     uint256[] superFormIds;
     uint256[] amounts;
     uint256[] maxSlippage;
     LiqRequest[] liqData;
-    bytes extraFormData; // payloadId
+    bytes extraFormData;
 }
 
 struct InitSingleVaultData {
-    uint256 txData; // <- tight packing of (address srcSender (160 bits), srcChainId(uint16), txId (80bits))
+    uint256 payloadId;
     uint256 superFormId;
     uint256 amount;
     uint256 maxSlippage;
     LiqRequest liqData;
-    bytes extraFormData; // payloadId
+    bytes extraFormData;
 }
 
 struct AMBMessage {
-    uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag and if multi/single vault, uint8 = 1, 2, 3
+    uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag  if multi/single vault, registry id, srcSender and srcChainId
     bytes params; // abi.encode (AMBInitData) NOTE: this is too ambigious. document to what fields does bytes params decode exactly
 }
 
@@ -102,12 +102,12 @@ struct AMBFactoryMessage {
 }
 
 struct ReturnMultiData {
-    uint256 returnTxInfo; // tight packing of status, srcChainId, dstChainId and original txId
+    uint256 payloadId;
     uint256[] amounts;
 }
 
 struct ReturnSingleData {
-    uint256 returnTxInfo; // tight packing of status, srcChainId, dstChainId and original txId
+    uint256 payloadId;
     uint256 amount;
 }
 

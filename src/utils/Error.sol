@@ -19,7 +19,7 @@ library Error {
     error NOT_TWO_STEPS_PROCESSOR();
 
     /// @dev - when msg.sender is not form
-    error NOT_FORM();
+    error NOT_SUPERFORM();
 
     /// @dev - when msg.sender is not form state registry
     error NOT_FORM_STATE_REGISTRY();

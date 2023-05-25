@@ -19,7 +19,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint80 transactionId => AMBMessage ambMessage) public txHistory;
+    mapping(uint256 transactionId => AMBMessage ambMessage) public txHistory;
 
     modifier onlyRouter() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(msg.sender)) revert Error.NOT_SUPER_ROUTER();
@@ -87,8 +87,8 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     /// @inheritdoc ISuperPositions
     function stateMultiSync(
         AMBMessage memory data_
-    ) external payable override onlyCoreStateRegistry returns (uint16 srcChainId_) {
-        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(data_.txInfo);
+    ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
+        (uint256 txType, uint256 callbackType, , , , uint64 returnDataSrcChainId) = _decodeTxInfo(data_.txInfo);
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -96,23 +96,16 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
 
-        (uint16 returnDataSrcChainId, uint16 returnDataDstChainId, uint80 returnDataTxId) = _decodeReturnTxInfo(
-            returnData.returnTxInfo
-        );
+        AMBMessage memory stored = txHistory[returnData.payloadId];
+        uint8 multi;
+        address srcSender;
+        (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(stored.txInfo);
 
-        AMBMessage memory stored = txHistory[returnDataTxId];
-
-        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
-
-        if (!multi) revert Error.INVALID_PAYLOAD();
+        if (multi == 0) revert Error.INVALID_PAYLOAD();
 
         InitMultiVaultData memory multiVaultData = abi.decode(stored.params, (InitMultiVaultData));
-        (address srcSender, uint16 srcChainId, ) = _decodeTxData(multiVaultData.txData);
 
-        if (returnDataSrcChainId != srcChainId) revert Error.SRC_CHAIN_IDS_MISMATCH();
-
-        if (returnDataDstChainId != _getDestinationChain(multiVaultData.superFormIds[0]))
-            revert Error.DST_CHAIN_IDS_MISMATCH();
+        if (returnDataSrcChainId != srcChainId_) revert Error.SRC_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
             _batchMint(srcSender, multiVaultData.superFormIds, returnData.amounts, "");
@@ -123,15 +116,14 @@ contract SuperPositions is ISuperPositions, ERC1155s {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
-        emit Completed(returnDataTxId);
-        return srcChainId;
+        emit Completed(returnData.payloadId);
     }
 
     /// @inheritdoc ISuperPositions
     function stateSync(
         AMBMessage memory data_
-    ) external payable override onlyCoreStateRegistry returns (uint16 srcChainId_) {
-        (uint256 txType, uint256 callbackType, , ) = _decodeTxInfo(data_.txInfo);
+    ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
+        (uint256 txType, uint256 callbackType, , , , uint64 returnDataSrcChainId) = _decodeTxInfo(data_.txInfo);
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -139,22 +131,16 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
 
-        (uint16 returnDataSrcChainId, uint16 returnDataDstChainId, uint80 returnDataTxId) = _decodeReturnTxInfo(
-            returnData.returnTxInfo
-        );
+        AMBMessage memory stored = txHistory[data_.payloadId];
+        uint8 multi;
+        address srcSender;
+        (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(stored.txInfo);
 
-        AMBMessage memory stored = txHistory[returnDataTxId];
-        (, , bool multi, ) = _decodeTxInfo(stored.txInfo);
-
-        if (multi) revert Error.INVALID_PAYLOAD();
+        if (multi == 1) revert Error.INVALID_PAYLOAD();
 
         InitSingleVaultData memory singleVaultData = abi.decode(stored.params, (InitSingleVaultData));
-        (address srcSender, uint16 srcChainId, ) = _decodeTxData(singleVaultData.txData);
 
-        if (returnDataSrcChainId != srcChainId) revert Error.SRC_CHAIN_IDS_MISMATCH();
-
-        if (returnDataDstChainId != _getDestinationChain(singleVaultData.superFormId))
-            revert Error.DST_CHAIN_IDS_MISMATCH();
+        if (returnDataSrcChainId != srcChainId_) revert Error.SRC_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
             _mint(srcSender, singleVaultData.superFormId, returnData.amount, "");
@@ -164,8 +150,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
-        emit Completed(returnDataTxId);
-        return srcChainId;
+        emit Completed(data_.payloadId);
     }
 
     /*///////////////////////////////////////////////////////////////
