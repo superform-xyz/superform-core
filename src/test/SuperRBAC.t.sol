@@ -11,7 +11,7 @@ import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 
 contract SuperformRolesTest is BaseSetup {
-    uint16 internal chainId = ETH;
+    uint64 internal chainId = ETH;
 
     function setUp() public override {
         super.setUp();
@@ -23,9 +23,10 @@ contract SuperformRolesTest is BaseSetup {
 
         vm.recordLogs();
         /// setting the status as false in chain id = ETH & broadcasting it
-        SuperRBAC(getContract(chainId, "SuperRBAC")).revokeSuperRouterRole{
-            value: 800 * 10 ** 18
-        }(getContract(chainId, "SuperRouter"), generateBroadcastParams(5, 2));
+        SuperRBAC(getContract(chainId, "SuperRBAC")).revokeSuperRouterRole{value: 800 * 10 ** 18}(
+            getContract(chainId, "SuperRouter"),
+            generateBroadcastParams(5, 2)
+        );
         _broadcastPayloadHelper(chainId, vm.getRecordedLogs());
 
         /// process the payload across all other chains
@@ -33,17 +34,15 @@ contract SuperformRolesTest is BaseSetup {
             if (chainIds[i] != chainId) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                bool statusBefore = SuperRBAC(
-                    getContract(chainIds[i], "SuperRBAC")
-                ).hasSuperRouterRole(getContract(chainIds[i], "SuperRouter"));
+                bool statusBefore = SuperRBAC(getContract(chainIds[i], "SuperRBAC")).hasSuperRouterRole(
+                    getContract(chainIds[i], "SuperRouter")
+                );
 
-                RolesStateRegistry(
-                    payable(getContract(chainIds[i], "RolesStateRegistry"))
-                ).processPayload(1, "");
+                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
 
-                bool statusAfter = SuperRBAC(
-                    getContract(chainIds[i], "SuperRBAC")
-                ).hasSuperRouterRole(getContract(chainIds[i], "SuperRouter"));
+                bool statusAfter = SuperRBAC(getContract(chainIds[i], "SuperRBAC")).hasSuperRouterRole(
+                    getContract(chainIds[i], "SuperRouter")
+                );
 
                 /// assert status update before and after processing the payload
                 assertEq(statusBefore, true);

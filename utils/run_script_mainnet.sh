@@ -7,6 +7,6 @@ source .env
 # Run the script
 echo Running Script: ...
 
-forge script script/Local.Deploy.s.sol \
-    --broadcast \
-    -vvvv
+forge script script/Test.Mainnet.Deploy.s.sol \
+    --resume \
+    --multi

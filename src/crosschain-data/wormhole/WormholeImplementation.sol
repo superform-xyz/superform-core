@@ -35,8 +35,8 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     IWormholeRelayer public relayer;
 
     /// @dev FIXME: refactor
-    mapping(uint16 => uint16) public ambChainId;
-    mapping(uint16 => uint16) public superChainId;
+    mapping(uint64 => uint16) public ambChainId;
+    mapping(uint16 => uint64) public superChainId;
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
@@ -76,8 +76,8 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
-        address srcSender_,
-        uint16 dstChainId_,
+        address,
+        uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual override {
@@ -141,7 +141,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         AMBMessage memory decoded = abi.decode(vm.payload, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
+        (, , , uint8 registryId, , ) = _decodeTxInfo(decoded.txInfo);
         /// FIXME: should migrate to support more state registry types
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
@@ -153,7 +153,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setChainId(uint16 superChainId_, uint16 ambChainId_) external onlyProtocolAdmin {
+    function setChainId(uint64 superChainId_, uint16 ambChainId_) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }

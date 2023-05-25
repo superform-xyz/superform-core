@@ -29,8 +29,8 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
 
-    mapping(uint16 => uint16) public ambChainId;
-    mapping(uint16 => uint16) public superChainId;
+    mapping(uint64 => uint16) public ambChainId;
+    mapping(uint16 => uint64) public superChainId;
 
     /*///////////////////////////////////////////////////////////////
                             LZ Variables & events
@@ -73,7 +73,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         address srcSender_,
-        uint16 dstChainId_,
+        uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable override {
@@ -94,7 +94,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         /// NOTE:should we check the length ?? anyway out of index will fail if the length
         /// mistmatches
 
-        for (uint16 i = 0; i < broadcastChains.length; i++) {
+        for (uint256 i = 0; i < broadcastChains.length; i++) {
             uint16 dstChainId = broadcastChains[i];
             _lzSend(dstChainId, message_, payable(srcSender_), address(0x0), d.extraDataPerDst[i], d.gasPerDst[i]);
         }
@@ -104,7 +104,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setChainId(uint16 superChainId_, uint16 ambChainId_) external onlyProtocolAdmin {
+    function setChainId(uint64 superChainId_, uint16 ambChainId_) external onlyProtocolAdmin {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
 
@@ -127,7 +127,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
+        (, , , uint8 registryId, , ) = _decodeTxInfo(decoded.txInfo);
 
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);

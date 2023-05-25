@@ -22,7 +22,7 @@ contract Scenario3Test is ProtocolActions {
         AMBs = [1, 2];
 
         CHAIN_0 = OP;
-        DST_CHAINS = [ARBI, ETH];
+        DST_CHAINS = [ARBI, ETH]; // 42161 , 1
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYING_VAULTS[ARBI][0] = [1, 2];
@@ -74,7 +74,6 @@ contract Scenario3Test is ProtocolActions {
             (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
 
             vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
-
             aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);
 
             success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);

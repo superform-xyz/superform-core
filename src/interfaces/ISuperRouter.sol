@@ -13,10 +13,10 @@ interface ISuperRouter {
     struct ActionLocalVars {
         AMBMessage ambMessage;
         LiqRequest liqRequest;
-        uint16 srcChainId;
-        uint16 dstChainId;
-        uint80 currentTotalTransactions;
+        uint64 srcChainId;
+        uint64 dstChainId;
         address srcSender;
+        uint256 currentPayloadId;
         uint256 liqRequestsLen;
     }
     /*///////////////////////////////////////////////////////////////
@@ -24,13 +24,13 @@ interface ISuperRouter {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev is emitted when a cross-chain transaction is initiated.
-    event CrossChainInitiated(uint80 indexed txId);
+    event CrossChainInitiated(uint256 indexed payloadId);
 
     /// @dev is emitted when the super registry is updated.
     event SuperRegistryUpdated(address indexed superRegistry);
 
     /// @dev is emitted when a cross-chain transaction is completed.
-    event Completed(uint256 txId);
+    event Completed(uint256 payloadId);
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL DEPOSIT FUNCTIONS
@@ -85,5 +85,5 @@ interface ISuperRouter {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev returns the total individual vault transactions made through the router.
-    function totalTransactions() external view returns (uint80);
+    function payloadIds() external view returns (uint256);
 }
