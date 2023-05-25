@@ -38,7 +38,7 @@ contract Scenario4Test is ProtocolActions {
     uint256 formType = 1;
 
     /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests
-    uint16[] dstChainID;
+    uint64[] dstChainID;
     uint256[] dstVaultID;
     uint256[] dstFormID;
     uint256[] amount;
@@ -399,7 +399,7 @@ contract Scenario4Test is ProtocolActions {
     // //////////////////////////////////////////////////////////////*/
 
     // function _createAction(
-    //     uint16[] memory chainID_,
+    //     uint64[] memory chainID_,
     //     uint256[] memory vaultIDs_,
     //     uint256[] memory formIDs_,
     //     uint256[] memory amounts_,

@@ -80,10 +80,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
     /// @notice Called by TwoStepsFormStateRegistry to process 2nd step of redeem after cooldown period passes
     function processUnlock(
-        address owner_
+        address owner_,
+        uint64 srcChainId_
     ) external onlyTwoStepsFormStateRegistry returns (OwnerRequest memory ownerRequest) {
         ownerRequest = unlockId[owner_];
-        _xChainWithdrawFromVault(ownerRequest.singleVaultData_);
+        _xChainWithdrawFromVault(ownerRequest.singleVaultData_, owner_, srcChainId_);
         delete unlockId[owner_];
     }
 
@@ -185,10 +186,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) internal virtual override returns (uint256 dstAmount) {
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_, payloadId_);
+        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
     }
 
     struct xChainWithdrawTimelockecLocalVars {
@@ -203,8 +203,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) internal virtual override returns (uint256 dstAmount) {
         xChainWithdrawTimelockecLocalVars memory vars;
         (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
@@ -273,7 +272,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             twoStepsFormStateRegistry.receivePayload(
                 unlockCounter,
                 singleVaultData_.superFormId,
-                vars.srcSender,
+                srcSender_,
                 srcChainId_
             );
         } else if (vars.unlock == 3) {
@@ -281,6 +280,12 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
-        emit Processed(srcChainId_, vars.dstChainId, payloadId_, singleVaultData_.amount, vars.vaultLoc);
+        emit Processed(
+            srcChainId_,
+            vars.dstChainId,
+            singleVaultData_.payloadId,
+            singleVaultData_.amount,
+            vars.vaultLoc
+        );
     }
 }

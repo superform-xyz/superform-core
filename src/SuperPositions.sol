@@ -80,8 +80,8 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// @inheritdoc ISuperPositions
-    function updateTxHistory(uint80 messageId_, AMBMessage memory message_) external override onlyRouter {
-        txHistory[messageId_] = message_;
+    function updateTxHistory(uint256 payloadId, AMBMessage memory message_) external override onlyRouter {
+        txHistory[payloadId] = message_;
     }
 
     /// @inheritdoc ISuperPositions
@@ -131,7 +131,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
 
-        AMBMessage memory stored = txHistory[data_.payloadId];
+        AMBMessage memory stored = txHistory[returnData.payloadId];
         uint8 multi;
         address srcSender;
         (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(stored.txInfo);
@@ -150,7 +150,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
-        emit Completed(data_.payloadId);
+        emit Completed(returnData.payloadId);
     }
 
     /*///////////////////////////////////////////////////////////////

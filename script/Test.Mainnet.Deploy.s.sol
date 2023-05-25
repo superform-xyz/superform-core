@@ -14,7 +14,7 @@ contract TestMainnetDeploy is AbstractDeploy {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint16[] SELECTED_CHAIN_IDS = [2, 4, 7]; /// @dev BSC, POLY & FTM
+    uint64[] SELECTED_CHAIN_IDS = [56, 137, 250]; /// @dev BSC, POLY & FTM
     uint256[] EVM_CHAIN_IDS = [56, 137, 250]; /// @dev BSC, POLY & FTM
     Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc_Fork, Chains.Polygon_Fork, Chains.Fantom_Fork];
 

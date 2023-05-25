@@ -167,7 +167,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         AMBMessage memory decoded = abi.decode(body_, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
+        (, , , uint8 registryId, , ) = _decodeTxInfo(decoded.txInfo);
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 

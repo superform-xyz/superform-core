@@ -120,15 +120,17 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             }
 
             _dispatchAmbMessage(
-                vars.srcSender,
-                TransactionType.DEPOSIT,
-                abi.encode(ambData),
-                1,
-                req.extraData,
-                req.ambIds,
-                vars.srcChainId,
-                vars.dstChainId,
-                vars.currentPayloadId
+                DispatchAMBMessageVars(
+                    vars.srcSender,
+                    TransactionType.DEPOSIT,
+                    abi.encode(ambData),
+                    1,
+                    req.extraData,
+                    req.ambIds,
+                    vars.srcChainId,
+                    vars.dstChainId,
+                    vars.currentPayloadId
+                )
             );
 
             emit CrossChainInitiated(vars.currentPayloadId);
@@ -192,14 +194,17 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
 
         _dispatchAmbMessage(
-            vars.srcSender,
-            TransactionType.DEPOSIT,
-            abi.encode(ambData),
-            0,
-            req.extraData,
-            req.ambIds,
-            vars.dstChainId,
-            vars.currentPayloadId
+            DispatchAMBMessageVars(
+                vars.srcSender,
+                TransactionType.DEPOSIT,
+                abi.encode(ambData),
+                0,
+                req.extraData,
+                req.ambIds,
+                vars.srcChainId,
+                vars.dstChainId,
+                vars.currentPayloadId
+            )
         );
 
         emit CrossChainInitiated(vars.currentPayloadId);
@@ -285,14 +290,17 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
             emit Completed(vars.currentPayloadId);
         } else {
             _dispatchAmbMessage(
-                vars.srcSender,
-                TransactionType.WITHDRAW,
-                abi.encode(ambData),
-                1,
-                req.extraData,
-                req.ambIds,
-                vars.dstChainId,
-                vars.currentPayloadId
+                DispatchAMBMessageVars(
+                    vars.srcSender,
+                    TransactionType.WITHDRAW,
+                    abi.encode(ambData),
+                    1,
+                    req.extraData,
+                    req.ambIds,
+                    vars.srcChainId,
+                    vars.dstChainId,
+                    vars.currentPayloadId
+                )
             );
 
             emit CrossChainInitiated(vars.currentPayloadId);
@@ -343,14 +351,17 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
 
         _dispatchAmbMessage(
-            vars.srcSender,
-            TransactionType.WITHDRAW,
-            abi.encode(ambData),
-            0,
-            req.extraData,
-            req.ambIds,
-            vars.dstChainId,
-            vars.currentPayloadId
+            DispatchAMBMessageVars(
+                vars.srcSender,
+                TransactionType.WITHDRAW,
+                abi.encode(ambData),
+                0,
+                req.extraData,
+                req.ambIds,
+                vars.srcChainId,
+                vars.dstChainId,
+                vars.currentPayloadId
+            )
         );
 
         emit CrossChainInitiated(vars.currentPayloadId);
@@ -470,43 +481,45 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
     }
 
-    function _dispatchAmbMessage(
-        address srcSender_,
-        TransactionType txType_,
-        bytes memory ambData_,
-        uint8 multiVaults_,
-        bytes memory extraData_,
-        uint8[] memory ambIds_,
-        uint64 srcChainId_,
-        uint64 dstChainId_,
-        uint256 currentTotalTransactions_
-    ) internal {
+    struct DispatchAMBMessageVars {
+        address srcSender;
+        TransactionType txType;
+        bytes ambData;
+        uint8 multiVaults;
+        bytes extraData;
+        uint8[] ambIds;
+        uint64 srcChainId;
+        uint64 dstChainId;
+        uint256 currentPayloadId;
+    }
+
+    function _dispatchAmbMessage(DispatchAMBMessageVars memory vars) internal {
         AMBMessage memory ambMessage = AMBMessage(
             _packTxInfo(
-                uint8(txType_),
+                uint8(vars.txType),
                 uint8(CallbackType.INIT),
-                multiVaults_,
+                vars.multiVaults,
                 STATE_REGISTRY_TYPE,
-                srcSender_,
-                srcChainId_
+                vars.srcSender,
+                vars.srcChainId
             ),
-            ambData_
+            vars.ambData
         );
-        SingleDstAMBParams memory ambParams = abi.decode(extraData_, (SingleDstAMBParams));
+        SingleDstAMBParams memory ambParams = abi.decode(vars.extraData, (SingleDstAMBParams));
 
         /// @dev _liqReq should have path encoded for withdraw to SuperRouter on chain different than chainId
         /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
         /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
         /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
         IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{value: ambParams.gasToPay}(
-            srcSender_,
-            ambIds_,
-            dstChainId_,
+            vars.srcSender,
+            vars.ambIds,
+            vars.dstChainId,
             abi.encode(ambMessage),
             ambParams.encodedAMBExtraData
         );
 
-        ISuperPositions(superRegistry.superPositions()).updateTxHistory(currentTotalTransactions_, ambMessage);
+        ISuperPositions(superRegistry.superPositions()).updateTxHistory(vars.currentPayloadId, ambMessage);
     }
 
     function _directDeposit(

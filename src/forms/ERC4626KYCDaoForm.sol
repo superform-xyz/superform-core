@@ -64,23 +64,21 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) internal override returns (uint256 dstAmount) {
         _kycCheck(srcSender_);
 
-        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_, payloadId_);
+        dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
     }
 
     /// @inheritdoc BaseForm
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) internal override returns (uint256 dstAmount) {
         _kycCheck(srcSender_);
 
-        dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_, payloadId_);
+        dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
     }
 }

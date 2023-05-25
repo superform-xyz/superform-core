@@ -51,7 +51,7 @@ interface ISuperFormFactory {
     /// @param salt_ is the salt for create2
     function addFormBeacons(
         address[] memory formImplementations_,
-        uint256[] memory formBeaconIds_,
+        uint32[] memory formBeaconIds_,
         bytes32 salt_
     ) external;
 
@@ -139,7 +139,7 @@ interface ISuperFormFactory {
         returns (
             uint256[] memory superFormIds_,
             address[] memory vaults_,
-            uint256[] memory formBeaconIds_,
+            uint32[] memory formBeaconIds_,
             uint64[] memory chainIds_
         );
 

@@ -73,7 +73,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     uint256 public trustedRemote;
     bytes32 public constant salt = "SUPERFORM";
-    mapping(uint16 chainId => mapping(bytes32 implementation => address at)) public contracts;
+    mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
@@ -92,18 +92,18 @@ abstract contract BaseSetup is DSTest, Test {
     string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
-    uint256[] public FORM_BEACON_IDS = [uint256(1), uint256(2), uint256(3)];
+    uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
     bytes[] public vaultBytecodes;
     // formbeacon id => vault name
-    mapping(uint256 formBeaconId => string[] names) VAULT_NAMES;
+    mapping(uint32 formBeaconId => string[] names) VAULT_NAMES;
     // chainId => formbeacon id => vault
     /// FIXME: We need to map individual formBeaconId to individual vault to have access to ERC4626Form previewFunctions
-    mapping(uint16 chainId => mapping(uint256 formBeaconId => IERC4626[] vaults)) public vaults;
+    mapping(uint64 chainId => mapping(uint32 formBeaconId => IERC4626[] vaults)) public vaults;
     // chainId => formbeacon id => vault id
-    mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
-    mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
+    mapping(uint64 chainId => mapping(uint32 formBeaconId => uint256[] ids)) vaultIds;
+    mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;
@@ -122,9 +122,9 @@ abstract contract BaseSetup is DSTest, Test {
                         AMB VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint16 => address) public LZ_ENDPOINTS;
+    mapping(uint64 => address) public LZ_ENDPOINTS;
     mapping(uint64 => address) public CELER_BUSSES;
-    mapping(uint16 => uint64) public CELER_CHAIN_IDS;
+    mapping(uint64 => uint64) public CELER_CHAIN_IDS;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -180,15 +180,15 @@ abstract contract BaseSetup is DSTest, Test {
     address public constant OP_messageBus = 0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d;
     address public constant FTM_messageBus = 0xFF4E183a0Ceb4Fa98E63BbF8077B929c8E5A2bA4;
 
-    uint16 public constant ETH = 1;
-    uint16 public constant BSC = 2;
-    uint16 public constant AVAX = 3;
-    uint16 public constant POLY = 4;
-    uint16 public constant ARBI = 5;
-    uint16 public constant OP = 6;
-    //uint16 public constant FTM = 7;
+    uint64 public constant ETH = 1;
+    uint64 public constant BSC = 56;
+    uint64 public constant AVAX = 43114;
+    uint64 public constant POLY = 137;
+    uint64 public constant ARBI = 42161;
+    uint64 public constant OP = 10;
+    //uint64 public constant FTM = 250;
 
-    uint16[] public chainIds = [1, 2, 3, 4, 5, 6];
+    uint64[] public chainIds = [1, 56, 43114, 137, 42161, 10];
 
     /// @dev reference for chain ids https://layerzero.gitbook.io/docs/technical-reference/mainnet/supported-chain-ids
     uint16 public constant LZ_ETH = 101;
@@ -213,7 +213,7 @@ abstract contract BaseSetup is DSTest, Test {
                         CHAINLINK VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint16 => address) public PRICE_FEEDS;
+    mapping(uint64 => address) public PRICE_FEEDS;
 
     address public constant ETHEREUM_ETH_USD_FEED = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address public constant BSC_BNB_USD_FEED = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
@@ -226,8 +226,8 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     // chainID => FORK
-    mapping(uint16 chainId => uint256 fork) public FORKS;
-    mapping(uint16 chainId => string forkUrl) public RPC_URLS;
+    mapping(uint64 chainId => uint256 fork) public FORKS;
+    mapping(uint64 chainId => string forkUrl) public RPC_URLS;
 
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
@@ -260,7 +260,7 @@ abstract contract BaseSetup is DSTest, Test {
         _fundUnderlyingTokens(100);
     }
 
-    function getContract(uint16 chainId, string memory _name) public view returns (address) {
+    function getContract(uint64 chainId, string memory _name) public view returns (address) {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
@@ -463,7 +463,7 @@ abstract contract BaseSetup is DSTest, Test {
             }
             uint256 vaultId = 0;
             bytes memory bytecodeWithArgs;
-            for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
+            for (uint32 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     /// @dev 7.2 - Deploy mock Vault
                     if (j != 2) {
@@ -582,7 +582,7 @@ abstract contract BaseSetup is DSTest, Test {
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (vars.chainId != chainIds[j]) {
                     vars.dstChainId = chainIds[j];
-                    vars.dstAmbChainId = lz_chainIds[j];
+                    vars.dstLzChainId = lz_chainIds[j];
                     vars.dstHypChainId = hyperlane_chainIds[j];
                     vars.dstCelerChainId = celer_chainIds[j];
 
@@ -591,12 +591,12 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
-                        vars.dstAmbChainId,
+                        vars.dstLzChainId,
                         abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                     );
                     LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(
                         vars.dstChainId,
-                        vars.dstAmbChainId
+                        vars.dstLzChainId
                     );
 
                     HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
@@ -680,7 +680,7 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     function _preDeploymentSetup() private {
-        mapping(uint16 => uint256) storage forks = FORKS;
+        mapping(uint64 => uint256) storage forks = FORKS;
         forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 16742187);
         forks[BSC] = vm.createFork(BSC_RPC_URL, 26121321);
         forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 26933006);
@@ -689,7 +689,7 @@ abstract contract BaseSetup is DSTest, Test {
         forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 78219242);
         //forks[FTM] = vm.createFork(FANTOM_RPC_URL, 56806404);
 
-        mapping(uint16 => string) storage rpcURLs = RPC_URLS;
+        mapping(uint64 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
         rpcURLs[BSC] = BSC_RPC_URL;
         rpcURLs[AVAX] = AVALANCHE_RPC_URL;
@@ -698,7 +698,7 @@ abstract contract BaseSetup is DSTest, Test {
         rpcURLs[OP] = OPTIMISM_RPC_URL;
         //rpcURLs[FTM] = FANTOM_RPC_URL;
 
-        mapping(uint16 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
+        mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
         lzEndpointsStorage[BSC] = BSC_lzEndpoint;
         lzEndpointsStorage[AVAX] = AVAX_lzEndpoint;
@@ -715,13 +715,13 @@ abstract contract BaseSetup is DSTest, Test {
         celerMessageBusStorage[ARBI] = ARBI_messageBus;
         celerMessageBusStorage[OP] = OP_messageBus;
 
-        mapping(uint16 => uint64) storage celerChainIdsStorage = CELER_CHAIN_IDS;
+        mapping(uint64 => uint64) storage celerChainIdsStorage = CELER_CHAIN_IDS;
 
         for (uint256 i = 0; i < chainIds.length; i++) {
             celerChainIdsStorage[chainIds[i]] = celer_chainIds[i];
         }
 
-        mapping(uint16 => address) storage priceFeeds = PRICE_FEEDS;
+        mapping(uint64 => address) storage priceFeeds = PRICE_FEEDS;
         priceFeeds[ETH] = ETHEREUM_ETH_USD_FEED;
         priceFeeds[BSC] = BSC_BNB_USD_FEED;
         priceFeeds[AVAX] = AVALANCHE_AVAX_USD_FEED;
@@ -750,7 +750,7 @@ abstract contract BaseSetup is DSTest, Test {
         vaultBytecodes.push(type(kycDAO4626).creationCode);
 
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
-        for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
+        for (uint32 i = 0; i < VAULT_KINDS.length; i++) {
             for (uint256 j = 0; j < underlyingTokens.length; j++) {
                 VAULT_NAMES[i].push(string.concat(underlyingTokens[j], VAULT_KINDS[i]));
             }
@@ -774,7 +774,7 @@ abstract contract BaseSetup is DSTest, Test {
         }
     }
 
-    function _getPriceMultiplier(uint16 targetChainId_) internal returns (uint256) {
+    function _getPriceMultiplier(uint64 targetChainId_) internal returns (uint256) {
         uint256 multiplier;
 
         if (targetChainId_ == ETH || targetChainId_ == ARBI || targetChainId_ == OP) {
@@ -833,7 +833,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev will sync the payloads for broadcast
-    function _broadcastPayloadHelper(uint16 currentChainId, Vm.Log[] memory logs) internal {
+    function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
         address[] memory toMailboxes = new address[](6);
@@ -914,7 +914,7 @@ abstract contract BaseSetup is DSTest, Test {
         IPermit2.PermitTransferFrom memory permit,
         address spender,
         uint256 signerKey,
-        uint16 chainId
+        uint64 chainId
     ) internal returns (bytes memory sig) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _getEIP712Hash(permit, spender, chainId));
         return abi.encodePacked(r, s, v);
@@ -925,7 +925,7 @@ abstract contract BaseSetup is DSTest, Test {
     function _getEIP712Hash(
         IPermit2.PermitTransferFrom memory permit,
         address spender,
-        uint16 chainId
+        uint64 chainId
     ) internal view returns (bytes32 h) {
         return
             keccak256(

@@ -141,7 +141,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         AMBMessage memory decoded = abi.decode(vm.payload, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
+        (, , , uint8 registryId, , ) = _decodeTxInfo(decoded.txInfo);
         /// FIXME: should migrate to support more state registry types
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);

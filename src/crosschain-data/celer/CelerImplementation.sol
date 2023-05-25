@@ -179,7 +179,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         AMBMessage memory decoded = abi.decode(message_, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId) = _decodeTxInfo(decoded.txInfo);
+        (, , , uint8 registryId, , ) = _decodeTxInfo(decoded.txInfo);
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 

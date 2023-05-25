@@ -193,8 +193,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processXChainDeposit(
         InitSingleVaultData memory singleVaultData_,
-        uint64 srcChainId,
-        uint256 payloadId
+        uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
         (, , uint64 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
         address vaultLoc = vault;
@@ -209,7 +208,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
-        emit Processed(srcChainId, dstChainId, payloadId, singleVaultData_.amount, vaultLoc);
+        emit Processed(srcChainId, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
     struct xChainWithdrawLocalVars {
@@ -223,8 +222,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     function _processXChainWithdraw(
         InitSingleVaultData memory singleVaultData_,
         address srcSender,
-        uint64 srcChainId,
-        uint256 payloadId
+        uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
@@ -275,7 +273,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount
-        emit Processed(srcChainId, vars.dstChainId, payloadId, singleVaultData_.amount, vars.vaultLoc);
+        emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vars.vaultLoc);
 
         /// Here we either fully succeed of Callback.FAIL.
         return 0;

@@ -9,7 +9,8 @@ import {InitSingleVaultData} from "../../types/DataTypes.sol";
 interface IERC4626TimelockForm is IERC4626Form {
     /// @notice Process unlock request
     /// @param owner is the srcSender of the payload during 1st step
-    function processUnlock(address owner) external;
+    /// @param srcChainId is the srcChainId of the payload during 1st step
+    function processUnlock(address owner, uint64 srcChainId) external;
 
     /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
     function unlockId(address owner) external view returns (InitSingleVaultData memory singleVaultData);

@@ -54,13 +54,11 @@ interface IBaseForm is IERC165Upgradeable {
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
     /// @param srcChainId_ The chain id of the source chain
-    /// @param payloadId_ The id of the payload
     /// @return dstAmount  The amount of tokens deposited in same chain action
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) external returns (uint256 dstAmount);
 
     /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
@@ -68,13 +66,11 @@ interface IBaseForm is IERC165Upgradeable {
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
     /// @param srcChainId_ The chain id of the source chain
-    /// @param payloadId_ The id of the payload
     /// @return dstAmount The amount of tokens withdrawn
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) external returns (uint256 dstAmount);
 
     function getUnderlyingOfVault() external view returns (ERC20);

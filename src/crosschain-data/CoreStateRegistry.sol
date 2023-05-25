@@ -135,7 +135,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         if (callbackType == uint8(CallbackType.INIT)) {
             if (txType == uint8(TransactionType.WITHDRAW)) {
                 returnMessage = multi == 1
-                    ? _processMultiWithdrawal(payloadId_, payloadInfo.param, srcSender, srcChainId)
+                    ? _processMultiWithdrawal(payloadId_, payloadInfo.params, srcSender, srcChainId)
                     : _processSingleWithdrawal(payloadId_, payloadInfo.params, srcSender, srcChainId);
             }
 
@@ -175,7 +175,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
         AMBMessage memory payloadInfo = abi.decode(payload[payloadId_], (AMBMessage));
 
-        (, , uint8 multi, ) = _decodeTxInfo(payloadInfo.txInfo);
+        (, , uint8 multi, , , ) = _decodeTxInfo(payloadInfo.txInfo);
 
         if (multi == 1) {
             InitMultiVaultData memory multiVaultData = abi.decode(payloadInfo.params, (InitMultiVaultData));
@@ -216,12 +216,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         RescueFaileDepositsLocalVars memory v;
         (v.multi, v.rescued, v.failedData, v.srcSender, v.srcChainId) = abi.decode(
             failedDepositPayloads[payloadId_],
-            (uint8, bool, bytes, uint64, address)
+            (uint8, bool, bytes, address, uint64)
         );
         if (v.multi == 0) revert Error.NOT_MULTI_FAILURE();
         if (v.rescued) revert Error.ALREADY_RESCUED();
 
-        failedDepositPayloads[payloadId_] = abi.encode(v.multi, true, v.failedData);
+        failedDepositPayloads[payloadId_] = abi.encode(v.multi, true, v.failedData, v.srcSender, v.srcChainId);
 
         v.failedSuperFormIds = abi.decode(v.failedData, (uint256[]));
 
@@ -288,12 +288,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         RescueFailedDepositLocalVars memory v;
         (v.multi, v.rescued, v.failedData, v.srcSender, v.srcChainId) = abi.decode(
             failedDepositPayloads[payloadId_],
-            (uint8, bool, bytes, uint64, address)
+            (uint8, bool, bytes, address, uint64)
         );
         if (v.multi == 1) revert Error.NOT_SINGLE_FAILURE();
         if (v.rescued) revert Error.ALREADY_RESCUED();
 
-        failedDepositPayloads[payloadId_] = abi.encode(v.multi, true, v.failedData);
+        failedDepositPayloads[payloadId_] = abi.encode(v.multi, true, v.failedData, v.srcSender, v.srcChainId);
 
         v.failedSuperFormId = abi.decode(v.failedData, (uint256));
 
@@ -347,7 +347,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         /// @dev This will revert ALL of the transactions if one of them fails.
         for (uint256 i; i < multiVaultData.superFormIds.length; i++) {
             singleVaultData = InitSingleVaultData({
-                txData: multiVaultData.txData,
+                payloadId: multiVaultData.payloadId,
                 superFormId: multiVaultData.superFormIds[i],
                 amount: multiVaultData.amounts[i],
                 maxSlippage: multiVaultData.maxSlippage[i],
@@ -360,7 +360,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
             (address superForm_, , ) = _getSuperForm(singleVaultData.superFormId);
 
-            try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_, payloadId_) {
+            try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
                 /// @dev marks the indexes that don't require a callback re-mint of SuperPositions
                 multiVaultData.amounts[i] = 0;
             } catch {
@@ -420,7 +420,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                 try
                     IBaseForm(superForms[i]).xChainDepositIntoVault(
                         InitSingleVaultData({
-                            txData: multiVaultData.txData,
+                            payloadId: multiVaultData.payloadId,
                             superFormId: multiVaultData.superFormIds[i],
                             amount: multiVaultData.amounts[i],
                             maxSlippage: multiVaultData.maxSlippage[i],
@@ -428,8 +428,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                             extraFormData: multiVaultData.extraFormData
                         }),
                         srcSender_,
-                        srcChainId_,
-                        payloadId_
+                        srcChainId_
                     )
                 returns (uint256 dstAmount) {
                     if (!fulfilment) fulfilment = true;
@@ -464,10 +463,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
         if (errors) {
             failedDepositPayloads[payloadId_] = abi.encode(
-                true,
+                1,
+                false,
                 abi.encode(failedSuperFormIds),
-                srcChainId_,
-                srcSender_
+                srcSender_,
+                srcChainId_
             );
             emit FailedXChainDeposits(payloadId_);
         }
@@ -493,7 +493,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         /// that's also the only way to get error type out of the try/catch
         /// NOTE: opted for just returning CallbackType.FAIL as we always end up with superPositions.returnPosition() anyways
         /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
-        try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_, payloadId_) {
+        try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
             // Handle the case when the external call succeeds
         } catch {
             // Handle the case when the external call reverts for whatever reason
@@ -502,7 +502,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                 _constructSingleReturnData(
                     srcChainId_,
                     srcSender_,
-                    payloadId__,
+                    payloadId_,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
                     singleVaultData.amount
@@ -536,9 +536,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.transfer(superForm_, singleVaultData.amount);
 
-            try
-                IBaseForm(superForm_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_, payloadId_)
-            returns (uint256 dstAmount) {
+            try IBaseForm(superForm_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
+                uint256 dstAmount
+            ) {
                 return
                     _constructSingleReturnData(
                         srcChainId_,
@@ -550,10 +550,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                     );
             } catch {
                 failedDepositPayloads[payloadId_] = abi.encode(
+                    0,
                     false,
                     abi.encode(singleVaultData.superFormId),
-                    srcChainId_,
-                    srcSender_
+                    srcSender_,
+                    srcChainId_
                 );
                 emit FailedXChainDeposits(payloadId_);
             }

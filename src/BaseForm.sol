@@ -110,21 +110,19 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
-        dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_, payloadId_);
+        dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
     }
 
     /// @inheritdoc IBaseForm
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
         /// @dev FIXME: not returning anything YET
-        dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_, payloadId_);
+        dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -192,16 +190,14 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) internal virtual returns (uint256 dstAmount);
 
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_,
-        uint256 payloadId_
+        uint64 srcChainId_
     ) internal virtual returns (uint256 dstAmount);
 
     /*///////////////////////////////////////////////////////////////

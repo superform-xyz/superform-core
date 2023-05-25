@@ -219,7 +219,7 @@ contract SuperFormFactory is ISuperFormFactory {
     /// @inheritdoc ISuperFormFactory
     function getSuperForm(
         uint256 superFormId
-    ) external pure override returns (address superForm_, uint256 formBeaconId_, uint64 chainId_) {
+    ) external pure override returns (address superForm_, uint32 formBeaconId_, uint64 chainId_) {
         (superForm_, formBeaconId_, chainId_) = _getSuperForm(superFormId);
     }
 
@@ -231,14 +231,14 @@ contract SuperFormFactory is ISuperFormFactory {
         returns (
             uint256[] memory superFormIds_,
             address[] memory superForms_,
-            uint256[] memory formBeaconIds_,
+            uint32[] memory formBeaconIds_,
             uint64[] memory chainIds_
         )
     {
         superFormIds_ = superForms;
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
-        formBeaconIds_ = new uint256[](len);
+        formBeaconIds_ = new uint32[](len);
         chainIds_ = new uint64[](len);
 
         for (uint256 i = 0; i < len; i++) {
@@ -309,7 +309,7 @@ contract SuperFormFactory is ISuperFormFactory {
     /// @notice is a part of broadcasting / dispatching through factory state registry
     /// @param message_ is the crosschain message received.
     function _syncBeaconStatus(bytes memory message_) internal {
-        (uint256 formBeaconId, bool status) = abi.decode(message_, (uint256, bool));
+        (uint32 formBeaconId, bool status) = abi.decode(message_, (uint32, bool));
 
         if (formBeacon[formBeaconId] == address(0)) revert Error.INVALID_FORM_ID();
 

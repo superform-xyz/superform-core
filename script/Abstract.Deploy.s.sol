@@ -32,11 +32,9 @@ import {IMessageBus} from "../src/vendor/celer/IMessageBus.sol";
 import {TwoStepsFormStateRegistry} from "../src/crosschain-data/TwoStepsFormStateRegistry.sol";
 
 struct SetupVars {
-    uint16[2] chainIds;
-    address[2] lzEndpoints;
-    uint16 chainId;
-    uint16 dstChainId;
-    uint16 dstAmbChainId;
+    uint64 chainId;
+    uint64 dstChainId;
+    uint16 dstLzChainId;
     uint32 dstHypChainId;
     uint64 dstCelerChainId;
     string fork;
@@ -76,7 +74,7 @@ abstract contract AbstractDeploy is Script {
     //////////////////////////////////////////////////////////////*/
 
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
-    mapping(uint16 chainId => mapping(bytes32 implementation => address at)) public contracts;
+    mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
     string[18] public contractNames = [
         "CoreStateRegistry",
@@ -143,13 +141,13 @@ abstract contract AbstractDeploy is Script {
     bytes32 public constant STATE_REGISTRY_ROLE = keccak256("STATE_REGISTRY_ROLE");
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
-    uint256[] public FORM_BEACON_IDS = [uint256(1), uint256(2), uint256(3)];
+    uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
     /// @dev liquidity bridge ids. 1,2,3 belong to socket. 4 is lifi
     uint8[] public bridgeIds = [uint8(1), 2, 3, 4];
 
-    mapping(uint16 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
+    mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
     /// @dev setup amb bridges
     /// @notice id 1 is layerzero
@@ -161,9 +159,9 @@ abstract contract AbstractDeploy is Script {
                         AMB VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint16 => address) public LZ_ENDPOINTS;
+    mapping(uint64 => address) public LZ_ENDPOINTS;
     mapping(uint64 => address) public CELER_BUSSES;
-    mapping(uint16 => uint64) public CELER_CHAIN_IDS;
+    mapping(uint64 => uint64) public CELER_CHAIN_IDS;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -218,15 +216,15 @@ abstract contract AbstractDeploy is Script {
 
     /// @dev superformChainIds
 
-    uint16 public constant ETH = 1;
-    uint16 public constant BSC = 2;
-    uint16 public constant AVAX = 3;
-    uint16 public constant POLY = 4;
-    uint16 public constant ARBI = 5;
-    uint16 public constant OP = 6;
-    uint16 public constant FTM = 7;
+    uint64 public constant ETH = 1;
+    uint64 public constant BSC = 56;
+    uint64 public constant AVAX = 43114;
+    uint64 public constant POLY = 137;
+    uint64 public constant ARBI = 42161;
+    uint64 public constant OP = 10;
+    uint64 public constant FTM = 250;
 
-    uint16[] public chainIds = [1, 2, 3, 4, 5, 6, 7];
+    uint64[] public chainIds = [1, 56, 43114, 137, 42161, 10, 250];
     string[] public chainNames = ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Fantom"];
 
     /// @dev vendor chain ids
@@ -286,14 +284,14 @@ abstract contract AbstractDeploy is Script {
         forks[Chains.Fantom_Fork] = "fantom_fork";
     }
 
-    function getContract(uint16 chainId, string memory _name) public view returns (address) {
+    function getContract(uint64 chainId, string memory _name) public view returns (address) {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
     function _setupStage1(
         uint256 i,
         Cycle cycle,
-        uint16[] memory s_superFormChainIds,
+        uint64[] memory s_superFormChainIds,
         uint256[] memory s_llBridgeChainIds,
         uint256 forkId
     ) internal setEnvDeploy(cycle) {
@@ -497,7 +495,7 @@ abstract contract AbstractDeploy is Script {
     function _setupStage2(
         uint256 i,
         Cycle cycle,
-        uint16[] memory s_superFormChainIds,
+        uint64[] memory s_superFormChainIds,
         uint256 forkId
     ) internal setEnvDeploy(cycle) {
         SetupVars memory vars;
@@ -518,7 +516,7 @@ abstract contract AbstractDeploy is Script {
         for (uint256 j = 0; j < s_superFormChainIds.length; j++) {
             if (j != i) {
                 vars.dstChainId = s_superFormChainIds[j];
-                vars.dstAmbChainId = lz_chainIds[j];
+                vars.dstLzChainId = lz_chainIds[j];
                 vars.dstHypChainId = hyperlane_chainIds[j];
                 vars.dstCelerChainId = celer_chainIds[j];
 
@@ -527,10 +525,10 @@ abstract contract AbstractDeploy is Script {
                 vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
 
                 LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
-                    vars.dstAmbChainId,
+                    vars.dstLzChainId,
                     abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                 );
-                LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstAmbChainId);
+                LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
 
                 HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
                     vars.dstHypChainId,
@@ -574,7 +572,7 @@ abstract contract AbstractDeploy is Script {
             }
         }
 
-        mapping(uint16 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
+        mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
         lzEndpointsStorage[BSC] = BSC_lzEndpoint;
         lzEndpointsStorage[AVAX] = AVAX_lzEndpoint;
@@ -592,13 +590,13 @@ abstract contract AbstractDeploy is Script {
         celerMessageBusStorage[OP] = OP_messageBus;
         celerMessageBusStorage[FTM] = FTM_messageBus;
 
-        mapping(uint16 => uint64) storage celerChainIdsStorage = CELER_CHAIN_IDS;
+        mapping(uint64 => uint64) storage celerChainIdsStorage = CELER_CHAIN_IDS;
 
         for (uint256 i = 0; i < chainIds.length; i++) {
             celerChainIdsStorage[chainIds[i]] = celer_chainIds[i];
         }
 
-        mapping(uint16 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
+        mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
         bridgeAddresses[ETH] = [
             0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
             0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
@@ -644,7 +642,7 @@ abstract contract AbstractDeploy is Script {
         ];
     }
 
-    function exportContract(string memory name, string memory label, address addr, uint16 chainId) internal {
+    function exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {
         string memory json = vm.serializeAddress("EXPORTS", label, addr);
         string memory root = vm.projectRoot();
 

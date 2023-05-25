@@ -41,34 +41,34 @@ struct SingleVaultSFData {
 
 struct MultiDstMultiVaultsStateReq {
     uint8[] ambIds;
-    uint16[] dstChainIds;
+    uint64[] dstChainIds;
     MultiVaultsSFData[] superFormsData;
     bytes[] extraDataPerDst; /// encoded array of SingleDstAMBParams; length == no of dstChainIds
 }
 
 struct SingleDstMultiVaultsStateReq {
     uint8[] ambIds;
-    uint16 dstChainId;
+    uint64 dstChainId;
     MultiVaultsSFData superFormsData;
     bytes extraData;
 }
 
 struct MultiDstSingleVaultStateReq {
     uint8[] ambIds;
-    uint16[] dstChainIds;
+    uint64[] dstChainIds;
     SingleVaultSFData[] superFormsData;
     bytes[] extraDataPerDst;
 }
 
 struct SingleXChainSingleVaultStateReq {
     uint8[] ambIds;
-    uint16 dstChainId;
+    uint64 dstChainId;
     SingleVaultSFData superFormData;
     bytes extraData;
 }
 
 struct SingleDirectSingleVaultStateReq {
-    uint16 dstChainId;
+    uint64 dstChainId;
     SingleVaultSFData superFormData;
     bytes extraData;
 }

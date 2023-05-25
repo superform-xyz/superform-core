@@ -66,7 +66,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         uint64 srcChainId = payloadStore[payloadId].srcChainId;
 
         /// @dev try to processUnlock for this srcSender
-        try form.processUnlock(srcSender) {
+        try form.processUnlock(srcSender, srcChainId) {
             delete payloadStore[payloadId];
         } catch (bytes memory err) {
             /// NOTE: in every other instance it's better to re-init withdraw

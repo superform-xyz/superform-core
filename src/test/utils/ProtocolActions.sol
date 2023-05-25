@@ -17,20 +17,20 @@ import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.
 abstract contract ProtocolActions is BaseSetup {
     uint8[] public AMBs;
 
-    uint16 public CHAIN_0;
+    uint64 public CHAIN_0;
 
-    uint16[] public DST_CHAINS;
+    uint64[] public DST_CHAINS;
 
-    mapping(uint16 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYING_VAULTS;
+    mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYING_VAULTS;
 
-    mapping(uint16 chainId => mapping(uint256 action => uint256[] formKinds)) public TARGET_FORM_KINDS;
+    mapping(uint64 chainId => mapping(uint256 action => uint32[] formKinds)) public TARGET_FORM_KINDS;
 
-    mapping(uint16 chainId => mapping(uint256 index => uint256[] action)) public AMOUNTS;
+    mapping(uint64 chainId => mapping(uint256 index => uint256[] action)) public AMOUNTS;
 
-    mapping(uint16 chainId => mapping(uint256 index => uint256[] action)) public MAX_SLIPPAGE;
+    mapping(uint64 chainId => mapping(uint256 index => uint256[] action)) public MAX_SLIPPAGE;
 
     /// @dev 1 for socket, 2 for lifi
-    mapping(uint16 chainId => mapping(uint256 index => uint8[] liqBridgeId)) public LIQ_BRIDGES;
+    mapping(uint64 chainId => mapping(uint256 index => uint8[] liqBridgeId)) public LIQ_BRIDGES;
 
     /// NOTE: Now that we can pass individual actions, this array is only useful for more extended simulations
     TestAction[] public actions;
@@ -633,11 +633,11 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     function _buildLiqBridgeTxData(
-        uint16 liqBridgeKind_,
+        uint64 liqBridgeKind_,
         address externalToken_,
         address underlyingToken_,
         address from_,
-        uint16 toChainId_,
+        uint64 toChainId_,
         bool multiTx_,
         address toDst_,
         uint256 liqBridgeToChainId_,
@@ -859,7 +859,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     struct TargetVaultsVars {
         uint256[] underlyingTokenIds;
-        uint256[] formKinds;
+        uint32[] formKinds;
         uint256[] superFormIdsTemp;
         uint256 len;
         string underlyingToken;
@@ -867,8 +867,8 @@ abstract contract ProtocolActions is BaseSetup {
 
     /// @dev this function is used to build the 2D arrays in the best way possible
     function _targetVaults(
-        uint16 chain0,
-        uint16 chain1,
+        uint64 chain0,
+        uint64 chain1,
         uint256 action
     )
         internal
@@ -905,8 +905,8 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _superFormIds(
         uint256[] memory underlyingTokenIds_,
-        uint256[] memory formKinds_,
-        uint16 chainId_
+        uint32[] memory formKinds_,
+        uint64 chainId_
     ) internal view returns (uint256[] memory) {
         uint256[] memory superFormIds_ = new uint256[](underlyingTokenIds_.length);
         if (underlyingTokenIds_.length != formKinds_.length) revert INVALID_TARGETS();
@@ -1037,7 +1037,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _processPayload(
         uint256 payloadId_,
-        uint16 targetChainId_,
+        uint64 targetChainId_,
         TestType testType,
         bytes4
     ) internal returns (bool) {
@@ -1068,8 +1068,8 @@ abstract contract ProtocolActions is BaseSetup {
     /// @dev FIXME: only works for socket
     /// @dev - assumption to only use MultiTxProcessor for destination chain swaps (middleware requests)
     function _processMultiTx(
-        uint16 srcChainId_,
-        uint16 targetChainId_,
+        uint64 srcChainId_,
+        uint64 targetChainId_,
         uint256 liquidityBridgeDstChainId_,
         address underlyingToken_,
         uint256 amount_
@@ -1116,8 +1116,8 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     function _batchProcessMultiTx(
-        uint16 srcChainId_,
-        uint16 targetChainId_,
+        uint64 srcChainId_,
+        uint64 targetChainId_,
         uint256 liquidityBridgeDstChainId_,
         address[] memory underlyingTokens_,
         uint256[] memory amounts_
@@ -1165,7 +1165,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(initialFork);
     }
 
-    function _payloadDeliveryHelper(uint16 FROM_CHAIN, uint16 TO_CHAIN, Vm.Log[] memory logs) internal {
+    function _payloadDeliveryHelper(uint64 FROM_CHAIN, uint64 TO_CHAIN, Vm.Log[] memory logs) internal {
         for (uint256 i; i < AMBs.length; i++) {
             /// @notice ID: 1 Layerzero
             if (AMBs[i] == 1) {
