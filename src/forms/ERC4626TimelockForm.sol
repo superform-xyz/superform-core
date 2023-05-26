@@ -263,6 +263,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             v.requestUnlock(singleVaultData_.amount, address(this));
 
             /// @dev Store for TwoStepsFormStateRegistry
+            /// @dev NOTE aggregate based on payload id
             ++unlockCounter;
             unlockId[vars.srcSender] = OwnerRequest({
                 requestTimestamp: block.timestamp,

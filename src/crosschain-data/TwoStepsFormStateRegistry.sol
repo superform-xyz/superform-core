@@ -66,8 +66,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, IFormStateRegistry {
             /// TODO: Test this case (test messaging back to src)
             // if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
             /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
-            (, InitSingleVaultData memory singleVaultData) = form.unlockId(payloadStore[payloadId].owner);
 
+            /// payloadRegistry.payload(payloadId)
+            (, InitSingleVaultData memory singleVaultData) = CoreStateRegistry.payload(payloadId);
+
+            // it registryId == 1
             delete payloadStore[payloadId];
 
             (uint16 srcChainId, bytes memory returnMessage) = _constructSingleReturnData(singleVaultData);
