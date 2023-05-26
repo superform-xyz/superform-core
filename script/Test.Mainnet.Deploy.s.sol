@@ -14,9 +14,9 @@ contract TestMainnetDeploy is AbstractDeploy {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] SELECTED_CHAIN_IDS = [56, 137, 43114]; /// @dev BSC, POLY & AVAX
-    uint256[] EVM_CHAIN_IDS = [56, 137, 43114]; /// @dev BSC, POLY & AVAX
-    Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc, Chains.Polygon, Chains.Avalanche];
+    uint64[] SELECTED_CHAIN_IDS = [56, 42161, 43114]; /// @dev BSC, ARBI & AVAX
+    uint256[] EVM_CHAIN_IDS = [56, 42161, 43114]; /// @dev BSC, ARBI & AVAX
+    Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc, Chains.Arbitrum, Chains.Avalanche];
 
     /// @notice The main script entrypoint
     function run() external {
