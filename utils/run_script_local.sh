@@ -9,4 +9,5 @@ echo Running Script: ...
 
 forge script script/Local.Deploy.s.sol \
     --broadcast \
+    --slow \
     -vvvv
