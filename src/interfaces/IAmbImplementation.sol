@@ -8,7 +8,7 @@ interface IAmbImplementation {
     /*///////////////////////////////////////////////////////////////
                     Events
     //////////////////////////////////////////////////////////////*/
-    event ChainAdded(uint16 superChainId);
+    event ChainAdded(uint64 superChainId);
 
     /*///////////////////////////////////////////////////////////////
                     External Functions
@@ -21,7 +21,7 @@ interface IAmbImplementation {
     /// @param extraData_ is message amb specific override information
     function dispatchPayload(
         address srcSender_,
-        uint16 dstChainId_,
+        uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable;

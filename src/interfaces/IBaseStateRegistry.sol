@@ -9,7 +9,7 @@ interface IBaseStateRegistry {
                                 Events
     //////////////////////////////////////////////////////////////*/
     /// @dev is emitted when a cross-chain payload is received in the state registry
-    event PayloadReceived(uint16 srcChainId, uint16 dstChainId, uint256 payloadId);
+    event PayloadReceived(uint64 srcChainId, uint64 dstChainId, uint256 payloadId);
 
     /// @dev is emitted when a cross-chain proof is received in the state registry
     /// NOTE: comes handy if quorum required is more than 0
@@ -39,7 +39,7 @@ interface IBaseStateRegistry {
     function dispatchPayload(
         address srcSender_,
         uint8[] memory ambIds_,
-        uint16 dstChainId_,
+        uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable;
@@ -60,7 +60,7 @@ interface IBaseStateRegistry {
     /// @param srcChainId_ is the superform chainId from which the payload is dispatched/sent
     /// @param message_ is the crosschain payload received
     /// NOTE: Only {IMPLEMENTATION_CONTRACT} role can call this function.
-    function receivePayload(uint16 srcChainId_, bytes memory message_) external;
+    function receivePayload(uint64 srcChainId_, bytes memory message_) external;
 
     /// @dev allows previlaged actors to process cross-chain payloads
     /// @param payloadId_ is the identifier of the cross-chain payload

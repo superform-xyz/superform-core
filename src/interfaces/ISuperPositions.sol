@@ -12,7 +12,7 @@ interface ISuperPositions {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev is emitted when a cross-chain withdraw return data is received.
-    event Status(uint256 txId, uint16 status);
+    event Status(uint256 txId, uint64 status);
 
     /// @dev is emitted when a cross-chain transaction is completed.
     event Completed(uint256 txId);
@@ -48,21 +48,17 @@ interface ISuperPositions {
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
     /// @return srcChainId_ is the decoded srcChainId.
-    function stateMultiSync(
-        AMBMessage memory data_
-    ) external payable returns (uint16 srcChainId_);
+    function stateMultiSync(AMBMessage memory data_) external payable returns (uint64 srcChainId_);
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.
     /// @return srcChainId_ is the decoded srcChainId.
-    function stateSync(
-        AMBMessage memory data_
-    ) external payable returns (uint16 srcChainId_);
+    function stateSync(AMBMessage memory data_) external payable returns (uint64 srcChainId_);
 
     /// @dev saves the AMB message being sent together with the associated id formulated in super router
     /// @param messageId_ is the id of the message being sent
     /// @param message_ is the message being sent
-    function updateTxHistory(uint80 messageId_, AMBMessage memory message_) external;
+    function updateTxHistory(uint256 messageId_, AMBMessage memory message_) external;
 
     function setDynamicURI(string memory dynamicURI_) external;
 

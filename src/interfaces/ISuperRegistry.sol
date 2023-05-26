@@ -31,6 +31,11 @@ interface ISuperRegistry {
     event CoreStateRegistryUpdated(address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
 
     /// @dev is emitted when the state registry address is set.
+    event TwoStepsFormStateRegistryUpdated(
+        address indexed oldTwoStepsFormStateRegistry,
+        address indexed twoStepsFormStateRegistry
+    );
+    /// @dev is emitted when the state registry address is set.
     event FactoryStateRegistryUpdated(address indexed oldFactoryStateRegistry, address indexed factoryStateRegistry);
 
     /// @dev is emitted when the roles state registry address is set.
@@ -66,7 +71,7 @@ interface ISuperRegistry {
     /// @dev sets the chain id.
     /// @param chainId_ the superform chain id this registry is deployed on
     /// @param permit2_ the address of the permit2 contract
-    function setImmutables(uint16 chainId_, address permit2_) external;
+    function setImmutables(uint64 chainId_, address permit2_) external;
 
     /// @dev sets a new protocol address.
     /// @param protocolAddressId_ the protocol address identifier
@@ -90,8 +95,8 @@ interface ISuperRegistry {
     function setCoreStateRegistry(address coreStateRegistry_) external;
 
     /// @dev sets the state registry address.
-    /// @param formStateRegistry_ the address of the state registry
-    function setFormStateRegistry(address formStateRegistry_) external;
+    /// @param twoStepsFormStateRegistry_ the address of the state registry
+    function setTwoStepsFormStateRegistry(address twoStepsFormStateRegistry_) external;
 
     /// @dev sets the state registry address.
     /// @param factoryStateRegistry_ the address of the state registry
@@ -142,7 +147,7 @@ interface ISuperRegistry {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev gets the superform chainId of the protocol
-    function chainId() external view returns (uint16);
+    function chainId() external view returns (uint64);
 
     /// @dev returns the permit2 address
     function PERMIT2() external view returns (address);
@@ -162,8 +167,8 @@ interface ISuperRegistry {
     /// @dev returns the id of the core state registry module
     function CORE_STATE_REGISTRY() external view returns (bytes32);
 
-    /// @dev returns the id of the form state registry module
-    function FORM_STATE_REGISTRY() external view returns (bytes32);
+    /// @dev returns the id of the two steps form state registry module
+    function TWO_STEPS_FORM_STATE_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the factory state registry module
     function FACTORY_STATE_REGISTRY() external view returns (bytes32);
@@ -204,8 +209,8 @@ interface ISuperRegistry {
     function coreStateRegistry() external view returns (address coreStateRegistry_);
 
     /// @dev gets the form state registry address.
-    /// @return formStateRegistry_ the address of the state registry
-    function twoStepsFormStateRegistry() external view returns (address formStateRegistry_);
+    /// @return twoStepsFormStateRegistry_ the address of the state registry
+    function twoStepsFormStateRegistry() external view returns (address twoStepsFormStateRegistry_);
 
     /// @dev gets the state registry address.
     /// @return factoryStateRegistry_ the address of the state registry

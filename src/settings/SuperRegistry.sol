@@ -12,7 +12,7 @@ import {Error} from "../utils/Error.sol";
 /// @dev Keeps information on all protocolAddresses used in the SuperForms ecosystem.
 contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev chainId represents the superform chain id.
-    uint16 public chainId;
+    uint64 public chainId;
 
     /// @dev canonical permit2 contract
     address public PERMIT2;
@@ -35,7 +35,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     bytes32 public constant override TOKEN_BANK = "TOKEN_BANK";
     bytes32 public constant override SUPERFORM_FACTORY = "SUPERFORM_FACTORY";
     bytes32 public constant override CORE_STATE_REGISTRY = "CORE_STATE_REGISTRY";
-    bytes32 public constant FORM_STATE_REGISTRY = "FORM_STATE_REGISTRY";
+    bytes32 public constant override TWO_STEPS_FORM_STATE_REGISTRY = "TWO_STEPS_FORM_STATE_REGISTRY";
     bytes32 public constant override FACTORY_STATE_REGISTRY = "FACTORY_STATE_REGISTRY";
     bytes32 public constant override ROLES_STATE_REGISTRY = "ROLES_STATE_REGISTRY";
     bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
@@ -54,11 +54,10 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev FIXME: remove all address 0 checks to block calls to a certain contract?
 
     /// @inheritdoc ISuperRegistry
-    function setImmutables(uint16 chainId_, address permit2_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setImmutables(uint64 chainId_, address permit2_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
         if (chainId != 0) revert Error.DISABLED();
         if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
         if (PERMIT2 != address(0)) revert Error.DISABLED();
-
         chainId = chainId_;
         PERMIT2 = permit2_;
 
@@ -116,13 +115,13 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setFormStateRegistry(address formStateRegistry_) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (formStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
+    function setTwoStepsFormStateRegistry(address twoStepsFormStateRegistry_) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (twoStepsFormStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
 
-        address oldFormStateRegistry = protocolAddresses[FORM_STATE_REGISTRY];
-        protocolAddresses[FORM_STATE_REGISTRY] = formStateRegistry_;
+        address oldTwoStepsFormStateRegistry = protocolAddresses[TWO_STEPS_FORM_STATE_REGISTRY];
+        protocolAddresses[TWO_STEPS_FORM_STATE_REGISTRY] = twoStepsFormStateRegistry_;
 
-        emit CoreStateRegistryUpdated(oldFormStateRegistry, formStateRegistry_);
+        emit TwoStepsFormStateRegistryUpdated(oldTwoStepsFormStateRegistry, twoStepsFormStateRegistry_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -264,8 +263,8 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function twoStepsFormStateRegistry() external view returns (address formStateRegistry_) {
-        formStateRegistry_ = getProtocolAddress(FORM_STATE_REGISTRY);
+    function twoStepsFormStateRegistry() external view returns (address twoStepsFormStateRegistry_) {
+        twoStepsFormStateRegistry_ = getProtocolAddress(TWO_STEPS_FORM_STATE_REGISTRY);
     }
 
     /// @inheritdoc ISuperRegistry

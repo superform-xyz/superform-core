@@ -55,6 +55,8 @@ struct StagesLocalVars {
     uint256[] amounts;
     uint256[] maxSlippage;
     uint8[] liqBridges;
+    uint256 chain0Index;
+    uint256 chainDstIndex;
 }
 
 struct MessagingAssertVars {
@@ -62,7 +64,7 @@ struct MessagingAssertVars {
     uint256 msgValue;
     uint256 txIdBefore;
     uint256 receivedPayloadId;
-    uint16 toChainId;
+    uint64 toChainId;
     bool success;
     MultiVaultsSFData expectedMultiVaultsData;
     SingleVaultSFData expectedSingleVaultData;
@@ -99,9 +101,9 @@ struct TestAssertionVars {
 //////////////////////////////////////////////////////////////*/
 
 struct SetupVars {
-    uint16 chainId;
-    uint16 dstChainId;
-    uint16 dstAmbChainId;
+    uint64 chainId;
+    uint64 dstChainId;
+    uint16 dstLzChainId;
     uint32 dstHypChainId;
     uint64 dstCelerChainId;
     uint256 fork;
@@ -157,13 +159,11 @@ struct SingleVaultCallDataArgs {
     uint8 liqBridge;
     uint256 maxSlippage;
     address vaultMock;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint64 srcChainId;
+    uint64 toChainId;
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
     bool multiTx;
-    uint256 totalAmount;
-    address sameUnderlyingCheck;
 }
 
 struct MultiVaultCallDataArgs {
@@ -177,8 +177,8 @@ struct MultiVaultCallDataArgs {
     uint8[] liqBridges;
     uint256[] maxSlippage;
     address[] vaultMock;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint64 srcChainId;
+    uint64 toChainId;
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
     bool multiTx;
@@ -194,8 +194,8 @@ struct BuildDepositCallDataArgs {
     uint256[] amounts;
     uint8 liqBridges;
     uint256 maxSlippage;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint64 srcChainId;
+    uint64 toChainId;
     bool multiTx;
 }
 
@@ -209,15 +209,15 @@ struct BuildWithdrawCallDataArgs {
     uint256[] amounts;
     uint256 maxSlippage;
     LiquidityChange actionKind;
-    uint16 srcChainId;
-    uint16 toChainId;
+    uint64 srcChainId;
+    uint64 toChainId;
 }
 
 struct UpdateMultiVaultPayloadArgs {
     uint256 payloadId;
     uint256[] amounts;
     int256 slippage;
-    uint16 targetChainId;
+    uint64 targetChainId;
     TestType testType;
     bytes4 revertError;
     bytes32 revertRole;
@@ -227,7 +227,7 @@ struct UpdateSingleVaultPayloadArgs {
     uint256 payloadId;
     uint256 amount;
     int256 slippage;
-    uint16 targetChainId;
+    uint64 targetChainId;
     TestType testType;
     bytes4 revertError;
     bytes32 revertRole;

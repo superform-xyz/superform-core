@@ -19,7 +19,7 @@ library Error {
     error NOT_TWO_STEPS_PROCESSOR();
 
     /// @dev - when msg.sender is not form
-    error NOT_FORM();
+    error NOT_SUPERFORM();
 
     /// @dev - when msg.sender is not form state registry
     error NOT_FORM_STATE_REGISTRY();
@@ -174,6 +174,9 @@ library Error {
 
     /// @dev emitted when a form does not exist
     error FORM_DOES_NOT_EXIST();
+
+    /// @dev emitted when a vault has already been added to a form kind
+    error VAULT_ALREADY_HAS_FORM();
 
     /*///////////////////////////////////////////////////////////////
                         SUPER ROUTER ERRORS

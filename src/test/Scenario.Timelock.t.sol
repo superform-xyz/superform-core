@@ -26,12 +26,12 @@ contract ScenarioTimelockTest is ProtocolActions {
     uint256 actionId;
 
     /// @dev Global variable for timelockForm type. Different from dstFormID which is an index to access FORM_BEACON_IDS in BaseSetup
-    uint256 timelockFormType = 2;
+    uint32 timelockFormType = 2;
 
     /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests
-    uint16[] dstChainID;
+    uint64[] dstChainID;
     uint256[] dstVaultID;
-    uint256[] dstFormID;
+    uint32[] dstFormID;
     uint256[] amount;
     uint256[] slippage;
     uint8[] liqBridges;
@@ -291,9 +291,9 @@ contract ScenarioTimelockTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function _createAction(
-        uint16[] memory chainID_,
+        uint64[] memory chainID_,
         uint256[] memory vaultIDs_,
-        uint256[] memory formIDs_,
+        uint32[] memory formIDs_,
         uint256[] memory amounts_,
         uint256[] memory slippages_,
         uint8[] memory liqBridges_,
