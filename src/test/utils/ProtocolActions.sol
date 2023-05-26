@@ -1106,7 +1106,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
                 value: msgValue
-            }(payloadId_, generateAckParams(AMBs));rigin/develop
+            }(payloadId_, generateAckParams(AMBs));
 
             return false;
         }
@@ -1214,7 +1214,6 @@ abstract contract ProtocolActions is BaseSetup {
         );
         vm.selectFork(initialFork);
     }
-
 
     function _payloadDeliveryHelper(uint64 FROM_CHAIN, uint64 TO_CHAIN, Vm.Log[] memory logs) internal {
         for (uint256 i; i < AMBs.length; i++) {

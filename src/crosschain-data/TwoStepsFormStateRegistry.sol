@@ -57,7 +57,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     }
 
     /// @inheritdoc ITwoStepsFormStateRegistry
-    function finalizePayload(uint256 payloadId, bytes memory ackExtraData) external onlyTwoStepsProcessor {
+    function finalizePayload(uint256 payloadId, bytes memory ackExtraData) external payable onlyTwoStepsProcessor {
         (address superForm, , ) = _getSuperForm(payloadStore[payloadId].superFormId);
 
         /// NOTE: ERC4626TimelockForm is the only form that uses processUnlock function
@@ -81,7 +81,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                 // it registryId == 1
                 delete payloadStore[payloadId];
 
-                (uint16 srcChainId, bytes memory returnMessage) = _constructSingleReturnData(singleVaultData);
+                bytes memory returnMessage = _constructSingleReturnData(srcChainId, payloadId, singleVaultData);
                 _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
             }
 
@@ -93,10 +93,10 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after xChainWithdraw succeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
+        uint64 srcChainId_,
+        uint256 payloadId_,
         InitSingleVaultData memory singleVaultData_
     ) internal view returns (uint16, bytes memory returnMessage) {
-        (, uint16 srcChainId, uint80 currentTotalTxs) = _decodeTxData(singleVaultData_.txData);
-
         /// @notice Send Data to Source to issue superform positions.
         return
             abi.encode(
@@ -107,16 +107,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                         false,
                         STATE_REGISTRY_TYPE
                     ),
-                    abi.encode(
-                        ReturnSingleData(
-                            _packReturnTxInfo(
-                                srcChainId,
-                                superRegistry.chainId(),
-                                currentTotalTxs /// @dev TODO: How to sync that with source now?
-                            ),
-                            singleVaultData_.amount
-                        )
-                    )
+                    abi.encode(ReturnSingleData(payloadId_, singleVaultData_.amount))
                 )
             );
     }
