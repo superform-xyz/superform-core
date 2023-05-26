@@ -554,23 +554,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// FIXME: check if this is safe in all aspects
             SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
-        }
-
-        /// @dev 16 - Setup trusted remotes and deploy superforms. This must be done after the rest of the protocol has been deployed on all chains
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            vars.chainId = chainIds[i];
-            vars.fork = FORKS[vars.chainId];
-            vm.selectFork(vars.fork);
-
-            vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
-
-            vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
-
-            vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
-
-            vars.factory = getContract(vars.chainId, "SuperFormFactory");
-
-            vars.coreStateRegistry = getContract(vars.chainId, "CoreStateRegistry");
 
             /// @dev Set all trusted remotes for each chain & configure amb chains ids
             /// @dev Set message quorum for all chain ids (as 1)
@@ -581,9 +564,10 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstHypChainId = hyperlane_chainIds[j];
                     vars.dstCelerChainId = celer_chainIds[j];
 
-                    vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
-                    vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
-                    vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
+                    /// @dev this is possible because our contracts are Create2 (same address)
+                    vars.dstLzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
+                    vars.dstHyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
+                    vars.dstCelerImplementation = getContract(vars.chainId, "CelerImplementation");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId,

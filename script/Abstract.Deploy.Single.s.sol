@@ -68,7 +68,7 @@ struct SetupVars {
     address kycDao4626Form;
 }
 
-abstract contract AbstractDeploy is Script {
+abstract contract AbstractDeploySingle is Script {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -97,7 +97,7 @@ abstract contract AbstractDeploy is Script {
         "SuperRBAC"
     ];
 
-    bytes32 constant salt = "SUPERFORM69";
+    bytes32 constant salt = "SUPERFORM_69";
 
     enum Chains {
         Ethereum,
@@ -288,22 +288,20 @@ abstract contract AbstractDeploy is Script {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
-    function _setupStage1(
+    function _deploy(
         uint256 i,
+        uint256 trueIndex,
         Cycle cycle,
         uint64[] memory s_superFormChainIds,
-        uint256[] memory s_llBridgeChainIds,
-        uint256 forkId
+        uint256[] memory s_llBridgeChainIds
     ) internal setEnvDeploy(cycle) {
         SetupVars memory vars;
         /// @dev liquidity validator addresses
         address[] memory bridgeValidators = new address[](bridgeIds.length);
 
-        vars.chainId = chainIds[i];
+        vars.chainId = s_superFormChainIds[i];
 
         vars.ambAddresses = new address[](ambIds.length);
-
-        vm.selectFork(forkId);
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -382,7 +380,7 @@ abstract contract AbstractDeploy is Script {
         vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
         contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
-        LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
+        LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[trueIndex]);
 
         /// @dev 4.2- deploy Hyperlane Implementation
         vars.hyperlaneImplementation = address(
@@ -398,7 +396,7 @@ abstract contract AbstractDeploy is Script {
         vars.celerImplementation = address(new CelerImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
         contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
 
-        CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[i]);
+        CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[trueIndex]);
 
         vars.ambAddresses[0] = vars.lzImplementation;
         vars.ambAddresses[1] = vars.hyperlaneImplementation;
@@ -488,34 +486,6 @@ abstract contract AbstractDeploy is Script {
         /// FIXME: check if this is safe in all aspects
         SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
 
-        vm.stopBroadcast();
-    }
-
-    function _setupStage2(
-        uint256 i,
-        Cycle cycle,
-        uint64[] memory s_superFormChainIds,
-        uint256 forkId
-    ) internal setEnvDeploy(cycle) {
-        SetupVars memory vars;
-
-        vars.chainId = chainIds[i];
-        vm.selectFork(forkId);
-        vm.startBroadcast(deployerPrivateKey);
-
-        vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
-        // 0x90a9D112fd9337C60C8404234dF1FeBa570f2a1E
-
-        vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
-        // 0xff07dE9eb321Aa70CB41363fC47Fad6092F0eB43
-
-        vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
-        // 0x24D1cF9E531d1636A83880c2aA9d60B0f613E2Ce
-
-        vars.factory = getContract(vars.chainId, "SuperFormFactory");
-        // 0x211825BdD7D563d3E8d22260F51469C9bA3d6c9B
-
-        /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < s_superFormChainIds.length; j++) {
             if (j != i) {
                 vars.dstChainId = s_superFormChainIds[j];
@@ -523,12 +493,12 @@ abstract contract AbstractDeploy is Script {
                 vars.dstHypChainId = hyperlane_chainIds[j];
                 vars.dstCelerChainId = celer_chainIds[j];
 
-                vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
+                vars.dstLzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
                 // 0x90a9D112fd9337C60C8404234dF1FeBa570f2a1E
-                vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
+                vars.dstHyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
                 // 0xff07dE9eb321Aa70CB41363fC47Fad6092F0eB43
 
-                vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
+                vars.dstCelerImplementation = getContract(vars.chainId, "CelerImplementation");
                 // 0x24D1cF9E531d1636A83880c2aA9d60B0f613E2Ce
 
                 LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
@@ -559,26 +529,19 @@ abstract contract AbstractDeploy is Script {
             }
         }
         vm.stopBroadcast();
+
         /// @dev Exports
         for (uint256 j = 0; j < contractNames.length; j++) {
-            exportContract(chainNames[i], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId);
+            exportContract(
+                chainNames[trueIndex],
+                contractNames[j],
+                getContract(vars.chainId, contractNames[j]),
+                vars.chainId
+            );
         }
     }
 
-    function _preDeploymentSetup(Chains[] memory chains, Cycle cycle) internal returns (uint256[] memory forkIds) {
-        if (cycle == Cycle.Dev) {
-            forkIds = new uint256[](chains.length + 1);
-            for (uint256 i = 0; i < chains.length; i++) {
-                forkIds[i] = vm.createFork(forks[chains[i]]);
-            }
-            forkIds[chains.length] = vm.createFork(forks[Chains.Ethereum]);
-        } else if (cycle == Cycle.Prod) {
-            forkIds = new uint256[](chains.length);
-            for (uint256 i = 0; i < chains.length; i++) {
-                forkIds[i] = vm.createFork(forks[chains[i]]);
-            }
-        }
-
+    function _preDeploymentSetup() internal {
         mapping(uint64 => address) storage lzEndpointsStorage = LZ_ENDPOINTS;
         lzEndpointsStorage[ETH] = ETH_lzEndpoint;
         lzEndpointsStorage[BSC] = BSC_lzEndpoint;
