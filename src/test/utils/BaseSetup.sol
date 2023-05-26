@@ -102,9 +102,9 @@ abstract contract BaseSetup is DSTest, Test {
     /// FIXME: We need to map individual formBeaconId to individual vault to have access to ERC4626Form previewFunctions
     mapping(uint64 chainId => mapping(uint32 formBeaconId => IERC4626[] vaults)) public vaults;
     // chainId => formbeacon id => vault id
-    mapping(uint16 chainId => mapping(uint256 formBeaconId => uint256[] ids)) vaultIds;
-    mapping(uint16 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
-    mapping(uint16 chainId => uint256 payloadId) TWO_STEP_PAYLOAD_ID;
+    mapping(uint64 chainId => mapping(uint32 formBeaconId => uint256[] ids)) vaultIds;
+    mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
+    mapping(uint64 chainId => uint256 payloadId) TWO_STEP_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;

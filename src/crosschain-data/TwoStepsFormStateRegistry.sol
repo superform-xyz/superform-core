@@ -81,7 +81,12 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                 // it registryId == 1
                 delete payloadStore[payloadId];
 
-                bytes memory returnMessage = _constructSingleReturnData(srcChainId, payloadId, singleVaultData);
+                bytes memory returnMessage = _constructSingleReturnData(
+                    srcSender,
+                    srcChainId,
+                    payloadId,
+                    singleVaultData
+                );
                 _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
             }
 
@@ -93,19 +98,22 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after xChainWithdraw succeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
+        address srcSender_,
         uint64 srcChainId_,
         uint256 payloadId_,
         InitSingleVaultData memory singleVaultData_
-    ) internal view returns (uint16, bytes memory returnMessage) {
+    ) internal view returns (bytes memory returnMessage) {
         /// @notice Send Data to Source to issue superform positions.
         return
             abi.encode(
                 AMBMessage(
                     _packTxInfo(
-                        uint120(TransactionType.WITHDRAW),
-                        uint120(CallbackType.FAIL),
-                        false,
-                        STATE_REGISTRY_TYPE
+                        uint8(TransactionType.WITHDRAW),
+                        uint8(CallbackType.FAIL),
+                        0,
+                        STATE_REGISTRY_TYPE,
+                        srcSender_,
+                        srcChainId_
                     ),
                     abi.encode(ReturnSingleData(payloadId_, singleVaultData_.amount))
                 )

@@ -1087,7 +1087,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _processTwoStepPayload(
         uint256 payloadId_,
-        uint16 targetChainId_,
+        uint64 targetChainId_,
         TestType testType,
         bytes4
     ) internal returns (bool) {
