@@ -43,6 +43,41 @@ abstract contract ProtocolActions is BaseSetup {
                             MAIN INTERNAL
     //////////////////////////////////////////////////////////////*/
 
+    function _runMainStages(
+        TestAction memory action,
+        uint256 act,
+        MultiVaultsSFData[] memory multiSuperFormsData,
+        SingleVaultSFData[] memory singleSuperFormsData,
+        MessagingAssertVars[] memory aV,
+        StagesLocalVars memory vars,
+        bool success
+    ) internal {
+        (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
+
+        vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
+
+        aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);
+        success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);
+
+        if (!success) {
+            return;
+        }
+
+        if (
+            (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) &&
+            !(action.testType == TestType.RevertXChainDeposit)
+        ) {
+            success = _stage5_process_superPositions_mint(action, vars);
+            if (!success) {
+                return;
+            }
+        }
+
+        if (action.action == Actions.Withdraw && action.testType == TestType.RevertXChainWithdraw) {
+            success = _stage6_process_superPositions_withdraw(action, vars);
+        }
+    }
+
     /// @dev STEP 1: Build Request Data
     /// NOTE: This whole step should be looked upon as PROTOCOL action, not USER action
     /// Request is built for user, but all of operations here would be performed by protocol and not even it's smart contracts
@@ -86,7 +121,6 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
         action.msgValue = action.msgValue + (vars.nDestinations + 1) * _getPriceMultiplier(CHAIN_0) * 1e18;
-
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (DST_CHAINS[i] == chainIds[j]) {
@@ -880,6 +914,7 @@ abstract contract ProtocolActions is BaseSetup {
         TargetVaultsVars memory vars;
         vars.underlyingTokenIds = TARGET_UNDERLYING_VAULTS[chain1][action];
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
+
         vars.superFormIdsTemp = _superFormIds(vars.underlyingTokenIds, vars.formKinds, chain1);
 
         vars.len = vars.superFormIdsTemp.length;

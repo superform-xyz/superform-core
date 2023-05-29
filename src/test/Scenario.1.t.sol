@@ -71,26 +71,8 @@ contract Scenario1Test is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
-            (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
-            vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
 
-            aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);
-
-            success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);
-
-            if (!success) {
-                continue;
-            }
-
-            if (
-                (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) &&
-                !(action.testType == TestType.RevertXChainDeposit)
-            ) {
-                success = _stage5_process_superPositions_mint(action, vars);
-                if (!success) {
-                    continue;
-                }
-            }
+            _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
         }
     }
 }

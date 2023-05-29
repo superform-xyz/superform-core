@@ -10,72 +10,99 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 import "./utils/AmbParams.sol";
 
+import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
+
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario6Test is ProtocolActions {
+contract Scenario12Test is ProtocolActions {
+    /// @dev Access SuperRouter interface
+    ISuperRouter superRouter;
+
+    /// @dev Access SuperPositions interface
+    IERC1155 superPositions;
+
+    address _superRouter;
+    address _stateRegistry;
+    address _superPositions;
+
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationXChainDeposit with multi tx (single processing) & batch processing
+        /// @dev singleDestinationMultiVault, large test
 
-        AMBs = [1, 2];
+        AMBs = [3, 2];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYING_VAULTS[ARBI][0] = [1];
-        TARGET_FORM_KINDS[ARBI][0] = [0];
+        TARGET_UNDERLYING_VAULTS[ARBI][0] = [1, 2, 0, 2, 2, 1, 0];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 2, 2, 2, 2];
 
-        TARGET_UNDERLYING_VAULTS[ARBI][1] = [0, 1];
-        TARGET_FORM_KINDS[ARBI][1] = [0, 0];
+        TARGET_UNDERLYING_VAULTS[ARBI][1] = [1, 2, 0, 2, 2, 1, 0];
+        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 2, 2, 2, 2];
 
-        AMOUNTS[ARBI][0] = [12337];
-        AMOUNTS[ARBI][1] = [721, 13];
+        AMOUNTS[ARBI][0] = [7722, 11, 3, 54218, 4412, 96, 2241];
+        AMOUNTS[ARBI][1] = [7722, 11, 3, 54218, 4412, 96, 2241];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000];
-        MAX_SLIPPAGE[ARBI][1] = [1000, 1000];
+        MAX_SLIPPAGE[ARBI][0] = [1000, 1000, 1000, 1000, 1000, 1000, 1000];
+        MAX_SLIPPAGE[ARBI][1] = [1000, 1000, 1000, 1000, 1000, 1000, 1000];
 
-        LIQ_BRIDGES[ARBI][0] = [1];
-        LIQ_BRIDGES[ARBI][1] = [1, 1];
+        LIQ_BRIDGES[ARBI][0] = [1, 2, 1, 2, 2, 1, 1];
+        LIQ_BRIDGES[ARBI][1] = [1, 1, 2, 2, 2, 1, 1];
 
         /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+        uint256 msgValue = 5 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 0,
+                multiVaults: true, //!!WARNING turn on or off multi vaults
+                user: 1,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: true,
+                multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                msgValue: msgValue,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 
         actions.push(
             TestAction({
-                action: Actions.Deposit,
+                action: Actions.Withdraw,
                 multiVaults: true, //!!WARNING turn on or off multi vaults
-                user: 0,
+                user: 1,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: true,
+                multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                msgValue: msgValue,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
+
+        /*///////////////////////////////////////////////////////////////
+                                STATE SETUP
+        //////////////////////////////////////////////////////////////*/
+
+        _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+
+        _stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
+
+        superRouter = ISuperRouter(_superRouter);
+
+        /// TODO: User ERC1155s
+        superPositions = IERC1155(ISuperRegistry(_stateRegistry).superPositions());
     }
 
     /*///////////////////////////////////////////////////////////////
