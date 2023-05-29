@@ -32,14 +32,12 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev FIXME: we don't have AMB and liquidity bridge implementations here, should we add?
     bytes32 public constant override PROTOCOL_ADMIN = "PROTOCOL_ADMIN";
     bytes32 public constant override SUPER_ROUTER = "SUPER_ROUTER";
-    bytes32 public constant override TOKEN_BANK = "TOKEN_BANK";
     bytes32 public constant override SUPERFORM_FACTORY = "SUPERFORM_FACTORY";
     bytes32 public constant override CORE_STATE_REGISTRY = "CORE_STATE_REGISTRY";
     bytes32 public constant override TWO_STEPS_FORM_STATE_REGISTRY = "TWO_STEPS_FORM_STATE_REGISTRY";
     bytes32 public constant override FACTORY_STATE_REGISTRY = "FACTORY_STATE_REGISTRY";
     bytes32 public constant override ROLES_STATE_REGISTRY = "ROLES_STATE_REGISTRY";
     bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
-    bytes32 public constant override SUPER_POSITION_BANK = "SUPER_POSITION_BANK";
     bytes32 public constant override SUPER_RBAC = "SUPER_RBAC";
     bytes32 public constant override MULTI_TX_PROCESSOR = "MULTI_TX_PROCESSOR";
 
@@ -86,8 +84,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function setSuperRouter(address superRouter_) external override onlyRole(PROTOCOL_ADMIN) {
-        if (superRouter_ == address(0)) revert Error.ZERO_ADDRESS();
-
         address oldSuperRouter = protocolAddresses[SUPER_ROUTER];
         protocolAddresses[SUPER_ROUTER] = superRouter_;
 
@@ -96,8 +92,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function setSuperFormFactory(address superFormFactory_) external override onlyRole(PROTOCOL_ADMIN) {
-        if (superFormFactory_ == address(0)) revert Error.ZERO_ADDRESS();
-
         address oldSuperFormFactory = protocolAddresses[SUPERFORM_FACTORY];
         protocolAddresses[SUPERFORM_FACTORY] = superFormFactory_;
 
@@ -106,8 +100,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function setCoreStateRegistry(address coreStateRegistry_) external override onlyRole(PROTOCOL_ADMIN) {
-        if (coreStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
-
         address oldCoreStateRegistry = protocolAddresses[CORE_STATE_REGISTRY];
         protocolAddresses[CORE_STATE_REGISTRY] = coreStateRegistry_;
 
@@ -116,8 +108,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function setTwoStepsFormStateRegistry(address twoStepsFormStateRegistry_) external onlyRole(PROTOCOL_ADMIN) {
-        if (twoStepsFormStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
-
         address oldTwoStepsFormStateRegistry = protocolAddresses[TWO_STEPS_FORM_STATE_REGISTRY];
         protocolAddresses[TWO_STEPS_FORM_STATE_REGISTRY] = twoStepsFormStateRegistry_;
 
@@ -126,8 +116,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function setFactoryStateRegistry(address factoryStateRegistry_) external override onlyRole(PROTOCOL_ADMIN) {
-        if (factoryStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
-
         address oldFactoryStateRegistry = protocolAddresses[FACTORY_STATE_REGISTRY];
         protocolAddresses[FACTORY_STATE_REGISTRY] = factoryStateRegistry_;
 
@@ -136,8 +124,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function setRolesStateRegistry(address rolesStateRegistry_) external override onlyRole(PROTOCOL_ADMIN) {
-        if (rolesStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
-
         address oldRolesStateRegistry = protocolAddresses[ROLES_STATE_REGISTRY];
         protocolAddresses[ROLES_STATE_REGISTRY] = rolesStateRegistry_;
 
@@ -146,8 +132,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function setSuperPositions(address superPositions_) external override onlyRole(PROTOCOL_ADMIN) {
-        if (superPositions_ == address(0)) revert Error.ZERO_ADDRESS();
-
         address oldSuperPositions = protocolAddresses[SUPER_POSITIONS];
         protocolAddresses[SUPER_POSITIONS] = superPositions_;
 
@@ -156,8 +140,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function setSuperRBAC(address superRBAC_) external override onlyRole(PROTOCOL_ADMIN) {
-        if (superRBAC_ == address(0)) revert Error.ZERO_ADDRESS();
-
         address oldSuperRBAC = protocolAddresses[SUPER_RBAC];
         protocolAddresses[SUPER_RBAC] = superRBAC_;
 
@@ -166,8 +148,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function setMultiTxProcessor(address multiTxProcessor_) external override onlyRole(PROTOCOL_ADMIN) {
-        if (multiTxProcessor_ == address(0)) revert Error.ZERO_ADDRESS();
-
         address oldMultiTxProcessor = protocolAddresses[MULTI_TX_PROCESSOR];
         protocolAddresses[MULTI_TX_PROCESSOR] = multiTxProcessor_;
 
@@ -224,15 +204,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         }
     }
 
-    function setSuperPositionBank(address superPositionBank_) external override onlyRole(PROTOCOL_ADMIN) {
-        if (superPositionBank_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        address oldSuperPositionBank = protocolAddresses[SUPER_POSITION_BANK];
-        protocolAddresses[SUPER_POSITION_BANK] = superPositionBank_;
-
-        emit SetSuperPositionBankAddress(oldSuperPositionBank, superPositionBank_);
-    }
-
     /*///////////////////////////////////////////////////////////////
                     External View Functions
     //////////////////////////////////////////////////////////////*/
@@ -280,10 +251,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @inheritdoc ISuperRegistry
     function superPositions() external view override returns (address superPositions_) {
         superPositions_ = getProtocolAddress(SUPER_POSITIONS);
-    }
-
-    function superPositionBank() external view returns (address superPositionBank_) {
-        superPositionBank_ = getProtocolAddress(SUPER_POSITION_BANK);
     }
 
     /// @inheritdoc ISuperRegistry

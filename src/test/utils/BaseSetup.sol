@@ -344,10 +344,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
 
-            SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(vars.coreStateRegistry);
-
-            assert(SuperRBAC(vars.superRBAC).hasCoreStateRegistryRole(vars.coreStateRegistry));
-
             /// @dev 4.2- deploy Factory State Registry
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 2)
@@ -361,9 +357,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.twoStepsFormStateRegistry = address(
                 new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 4)
             );
-
-            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry);
-            assert(SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry));
 
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
@@ -497,7 +490,6 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars.factory;
 
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
-            SuperRBAC(vars.superRBAC).grantSuperformFactoryRole(vars.factory);
 
             /// @dev 9 - Deploy 4626Form implementations
             // Standard ERC4626 Form
@@ -524,8 +516,6 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars.superRouter;
 
             SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
-            SuperRBAC(vars.superRBAC).grantSuperRouterRole(vars.superRouter);
-            assert(SuperRBAC(vars.superRBAC).hasSuperRouterRole(vars.superRouter));
 
             /// @dev 13 - Deploy SuperPositions
             vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));

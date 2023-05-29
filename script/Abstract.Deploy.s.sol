@@ -337,8 +337,6 @@ abstract contract AbstractDeploy is Script {
 
         SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
 
-        SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(vars.coreStateRegistry);
-
         /// @dev 3.2- deploy Factory State Registry
 
         vars.factoryStateRegistry = address(new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 2));
@@ -352,7 +350,6 @@ abstract contract AbstractDeploy is Script {
         );
 
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
-        SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry);
 
         SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
 
@@ -428,7 +425,6 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars.factory;
 
         SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
-        SuperRBAC(vars.superRBAC).grantSuperformFactoryRole(vars.factory);
 
         /// @dev 7 - Deploy 4626Form implementations
         // Standard ERC4626 Form
@@ -456,7 +452,6 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars.superRouter;
 
         SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
-        SuperRBAC(vars.superRBAC).grantSuperRouterRole(vars.superRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));

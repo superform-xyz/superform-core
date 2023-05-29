@@ -22,13 +22,12 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     mapping(uint256 transactionId => AMBMessage ambMessage) public txHistory;
 
     modifier onlyRouter() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(msg.sender)) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.superRouter() != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyCoreStateRegistry() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(msg.sender))
-            revert Error.NOT_CORE_STATE_REGISTRY();
+        if (superRegistry.coreStateRegistry() != msg.sender) revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 

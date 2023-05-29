@@ -34,8 +34,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
     /// @dev TwoStepsFormStateRegistry modifier for calling processUnlock()
     modifier onlyTwoStepsFormStateRegistry() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasTwoStepsFormStateRegistryRole(msg.sender))
-            revert Error.NOT_FORM_STATE_REGISTRY();
+        if (superRegistry.twoStepsFormStateRegistry() != msg.sender) revert Error.NOT_FORM_STATE_REGISTRY();
         _;
     }
 
