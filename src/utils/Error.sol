@@ -33,14 +33,11 @@ library Error {
     /// @dev - when msg.sender is not protocol admin
     error NOT_PROTOCOL_ADMIN();
 
+    /// @dev - when msg.sender is not emergency admin
+    error NOT_EMERGENCY_ADMIN();
+
     /// @dev - when msg.sender is not super router
     error NOT_SUPER_ROUTER();
-
-    /// @dev if the msg-sender is not token bank
-    error NOT_TOKEN_BANK();
-
-    /// @dev if the msg-sender is not super position bank
-    error NOT_SUPER_POSITION_BANK();
 
     /// @dev if the msg-sender is not super form factory
     error NOT_SUPERFORM_FACTORY();

@@ -15,7 +15,9 @@ import "../utils/DataPacking.sol";
 contract SuperRBAC is ISuperRBAC, AccessControl {
     uint8 public constant STATE_REGISTRY_TYPE = 2;
 
-    bytes32 public constant SYNC_REVOKE_ROLE = keccak256("SYNC_REVOKE_ROLE");
+    bytes32 public immutable PROTOCOL_ADMIN_ROLE;
+    bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
+    bytes32 public constant override SYNC_REVOKE_ROLE = keccak256("SYNC_REVOKE_ROLE");
     bytes32 public constant override SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
     bytes32 public constant override CORE_CONTRACTS_ROLE = keccak256("CORE_CONTRACTS_ROLE");
     bytes32 public constant override PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
@@ -31,16 +33,17 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address protocolAdmin = superRegistry.protocolAdmin();
         if (admin_ != protocolAdmin) revert Error.INVALID_DEPLOYER();
 
-        bytes32 protocolAdminRole = superRegistry.PROTOCOL_ADMIN();
+        PROTOCOL_ADMIN_ROLE = superRegistry.PROTOCOL_ADMIN_ROLE();
 
-        _setupRole(protocolAdminRole, protocolAdmin);
+        _setupRole(PROTOCOL_ADMIN_ROLE, protocolAdmin);
 
-        _setRoleAdmin(protocolAdminRole, protocolAdminRole);
-        _setRoleAdmin(SWAPPER_ROLE, protocolAdminRole);
-        _setRoleAdmin(CORE_CONTRACTS_ROLE, protocolAdminRole);
-        _setRoleAdmin(PROCESSOR_ROLE, protocolAdminRole);
-        _setRoleAdmin(TWOSTEPS_PROCESSOR_ROLE, protocolAdminRole);
-        _setRoleAdmin(UPDATER_ROLE, protocolAdminRole);
+        _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(CORE_CONTRACTS_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(TWOSTEPS_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(UPDATER_ROLE, PROTOCOL_ADMIN_ROLE);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -49,12 +52,22 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     function grantProtocolAdminRole(address admin_) external override {
-        grantRole(superRegistry.PROTOCOL_ADMIN(), admin_);
+        grantRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
     function revokeProtocolAdminRole(address admin_) external override {
-        revokeRole(superRegistry.PROTOCOL_ADMIN(), admin_);
+        revokeRole(PROTOCOL_ADMIN_ROLE, admin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function grantEmergencyAdminRole(address admin_) external override {
+        grantRole(EMERGENCY_ADMIN_ROLE, admin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function revokeEmergencyAdminRole(address admin_) external override {
+        revokeRole(EMERGENCY_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -166,7 +179,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
             (bytes32 role, address affectedAddress) = abi.decode(rolesPayload.message, (bytes32, address));
 
             /// @dev no one can update the default admin role
-            if (role != superRegistry.PROTOCOL_ADMIN()) revokeRole(role, affectedAddress);
+            if (role != PROTOCOL_ADMIN_ROLE) revokeRole(role, affectedAddress);
         }
     }
 
@@ -176,7 +189,17 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     function hasProtocolAdminRole(address admin_) external view override returns (bool) {
-        return hasRole(superRegistry.PROTOCOL_ADMIN(), admin_);
+        return hasRole(PROTOCOL_ADMIN_ROLE, admin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasEmergencyAdminRole(address emergencyAdmin_) external view override returns (bool) {
+        return hasRole(EMERGENCY_ADMIN_ROLE, emergencyAdmin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasSyncRevokeRole(address syncRevoker_) external view override returns (bool) {
+        return hasRole(SYNC_REVOKE_ROLE, syncRevoker_);
     }
 
     /// @inheritdoc ISuperRBAC

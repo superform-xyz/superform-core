@@ -109,7 +109,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         vars.lzEndpoint_0 = LZ_ENDPOINTS[CHAIN_0];
-        vars.fromSrc = payable(getContract(CHAIN_0, "SuperRouter"));
+        vars.fromSrc = payable(getContract(CHAIN_0, "SuperFormRouter"));
 
         vars.nDestinations = DST_CHAINS.length;
 
@@ -212,7 +212,7 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars
     ) internal returns (StagesLocalVars memory) {
-        SuperRouter superRouter = SuperRouter(vars.fromSrc);
+        SuperFormRouter superRouter = SuperFormRouter(vars.fromSrc);
 
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -806,7 +806,7 @@ abstract contract ProtocolActions is BaseSetup {
                 nonce: _randomUint256(),
                 deadline: block.timestamp
             });
-            v.sig = _signPermit(v.permit, v.from, userKeys[args.user], args.srcChainId); /// @dev from is either SuperRouter (xchain) or the form (direct deposit)
+            v.sig = _signPermit(v.permit, v.from, userKeys[args.user], args.srcChainId); /// @dev from is either SuperFormRouter (xchain) or the form (direct deposit)
 
             v.permit2Calldata = abi.encode(v.permit.nonce, v.permit.deadline, v.sig);
         }
@@ -824,7 +824,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[args.srcChainId]);
 
-        /// @dev - APPROVE transfer to SuperRouter (because of Socket)
+        /// @dev - APPROVE transfer to SuperFormRouter (because of Socket)
         vm.prank(users[args.user]);
 
         if (action == Actions.DepositPermit2) {
@@ -855,7 +855,7 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal returns (SingleVaultSFData memory superFormData) {
         SingleVaultWithdrawLocalVars memory vars;
 
-        vars.superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        vars.superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
         vars.superPositions = IERC1155(ISuperRegistry(vars.stateRegistry).superPositions());
         vm.prank(users[args.user]);

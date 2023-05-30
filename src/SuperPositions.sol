@@ -6,7 +6,7 @@ import {ERC1155} from "solmate/tokens/ERC1155.sol";
 import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
-import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
+import {ISuperFormRouter} from "./interfaces/ISuperFormRouter.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import "./utils/DataPacking.sol";
 import {Error} from "./utils/Error.sol";

@@ -144,17 +144,17 @@ contract SuperFormFactory is ISuperFormFactory {
     /// @inheritdoc ISuperFormFactory
     function changeFormBeaconPauseStatus(
         uint32 formBeaconId_,
-        bool status_,
+        bool paused_,
         bytes memory extraData_
     ) external payable override onlyProtocolAdmin {
         if (formBeacon[formBeaconId_] == address(0)) revert Error.INVALID_FORM_ID();
 
-        FormBeacon(formBeacon[formBeaconId_]).changePauseStatus(status_);
+        FormBeacon(formBeacon[formBeaconId_]).changePauseStatus(paused_);
 
         if (extraData_.length > 0) {
             AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
                 SYNC_BEACON_STATUS,
-                abi.encode(formBeaconId_, status_)
+                abi.encode(formBeaconId_, paused_)
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
@@ -187,8 +187,8 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @inheritdoc ISuperFormFactory
-    function getFormBeaconStatus(uint32 formBeaconId_) external view override returns (bool status_) {
-        status_ = FormBeacon(formBeacon[formBeaconId_]).paused();
+    function isFormBeaconPaused(uint32 formBeaconId_) external view override returns (bool paused_) {
+        paused_ = FormBeacon(formBeacon[formBeaconId_]).paused();
     }
 
     /// @inheritdoc ISuperFormFactory

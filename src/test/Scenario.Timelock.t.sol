@@ -8,7 +8,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
 // Test Utils
-import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IERC4626Form} from "./interfaces/IERC4626Form.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
@@ -33,8 +33,8 @@ contract ScenarioTimelockTest is ProtocolActions {
     uint256[] slippage;
     uint8[] liqBridges;
 
-    /// @dev Access SuperRouter interface
-    ISuperRouter superRouter;
+    /// @dev Access SuperFormRouter interface
+    ISuperFormRouter superRouter;
 
     /// @dev Access SuperPositions interface
     IERC1155 superPositions;
@@ -81,7 +81,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                                 STATE SETUP
         //////////////////////////////////////////////////////////////*/
 
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
 
         address _superForm = getContract(
             dstChainID[0], /// temp select by index
@@ -94,7 +94,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         address _stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
 
-        superRouter = ISuperRouter(_superRouter);
+        superRouter = ISuperFormRouter(_superRouter);
 
         address _superPositions = ISuperRegistry(_stateRegistry).superPositions();
 

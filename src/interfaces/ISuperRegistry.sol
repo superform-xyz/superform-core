@@ -147,7 +147,7 @@ interface ISuperRegistry {
     function PERMIT2() external view returns (address);
 
     /// @dev returns the id of the protocol admin
-    function PROTOCOL_ADMIN() external view returns (bytes32);
+    function PROTOCOL_ADMIN_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the super router module
     function SUPER_ROUTER() external view returns (bytes32);

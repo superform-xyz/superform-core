@@ -55,8 +55,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         _;
     }
 
-    modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasEmergencyAdminRole(msg.sender))
+            revert Error.NOT_EMERGENCY_ADMIN();
         _;
     }
 
@@ -225,11 +226,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
                             DEV FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev FIXME Decide to keep this?
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @notice should be removed after end-to-end testing.
+    /// @dev EMERGENCY_ADMIN ONLY FUNCTION.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function emergencyWithdrawToken(address tokenContract_, uint256 amount) external onlyProtocolAdmin {
+    function emergencyWithdrawToken(address tokenContract_, uint256 amount) external onlyEmergencyAdmin {
         ERC20 tokenContract = ERC20(tokenContract_);
 
         /// note: transfer the token from address of this contract
@@ -237,10 +236,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         tokenContract.transfer(msg.sender, amount);
     }
 
-    /// @dev FIXME Decide to keep this?
-    /// @dev PREVILEGED admin ONLY FUNCTION.
+    /// @dev EMERGENCY_ADMIN ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function emergencyWithdrawNativeToken(uint256 amount) external onlyProtocolAdmin {
+    function emergencyWithdrawNativeToken(uint256 amount) external onlyEmergencyAdmin {
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
     }

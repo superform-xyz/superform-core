@@ -27,11 +27,11 @@ import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
 import {RolesStateRegistry} from "../../crosschain-data/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
-import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
+import {ISuperFormRouter} from "../../interfaces/ISuperFormRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "../../vendor/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
-import {SuperRouter} from "../../SuperRouter.sol";
+import {SuperFormRouter} from "../../SuperFormRouter.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
 import {SuperRBAC} from "../../settings/SuperRBAC.sol";
 import {SuperPositions} from "../../SuperPositions.sol";
@@ -321,6 +321,10 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
             assert(SuperRBAC(vars.superRBAC).hasProtocolAdminRole(deployer));
 
+            /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
+            SuperRBAC(vars.superRBAC).grantEmergencyAdminRole(deployer);
+            assert(SuperRBAC(vars.superRBAC).hasEmergencyAdminRole(deployer));
+
             /// @dev FIXME: in reality who should have the SWAPPER_ROLE for multiTxProcessor?
             SuperRBAC(vars.superRBAC).grantSwapperRole(deployer);
             assert(SuperRBAC(vars.superRBAC).hasSwapperRole(deployer));
@@ -511,9 +515,9 @@ abstract contract BaseSetup is DSTest, Test {
 
             ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
-            /// @dev 12 - Deploy SuperRouter
-            vars.superRouter = address(new SuperRouter{salt: salt}(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars.superRouter;
+            /// @dev 12 - Deploy SuperFormRouter
+            vars.superRouter = address(new SuperFormRouter{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SuperFormRouter"))] = vars.superRouter;
 
             SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
 

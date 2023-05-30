@@ -45,9 +45,9 @@ contract FormBeacon is IFormBeacon {
     }
 
     /// @inheritdoc IFormBeacon
-    function changePauseStatus(bool newStatus_) external override onlySuperFormFactory {
-        paused = newStatus_;
-        emit FormBeaconStatus(newStatus_);
+    function changePauseStatus(bool paused_) external override onlySuperFormFactory {
+        paused = paused_;
+        emit FormBeaconPaused(paused_);
     }
 
     /// @inheritdoc IFormBeacon

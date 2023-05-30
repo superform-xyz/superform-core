@@ -17,6 +17,14 @@ interface ISuperRBAC {
     /// @param admin_ the address to revoke the role from
     function revokeProtocolAdminRole(address admin_) external;
 
+    /// @dev grants the EMERGENCY_ADMIN_ROLE to the given address
+    /// @param admin_ the address to grant the role to
+    function grantEmergencyAdminRole(address admin_) external;
+
+    /// @dev revokes the EMERGENCY_ADMIN_ROLE from given address
+    /// @param admin_ the address to revoke the role from
+    function revokeEmergencyAdminRole(address admin_) external;
+
     /// @dev grants the SWAPPER_ROLE to the given address
     /// @param swapper_ the address to grant the role to
     function grantSwapperRole(address swapper_) external;
@@ -75,6 +83,15 @@ interface ISuperRBAC {
                             View Functions
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev returns the id of the protocol admin role
+    function PROTOCOL_ADMIN_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of the emergency admin role
+    function EMERGENCY_ADMIN_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of the sync revoke role
+    function SYNC_REVOKE_ROLE() external view returns (bytes32);
+
     /// @dev returns the id of the swapper role
     function SWAPPER_ROLE() external view returns (bytes32);
 
@@ -93,6 +110,14 @@ interface ISuperRBAC {
     /// @dev returns wether the given address has the protocol admin role
     /// @param admin_ the address to check
     function hasProtocolAdminRole(address admin_) external view returns (bool);
+
+    /// @dev returns wether the given address has the emergency admin role
+    /// @param admin_ the address to check
+    function hasEmergencyAdminRole(address admin_) external view returns (bool);
+
+    /// @dev returns wether the given address has the sync revoke role
+    /// @param syncRevoke_ the address to check
+    function hasSyncRevokeRole(address syncRevoke_) external view returns (bool);
 
     /// @dev returns wether the given address has the swapper role
     /// @param swapper_ the address to check

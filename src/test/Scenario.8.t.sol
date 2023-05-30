@@ -14,8 +14,8 @@ import "./utils/AmbParams.sol";
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario8Test is ProtocolActions {
-    /// @dev Access SuperRouter interface
-    ISuperRouter superRouter;
+    /// @dev Access SuperFormRouter interface
+    ISuperFormRouter superRouter;
 
     function setUp() public override {
         super.setUp();
@@ -85,8 +85,8 @@ contract Scenario8Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
-        superRouter = ISuperRouter(_superRouter);
+        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
+        superRouter = ISuperFormRouter(_superRouter);
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];

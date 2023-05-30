@@ -9,7 +9,7 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 import "./utils/AmbParams.sol";
 
-import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 import {IERC4626Form} from "./interfaces/IERC4626Form.sol";
@@ -21,8 +21,8 @@ contract Scenario4Test is ProtocolActions {
     /// @dev Global counter for actions sent to the protocol
     uint256 actionId;
 
-    /// @dev Access SuperRouter interface
-    ISuperRouter superRouter;
+    /// @dev Access SuperFormRouter interface
+    ISuperFormRouter superRouter;
 
     /// @dev Access SuperPositions interface
     IERC1155 superPositions;
@@ -117,11 +117,11 @@ contract Scenario4Test is ProtocolActions {
                                 STATE SETUP
         //////////////////////////////////////////////////////////////*/
 
-        _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
 
         _stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
 
-        superRouter = ISuperRouter(_superRouter);
+        superRouter = ISuperFormRouter(_superRouter);
 
         /// TODO: User ERC1155s
         superPositions = IERC1155(ISuperRegistry(_stateRegistry).superPositions());

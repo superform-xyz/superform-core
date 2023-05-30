@@ -10,15 +10,15 @@ import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 import "./utils/AmbParams.sol";
 
-import {ISuperRouter} from "../interfaces/ISuperRouter.sol";
+import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario12Test is ProtocolActions {
-    /// @dev Access SuperRouter interface
-    ISuperRouter superRouter;
+    /// @dev Access SuperFormRouter interface
+    ISuperFormRouter superRouter;
 
     /// @dev Access SuperPositions interface
     IERC1155 superPositions;
@@ -95,11 +95,11 @@ contract Scenario12Test is ProtocolActions {
                                 STATE SETUP
         //////////////////////////////////////////////////////////////*/
 
-        _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperRouter"))];
+        _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
 
         _stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
 
-        superRouter = ISuperRouter(_superRouter);
+        superRouter = ISuperFormRouter(_superRouter);
 
         /// TODO: User ERC1155s
         superPositions = IERC1155(ISuperRegistry(_stateRegistry).superPositions());

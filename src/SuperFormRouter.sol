@@ -7,7 +7,7 @@ import {LiqRequest, TransactionType, CallbackType, MultiVaultsSFData, SingleVaul
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
-import {ISuperRouter} from "./interfaces/ISuperRouter.sol";
+import {ISuperFormRouter} from "./interfaces/ISuperFormRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {IFormBeacon} from "./interfaces/IFormBeacon.sol";
@@ -17,11 +17,11 @@ import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
 
-/// @title Super Router
+/// @title SuperFormRouter
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and action information to a remote execution chain.
 /// @dev extends Liquidity Handler.
-contract SuperRouter is ISuperRouter, LiquidityHandler {
+contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     using SafeERC20 for IERC20;
 
     /*///////////////////////////////////////////////////////////////
@@ -39,6 +39,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         _;
     }
 
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasEmergencyAdminRole(msg.sender))
+            revert Error.NOT_EMERGENCY_ADMIN();
+        _;
+    }
+
     /// @dev constructor
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
@@ -53,7 +59,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     /// @notice liquidity bridge tech fails without a native receive function.
     receive() external payable {}
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function multiDstMultiVaultDeposit(MultiDstMultiVaultsStateReq calldata req) external payable override {
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             singleDstMultiVaultDeposit(
@@ -67,7 +73,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
     }
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function singleDstMultiVaultDeposit(SingleDstMultiVaultsStateReq memory req) public payable override {
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
@@ -137,7 +143,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
     }
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function multiDstSingleVaultDeposit(MultiDstSingleVaultStateReq calldata req) external payable override {
         uint64 dstChainId;
 
@@ -160,7 +166,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
     }
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req) public payable override {
         ActionLocalVars memory vars;
 
@@ -205,7 +211,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         emit CrossChainInitiated(vars.currentPayloadId);
     }
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req) public payable override {
         ActionLocalVars memory vars;
 
@@ -226,7 +232,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         emit Completed(vars.currentPayloadId);
     }
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function multiDstMultiVaultWithdraw(MultiDstMultiVaultsStateReq calldata req) external payable override {
         uint256 nDestinations = req.dstChainIds.length;
 
@@ -242,7 +248,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
     }
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function singleDstMultiVaultWithdraw(SingleDstMultiVaultsStateReq memory req) public payable override {
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
@@ -297,7 +303,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
     }
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req) external payable override {
         uint64 dstChainId;
 
@@ -320,7 +326,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         }
     }
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req) public payable override {
         ActionLocalVars memory vars;
 
@@ -352,7 +358,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         emit CrossChainInitiated(vars.currentPayloadId);
     }
 
-    /// @inheritdoc ISuperRouter
+    /// @inheritdoc ISuperFormRouter
     function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req) public payable override {
         ActionLocalVars memory vars;
 
@@ -484,7 +490,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         );
         SingleDstAMBParams memory ambParams = abi.decode(vars.extraData, (SingleDstAMBParams));
 
-        /// @dev _liqReq should have path encoded for withdraw to SuperRouter on chain different than chainId
+        /// @dev _liqReq should have path encoded for withdraw to SuperFormRouter on chain different than chainId
         /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
         /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
         /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
@@ -519,7 +525,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     }
 
     /**
-     * @notice deposit() to vaults existing on the same chain as SuperRouter
+     * @notice deposit() to vaults existing on the same chain as SuperFormRouter
      * @dev Optimistic transfer & call
      */
     function _directSingleDeposit(
@@ -549,7 +555,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     }
 
     /**
-     * @notice deposit() to vaults existing on the same chain as SuperRouter
+     * @notice deposit() to vaults existing on the same chain as SuperFormRouter
      * @dev Optimistic transfer & call
      */
     function _directMultiDeposit(
@@ -602,7 +608,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     }
 
     /**
-     * @notice withdraw() to vaults existing on the same chain as SuperRouter
+     * @notice withdraw() to vaults existing on the same chain as SuperFormRouter
      * @dev Optimistic transfer & call
      */
     function _directSingleWithdraw(
@@ -626,7 +632,7 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     }
 
     /**
-     * @notice withdraw() to vaults existing on the same chain as SuperRouter
+     * @notice withdraw() to vaults existing on the same chain as SuperFormRouter
      * @dev Optimistic transfer & call
      */
     function _directMultiWithdraw(
@@ -742,13 +748,12 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            DEV FUNCTIONS
+                            EMERGENCY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @notice should be removed after end-to-end testing.
+    /// @dev EMERGENCY_ADMIN ONLY FUNCTION.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function withdrawToken(address tokenContract_, uint256 amount_) external onlyProtocolAdmin {
+    function emergencyWithdrawToken(address tokenContract_, uint256 amount_) external onlyEmergencyAdmin {
         IERC20 tokenContract = IERC20(tokenContract_);
 
         /// note: transfer the token from address of this contract
@@ -756,9 +761,9 @@ contract SuperRouter is ISuperRouter, LiquidityHandler {
         tokenContract.safeTransfer(msg.sender, amount_);
     }
 
-    /// @dev PREVILEGED admin ONLY FUNCTION.
+    /// @dev EMERGENCY_ADMIN ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function withdrawNativeToken(uint256 amount_) external onlyProtocolAdmin {
+    function emergencyWithdrawNativeToken(uint256 amount_) external onlyEmergencyAdmin {
         (bool success, ) = payable(msg.sender).call{value: amount_}("");
         if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
     }
