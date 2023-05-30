@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {ERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {InitSingleVaultData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
@@ -142,7 +142,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     /// @notice Returns the underlying token of a vault.
     /// @return The underlying token
-    function getUnderlyingOfVault() public view virtual returns (ERC20);
+    function getUnderlyingOfVault() public view virtual returns (address);
 
     /// @notice Returns the amount of underlying tokens each share of a vault is worth.
     /// @return The pricePerVaultShare value
@@ -229,7 +229,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev EMERGENCY_ADMIN ONLY FUNCTION.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
     function emergencyWithdrawToken(address tokenContract_, uint256 amount) external onlyEmergencyAdmin {
-        ERC20 tokenContract = ERC20(tokenContract_);
+        IERC20 tokenContract = IERC20(tokenContract_);
 
         /// note: transfer the token from address of this contract
         /// note: to address of the user (executing the withdrawToken() function)

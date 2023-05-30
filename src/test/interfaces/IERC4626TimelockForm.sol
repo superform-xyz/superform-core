@@ -7,15 +7,13 @@ import {InitSingleVaultData} from "../../types/DataTypes.sol";
 interface IERC4626TimelockForm is IERC20 {
     /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
     /// TODO: We use two IERC4626TimelockForm interfaces (files), should be only one!
-    function unlockId(
-        uint256 unlockCounter
-    ) external view returns (InitSingleVaultData memory singleVaultData);
+    function unlockId(uint256 unlockCounter) external view returns (InitSingleVaultData memory singleVaultData);
 
     function vaultSharesIsERC20() external pure returns (bool);
 
     function vaultSharesIsERC4626() external pure returns (bool);
 
-    function getUnderlyingOfVault() external view returns (IERC20);
+    function getUnderlyingOfVault() external view returns (address);
 
     function getPricePerVaultShare() external view returns (uint256);
 
@@ -29,7 +27,5 @@ interface IERC4626TimelockForm is IERC20 {
 
     function previewDepositTo(uint256 assets_) external view returns (uint256);
 
-    function previewWithdrawFrom(
-        uint256 assets_
-    ) external view returns (uint256);
+    function previewWithdrawFrom(uint256 assets_) external view returns (uint256);
 }

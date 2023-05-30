@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseStateRegistry} from "./BaseStateRegistry.sol";
 import {QuorumManager} from "./utils/QuorumManager.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
@@ -21,8 +21,7 @@ import "../utils/DataPacking.sol";
 /// @author Zeropoint Labs
 /// @dev enables communication between SuperForm Core Contracts deployed on all supported networks
 contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager, ICoreStateRegistry {
-    /// FIXME: are we using safe transfers?
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for IERC20;
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -398,7 +397,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         InitMultiVaultData memory multiVaultData = abi.decode(payload_, (InitMultiVaultData));
 
         (address[] memory superForms, , ) = _getSuperForms(multiVaultData.superFormIds);
-        ERC20 underlying;
+        IERC20 underlying;
         uint256 numberOfVaults = multiVaultData.superFormIds.length;
         uint256[] memory dstAmounts = new uint256[](numberOfVaults);
         uint256[] memory failedSuperFormIds = new uint256[](numberOfVaults);
@@ -408,7 +407,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         for (uint256 i = 0; i < numberOfVaults; i++) {
             /// @dev FIXME: whole msg.value is transferred here, in multi sync this needs to be split
 
-            underlying = IBaseForm(superForms[i]).getUnderlyingOfVault();
+            underlying = IERC20(IBaseForm(superForms[i]).getUnderlyingOfVault());
 
             /// @dev This will revert ALL of the transactions if one of them fails.
             if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
@@ -524,7 +523,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
         (address superForm_, , ) = _getSuperForm(singleVaultData.superFormId);
 
-        ERC20 underlying = IBaseForm(superForm_).getUnderlyingOfVault();
+        IERC20 underlying = IERC20(IBaseForm(superForm_).getUnderlyingOfVault());
 
         /// @dev NOTE: This will revert with an error only descriptive of the first possible revert out of many
         /// 1. Not enough tokens on this contract == BRIDGE_TOKENS_PENDING

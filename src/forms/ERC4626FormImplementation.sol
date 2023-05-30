@@ -28,8 +28,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     /// @dev asset() or some similar function should return all possible tokens that can be deposited into the vault so that BE can grab that properly
-    function getUnderlyingOfVault() public view virtual override returns (ERC20) {
-        return IERC4626(vault).asset();
+    function getUnderlyingOfVault() public view virtual override returns (address) {
+        return address(IERC4626(vault).asset());
     }
 
     /// @inheritdoc BaseForm
