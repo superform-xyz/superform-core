@@ -8,7 +8,6 @@ import "./TestTypes.sol";
 import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 
@@ -29,7 +28,7 @@ import {RolesStateRegistry} from "../../crosschain-data/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
 import {ISuperFormRouter} from "../../interfaces/ISuperFormRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
-import {IERC4626} from "../../vendor/IERC4626.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {SuperFormRouter} from "../../SuperFormRouter.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
@@ -54,8 +53,6 @@ import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {TwoStepsFormStateRegistry} from "../../crosschain-data/TwoStepsFormStateRegistry.sol";
 
 abstract contract BaseSetup is DSTest, Test {
-    using FixedPointMathLib for uint256;
-
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/

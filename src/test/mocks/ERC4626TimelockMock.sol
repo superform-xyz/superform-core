@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {ERC4626} from "solmate/mixins/ERC4626.sol";
+import {ERC4626} from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
+import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {IERC4626TimelockVault} from "../../forms/interfaces/IERC4626TimelockVault.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @notice Mock ERC4626Timelock contract
 /// @dev Requires two separate calls to perform ERC4626.withdraw() or redeem()
@@ -13,8 +13,7 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 /// @dev Allows canceling unlock request
 /// @dev Designed to mimick behavior of timelock vaults covering most of the use cases abstracted
 contract ERC4626TimelockMock is ERC4626 {
-    using SafeTransferLib for ERC20;
-    using FixedPointMathLib for uint256;
+    using SafeERC20 for IERC20;
 
     uint256 public lockPeriod = 100;
     uint256 public requestId;
@@ -30,20 +29,9 @@ contract ERC4626TimelockMock is ERC4626 {
 
     mapping(address owner => UnlockRequest) public requests;
 
-    constructor(
-        ERC20 asset_,
-        string memory name_,
-        string memory symbol_
-    ) ERC4626(asset_, name_, symbol_) {}
+    constructor(IERC20 asset_, string memory name_, string memory symbol_) ERC4626(asset_) ERC20(name_, symbol_) {}
 
-    function totalAssets() public view override returns (uint256) {
-        /// @dev placeholder, we just use it for mock
-        return asset.balanceOf(address(this));
-    }
-
-    function userUnlockRequests(
-        address owner
-    ) external view returns (UnlockRequest memory) {
+    function userUnlockRequests(address owner) external view returns (UnlockRequest memory) {
         return requests[owner];
     }
 
@@ -56,9 +44,8 @@ contract ERC4626TimelockMock is ERC4626 {
         require(requests[owner].shareAmount == 0, "ALREADY_REQUESTED");
 
         if (msg.sender != owner) {
-            uint256 allowed = allowance[owner][msg.sender];
-            if (allowed != type(uint256).max)
-                allowance[owner][msg.sender] = allowed - sharesAmount;
+            uint256 allowed = allowance(owner, msg.sender);
+            if (allowed != type(uint256).max) decreaseAllowance(msg.sender, sharesAmount);
         }
 
         /// @dev Burns shares. other impls may require to safeTransferFrom() to vault address
@@ -66,21 +53,12 @@ contract ERC4626TimelockMock is ERC4626 {
 
         /// @dev Internal tracking of withdraw/redeem requests routed through this vault
         requestId++;
-        requests[owner] = (
-            UnlockRequest({
-                id: requestId,
-                startedAt: block.timestamp,
-                shareAmount: sharesAmount
-            })
-        );
+        requests[owner] = (UnlockRequest({id: requestId, startedAt: block.timestamp, shareAmount: sharesAmount}));
     }
 
     function cancelUnlock(address owner) external {
         UnlockRequest storage request = requests[owner];
-        require(
-            request.startedAt + lockPeriod > block.timestamp,
-            "NOT_UNLOCKED"
-        );
+        require(request.startedAt + lockPeriod > block.timestamp, "NOT_UNLOCKED");
 
         /// @dev Mint shares back
         /// NOTE: This method needs to be tested for re-basing shares
@@ -89,27 +67,18 @@ contract ERC4626TimelockMock is ERC4626 {
         delete requests[owner];
     }
 
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) public override returns (uint256 shares) {
+    function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256 shares) {
         shares = previewWithdraw(assets); // No need to check for rounding error, previewWithdraw rounds up.
 
         if (msg.sender != owner) {
-            uint256 allowed = allowance[owner][msg.sender]; // Saves gas for limited approvals.
-
-            if (allowed != type(uint256).max)
-                allowance[owner][msg.sender] = allowed - shares;
+            uint256 allowed = allowance(owner, msg.sender);
+            if (allowed != type(uint256).max) decreaseAllowance(msg.sender, shares);
         }
 
         /// @dev Mock Timelock-like behavior (a need for cooldown period to pass)
         /// @dev Mock Timelock-like behavior (enough of the shares unlocked)
         UnlockRequest storage request = requests[owner];
-        require(
-            request.startedAt + lockPeriod <= block.timestamp,
-            "NOT_UNLOCKED"
-        );
+        require(request.startedAt + lockPeriod <= block.timestamp, "NOT_UNLOCKED");
         require(request.shareAmount >= shares, "SHARES_LOCKED");
 
         if (request.shareAmount == shares) {
@@ -120,19 +89,13 @@ contract ERC4626TimelockMock is ERC4626 {
 
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
 
-        asset.safeTransfer(receiver, assets);
+        IERC20(asset()).safeTransfer(receiver, assets);
     }
 
-    function redeem(
-        uint256 shares,
-        address receiver,
-        address owner
-    ) public override returns (uint256 assets) {
+    function redeem(uint256 shares, address receiver, address owner) public override returns (uint256 assets) {
         if (msg.sender != owner) {
-            uint256 allowed = allowance[owner][msg.sender]; // Saves gas for limited approvals.
-
-            if (allowed != type(uint256).max)
-                allowance[owner][msg.sender] = allowed - shares;
+            uint256 allowed = allowance(owner, msg.sender);
+            if (allowed != type(uint256).max) decreaseAllowance(msg.sender, shares);
         }
 
         // Check for rounding error since we round down in previewRedeem.
@@ -141,10 +104,7 @@ contract ERC4626TimelockMock is ERC4626 {
         /// @dev Mock Timelock-like behavior (a need for cooldown period to pass)
         /// @dev Mock Timelock-like behavior (enough of the shares unlocked)
         UnlockRequest storage request = requests[owner];
-        require(
-            request.startedAt + lockPeriod <= block.timestamp,
-            "NOT_UNLOCKED"
-        );
+        require(request.startedAt + lockPeriod <= block.timestamp, "NOT_UNLOCKED");
         require(request.shareAmount >= shares, "SHARES_LOCKED");
 
         if (request.shareAmount == shares) {
@@ -155,6 +115,6 @@ contract ERC4626TimelockMock is ERC4626 {
 
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
 
-        asset.safeTransfer(receiver, assets);
+        IERC20(asset()).safeTransfer(receiver, assets);
     }
 }

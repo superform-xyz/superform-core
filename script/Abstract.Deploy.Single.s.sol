@@ -3,6 +3,8 @@ pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {PositionsSplitter} from "ERC1155s/splitter/PositionsSplitter.sol";
+import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../src/interfaces/IBaseStateRegistry.sol";
@@ -76,7 +78,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[18] public contractNames = [
+    string[19] public contractNames = [
         "CoreStateRegistry",
         "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
@@ -94,7 +96,8 @@ abstract contract AbstractDeploySingle is Script {
         "SuperPositions",
         "MultiTxProcessor",
         "SuperRegistry",
-        "SuperRBAC"
+        "SuperRBAC",
+        "PositionsSplitter"
     ];
 
     bytes32 constant salt = "SUPERFORM_69";
@@ -458,6 +461,11 @@ abstract contract AbstractDeploySingle is Script {
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
+
+        contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = address(
+            new PositionsSplitter{salt: salt}(IERC1155s(vars.superPositions))
+        );
+
         /// @dev 12 - Deploy MultiTx Processor
         vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars.multiTxProcessor;

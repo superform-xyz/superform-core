@@ -12,7 +12,7 @@ import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {LiFiMock} from "../mocks/LiFiMock.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
-import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     uint8[] public AMBs;
@@ -845,7 +845,7 @@ abstract contract ProtocolActions is BaseSetup {
         ISocketRegistry.BridgeRequest bridgeRequest;
         address superRouter;
         address stateRegistry;
-        IERC1155 superPositions;
+        IERC1155s superPositions;
         bytes txData;
         LiqRequest liqReq;
     }
@@ -857,9 +857,9 @@ abstract contract ProtocolActions is BaseSetup {
 
         vars.superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
-        vars.superPositions = IERC1155(ISuperRegistry(vars.stateRegistry).superPositions());
+        vars.superPositions = IERC1155s(ISuperRegistry(vars.stateRegistry).superPositions());
         vm.prank(users[args.user]);
-        vars.superPositions.setApprovalForAll(vars.superRouter, true);
+        vars.superPositions.setApprovalForOne(vars.superRouter, args.superFormId, args.amount);
 
         vars.txData = _buildLiqBridgeTxData(
             args.liqBridge,

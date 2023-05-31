@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {AbstractDeploySingle} from "./Abstract.Deploy.Single.s.sol";
 import {MockERC20} from "../src/test/mocks/MockERC20.sol";
-import {IERC4626} from "../src/vendor/IERC4626.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {VaultMock} from "../src/test/mocks/VaultMock.sol";
 import {ERC4626TimelockMock} from "../src/test/mocks/ERC4626TimelockMock.sol";
 import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";

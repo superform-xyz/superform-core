@@ -1,8 +1,7 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC1155s} from "ERC1155s/src/ERC1155s.sol";
-import {ERC1155} from "solmate/tokens/ERC1155.sol";
+import {ERC1155s} from "ERC1155s/ERC1155s.sol";
 import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
@@ -46,7 +45,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// FIXME: Temp extension need to make approve at superRouter, may change with arch
-    function setApprovalForAll(address operator, bool approved) public virtual override(ISuperPositions, ERC1155) {
+    function setApprovalForAll(address operator, bool approved) public virtual override(ISuperPositions, ERC1155s) {
         super.setApprovalForAll(operator, approved);
     }
 
@@ -175,7 +174,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     /**
      * @dev See {ERC1155s-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155s) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }
