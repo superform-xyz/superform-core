@@ -1096,7 +1096,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[targetChainId_]);
         uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
 
-        vm.prank(deployer);
+        // vm.prank(deployer);
         if (testType == TestType.Pass) {
             TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
                 value: msgValue
