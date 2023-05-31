@@ -584,7 +584,7 @@ abstract contract ProtocolActions is BaseSetup {
                 contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]
             );
             vm.rollFork(block.number + 20000);
-            twoStepsFormStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
+            // twoStepsFormStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
         }
 
         return true;

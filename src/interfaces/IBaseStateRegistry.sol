@@ -75,4 +75,6 @@ interface IBaseStateRegistry {
     /// @param extraData_ defines all the message bridge realted overrides
     /// NOTE: Only {PROCESSOR_ROLE} role can call this function
     function revertPayload(uint256 payloadId_, uint256 ambId_, bytes memory extraData_) external payable;
+
+    function payload(uint256 payloadId_) external view returns (bytes memory payload_);
 }
