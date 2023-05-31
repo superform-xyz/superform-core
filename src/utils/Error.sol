@@ -138,9 +138,6 @@ library Error {
     /// TODO: insert description
     error INVALID_PROOF_BRIDGE_ID();
 
-    /// @dev if the msg.sender is not the wormhole relayer
-    error NOT_WORMHOLE_RELAYER();
-
     /// @dev if less than 2 AMBs are passed in the state request
     error INVALID_AMB_IDS_LENGTH();
 
@@ -155,9 +152,6 @@ library Error {
 
     /// @dev if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
-
-    /// @dev if wormhole fails to verify payload
-    error INVALID_WORMHOLE_PAYLOAD(string reason_);
 
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS
