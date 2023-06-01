@@ -61,7 +61,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             return 2;
         }
 
-        uint256 unlockTime = ownerRequest.requestTimestamp + IERC4626TimelockVault(vault_).getLockPeirod();
+        uint256 unlockTime = ownerRequest.requestTimestamp + IERC4626TimelockVault(vault_).getLockPeriod();
 
         if (block.timestamp < unlockTime) {
             /// unlock cooldown period not passed. revert Error.WITHDRAW_COOLDOWN_PERIOD

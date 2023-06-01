@@ -5,7 +5,6 @@ import {ERC4626} from "openzeppelin-contracts/contracts/token/ERC20/extensions/E
 import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {IERC4626TimelockVault} from "../../forms/interfaces/IERC4626TimelockVault.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
-import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @notice Mock ERC4626Timelock contract
 /// @dev Requires two separate calls to perform ERC4626.withdraw() or redeem()
@@ -13,8 +12,6 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 /// @dev Allows canceling unlock request
 /// @dev Designed to mimick behavior of timelock vaults covering most of the use cases abstracted
 contract ERC4626TimelockMock is ERC4626 {
-    using SafeERC20 for IERC20;
-
     uint256 public lockPeriod = 100;
     uint256 public requestId;
 
@@ -35,7 +32,7 @@ contract ERC4626TimelockMock is ERC4626 {
         return requests[owner];
     }
 
-    function getLockPeirod() external view returns (uint256) {
+    function getLockPeriod() external view returns (uint256) {
         return lockPeriod;
     }
 
@@ -46,10 +43,8 @@ contract ERC4626TimelockMock is ERC4626 {
         if (msg.sender != owner) {
             uint256 allowed = allowance(owner, msg.sender);
             if (allowed != type(uint256).max) decreaseAllowance(msg.sender, sharesAmount);
+            allowed = allowance(owner, msg.sender);
         }
-
-        /// @dev Burns shares. other impls may require to safeTransferFrom() to vault address
-        _burn(owner, sharesAmount);
 
         /// @dev Internal tracking of withdraw/redeem requests routed through this vault
         requestId++;
@@ -65,56 +60,5 @@ contract ERC4626TimelockMock is ERC4626 {
         _mint(owner, request.shareAmount);
 
         delete requests[owner];
-    }
-
-    function withdraw(uint256 assets, address receiver, address owner) public override returns (uint256 shares) {
-        shares = previewWithdraw(assets); // No need to check for rounding error, previewWithdraw rounds up.
-
-        if (msg.sender != owner) {
-            uint256 allowed = allowance(owner, msg.sender);
-            if (allowed != type(uint256).max) decreaseAllowance(msg.sender, shares);
-        }
-
-        /// @dev Mock Timelock-like behavior (a need for cooldown period to pass)
-        /// @dev Mock Timelock-like behavior (enough of the shares unlocked)
-        UnlockRequest storage request = requests[owner];
-        require(request.startedAt + lockPeriod <= block.timestamp, "NOT_UNLOCKED");
-        require(request.shareAmount >= shares, "SHARES_LOCKED");
-
-        if (request.shareAmount == shares) {
-            delete requests[owner];
-        } else {
-            request.shareAmount -= shares;
-        }
-
-        emit Withdraw(msg.sender, receiver, owner, assets, shares);
-
-        IERC20(asset()).safeTransfer(receiver, assets);
-    }
-
-    function redeem(uint256 shares, address receiver, address owner) public override returns (uint256 assets) {
-        if (msg.sender != owner) {
-            uint256 allowed = allowance(owner, msg.sender);
-            if (allowed != type(uint256).max) decreaseAllowance(msg.sender, shares);
-        }
-
-        // Check for rounding error since we round down in previewRedeem.
-        require((assets = previewRedeem(shares)) != 0, "ZERO_ASSETS");
-
-        /// @dev Mock Timelock-like behavior (a need for cooldown period to pass)
-        /// @dev Mock Timelock-like behavior (enough of the shares unlocked)
-        UnlockRequest storage request = requests[owner];
-        require(request.startedAt + lockPeriod <= block.timestamp, "NOT_UNLOCKED");
-        require(request.shareAmount >= shares, "SHARES_LOCKED");
-
-        if (request.shareAmount == shares) {
-            delete requests[owner];
-        } else {
-            request.shareAmount -= shares;
-        }
-
-        emit Withdraw(msg.sender, receiver, owner, assets, shares);
-
-        IERC20(asset()).safeTransfer(receiver, assets);
     }
 }

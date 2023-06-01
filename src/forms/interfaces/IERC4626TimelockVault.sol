@@ -34,5 +34,5 @@ interface IERC4626TimelockVault is IERC4626 {
     function userUnlockRequests(address owner) external view returns (UnlockRequest memory);
 
     /// @notice The amount of time that must pass between a requestUnlock() and withdraw() call.
-    function getLockPeirod() external view returns (uint256);
+    function getLockPeriod() external view returns (uint256);
 }
