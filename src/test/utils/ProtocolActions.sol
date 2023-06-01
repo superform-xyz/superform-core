@@ -477,6 +477,7 @@ abstract contract ProtocolActions is BaseSetup {
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
+                                    vars.liqBridges,
                                     CHAIN_0,
                                     aV[i].toChainId,
                                     llChainIds[vars.chainDstIndex],
@@ -485,6 +486,7 @@ abstract contract ProtocolActions is BaseSetup {
                                 );
                             } else {
                                 _processMultiTx(
+                                    vars.liqBridges[0],
                                     CHAIN_0,
                                     aV[i].toChainId,
                                     llChainIds[vars.chainDstIndex],
@@ -665,7 +667,7 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     function _buildLiqBridgeTxData(
-        uint64 liqBridgeKind_,
+        uint8 liqBridgeKind_,
         address externalToken_,
         address underlyingToken_,
         address from_,
@@ -1098,9 +1100,78 @@ abstract contract ProtocolActions is BaseSetup {
         return true;
     }
 
-    /// @dev FIXME: only works for socket
+    function _buildLiqBridgeTxDataMultiTx(
+        uint8 liqBridgeKind_,
+        address underlyingToken_,
+        address from_,
+        uint64 toChainId_,
+        uint256 liqBridgeToChainId_,
+        uint256 amount_
+    ) internal returns (bytes memory txData) {
+        if (liqBridgeKind_ == 1) {
+            ISocketRegistry.BridgeRequest memory bridgeRequest;
+            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+            ISocketRegistry.UserRequest memory userRequest;
+            /// @dev middlware request is used if there is a swap involved before the bridging action
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
+            middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1, /// request id
+                0, /// FIXME optional native amount
+                underlyingToken_,
+                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_])
+            );
+
+            /// @dev empty bridge request
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                0, /// id
+                0, /// FIXME optional native amount
+                address(0),
+                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_])
+            );
+
+            userRequest = ISocketRegistry.UserRequest(
+                getContract(toChainId_, "CoreStateRegistry"),
+                liqBridgeToChainId_,
+                amount_,
+                middlewareRequest,
+                bridgeRequest
+            );
+
+            txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
+        } else if (liqBridgeKind_ == 2) {
+            ILiFi.BridgeData memory bridgeData;
+            ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
+
+            swapData[0] = ILiFi.SwapData(
+                address(0), /// callTo (arbitrary)
+                address(0), /// callTo (approveTo)
+                underlyingToken_,
+                underlyingToken_,
+                amount_,
+                abi.encode(from_, FORKS[toChainId_]),
+                false // arbitrary
+            );
+
+            bridgeData = ILiFi.BridgeData(
+                bytes32("1"), /// request id
+                "",
+                "", /// FIXME optional native amount
+                address(0),
+                underlyingToken_,
+                getContract(toChainId_, "CoreStateRegistry"),
+                amount_,
+                liqBridgeToChainId_,
+                false,
+                true
+            );
+
+            txData = abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
+        }
+    }
+
     /// @dev - assumption to only use MultiTxProcessor for destination chain swaps (middleware requests)
     function _processMultiTx(
+        uint8 liqBridgeKind_,
         uint64 srcChainId_,
         uint64 targetChainId_,
         uint256 liquidityBridgeDstChainId_,
@@ -1110,38 +1181,20 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
 
-        vm.prank(deployer);
-
-        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-        ISocketRegistry.BridgeRequest memory bridgeRequest;
-
-        middlewareRequest = ISocketRegistry.MiddlewareRequest(
-            1, /// id
-            0, /// FIXME optional native amount
+        bytes memory txData = _buildLiqBridgeTxDataMultiTx(
+            liqBridgeKind_,
             underlyingToken_,
-            abi.encode(getContract(targetChainId_, "MultiTxProcessor"), FORKS[targetChainId_])
-        );
-        /// @dev empty bridge request
-        bridgeRequest = ISocketRegistry.BridgeRequest(
-            0, /// id
-            0, /// FIXME optional native amount
-            address(0),
-            abi.encode(getContract(targetChainId_, "MultiTxProcessor"), FORKS[targetChainId_])
-        );
-
-        ISocketRegistry.UserRequest memory userRequest = ISocketRegistry.UserRequest(
-            getContract(targetChainId_, "CoreStateRegistry"),
+            getContract(targetChainId_, "MultiTxProcessor"),
+            targetChainId_,
             liquidityBridgeDstChainId_,
-            amount_,
-            middlewareRequest,
-            bridgeRequest
+            amount_
         );
 
-        bytes memory socketTxDataV2 = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
+        vm.prank(deployer);
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).processTx(
             bridgeIds[0],
-            socketTxDataV2,
+            txData,
             underlyingToken_,
             amount_
         );
@@ -1149,6 +1202,7 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     function _batchProcessMultiTx(
+        uint8[] memory liqBridgeKinds_,
         uint64 srcChainId_,
         uint64 targetChainId_,
         uint256 liquidityBridgeDstChainId_,
@@ -1158,40 +1212,23 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
 
-        vm.prank(deployer);
-
-        ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-        ISocketRegistry.BridgeRequest memory bridgeRequest;
-        bytes[] memory socketTxDatasV2 = new bytes[](underlyingTokens_.length);
+        bytes[] memory txDatas = new bytes[](underlyingTokens_.length);
 
         for (uint256 i = 0; i < underlyingTokens_.length; i++) {
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// id
-                0, /// FIXME optional native amount
+            txDatas[i] = _buildLiqBridgeTxDataMultiTx(
+                liqBridgeKinds_[i],
                 underlyingTokens_[i],
-                abi.encode(getContract(targetChainId_, "MultiTxProcessor"), FORKS[targetChainId_]) /// @dev this abi.encode is only used for the mock purposes
-            );
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                0, /// id
-                0, /// FIXME optional native amount
-                address(0),
-                abi.encode(getContract(targetChainId_, "MultiTxProcessor"), FORKS[targetChainId_]) /// @dev this abi.encode is only used for the mock purposes
-            );
-
-            ISocketRegistry.UserRequest memory userRequest = ISocketRegistry.UserRequest(
-                getContract(targetChainId_, "CoreStateRegistry"),
+                getContract(targetChainId_, "MultiTxProcessor"),
+                targetChainId_,
                 liquidityBridgeDstChainId_,
-                amounts_[i],
-                middlewareRequest,
-                bridgeRequest
+                amounts_[i]
             );
-
-            socketTxDatasV2[i] = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
         }
+        vm.prank(deployer);
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).batchProcessTx(
             bridgeIds[0],
-            socketTxDatasV2,
+            txDatas,
             underlyingTokens_,
             amounts_
         );
