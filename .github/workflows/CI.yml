@@ -36,6 +36,10 @@ jobs:
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
       - name: check coverage
         run: forge coverage --report lcov && lcov --remove lcov.info  -o lcov.info 'src/test/*' 'script/*'
+      - uses: codecov/codecov-action@v3
+        with:
+          files: ./lcov.info
+          flags: foundry
 
 
   foundry-snapshot:
