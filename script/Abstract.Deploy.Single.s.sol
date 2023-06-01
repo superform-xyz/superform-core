@@ -462,7 +462,7 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
-        contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = address(
+        contracts[vars.chainId][bytes32(bytes("PositionsSplitter"))] = address(
             new PositionsSplitter{salt: salt}(IERC1155s(vars.superPositions))
         );
 

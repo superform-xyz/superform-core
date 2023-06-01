@@ -2,12 +2,12 @@
 pragma solidity ^0.8.19;
 
 import {AbstractDeploy} from "./Abstract.Deploy.s.sol";
-import {MockERC20} from "../src/test/mocks/MockERC20.sol";
+import {MockERC20} from "../../src/test/mocks/MockERC20.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import {VaultMock} from "../src/test/mocks/VaultMock.sol";
-import {ERC4626TimelockMock} from "../src/test/mocks/ERC4626TimelockMock.sol";
+import {VaultMock} from "../../src/test/mocks/VaultMock.sol";
+import {ERC4626TimelockMock} from "../../src/test/mocks/ERC4626TimelockMock.sol";
 import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
-import {AggregatorV3Interface} from "../src/test/utils/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "../../src/test/utils/AggregatorV3Interface.sol";
 
 contract LocalDeploy is AbstractDeploy {
     /*//////////////////////////////////////////////////////////////

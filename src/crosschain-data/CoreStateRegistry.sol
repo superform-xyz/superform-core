@@ -193,7 +193,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         // amb[ambId_].dispatchPayload(formData.dstChainId_, message_, extraData_);
     }
 
-    struct RescueFaileDepositsLocalVars {
+    struct RescueFailedDepositsLocalVars {
         uint8 multi;
         bool rescued;
         uint64 dstChainId;
@@ -212,7 +212,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         uint256 payloadId_,
         LiqRequest[] memory liqDatas_
     ) external payable override onlyProcessor {
-        RescueFaileDepositsLocalVars memory v;
+        RescueFailedDepositsLocalVars memory v;
         (v.multi, v.rescued, v.failedData, v.srcSender, v.srcChainId) = abi.decode(
             failedDepositPayloads[payloadId_],
             (uint8, bool, bytes, address, uint64)

@@ -7,31 +7,31 @@ import {PositionsSplitter} from "ERC1155s/splitter/PositionsSplitter.sol";
 import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 
 /// @dev Protocol imports
-import {IBaseStateRegistry} from "../src/interfaces/IBaseStateRegistry.sol";
-import {CoreStateRegistry} from "../src/crosschain-data/CoreStateRegistry.sol";
-import {RolesStateRegistry} from "../src/crosschain-data/RolesStateRegistry.sol";
-import {FactoryStateRegistry} from "../src/crosschain-data/FactoryStateRegistry.sol";
-import {ISuperFormRouter} from "../src/interfaces/ISuperFormRouter.sol";
-import {ISuperFormFactory} from "../src/interfaces/ISuperFormFactory.sol";
-import {IBaseForm} from "../src/interfaces/IBaseForm.sol";
-import {SuperFormRouter} from "../src/SuperFormRouter.sol";
-import {SuperRegistry} from "../src/settings/SuperRegistry.sol";
-import {SuperRBAC} from "../src/settings/SuperRBAC.sol";
-import {SuperPositions} from "../src/SuperPositions.sol";
-import {SuperFormFactory} from "../src/SuperFormFactory.sol";
-import {ERC4626Form} from "../src/forms/ERC4626Form.sol";
-import {ERC4626TimelockForm} from "../src/forms/ERC4626TimelockForm.sol";
-import {ERC4626KYCDaoForm} from "../src/forms/ERC4626KYCDaoForm.sol";
-import {MultiTxProcessor} from "../src/crosschain-liquidity/MultiTxProcessor.sol";
-import {LiFiValidator} from "../src/crosschain-liquidity/lifi/LiFiValidator.sol";
-import {SocketValidator} from "../src/crosschain-liquidity/socket/SocketValidator.sol";
-import {LayerzeroImplementation} from "../src/crosschain-data/layerzero/LayerzeroImplementation.sol";
-import {HyperlaneImplementation} from "../src/crosschain-data/hyperlane/HyperlaneImplementation.sol";
-import {CelerImplementation} from "../src/crosschain-data/celer/CelerImplementation.sol";
-import {IMailbox} from "../src/vendor/hyperlane/IMailbox.sol";
-import {IInterchainGasPaymaster} from "../src/vendor/hyperlane/IInterchainGasPaymaster.sol";
-import {IMessageBus} from "../src/vendor/celer/IMessageBus.sol";
-import {TwoStepsFormStateRegistry} from "../src/crosschain-data/TwoStepsFormStateRegistry.sol";
+import {IBaseStateRegistry} from "../../src/interfaces/IBaseStateRegistry.sol";
+import {CoreStateRegistry} from "../../src/crosschain-data/CoreStateRegistry.sol";
+import {RolesStateRegistry} from "../../src/crosschain-data/RolesStateRegistry.sol";
+import {FactoryStateRegistry} from "../../src/crosschain-data/FactoryStateRegistry.sol";
+import {ISuperFormRouter} from "../../src/interfaces/ISuperFormRouter.sol";
+import {ISuperFormFactory} from "../../src/interfaces/ISuperFormFactory.sol";
+import {IBaseForm} from "../../src/interfaces/IBaseForm.sol";
+import {SuperFormRouter} from "../../src/SuperFormRouter.sol";
+import {SuperRegistry} from "../../src/settings/SuperRegistry.sol";
+import {SuperRBAC} from "../../src/settings/SuperRBAC.sol";
+import {SuperPositions} from "../../src/SuperPositions.sol";
+import {SuperFormFactory} from "../../src/SuperFormFactory.sol";
+import {ERC4626Form} from "../../src/forms/ERC4626Form.sol";
+import {ERC4626TimelockForm} from "../../src/forms/ERC4626TimelockForm.sol";
+import {ERC4626KYCDaoForm} from "../../src/forms/ERC4626KYCDaoForm.sol";
+import {MultiTxProcessor} from "../../src/crosschain-liquidity/MultiTxProcessor.sol";
+import {LiFiValidator} from "../../src/crosschain-liquidity/lifi/LiFiValidator.sol";
+import {SocketValidator} from "../../src/crosschain-liquidity/socket/SocketValidator.sol";
+import {LayerzeroImplementation} from "../../src/crosschain-data/layerzero/LayerzeroImplementation.sol";
+import {HyperlaneImplementation} from "../../src/crosschain-data/hyperlane/HyperlaneImplementation.sol";
+import {CelerImplementation} from "../../src/crosschain-data/celer/CelerImplementation.sol";
+import {IMailbox} from "../../src/vendor/hyperlane/IMailbox.sol";
+import {IInterchainGasPaymaster} from "../../src/vendor/hyperlane/IInterchainGasPaymaster.sol";
+import {IMessageBus} from "../../src/vendor/celer/IMessageBus.sol";
+import {TwoStepsFormStateRegistry} from "../../src/crosschain-data/TwoStepsFormStateRegistry.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -464,7 +464,7 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
-        contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = address(
+        contracts[vars.chainId][bytes32(bytes("PositionsSplitter"))] = address(
             new PositionsSplitter{salt: salt}(IERC1155s(vars.superPositions))
         );
 
