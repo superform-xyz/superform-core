@@ -22,7 +22,6 @@ contract SuperFormFactory is ISuperFormFactory {
                             Constants
     //////////////////////////////////////////////////////////////*/
     uint256 constant MAX_FORM_ID = 2 ** 32 - 1;
-    bytes32 constant SYNC_NEW_SUPERFORM = keccak256("SYNC_NEW_SUPERFORM");
     bytes32 constant SYNC_BEACON_STATUS = keccak256("SYNC_BEACON_STATUS");
 
     /*///////////////////////////////////////////////////////////////
@@ -88,15 +87,11 @@ contract SuperFormFactory is ISuperFormFactory {
         }
     }
 
-    // vault
-    /// superFormAddress formBeaconId chainId
-
     /// @inheritdoc ISuperFormFactory
     function createSuperForm(
         uint32 formBeaconId_, /// TimelockedBeaconId, NormalBeaconId... etc
-        address vault_,
-        bytes calldata extraData_
-    ) external payable override returns (uint256 superFormId_, address superForm_) {
+        address vault_
+    ) external override returns (uint256 superFormId_, address superForm_) {
         address tFormBeacon = formBeacon[formBeaconId_];
         if (vault_ == address(0)) revert Error.ZERO_ADDRESS();
         if (vaultToFormBeaconId[vault_] != 0) revert Error.VAULT_ALREADY_HAS_FORM();
@@ -117,15 +112,7 @@ contract SuperFormFactory is ISuperFormFactory {
         vaultToSuperForms[vault_].push(superFormId_);
         /// @dev FIXME do we need to store info of all superforms just for external querying? Could save gas here
         superForms.push(superFormId_);
-
         vaultToFormBeaconId[vault_] = formBeaconId_;
-
-        AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
-            SYNC_NEW_SUPERFORM,
-            abi.encode(superFormId_, vault_)
-        );
-
-        _broadcast(abi.encode(factoryPayload), extraData_);
 
         emit SuperFormCreated(formBeaconId_, vault_, superFormId_, superForm_);
     }
@@ -167,10 +154,6 @@ contract SuperFormFactory is ISuperFormFactory {
 
         AMBMessage memory stateRegistryPayload = abi.decode(data_, (AMBMessage));
         AMBFactoryMessage memory factoryPayload = abi.decode(stateRegistryPayload.params, (AMBFactoryMessage));
-
-        if (factoryPayload.messageType == SYNC_NEW_SUPERFORM) {
-            _syncNewSuperform(factoryPayload.message);
-        }
 
         if (factoryPayload.messageType == SYNC_BEACON_STATUS) {
             _syncBeaconStatus(factoryPayload.message);
