@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {ERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {InitSingleVaultData} from "./types/DataTypes.sol";
 import {LiqRequest} from "./types/LiquidityTypes.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
@@ -46,18 +46,12 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlySuperRouter() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasSuperRouterRole(msg.sender)) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.superRouter() != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyCoreStateRegistry() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasCoreStateRegistryRole(msg.sender))
-            revert Error.NOT_CORE_STATE_REGISTRY();
-        _;
-    }
-
-    modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
+        if (superRegistry.coreStateRegistry() != msg.sender) revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 
@@ -142,7 +136,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     /// @notice Returns the underlying token of a vault.
     /// @return The underlying token
-    function getUnderlyingOfVault() public view virtual returns (ERC20);
+    function getUnderlyingOfVault() public view virtual returns (address);
 
     /// @notice Returns the amount of underlying tokens each share of a vault is worth.
     /// @return The pricePerVaultShare value
@@ -221,28 +215,4 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         uint256 underlyingAmount_,
         uint256 pricePerVaultShare_
     ) internal view virtual returns (uint256);
-
-    /*///////////////////////////////////////////////////////////////
-                            DEV FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev FIXME Decide to keep this?
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @notice should be removed after end-to-end testing.
-    /// @dev allows admin to withdraw lost tokens in the smart contract.
-    function emergencyWithdrawToken(address tokenContract_, uint256 amount) external onlyProtocolAdmin {
-        ERC20 tokenContract = ERC20(tokenContract_);
-
-        /// note: transfer the token from address of this contract
-        /// note: to address of the user (executing the withdrawToken() function)
-        tokenContract.transfer(msg.sender, amount);
-    }
-
-    /// @dev FIXME Decide to keep this?
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @dev allows admin to withdraw lost native tokens in the smart contract.
-    function emergencyWithdrawNativeToken(uint256 amount) external onlyProtocolAdmin {
-        (bool success, ) = payable(msg.sender).call{value: amount}("");
-        if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();
-    }
 }

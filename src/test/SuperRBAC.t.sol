@@ -17,14 +17,14 @@ contract SuperformRolesTest is BaseSetup {
         super.setUp();
     }
 
-    function xtest_revokeRoleBroadcast() public {
+    function test_revokeRoleBroadcast() public {
         vm.startPrank(deployer);
         vm.selectFork(FORKS[chainId]);
 
         vm.recordLogs();
         /// setting the status as false in chain id = ETH & broadcasting it
-        SuperRBAC(getContract(chainId, "SuperRBAC")).revokeSuperRouterRole{value: 800 * 10 ** 18}(
-            getContract(chainId, "SuperRouter"),
+        SuperRBAC(getContract(chainId, "SuperRBAC")).revokeProcessorRole{value: 800 * 10 ** 18}(
+            deployer,
             generateBroadcastParams(5, 2)
         );
         _broadcastPayloadHelper(chainId, vm.getRecordedLogs());
@@ -34,15 +34,11 @@ contract SuperformRolesTest is BaseSetup {
             if (chainIds[i] != chainId) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                bool statusBefore = SuperRBAC(getContract(chainIds[i], "SuperRBAC")).hasSuperRouterRole(
-                    getContract(chainIds[i], "SuperRouter")
-                );
+                bool statusBefore = SuperRBAC(getContract(chainIds[i], "SuperRBAC")).hasProcessorRole(deployer);
 
                 RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
 
-                bool statusAfter = SuperRBAC(getContract(chainIds[i], "SuperRBAC")).hasSuperRouterRole(
-                    getContract(chainIds[i], "SuperRouter")
-                );
+                bool statusAfter = SuperRBAC(getContract(chainIds[i], "SuperRBAC")).hasProcessorRole(deployer);
 
                 /// assert status update before and after processing the payload
                 assertEq(statusBefore, true);

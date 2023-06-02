@@ -1,6 +1,6 @@
 # State Registry
 
-This directory contains the components to enable crosschain communication functionality to Superform Protocol. It also includes the wrapper contracts for different arbitrary message bridges (AMBs) leveraged by Superform. Layerzero, Hyperlane & Celer have completed wrapper implementation, whereas Wormhole wrappers are in progress.
+This directory contains the components to enable crosschain communication functionality to Superform Protocol. It also includes the wrapper contracts for different arbitrary message bridges (AMBs) leveraged by Superform. Layerzero, Hyperlane & Celer have completed wrapper implementation.
 
 ## Components Overview
 

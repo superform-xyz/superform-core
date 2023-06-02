@@ -8,7 +8,6 @@ import "./TestTypes.sol";
 import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 
@@ -27,11 +26,11 @@ import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
 import {RolesStateRegistry} from "../../crosschain-data/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
-import {ISuperRouter} from "../../interfaces/ISuperRouter.sol";
+import {ISuperFormRouter} from "../../interfaces/ISuperFormRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
-import {IERC4626} from "../../vendor/IERC4626.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
-import {SuperRouter} from "../../SuperRouter.sol";
+import {SuperFormRouter} from "../../SuperFormRouter.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
 import {SuperRBAC} from "../../settings/SuperRBAC.sol";
 import {SuperPositions} from "../../SuperPositions.sol";
@@ -54,8 +53,6 @@ import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {TwoStepsFormStateRegistry} from "../../crosschain-data/TwoStepsFormStateRegistry.sol";
 
 abstract contract BaseSetup is DSTest, Test {
-    using FixedPointMathLib for uint256;
-
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -321,6 +318,10 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
             assert(SuperRBAC(vars.superRBAC).hasProtocolAdminRole(deployer));
 
+            /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
+            SuperRBAC(vars.superRBAC).grantEmergencyAdminRole(deployer);
+            assert(SuperRBAC(vars.superRBAC).hasEmergencyAdminRole(deployer));
+
             /// @dev FIXME: in reality who should have the SWAPPER_ROLE for multiTxProcessor?
             SuperRBAC(vars.superRBAC).grantSwapperRole(deployer);
             assert(SuperRBAC(vars.superRBAC).hasSwapperRole(deployer));
@@ -344,10 +345,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
 
-            SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(vars.coreStateRegistry);
-
-            assert(SuperRBAC(vars.superRBAC).hasCoreStateRegistryRole(vars.coreStateRegistry));
-
             /// @dev 4.2- deploy Factory State Registry
             vars.factoryStateRegistry = address(
                 new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 2)
@@ -361,9 +358,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.twoStepsFormStateRegistry = address(
                 new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 4)
             );
-
-            SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry);
-            assert(SuperRBAC(vars.superRBAC).hasTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry));
 
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
@@ -497,7 +491,6 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars.factory;
 
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
-            SuperRBAC(vars.superRBAC).grantSuperformFactoryRole(vars.factory);
 
             /// @dev 9 - Deploy 4626Form implementations
             // Standard ERC4626 Form
@@ -519,13 +512,11 @@ abstract contract BaseSetup is DSTest, Test {
 
             ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
-            /// @dev 12 - Deploy SuperRouter
-            vars.superRouter = address(new SuperRouter{salt: salt}(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars.superRouter;
+            /// @dev 12 - Deploy SuperFormRouter
+            vars.superRouter = address(new SuperFormRouter{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SuperFormRouter"))] = vars.superRouter;
 
             SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
-            SuperRBAC(vars.superRBAC).grantSuperRouterRole(vars.superRouter);
-            assert(SuperRBAC(vars.superRBAC).hasSuperRouterRole(vars.superRouter));
 
             /// @dev 13 - Deploy SuperPositions
             vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));
@@ -620,7 +611,7 @@ abstract contract BaseSetup is DSTest, Test {
                         contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))]
                     ).createSuperForm{value: 800 * 10 ** 18}(FORM_BEACON_IDS[j], vault, generateBroadcastParams(5, 2));
 
-                    if (FORM_BEACON_IDS[j] == 3 && i == 3) {
+                    if (FORM_BEACON_IDS[j] == 3) {
                         /// mint a kycDAO Nft to superForm on polygon
                         KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(vars.superForm);
                     }
@@ -637,12 +628,10 @@ abstract contract BaseSetup is DSTest, Test {
                 }
             }
 
-            if (i == 3) {
-                /// mint a kycDAO Nft to a few users
-                KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[0]);
-                KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[1]);
-                KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
-            }
+            /// mint a kycDAO Nft to a few users
+            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[0]);
+            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[1]);
+            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
         }
 
         _processFactoryPayloads(((chainIds.length - 1) * FORM_BEACON_IDS.length * UNDERLYING_TOKENS.length) + 1);

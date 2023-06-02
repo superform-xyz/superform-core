@@ -7,7 +7,7 @@ source .env
 # Run the script
 echo Running Script: ...
 
-forge script script/Local.Deploy.s.sol \
+forge script script/old/Local.Deploy.s.sol \
     --broadcast \
     --slow \
     -vvvv

@@ -3,16 +3,18 @@ pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {PositionsSplitter} from "ERC1155s/splitter/PositionsSplitter.sol";
+import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../src/interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../src/crosschain-data/CoreStateRegistry.sol";
 import {RolesStateRegistry} from "../src/crosschain-data/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../src/crosschain-data/FactoryStateRegistry.sol";
-import {ISuperRouter} from "../src/interfaces/ISuperRouter.sol";
+import {ISuperFormRouter} from "../src/interfaces/ISuperFormRouter.sol";
 import {ISuperFormFactory} from "../src/interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "../src/interfaces/IBaseForm.sol";
-import {SuperRouter} from "../src/SuperRouter.sol";
+import {SuperFormRouter} from "../src/SuperFormRouter.sol";
 import {SuperRegistry} from "../src/settings/SuperRegistry.sol";
 import {SuperRBAC} from "../src/settings/SuperRBAC.sol";
 import {SuperPositions} from "../src/SuperPositions.sol";
@@ -76,7 +78,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[18] public contractNames = [
+    string[19] public contractNames = [
         "CoreStateRegistry",
         "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
@@ -90,11 +92,12 @@ abstract contract AbstractDeploySingle is Script {
         "ERC4626Form",
         "ERC4626TimelockForm",
         "ERC4626KYCDaoForm",
-        "SuperRouter",
+        "SuperFormRouter",
         "SuperPositions",
         "MultiTxProcessor",
         "SuperRegistry",
-        "SuperRBAC"
+        "SuperRBAC",
+        "PositionsSplitter"
     ];
 
     bytes32 constant salt = "SUPERFORM_69";
@@ -319,6 +322,8 @@ abstract contract AbstractDeploySingle is Script {
 
         SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
 
+        /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
+        SuperRBAC(vars.superRBAC).grantEmergencyAdminRole(ownerAddress);
         /// @dev FIXME: in reality who should have the SWAPPER_ROLE for multiTxProcessor?
         SuperRBAC(vars.superRBAC).grantSwapperRole(ownerAddress);
         /// @dev FIXME: in reality who should have the PROCESSOR_ROLE for state registry?
@@ -335,8 +340,6 @@ abstract contract AbstractDeploySingle is Script {
 
         SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
 
-        SuperRBAC(vars.superRBAC).grantCoreStateRegistryRole(vars.coreStateRegistry);
-
         /// @dev 3.2- deploy Factory State Registry
 
         vars.factoryStateRegistry = address(new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 2));
@@ -350,7 +353,6 @@ abstract contract AbstractDeploySingle is Script {
         );
 
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
-        SuperRBAC(vars.superRBAC).grantTwoStepsFormStateRegistryRole(vars.twoStepsFormStateRegistry);
 
         SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
 
@@ -426,7 +428,6 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars.factory;
 
         SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
-        SuperRBAC(vars.superRBAC).grantSuperformFactoryRole(vars.factory);
 
         /// @dev 7 - Deploy 4626Form implementations
         // Standard ERC4626 Form
@@ -448,19 +449,23 @@ abstract contract AbstractDeploySingle is Script {
 
         ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
-        /// @dev 10 - Deploy SuperRouter
+        /// @dev 10 - Deploy SuperFormRouter
 
-        vars.superRouter = address(new SuperRouter{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("SuperRouter"))] = vars.superRouter;
+        vars.superRouter = address(new SuperFormRouter{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SuperFormRouter"))] = vars.superRouter;
 
         SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
-        SuperRBAC(vars.superRBAC).grantSuperRouterRole(vars.superRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
+
+        contracts[vars.chainId][bytes32(bytes("PositionsSplitter"))] = address(
+            new PositionsSplitter{salt: salt}(IERC1155s(vars.superPositions))
+        );
+
         /// @dev 12 - Deploy MultiTx Processor
         vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars.multiTxProcessor;

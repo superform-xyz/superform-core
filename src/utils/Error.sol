@@ -33,14 +33,11 @@ library Error {
     /// @dev - when msg.sender is not protocol admin
     error NOT_PROTOCOL_ADMIN();
 
+    /// @dev - when msg.sender is not emergency admin
+    error NOT_EMERGENCY_ADMIN();
+
     /// @dev - when msg.sender is not super router
     error NOT_SUPER_ROUTER();
-
-    /// @dev if the msg-sender is not token bank
-    error NOT_TOKEN_BANK();
-
-    /// @dev if the msg-sender is not super position bank
-    error NOT_SUPER_POSITION_BANK();
 
     /// @dev if the msg-sender is not super form factory
     error NOT_SUPERFORM_FACTORY();
@@ -141,9 +138,6 @@ library Error {
     /// TODO: insert description
     error INVALID_PROOF_BRIDGE_ID();
 
-    /// @dev if the msg.sender is not the wormhole relayer
-    error NOT_WORMHOLE_RELAYER();
-
     /// @dev if less than 2 AMBs are passed in the state request
     error INVALID_AMB_IDS_LENGTH();
 
@@ -158,9 +152,6 @@ library Error {
 
     /// @dev if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
-
-    /// @dev if wormhole fails to verify payload
-    error INVALID_WORMHOLE_PAYLOAD(string reason_);
 
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS

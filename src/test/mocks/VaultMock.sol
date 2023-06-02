@@ -1,23 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {ERC4626} from "solmate/mixins/ERC4626.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import {ERC4626} from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
+import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract VaultMock is ERC4626 {
-    using SafeTransferLib for ERC20;
-    using FixedPointMathLib for uint256;
+    using SafeERC20 for IERC20;
 
-    constructor(
-        ERC20 asset,
-        string memory name,
-        string memory symbol
-    ) ERC4626(asset, name, symbol) {}
-
-    function totalAssets() public view override returns (uint256) {
-        /// @dev placeholder, we just use it for mock
-        return asset.balanceOf(address(this));
-    }
+    constructor(IERC20 asset_, string memory name_, string memory symbol_) ERC4626(asset_) ERC20(name_, symbol_) {}
 }

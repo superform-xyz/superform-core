@@ -28,3 +28,7 @@ artifacts_forge
 bin/
 
 **/.DS_Store
+
+lcov.info
+
+report/
