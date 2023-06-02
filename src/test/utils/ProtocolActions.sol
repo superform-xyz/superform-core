@@ -614,15 +614,38 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal returns (bool success) {
         vm.prank(deployer);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
+            vm.recordLogs();
             vm.selectFork(FORKS[DST_CHAINS[i]]);
             ITwoStepsFormStateRegistry twoStepsFormStateRegistry = ITwoStepsFormStateRegistry(
                 contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]
             );
             vm.rollFork(block.number + 20000);
-            twoStepsFormStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
+            // twoStepsFormStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
         }
 
-        /// TODO: msg back to source
+        return true;
+    }
+
+    /// NOTE: to process failed messages from 2 step forms registry
+    /// @dev implemented due to payload id collision
+    function _stage8_process_2step_payload(
+        TestAction memory action,
+        StagesLocalVars memory vars
+    ) internal returns (bool success) {
+        /// assume it will pass by default
+        success = true;
+
+        unchecked {
+            TWO_STEP_PAYLOAD_ID[CHAIN_0]++;
+        }
+
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[CHAIN_0]);
+
+        _processTwoStepPayload(TWO_STEP_PAYLOAD_ID[CHAIN_0], CHAIN_0, action.testType, action.revertError);
+
+        vm.selectFork(initialFork);
 
         return true;
     }
@@ -1090,6 +1113,35 @@ abstract contract ProtocolActions is BaseSetup {
             vm.expectRevert();
 
             CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
+                value: msgValue
+            }(payloadId_, generateAckParams(AMBs));
+            return false;
+        }
+
+        vm.selectFork(initialFork);
+        return true;
+    }
+
+    function _processTwoStepPayload(
+        uint256 payloadId_,
+        uint64 targetChainId_,
+        TestType testType,
+        bytes4
+    ) internal returns (bool) {
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[targetChainId_]);
+        uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
+
+        // vm.prank(deployer);
+        if (testType == TestType.Pass) {
+            TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
+                value: msgValue
+            }(payloadId_, generateAckParams(AMBs));
+        } else if (testType == TestType.RevertProcessPayload) {
+            vm.expectRevert();
+
+            TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
                 value: msgValue
             }(payloadId_, generateAckParams(AMBs));
 

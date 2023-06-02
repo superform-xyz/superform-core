@@ -354,8 +354,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                 extraFormData: multiVaultData.extraFormData
             });
 
-            /// @dev Store PayloadId in extraFormData (tbd: 1-step flow doesnt need this)
-            singleVaultData.extraFormData = abi.encode(payloadId_);
+            /// @dev Store destination payloadId_ & index in extraFormData (tbd: 1-step flow doesnt need this)
+            /// FIXME: Decide and move this logic inside the above initialization of the struct
+            singleVaultData.extraFormData = abi.encode(payloadId_, i);
 
             (address superForm_, , ) = _getSuperForm(singleVaultData.superFormId);
 

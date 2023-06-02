@@ -101,6 +101,7 @@ abstract contract BaseSetup is DSTest, Test {
     // chainId => formbeacon id => vault id
     mapping(uint64 chainId => mapping(uint32 formBeaconId => uint256[] ids)) vaultIds;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
+    mapping(uint64 chainId => uint256 payloadId) TWO_STEP_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
     uint8[] bridgeIds;

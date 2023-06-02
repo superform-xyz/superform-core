@@ -10,23 +10,26 @@ import {BaseStateRegistry} from "../crosschain-data/BaseStateRegistry.sol";
 import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData} from "../types/DataTypes.sol";
 import "../utils/DataPacking.sol";
+import "forge-std/console.sol";
 
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
 contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegistry {
-    /// @notice Pre-compute keccak256 hash of WITHDRAW_COOLDOWN_PERIOD()
     bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
 
-    /// @dev Stores individual user request to process unlock
-    struct OwnerRequest {
-        address owner;
-        uint64 srcChainId;
-        uint256 superFormId;
+    enum TimeLockStatus {
+        UNAVAILABLE,
+        PENDING,
+        PROCESSED
     }
 
-    /// @notice Stores 1:1 mapping with Form.unlockId(srcSender) without copying the whole data structure
-    mapping(uint256 payloadId => OwnerRequest) public payloadStore;
+    struct TimeLockPayload {
+        uint256 superFormId;
+        TimeLockStatus status;
+    }
+
+    mapping(uint256 payloadId => mapping(uint256 index => TimeLockPayload)) public timeLockPayload;
 
     /// @notice Checks if the caller is form allowed to send payload to this contract (only Forms are allowed)
     /// TODO: Test this modifier
@@ -46,43 +49,42 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
 
     /// @inheritdoc ITwoStepsFormStateRegistry
-    function receivePayload(
-        uint256 payloadId,
-        uint256 superFormId,
-        address owner,
-        uint64 srcChainId
-    ) external onlyForm(superFormId) {
-        payloadStore[payloadId] = OwnerRequest({owner: owner, srcChainId: srcChainId, superFormId: superFormId});
+    function receivePayload(uint256 payloadId_, uint256 index_, uint256 superFormId_) external onlyForm(superFormId_) {
+        timeLockPayload[payloadId_][index_] = TimeLockPayload(superFormId_, TimeLockStatus.PENDING);
     }
 
     /// @inheritdoc ITwoStepsFormStateRegistry
-    function finalizePayload(uint256 payloadId, bytes memory ackExtraData) external onlyTwoStepsProcessor {
-        (address superForm, , ) = _getSuperForm(payloadStore[payloadId].superFormId);
+    function finalizePayload(
+        uint256 payloadId_,
+        uint256 index_,
+        bytes memory ackExtraData
+    ) external payable onlyTwoStepsProcessor {
+        TimeLockPayload storage payload = timeLockPayload[payloadId_][index_];
+
+        if (payload.status != TimeLockStatus.PENDING) revert Error.INVALID_PAYLOAD_STATE();
+        payload.status = TimeLockStatus.PROCESSED;
+
+        (address superForm, , ) = _getSuperForm(payload.superFormId);
 
         /// NOTE: ERC4626TimelockForm is the only form that uses processUnlock function
         IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
 
-        address srcSender = payloadStore[payloadId].owner;
-        uint64 srcChainId = payloadStore[payloadId].srcChainId;
-
         /// @dev try to processUnlock for this srcSender
-        try form.processUnlock(srcSender, srcChainId) {
-            delete payloadStore[payloadId];
-        } catch (bytes memory err) {
+        try form.processUnlock(payloadId_, index_) {} catch (bytes memory err) {
             /// NOTE: in every other instance it's better to re-init withdraw
             /// NOTE: this catch will ALWAYS send a message back to source with exception of WITHDRAW_COOLDOWN_PERIOD error on Timelock
             /// TODO: Test this case (test messaging back to src)
+
             if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
                 /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
-                InitSingleVaultData memory singleVaultData = form.unlockId(srcSender);
-
-                delete payloadStore[payloadId];
+                (InitSingleVaultData memory singleVaultData, address srcSender, uint64 srcChainId) = form
+                    .getSingleVaultDataAtIndex(payloadId_, index_);
 
                 bytes memory returnMessage = _constructSingleReturnData(
-                    singleVaultData,
-                    payloadId,
                     srcSender,
-                    srcChainId
+                    srcChainId,
+                    payloadId_,
+                    singleVaultData
                 );
                 _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
             }
@@ -95,11 +97,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after xChainWithdraw succeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
     function _constructSingleReturnData(
-        InitSingleVaultData memory singleVaultData_,
-        uint256 payloadId_,
         address srcSender_,
-        uint64 srcChainId_
-    ) internal pure returns (bytes memory returnMessage) {
+        uint64 srcChainId_,
+        uint256 payloadId_,
+        InitSingleVaultData memory singleVaultData_
+    ) internal view returns (bytes memory returnMessage) {
         /// @notice Send Data to Source to issue superform positions.
         return
             abi.encode(
@@ -108,7 +110,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                         uint8(TransactionType.WITHDRAW),
                         uint8(CallbackType.FAIL),
                         0,
-                        0,
+                        STATE_REGISTRY_TYPE,
                         srcSender_,
                         srcChainId_
                     ),
@@ -122,16 +124,12 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     function _dispatchAcknowledgement(uint64 dstChainId_, bytes memory message_, bytes memory ackExtraData_) internal {
         AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
         uint8[] memory ambIds_ = ackData.ambIds;
-
-        /// @dev atleast 2 AMBs are required
-        if (ambIds_.length < 2) {
-            revert Error.INVALID_AMB_IDS_LENGTH();
-        }
-
         AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
 
         _dispatchPayload(msg.sender, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
 
-        _dispatchProof(msg.sender, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
+        if (ambIds_.length > 1) {
+            _dispatchProof(msg.sender, ambIds_, dstChainId_, d.gasPerAMB, message_, d.extraDataPerAMB);
+        }
     }
 }
