@@ -15,12 +15,9 @@ import "../utils/DataPacking.sol";
 contract SuperRBAC is ISuperRBAC, AccessControl {
     uint8 public constant STATE_REGISTRY_TYPE = 2;
 
-    bytes32 public constant SYNC_REVOKE_ROLE = keccak256("SYNC_REVOKE_ROLE");
-
-    bytes32 public constant override CORE_STATE_REGISTRY_ROLE = keccak256("CORE_STATE_REGISTRY_ROLE");
-    bytes32 public constant TWOSTEPS_FORM_STATE_REGISTRY_ROLE = keccak256("TWOSTEPS_FORM_STATE_REGISTRY_ROLE");
-    bytes32 public constant override SUPER_ROUTER_ROLE = keccak256("SUPER_ROUTER_ROLE");
-    bytes32 public constant override SUPERFORM_FACTORY_ROLE = keccak256("SUPERFORM_FACTORY_ROLE");
+    bytes32 public immutable PROTOCOL_ADMIN_ROLE;
+    bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
+    bytes32 public constant override SYNC_REVOKE_ROLE = keccak256("SYNC_REVOKE_ROLE");
     bytes32 public constant override SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
     bytes32 public constant override CORE_CONTRACTS_ROLE = keccak256("CORE_CONTRACTS_ROLE");
     bytes32 public constant override PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
@@ -36,7 +33,17 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address protocolAdmin = superRegistry.protocolAdmin();
         if (admin_ != protocolAdmin) revert Error.INVALID_DEPLOYER();
 
-        _setupRole(DEFAULT_ADMIN_ROLE, protocolAdmin);
+        PROTOCOL_ADMIN_ROLE = superRegistry.PROTOCOL_ADMIN_ROLE();
+
+        _setupRole(PROTOCOL_ADMIN_ROLE, protocolAdmin);
+
+        _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(CORE_CONTRACTS_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(TWOSTEPS_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(UPDATER_ROLE, PROTOCOL_ADMIN_ROLE);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -45,79 +52,22 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     function grantProtocolAdminRole(address admin_) external override {
-        grantRole(DEFAULT_ADMIN_ROLE, admin_);
+        grantRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
     function revokeProtocolAdminRole(address admin_) external override {
-        revokeRole(DEFAULT_ADMIN_ROLE, admin_);
+        revokeRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
-    function grantCoreStateRegistryRole(address coreStateRegistry_) external override {
-        grantRole(CORE_STATE_REGISTRY_ROLE, coreStateRegistry_);
+    function grantEmergencyAdminRole(address admin_) external override {
+        grantRole(EMERGENCY_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
-    function revokeCoreStateRegistryRole(address stateRegistry_, bytes memory extraData_) external payable override {
-        revokeRole(CORE_STATE_REGISTRY_ROLE, stateRegistry_);
-
-        if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
-                abi.encode(CORE_STATE_REGISTRY_ROLE, stateRegistry_)
-            );
-
-            _broadcast(abi.encode(rolesPayload), extraData_);
-        }
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function grantTwoStepsFormStateRegistryRole(address twoStepsformStateRegistry_) external override {
-        grantRole(TWOSTEPS_FORM_STATE_REGISTRY_ROLE, twoStepsformStateRegistry_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function revokeTwoStepsFormStateRegistryRole(address twoStepsformStateRegistry_) external override {
-        revokeRole(TWOSTEPS_FORM_STATE_REGISTRY_ROLE, twoStepsformStateRegistry_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function grantSuperRouterRole(address superRouter_) external override {
-        grantRole(SUPER_ROUTER_ROLE, superRouter_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function revokeSuperRouterRole(address superRouter_, bytes memory extraData_) external payable override {
-        revokeRole(SUPER_ROUTER_ROLE, superRouter_);
-
-        if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
-                abi.encode(SUPER_ROUTER_ROLE, superRouter_)
-            );
-
-            _broadcast(abi.encode(rolesPayload), extraData_);
-        }
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function grantSuperformFactoryRole(address superformFactory_) external override {
-        grantRole(SUPERFORM_FACTORY_ROLE, superformFactory_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function revokeSuperformFactoryRole(address superformFactory_, bytes memory extraData_) external payable override {
-        revokeRole(SUPERFORM_FACTORY_ROLE, superformFactory_);
-
-        if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
-                abi.encode(SUPERFORM_FACTORY_ROLE, superformFactory_)
-            );
-
-            _broadcast(abi.encode(rolesPayload), extraData_);
-        }
+    function revokeEmergencyAdminRole(address admin_) external override {
+        revokeRole(EMERGENCY_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -229,7 +179,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
             (bytes32 role, address affectedAddress) = abi.decode(rolesPayload.message, (bytes32, address));
 
             /// @dev no one can update the default admin role
-            if (role != DEFAULT_ADMIN_ROLE) revokeRole(role, affectedAddress);
+            if (role != PROTOCOL_ADMIN_ROLE) revokeRole(role, affectedAddress);
         }
     }
 
@@ -239,26 +189,17 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     function hasProtocolAdminRole(address admin_) external view override returns (bool) {
-        return hasRole(DEFAULT_ADMIN_ROLE, admin_);
+        return hasRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
-    function hasCoreStateRegistryRole(address coreStateRegistry_) external view override returns (bool) {
-        return hasRole(CORE_STATE_REGISTRY_ROLE, coreStateRegistry_);
-    }
-
-    function hasTwoStepsFormStateRegistryRole(address twoStepsFormStateRegistry_) external view returns (bool) {
-        return hasRole(TWOSTEPS_FORM_STATE_REGISTRY_ROLE, twoStepsFormStateRegistry_);
+    function hasEmergencyAdminRole(address emergencyAdmin_) external view override returns (bool) {
+        return hasRole(EMERGENCY_ADMIN_ROLE, emergencyAdmin_);
     }
 
     /// @inheritdoc ISuperRBAC
-    function hasSuperRouterRole(address superRouter_) external view override returns (bool) {
-        return hasRole(SUPER_ROUTER_ROLE, superRouter_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasSuperformFactoryRole(address superformFactory_) external view override returns (bool) {
-        return hasRole(SUPERFORM_FACTORY_ROLE, superformFactory_);
+    function hasSyncRevokeRole(address syncRevoker_) external view override returns (bool) {
+        return hasRole(SYNC_REVOKE_ROLE, syncRevoker_);
     }
 
     /// @inheritdoc ISuperRBAC

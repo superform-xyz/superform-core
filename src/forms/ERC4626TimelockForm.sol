@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC4626TimelockVault} from "./interfaces/IERC4626TimelockVault.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {InitSingleVaultData, AMBMessage, InitMultiVaultData} from "../types/DataTypes.sol";
 import {ERC4626FormImplementation} from "./ERC4626FormImplementation.sol";
 import {BaseForm} from "../BaseForm.sol";
@@ -17,7 +17,7 @@ import "../utils/DataPacking.sol";
 /// @title ERC4626TimelockForm
 /// @notice The Form implementation with timelock extension for ERC4626 vaults
 contract ERC4626TimelockForm is ERC4626FormImplementation {
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for IERC20;
 
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
@@ -33,8 +33,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
     /// @dev TwoStepsFormStateRegistry modifier for calling processUnlock()
     modifier onlyTwoStepsFormStateRegistry() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasTwoStepsFormStateRegistryRole(msg.sender))
-            revert Error.NOT_FORM_STATE_REGISTRY();
+        if (superRegistry.twoStepsFormStateRegistry() != msg.sender) revert Error.NOT_FORM_STATE_REGISTRY();
         _;
     }
 
@@ -73,7 +72,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         if (requestTimestamp == 0) return 2;
 
         /// @dev FIXME: this works for vaults that return lock period in terms of block.timestamp
-        uint256 lockPeriod = IERC4626TimelockVault(vault_).getLockPeirod();
+        uint256 lockPeriod = IERC4626TimelockVault(vault_).getLockPeriod();
         if (requestTimestamp + lockPeriod < block.timestamp) return 3;
 
         /// @dev NOTE: feels like amount based validation is redundant (remove this later)
@@ -88,7 +87,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         if (requestTimestamp == 0) return 2;
 
         /// @dev FIXME: this works for vaults that return lock period in terms of block.timestamp
-        uint256 lockPeriod = IERC4626TimelockVault(vault).getLockPeirod();
+        uint256 lockPeriod = IERC4626TimelockVault(vault).getLockPeriod();
         if (requestTimestamp + lockPeriod < block.timestamp) return 3;
 
         uint256 requestedAmount = unlockAmount[srcSender_];
@@ -177,7 +176,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         if (vars.unlock == 2) {
             v.requestUnlock(singleVaultData_.amount, address(this));
 
-            /// NOTE: We already burned SPs optimistically on SuperRouter
+            /// NOTE: We already burned SPs optimistically on SuperFormRouter
             /// NOTE: All Timelocked Forms need to go through the TwoStepsFormStateRegistry, including same chain
             /// @dev Store for TwoStepsFormStateRegistry
             unlockTime[srcSender_] = block.timestamp;
@@ -246,7 +245,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
             if (isValidLiqReq != 0) {
                 /// Note Redeem Vault positions (we operate only on positions, not assets)
-                vars.balanceBefore = ERC20(v.asset()).balanceOf(address(this));
+                vars.balanceBefore = IERC20(v.asset()).balanceOf(address(this));
 
                 /// @dev NOTE: only allows withdraws back to source
                 IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
@@ -270,8 +269,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                     "",
                     superRegistry.PERMIT2()
                 );
-
-                vars.balanceAfter = ERC20(v.asset()).balanceOf(address(this));
+                vars.balanceAfter = IERC20(v.asset()).balanceOf(address(this));
 
                 /// note: balance validation to prevent draining contract.
                 if (vars.balanceAfter < vars.balanceBefore - dstAmount)

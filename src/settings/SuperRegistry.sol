@@ -28,24 +28,23 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev is the reverse mapping of ambAddresses
     mapping(address ambAddress => uint8 bridgeId) public ambIds;
 
+    /// @dev Supra Protocol Admin role (to encompass also SuperRegistry)
+    bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
+
     /// @dev core protocol addresses identifiers
-    /// @dev FIXME: we don't have AMB and liquidity bridge implementations here, should we add?
-    bytes32 public constant override PROTOCOL_ADMIN = "PROTOCOL_ADMIN";
-    bytes32 public constant override SUPER_ROUTER = "SUPER_ROUTER";
-    bytes32 public constant override TOKEN_BANK = "TOKEN_BANK";
-    bytes32 public constant override SUPERFORM_FACTORY = "SUPERFORM_FACTORY";
-    bytes32 public constant override CORE_STATE_REGISTRY = "CORE_STATE_REGISTRY";
-    bytes32 public constant override TWO_STEPS_FORM_STATE_REGISTRY = "TWO_STEPS_FORM_STATE_REGISTRY";
-    bytes32 public constant override FACTORY_STATE_REGISTRY = "FACTORY_STATE_REGISTRY";
-    bytes32 public constant override ROLES_STATE_REGISTRY = "ROLES_STATE_REGISTRY";
-    bytes32 public constant override SUPER_POSITIONS = "SUPER_POSITIONS";
-    bytes32 public constant override SUPER_POSITION_BANK = "SUPER_POSITION_BANK";
-    bytes32 public constant override SUPER_RBAC = "SUPER_RBAC";
-    bytes32 public constant override MULTI_TX_PROCESSOR = "MULTI_TX_PROCESSOR";
+    bytes32 public constant override SUPER_ROUTER = keccak256("SUPER_ROUTER");
+    bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
+    bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
+    bytes32 public constant override TWO_STEPS_FORM_STATE_REGISTRY = keccak256("TWO_STEPS_FORM_STATE_REGISTRY");
+    bytes32 public constant override FACTORY_STATE_REGISTRY = keccak256("FACTORY_STATE_REGISTRY");
+    bytes32 public constant override ROLES_STATE_REGISTRY = keccak256("ROLES_STATE_REGISTRY");
+    bytes32 public constant override SUPER_POSITIONS = keccak256("SUPER_POSITIONS");
+    bytes32 public constant override SUPER_RBAC = keccak256("SUPER_RBAC");
+    bytes32 public constant override MULTI_TX_PROCESSOR = keccak256("MULTI_TX_PROCESSOR");
 
     /// @param admin_ the address of the admin.
     constructor(address admin_) {
-        _setupRole(DEFAULT_ADMIN_ROLE, admin_);
+        _setupRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -54,7 +53,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @dev FIXME: remove all address 0 checks to block calls to a certain contract?
 
     /// @inheritdoc ISuperRegistry
-    function setImmutables(uint64 chainId_, address permit2_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setImmutables(uint64 chainId_, address permit2_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         if (chainId != 0) revert Error.DISABLED();
         if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
         if (PERMIT2 != address(0)) revert Error.DISABLED();
@@ -68,26 +67,24 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     function setNewProtocolAddress(
         bytes32 protocolAddressId_,
         address newAddress_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldAddress = protocolAddresses[protocolAddressId_];
         protocolAddresses[protocolAddressId_] = newAddress_;
         emit ProtocolAddressUpdated(protocolAddressId_, oldAddress, newAddress_);
     }
 
     /// @inheritdoc ISuperRegistry
-    function setProtocolAdmin(address admin_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    function setProtocolAdmin(address admin_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         if (admin_ == address(0)) revert Error.ZERO_ADDRESS();
 
-        address oldAdmin = protocolAddresses[PROTOCOL_ADMIN];
-        protocolAddresses[PROTOCOL_ADMIN] = admin_;
+        address oldAdmin = protocolAddresses[PROTOCOL_ADMIN_ROLE];
+        protocolAddresses[PROTOCOL_ADMIN_ROLE] = admin_;
 
         emit ProtocolAdminUpdated(oldAdmin, admin_);
     }
 
     /// @inheritdoc ISuperRegistry
-    function setSuperRouter(address superRouter_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (superRouter_ == address(0)) revert Error.ZERO_ADDRESS();
-
+    function setSuperRouter(address superRouter_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldSuperRouter = protocolAddresses[SUPER_ROUTER];
         protocolAddresses[SUPER_ROUTER] = superRouter_;
 
@@ -95,9 +92,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setSuperFormFactory(address superFormFactory_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (superFormFactory_ == address(0)) revert Error.ZERO_ADDRESS();
-
+    function setSuperFormFactory(address superFormFactory_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldSuperFormFactory = protocolAddresses[SUPERFORM_FACTORY];
         protocolAddresses[SUPERFORM_FACTORY] = superFormFactory_;
 
@@ -105,9 +100,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setCoreStateRegistry(address coreStateRegistry_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (coreStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
-
+    function setCoreStateRegistry(address coreStateRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldCoreStateRegistry = protocolAddresses[CORE_STATE_REGISTRY];
         protocolAddresses[CORE_STATE_REGISTRY] = coreStateRegistry_;
 
@@ -115,9 +108,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setTwoStepsFormStateRegistry(address twoStepsFormStateRegistry_) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (twoStepsFormStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
-
+    function setTwoStepsFormStateRegistry(address twoStepsFormStateRegistry_) external onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldTwoStepsFormStateRegistry = protocolAddresses[TWO_STEPS_FORM_STATE_REGISTRY];
         protocolAddresses[TWO_STEPS_FORM_STATE_REGISTRY] = twoStepsFormStateRegistry_;
 
@@ -125,9 +116,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setFactoryStateRegistry(address factoryStateRegistry_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (factoryStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
-
+    function setFactoryStateRegistry(address factoryStateRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldFactoryStateRegistry = protocolAddresses[FACTORY_STATE_REGISTRY];
         protocolAddresses[FACTORY_STATE_REGISTRY] = factoryStateRegistry_;
 
@@ -135,9 +124,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setRolesStateRegistry(address rolesStateRegistry_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (rolesStateRegistry_ == address(0)) revert Error.ZERO_ADDRESS();
-
+    function setRolesStateRegistry(address rolesStateRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldRolesStateRegistry = protocolAddresses[ROLES_STATE_REGISTRY];
         protocolAddresses[ROLES_STATE_REGISTRY] = rolesStateRegistry_;
 
@@ -145,9 +132,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setSuperPositions(address superPositions_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (superPositions_ == address(0)) revert Error.ZERO_ADDRESS();
-
+    function setSuperPositions(address superPositions_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldSuperPositions = protocolAddresses[SUPER_POSITIONS];
         protocolAddresses[SUPER_POSITIONS] = superPositions_;
 
@@ -155,9 +140,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setSuperRBAC(address superRBAC_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (superRBAC_ == address(0)) revert Error.ZERO_ADDRESS();
-
+    function setSuperRBAC(address superRBAC_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldSuperRBAC = protocolAddresses[SUPER_RBAC];
         protocolAddresses[SUPER_RBAC] = superRBAC_;
 
@@ -165,9 +148,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setMultiTxProcessor(address multiTxProcessor_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (multiTxProcessor_ == address(0)) revert Error.ZERO_ADDRESS();
-
+    function setMultiTxProcessor(address multiTxProcessor_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         address oldMultiTxProcessor = protocolAddresses[MULTI_TX_PROCESSOR];
         protocolAddresses[MULTI_TX_PROCESSOR] = multiTxProcessor_;
 
@@ -179,7 +160,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
         uint8[] memory bridgeId_,
         address[] memory bridgeAddress_,
         address[] memory bridgeValidator_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         for (uint256 i = 0; i < bridgeId_.length; i++) {
             uint8 x = bridgeId_[i];
             address y = bridgeAddress_[i];
@@ -196,7 +177,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     function setAmbAddress(
         uint8[] memory ambId_,
         address[] memory ambAddress_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         for (uint256 i; i < ambId_.length; i++) {
             address x = ambAddress_[i];
             uint8 y = ambId_[i];
@@ -212,7 +193,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     function setStateRegistryAddress(
         uint8[] memory registryId_,
         address[] memory registryAddress_
-    ) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         for (uint256 i; i < registryId_.length; i++) {
             address x = registryAddress_[i];
             uint8 y = registryId_[i];
@@ -222,15 +203,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
             stateRegistryIds[x] = y;
             emit SetStateRegistryAddress(y, x);
         }
-    }
-
-    function setSuperPositionBank(address superPositionBank_) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (superPositionBank_ == address(0)) revert Error.ZERO_ADDRESS();
-
-        address oldSuperPositionBank = protocolAddresses[SUPER_POSITION_BANK];
-        protocolAddresses[SUPER_POSITION_BANK] = superPositionBank_;
-
-        emit SetSuperPositionBankAddress(oldSuperPositionBank, superPositionBank_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -244,7 +216,7 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
 
     /// @inheritdoc ISuperRegistry
     function protocolAdmin() external view override returns (address protocolAdmin_) {
-        protocolAdmin_ = getProtocolAddress(PROTOCOL_ADMIN);
+        protocolAdmin_ = getProtocolAddress(PROTOCOL_ADMIN_ROLE);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -280,10 +252,6 @@ contract SuperRegistry is ISuperRegistry, AccessControl {
     /// @inheritdoc ISuperRegistry
     function superPositions() external view override returns (address superPositions_) {
         superPositions_ = getProtocolAddress(SUPER_POSITIONS);
-    }
-
-    function superPositionBank() external view returns (address superPositionBank_) {
-        superPositionBank_ = getProtocolAddress(SUPER_POSITION_BANK);
     }
 
     /// @inheritdoc ISuperRegistry

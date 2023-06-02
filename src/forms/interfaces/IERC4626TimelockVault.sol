@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {InitSingleVaultData} from "../../types/DataTypes.sol";
-import {IERC4626} from "./IERC4626Vault.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 /// @notice Interface for ERC4626 extended with Timelock design (ERC4626MockVault)
 /// NOTE: Not a Form interface!
@@ -34,5 +34,5 @@ interface IERC4626TimelockVault is IERC4626 {
     function userUnlockRequests(address owner) external view returns (UnlockRequest memory);
 
     /// @notice The amount of time that must pass between a requestUnlock() and withdraw() call.
-    function getLockPeirod() external view returns (uint256);
+    function getLockPeriod() external view returns (uint256);
 }

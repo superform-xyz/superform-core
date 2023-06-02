@@ -2,11 +2,9 @@
 pragma solidity 0.8.19;
 
 import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
-
 import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
-import {IERC4626} from "../vendor/IERC4626.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 /// @title IBaseForm
 /// @author ZeroPoint Labs
@@ -73,5 +71,5 @@ interface IBaseForm is IERC165Upgradeable {
         uint64 srcChainId_
     ) external returns (uint256 dstAmount);
 
-    function getUnderlyingOfVault() external view returns (ERC20);
+    function getUnderlyingOfVault() external view returns (address);
 }

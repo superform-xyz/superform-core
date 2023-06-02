@@ -188,12 +188,12 @@ contract SuperFormFactoryTest is BaseSetup {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 bool statusBefore = SuperFormFactory(payable(getContract(chainIds[i], "SuperFormFactory")))
-                    .getFormBeaconStatus(1);
+                    .isFormBeaconPaused(1);
 
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(31, "");
 
                 bool statusAfter = SuperFormFactory(payable(getContract(chainIds[i], "SuperFormFactory")))
-                    .getFormBeaconStatus(1);
+                    .isFormBeaconPaused(1);
 
                 /// assert status update before and after processing the payload
                 assertEq(statusBefore, false);

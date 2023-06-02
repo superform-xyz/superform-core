@@ -96,10 +96,10 @@ interface ISuperFormFactory {
     /// @return formBeacon_ is the address of the beacon form
     function getFormBeacon(uint32 formBeaconId_) external view returns (address formBeacon_);
 
-    /// @dev returns the status of form beacon
+    /// @dev returns the paused status of form beacon
     /// @param formBeaconId_ is the id of the beacon form
-    /// @return status_ is the current status of the form beacon
-    function getFormBeaconStatus(uint32 formBeaconId_) external view returns (bool status_);
+    /// @return paused_ is the current paused status of the form beacon
+    function isFormBeaconPaused(uint32 formBeaconId_) external view returns (bool paused_);
 
     /// @dev returns the address of a superform
     /// @param superFormId_ is the id of the superform

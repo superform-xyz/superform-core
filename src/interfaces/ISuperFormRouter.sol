@@ -3,10 +3,10 @@ pragma solidity 0.8.19;
 
 import {LiqRequest, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, AMBMessage} from "../types/DataTypes.sol";
 
-/// @title ISuperRouter
+/// @title ISuperFormRouter
 /// @author Zeropoint Labs.
 /// @dev interface for Super Router
-interface ISuperRouter {
+interface ISuperFormRouter {
     /*///////////////////////////////////////////////////////////////
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/

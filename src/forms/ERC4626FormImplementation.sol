@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
-import {IERC4626} from "../vendor/IERC4626.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {InitSingleVaultData, LiqRequest} from "../types/DataTypes.sol";
@@ -15,7 +16,7 @@ import "../utils/DataPacking.sol";
 /// @title ERC4626FormImplementation
 /// @notice Has common internal functions that can be re-used by actual form implementations
 abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
-    using SafeTransferLib for ERC20;
+    using SafeERC20 for IERC20;
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
@@ -28,8 +29,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     /// @dev asset() or some similar function should return all possible tokens that can be deposited into the vault so that BE can grab that properly
-    function getUnderlyingOfVault() public view virtual override returns (ERC20) {
-        return IERC4626(vault).asset();
+    function getUnderlyingOfVault() public view virtual override returns (address) {
+        return address(IERC4626(vault).asset());
     }
 
     /// @inheritdoc BaseForm
@@ -81,7 +82,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint256 dstAmount;
         uint256 balanceBefore;
         uint256 balanceAfter;
-        ERC20 collateralToken;
+        IERC20 collateralToken;
     }
 
     function _processDirectDeposit(
@@ -96,17 +97,17 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC4626 v = IERC4626(vars.vaultLoc);
 
         vars.collateral = address(v.asset());
-        vars.collateralToken = ERC20(vars.collateral);
+        vars.collateralToken = IERC20(vars.collateral);
         vars.balanceBefore = vars.collateralToken.balanceOf(address(this));
 
         /// note: handle the collateral token transfers.
         if (singleVaultData_.liqData.txData.length == 0) {
             if (
-                ERC20(singleVaultData_.liqData.token).allowance(srcSender_, address(this)) <
+                IERC20(singleVaultData_.liqData.token).allowance(srcSender_, address(this)) <
                 singleVaultData_.liqData.amount
             ) revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
-            ERC20(singleVaultData_.liqData.token).safeTransferFrom(
+            IERC20(singleVaultData_.liqData.token).safeTransferFrom(
                 srcSender_,
                 address(this),
                 singleVaultData_.liqData.amount
@@ -201,8 +202,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC4626 v = IERC4626(vaultLoc);
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
-        /// DEVNOTE: allowance is modified inside of the ERC20.transferFrom() call
-        ERC20(v.asset()).approve(vaultLoc, singleVaultData_.amount);
+        /// DEVNOTE: allowance is modified inside of the IERC20.transferFrom() call
+        IERC20(v.asset()).approve(vaultLoc, singleVaultData_.amount);
 
         /// DEVNOTE: This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
@@ -234,7 +235,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// Note Redeem Vault positions (we operate only on positions, not assets)
             vars.dstAmount = v.redeem(singleVaultData_.amount, address(this), address(this));
 
-            vars.balanceBefore = ERC20(v.asset()).balanceOf(address(this));
+            vars.balanceBefore = IERC20(v.asset()).balanceOf(address(this));
 
             /// @dev NOTE: only allows withdraws back to source
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
@@ -262,7 +263,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 superRegistry.PERMIT2()
             );
 
-            vars.balanceAfter = ERC20(v.asset()).balanceOf(address(this));
+            vars.balanceAfter = IERC20(v.asset()).balanceOf(address(this));
 
             /// note: balance validation to prevent draining contract.
             if (vars.balanceAfter < vars.balanceBefore - vars.dstAmount)
@@ -285,17 +286,17 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     /// @inheritdoc BaseForm
     function superformYieldTokenName() external view virtual override returns (string memory) {
-        return string(abi.encodePacked("Superform ", ERC20(vault).name()));
+        return string(abi.encodePacked("Superform ", IERC20Metadata(vault).name()));
     }
 
     /// @inheritdoc BaseForm
     function superformYieldTokenSymbol() external view virtual override returns (string memory) {
-        return string(abi.encodePacked("SUP-", ERC20(vault).symbol()));
+        return string(abi.encodePacked("SUP-", IERC20Metadata(vault).symbol()));
     }
 
     /// @inheritdoc BaseForm
     function superformYieldTokenDecimals() external view virtual override returns (uint256 underlyingDecimals) {
-        return ERC20(vault).decimals();
+        return IERC20Metadata(vault).decimals();
     }
 
     /*///////////////////////////////////////////////////////////////

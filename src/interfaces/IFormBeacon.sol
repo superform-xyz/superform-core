@@ -12,7 +12,7 @@ interface IFormBeacon {
     event FormLogicUpdated(address indexed oldLogic, address indexed newLogic);
 
     /// @dev emited when form beacon status is changed
-    event FormBeaconStatus(bool newStatus);
+    event FormBeaconPaused(bool paused);
 
     /*///////////////////////////////////////////////////////////////
                         External Functions
