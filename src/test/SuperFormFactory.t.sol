@@ -147,24 +147,12 @@ contract SuperFormFactoryTest is BaseSetup {
             vars.expectedFormBeaconIds = new uint32[](chainIds.length * UNDERLYING_TOKENS.length);
             vars.expectedChainIds = new uint256[](chainIds.length * UNDERLYING_TOKENS.length);
 
-            /*
-        for (uint256 i = 0; i < vars.expectedFormBeaconIds.length; i++) {
-            vars.expectedFormBeaconIds[i] = vars.formBeaconId;
-            vars.expectedChainIds[i] = chainIds[i / 3];
-        }
-
-        assertEq(vars.formIds_, vars.expectedFormBeaconIds);
-        assertEq(vars.transformedChainIds_, vars.expectedChainIds);
-*/
-
-            /// @dev 6 * 2 * 3 = 36
-
-            uint256 expectedNumberOfSuperforms = chainIds.length * UNDERLYING_TOKENS.length * FORM_BEACON_IDS.length;
+            uint256 expectedNumberOfSuperforms = UNDERLYING_TOKENS.length * FORM_BEACON_IDS.length;
 
             assertEq(
                 SuperFormFactory(getContract(chainIds[i], "SuperFormFactory")).getAllSuperFormsList(),
                 expectedNumberOfSuperforms
-            ); /// 1 chain = 3; 6 chains = 6 * 3
+            );
         }
     }
 

@@ -610,7 +610,7 @@ abstract contract BaseSetup is DSTest, Test {
                     uint256 superFormId;
                     (superFormId, vars.superForm) = ISuperFormFactory(
                         contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))]
-                    ).createSuperForm{value: 800 * 10 ** 18}(FORM_BEACON_IDS[j], vault, generateBroadcastParams(5, 2));
+                    ).createSuperForm(FORM_BEACON_IDS[j], vault);
 
                     if (FORM_BEACON_IDS[j] == 3) {
                         /// mint a kycDAO Nft to superForm on polygon
@@ -624,8 +624,6 @@ abstract contract BaseSetup is DSTest, Test {
                             )
                         )
                     ] = vars.superForm;
-
-                    _broadcastPayloadHelper(chainIds[i], vm.getRecordedLogs());
                 }
             }
 
@@ -635,7 +633,6 @@ abstract contract BaseSetup is DSTest, Test {
             KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
         }
 
-        _processFactoryPayloads(((chainIds.length - 1) * FORM_BEACON_IDS.length * UNDERLYING_TOKENS.length) + 1);
         vm.stopPrank();
     }
 
