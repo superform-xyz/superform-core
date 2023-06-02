@@ -308,7 +308,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         for (uint256 i = 0; i < chainID_.length; i++) {
             /// temp select by index. TODO: actionId mechanics requires update!
-            TARGET_UNDERLYING_VAULTS[chainID_[i]][actionId] = vaultIDs_;
+            TARGET_VAULTS[chainID_[i]][actionId] = vaultIDs_;
             TARGET_FORM_KINDS[chainID_[i]][actionId] = formIDs_; /// <= 1 for timelock, this accesses array by index (0 for standard)
             AMOUNTS[chainID_[i]][actionId] = amounts_;
             MAX_SLIPPAGE[chainID_[i]][actionId] = slippages_;

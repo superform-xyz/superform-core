@@ -41,10 +41,12 @@ contract ScenarioKYCDaoTest is ProtocolActions {
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYING_VAULTS[POLY][0] = [1];
+        TARGET_UNDERLYINGS[POLY][0] = [1];
+        TARGET_VAULTS[POLY][0] = [1];
         TARGET_FORM_KINDS[POLY][0] = [2];
 
-        TARGET_UNDERLYING_VAULTS[POLY][1] = [1];
+        TARGET_UNDERLYINGS[POLY][1] = [2];
+        TARGET_VAULTS[POLY][1] = [1];
         TARGET_FORM_KINDS[POLY][1] = [2];
 
         AMOUNTS[POLY][0] = [7722];

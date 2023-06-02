@@ -12,46 +12,46 @@ import "./utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario9Test is ProtocolActions {
-    /// @dev Access SuperFormRouter interface
-    ISuperFormRouter superRouter;
-
+contract Scenario13Test is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationSingleVault Deposit test case
-        AMBs = [1, 2, 3];
+        /// @dev singleDestinationMultiVault Deposit test case
+        AMBs = [1, 3];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [1];
+        TARGET_UNDERLYINGS[POLY][0] = [1, 1];
+        TARGET_VAULTS[POLY][0] = [3, 3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
 
-        TARGET_VAULTS[POLY][0] = [1];
+        TARGET_FORM_KINDS[POLY][0] = [0, 0];
 
-        TARGET_FORM_KINDS[POLY][0] = [0];
+        AMOUNTS[POLY][0] = [4121, 421];
 
-        AMOUNTS[POLY][0] = [231];
+        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        /// @dev 1 for socket, 2 for lifi
+        LIQ_BRIDGES[POLY][0] = [2, 2];
 
-        LIQ_BRIDGES[POLY][0] = [1];
+        /// @dev check if we need to have this here (it's being overriden)
+        uint256 msgValue = 2 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
+                multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: 0,
-                testType: TestType.Pass,
+                testType: TestType.RevertProcessPayload,
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                msgValue: 75 * 10 ** 18,
-                ambParams: generateAmbParams(DST_CHAINS.length, 3),
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                msgValue: msgValue,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
@@ -62,17 +62,14 @@ contract Scenario9Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
-        superRouter = ISuperFormRouter(_superRouter);
-
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
-
+            console.log(1);
             _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
         }
     }

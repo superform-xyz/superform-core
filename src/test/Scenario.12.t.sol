@@ -40,10 +40,12 @@ contract Scenario12Test is ProtocolActions {
         DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYING_VAULTS[ARBI][0] = [1, 2, 0, 2, 2, 1, 0];
+        TARGET_UNDERLYINGS[ARBI][0] = [1, 1, 1, 0, 0, 0, 0];
+        TARGET_VAULTS[ARBI][0] = [1, 2, 0, 2, 2, 1, 0];
         TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 2, 2, 2, 2];
 
-        TARGET_UNDERLYING_VAULTS[ARBI][1] = [1, 2, 0, 2, 2, 1, 0];
+        TARGET_UNDERLYINGS[ARBI][1] = [1, 1, 1, 0, 0, 0, 0];
+        TARGET_VAULTS[ARBI][1] = [1, 2, 0, 2, 2, 1, 0];
         TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 2, 2, 2, 2];
 
         AMOUNTS[ARBI][0] = [7722, 11, 3, 54218, 4412, 96, 2241];

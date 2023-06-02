@@ -25,7 +25,10 @@ contract Scenario2Test is ProtocolActions {
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYING_VAULTS[POLY][0] = [1, 2];
+
+        TARGET_UNDERLYINGS[POLY][0] = [0, 0];
+
+        TARGET_VAULTS[POLY][0] = [1, 2];
 
         TARGET_FORM_KINDS[POLY][0] = [0, 0];
 
