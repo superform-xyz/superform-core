@@ -18,7 +18,7 @@ contract Scenario13Test is ProtocolActions {
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationMultiVault Deposit test case
+        /// @dev singleDestinationMultiVault failed deposit test case
         AMBs = [1, 3];
 
         CHAIN_0 = OP;

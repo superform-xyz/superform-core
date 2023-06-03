@@ -93,7 +93,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
-    string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault", "VaultMockRevertDeposit"];
+    string[] public VAULT_KINDS = ["VaultMock", "ERC4626TimelockMock", "kycDAO4626", "VaultMockRevertDeposit"];
     struct VaultInfo {
         bytes[] vaultBytecode;
         string[] vaultKinds;

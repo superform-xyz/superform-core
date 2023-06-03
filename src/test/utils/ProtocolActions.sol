@@ -776,17 +776,17 @@ abstract contract ProtocolActions is BaseSetup {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
-            if (externalToken_ != underlyingToken_) {
-                swapData[0] = ILiFi.SwapData(
-                    address(0), /// callTo (arbitrary)
-                    address(0), /// callTo (approveTo)
-                    externalToken_,
-                    underlyingToken_,
-                    amount_,
-                    abi.encode(from_, FORKS[toChainId_]),
-                    false // arbitrary
-                );
+            swapData[0] = ILiFi.SwapData(
+                address(0), /// callTo (arbitrary)
+                address(0), /// callTo (approveTo)
+                externalToken_,
+                underlyingToken_,
+                amount_,
+                abi.encode(from_, FORKS[toChainId_]),
+                false // arbitrary
+            );
 
+            if (externalToken_ != underlyingToken_) {
                 bridgeData = ILiFi.BridgeData(
                     bytes32("1"), /// request id
                     "",

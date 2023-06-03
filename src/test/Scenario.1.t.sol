@@ -31,7 +31,7 @@ contract Scenario1Test is ProtocolActions {
 
         TARGET_UNDERLYINGS[POLY][0] = [0];
 
-        TARGET_VAULTS[POLY][0] = [1];
+        TARGET_VAULTS[POLY][0] = [0]; /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[POLY][0] = [0];
 
