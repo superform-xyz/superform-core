@@ -21,16 +21,8 @@ contract LiFiMock is Test {
         /// @dev for the purpose of this mock, encapsulating mock data in swap data, regardless if we are doing a swap or not
         if (!bridgeData.hasSourceSwaps && !bridgeData.hasDestinationCall) {
             /// @dev just mock bridge
-            _bridge(
-                bridgeData.minAmount,
-                bridgeData.receiver,
-                bridgeData.sendingAssetId,
-                swapData[0].callData,
-                false
-            );
-        } else if (
-            bridgeData.hasSourceSwaps && !bridgeData.hasDestinationCall
-        ) {
+            _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
+        } else if (bridgeData.hasSourceSwaps && !bridgeData.hasDestinationCall) {
             /// @dev else, assume according to socket a swap and bridge is involved
             /// @dev assume from amount = minAmount
             _swap(
@@ -40,26 +32,12 @@ contract LiFiMock is Test {
                 swapData[0].callData
             );
 
-            _bridge(
-                bridgeData.minAmount,
-                bridgeData.receiver,
-                bridgeData.sendingAssetId,
-                swapData[0].callData,
-                true
-            );
-        } else if (
-            !bridgeData.hasSourceSwaps && bridgeData.hasDestinationCall
-        ) {
+            _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, true);
+        } else if (!bridgeData.hasSourceSwaps && bridgeData.hasDestinationCall) {
             /// @dev assume, for mocking purposes that cases with just swap is for the same token
             /// @dev this is for direct actions and multiTx swap of destination
             /// @dev bridge is used here to mint tokens in a new contract, but actually it's just a swap (chain id is the same)
-            _bridge(
-                bridgeData.minAmount,
-                bridgeData.receiver,
-                bridgeData.sendingAssetId,
-                swapData[0].callData,
-                false
-            );
+            _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
         }
     }
 
@@ -71,12 +49,9 @@ contract LiFiMock is Test {
         bool prevSwap
     ) internal {
         /// @dev encapsulating from
-        (address from, uint256 toForkId) = abi.decode(
-            data_,
-            (address, uint256)
-        );
-        if (!prevSwap)
-            MockERC20(inputToken_).transferFrom(from, address(this), amount_);
+        (address from, uint256 toForkId) = abi.decode(data_, (address, uint256));
+
+        if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
         MockERC20(inputToken_).burn(address(this), amount_);
 
         uint256 prevForkId = vm.activeFork();
@@ -85,12 +60,7 @@ contract LiFiMock is Test {
         vm.selectFork(prevForkId);
     }
 
-    function _swap(
-        uint256 amount_,
-        address inputToken_,
-        address bridgeToken_,
-        bytes memory data_
-    ) internal {
+    function _swap(uint256 amount_, address inputToken_, address bridgeToken_, bytes memory data_) internal {
         /// @dev encapsulating from
         address from = abi.decode(data_, (address));
         MockERC20(inputToken_).transferFrom(from, address(this), amount_);

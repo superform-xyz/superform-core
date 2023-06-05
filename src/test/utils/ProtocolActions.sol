@@ -15,13 +15,17 @@ import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateReg
 import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 
 abstract contract ProtocolActions is BaseSetup {
+    event FailedXChainDeposits(uint256 indexed payloadId);
+
     uint8[] public AMBs;
 
     uint64 public CHAIN_0;
 
     uint64[] public DST_CHAINS;
 
-    mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYING_VAULTS;
+    mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYINGS;
+
+    mapping(uint64 chainId => mapping(uint256 action => uint256[] vaultIds)) public TARGET_VAULTS;
 
     mapping(uint64 chainId => mapping(uint256 action => uint32[] formKinds)) public TARGET_FORM_KINDS;
 
@@ -53,13 +57,14 @@ abstract contract ProtocolActions is BaseSetup {
         bool success
     ) internal {
         (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
-
         vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
 
         aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);
+
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);
 
         if (!success) {
+            console.log("FAILED DEPOSIT ASSERTED");
             return;
         }
 
@@ -514,6 +519,35 @@ abstract contract ProtocolActions is BaseSetup {
 
                         _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
                     } else if (action.testType == TestType.RevertProcessPayload) {
+                        /// @dev FIXME brute copied this here, likely the whole if else can be optimized (we are trying to detect reverts at processPayload stage)
+                        if (action.multiTx) {
+                            (, vars.underlyingSrcToken, ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex);
+                            if (action.multiVaults) {
+                                vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
+                                _batchProcessMultiTx(
+                                    vars.liqBridges,
+                                    CHAIN_0,
+                                    aV[i].toChainId,
+                                    llChainIds[vars.chainDstIndex],
+                                    vars.underlyingSrcToken,
+                                    vars.amounts
+                                );
+                            } else {
+                                _processMultiTx(
+                                    vars.liqBridges[0],
+                                    CHAIN_0,
+                                    aV[i].toChainId,
+                                    llChainIds[vars.chainDstIndex],
+                                    vars.underlyingSrcToken[0],
+                                    singleSuperFormsData[i].amount
+                                );
+                            }
+                        }
+                        if (action.multiVaults) {
+                            _updateMultiVaultPayload(vars.multiVaultsPayloadArg);
+                        } else if (singleSuperFormsData.length > 0) {
+                            _updateSingleVaultPayload(vars.singleVaultsPayloadArg);
+                        }
                         success = _processPayload(
                             PAYLOAD_ID[aV[i].toChainId],
                             aV[i].toChainId,
@@ -742,17 +776,17 @@ abstract contract ProtocolActions is BaseSetup {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
-            if (externalToken_ != underlyingToken_) {
-                swapData[0] = ILiFi.SwapData(
-                    address(0), /// callTo (arbitrary)
-                    address(0), /// callTo (approveTo)
-                    externalToken_,
-                    underlyingToken_,
-                    amount_,
-                    abi.encode(from_, FORKS[toChainId_]),
-                    false // arbitrary
-                );
+            swapData[0] = ILiFi.SwapData(
+                address(0), /// callTo (arbitrary)
+                address(0), /// callTo (approveTo)
+                externalToken_,
+                underlyingToken_,
+                amount_,
+                abi.encode(from_, FORKS[toChainId_]),
+                false // arbitrary
+            );
 
+            if (externalToken_ != underlyingToken_) {
                 bridgeData = ILiFi.BridgeData(
                     bytes32("1"), /// request id
                     "",
@@ -915,7 +949,8 @@ abstract contract ProtocolActions is BaseSetup {
     //////////////////////////////////////////////////////////////*/
 
     struct TargetVaultsVars {
-        uint256[] underlyingTokenIds;
+        uint256[] underlyingTokens;
+        uint256[] vaultIds;
         uint32[] formKinds;
         uint256[] superFormIdsTemp;
         uint256 len;
@@ -937,10 +972,11 @@ abstract contract ProtocolActions is BaseSetup {
         )
     {
         TargetVaultsVars memory vars;
-        vars.underlyingTokenIds = TARGET_UNDERLYING_VAULTS[chain1][action];
+        vars.underlyingTokens = TARGET_UNDERLYINGS[chain1][action];
+        vars.vaultIds = TARGET_VAULTS[chain1][action];
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
 
-        vars.superFormIdsTemp = _superFormIds(vars.underlyingTokenIds, vars.formKinds, chain1);
+        vars.superFormIdsTemp = _superFormIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
 
         vars.len = vars.superFormIdsTemp.length;
 
@@ -952,33 +988,37 @@ abstract contract ProtocolActions is BaseSetup {
 
         for (uint256 i = 0; i < vars.len; i++) {
             vars.underlyingToken = UNDERLYING_TOKENS[
-                vars.underlyingTokenIds[i] // 1
+                vars.underlyingTokens[i] // 1
             ];
 
             targetSuperFormsMem[i] = vars.superFormIdsTemp[i];
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
-            vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.formKinds[i]][vars.underlyingTokenIds[i]]);
+            vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
         }
     }
 
     function _superFormIds(
-        uint256[] memory underlyingTokenIds_,
+        uint256[] memory underlyingTokens_,
+        uint256[] memory vaultIds_,
         uint32[] memory formKinds_,
         uint64 chainId_
     ) internal view returns (uint256[] memory) {
-        uint256[] memory superFormIds_ = new uint256[](underlyingTokenIds_.length);
-        if (underlyingTokenIds_.length != formKinds_.length) revert INVALID_TARGETS();
+        uint256[] memory superFormIds_ = new uint256[](vaultIds_.length);
+        if (vaultIds_.length != formKinds_.length) revert INVALID_TARGETS();
+        if (vaultIds_.length != underlyingTokens_.length) revert INVALID_TARGETS();
 
-        for (uint256 i = 0; i < underlyingTokenIds_.length; i++) {
+        for (uint256 i = 0; i < vaultIds_.length; i++) {
             /// NOTE/FIXME: This should be allowed to revert (or not) at the core level.
             /// Can produce false positive. (What if we revert here, but not in the core)
+            if (underlyingTokens_[i] > UNDERLYING_TOKENS.length) revert WRONG_UNDERLYING_ID();
+            if (vaultIds_[i] > VAULT_KINDS.length) revert WRONG_UNDERLYING_ID();
             if (formKinds_[i] > FORM_BEACON_IDS.length) revert WRONG_FORMBEACON_ID();
-            if (underlyingTokenIds_[i] > UNDERLYING_TOKENS.length) revert WRONG_UNDERLYING_ID();
 
             address superForm = getContract(
                 chainId_,
                 string.concat(
-                    UNDERLYING_TOKENS[underlyingTokenIds_[i]],
+                    UNDERLYING_TOKENS[underlyingTokens_[i]],
+                    VAULT_KINDS[vaultIds_[i]],
                     "SuperForm",
                     Strings.toString(FORM_BEACON_IDS[formKinds_[i]])
                 )
@@ -1007,7 +1047,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
 
-        if (args.testType == TestType.Pass) {
+        if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateMultiVaultPayload(
@@ -1057,7 +1097,7 @@ abstract contract ProtocolActions is BaseSetup {
             finalAmount = (args.amount * (10000 + uint256(args.slippage))) / 10000;
         }
 
-        if (args.testType == TestType.Pass) {
+        if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateSingleVaultPayload(
@@ -1097,7 +1137,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 payloadId_,
         uint64 targetChainId_,
         TestType testType,
-        bytes4
+        bytes4 revertError
     ) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
 
@@ -1110,7 +1150,10 @@ abstract contract ProtocolActions is BaseSetup {
                 value: msgValue
             }(payloadId_, generateAckParams(AMBs));
         } else if (testType == TestType.RevertProcessPayload) {
-            vm.expectRevert();
+            /// @dev WARNING the try catch silences the revert, therefore the only way to assert is via emit
+            vm.expectEmit();
+            // We emit the event we expect to see.
+            emit FailedXChainDeposits(payloadId_);
 
             CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
                 value: msgValue

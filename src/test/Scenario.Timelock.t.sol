@@ -27,6 +27,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
     /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests
     uint64[] dstChainID;
+    uint256[] dstUnderlyingID;
     uint256[] dstVaultID;
     uint32[] dstFormID;
     uint256[] amount;
@@ -54,7 +55,8 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev You can define settings here or at the level of individual tests
         dstChainID = DST_CHAINS; /// id4
-        dstVaultID = [0]; /// vault
+        dstUnderlyingID = [0]; /// underlying
+        dstVaultID = [1]; /// vault
         dstFormID = [1]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
         amount = [1000];
         slippage = [1000];
@@ -87,6 +89,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             dstChainID[0], /// temp select by index
             string.concat(
                 UNDERLYING_TOKENS[0], /// <= Arbitrary choice as BaseSetup deploys all vaults & deals all tokens to users TODO: cleanup
+                VAULT_KINDS[1], /// @dev timelock vault
                 "SuperForm",
                 Strings.toString(FORM_BEACON_IDS[1])
             )
@@ -110,7 +113,8 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev Individual setting for deposit call (overwrite again for withdraw)
         dstChainID = DST_CHAINS; /// id4
-        dstVaultID = [0]; /// vault
+        dstUnderlyingID = [0]; /// underlying
+        dstVaultID = [1]; /// vault
         dstFormID = [1]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
         amount = [1000];
         slippage = [1000];
@@ -132,6 +136,7 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// NOTE: Individual deposit/withdraw invocation allows to make asserts in between
         TestAction memory action = _createAction(
             dstChainID,
+            dstUnderlyingID,
             dstVaultID,
             dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
             amount,
@@ -207,7 +212,8 @@ contract ScenarioTimelockTest is ProtocolActions {
         /// @dev Individual setting for deposit call (overwrite again for withdraw)
         /// NOTE: Having mutability for those allows to test with fuzzing on range of random params
         dstChainID = DST_CHAINS; /// id4
-        dstVaultID = [0]; /// vault
+        dstUnderlyingID = [0]; /// underlying
+        dstVaultID = [1]; /// vault
         dstFormID = [1]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
         amount = [1000];
         slippage = [1000];
@@ -215,6 +221,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         action = _createAction(
             dstChainID,
+            dstUnderlyingID,
             dstVaultID,
             dstFormID, // formID, 0 == ERC4626Form, 1 == ERC4626Timelock
             amount,
@@ -289,6 +296,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
     function _createAction(
         uint64[] memory chainID_,
+        uint256[] memory underlyingIDs_,
         uint256[] memory vaultIDs_,
         uint32[] memory formIDs_,
         uint256[] memory amounts_,
@@ -308,7 +316,8 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         for (uint256 i = 0; i < chainID_.length; i++) {
             /// temp select by index. TODO: actionId mechanics requires update!
-            TARGET_UNDERLYING_VAULTS[chainID_[i]][actionId] = vaultIDs_;
+            TARGET_UNDERLYINGS[chainID_[i]][actionId] = underlyingIDs_;
+            TARGET_VAULTS[chainID_[i]][actionId] = vaultIDs_;
             TARGET_FORM_KINDS[chainID_[i]][actionId] = formIDs_; /// <= 1 for timelock, this accesses array by index (0 for standard)
             AMOUNTS[chainID_[i]][actionId] = amounts_;
             MAX_SLIPPAGE[chainID_[i]][actionId] = slippages_;
