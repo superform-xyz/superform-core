@@ -132,13 +132,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory ambOverride_
     ) external payable virtual override onlyProcessor {}
 
-    /// @inheritdoc IBaseStateRegistry
-    function revertPayload(
-        uint256 payloadId_,
-        uint256 ambId_,
-        bytes memory extraData_
-    ) external payable virtual override onlyProcessor {}
-
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
