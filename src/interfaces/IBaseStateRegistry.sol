@@ -67,14 +67,12 @@ interface IBaseStateRegistry {
     /// @param ambOverride_ is the message bridge configuration override when an acknowledgement to source chain is needed
     /// NOTE: Only {PROCESSOR_ROLE} role can call this function
     /// NOTE: sending `0x` in ambOverride_ will trigger no acknowledgement
+    /// NOTE: this should handle reverting the state on source chain in-case of failure
+    /// (or) can implement scenario based reverting like in coreStateRegistry
     function processPayload(uint256 payloadId_, bytes memory ambOverride_) external payable;
 
-    /// @dev allows previlaged actors to revert cross-chain payloads to revert state changes on source chain
-    /// @param payloadId_ is the identifier of the cross-chain payload
-    /// @param ambId_ is the identifier of the cross-chain message bridge
-    /// @param extraData_ defines all the message bridge realted overrides
-    /// NOTE: Only {PROCESSOR_ROLE} role can call this function
-    function revertPayload(uint256 payloadId_, uint256 ambId_, bytes memory extraData_) external payable;
-
+    /// @dev allows users to read the bytes payload_ stored per payloadId_
+    /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
+    /// @return payload_ the crosschain data received
     function payload(uint256 payloadId_) external view returns (bytes memory payload_);
 }
