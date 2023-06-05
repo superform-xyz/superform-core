@@ -160,39 +160,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
     }
 
-    /// @inheritdoc BaseStateRegistry
-    function revertPayload(
-        uint256 payloadId_,
-        uint256,
-        bytes memory
-    ) external payable virtual override onlyProcessor isValidPayloadId(payloadId_) {
-        if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert Error.INVALID_PAYLOAD_STATE();
-        }
-
-        payloadTracking[payloadId_] = PayloadState.PROCESSED;
-
-        AMBMessage memory payloadInfo = abi.decode(payload[payloadId_], (AMBMessage));
-
-        (, , uint8 multi, , , ) = _decodeTxInfo(payloadInfo.txInfo);
-
-        if (multi == 1) {
-            InitMultiVaultData memory multiVaultData = abi.decode(payloadInfo.params, (InitMultiVaultData));
-
-            if (superRegistry.chainId() != _getDestinationChain(multiVaultData.superFormIds[0]))
-                revert Error.INVALID_PAYLOAD_STATE();
-        } else if (multi == 0) {
-            InitSingleVaultData memory singleVaultData = abi.decode(payloadInfo.params, (InitSingleVaultData));
-
-            if (superRegistry.chainId() != _getDestinationChain(singleVaultData.superFormId))
-                revert Error.INVALID_PAYLOAD_STATE();
-        }
-
-        /// FIXME: Send `data` back to source based on AmbID to revert Error.the state.
-        /// FIXME: chain_ids conflict should be addresses here.
-        // amb[ambId_].dispatchPayload(formData.dstChainId_, message_, extraData_);
-    }
-
     struct RescueFailedDepositsLocalVars {
         uint8 multi;
         bool rescued;
