@@ -16,6 +16,7 @@ import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {LiFiMock} from "../mocks/LiFiMock.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
+import {VaultMockRevertDeposit} from "../mocks/VaultMockRevertDeposit.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {Permit2Clone} from "../mocks/Permit2Clone.sol";
@@ -90,17 +91,24 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
     uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
-    string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
-    bytes[] public vaultBytecodes;
-    // formbeacon id => vault name
-    mapping(uint32 formBeaconId => string[] names) VAULT_NAMES;
-    // chainId => formbeacon id => vault
+    /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
+    string[] public VAULT_KINDS = ["VaultMock", "ERC4626TimelockMock", "kycDAO4626", "VaultMockRevertDeposit"];
+    struct VaultInfo {
+        bytes[] vaultBytecode;
+        string[] vaultKinds;
+    }
+    mapping(uint32 formBeaconId => VaultInfo vaultInfo) vaultBytecodes2;
+
+    bytes[] public vault4626Bytecodes;
+    bytes[] public vaultKycBytecodes;
+    bytes[] public vaultTiemlockedBytecodes;
+
+    mapping(uint256 vaultId => string[] names) VAULT_NAMES;
+
     /// FIXME: We need to map individual formBeaconId to individual vault to have access to ERC4626Form previewFunctions
-    mapping(uint64 chainId => mapping(uint32 formBeaconId => IERC4626[] vaults)) public vaults;
-    // chainId => formbeacon id => vault id
-    mapping(uint64 chainId => mapping(uint32 formBeaconId => uint256[] ids)) vaultIds;
-    mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID; // chaindId => payloadId
+    mapping(uint64 chainId => mapping(uint32 formBeaconId => IERC4626[][] vaults)) public vaults;
+    mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
     mapping(uint64 chainId => uint256 payloadId) TWO_STEP_PAYLOAD_ID;
 
     /// @dev liquidity bridge ids
@@ -453,37 +461,45 @@ abstract contract BaseSetup is DSTest, Test {
             }
             uint256 vaultId = 0;
             bytes memory bytecodeWithArgs;
+
             for (uint32 j = 0; j < FORM_BEACON_IDS.length; j++) {
+                IERC4626[][] memory doubleVaults = new IERC4626[][](UNDERLYING_TOKENS.length);
+
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
-                    /// @dev 7.2 - Deploy mock Vault
-                    if (j != 2) {
-                        bytecodeWithArgs = abi.encodePacked(
-                            vaultBytecodes[j],
-                            abi.encode(
-                                MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
-                                VAULT_NAMES[j][k],
-                                VAULT_NAMES[j][k]
-                            )
-                        );
+                    uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;
+                    IERC4626[] memory vaultsT = new IERC4626[](lenBytecodes);
+                    for (uint256 l = 0; l < lenBytecodes; l++) {
+                        /// @dev 7.2 - Deploy mock Vault
 
-                        vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                    } else {
-                        /// deploy the kycDAOVault wrapper with different args only in Polygon
+                        if (j != 2) {
+                            bytecodeWithArgs = abi.encodePacked(
+                                vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode[l],
+                                abi.encode(
+                                    MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
+                                    VAULT_NAMES[l][k],
+                                    VAULT_NAMES[l][k]
+                                )
+                            );
 
-                        bytecodeWithArgs = abi.encodePacked(
-                            vaultBytecodes[j],
-                            abi.encode(MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock)
-                        );
+                            vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                        } else {
+                            /// deploy the kycDAOVault wrapper with different args only in Polygon
 
-                        vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                            bytecodeWithArgs = abi.encodePacked(
+                                vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode[l],
+                                abi.encode(MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock)
+                            );
+
+                            vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                        }
+
+                        /// @dev Add ERC4626Vault
+                        contracts[vars.chainId][bytes32(bytes(string.concat(VAULT_NAMES[l][k])))] = vars.vault;
+                        vaultsT[l] = IERC4626(vars.vault);
                     }
-
-                    /// @dev Add ERC4626Vault
-                    contracts[vars.chainId][bytes32(bytes(string.concat(VAULT_NAMES[j][k])))] = vars.vault;
-
-                    vaults[vars.chainId][FORM_BEACON_IDS[j]].push(IERC4626(vars.vault));
-                    vaultIds[vars.chainId][FORM_BEACON_IDS[j]].push(vaultId++);
+                    doubleVaults[k] = vaultsT;
                 }
+                vaults[vars.chainId][FORM_BEACON_IDS[j]] = doubleVaults;
             }
 
             /// @dev 8 - Deploy SuperFormFactory
@@ -605,25 +621,34 @@ abstract contract BaseSetup is DSTest, Test {
             vm.selectFork(FORKS[chainIds[i]]);
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
-                    vm.recordLogs();
-                    address vault = address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k]);
-                    uint256 superFormId;
-                    (superFormId, vars.superForm) = ISuperFormFactory(
-                        contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))]
-                    ).createSuperForm(FORM_BEACON_IDS[j], vault);
+                    uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;
 
-                    if (FORM_BEACON_IDS[j] == 3) {
-                        /// mint a kycDAO Nft to superForm on polygon
-                        KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(vars.superForm);
-                    }
+                    for (uint256 l = 0; l < lenBytecodes; l++) {
+                        address vault = address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k][l]);
 
-                    contracts[chainIds[i]][
-                        bytes32(
-                            bytes(
-                                string.concat(UNDERLYING_TOKENS[k], "SuperForm", Strings.toString(FORM_BEACON_IDS[j]))
+                        uint256 superFormId;
+                        (superFormId, vars.superForm) = ISuperFormFactory(
+                            contracts[chainIds[i]][bytes32(bytes("SuperFormFactory"))]
+                        ).createSuperForm(FORM_BEACON_IDS[j], vault);
+
+                        if (FORM_BEACON_IDS[j] == 3) {
+                            /// mint a kycDAO Nft to superForm on polygon
+                            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(vars.superForm);
+                        }
+
+                        contracts[chainIds[i]][
+                            bytes32(
+                                bytes(
+                                    string.concat(
+                                        UNDERLYING_TOKENS[k],
+                                        vaultBytecodes2[FORM_BEACON_IDS[j]].vaultKinds[l],
+                                        "SuperForm",
+                                        Strings.toString(FORM_BEACON_IDS[j])
+                                    )
+                                )
                             )
-                        )
-                    ] = vars.superForm;
+                        ] = vars.superForm;
+                    }
                 }
             }
 
@@ -706,12 +731,23 @@ abstract contract BaseSetup is DSTest, Test {
 
         /// @dev setup vault bytecodes
         /// @dev NOTE: do not change order of these pushes
-        vaultBytecodes.push(type(VaultMock).creationCode);
-        vaultBytecodes.push(type(ERC4626TimelockMock).creationCode);
-        vaultBytecodes.push(type(kycDAO4626).creationCode);
+        /// @dev WARNING: Must fill VAULT_NAMES with exact same names as here!!!!!
+        /// @dev form 1 (normal 4626)
+        vaultBytecodes2[1].vaultBytecode.push(type(VaultMock).creationCode);
+        vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertDeposit).creationCode);
+        vaultBytecodes2[1].vaultKinds.push("VaultMock");
+        vaultBytecodes2[1].vaultKinds.push("VaultMockRevertDeposit");
+
+        /// @dev form 2 (timelocked 4626)
+        vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMock).creationCode);
+        vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMock");
+
+        /// @dev form 3 (kycdao 4626)
+        vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626).creationCode);
+        vaultBytecodes2[3].vaultKinds.push("kycDAO4626");
 
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
-        for (uint32 i = 0; i < VAULT_KINDS.length; i++) {
+        for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
             for (uint256 j = 0; j < underlyingTokens.length; j++) {
                 VAULT_NAMES[i].push(string.concat(underlyingTokens[j], VAULT_KINDS[i]));
             }

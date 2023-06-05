@@ -147,7 +147,7 @@ contract SuperFormFactoryTest is BaseSetup {
             vars.expectedFormBeaconIds = new uint32[](chainIds.length * UNDERLYING_TOKENS.length);
             vars.expectedChainIds = new uint256[](chainIds.length * UNDERLYING_TOKENS.length);
 
-            uint256 expectedNumberOfSuperforms = UNDERLYING_TOKENS.length * FORM_BEACON_IDS.length;
+            uint256 expectedNumberOfSuperforms = UNDERLYING_TOKENS.length * VAULT_KINDS.length;
 
             assertEq(
                 SuperFormFactory(getContract(chainIds[i], "SuperFormFactory")).getAllSuperFormsList(),
