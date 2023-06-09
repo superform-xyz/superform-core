@@ -308,19 +308,16 @@ abstract contract AbstractDeploySingle is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        /// @dev 1 - Deploy SuperRegistry and assign roles
-        vars.superRegistry = address(new SuperRegistry{salt: salt}(ownerAddress));
-        contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
-
-        SuperRegistry(vars.superRegistry).setImmutables(vars.chainId, CANONICAL_PERMIT2);
-
-        SuperRegistry(vars.superRegistry).setProtocolAdmin(ownerAddress);
-
-        /// @dev 2 - Deploy SuperRBAC
-        vars.superRBAC = address(new SuperRBAC{salt: salt}(vars.superRegistry, ownerAddress));
+        /// @dev 1 - Deploy SuperRBAC
+        vars.superRBAC = address(new SuperRBAC{salt: salt}(ownerAddress));
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
 
-        SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
+        /// @dev 2 - Deploy SuperRegistry and assign roles
+        vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
+        contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
+
+        SuperRBAC(vars.superRBAC).setSuperRegistry(vars.superRegistry);
+        SuperRegistry(vars.superRegistry).setImmutables(vars.chainId, CANONICAL_PERMIT2);
 
         /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
         SuperRBAC(vars.superRBAC).grantEmergencyAdminRole(ownerAddress);

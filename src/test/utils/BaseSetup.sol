@@ -313,18 +313,17 @@ abstract contract BaseSetup is DSTest, Test {
 
             contracts[vars.chainId][bytes32(bytes("CelerHelper"))] = vars.celerHelper;
 
-            /// @dev 2 - Deploy SuperRegistry and assign roles
-            vars.superRegistry = address(new SuperRegistry{salt: salt}(deployer));
-            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
-
-            SuperRegistry(vars.superRegistry).setImmutables(vars.chainId, vars.canonicalPermit2);
-            SuperRegistry(vars.superRegistry).setProtocolAdmin(deployer);
-
-            /// @dev 3 - Deploy SuperRBAC
-            vars.superRBAC = address(new SuperRBAC{salt: salt}(vars.superRegistry, deployer));
+            /// @dev 2 - Deploy SuperRBAC
+            vars.superRBAC = address(new SuperRBAC{salt: salt}(deployer));
             contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
 
-            SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
+            /// @dev 3 - Deploy SuperRegistry and assign roles
+            vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
+            contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
+
+            SuperRBAC(vars.superRBAC).setSuperRegistry(vars.superRegistry);
+            SuperRegistry(vars.superRegistry).setImmutables(vars.chainId, vars.canonicalPermit2);
+
             assert(SuperRBAC(vars.superRBAC).hasProtocolAdminRole(deployer));
 
             /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
