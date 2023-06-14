@@ -19,6 +19,8 @@ abstract contract ProtocolActions is BaseSetup {
 
     uint8[] public AMBs;
 
+    uint8[][] public MultiDstAMBs;
+
     uint64 public CHAIN_0;
 
     uint64[] public DST_CHAINS;
@@ -244,7 +246,7 @@ abstract contract ProtocolActions is BaseSetup {
                         );
                 } else if (vars.nDestinations > 1) {
                     vars.multiDstMultiVaultStateReq = MultiDstMultiVaultsStateReq(
-                        AMBs,
+                        MultiDstAMBs,
                         DST_CHAINS,
                         multiSuperFormsData,
                         action.ambParams
@@ -291,7 +293,7 @@ abstract contract ProtocolActions is BaseSetup {
                     }
                 } else if (vars.nDestinations > 1) {
                     vars.multiDstSingleVaultStateReq = MultiDstSingleVaultStateReq(
-                        AMBs,
+                        MultiDstAMBs,
                         DST_CHAINS,
                         singleSuperFormsData,
                         action.ambParams
