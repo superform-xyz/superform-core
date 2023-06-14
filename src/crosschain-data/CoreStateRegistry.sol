@@ -7,6 +7,7 @@ import {BaseStateRegistry} from "./BaseStateRegistry.sol";
 import {QuorumManager} from "./utils/QuorumManager.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import {ISuperPositions} from "../interfaces/ISuperPositions.sol";
+import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IBaseForm} from "../interfaces/IBaseForm.sol";
@@ -312,6 +313,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
         /// @dev This will revert ALL of the transactions if one of them fails.
         for (uint256 i; i < multiVaultData.superFormIds.length; i++) {
+            _validateSuperFormChainId(multiVaultData.superFormIds[i]);
+
             singleVaultData = InitSingleVaultData({
                 payloadId: multiVaultData.payloadId,
                 superFormId: multiVaultData.superFormIds[i],
@@ -382,6 +385,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                 underlying.transfer(superForms[i], multiVaultData.amounts[i]);
                 LiqRequest memory emptyRequest;
 
+                _validateSuperFormChainId(multiVaultData.superFormIds[i]);
+
                 /// Note / FIXME ?: dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
                 try
                     IBaseForm(superForms[i]).xChainDepositIntoVault(
@@ -451,6 +456,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         /// @dev Store PayloadId in extraFormData (tbd: 1-step flow doesnt need this)
         singleVaultData.extraFormData = abi.encode(payloadId_);
 
+        _validateSuperFormChainId(singleVaultData.superFormId);
         (address superForm_, , ) = _getSuperForm(singleVaultData.superFormId);
 
         /// @dev Withdraw from Form
@@ -489,6 +495,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
             revert Error.PAYLOAD_NOT_UPDATED();
         }
 
+        _validateSuperFormChainId(singleVaultData.superFormId);
         (address superForm_, , ) = _getSuperForm(singleVaultData.superFormId);
 
         IERC20 underlying = IERC20(IBaseForm(superForm_).getUnderlyingOfVault());
@@ -610,6 +617,15 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
         if (newAmount < minAmount) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
+        }
+    }
+
+    function _validateSuperFormChainId(uint256 superFormId_) internal view {
+        /// @dev validates if superFormId exists on factory
+        (, , uint64 chainId) = ISuperFormFactory(superRegistry.superFormFactory()).getSuperForm(superFormId_);
+
+        if (chainId != superRegistry.chainId()) {
+            revert Error.INVALID_CHAIN_ID();
         }
     }
 }

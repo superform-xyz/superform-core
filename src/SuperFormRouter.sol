@@ -516,6 +516,13 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         uint256 msgValue_,
         address srcSender_
     ) internal returns (uint256 dstAmount) {
+        /// @dev validates if superFormId exists on factory
+        (, , uint64 chainId) = ISuperFormFactory(superRegistry.superFormFactory()).getSuperForm(superFormId_);
+
+        if (chainId != superRegistry.chainId()) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         /// @dev deposits collateral to a given vault and mint vault positions.
         /// @dev FIXME: in multi deposits we split the msg.value, but this only works if we validate that the user is only depositing from one source asset (native in this case)
         dstAmount = IBaseForm(superForm).directDepositIntoVault{value: msgValue_}(
@@ -600,6 +607,13 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         bytes memory extraFormData_,
         address srcSender_
     ) internal {
+        /// @dev validates if superFormId exists on factory
+        (, , uint64 chainId) = ISuperFormFactory(superRegistry.superFormFactory()).getSuperForm(superFormId_);
+
+        if (chainId != superRegistry.chainId()) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         /// @dev to allow bridging somewhere else requires arch change
         IBaseForm(superForm).directWithdrawFromVault(
             InitSingleVaultData(txData_, superFormId_, amount_, maxSlippage_, liqData_, extraFormData_),
