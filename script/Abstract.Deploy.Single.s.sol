@@ -174,6 +174,8 @@ abstract contract AbstractDeploySingle is Script {
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant FTM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
+    address public constant CHAINLINK_lzOracle = 0x150A58e9E6BF69ccEb1DBA5ae97C166DC8792539;
+
     IMailbox public constant HyperlaneMailbox = IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
     IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
         IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
@@ -508,6 +510,12 @@ abstract contract AbstractDeploySingle is Script {
                     abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                 );
                 LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
+                LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
+                    0, /// Defaults To Zero
+                    vars.dstLzChainId,
+                    6, /// For Oracle Config
+                    abi.encode(CHAINLINK_lzOracle)
+                );
 
                 HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
                     vars.dstHypChainId,
