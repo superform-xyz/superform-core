@@ -64,7 +64,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             singleDstMultiVaultDeposit(
                 SingleDstMultiVaultsStateReq(
-                    req.ambIds,
+                    req.ambIds[i],
                     req.dstChainIds[i],
                     req.superFormsData[i],
                     req.extraDataPerDst[i]
@@ -156,7 +156,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             } else {
                 singleXChainSingleVaultDeposit(
                     SingleXChainSingleVaultStateReq(
-                        req.ambIds,
+                        req.ambIds[i],
                         dstChainId,
                         req.superFormsData[i],
                         req.extraDataPerDst[i]
@@ -239,7 +239,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         for (uint256 i = 0; i < nDestinations; i++) {
             singleDstMultiVaultWithdraw(
                 SingleDstMultiVaultsStateReq(
-                    req.ambIds,
+                    req.ambIds[i],
                     req.dstChainIds[i],
                     req.superFormsData[i],
                     req.extraDataPerDst[i]
@@ -316,7 +316,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             } else {
                 singleXChainSingleVaultWithdraw(
                     SingleXChainSingleVaultStateReq(
-                        req.ambIds,
+                        req.ambIds[i],
                         dstChainId,
                         req.superFormsData[i],
                         req.extraDataPerDst[i]
