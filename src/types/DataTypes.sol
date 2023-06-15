@@ -93,7 +93,7 @@ struct InitSingleVaultData {
 
 struct AMBMessage {
     uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag  if multi/single vault, registry id, srcSender and srcChainId
-    bytes params; // abi.encode (AMBInitData) NOTE: this is too ambigious. document to what fields does bytes params decode exactly
+    bytes params; // decoding txInfo will point to the right datatype of params. Refer CoreStateRegistryHelper.sol
 }
 
 struct AMBFactoryMessage {
