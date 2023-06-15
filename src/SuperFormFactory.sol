@@ -37,7 +37,8 @@ contract SuperFormFactory is ISuperFormFactory {
 
     mapping(address vault => uint256[] superFormIds) public vaultToSuperForms;
 
-    mapping(address vault => uint256 formBeaconId) public vaultToFormBeaconId;
+    ///@dev TODO mapped to array as well
+    mapping(address vault => uint256 formBeaconId) public vaultToFormBeaconId; 
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
@@ -94,6 +95,7 @@ contract SuperFormFactory is ISuperFormFactory {
     ) external override returns (uint256 superFormId_, address superForm_) {
         address tFormBeacon = formBeacon[formBeaconId_];
         if (vault_ == address(0)) revert Error.ZERO_ADDRESS();
+        ///@dev TODO review if logic is still applicable; vaults can be added to multiple Forms
         if (vaultToFormBeaconId[vault_] != 0) revert Error.VAULT_ALREADY_HAS_FORM();
         if (tFormBeacon == address(0)) revert Error.FORM_DOES_NOT_EXIST();
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
@@ -175,6 +177,7 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @inheritdoc ISuperFormFactory
+    ///@dev TODO are extra return types needed? Just superFormIds_ now with getSuperForm functionality? including chainIds w/o broadcasting
     function getAllSuperFormsFromVault(
         address vault_
     )
@@ -207,6 +210,7 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @inheritdoc ISuperFormFactory
+    ///@dev TODO don't need chainIds_, and probably not formBeaconIds_
     function getAllSuperForms()
         external
         view
@@ -230,16 +234,19 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @inheritdoc ISuperFormFactory
+    ///@dev TODO should be renamed to getFormCount
     function getAllFormsList() external view override returns (uint256 forms_) {
         forms_ = formBeacons.length;
     }
 
     /// @inheritdoc ISuperFormFactory
+    ///@dev TODO should be renamed to getSuperFormCount
     function getAllSuperFormsList() external view override returns (uint256 superForms_) {
         superForms_ = superForms.length;
     }
 
     /// @inheritdoc ISuperFormFactory
+    ///@dev TODO can remove this function
     function getAllChainSuperFormsList() external view override returns (uint256 superForms_) {
         uint256[] memory superFormIds_ = superForms;
         uint256 len = superFormIds_.length;
