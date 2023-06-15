@@ -16,26 +16,8 @@ contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
     }
 
     /// @inheritdoc ICoreStateRegistryHelper
-    function decodePayloadInfo(
-        uint256 payloadId_
-    )
-        external
-        view
-        returns (uint8 txType, uint8 callbackType, address srcSender, uint64 srcChainId, bytes memory data)
-    {
-        bytes memory payload = payloadRegistry.payload(payloadId_);
-        AMBMessage memory message = abi.decode(payload, (AMBMessage));
-
-        (uint8 txType_, uint8 callbackType_, , , address srcSender_, uint64 srcChainId_) = _decodeTxInfo(
-            message.txInfo
-        );
-
-        return (txType_, callbackType_, srcSender_, srcChainId_, message.params);
-    }
-
-    /// @inheritdoc ICoreStateRegistryHelper
-    function decodePayloadMessage(
-        uint256 payloadId_
+    function decodePayload(
+        uint256 dstPayloadId_
     )
         external
         view
@@ -50,7 +32,7 @@ contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
             uint256 srcPayloadId
         )
     {
-        bytes memory payload = payloadRegistry.payload(payloadId_);
+        bytes memory payload = payloadRegistry.payload(dstPayloadId_);
         AMBMessage memory message = abi.decode(payload, (AMBMessage));
 
         (uint8 txType_, uint8 callbackType_, uint8 multi_, , address srcSender_, uint64 srcChainId_) = _decodeTxInfo(
