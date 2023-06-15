@@ -5,6 +5,9 @@ pragma solidity 0.8.19;
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
 
+/// Interfaces
+import {ICoreStateRegistryHelper} from "../interfaces/ICoreStateRegistryHelper.sol";
+
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
@@ -12,7 +15,7 @@ import "./utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario1Test is ProtocolActions {
+contract CoreStateRegistryHelperTest is ProtocolActions {
     /// @dev Access SuperFormRouter interface
     ISuperFormRouter superRouter;
 
@@ -63,7 +66,7 @@ contract Scenario1Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_payload_helper() public {
         address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
         superRouter = ISuperFormRouter(_superRouter);
 
@@ -77,5 +80,32 @@ contract Scenario1Test is ProtocolActions {
 
             _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
         }
+
+        vm.selectFork(FORKS[DST_CHAINS[0]]);
+
+        address _coreStateRegistryHelper = contracts[DST_CHAINS[0]][bytes32(bytes("CoreStateRegistryHelper"))];
+        ICoreStateRegistryHelper helper = ICoreStateRegistryHelper(_coreStateRegistryHelper);
+
+        (uint8 txType, uint8 callbackType, address srcSender, uint64 srcChainId, bytes memory data) = helper
+            .decodePayloadInfo(1);
+
+        assertEq(txType, 0); /// 0 for deposit
+        assertEq(callbackType, 0); /// 0 for init
+        assertEq(srcChainId, 10); /// chain id of optimism is 10
+
+        (
+            ,
+            ,
+            ,
+            ,
+            uint256[] memory amounts,
+            uint256[] memory slippage,
+            uint256[] memory superformIds,
+            uint256 srcPayloadId
+        ) = helper.decodePayloadMessage(1);
+
+        assertEq(srcPayloadId, 1);
+        assertEq(amounts, AMOUNTS[POLY][0]);
+        assertEq(slippage, MAX_SLIPPAGE[POLY][0] = [1000]);
     }
 }

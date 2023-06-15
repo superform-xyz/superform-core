@@ -52,6 +52,7 @@ import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {TwoStepsFormStateRegistry} from "../../crosschain-data/TwoStepsFormStateRegistry.sol";
+import {CoreStateRegistryHelper} from "../../crosschain-data/helpers/CoreStateRegistryHelper.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////
@@ -352,6 +353,10 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
             SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
+
+            /// @dev 4.1.1- deploy Core State Registry Helper
+            vars.coreStateRegistryHelper = address(new CoreStateRegistryHelper{salt: salt}(vars.coreStateRegistry));
+            contracts[vars.chainId][bytes32(bytes("CoreStateRegistryHelper"))] = vars.coreStateRegistryHelper;
 
             /// @dev 4.2- deploy Factory State Registry
             vars.factoryStateRegistry = address(
