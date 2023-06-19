@@ -195,4 +195,15 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         if (messageBus_ == address(0)) revert();
         messageBus = IMessageBus(messageBus_);
     }
+
+    /*///////////////////////////////////////////////////////////////
+                            View functions
+    //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc IAmbImplementation
+    function estimateFees(uint64, bytes memory message_, bytes memory) external view override returns (uint256 fees) {
+        /// @notice celer just returns the source-chain fees.
+        /// @notice for destination chain, estimation should be made offchain
+        return messageBus.calcFee(message_);
+    }
 }

@@ -97,11 +97,20 @@ contract CoreStateRegistryHelperTest is ProtocolActions {
             uint256 srcPayloadId
         ) = helper.decodePayload(1);
 
+        bytes[] memory extraDataGenerated = new bytes[](2);
+        extraDataGenerated[0] = abi.encode("500000");
+        extraDataGenerated[1] = abi.encode("0");
+
         assertEq(txType, 0); /// 0 for deposit
         assertEq(callbackType, 0); /// 0 for init
         assertEq(srcChainId, 10); /// chain id of optimism is 10
         assertEq(srcPayloadId, 1);
         assertEq(amounts, AMOUNTS[POLY][0]);
         assertEq(slippage, MAX_SLIPPAGE[POLY][0] = [1000]);
+
+        /// @notice: just asserting if fees are greater than 0
+        /// no way to write serious tests on forked testnet at this point. should come back to this later on.
+        (uint256 totalFees, ) = helper.estimateFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
+        assertGe(totalFees, 0);
     }
 }

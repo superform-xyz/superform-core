@@ -355,7 +355,9 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
 
             /// @dev 4.1.1- deploy Core State Registry Helper
-            vars.coreStateRegistryHelper = address(new CoreStateRegistryHelper{salt: salt}(vars.coreStateRegistry));
+            vars.coreStateRegistryHelper = address(
+                new CoreStateRegistryHelper{salt: salt}(vars.coreStateRegistry, vars.superRegistry)
+            );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistryHelper"))] = vars.coreStateRegistryHelper;
 
             /// @dev 4.2- deploy Factory State Registry
