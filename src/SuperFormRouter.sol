@@ -554,7 +554,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             ambData_.maxSlippage,
             liqRequest_,
             ambData_.extraFormData,
-            msg.value,
+            liqRequest_.nativeAmount,
             srcSender_
         );
 
@@ -588,7 +588,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 ambData_.maxSlippage[i],
                 liqRequests_[i],
                 ambData_.extraFormData,
-                msg.value / len, /// @dev FIXME: is this acceptable ? Note that the user fully controls the msg.value being sent
+                liqRequests_[i].nativeAmount, /// @dev FIXME: is this acceptable ? Note that the user fully controls the msg.value being sent
                 srcSender_
             );
         }
