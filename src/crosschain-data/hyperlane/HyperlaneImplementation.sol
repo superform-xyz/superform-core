@@ -171,6 +171,19 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /*///////////////////////////////////////////////////////////////
+                    View Functions
+    //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc IAmbImplementation
+    function estimateFees(
+        uint64 dstChainId_,
+        bytes memory,
+        bytes memory extraData_
+    ) external view override returns (uint256 fees) {
+        return igp.quoteGasPayment(ambChainId[dstChainId_], abi.decode(extraData_, (uint256)));
+    }
+
+    /*///////////////////////////////////////////////////////////////
                     Internal Functions
     //////////////////////////////////////////////////////////////*/
 

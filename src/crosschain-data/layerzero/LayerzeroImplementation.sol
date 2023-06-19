@@ -285,8 +285,21 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         emit SetTrustedRemote(srcChainId_, srcAddress_);
     }
 
+    /*///////////////////////////////////////////////////////////////
+                            View Functions
+    //////////////////////////////////////////////////////////////*/
+
     function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
         bytes memory trustedSource = trustedRemoteLookup[srcChainId_];
         return keccak256(trustedSource) == keccak256(srcAddress_);
+    }
+
+    /// @inheritdoc IAmbImplementation
+    function estimateFees(
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external view override returns (uint256 fees) {
+        (fees, ) = lzEndpoint.estimateFees(ambChainId[dstChainId_], address(this), message_, false, extraData_);
     }
 }

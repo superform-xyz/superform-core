@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
+import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {ICoreStateRegistryHelper} from "../../interfaces/ICoreStateRegistryHelper.sol";
 import {AMBMessage, CallbackType, ReturnMultiData, ReturnSingleData, TransactionType, InitMultiVaultData, InitSingleVaultData} from "../../types/DataTypes.sol";
 
@@ -10,9 +12,11 @@ import "../../utils/DataPacking.sol";
 
 contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
     IBaseStateRegistry public immutable payloadRegistry;
+    ISuperRegistry public immutable superRegistry;
 
-    constructor(address payloadRegistry_) {
+    constructor(address payloadRegistry_, address superRegistry_) {
         payloadRegistry = IBaseStateRegistry(payloadRegistry_);
+        superRegistry = ISuperRegistry(superRegistry_);
     }
 
     /// @inheritdoc ICoreStateRegistryHelper
@@ -81,5 +85,25 @@ contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
         }
 
         return (txType_, callbackType_, srcSender_, srcChainId_, amounts, slippage, superformIds, srcPayloadId);
+    }
+
+    /// @inheritdoc ICoreStateRegistryHelper
+    function estimateFees(
+        uint8[] memory ambIds_,
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes[] memory extraData_
+    ) external view returns (uint256 totalFees, uint256[] memory) {
+        uint256 len = ambIds_.length;
+        uint256[] memory fees = new uint256[](len);
+        for (uint256 i; i < len; i++) {
+            fees[i] = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+                dstChainId_,
+                message_,
+                extraData_[i]
+            );
+
+            totalFees += fees[i];
+        }
     }
 }
