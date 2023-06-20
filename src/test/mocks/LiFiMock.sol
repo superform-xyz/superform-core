@@ -63,8 +63,10 @@ contract LiFiMock is Test {
     function _swap(uint256 amount_, address inputToken_, address bridgeToken_, bytes memory data_) internal {
         /// @dev encapsulating from
         address from = abi.decode(data_, (address));
-        MockERC20(inputToken_).transferFrom(from, address(this), amount_);
-        MockERC20(inputToken_).burn(address(this), amount_);
+        if (inputToken_ != NATIVE) {
+            MockERC20(inputToken_).transferFrom(from, address(this), amount_);
+            MockERC20(inputToken_).burn(address(this), amount_);
+        }
         /// @dev assume no swap slippage
         MockERC20(bridgeToken_).mint(address(this), amount_);
     }

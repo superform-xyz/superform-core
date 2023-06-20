@@ -100,6 +100,7 @@ abstract contract ProtocolActions is BaseSetup {
             StagesLocalVars memory vars
         )
     {
+        console.log(action.externalToken);
         if (action.revertError != bytes4(0) && action.testType == TestType.Pass) revert MISMATCH_TEST_TYPE();
 
         /// FIXME: Separate concerns in tests, this revert is for protocol level operation
@@ -168,7 +169,9 @@ abstract contract ProtocolActions is BaseSetup {
                     MultiVaultCallDataArgs(
                         action.user,
                         vars.fromSrc,
-                        getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
+                        action.externalToken == 3
+                            ? NATIVE_TOKEN
+                            : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                         vars.toDst,
                         vars.underlyingSrcToken,
                         vars.targetSuperFormIds,
@@ -188,7 +191,9 @@ abstract contract ProtocolActions is BaseSetup {
                 SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                     action.user,
                     vars.fromSrc,
-                    getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
+                    action.externalToken == 3
+                        ? NATIVE_TOKEN
+                        : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                     vars.toDst[0],
                     vars.underlyingSrcToken[0],
                     vars.targetSuperFormIds[0],
@@ -219,6 +224,7 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars
     ) internal returns (StagesLocalVars memory) {
+        console.log("stage2 reached");
         SuperFormRouter superRouter = SuperFormRouter(vars.fromSrc);
 
         vm.selectFork(FORKS[CHAIN_0]);
@@ -333,6 +339,7 @@ abstract contract ProtocolActions is BaseSetup {
         MultiVaultsSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData
     ) internal returns (MessagingAssertVars[] memory) {
+        console.log("stage3 reached");
         Stage3InternalVars memory internalVars;
         MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
@@ -879,23 +886,24 @@ abstract contract ProtocolActions is BaseSetup {
             v.txData,
             liqRequestToken,
             args.amount,
-            0,
+            liqRequestToken == NATIVE_TOKEN ? args.amount : 0,
             v.permit2Calldata /// @dev will be empty if action == Actions.Deposit
         );
 
         vm.selectFork(FORKS[args.srcChainId]);
 
-        /// @dev - APPROVE transfer to SuperFormRouter (because of Socket)
-        vm.prank(users[args.user]);
+        if (liqRequestToken != NATIVE_TOKEN) {
+            /// @dev - APPROVE transfer to SuperFormRouter (because of Socket)
+            vm.prank(users[args.user]);
 
-        if (action == Actions.DepositPermit2) {
-            MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);
-        } else if (action == Actions.Deposit) {
-            /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts are ordered from lowest to highest,
-            /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
-            MockERC20(liqRequestToken).increaseAllowance(v.from, args.amount);
+            if (action == Actions.DepositPermit2) {
+                MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);
+            } else if (action == Actions.Deposit && liqRequestToken != NATIVE_TOKEN) {
+                /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts are ordered from lowest to highest,
+                /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
+                MockERC20(liqRequestToken).increaseAllowance(v.from, args.amount);
+            }
         }
-
         vm.selectFork(v.initialFork);
 
         superFormData = SingleVaultSFData(args.superFormId, args.amount, args.maxSlippage, v.liqReq, "");
