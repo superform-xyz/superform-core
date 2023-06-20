@@ -13,9 +13,6 @@ import "./utils/AmbParams.sol";
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario14Test is ProtocolActions {
-    /// @dev Access SuperFormRouter interface
-    ISuperFormRouter superRouter;
-
     /*//////////////////////////////////////////////////////////////
                 !! CONSTRUCTOR !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
@@ -64,10 +61,7 @@ contract Scenario14Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario_native() public {
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
-        superRouter = ISuperFormRouter(_superRouter);
-
+    function test_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;

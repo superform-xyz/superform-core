@@ -230,9 +230,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[CHAIN_0]);
 
         if (action.testType != TestType.RevertMainAction) {
-            if (action.externalToken != 3) {
-                vm.prank(users[action.user]);
-            }
+            vm.prank(users[action.user]);
             /// @dev see @pigeon for this implementation
             vm.recordLogs();
             if (action.multiVaults) {
@@ -894,17 +892,18 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[args.srcChainId]);
 
-        /// @dev - APPROVE transfer to SuperFormRouter (because of Socket)
-        vm.prank(users[args.user]);
+        if (liqRequestToken != NATIVE_TOKEN) {
+            /// @dev - APPROVE transfer to SuperFormRouter (because of Socket)
+            vm.prank(users[args.user]);
 
-        if (action == Actions.DepositPermit2) {
-            MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);
-        } else if (action == Actions.Deposit && liqRequestToken != NATIVE_TOKEN) {
-            /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts are ordered from lowest to highest,
-            /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
-            MockERC20(liqRequestToken).increaseAllowance(v.from, args.amount);
+            if (action == Actions.DepositPermit2) {
+                MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);
+            } else if (action == Actions.Deposit && liqRequestToken != NATIVE_TOKEN) {
+                /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts are ordered from lowest to highest,
+                /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
+                MockERC20(liqRequestToken).increaseAllowance(v.from, args.amount);
+            }
         }
-
         vm.selectFork(v.initialFork);
 
         superFormData = SingleVaultSFData(args.superFormId, args.amount, args.maxSlippage, v.liqReq, "");
