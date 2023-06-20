@@ -14,14 +14,10 @@ contract SocketRouterMock is ISocketRegistry, Test {
     receive() external payable {}
 
     /// @dev FIXME Native case missing
-    function outboundTransferTo(
-        ISocketRegistry.UserRequest calldata userRequest_
-    ) external payable override {
-        ISocketRegistry.BridgeRequest memory bridgeRequest = userRequest_
-            .bridgeRequest;
+    function outboundTransferTo(ISocketRegistry.UserRequest calldata userRequest_) external payable override {
+        ISocketRegistry.BridgeRequest memory bridgeRequest = userRequest_.bridgeRequest;
 
-        ISocketRegistry.MiddlewareRequest
-            memory middlewareRequest = userRequest_.middlewareRequest;
+        ISocketRegistry.MiddlewareRequest memory middlewareRequest = userRequest_.middlewareRequest;
 
         if (middlewareRequest.id == 0 && bridgeRequest.id != 0) {
             /// @dev just mock bridge
@@ -72,12 +68,8 @@ contract SocketRouterMock is ISocketRegistry, Test {
         bool prevSwap
     ) internal {
         /// @dev encapsulating from
-        (address from, uint256 toForkId) = abi.decode(
-            data_,
-            (address, uint256)
-        );
-        if (!prevSwap)
-            MockERC20(inputToken_).transferFrom(from, address(this), amount_);
+        (address from, uint256 toForkId) = abi.decode(data_, (address, uint256));
+        if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
         MockERC20(inputToken_).burn(address(this), amount_);
 
         uint256 prevForkId = vm.activeFork();
@@ -86,16 +78,13 @@ contract SocketRouterMock is ISocketRegistry, Test {
         vm.selectFork(prevForkId);
     }
 
-    function _swap(
-        uint256 amount_,
-        address inputToken_,
-        address bridgeToken_,
-        bytes memory data_
-    ) internal {
+    function _swap(uint256 amount_, address inputToken_, address bridgeToken_, bytes memory data_) internal {
         /// @dev encapsulating from
         address from = abi.decode(data_, (address));
-        MockERC20(inputToken_).transferFrom(from, address(this), amount_);
-        MockERC20(inputToken_).burn(address(this), amount_);
+        if (inputToken_ != NATIVE) {
+            MockERC20(inputToken_).transferFrom(from, address(this), amount_);
+            MockERC20(inputToken_).burn(address(this), amount_);
+        }
         /// @dev assume no swap slippage
         MockERC20(bridgeToken_).mint(address(this), amount_);
     }
