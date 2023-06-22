@@ -100,7 +100,6 @@ abstract contract ProtocolActions is BaseSetup {
             StagesLocalVars memory vars
         )
     {
-        console.log(action.externalToken);
         if (action.revertError != bytes4(0) && action.testType == TestType.Pass) revert MISMATCH_TEST_TYPE();
 
         /// FIXME: Separate concerns in tests, this revert is for protocol level operation
@@ -224,7 +223,6 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars
     ) internal returns (StagesLocalVars memory) {
-        console.log("stage2 reached");
         SuperFormRouter superRouter = SuperFormRouter(vars.fromSrc);
 
         vm.selectFork(FORKS[CHAIN_0]);
@@ -339,7 +337,6 @@ abstract contract ProtocolActions is BaseSetup {
         MultiVaultsSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData
     ) internal returns (MessagingAssertVars[] memory) {
-        console.log("stage3 reached");
         Stage3InternalVars memory internalVars;
         MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
