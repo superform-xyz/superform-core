@@ -162,10 +162,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes[] memory overrideData_
     ) internal {
-        bytes memory proof = abi.encode(keccak256(message_));
-
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
-        data.params = proof;
+        data.params = abi.encode(keccak256(message_));
 
         for (uint8 i = 1; i < ambIds_.length; i++) {
             uint8 tempAmbId = ambIds_[i];

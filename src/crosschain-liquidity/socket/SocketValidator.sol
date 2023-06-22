@@ -28,11 +28,7 @@ contract SocketValidator is BridgeValidator {
 
     /// @inheritdoc BridgeValidator
     function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external pure override returns (bool) {
-        if ((_decodeCallData(txData_).amount != amount_)) {
-            return false;
-        }
-
-        return true;
+        return _decodeCallData(txData_).amount == amount_;
     }
 
     /// @inheritdoc BridgeValidator
@@ -52,17 +48,19 @@ contract SocketValidator is BridgeValidator {
 
         /// @dev 2. receiver address validation
 
-        if (deposit_ && srcChainId_ == dstChainId_) {
-            /// @dev If same chain deposits then receiver address must be the superform
+        if (deposit_) {
+            if (srcChainId_ == dstChainId_) {
+                /// @dev If same chain deposits then receiver address must be the superform
 
-            if (userRequest.receiverAddress != superForm_) revert Error.INVALID_TXDATA_RECEIVER();
-        } else if (deposit_ && srcChainId_ != dstChainId_) {
-            /// @dev if cross chain deposits, then receiver address must be the token bank
-            if (
-                !(userRequest.receiverAddress == superRegistry.coreStateRegistry() ||
-                    userRequest.receiverAddress == superRegistry.multiTxProcessor())
-            ) revert Error.INVALID_TXDATA_RECEIVER();
-        } else if (!deposit_) {
+                if (userRequest.receiverAddress != superForm_) revert Error.INVALID_TXDATA_RECEIVER();
+            } else {
+                /// @dev if cross chain deposits, then receiver address must be the token bank
+                if (
+                    !(userRequest.receiverAddress == superRegistry.coreStateRegistry() ||
+                        userRequest.receiverAddress == superRegistry.multiTxProcessor())
+                ) revert Error.INVALID_TXDATA_RECEIVER();
+            }
+        } else {
             /// @dev if withdraws, then receiver address must be the srcSender
             /// @dev what if SrcSender is a contract? can it be used to re-enter somewhere?
             /// https://linear.app/superform/issue/SUP-2024/reentrancy-vulnerability-prevent-crafting-arbitrary-txdata-to-reenter
@@ -70,11 +68,10 @@ contract SocketValidator is BridgeValidator {
         }
 
         /// @dev 3. token validation
-        if (userRequest.middlewareRequest.id == 0 && liqDataToken_ != userRequest.bridgeRequest.inputToken) {
-            revert Error.INVALID_TXDATA_TOKEN();
-        } else if (userRequest.middlewareRequest.id != 0 && liqDataToken_ != userRequest.middlewareRequest.inputToken) {
-            revert Error.INVALID_TXDATA_TOKEN();
-        }
+        if (
+            (userRequest.middlewareRequest.id == 0 && liqDataToken_ != userRequest.bridgeRequest.inputToken) ||
+            (userRequest.middlewareRequest.id != 0 && liqDataToken_ != userRequest.middlewareRequest.inputToken)
+        ) revert Error.INVALID_TXDATA_TOKEN();
     }
 
     /// @dev allows admin to add new chain ids in future

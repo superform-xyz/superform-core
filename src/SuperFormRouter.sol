@@ -675,10 +675,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
         (, uint32 formBeaconId_, ) = _getSuperForm(superFormData_.superFormId);
 
-        if (IFormBeacon(ISuperFormFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused())
-            return false;
-
-        return true;
+        return !IFormBeacon(ISuperFormFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused();
     }
 
     function _validateSuperFormsDepositData(
