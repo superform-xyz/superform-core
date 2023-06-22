@@ -129,6 +129,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 DispatchAMBMessageVars(
                     TransactionType.DEPOSIT,
                     abi.encode(ambData),
+                    req.superFormsData.superFormIds,
                     req.extraData,
                     vars.srcSender,
                     req.ambIds,
@@ -194,10 +195,14 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             true
         );
 
+        uint256[] memory superFormIds = new uint256[](1);
+        superFormIds[0] = req.superFormData.superFormId;
+
         _dispatchAmbMessage(
             DispatchAMBMessageVars(
                 TransactionType.DEPOSIT,
                 abi.encode(ambData),
+                superFormIds,
                 req.extraData,
                 vars.srcSender,
                 req.ambIds,
@@ -289,6 +294,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 DispatchAMBMessageVars(
                     TransactionType.WITHDRAW,
                     abi.encode(ambData),
+                    req.superFormsData.superFormIds,
                     req.extraData,
                     vars.srcSender,
                     req.ambIds,
@@ -341,10 +347,14 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
         (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(vars.srcSender, vars.dstChainId, req.superFormData);
 
+        uint256[] memory superFormIds = new uint256[](1);
+        superFormIds[0] = req.superFormData.superFormId;
+
         _dispatchAmbMessage(
             DispatchAMBMessageVars(
                 TransactionType.WITHDRAW,
                 abi.encode(ambData),
+                superFormIds,
                 req.extraData,
                 vars.srcSender,
                 req.ambIds,
@@ -467,6 +477,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     struct DispatchAMBMessageVars {
         TransactionType txType;
         bytes ambData;
+        uint256[] superFormIds;
         bytes extraData;
         address srcSender;
         uint8[] ambIds;
@@ -502,7 +513,11 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             ambParams.encodedAMBExtraData
         );
 
-        ISuperPositions(superRegistry.superPositions()).updateTxHistory(vars.currentPayloadId, ambMessage);
+        ISuperPositions(superRegistry.superPositions()).updateTxHistory(
+            vars.currentPayloadId,
+            ambMessage.txInfo,
+            vars.superFormIds
+        );
     }
 
     function _directDeposit(

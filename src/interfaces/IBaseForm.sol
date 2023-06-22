@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
 import {InitSingleVaultData} from "../types/DataTypes.sol";
-import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 /// @title IBaseForm

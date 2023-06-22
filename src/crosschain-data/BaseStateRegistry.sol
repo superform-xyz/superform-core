@@ -2,12 +2,12 @@
 pragma solidity 0.8.19;
 
 import {Error} from "../utils/Error.sol";
-import "../utils/DataPacking.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {PayloadState, AMBMessage, AMBFactoryMessage, AMBExtraData} from "../types/DataTypes.sol";
+import {PayloadState, AMBMessage, AMBExtraData} from "../types/DataTypes.sol";
+import "../utils/DataPacking.sol";
 
 /// @title BaseStateRegistry
 /// @author Zeropoint Labs

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {MultiVaultsSFData, SingleVaultSFData} from "../types/DataTypes.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";

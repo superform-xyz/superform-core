@@ -10,7 +10,6 @@ import {BaseForm} from "../BaseForm.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {ITwoStepsFormStateRegistry} from "../interfaces/ITwoStepsFormStateRegistry.sol";
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 import "../utils/DataPacking.sol";
 

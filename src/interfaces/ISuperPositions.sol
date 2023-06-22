@@ -55,10 +55,11 @@ interface ISuperPositions {
     /// @return srcChainId_ is the decoded srcChainId.
     function stateSync(AMBMessage memory data_) external payable returns (uint64 srcChainId_);
 
-    /// @dev saves the AMB message being sent together with the associated id formulated in super router
-    /// @param messageId_ is the id of the message being sent
-    /// @param message_ is the message being sent
-    function updateTxHistory(uint256 messageId_, AMBMessage memory message_) external;
+    /// @dev saves the message being sent together with the associated id formulated in super router
+    /// @param payloadId_ is the id of the message being saved
+    /// @param txInfo_ is the relevant information of the transaction being saved
+    /// @param superFormIds_ are the ids of the super positions being saved
+    function updateTxHistory(uint256 payloadId_, uint256 txInfo_, uint256[] memory superFormIds_) external;
 
     function setDynamicURI(string memory dynamicURI_) external;
 

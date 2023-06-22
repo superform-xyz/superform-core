@@ -5,9 +5,7 @@ import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {ICoreStateRegistryHelper} from "../../interfaces/ICoreStateRegistryHelper.sol";
-import {AMBMessage, CallbackType, ReturnMultiData, ReturnSingleData, TransactionType, InitMultiVaultData, InitSingleVaultData} from "../../types/DataTypes.sol";
-
-import "forge-std/console.sol";
+import {AMBMessage, CallbackType, ReturnMultiData, ReturnSingleData, InitMultiVaultData, InitSingleVaultData} from "../../types/DataTypes.sol";
 import "../../utils/DataPacking.sol";
 
 contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
