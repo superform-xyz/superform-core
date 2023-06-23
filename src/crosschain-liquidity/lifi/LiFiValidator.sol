@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {MultiVaultsSFData, SingleVaultSFData} from "../../types/DataTypes.sol";
 import {BridgeValidator} from "../BridgeValidator.sol";
-import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {ILiFi} from "../../vendor/lifi/ILiFi.sol";
-import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {Error} from "../../utils/Error.sol";
 import "../../utils/DataPacking.sol";
 
@@ -34,11 +31,7 @@ contract LiFiValidator is BridgeValidator {
     function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external pure override returns (bool) {
         (ILiFi.BridgeData memory bridgeData, ) = _decodeCallData(txData_);
 
-        if ((bridgeData.minAmount != amount_)) {
-            return false;
-        }
-
-        return true;
+        return bridgeData.minAmount == amount_;
     }
 
     /// @inheritdoc BridgeValidator
@@ -66,17 +59,19 @@ contract LiFiValidator is BridgeValidator {
 
         /// @dev 2. receiver address validation
 
-        if (deposit_ && srcChainId_ == dstChainId_) {
-            /// @dev If same chain deposits then receiver address must be the superform
+        if (deposit_) {
+            if (srcChainId_ == dstChainId_) {
+                /// @dev If same chain deposits then receiver address must be the superform
 
-            if (bridgeData.receiver != superForm_) revert Error.INVALID_TXDATA_RECEIVER();
-        } else if (deposit_ && srcChainId_ != dstChainId_) {
-            /// @dev if cross chain deposits, then receiver address must be the token bank
-            if (
-                !(bridgeData.receiver == superRegistry.coreStateRegistry() ||
-                    bridgeData.receiver == superRegistry.multiTxProcessor())
-            ) revert Error.INVALID_TXDATA_RECEIVER();
-        } else if (!deposit_) {
+                if (bridgeData.receiver != superForm_) revert Error.INVALID_TXDATA_RECEIVER();
+            } else {
+                /// @dev if cross chain deposits, then receiver address must be the token bank
+                if (
+                    !(bridgeData.receiver == superRegistry.coreStateRegistry() ||
+                        bridgeData.receiver == superRegistry.multiTxProcessor())
+                ) revert Error.INVALID_TXDATA_RECEIVER();
+            }
+        } else {
             /// @dev if withdraws, then receiver address must be the srcSender
             /// @dev what if SrcSender is a contract? can it be used to re-enter somewhere?
             /// https://linear.app/superform/issue/SUP-2024/reentrancy-vulnerability-prevent-crafting-arbitrary-txdata-to-reenter

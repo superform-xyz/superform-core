@@ -5,20 +5,24 @@ import {ERC1155s} from "ERC1155s/ERC1155s.sol";
 import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
-import {ISuperFormRouter} from "./interfaces/ISuperFormRouter.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
-import "./utils/DataPacking.sol";
 import {Error} from "./utils/Error.sol";
+import "./utils/DataPacking.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
 contract SuperPositions is ISuperPositions, ERC1155s {
-    string public dynamicURI = "https://api.superform.xyz/superposition/";
+    string public dynamicURI;
 
     ISuperRegistry public immutable superRegistry;
 
     /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint256 transactionId => AMBMessage ambMessage) public txHistory;
+    mapping(uint256 transactionId => TransactionInfo transactionInfo) public txHistory;
+
+    struct TransactionInfo {
+        uint256 txInfo;
+        uint256[] superFormIds; // if stored on index 0 it is a single Vault
+    }
 
     modifier onlyRouter() {
         if (superRegistry.superRouter() != msg.sender) revert Error.NOT_SUPER_ROUTER();
@@ -78,8 +82,12 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// @inheritdoc ISuperPositions
-    function updateTxHistory(uint256 payloadId, AMBMessage memory message_) external override onlyRouter {
-        txHistory[payloadId] = message_;
+    function updateTxHistory(
+        uint256 payloadId_,
+        uint256 txInfo_,
+        uint256[] memory superFormIds_
+    ) external override onlyRouter {
+        txHistory[payloadId_] = TransactionInfo(txInfo_, superFormIds_);
     }
 
     /// @inheritdoc ISuperPositions
@@ -94,23 +102,21 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
 
-        AMBMessage memory stored = txHistory[returnData.payloadId];
+        TransactionInfo memory transactionInfo = txHistory[returnData.payloadId];
 
         uint8 multi;
         address srcSender;
-        (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(stored.txInfo);
+        (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(transactionInfo.txInfo);
 
         if (multi == 0) revert Error.INVALID_PAYLOAD();
-
-        InitMultiVaultData memory multiVaultData = abi.decode(stored.params, (InitMultiVaultData));
 
         if (returnDataSrcChainId != srcChainId_) revert Error.SRC_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
-            _batchMint(srcSender, multiVaultData.superFormIds, returnData.amounts, "");
+            _batchMint(srcSender, transactionInfo.superFormIds, returnData.amounts, "");
         } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
             /// @dev mint back super positions
-            _batchMint(srcSender, multiVaultData.superFormIds, returnData.amounts, "");
+            _batchMint(srcSender, transactionInfo.superFormIds, returnData.amounts, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -130,21 +136,20 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
 
-        AMBMessage memory stored = txHistory[returnData.payloadId];
+        TransactionInfo memory transactionInfo = txHistory[returnData.payloadId];
+
         uint8 multi;
         address srcSender;
-        (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(stored.txInfo);
+        (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(transactionInfo.txInfo);
 
         if (multi == 1) revert Error.INVALID_PAYLOAD();
-
-        InitSingleVaultData memory singleVaultData = abi.decode(stored.params, (InitSingleVaultData));
 
         if (returnDataSrcChainId != srcChainId_) revert Error.SRC_CHAIN_IDS_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
-            _mint(srcSender, singleVaultData.superFormId, returnData.amount, "");
+            _mint(srcSender, transactionInfo.superFormIds[0], returnData.amount, "");
         } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
-            _mint(srcSender, singleVaultData.superFormId, singleVaultData.amount, "");
+            _mint(srcSender, transactionInfo.superFormIds[0], returnData.amount, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }

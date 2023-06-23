@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IPermit2} from "../vendor/dragonfly-xyz/IPermit2.sol";
 import {Error} from "../utils/Error.sol";
 
 /// @title SuperRegistry
