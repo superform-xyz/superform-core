@@ -216,6 +216,36 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
+    function _assertMultiVaultBalanceBefore(
+        uint256 user,
+        uint256[] memory superFormIds,
+        uint256 amountToAssert
+    ) internal {
+        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+
+        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
+
+        IERC1155s superPositions = IERC1155s(superPositionsAddress);
+
+        uint256 currentBalanceOfSp;
+
+        for (uint256 i = 0; i < superFormIds.length; i++) {
+            currentBalanceOfSp = superPositions.balanceOf(users[user], superFormIds[i]);
+            assertEq(currentBalanceOfSp, amountToAssert);
+        }
+    }
+
+    function _assertSingleVaultBalanceBefore(uint256 user, uint256 superFormId, uint256 amountToAssert) internal {
+        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+
+        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
+
+        IERC1155s superPositions = IERC1155s(superPositionsAddress);
+
+        uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
+        assertEq(currentBalanceOfSp, amountToAssert);
+    }
+
     /// @dev STEP 2: Run Source Chain Action
     function _stage2_run_src_action(
         TestAction memory action,
@@ -228,7 +258,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[CHAIN_0]);
 
         if (action.testType != TestType.RevertMainAction) {
-            vm.prank(users[action.user]);
+            vm.startPrank(users[action.user]);
             /// @dev see @pigeon for this implementation
             vm.recordLogs();
             if (action.multiVaults) {
@@ -240,14 +270,20 @@ abstract contract ProtocolActions is BaseSetup {
                         action.ambParams[0]
                     );
 
-                    if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
+                    if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                        _assertMultiVaultBalanceBefore(
+                            action.user,
+                            vars.singleDstMultiVaultStateReq.superFormsData.superFormIds,
+                            0
+                        );
                         superRouter.singleDstMultiVaultDeposit{value: action.msgValue}(
                             vars.singleDstMultiVaultStateReq
                         );
-                    else if (action.action == Actions.Withdraw)
+                    } else if (action.action == Actions.Withdraw) {
                         superRouter.singleDstMultiVaultWithdraw{value: action.msgValue}(
                             vars.singleDstMultiVaultStateReq
                         );
+                    }
                 } else if (vars.nDestinations > 1) {
                     vars.multiDstMultiVaultStateReq = MultiDstMultiVaultsStateReq(
                         MultiDstAMBs,
@@ -256,10 +292,19 @@ abstract contract ProtocolActions is BaseSetup {
                         action.ambParams
                     );
 
-                    if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
+                    if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                        for (uint256 i = 0; i < vars.nDestinations; i++) {
+                            _assertMultiVaultBalanceBefore(
+                                action.user,
+                                vars.multiDstMultiVaultStateReq.superFormsData[i].superFormIds,
+                                0
+                            );
+                        }
+
                         superRouter.multiDstMultiVaultDeposit{value: action.msgValue}(vars.multiDstMultiVaultStateReq);
-                    else if (action.action == Actions.Withdraw)
+                    } else if (action.action == Actions.Withdraw) {
                         superRouter.multiDstMultiVaultWithdraw{value: action.msgValue}(vars.multiDstMultiVaultStateReq);
+                    }
                 }
             } else {
                 if (vars.nDestinations == 1) {
@@ -271,14 +316,20 @@ abstract contract ProtocolActions is BaseSetup {
                             action.ambParams[0]
                         );
 
-                        if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
+                        if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                            _assertSingleVaultBalanceBefore(
+                                action.user,
+                                vars.singleXChainSingleVaultStateReq.superFormData.superFormId,
+                                0
+                            );
                             superRouter.singleXChainSingleVaultDeposit{value: action.msgValue}(
                                 vars.singleXChainSingleVaultStateReq
                             );
-                        else if (action.action == Actions.Withdraw)
+                        } else if (action.action == Actions.Withdraw) {
                             superRouter.singleXChainSingleVaultWithdraw{value: action.msgValue}(
                                 vars.singleXChainSingleVaultStateReq
                             );
+                        }
                     } else {
                         vars.singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
                             DST_CHAINS[0],
@@ -286,14 +337,20 @@ abstract contract ProtocolActions is BaseSetup {
                             action.ambParams[0]
                         );
 
-                        if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
+                        if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                            _assertSingleVaultBalanceBefore(
+                                action.user,
+                                vars.singleDirectSingleVaultStateReq.superFormData.superFormId,
+                                0
+                            );
                             superRouter.singleDirectSingleVaultDeposit{value: action.msgValue}(
                                 vars.singleDirectSingleVaultStateReq
                             );
-                        else if (action.action == Actions.Withdraw)
+                        } else if (action.action == Actions.Withdraw) {
                             superRouter.singleDirectSingleVaultWithdraw{value: action.msgValue}(
                                 vars.singleDirectSingleVaultStateReq
                             );
+                        }
                     }
                 } else if (vars.nDestinations > 1) {
                     vars.multiDstSingleVaultStateReq = MultiDstSingleVaultStateReq(
@@ -302,16 +359,25 @@ abstract contract ProtocolActions is BaseSetup {
                         singleSuperFormsData,
                         action.ambParams
                     );
-                    if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
+                    if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                        for (uint256 i = 0; i < vars.nDestinations; i++) {
+                            _assertSingleVaultBalanceBefore(
+                                action.user,
+                                vars.multiDstSingleVaultStateReq.superFormsData[i].superFormId,
+                                0
+                            );
+                        }
                         superRouter.multiDstSingleVaultDeposit{value: action.msgValue}(
                             vars.multiDstSingleVaultStateReq
                         );
-                    else if (action.action == Actions.Withdraw)
+                    } else if (action.action == Actions.Withdraw) {
                         superRouter.multiDstSingleVaultWithdraw{value: action.msgValue}(
                             vars.multiDstSingleVaultStateReq
                         );
+                    }
                 }
             }
+            vm.stopPrank();
         } else {
             /// @dev not done
         }
