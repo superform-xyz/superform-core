@@ -38,7 +38,7 @@ contract SuperFormFactory is ISuperFormFactory {
     mapping(address vault => uint256[] superFormIds) public vaultToSuperForms;
 
     ///@dev TODO mapped to array as well
-    mapping(address vault => uint256 formBeaconId) public vaultToFormBeaconId; 
+    // mapping(address vault => uint256 formBeaconId) public vaultToFormBeaconId;
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
@@ -96,7 +96,7 @@ contract SuperFormFactory is ISuperFormFactory {
         address tFormBeacon = formBeacon[formBeaconId_];
         if (vault_ == address(0)) revert Error.ZERO_ADDRESS();
         ///@dev TODO review if logic is still applicable; vaults can be added to multiple Forms
-        if (vaultToFormBeaconId[vault_] != 0) revert Error.VAULT_ALREADY_HAS_FORM();
+        // if (vaultToFormBeaconId[vault_] != 0) revert Error.VAULT_ALREADY_HAS_FORM();
         if (tFormBeacon == address(0)) revert Error.FORM_DOES_NOT_EXIST();
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
@@ -114,7 +114,7 @@ contract SuperFormFactory is ISuperFormFactory {
         vaultToSuperForms[vault_].push(superFormId_);
         /// @dev FIXME do we need to store info of all superforms just for external querying? Could save gas here
         superForms.push(superFormId_);
-        vaultToFormBeaconId[vault_] = formBeaconId_;
+        // vaultToFormBeaconId[vault_] = formBeaconId_;
 
         emit SuperFormCreated(formBeaconId_, vault_, superFormId_, superForm_);
     }
