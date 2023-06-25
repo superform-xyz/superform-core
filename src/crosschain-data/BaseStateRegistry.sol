@@ -2,12 +2,12 @@
 pragma solidity 0.8.19;
 
 import {Error} from "../utils/Error.sol";
-import "../utils/DataPacking.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {PayloadState, AMBMessage, AMBFactoryMessage, AMBExtraData} from "../types/DataTypes.sol";
+import {PayloadState, AMBMessage, AMBExtraData} from "../types/DataTypes.sol";
+import "../utils/DataPacking.sol";
 
 /// @title BaseStateRegistry
 /// @author Zeropoint Labs
@@ -162,10 +162,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         bytes memory message_,
         bytes[] memory overrideData_
     ) internal {
-        bytes memory proof = abi.encode(keccak256(message_));
-
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
-        data.params = proof;
+        data.params = abi.encode(keccak256(message_));
 
         for (uint8 i = 1; i < ambIds_.length; i++) {
             uint8 tempAmbId = ambIds_[i];

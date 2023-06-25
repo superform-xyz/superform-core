@@ -18,9 +18,6 @@ interface ISuperRegistry {
         address indexed newAddress
     );
 
-    /// @dev is emitted when the protocol admin address is set.
-    event ProtocolAdminUpdated(address indexed oldProtocolAdmin, address indexed protocolAdmin);
-
     /// @dev is emitted when the super router address is set.
     event SuperRouterUpdated(address indexed oldSuperRouter, address indexed superRouter);
 
@@ -75,10 +72,6 @@ interface ISuperRegistry {
     /// @param protocolAddressId_ the protocol address identifier
     /// @param newAddress_ the new address
     function setNewProtocolAddress(bytes32 protocolAddressId_, address newAddress_) external;
-
-    /// @dev sets the protocol admin address
-    /// @param admin_ the address of the protocol admin
-    function setProtocolAdmin(address admin_) external;
 
     /// @dev sets the super router address.
     /// @param superRouter_ the address of the super router
@@ -146,9 +139,6 @@ interface ISuperRegistry {
     /// @dev returns the permit2 address
     function PERMIT2() external view returns (address);
 
-    /// @dev returns the id of the protocol admin
-    function PROTOCOL_ADMIN_ROLE() external view returns (bytes32);
-
     /// @dev returns the id of the super router module
     function SUPER_ROUTER() external view returns (bytes32);
 
@@ -179,10 +169,6 @@ interface ISuperRegistry {
     /// @dev gets the address of a contract.
     /// @param protocolAddressId_ is the id of the contract
     function getProtocolAddress(bytes32 protocolAddressId_) external view returns (address);
-
-    /// @dev gets the protocol admin address.
-    /// @return protocolAdmin_ the address of the protocol admin
-    function protocolAdmin() external view returns (address protocolAdmin_);
 
     /// @dev gets the super router address.
     /// @return superRouter_ the address of the super router

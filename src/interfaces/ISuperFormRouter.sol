@@ -14,8 +14,6 @@ interface ISuperFormRouter {
         AMBMessage ambMessage;
         LiqRequest liqRequest;
         uint64 srcChainId;
-        uint64 dstChainId;
-        address srcSender;
         uint256 currentPayloadId;
         uint256 liqRequestsLen;
     }

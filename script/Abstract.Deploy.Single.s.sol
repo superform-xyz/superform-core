@@ -174,6 +174,8 @@ abstract contract AbstractDeploySingle is Script {
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant FTM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
+    address public constant CHAINLINK_lzOracle = 0x150A58e9E6BF69ccEb1DBA5ae97C166DC8792539;
+
     IMailbox public constant HyperlaneMailbox = IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
     IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
         IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
@@ -308,19 +310,16 @@ abstract contract AbstractDeploySingle is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        /// @dev 1 - Deploy SuperRegistry and assign roles
-        vars.superRegistry = address(new SuperRegistry{salt: salt}(ownerAddress));
-        contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
-
-        SuperRegistry(vars.superRegistry).setImmutables(vars.chainId, CANONICAL_PERMIT2);
-
-        SuperRegistry(vars.superRegistry).setProtocolAdmin(ownerAddress);
-
-        /// @dev 2 - Deploy SuperRBAC
-        vars.superRBAC = address(new SuperRBAC{salt: salt}(vars.superRegistry, ownerAddress));
+        /// @dev 1 - Deploy SuperRBAC
+        vars.superRBAC = address(new SuperRBAC{salt: salt}(ownerAddress));
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
 
-        SuperRegistry(vars.superRegistry).setSuperRBAC(vars.superRBAC);
+        /// @dev 2 - Deploy SuperRegistry and assign roles
+        vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
+        contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
+
+        SuperRBAC(vars.superRBAC).setSuperRegistry(vars.superRegistry);
+        SuperRegistry(vars.superRegistry).setImmutables(vars.chainId, CANONICAL_PERMIT2);
 
         /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
         SuperRBAC(vars.superRBAC).grantEmergencyAdminRole(ownerAddress);
@@ -511,6 +510,12 @@ abstract contract AbstractDeploySingle is Script {
                     abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                 );
                 LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
+                LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
+                    0, /// Defaults To Zero
+                    vars.dstLzChainId,
+                    6, /// For Oracle Config
+                    abi.encode(CHAINLINK_lzOracle)
+                );
 
                 HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
                     vars.dstHypChainId,

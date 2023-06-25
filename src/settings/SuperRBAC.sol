@@ -15,7 +15,7 @@ import "../utils/DataPacking.sol";
 contract SuperRBAC is ISuperRBAC, AccessControl {
     uint8 public constant STATE_REGISTRY_TYPE = 2;
 
-    bytes32 public immutable PROTOCOL_ADMIN_ROLE;
+    bytes32 public immutable PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
     bytes32 public constant override SYNC_REVOKE_ROLE = keccak256("SYNC_REVOKE_ROLE");
     bytes32 public constant override SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
@@ -24,18 +24,10 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override TWOSTEPS_PROCESSOR_ROLE = keccak256("TWOSTEPS_PROCESSOR_ROLE");
     bytes32 public constant override UPDATER_ROLE = keccak256("UPDATER_ROLE");
 
-    ISuperRegistry public immutable superRegistry;
+    ISuperRegistry public superRegistry;
 
-    /// @param superRegistry_ the superform registry contract
-    constructor(address superRegistry_, address admin_) {
-        superRegistry = ISuperRegistry(superRegistry_);
-
-        address protocolAdmin = superRegistry.protocolAdmin();
-        if (admin_ != protocolAdmin) revert Error.INVALID_DEPLOYER();
-
-        PROTOCOL_ADMIN_ROLE = superRegistry.PROTOCOL_ADMIN_ROLE();
-
-        _setupRole(PROTOCOL_ADMIN_ROLE, protocolAdmin);
+    constructor(address admin_) {
+        _setupRole(PROTOCOL_ADMIN_ROLE, admin_);
 
         _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -49,6 +41,10 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+
+    function setSuperRegistry(address superRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
+        superRegistry = ISuperRegistry(superRegistry_);
+    }
 
     /// @inheritdoc ISuperRBAC
     function grantProtocolAdminRole(address admin_) external override {

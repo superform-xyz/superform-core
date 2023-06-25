@@ -31,4 +31,20 @@ interface IAmbImplementation {
     /// @param message_ is the cross-chain message to be sent
     /// @param extraData_ is the message amb specific override information
     function broadcastPayload(address srcSender_, bytes memory message_, bytes memory extraData_) external payable;
+
+    /*///////////////////////////////////////////////////////////////
+                    View Functions
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev returns the gas fees estimation in native tokens
+    /// @notice not all AMBs will have on-chain estimation for which this function will return 0
+    /// @param dstChainId_ is the identifier of the destination chain
+    /// @param message_ is the cross-chain message
+    /// @param extraData_ is any amb-specific information
+    /// @return fees is the native_tokens to be sent along the transaction
+    function estimateFees(
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external view returns (uint256 fees);
 }

@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {MultiVaultsSFData, SingleVaultSFData} from "../types/DataTypes.sol";
 
 /// @title Bridge Handler Interface
 /// @author Zeropoint Labs

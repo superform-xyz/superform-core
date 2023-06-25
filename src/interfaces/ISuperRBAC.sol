@@ -9,6 +9,9 @@ interface ISuperRBAC {
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev updates the super registry address
+    function setSuperRegistry(address superRegistry_) external;
+
     /// @dev grants the DEFAULT_ADMIN_ROLE to the given address
     /// @param admin_ the address to grant the role to
     function grantProtocolAdminRole(address admin_) external;

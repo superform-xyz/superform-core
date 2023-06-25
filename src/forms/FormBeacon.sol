@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import {UpgradeableBeacon} from "openzeppelin-contracts/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import {IFormBeacon} from "../interfaces/IFormBeacon.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 
 /// @title FormBeacon
