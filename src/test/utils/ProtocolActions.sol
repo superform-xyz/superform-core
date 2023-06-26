@@ -69,7 +69,6 @@ abstract contract ProtocolActions is BaseSetup {
             console.log("FAILED DEPOSIT ASSERTED");
             return;
         }
-
         if (
             (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) &&
             !(action.testType == TestType.RevertXChainDeposit)
@@ -77,11 +76,48 @@ abstract contract ProtocolActions is BaseSetup {
             success = _stage5_process_superPositions_mint(action, vars);
             if (!success) {
                 return;
+            } else {
+                uint256[] memory spAmountSummed;
+
+                for (uint256 i = 0; i < vars.nDestinations; i++) {
+                    if (action.multiVaults) {
+                        console.log("a");
+                        (, spAmountSummed) = _spAmountsMultiBefore(multiSuperFormsData[i]);
+                        console.log("b");
+                        _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountSummed);
+                    } else {
+                        _assertSingleVaultBalance(
+                            action.user,
+                            singleSuperFormsData[i].superFormId,
+                            singleSuperFormsData[i].amount
+                        );
+                    }
+                }
             }
         }
 
         if (action.action == Actions.Withdraw && action.testType == TestType.RevertXChainWithdraw) {
             success = _stage6_process_superPositions_withdraw(action, vars);
+            if (success) {
+                uint256[] memory spAmountFinal;
+
+                for (uint256 i = 0; i < vars.nDestinations; i++) {
+                    if (action.multiVaults) {
+                        spAmountFinal = _spAmountsMultiAfter(multiSuperFormsData[i], action.user);
+
+                        _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountFinal);
+                    } else {
+                        _assertSingleVaultBalance(
+                            action.user,
+                            singleSuperFormsData[i].superFormId,
+                            IERC1155s(getContract(CHAIN_0, "SuperPositions")).balanceOf(
+                                users[action.user],
+                                singleSuperFormsData[i].superFormId
+                            ) - singleSuperFormsData[i].amount
+                        );
+                    }
+                }
+            }
         }
     }
 
@@ -216,7 +252,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
-    function _assertMultiVaultBalanceBefore(
+    function _assertMultiVaultBalance(
         uint256 user,
         uint256[] memory superFormIds,
         uint256[] memory amountsToAssert
@@ -231,12 +267,14 @@ abstract contract ProtocolActions is BaseSetup {
 
         for (uint256 i = 0; i < superFormIds.length; i++) {
             currentBalanceOfSp = superPositions.balanceOf(users[user], superFormIds[i]);
+            console.log("currentBalanceOfSp", currentBalanceOfSp);
+            console.log("amountsToAssert[i]", amountsToAssert[i]);
 
             assertEq(currentBalanceOfSp, amountsToAssert[i]);
         }
     }
 
-    function _assertSingleVaultBalanceBefore(uint256 user, uint256 superFormId, uint256 amountToAssert) internal {
+    function _assertSingleVaultBalance(uint256 user, uint256 superFormId, uint256 amountToAssert) internal {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
 
         address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
@@ -247,7 +285,7 @@ abstract contract ProtocolActions is BaseSetup {
         assertEq(currentBalanceOfSp, amountToAssert);
     }
 
-    function _spAmountsMulti(
+    function _spAmountsMultiBefore(
         MultiVaultsSFData memory multiSuperFormsData
     ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed) {
         uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
@@ -264,6 +302,26 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
             spAmountSummed[i] = IBaseForm(superForms[i]).previewDepositTo(spAmountSummed[i]);
+        }
+    }
+
+    function _spAmountsMultiAfter(
+        MultiVaultsSFData memory multiSuperFormsData,
+        uint256 user
+    ) internal returns (uint256[] memory spAmountFinal) {
+        uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
+        spAmountFinal = new uint256[](lenSuperforms);
+
+        // create an array of amounts summing the amounts of the same superform ids
+        (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
+
+        for (uint256 i = 0; i < lenSuperforms; i++) {
+            spAmountFinal[i] =
+                IERC1155s(getContract(CHAIN_0, "SuperPositions")).balanceOf(
+                    users[user],
+                    multiSuperFormsData.superFormIds[i]
+                ) -
+                multiSuperFormsData.amounts[i];
         }
     }
 
@@ -286,9 +344,8 @@ abstract contract ProtocolActions is BaseSetup {
             uint256[] memory spAmountSummed;
             if (action.multiVaults) {
                 for (uint256 i = 0; i < vars.nDestinations; i++) {
-                    (emptyAmount, spAmountSummed) = _spAmountsMulti(multiSuperFormsData[i]);
-
-                    _assertMultiVaultBalanceBefore(
+                    (emptyAmount, spAmountSummed) = _spAmountsMultiBefore(multiSuperFormsData[i]);
+                    _assertMultiVaultBalance(
                         action.user,
                         multiSuperFormsData[i].superFormIds,
                         action.action == Actions.Withdraw ? spAmountSummed : emptyAmount
@@ -329,7 +386,7 @@ abstract contract ProtocolActions is BaseSetup {
                 for (uint256 i = 0; i < vars.nDestinations; i++) {
                     (address superForm, , ) = _getSuperForm(singleSuperFormsData[i].superFormId);
 
-                    _assertSingleVaultBalanceBefore(
+                    _assertSingleVaultBalance(
                         action.user,
                         singleSuperFormsData[i].superFormId,
                         action.action == Actions.Withdraw
@@ -382,7 +439,7 @@ abstract contract ProtocolActions is BaseSetup {
                     );
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                         for (uint256 i = 0; i < vars.nDestinations; i++) {
-                            _assertSingleVaultBalanceBefore(
+                            _assertSingleVaultBalance(
                                 action.user,
                                 vars.multiDstSingleVaultStateReq.superFormsData[i].superFormId,
                                 0
