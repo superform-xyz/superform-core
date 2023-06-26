@@ -14,14 +14,13 @@ import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
-contract ScenarioKYCDaoTest is ProtocolActions {
+contract ScenarioTimelockTest2 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationMultiVault, same underlying test.
-        /// @dev FIXME: currently not testing the case where we mix liq bridges but underlyings are the same (protocol actions is only picking up the first liq bridge kind)
+        /// @dev singleDestinationSingleVault, Timelocked, same underlying test.
 
         AMBs = [1, 2];
 
@@ -30,12 +29,12 @@ contract ScenarioKYCDaoTest is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [1];
-        TARGET_VAULTS[POLY][0] = [2];
-        TARGET_FORM_KINDS[POLY][0] = [2];
+        TARGET_VAULTS[POLY][0] = [1];
+        TARGET_FORM_KINDS[POLY][0] = [1];
 
         TARGET_UNDERLYINGS[POLY][1] = [1];
-        TARGET_VAULTS[POLY][1] = [2];
-        TARGET_FORM_KINDS[POLY][1] = [2];
+        TARGET_VAULTS[POLY][1] = [1];
+        TARGET_FORM_KINDS[POLY][1] = [1];
 
         AMOUNTS[POLY][0] = [7722];
         AMOUNTS[POLY][1] = [7722];
@@ -68,7 +67,7 @@ contract ScenarioKYCDaoTest is ProtocolActions {
 
         actions.push(
             TestAction({
-                action: Actions.Withdraw,
+                action: Actions.WithdrawTimelocked,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 1,
                 testType: TestType.Pass,

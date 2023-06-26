@@ -16,8 +16,6 @@ import "./utils/ProtocolActions.sol";
 import {_packSuperForm} from "../utils/DataPacking.sol";
 import "./utils/AmbParams.sol";
 
-/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
-/// @dev FIXME - using unoptimized multiDstMultivault function
 contract ScenarioTimelockTest is ProtocolActions {
     /// @dev Global counter for actions sent to the protocol
     uint256 actionId;

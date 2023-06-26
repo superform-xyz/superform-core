@@ -14,7 +14,8 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 enum Actions {
     Deposit,
     Withdraw,
-    DepositPermit2
+    DepositPermit2,
+    WithdrawTimelocked
 }
 
 enum LiquidityChange {

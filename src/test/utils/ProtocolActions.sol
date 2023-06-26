@@ -66,7 +66,6 @@ abstract contract ProtocolActions is BaseSetup {
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);
 
         if (!success) {
-            console.log("FAILED DEPOSIT ASSERTED");
             return;
         }
         if (
@@ -78,12 +77,11 @@ abstract contract ProtocolActions is BaseSetup {
                 return;
             } else {
                 uint256[] memory spAmountSummed;
+                vm.selectFork(FORKS[CHAIN_0]);
 
                 for (uint256 i = 0; i < vars.nDestinations; i++) {
                     if (action.multiVaults) {
-                        console.log("a");
-                        (, spAmountSummed) = _spAmountsMultiBefore(multiSuperFormsData[i]);
-                        console.log("b");
+                        (, spAmountSummed) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(multiSuperFormsData[i]);
                         _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountSummed);
                     } else {
                         _assertSingleVaultBalance(
@@ -99,24 +97,18 @@ abstract contract ProtocolActions is BaseSetup {
         if (action.action == Actions.Withdraw && action.testType == TestType.RevertXChainWithdraw) {
             success = _stage6_process_superPositions_withdraw(action, vars);
             if (success) {
-                uint256[] memory spAmountFinal;
+                _assertAfterWithdraw(action, multiSuperFormsData, singleSuperFormsData, vars, success);
+            }
+        } else if (action.action == Actions.WithdrawTimelocked) {
+            /// @dev Keeper needs to know this value to be able to process unlock
+            success = _stage7_process_unlock_withdraw(action, vars, 1);
 
-                for (uint256 i = 0; i < vars.nDestinations; i++) {
-                    if (action.multiVaults) {
-                        spAmountFinal = _spAmountsMultiAfter(multiSuperFormsData[i], action.user);
+            // if (action.testType == TestType.RevertXChainWithdraw) {
+            /// @dev Process payload received on source from destination (withdraw callback)
+            success = _stage8_process_2step_payload(action, vars);
 
-                        _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountFinal);
-                    } else {
-                        _assertSingleVaultBalance(
-                            action.user,
-                            singleSuperFormsData[i].superFormId,
-                            IERC1155s(getContract(CHAIN_0, "SuperPositions")).balanceOf(
-                                users[action.user],
-                                singleSuperFormsData[i].superFormId
-                            ) - singleSuperFormsData[i].amount
-                        );
-                    }
-                }
+            if (success) {
+                _assertAfterWithdraw(action, multiSuperFormsData, singleSuperFormsData, vars, success);
             }
         }
     }
@@ -252,79 +244,6 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
-    function _assertMultiVaultBalance(
-        uint256 user,
-        uint256[] memory superFormIds,
-        uint256[] memory amountsToAssert
-    ) internal {
-        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
-
-        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
-
-        IERC1155s superPositions = IERC1155s(superPositionsAddress);
-
-        uint256 currentBalanceOfSp;
-
-        for (uint256 i = 0; i < superFormIds.length; i++) {
-            currentBalanceOfSp = superPositions.balanceOf(users[user], superFormIds[i]);
-            console.log("currentBalanceOfSp", currentBalanceOfSp);
-            console.log("amountsToAssert[i]", amountsToAssert[i]);
-
-            assertEq(currentBalanceOfSp, amountsToAssert[i]);
-        }
-    }
-
-    function _assertSingleVaultBalance(uint256 user, uint256 superFormId, uint256 amountToAssert) internal {
-        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
-
-        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
-
-        IERC1155s superPositions = IERC1155s(superPositionsAddress);
-
-        uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
-        assertEq(currentBalanceOfSp, amountToAssert);
-    }
-
-    function _spAmountsMultiBefore(
-        MultiVaultsSFData memory multiSuperFormsData
-    ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed) {
-        uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
-        emptyAmount = new uint256[](lenSuperforms);
-        spAmountSummed = new uint256[](lenSuperforms);
-
-        // create an array of amounts summing the amounts of the same superform ids
-        (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
-
-        for (uint256 i = 0; i < lenSuperforms; i++) {
-            for (uint256 j = 0; j < lenSuperforms; j++) {
-                if (multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j]) {
-                    spAmountSummed[i] += multiSuperFormsData.amounts[j];
-                }
-            }
-            spAmountSummed[i] = IBaseForm(superForms[i]).previewDepositTo(spAmountSummed[i]);
-        }
-    }
-
-    function _spAmountsMultiAfter(
-        MultiVaultsSFData memory multiSuperFormsData,
-        uint256 user
-    ) internal returns (uint256[] memory spAmountFinal) {
-        uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
-        spAmountFinal = new uint256[](lenSuperforms);
-
-        // create an array of amounts summing the amounts of the same superform ids
-        (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
-
-        for (uint256 i = 0; i < lenSuperforms; i++) {
-            spAmountFinal[i] =
-                IERC1155s(getContract(CHAIN_0, "SuperPositions")).balanceOf(
-                    users[user],
-                    multiSuperFormsData.superFormIds[i]
-                ) -
-                multiSuperFormsData.amounts[i];
-        }
-    }
-
     /// @dev STEP 2: Run Source Chain Action
     function _stage2_run_src_action(
         TestAction memory action,
@@ -344,7 +263,9 @@ abstract contract ProtocolActions is BaseSetup {
             uint256[] memory spAmountSummed;
             if (action.multiVaults) {
                 for (uint256 i = 0; i < vars.nDestinations; i++) {
-                    (emptyAmount, spAmountSummed) = _spAmountsMultiBefore(multiSuperFormsData[i]);
+                    (emptyAmount, spAmountSummed) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
+                        multiSuperFormsData[i]
+                    );
                     _assertMultiVaultBalance(
                         action.user,
                         multiSuperFormsData[i].superFormIds,
@@ -804,7 +725,7 @@ abstract contract ProtocolActions is BaseSetup {
                 contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]
             );
             vm.rollFork(block.number + 20000);
-            // twoStepsFormStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
+            //twoStepsFormStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
         }
 
         return true;
@@ -1512,6 +1433,105 @@ abstract contract ProtocolActions is BaseSetup {
                     CELER_CHAIN_IDS[FROM_CHAIN],
                     FORKS[FROM_CHAIN],
                     logs
+                );
+            }
+        }
+    }
+
+    function _assertMultiVaultBalance(
+        uint256 user,
+        uint256[] memory superFormIds,
+        uint256[] memory amountsToAssert
+    ) internal {
+        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+
+        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
+
+        IERC1155s superPositions = IERC1155s(superPositionsAddress);
+
+        uint256 currentBalanceOfSp;
+
+        for (uint256 i = 0; i < superFormIds.length; i++) {
+            currentBalanceOfSp = superPositions.balanceOf(users[user], superFormIds[i]);
+
+            assertEq(currentBalanceOfSp, amountsToAssert[i]);
+        }
+    }
+
+    function _assertSingleVaultBalance(uint256 user, uint256 superFormId, uint256 amountToAssert) internal {
+        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+
+        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
+
+        IERC1155s superPositions = IERC1155s(superPositionsAddress);
+
+        uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
+        assertEq(currentBalanceOfSp, amountToAssert);
+    }
+
+    function _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
+        MultiVaultsSFData memory multiSuperFormsData
+    ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed) {
+        uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
+        emptyAmount = new uint256[](lenSuperforms);
+        spAmountSummed = new uint256[](lenSuperforms);
+
+        // create an array of amounts summing the amounts of the same superform ids
+        (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
+
+        for (uint256 i = 0; i < lenSuperforms; i++) {
+            for (uint256 j = 0; j < lenSuperforms; j++) {
+                if (multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j]) {
+                    spAmountSummed[i] += multiSuperFormsData.amounts[j];
+                }
+            }
+            spAmountSummed[i] = IBaseForm(superForms[i]).previewDepositTo(spAmountSummed[i]);
+        }
+    }
+
+    function _spAmountsMultiAfterWithdraw(
+        MultiVaultsSFData memory multiSuperFormsData,
+        uint256 user
+    ) internal returns (uint256[] memory spAmountFinal) {
+        uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
+        spAmountFinal = new uint256[](lenSuperforms);
+
+        // create an array of amounts summing the amounts of the same superform ids
+        (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
+
+        for (uint256 i = 0; i < lenSuperforms; i++) {
+            spAmountFinal[i] =
+                IERC1155s(getContract(CHAIN_0, "SuperPositions")).balanceOf(
+                    users[user],
+                    multiSuperFormsData.superFormIds[i]
+                ) -
+                multiSuperFormsData.amounts[i];
+        }
+    }
+
+    function _assertAfterWithdraw(
+        TestAction memory action,
+        MultiVaultsSFData[] memory multiSuperFormsData,
+        SingleVaultSFData[] memory singleSuperFormsData,
+        StagesLocalVars memory vars,
+        bool success
+    ) internal {
+        vm.selectFork(FORKS[CHAIN_0]);
+        uint256[] memory spAmountFinal;
+
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            if (action.multiVaults) {
+                spAmountFinal = _spAmountsMultiAfterWithdraw(multiSuperFormsData[i], action.user);
+
+                _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountFinal);
+            } else {
+                _assertSingleVaultBalance(
+                    action.user,
+                    singleSuperFormsData[i].superFormId,
+                    IERC1155s(getContract(CHAIN_0, "SuperPositions")).balanceOf(
+                        users[action.user],
+                        singleSuperFormsData[i].superFormId
+                    ) - singleSuperFormsData[i].amount
                 );
             }
         }
