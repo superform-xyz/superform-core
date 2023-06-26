@@ -41,6 +41,6 @@ contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperFormFactory(superRegistry.superFormFactory()).stateSync(payload[payloadId_]);
+        ISuperFormFactory(superRegistry.superFormFactory()).stateSync(payloadBody[payloadId_]);
     }
 }

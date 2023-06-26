@@ -13,9 +13,10 @@ abstract contract QuorumManager is IQuorumManager {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    /// @dev NOTE: ability to batch set quorum
 
     /// @inheritdoc IQuorumManager
+    /// @dev ability to batch set quorum
+    /// NOTE: add role-based access controls in inheriting children contract
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external virtual {}
 
     /*///////////////////////////////////////////////////////////////

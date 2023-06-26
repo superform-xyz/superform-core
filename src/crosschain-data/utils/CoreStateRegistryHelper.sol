@@ -36,20 +36,19 @@ contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
             uint256 srcPayloadId
         )
     {
-        bytes memory payload = payloadRegistry.payload(dstPayloadId_);
-        AMBMessage memory message = abi.decode(payload, (AMBMessage));
+        bytes memory payloadBody = payloadRegistry.payloadBody(dstPayloadId_);
+        uint256 payloadHeader = payloadRegistry.payloadHeader(dstPayloadId_);
 
-        (uint8 txType_, uint8 callbackType_, uint8 multi_, , address srcSender_, uint64 srcChainId_) = message
-            .txInfo
+        (uint8 txType_, uint8 callbackType_, uint8 multi_, , address srcSender_, uint64 srcChainId_) = payloadHeader
             .decodeTxInfo();
 
         if (callbackType_ == uint256(CallbackType.RETURN)) {
             if (multi_ == 1) {
-                ReturnMultiData memory rd = abi.decode(message.params, (ReturnMultiData));
+                ReturnMultiData memory rd = abi.decode(payloadBody, (ReturnMultiData));
                 amounts = rd.amounts;
                 srcPayloadId = rd.payloadId;
             } else {
-                ReturnSingleData memory rsd = abi.decode(message.params, (ReturnSingleData));
+                ReturnSingleData memory rsd = abi.decode(payloadBody, (ReturnSingleData));
                 uint256[] memory amounts_ = new uint256[](1);
                 amounts_[0] = rsd.amount;
 
@@ -60,13 +59,13 @@ contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
 
         if (callbackType_ == uint256(CallbackType.INIT)) {
             if (multi_ == 1) {
-                InitMultiVaultData memory imvd = abi.decode(message.params, (InitMultiVaultData));
+                InitMultiVaultData memory imvd = abi.decode(payloadBody, (InitMultiVaultData));
                 amounts = imvd.amounts;
                 slippage = imvd.maxSlippage;
                 superformIds = imvd.superFormIds;
                 srcPayloadId = imvd.payloadId;
             } else {
-                InitSingleVaultData memory isvd = abi.decode(message.params, (InitSingleVaultData));
+                InitSingleVaultData memory isvd = abi.decode(payloadBody, (InitSingleVaultData));
 
                 uint256[] memory amounts_ = new uint256[](1);
                 amounts_[0] = isvd.amount;
