@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
-import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {IMailbox} from "../../vendor/hyperlane/IMailbox.sol";
-import {IMessageRecipient} from "../../vendor/hyperlane/IMessageRecipient.sol";
-import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
-import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {IInterchainGasPaymaster} from "../../vendor/hyperlane/IInterchainGasPaymaster.sol";
-import {AMBMessage, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
-import {Error} from "../../utils/Error.sol";
-import "../../utils/DataPacking.sol";
+import {IBaseStateRegistry} from "../../../interfaces/IBaseStateRegistry.sol";
+import {IAmbImplementation} from "../../../interfaces/IAmbImplementation.sol";
+import {IMailbox} from "../../../vendor/hyperlane/IMailbox.sol";
+import {IMessageRecipient} from "../../../vendor/hyperlane/IMessageRecipient.sol";
+import {ISuperRBAC} from "../../../interfaces/ISuperRBAC.sol";
+import {ISuperRegistry} from "../../../interfaces/ISuperRegistry.sol";
+import {IInterchainGasPaymaster} from "../../../vendor/hyperlane/IInterchainGasPaymaster.sol";
+import {AMBMessage, BroadCastAMBExtraData} from "../../../types/DataTypes.sol";
+import {Error} from "../../../utils/Error.sol";
+import "../../../utils/DataPacking.sol";
 
 /// @title HyperlaneImplementation
 /// @author Zeropoint Labs
@@ -90,7 +90,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         /// mistmatches
 
         uint256 totalChains = broadcastChains.length;
-        for (uint64 i = 0; i < totalChains; i++) {
+        for (uint64 i; i < totalChains; i++) {
             uint32 domain = broadcastChains[i];
 
             bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);

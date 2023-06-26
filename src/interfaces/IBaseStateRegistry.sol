@@ -44,18 +44,6 @@ interface IBaseStateRegistry {
         bytes memory extraData_
     ) external payable;
 
-    /// @dev allows core contracts to send payload to all configured destination chain.
-    /// @param srcSender_ is the caller of the function (used for gas refunds).
-    /// @param ambIds_ is the identifier of the arbitrary message bridge to be used
-    /// @param message_ is the crosschain payload to be broadcasted
-    /// @param extraData_ defines all the message bridge realted overrides
-    function broadcastPayload(
-        address srcSender_,
-        uint8[] memory ambIds_,
-        bytes memory message_,
-        bytes memory extraData_
-    ) external payable;
-
     /// @dev allows state registry to receive messages from message bridge implementations
     /// @param srcChainId_ is the superform chainId from which the payload is dispatched/sent
     /// @param message_ is the crosschain payload received
@@ -75,4 +63,14 @@ interface IBaseStateRegistry {
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
     /// @return payload_ the crosschain data received
     function payload(uint256 payloadId_) external view returns (bytes memory payload_);
+
+    /// @dev allows users to read the bytes payload_ stored per payloadId_
+    /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
+    /// @return payloadBody_ the crosschain data received
+    function payloadBody(uint256 payloadId_) external view returns (bytes memory payloadBody_);
+
+    /// @dev allows users to read the uint256 payloadHeader stored per payloadId_
+    /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
+    /// @return payloadHeader_ the crosschain header received
+    function payloadHeader(uint256 payloadId_) external view returns (uint256 payloadHeader_);
 }

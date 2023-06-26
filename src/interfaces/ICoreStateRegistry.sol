@@ -28,10 +28,5 @@ interface ICoreStateRegistry {
     /// @dev allows accounts with {PROCESSOR_ROLE} to rescue tokens on failed deposits
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// @param liqDatas_ is the array of liquidity data.
-    function rescueFailedMultiDeposits(uint256 payloadId_, LiqRequest[] memory liqDatas_) external payable;
-
-    /// @dev allows accounts with {PROCESSOR_ROLE} to rescue tokens on failed deposits
-    /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @param liqData_ is the liquidity data.
-    function rescueFailedDeposit(uint256 payloadId_, LiqRequest memory liqData_) external payable;
+    function rescueFailedDeposits(uint256 payloadId_, LiqRequest[] memory liqDatas_) external payable;
 }

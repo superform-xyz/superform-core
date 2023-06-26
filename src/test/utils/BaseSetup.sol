@@ -24,9 +24,9 @@ import {KYCDaoNFTMock} from "../mocks/KYCDaoNFTMock.sol";
 
 /// @dev Protocol imports
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
-import {CoreStateRegistry} from "../../crosschain-data/CoreStateRegistry.sol";
-import {RolesStateRegistry} from "../../crosschain-data/RolesStateRegistry.sol";
-import {FactoryStateRegistry} from "../../crosschain-data/FactoryStateRegistry.sol";
+import {CoreStateRegistry} from "../../crosschain-data/extensions/CoreStateRegistry.sol";
+import {RolesStateRegistry} from "../../crosschain-data/extensions/RolesStateRegistry.sol";
+import {FactoryStateRegistry} from "../../crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ISuperFormRouter} from "../../interfaces/ISuperFormRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
@@ -42,17 +42,17 @@ import {ERC4626KYCDaoForm} from "../../forms/ERC4626KYCDaoForm.sol";
 import {MultiTxProcessor} from "../../crosschain-liquidity/MultiTxProcessor.sol";
 import {LiFiValidator} from "../../crosschain-liquidity/lifi/LiFiValidator.sol";
 import {SocketValidator} from "../../crosschain-liquidity/socket/SocketValidator.sol";
-import {LayerzeroImplementation} from "../../crosschain-data/layerzero/LayerzeroImplementation.sol";
-import {HyperlaneImplementation} from "../../crosschain-data/hyperlane/HyperlaneImplementation.sol";
-import {CelerImplementation} from "../../crosschain-data/celer/CelerImplementation.sol";
+import {LayerzeroImplementation} from "../../crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
+import {HyperlaneImplementation} from "../../crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
+import {CelerImplementation} from "../../crosschain-data/adapters/celer/CelerImplementation.sol";
 import {IMailbox} from "../../vendor/hyperlane/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../vendor/hyperlane/IInterchainGasPaymaster.sol";
 import {IMessageBus} from "../../vendor/celer/IMessageBus.sol";
 import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
-import {TwoStepsFormStateRegistry} from "../../crosschain-data/TwoStepsFormStateRegistry.sol";
-import {CoreStateRegistryHelper} from "../../crosschain-data/helpers/CoreStateRegistryHelper.sol";
+import {TwoStepsFormStateRegistry} from "../../crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
+import {CoreStateRegistryHelper} from "../../crosschain-data/utils/CoreStateRegistryHelper.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////

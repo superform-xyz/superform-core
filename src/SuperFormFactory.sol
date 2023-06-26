@@ -8,7 +8,7 @@ import {FormBeacon} from "./forms/FormBeacon.sol";
 import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
-import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
+import {IBroadcaster} from "./interfaces/IBroadcaster.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {Error} from "./utils/Error.sol";
@@ -154,8 +154,7 @@ contract SuperFormFactory is ISuperFormFactory {
     function stateSync(bytes memory data_) external payable override {
         if (msg.sender != superRegistry.factoryStateRegistry()) revert Error.NOT_FACTORY_STATE_REGISTRY();
 
-        AMBMessage memory stateRegistryPayload = abi.decode(data_, (AMBMessage));
-        AMBFactoryMessage memory factoryPayload = abi.decode(stateRegistryPayload.params, (AMBFactoryMessage));
+        AMBFactoryMessage memory factoryPayload = abi.decode(data_, (AMBFactoryMessage));
 
         if (factoryPayload.messageType == SYNC_BEACON_STATUS) {
             _syncBeaconStatus(factoryPayload.message);
@@ -275,7 +274,7 @@ contract SuperFormFactory is ISuperFormFactory {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBaseStateRegistry(superRegistry.factoryStateRegistry()).broadcastPayload{value: msg.value}(
+        IBroadcaster(superRegistry.factoryStateRegistry()).broadcastPayload{value: msg.value}(
             msg.sender,
             ambIds,
             message_,

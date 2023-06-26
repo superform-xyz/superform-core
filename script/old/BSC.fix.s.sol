@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
 import {AbstractDeploySingle} from "../Abstract.Deploy.Single.s.sol";
-import {LayerzeroImplementation} from "../../src/crosschain-data/layerzero/LayerzeroImplementation.sol";
-import {CelerImplementation} from "../../src/crosschain-data/celer/CelerImplementation.sol";
+import {LayerzeroImplementation} from "../../src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
+import {CelerImplementation} from "../../src/crosschain-data/adapters/celer/CelerImplementation.sol";
 
 contract Fix is Script {
     //Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc, Chains.Arbitrum, Chains.Avalanche];

@@ -8,19 +8,19 @@ This directory contains the components to enable crosschain communication functi
 
 The following components are a key part of superform's robust crosschain communication.
 
-- **Base State Registry [BaseStateRegistry.sol](./BaseStateRegistry.sol)**: The base implementation of the state registry, exposes dispatching and broadcasting payload interfaces. Any cross-chain message is also called a "payload."
-- **Core State Registry [CoreStateRegistry.sol](./CoreStateRegistry.sol)**: Child contract inheriting base state registry enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Also posses its custom logic for payload processing & updation (during deposits).
-- **Factory State Registry [FactoryStateRegistry.sol](./FactoryStateRegistry.sol)**: Child contract inheriting base state registry enables crosschain communication between factory contracts.
-- **Roles State Registry [RolesStateRegistry.sol](./RolesStateRegistry.sol)**: Child contract inheriting base state registry enables crosschain communication between RBAC contracts, helps in revoking roles across all the chains in one function call on a remote chain. (works only with CREATE2)
-- **Two Steps Form State Registry [TwoStepsFormStateRegistry.sol](./TwoStepsFormStateRegistry.sol)**: Special contract, specifically designed to process withdrawal request for two step forms, such as timelocked. Inherits base state registry to send acknowledgement on failure withdrawals for two steps' forms.
+- **Base State Registry [BaseStateRegistry.sol](./BaseStateRegistry.sol)**: The base implementation of the state registry, exposes sending and receiving payload interfaces. Any cross-chain message is also called a "payload."
+- **Core State Registry [CoreStateRegistry.sol](./extensions/CoreStateRegistry.sol)**: Child contract inheriting base state registry enables core contracts, including routers & form implementations, to communicate with their counterparts on a different network. Also posses its custom logic for payload processing & updation (during deposits).
+- **Factory State Registry [FactoryStateRegistry.sol](./extensions/FactoryStateRegistry.sol)**: Child contract inheriting base state registry enables crosschain communication between factory contracts.
+- **Roles State Registry [RolesStateRegistry.sol](./extensions/RolesStateRegistry.sol)**: Child contract inheriting base state registry enables crosschain communication between RBAC contracts, helps in revoking roles across all the chains in one function call on a remote chain. (works only with CREATE2)
+- **Two Steps Form State Registry [TwoStepsFormStateRegistry.sol](./extensions/TwoStepsFormStateRegistry.sol)**: Special contract, specifically designed to process withdrawal request for two step forms, such as timelocked. Inherits base state registry to send acknowledgement on failure withdrawals for two steps' forms.
 
 Each individual AMB wrapper will be placed inside a folder named after the Arbitrary Message Bridge (AMB).
 
-- **[CelerImplementation.sol](./celer/Implementation.sol)**: Wrapper for Celer AMB
+- **[CelerImplementation.sol](./adapters/celer/Implementation.sol)**: Wrapper for Celer AMB
 
-- **[LayerzeroImplementation.sol](./layerzero/Implementation.sol)**: Wrapper for Layerzero AMB
+- **[LayerzeroImplementation.sol](./adapters/layerzero/Implementation.sol)**: Wrapper for Layerzero AMB
 
-- **[HyperlaneImplementation.sol](./hyperlane/Implementation.sol)**: Wrapper for Hyperlane AMB
+- **[HyperlaneImplementation.sol](./adapters/hyperlane/Implementation.sol)**: Wrapper for Hyperlane AMB
 
 ## Architecture
 
