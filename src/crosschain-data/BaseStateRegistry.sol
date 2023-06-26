@@ -25,9 +25,14 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     //////////////////////////////////////////////////////////////*/
     uint256 public payloadsCount;
 
-    mapping(bytes => uint256) public messageQuorum;
-    /// @dev stores all received payloads after assigning them an unique identifier upon receiving
-    mapping(uint256 => bytes) public payload;
+    mapping(bytes32 => uint256) public messageQuorum;
+
+    /// @dev stores received payload after assigning them an unique identifier upon receiving
+    mapping(uint256 => bytes) public payloadBody;
+
+    /// @dev stores received payload's header (txInfo)
+    mapping(uint256 => uint256) public payloadHeader;
+
     /// @dev maps payloads to their current status
     mapping(uint256 => PayloadState) public payloadTracking;
 
@@ -98,12 +103,14 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         if (data.params.length == 32) {
             /// NOTE: assuming 32 bytes length is always proof
             /// NOTE: should validate this assumption
-            ++messageQuorum[data.params];
+            ++messageQuorum[abi.decode(data.params, (bytes32))];
 
             emit ProofReceived(data.params);
         } else {
             ++payloadsCount;
-            payload[payloadsCount] = message_;
+
+            payloadBody[payloadsCount] = data.params;
+            payloadHeader[payloadsCount] = data.txInfo;
 
             emit PayloadReceived(srcChainId_, superRegistry.chainId(), payloadsCount);
         }
@@ -170,5 +177,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                 ++i;
             }
         }
+    }
+
+    function payload(uint256 payloadId_) external view returns (bytes memory payload_) {
+        return abi.encode(AMBMessage(payloadHeader[payloadId_], payloadBody[payloadId_]));
     }
 }

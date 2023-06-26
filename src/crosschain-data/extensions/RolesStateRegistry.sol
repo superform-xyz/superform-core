@@ -41,6 +41,6 @@ contract RolesStateRegistry is Broadcaster {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperRBAC(superRegistry.superRBAC()).stateSync(payload[payloadId_]);
+        ISuperRBAC(superRegistry.superRBAC()).stateSync(payloadBody[payloadId_]);
     }
 }

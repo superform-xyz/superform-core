@@ -63,4 +63,14 @@ interface IBaseStateRegistry {
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
     /// @return payload_ the crosschain data received
     function payload(uint256 payloadId_) external view returns (bytes memory payload_);
+
+    /// @dev allows users to read the bytes payload_ stored per payloadId_
+    /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
+    /// @return payloadBody_ the crosschain data received
+    function payloadBody(uint256 payloadId_) external view returns (bytes memory payloadBody_);
+
+    /// @dev allows users to read the uint256 payloadHeader stored per payloadId_
+    /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
+    /// @return payloadHeader_ the crosschain header received
+    function payloadHeader(uint256 payloadId_) external view returns (uint256 payloadHeader_);
 }

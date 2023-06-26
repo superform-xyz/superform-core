@@ -154,8 +154,7 @@ contract SuperFormFactory is ISuperFormFactory {
     function stateSync(bytes memory data_) external payable override {
         if (msg.sender != superRegistry.factoryStateRegistry()) revert Error.NOT_FACTORY_STATE_REGISTRY();
 
-        AMBMessage memory stateRegistryPayload = abi.decode(data_, (AMBMessage));
-        AMBFactoryMessage memory factoryPayload = abi.decode(stateRegistryPayload.params, (AMBFactoryMessage));
+        AMBFactoryMessage memory factoryPayload = abi.decode(data_, (AMBFactoryMessage));
 
         if (factoryPayload.messageType == SYNC_BEACON_STATUS) {
             _syncBeaconStatus(factoryPayload.message);

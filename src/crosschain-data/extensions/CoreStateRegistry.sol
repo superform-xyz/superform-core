@@ -67,10 +67,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
-        AMBMessage memory payloadInfo = abi.decode(payload[payloadId_], (AMBMessage));
-        InitMultiVaultData memory multiVaultData = abi.decode(payloadInfo.params, (InitMultiVaultData));
+        InitMultiVaultData memory multiVaultData = abi.decode(payloadBody[payloadId_], (InitMultiVaultData));
 
-        PayloadUpdaterLib.validatePayloadUpdate(payloadInfo.txInfo, payloadTracking[payloadId_], 1);
+        PayloadUpdaterLib.validatePayloadUpdate(payloadHeader[payloadId_], payloadTracking[payloadId_], 1);
 
         uint256 l1 = multiVaultData.amounts.length;
         uint256 l2 = finalAmounts_.length;
@@ -93,9 +92,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
 
         multiVaultData.amounts = finalAmounts_;
 
-        payloadInfo.params = abi.encode(multiVaultData);
-
-        payload[payloadId_] = abi.encode(payloadInfo);
+        payloadBody[payloadId_] = abi.encode(multiVaultData);
         payloadTracking[payloadId_] = PayloadState.UPDATED;
 
         emit PayloadUpdated(payloadId_);
@@ -106,18 +103,16 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         uint256 payloadId_,
         uint256 finalAmount_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
-        AMBMessage memory payloadInfo = abi.decode(payload[payloadId_], (AMBMessage));
-        InitSingleVaultData memory singleVaultData = abi.decode(payloadInfo.params, (InitSingleVaultData));
+        InitSingleVaultData memory singleVaultData = abi.decode(payloadBody[payloadId_], (InitSingleVaultData));
 
-        PayloadUpdaterLib.validatePayloadUpdate(payloadInfo.txInfo, payloadTracking[payloadId_], 0);
+        PayloadUpdaterLib.validatePayloadUpdate(payloadHeader[payloadId_], payloadTracking[payloadId_], 0);
         PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage);
 
         singleVaultData.amount = finalAmount_;
-        payloadInfo.params = abi.encode(singleVaultData);
 
-        payload[payloadId_] = abi.encode(payloadInfo);
-
+        payloadBody[payloadId_] = abi.encode(singleVaultData);
         payloadTracking[payloadId_] = PayloadState.UPDATED;
+
         emit PayloadUpdated(payloadId_);
     }
 
@@ -126,40 +121,42 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         uint256 payloadId_,
         bytes memory ackExtraData_
     ) external payable virtual override onlyProcessor isValidPayloadId(payloadId_) {
+        bytes memory _payloadBody = payloadBody[payloadId_];
+        uint256 _payloadHeader = payloadHeader[payloadId_];
+
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
             revert Error.INVALID_PAYLOAD_STATE();
         }
 
-        bytes memory _payload = payload[payloadId_];
-        AMBMessage memory payloadInfo = abi.decode(_payload, (AMBMessage));
-
-        (uint8 txType, uint8 callbackType, uint8 multi, , address srcSender, uint64 srcChainId) = payloadInfo
-            .txInfo
+        (uint8 txType, uint8 callbackType, uint8 multi, , address srcSender, uint64 srcChainId) = _payloadHeader
             .decodeTxInfo();
+
+        AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
         bytes memory returnMessage;
 
         if (callbackType == uint256(CallbackType.RETURN)) {
             multi == 1
-                ? ISuperPositions(superRegistry.superPositions()).stateMultiSync(payloadInfo)
-                : ISuperPositions(superRegistry.superPositions()).stateSync(payloadInfo);
+                ? ISuperPositions(superRegistry.superPositions()).stateMultiSync(_message)
+                : ISuperPositions(superRegistry.superPositions()).stateSync(_message);
         }
 
         if (callbackType == uint8(CallbackType.INIT)) {
             if (txType == uint8(TransactionType.WITHDRAW)) {
                 returnMessage = multi == 1
-                    ? _processMultiWithdrawal(payloadId_, payloadInfo.params, srcSender, srcChainId)
-                    : _processSingleWithdrawal(payloadId_, payloadInfo.params, srcSender, srcChainId);
+                    ? _processMultiWithdrawal(payloadId_, _payloadBody, srcSender, srcChainId)
+                    : _processSingleWithdrawal(payloadId_, _payloadBody, srcSender, srcChainId);
             }
 
             if (txType == uint8(TransactionType.DEPOSIT)) {
                 returnMessage = multi == 1
-                    ? _processMultiDeposit(payloadId_, payloadInfo.params, srcSender, srcChainId)
-                    : _processSingleDeposit(payloadId_, payloadInfo.params, srcSender, srcChainId);
+                    ? _processMultiDeposit(payloadId_, _payloadBody, srcSender, srcChainId)
+                    : _processSingleDeposit(payloadId_, _payloadBody, srcSender, srcChainId);
             }
         }
 
         /// @dev validates quorum
-        bytes memory _proof = abi.encode(keccak256(_payload));
+        bytes32 _proof = keccak256(abi.encode(_message));
+
         if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
@@ -181,9 +178,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         address srcSender;
         address superForm;
         bytes failedData;
-        bytes payload;
         uint256[] failedSuperFormIds;
-        AMBMessage payloadInfo;
+        bytes payloadInfo;
         InitMultiVaultData multiVaultData;
     }
 
@@ -202,10 +198,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         delete failedDepositPayloads[payloadId_];
 
         v.failedSuperFormIds = abi.decode(v.failedData, (uint256[]));
-        v.payload = payload[payloadId_];
-        v.payloadInfo = abi.decode(v.payload, (AMBMessage));
+        v.payloadInfo = payloadBody[payloadId_];
 
-        v.multiVaultData = abi.decode(v.payloadInfo.params, (InitMultiVaultData));
+        v.multiVaultData = abi.decode(v.payloadInfo, (InitMultiVaultData));
 
         if (
             !((liqDatas_.length == v.failedSuperFormIds.length) &&
@@ -257,7 +252,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         bytes failedData;
         bytes payload;
         uint256 failedSuperFormId;
-        AMBMessage payloadInfo;
+        bytes payloadInfo;
         InitSingleVaultData singleVaultData;
     }
 
@@ -277,11 +272,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         delete failedDepositPayloads[payloadId_];
 
         v.failedSuperFormId = abi.decode(v.failedData, (uint256));
+        v.payloadInfo = payloadBody[payloadId_];
 
-        v.payload = payload[payloadId_];
-        v.payloadInfo = abi.decode(v.payload, (AMBMessage));
-
-        v.singleVaultData = abi.decode(v.payloadInfo.params, (InitSingleVaultData));
+        v.singleVaultData = abi.decode(v.payloadInfo, (InitSingleVaultData));
 
         v.dstChainId = superRegistry.chainId();
 
