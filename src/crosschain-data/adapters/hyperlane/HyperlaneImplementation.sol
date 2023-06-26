@@ -90,7 +90,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         /// mistmatches
 
         uint256 totalChains = broadcastChains.length;
-        for (uint64 i = 0; i < totalChains; i++) {
+        for (uint64 i; i < totalChains; i++) {
             uint32 domain = broadcastChains[i];
 
             bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);

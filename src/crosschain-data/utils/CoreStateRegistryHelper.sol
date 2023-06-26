@@ -6,9 +6,11 @@ import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {ICoreStateRegistryHelper} from "../../interfaces/ICoreStateRegistryHelper.sol";
 import {AMBMessage, CallbackType, ReturnMultiData, ReturnSingleData, InitMultiVaultData, InitSingleVaultData} from "../../types/DataTypes.sol";
-import "../../utils/DataPacking.sol";
+import {DataLib} from "../../libraries/DataLib.sol";
 
 contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
+    using DataLib for uint256;
+
     IBaseStateRegistry public immutable payloadRegistry;
     ISuperRegistry public immutable superRegistry;
 
@@ -37,9 +39,9 @@ contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
         bytes memory payload = payloadRegistry.payload(dstPayloadId_);
         AMBMessage memory message = abi.decode(payload, (AMBMessage));
 
-        (uint8 txType_, uint8 callbackType_, uint8 multi_, , address srcSender_, uint64 srcChainId_) = _decodeTxInfo(
-            message.txInfo
-        );
+        (uint8 txType_, uint8 callbackType_, uint8 multi_, , address srcSender_, uint64 srcChainId_) = message
+            .txInfo
+            .decodeTxInfo();
 
         if (callbackType_ == uint256(CallbackType.RETURN)) {
             if (multi_ == 1) {
@@ -94,7 +96,7 @@ contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
     ) external view returns (uint256 totalFees, uint256[] memory) {
         uint256 len = ambIds_.length;
         uint256[] memory fees = new uint256[](len);
-        for (uint256 i; i < len; i++) {
+        for (uint256 i; i < len; ) {
             fees[i] = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
                 dstChainId_,
                 message_,
@@ -102,6 +104,10 @@ contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
             );
 
             totalFees += fees[i];
+
+            unchecked {
+                ++i;
+            }
         }
     }
 }

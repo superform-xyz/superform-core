@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "../../utils/DataPacking.sol";
 import {Error} from "../../utils/Error.sol";
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
 import {IBroadcaster} from "../../interfaces/IBroadcaster.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {AMBMessage, AMBExtraData} from "../../types/DataTypes.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
+import {DataLib} from "../../libraries/DataLib.sol";
 
 abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
@@ -45,12 +45,13 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
         bytes memory extraData_
     ) internal {
         AMBMessage memory newData = AMBMessage(
-            _packTxInfo(0, 0, 0, STATE_REGISTRY_TYPE, srcSender_, superRegistry.chainId()),
+            DataLib.packTxInfo(0, 0, 0, STATE_REGISTRY_TYPE, srcSender_, superRegistry.chainId()),
             message_
         );
 
         IAmbImplementation ambImplementation = IAmbImplementation(superRegistry.getAmbAddress(ambId_));
 
+        /// @dev reverts if an unknown amb id is used
         if (address(ambImplementation) == address(0)) {
             revert Error.INVALID_BRIDGE_ID();
         }
@@ -68,11 +69,11 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
     ) internal {
         bytes memory proof = abi.encode(keccak256(message_));
         AMBMessage memory newData = AMBMessage(
-            _packTxInfo(0, 0, 0, STATE_REGISTRY_TYPE, srcSender_, superRegistry.chainId()),
+            DataLib.packTxInfo(0, 0, 0, STATE_REGISTRY_TYPE, srcSender_, superRegistry.chainId()),
             proof
         );
 
-        for (uint8 i = 1; i < ambIds_.length; i++) {
+        for (uint8 i = 1; i < ambIds_.length; ) {
             uint8 tempAmbId = ambIds_[i];
 
             if (tempAmbId == ambIds_[0]) {
@@ -86,6 +87,10 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
             }
 
             tempImpl.broadcastPayload{value: gasToPay_[i]}(srcSender_, abi.encode(newData), extraData_[i]);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 }

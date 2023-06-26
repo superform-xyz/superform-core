@@ -94,7 +94,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         /// NOTE:should we check the length ?? anyway out of index will fail if the length
         /// mistmatches
 
-        for (uint256 i = 0; i < broadcastChains.length; i++) {
+        for (uint256 i; i < broadcastChains.length; i++) {
             uint16 dstChainId = broadcastChains[i];
             _lzSend(dstChainId, message_, payable(srcSender_), address(0x0), d.extraDataPerDst[i], d.gasPerDst[i]);
         }

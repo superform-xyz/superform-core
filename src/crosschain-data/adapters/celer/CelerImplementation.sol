@@ -97,7 +97,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         uint256 feesReq = messageBus.calcFee(message_);
         feesReq = feesReq * totalChains;
 
-        for (uint64 i = 0; i < totalChains; i++) {
+        for (uint64 i; i < totalChains; i++) {
             uint64 chainId = broadcastChains[i];
 
             messageBus.sendMessage{value: d.gasPerDst[i]}(authorizedImpl[chainId], chainId, message_);

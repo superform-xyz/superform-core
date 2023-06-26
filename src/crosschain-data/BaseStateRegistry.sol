@@ -7,7 +7,6 @@ import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
 import {PayloadState, AMBMessage, AMBExtraData} from "../types/DataTypes.sol";
-import "../utils/DataPacking.sol";
 
 /// @title BaseStateRegistry
 /// @author Zeropoint Labs
@@ -97,9 +96,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
 
         if (data.params.length == 32) {
-            /// FIXME: assuming 32 bytes length is always proof
+            /// NOTE: assuming 32 bytes length is always proof
             /// NOTE: should validate this assumption
-            messageQuorum[data.params] += 1;
+            ++messageQuorum[data.params];
 
             emit ProofReceived(data.params);
         } else {
@@ -119,6 +118,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
     /// @dev dispatches the payload(message_) through individual message bridge implementations
     function _dispatchPayload(
         address srcSender_,
@@ -130,6 +130,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     ) internal {
         IAmbImplementation ambImplementation = IAmbImplementation(superRegistry.getAmbAddress(ambId_));
 
+        /// @dev revert if an unknown amb id is used
         if (address(ambImplementation) == address(0)) {
             revert Error.INVALID_BRIDGE_ID();
         }
@@ -149,7 +150,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
         data.params = abi.encode(keccak256(message_));
 
-        for (uint8 i = 1; i < ambIds_.length; i++) {
+        /// @dev i starts from 1 since 0 is primary amb id
+        for (uint8 i = 1; i < ambIds_.length; ) {
             uint8 tempAmbId = ambIds_[i];
 
             if (tempAmbId == ambIds_[0]) {
@@ -163,6 +165,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             }
 
             tempImpl.dispatchPayload{value: gasToPay_[i]}(srcSender_, dstChainId_, abi.encode(data), overrideData_[i]);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 }
