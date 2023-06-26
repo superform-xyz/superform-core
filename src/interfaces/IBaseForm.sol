@@ -70,5 +70,10 @@ interface IBaseForm is IERC165Upgradeable {
         uint64 srcChainId_
     ) external returns (uint256 dstAmount);
 
+    /// @notice Returns the underlying token of a vault.
+    /// @return The underlying token
     function getUnderlyingOfVault() external view returns (address);
+
+    /// @dev API may need to know state of funds deployed
+    function previewDepositTo(uint256 assets_) external view returns (uint256);
 }

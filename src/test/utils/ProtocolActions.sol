@@ -219,7 +219,7 @@ abstract contract ProtocolActions is BaseSetup {
     function _assertMultiVaultBalanceBefore(
         uint256 user,
         uint256[] memory superFormIds,
-        uint256 amountToAssert
+        uint256[] memory amountsToAssert
     ) internal {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
 
@@ -231,7 +231,8 @@ abstract contract ProtocolActions is BaseSetup {
 
         for (uint256 i = 0; i < superFormIds.length; i++) {
             currentBalanceOfSp = superPositions.balanceOf(users[user], superFormIds[i]);
-            assertEq(currentBalanceOfSp, amountToAssert);
+
+            assertEq(currentBalanceOfSp, amountsToAssert[i]);
         }
     }
 
@@ -244,6 +245,26 @@ abstract contract ProtocolActions is BaseSetup {
 
         uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
         assertEq(currentBalanceOfSp, amountToAssert);
+    }
+
+    function _spAmountsMulti(
+        MultiVaultsSFData memory multiSuperFormsData
+    ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed) {
+        uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
+        emptyAmount = new uint256[](lenSuperforms);
+        spAmountSummed = new uint256[](lenSuperforms);
+
+        // create an array of amounts summing the amounts of the same superform ids
+        (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
+
+        for (uint256 i = 0; i < lenSuperforms; i++) {
+            for (uint256 j = 0; j < lenSuperforms; j++) {
+                if (multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j]) {
+                    spAmountSummed[i] += multiSuperFormsData.amounts[j];
+                }
+            }
+            spAmountSummed[i] = IBaseForm(superForms[i]).previewDepositTo(spAmountSummed[i]);
+        }
     }
 
     /// @dev STEP 2: Run Source Chain Action
@@ -261,7 +282,18 @@ abstract contract ProtocolActions is BaseSetup {
             vm.startPrank(users[action.user]);
             /// @dev see @pigeon for this implementation
             vm.recordLogs();
+            uint256[] memory emptyAmount;
+            uint256[] memory spAmountSummed;
             if (action.multiVaults) {
+                for (uint256 i = 0; i < vars.nDestinations; i++) {
+                    (emptyAmount, spAmountSummed) = _spAmountsMulti(multiSuperFormsData[i]);
+
+                    _assertMultiVaultBalanceBefore(
+                        action.user,
+                        multiSuperFormsData[i].superFormIds,
+                        action.action == Actions.Withdraw ? spAmountSummed : emptyAmount
+                    );
+                }
                 if (vars.nDestinations == 1) {
                     vars.singleDstMultiVaultStateReq = SingleDstMultiVaultsStateReq(
                         AMBs,
@@ -271,11 +303,6 @@ abstract contract ProtocolActions is BaseSetup {
                     );
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                        _assertMultiVaultBalanceBefore(
-                            action.user,
-                            vars.singleDstMultiVaultStateReq.superFormsData.superFormIds,
-                            0
-                        );
                         superRouter.singleDstMultiVaultDeposit{value: action.msgValue}(
                             vars.singleDstMultiVaultStateReq
                         );
@@ -293,20 +320,24 @@ abstract contract ProtocolActions is BaseSetup {
                     );
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                        for (uint256 i = 0; i < vars.nDestinations; i++) {
-                            _assertMultiVaultBalanceBefore(
-                                action.user,
-                                vars.multiDstMultiVaultStateReq.superFormsData[i].superFormIds,
-                                0
-                            );
-                        }
-
                         superRouter.multiDstMultiVaultDeposit{value: action.msgValue}(vars.multiDstMultiVaultStateReq);
                     } else if (action.action == Actions.Withdraw) {
                         superRouter.multiDstMultiVaultWithdraw{value: action.msgValue}(vars.multiDstMultiVaultStateReq);
                     }
                 }
             } else {
+                for (uint256 i = 0; i < vars.nDestinations; i++) {
+                    (address superForm, , ) = _getSuperForm(singleSuperFormsData[i].superFormId);
+
+                    _assertSingleVaultBalanceBefore(
+                        action.user,
+                        singleSuperFormsData[i].superFormId,
+                        action.action == Actions.Withdraw
+                            ? IBaseForm(superForm).previewDepositTo(singleSuperFormsData[i].amount)
+                            : 0
+                    );
+                }
+
                 if (vars.nDestinations == 1) {
                     if (CHAIN_0 != DST_CHAINS[0]) {
                         vars.singleXChainSingleVaultStateReq = SingleXChainSingleVaultStateReq(
@@ -317,11 +348,6 @@ abstract contract ProtocolActions is BaseSetup {
                         );
 
                         if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                            _assertSingleVaultBalanceBefore(
-                                action.user,
-                                vars.singleXChainSingleVaultStateReq.superFormData.superFormId,
-                                0
-                            );
                             superRouter.singleXChainSingleVaultDeposit{value: action.msgValue}(
                                 vars.singleXChainSingleVaultStateReq
                             );
@@ -338,11 +364,6 @@ abstract contract ProtocolActions is BaseSetup {
                         );
 
                         if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                            _assertSingleVaultBalanceBefore(
-                                action.user,
-                                vars.singleDirectSingleVaultStateReq.superFormData.superFormId,
-                                0
-                            );
                             superRouter.singleDirectSingleVaultDeposit{value: action.msgValue}(
                                 vars.singleDirectSingleVaultStateReq
                             );
