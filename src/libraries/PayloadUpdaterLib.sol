@@ -18,6 +18,20 @@ library PayloadUpdaterLib {
         }
     }
 
+    function validateSlippageArray(
+        uint256[] memory newAmount,
+        uint256[] memory maxAmount,
+        uint256[] memory slippage
+    ) internal pure {
+        for (uint256 i; i < newAmount.length; ) {
+            validateSlippage(newAmount[i], maxAmount[i], slippage[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
     function validatePayloadUpdate(uint256 txInfo_, PayloadState currentPayloadState_, uint8 isMulti) internal pure {
         (uint256 txType, uint256 callbackType, uint8 multi, , , ) = DataLib.decodeTxInfo(txInfo_);
 

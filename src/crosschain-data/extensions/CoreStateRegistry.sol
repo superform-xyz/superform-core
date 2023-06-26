@@ -30,7 +30,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint256 payloadId => bytes failedDepositRequests) internal failedDepositPayloads;
+    /// @dev just stores the superFormIds that are failed in a specific payload id
+    mapping(uint256 payloadId => uint256[] superFormIds) internal failedDeposits;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -69,8 +70,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
         InitMultiVaultData memory multiVaultData = abi.decode(payloadBody[payloadId_], (InitMultiVaultData));
 
-        PayloadUpdaterLib.validatePayloadUpdate(payloadHeader[payloadId_], payloadTracking[payloadId_], 1);
-
         uint256 l1 = multiVaultData.amounts.length;
         uint256 l2 = finalAmounts_.length;
 
@@ -78,17 +77,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
             revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
         }
 
-        for (uint256 i; i < l1; ) {
-            PayloadUpdaterLib.validateSlippage(
-                finalAmounts_[i],
-                multiVaultData.amounts[i],
-                multiVaultData.maxSlippage[i]
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
+        PayloadUpdaterLib.validatePayloadUpdate(payloadHeader[payloadId_], payloadTracking[payloadId_], 1);
+        PayloadUpdaterLib.validateSlippageArray(finalAmounts_, multiVaultData.amounts, multiVaultData.maxSlippage);
 
         multiVaultData.amounts = finalAmounts_;
 
@@ -171,136 +161,63 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
     }
 
     struct RescueFailedDepositsLocalVars {
-        uint8 multi;
-        bool rescued;
         uint64 dstChainId;
         uint64 srcChainId;
         address srcSender;
         address superForm;
-        bytes failedData;
-        uint256[] failedSuperFormIds;
-        bytes payloadInfo;
-        InitMultiVaultData multiVaultData;
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function rescueFailedMultiDeposits(
+    function rescueFailedDeposits(
         uint256 payloadId_,
-        LiqRequest[] memory liqDatas_
+        LiqRequest[] memory liqData_
     ) external payable override onlyProcessor {
         RescueFailedDepositsLocalVars memory v;
-        (v.multi, v.rescued, v.failedData, v.srcSender, v.srcChainId) = abi.decode(
-            failedDepositPayloads[payloadId_],
-            (uint8, bool, bytes, address, uint64)
-        );
-        if (v.multi == 0) revert Error.NOT_MULTI_FAILURE();
-        if (v.srcChainId == 0) revert Error.ALREADY_RESCUED();
-        delete failedDepositPayloads[payloadId_];
 
-        v.failedSuperFormIds = abi.decode(v.failedData, (uint256[]));
-        v.payloadInfo = payloadBody[payloadId_];
+        uint256[] memory superFormIds = failedDeposits[payloadId_];
 
-        v.multiVaultData = abi.decode(v.payloadInfo, (InitMultiVaultData));
+        uint256 l1 = superFormIds.length;
+        uint256 l2 = liqData_.length;
 
-        if (
-            !((liqDatas_.length == v.failedSuperFormIds.length) &&
-                (v.failedSuperFormIds.length == v.multiVaultData.liqData.length))
-        ) revert Error.INVALID_RESCUE_DATA();
-
-        v.dstChainId = superRegistry.chainId();
-
-        v.superForm;
-        for (uint256 i; i < v.multiVaultData.liqData.length; ) {
-            if (v.multiVaultData.superFormIds[i] == v.failedSuperFormIds[i]) {
-                (v.superForm, , ) = v.failedSuperFormIds[i].getSuperForm();
-
-                IBridgeValidator(superRegistry.getBridgeValidator(liqDatas_[i].bridgeId)).validateTxData(
-                    liqDatas_[i].txData,
-                    v.dstChainId,
-                    v.srcChainId,
-                    false, /// @dev - this acts like a withdraw where funds are bridged back to user
-                    v.superForm,
-                    v.srcSender,
-                    liqDatas_[i].token
-                );
-
-                dispatchTokens(
-                    superRegistry.getBridgeAddress(liqDatas_[i].bridgeId),
-                    liqDatas_[i].txData,
-                    liqDatas_[i].token,
-                    liqDatas_[i].amount,
-                    v.srcSender,
-                    liqDatas_[i].nativeAmount,
-                    liqDatas_[i].permit2data,
-                    superRegistry.PERMIT2()
-                );
-            }
-
-            unchecked {
-                ++i;
-            }
+        if (l1 == 0 || l2 == 0 || l1 != l2) {
+            revert Error.INVALID_RESCUE_DATA();
         }
-    }
 
-    struct RescueFailedDepositLocalVars {
-        uint8 multi;
-        bool rescued;
-        uint64 dstChainId;
-        uint64 srcChainId;
-        address srcSender;
-        address superForm;
-        bytes failedData;
-        bytes payload;
-        uint256 failedSuperFormId;
-        bytes payloadInfo;
-        InitSingleVaultData singleVaultData;
-    }
+        uint256 _payloadHeader = payloadHeader[payloadId_];
 
-    /// @inheritdoc ICoreStateRegistry
-    function rescueFailedDeposit(
-        uint256 payloadId_,
-        LiqRequest memory liqData_
-    ) external payable override onlyProcessor {
-        RescueFailedDepositLocalVars memory v;
-        (v.multi, v.rescued, v.failedData, v.srcSender, v.srcChainId) = abi.decode(
-            failedDepositPayloads[payloadId_],
-            (uint8, bool, bytes, address, uint64)
-        );
-        if (v.multi == 1) revert Error.NOT_SINGLE_FAILURE();
-        if (v.srcChainId == 0) revert Error.ALREADY_RESCUED();
+        (, , , , v.srcSender, v.srcChainId) = _payloadHeader.decodeTxInfo();
 
-        delete failedDepositPayloads[payloadId_];
-
-        v.failedSuperFormId = abi.decode(v.failedData, (uint256));
-        v.payloadInfo = payloadBody[payloadId_];
-
-        v.singleVaultData = abi.decode(v.payloadInfo, (InitSingleVaultData));
+        delete failedDeposits[payloadId_];
 
         v.dstChainId = superRegistry.chainId();
 
-        if (v.singleVaultData.superFormId == v.failedSuperFormId) {
-            (v.superForm, , ) = v.failedSuperFormId.getSuperForm();
+        for (uint256 i; i < l1; ) {
+            (v.superForm, , ) = superFormIds[i].getSuperForm();
 
-            IBridgeValidator(superRegistry.getBridgeValidator(liqData_.bridgeId)).validateTxData(
-                liqData_.txData,
+            IBridgeValidator(superRegistry.getBridgeValidator(liqData_[i].bridgeId)).validateTxData(
+                liqData_[i].txData,
                 v.dstChainId,
                 v.srcChainId,
                 false, /// @dev - this acts like a withdraw where funds are bridged back to user
                 v.superForm,
                 v.srcSender,
-                liqData_.token
+                liqData_[i].token
             );
 
             dispatchTokens(
-                superRegistry.getBridgeAddress(liqData_.bridgeId),
-                liqData_.txData,
-                liqData_.token,
-                liqData_.amount,
+                superRegistry.getBridgeAddress(liqData_[i].bridgeId),
+                liqData_[i].txData,
+                liqData_[i].token,
+                liqData_[i].amount,
                 v.srcSender,
-                liqData_.nativeAmount,
-                liqData_.permit2data,
+                liqData_[i].nativeAmount,
+                liqData_[i].permit2data,
                 superRegistry.PERMIT2()
             );
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -383,7 +300,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         IERC20 underlying;
         uint256 numberOfVaults = multiVaultData.superFormIds.length;
         uint256[] memory dstAmounts = new uint256[](numberOfVaults);
-        uint256[] memory failedSuperFormIds = new uint256[](numberOfVaults);
+
         bool fulfilment;
         bool errors;
 
@@ -420,9 +337,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                     continue;
                 } catch {
                     if (!errors) errors = true;
-                    failedSuperFormIds[i] = multiVaultData.superFormIds[i];
-                    /// @dev mark here the superFormIds and amounts to be bridged back
-                    /// FIXME do we bridge back tokens that failed? we need to save the failed vaults and bridge back the tokens... (in a different tx?)
+
+                    failedDeposits[payloadId_].push(multiVaultData.superFormIds[i]);
                     continue;
                 }
             } else {
@@ -444,13 +360,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         }
 
         if (errors) {
-            failedDepositPayloads[payloadId_] = abi.encode(
-                1,
-                false,
-                abi.encode(failedSuperFormIds),
-                srcSender_,
-                srcChainId_
-            );
             emit FailedXChainDeposits(payloadId_);
         }
 
@@ -535,13 +444,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                         dstAmount
                     );
             } catch {
-                failedDepositPayloads[payloadId_] = abi.encode(
-                    0,
-                    false,
-                    abi.encode(singleVaultData.superFormId),
-                    srcSender_,
-                    srcChainId_
-                );
+                failedDeposits[payloadId_].push(singleVaultData.superFormId);
+
                 emit FailedXChainDeposits(payloadId_);
             }
         } else {
