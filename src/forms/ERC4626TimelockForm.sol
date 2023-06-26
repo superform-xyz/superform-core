@@ -297,12 +297,12 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         uint256 payloadId_,
         uint256 index_
     ) public view returns (InitSingleVaultData memory data, address, uint64) {
-        bytes memory payload = IBaseStateRegistry(superRegistry.coreStateRegistry()).payload(payloadId_);
-        AMBMessage memory payloadInfo = abi.decode(payload, (AMBMessage));
+        bytes memory payloadBody = IBaseStateRegistry(superRegistry.coreStateRegistry()).payloadBody(payloadId_);
+        uint256 payloadHeader = IBaseStateRegistry(superRegistry.coreStateRegistry()).payloadHeader(payloadId_);
 
-        (, , , , address srcSender, uint64 srcChainId) = _decodeTxInfo(payloadInfo.txInfo);
+        (, , , , address srcSender, uint64 srcChainId) = _decodeTxInfo(payloadHeader);
 
-        InitMultiVaultData memory multiVaultData = abi.decode(payloadInfo.params, (InitMultiVaultData));
+        InitMultiVaultData memory multiVaultData = abi.decode(payloadBody, (InitMultiVaultData));
 
         data = InitSingleVaultData({
             payloadId: multiVaultData.payloadId,

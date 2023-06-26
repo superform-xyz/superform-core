@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
-import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
+import {IBroadcaster} from "../interfaces/IBroadcaster.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
@@ -168,8 +168,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     function stateSync(bytes memory data_) external override {
         if (msg.sender != superRegistry.rolesStateRegistry()) revert Error.NOT_ROLES_STATE_REGISTRY();
 
-        AMBMessage memory stateRegistryPayload = abi.decode(data_, (AMBMessage));
-        AMBFactoryMessage memory rolesPayload = abi.decode(stateRegistryPayload.params, (AMBFactoryMessage));
+        AMBFactoryMessage memory rolesPayload = abi.decode(data_, (AMBFactoryMessage));
 
         if (rolesPayload.messageType == SYNC_REVOKE_ROLE) {
             (bytes32 role, address affectedAddress) = abi.decode(rolesPayload.message, (bytes32, address));
@@ -235,7 +234,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBaseStateRegistry(superRegistry.rolesStateRegistry()).broadcastPayload{value: msg.value}(
+        IBroadcaster(superRegistry.rolesStateRegistry()).broadcastPayload{value: msg.value}(
             msg.sender,
             ambIds,
             message_,
