@@ -44,18 +44,6 @@ interface IBaseStateRegistry {
         bytes memory extraData_
     ) external payable;
 
-    /// @dev allows core contracts to send payload to all configured destination chain.
-    /// @param srcSender_ is the caller of the function (used for gas refunds).
-    /// @param ambIds_ is the identifier of the arbitrary message bridge to be used
-    /// @param message_ is the crosschain payload to be broadcasted
-    /// @param extraData_ defines all the message bridge realted overrides
-    function broadcastPayload(
-        address srcSender_,
-        uint8[] memory ambIds_,
-        bytes memory message_,
-        bytes memory extraData_
-    ) external payable;
-
     /// @dev allows state registry to receive messages from message bridge implementations
     /// @param srcChainId_ is the superform chainId from which the payload is dispatched/sent
     /// @param message_ is the crosschain payload received

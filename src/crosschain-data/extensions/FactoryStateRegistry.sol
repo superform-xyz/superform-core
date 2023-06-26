@@ -1,17 +1,17 @@
 // SPDX-License-Identifer: Apache-2.0
 pragma solidity 0.8.19;
 
-import {BaseStateRegistry} from "./BaseStateRegistry.sol";
-import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
-import {IFactoryStateRegistry} from "../interfaces/IFactoryStateRegistry.sol";
-import {PayloadState} from "../types/DataTypes.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {Error} from "../utils/Error.sol";
+import {Broadcaster} from "../utils/Broadcaster.sol";
+import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
+import {IFactoryStateRegistry} from "../../interfaces/IFactoryStateRegistry.sol";
+import {PayloadState} from "../../types/DataTypes.sol";
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {Error} from "../../utils/Error.sol";
 
 /// @title FactoryStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between SuperFormFactory deployed on all supported networks
-contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
+contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
@@ -23,13 +23,11 @@ contract FactoryStateRegistry is BaseStateRegistry, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_, uint8 registryType_) Broadcaster(superRegistry_, registryType_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc BaseStateRegistry
     function processPayload(
         uint256 payloadId_,
         bytes memory /// not useful here

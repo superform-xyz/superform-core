@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
-import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
+import {IBroadcaster} from "../interfaces/IBroadcaster.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
@@ -235,7 +235,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBaseStateRegistry(superRegistry.rolesStateRegistry()).broadcastPayload{value: msg.value}(
+        IBroadcaster(superRegistry.rolesStateRegistry()).broadcastPayload{value: msg.value}(
             msg.sender,
             ambIds,
             message_,

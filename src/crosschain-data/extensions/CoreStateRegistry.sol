@@ -3,20 +3,20 @@ pragma solidity 0.8.19;
 
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {BaseStateRegistry} from "./BaseStateRegistry.sol";
-import {QuorumManager} from "./utils/QuorumManager.sol";
-import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
-import {ISuperPositions} from "../interfaces/ISuperPositions.sol";
-import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
-import {ICoreStateRegistry} from "../interfaces/ICoreStateRegistry.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IBaseForm} from "../interfaces/IBaseForm.sol";
-import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
-import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, AckAMBData, AMBExtraData, ReturnMultiData, ReturnSingleData} from "../types/DataTypes.sol";
-import {LiqRequest} from "../types/DataTypes.sol";
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
-import {Error} from "../utils/Error.sol";
-import "../utils/DataPacking.sol";
+import {BaseStateRegistry} from "../BaseStateRegistry.sol";
+import {QuorumManager} from "../utils/QuorumManager.sol";
+import {LiquidityHandler} from "../../crosschain-liquidity/LiquidityHandler.sol";
+import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
+import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
+import {ICoreStateRegistry} from "../../interfaces/ICoreStateRegistry.sol";
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {IBaseForm} from "../../interfaces/IBaseForm.sol";
+import {IBridgeValidator} from "../../interfaces/IBridgeValidator.sol";
+import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, AckAMBData, AMBExtraData, ReturnMultiData, ReturnSingleData} from "../../types/DataTypes.sol";
+import {LiqRequest} from "../../types/DataTypes.sol";
+import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
+import {Error} from "../../utils/Error.sol";
+import "../../utils/DataPacking.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs

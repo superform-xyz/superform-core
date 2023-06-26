@@ -1,16 +1,16 @@
 // SPDX-License-Identifer: Apache-2.0
 pragma solidity 0.8.19;
 
-import {BaseStateRegistry} from "./BaseStateRegistry.sol";
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
-import {PayloadState} from "../types/DataTypes.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {Error} from "../utils/Error.sol";
+import {Broadcaster} from "../utils/Broadcaster.sol";
+import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
+import {PayloadState} from "../../types/DataTypes.sol";
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {Error} from "../../utils/Error.sol";
 
 /// @title RolesStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between SuperRBAC deployed on all supported networks
-contract RolesStateRegistry is BaseStateRegistry {
+contract RolesStateRegistry is Broadcaster {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
@@ -22,13 +22,12 @@ contract RolesStateRegistry is BaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_, uint8 registryType_) Broadcaster(superRegistry_, registryType_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc BaseStateRegistry
     function processPayload(
         uint256 payloadId_,
         bytes memory /// not useful here

@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {SuperFormFactory} from "../SuperFormFactory.sol";
-import {FactoryStateRegistry} from "../crosschain-data/FactoryStateRegistry.sol";
+import {FactoryStateRegistry} from "../crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ERC4626Form} from "../forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../forms/ERC4626TimelockForm.sol";
 import "./utils/BaseSetup.sol";
