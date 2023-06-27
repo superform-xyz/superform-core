@@ -6,7 +6,6 @@ import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
 
 // Test Utils
-import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 import "./utils/AmbParams.sol";
 

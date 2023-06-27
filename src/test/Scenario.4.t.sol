@@ -5,45 +5,12 @@ pragma solidity 0.8.19;
 import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
 // Test Utils
-import {MockERC20} from "./mocks/MockERC20.sol";
 import "./utils/ProtocolActions.sol";
 import "./utils/AmbParams.sol";
-
-import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
-import {IERC4626Form} from "./interfaces/IERC4626Form.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario4Test is ProtocolActions {
-    /// @dev Global counter for actions sent to the protocol
-    uint256 actionId;
-
-    /// @dev Access SuperFormRouter interface
-    ISuperFormRouter superRouter;
-
-    /// @dev Access SuperPositions interface
-    IERC1155 superPositions;
-
-    /// @dev Access Form interface to call form functions for assertions
-    IERC4626Form public erc4626Form;
-
-    address _superRouter;
-    address _stateRegistry;
-    address _superPositions;
-
-    /// @dev Global variable for timelockForm type. Different from dstFormID which is an index to access FORM_BEACON_IDS in BaseSetup
-    uint256 formType = 1;
-
-    /// @dev Global and default set of variables for setting single action to build deposit/withdraw requests
-    uint64[] dstChainID;
-    uint256[] dstVaultID;
-    uint256[] dstFormID;
-    uint256[] amount;
-    uint256[] slippage;
-
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -108,25 +75,6 @@ contract Scenario4Test is ProtocolActions {
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
-
-        // dstChainID = DST_CHAINS; /// id4
-        // dstVaultID = [0]; /// vault
-        // dstFormID = [0]; /// index to access in array of forms at BaseSetup level == TimelockForm == FORM_BEACON_IDS[1]
-        // amount = [1000];
-        // slippage = [1000];
-
-        /*///////////////////////////////////////////////////////////////
-                                STATE SETUP
-        //////////////////////////////////////////////////////////////*/
-
-        _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
-
-        _stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
-
-        superRouter = ISuperFormRouter(_superRouter);
-
-        /// TODO: User ERC1155s
-        superPositions = IERC1155(ISuperRegistry(_stateRegistry).superPositions());
     }
 
     /*///////////////////////////////////////////////////////////////
