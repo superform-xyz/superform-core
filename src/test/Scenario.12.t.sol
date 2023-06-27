@@ -17,16 +17,6 @@ import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
 contract Scenario12Test is ProtocolActions {
-    /// @dev Access SuperFormRouter interface
-    ISuperFormRouter superRouter;
-
-    /// @dev Access SuperPositions interface
-    IERC1155 superPositions;
-
-    address _superRouter;
-    address _stateRegistry;
-    address _superPositions;
-
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -92,19 +82,6 @@ contract Scenario12Test is ProtocolActions {
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
-
-        /*///////////////////////////////////////////////////////////////
-                                STATE SETUP
-        //////////////////////////////////////////////////////////////*/
-
-        _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
-
-        _stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
-
-        superRouter = ISuperFormRouter(_superRouter);
-
-        /// TODO: User ERC1155s
-        superPositions = IERC1155(ISuperRegistry(_stateRegistry).superPositions());
     }
 
     /*///////////////////////////////////////////////////////////////

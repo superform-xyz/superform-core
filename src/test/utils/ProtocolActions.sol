@@ -60,7 +60,13 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal {
         (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
         uint256[] memory spAmountSummed;
-        (, spAmountSummed) = _assertBeforeAction(action, multiSuperFormsData, singleSuperFormsData, vars);
+        uint256 spAmountBeforeWithdraw;
+        (, spAmountSummed, spAmountBeforeWithdraw) = _assertBeforeAction(
+            action,
+            multiSuperFormsData,
+            singleSuperFormsData,
+            vars
+        );
 
         vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
 
@@ -72,9 +78,14 @@ abstract contract ProtocolActions is BaseSetup {
             return;
         } else if (action.action == Actions.Withdraw && action.testType == TestType.Pass) {
             /// @dev fully successful withdraws finish here
-            console.log("a");
-            _assertAfterWithdraw(action, multiSuperFormsData, singleSuperFormsData, vars, spAmountSummed);
-            console.log("b");
+            _assertAfterWithdraw(
+                action,
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars,
+                spAmountSummed,
+                spAmountBeforeWithdraw
+            );
         }
 
         if (
@@ -110,6 +121,15 @@ abstract contract ProtocolActions is BaseSetup {
             if (!success) {
                 console.log("Stage 7 failed");
                 return;
+            } else {
+                _assertAfterWithdraw(
+                    action,
+                    multiSuperFormsData,
+                    singleSuperFormsData,
+                    vars,
+                    spAmountSummed,
+                    spAmountBeforeWithdraw
+                );
             }
             // if (action.testType == TestType.RevertXChainWithdraw) {
             /// @dev Process payload received on source from destination (withdraw callback)
@@ -118,7 +138,8 @@ abstract contract ProtocolActions is BaseSetup {
                 console.log("Stage 8 failed");
                 return;
             } else {
-                _assertAfterWithdraw(action, multiSuperFormsData, singleSuperFormsData, vars);
+                /// @dev TODO to rework (assert SuperPositions are minted back in case of failure)
+                //_assertAfterWithdraw(action, multiSuperFormsData, singleSuperFormsData, vars);
             }
         }
     }
@@ -1473,7 +1494,12 @@ abstract contract ProtocolActions is BaseSetup {
         (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
 
         for (uint256 i = 0; i < lenSuperforms; i++) {
-            spAmountFinal[i] = currentSPBeforeWithdaw - multiSuperFormsData.amounts[i];
+            spAmountFinal[i] = currentSPBeforeWithdaw[i];
+            for (uint256 j = 0; j < lenSuperforms; j++) {
+                if (multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j]) {
+                    spAmountFinal[i] -= multiSuperFormsData.amounts[j];
+                }
+            }
         }
     }
 
@@ -1482,7 +1508,7 @@ abstract contract ProtocolActions is BaseSetup {
         MultiVaultsSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars
-    ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed) {
+    ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 spAmountBeforeWithdraw) {
         if (action.multiVaults) {
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (emptyAmount, spAmountSummed) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
@@ -1498,13 +1524,11 @@ abstract contract ProtocolActions is BaseSetup {
         } else {
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (address superForm, , ) = _getSuperForm(singleSuperFormsData[i].superFormId);
-
+                spAmountBeforeWithdraw = IBaseForm(superForm).previewDepositTo(singleSuperFormsData[i].amount);
                 _assertSingleVaultBalance(
                     action.user,
                     singleSuperFormsData[i].superFormId,
-                    action.action == Actions.Withdraw
-                        ? IBaseForm(superForm).previewDepositTo(singleSuperFormsData[i].amount)
-                        : 0
+                    action.action == Actions.Withdraw ? spAmountBeforeWithdraw : 0
                 );
             }
             console.log("Asserted b4 action");
@@ -1541,25 +1565,27 @@ abstract contract ProtocolActions is BaseSetup {
         MultiVaultsSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars,
-        uint256[] memory spAmountBeforeWithdraw
+        uint256[] memory spAmountsBeforeWithdraw,
+        uint256 spAmountBeforeWithdraw
     ) internal {
         vm.selectFork(FORKS[CHAIN_0]);
         uint256[] memory spAmountFinal;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             if (action.multiVaults) {
-
-                spAmountFinal = _spAmountsMultiAfterWithdraw(multiSuperFormsData[i], action.user, spAmountBeforeWithdraw);
+                spAmountFinal = _spAmountsMultiAfterWithdraw(
+                    multiSuperFormsData[i],
+                    action.user,
+                    spAmountsBeforeWithdraw
+                );
 
                 _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountFinal);
             } else {
+                /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
                 _assertSingleVaultBalance(
                     action.user,
                     singleSuperFormsData[i].superFormId,
-                    IERC1155s(getContract(CHAIN_0, "SuperPositions")).balanceOf(
-                        users[action.user],
-                        singleSuperFormsData[i].superFormId
-                    ) - singleSuperFormsData[i].amount
+                    spAmountBeforeWithdraw - singleSuperFormsData[i].amount
                 );
             }
         }
