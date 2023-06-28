@@ -50,7 +50,7 @@ contract Scenario14Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
+                ambParams: generateAmbParams(DST_CHAINS.length, 2), // DST POLY 3 ETH, (1 ETH, 1 ETH)
                 msgValue: 50 * 10 ** 18,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH, 3 = NATIVE_TOKEN
             })

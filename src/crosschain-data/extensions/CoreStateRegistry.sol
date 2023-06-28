@@ -106,58 +106,73 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         emit PayloadUpdated(payloadId_);
     }
 
+    struct CoreProcessPayloadLocalVars {
+        bytes _payloadBody;
+        uint256 _payloadHeader;
+        uint8 txType;
+        uint8 callbackType;
+        uint8 multi;
+        address srcSender;
+        uint64 srcChainId;
+        AMBMessage _message;
+        bytes returnMessage;
+        bytes32 _proof;
+    }
+
     /// @inheritdoc BaseStateRegistry
     function processPayload(
         uint256 payloadId_,
         bytes memory ackExtraData_
-    ) external payable virtual override onlyProcessor isValidPayloadId(payloadId_) {
-        bytes memory _payloadBody = payloadBody[payloadId_];
-        uint256 _payloadHeader = payloadHeader[payloadId_];
+    ) external payable virtual override onlyProcessor isValidPayloadId(payloadId_) returns (bytes memory) {
+        CoreProcessPayloadLocalVars memory v;
+
+        v._payloadBody = payloadBody[payloadId_];
+        v._payloadHeader = payloadHeader[payloadId_];
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
             revert Error.INVALID_PAYLOAD_STATE();
         }
 
-        (uint8 txType, uint8 callbackType, uint8 multi, , address srcSender, uint64 srcChainId) = _payloadHeader
-            .decodeTxInfo();
+        (v.txType, v.callbackType, v.multi, , v.srcSender, v.srcChainId) = v._payloadHeader.decodeTxInfo();
 
-        AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
-        bytes memory returnMessage;
+        v._message = AMBMessage(v._payloadHeader, v._payloadBody);
 
-        if (callbackType == uint256(CallbackType.RETURN)) {
-            multi == 1
-                ? ISuperPositions(superRegistry.superPositions()).stateMultiSync(_message)
-                : ISuperPositions(superRegistry.superPositions()).stateSync(_message);
+        if (v.callbackType == uint256(CallbackType.RETURN)) {
+            v.multi == 1
+                ? ISuperPositions(superRegistry.superPositions()).stateMultiSync(v._message)
+                : ISuperPositions(superRegistry.superPositions()).stateSync(v._message);
         }
 
-        if (callbackType == uint8(CallbackType.INIT)) {
-            if (txType == uint8(TransactionType.WITHDRAW)) {
-                returnMessage = multi == 1
-                    ? _processMultiWithdrawal(payloadId_, _payloadBody, srcSender, srcChainId)
-                    : _processSingleWithdrawal(payloadId_, _payloadBody, srcSender, srcChainId);
+        if (v.callbackType == uint8(CallbackType.INIT)) {
+            if (v.txType == uint8(TransactionType.WITHDRAW)) {
+                v.returnMessage = v.multi == 1
+                    ? _processMultiWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId)
+                    : _processSingleWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId);
             }
 
-            if (txType == uint8(TransactionType.DEPOSIT)) {
-                returnMessage = multi == 1
-                    ? _processMultiDeposit(payloadId_, _payloadBody, srcSender, srcChainId)
-                    : _processSingleDeposit(payloadId_, _payloadBody, srcSender, srcChainId);
+            if (v.txType == uint8(TransactionType.DEPOSIT)) {
+                v.returnMessage = v.multi == 1
+                    ? _processMultiDeposit(payloadId_, v._payloadBody, v.srcSender, v.srcChainId)
+                    : _processSingleDeposit(payloadId_, v._payloadBody, v.srcSender, v.srcChainId);
             }
         }
 
         /// @dev validates quorum
-        bytes32 _proof = keccak256(abi.encode(_message));
+        v._proof = keccak256(abi.encode(v._message));
 
-        if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
+        if (messageQuorum[v._proof] < getRequiredMessagingQuorum(v.srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
-        if (returnMessage.length > 0) {
-            _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData_);
+        if (v.returnMessage.length > 0) {
+            _dispatchAcknowledgement(v.srcChainId, v.returnMessage, ackExtraData_);
         }
 
         /// @dev sets status as processed
         /// @dev check for re-entrancy & relocate if needed
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+        return v.returnMessage;
     }
 
     struct RescueFailedDepositsLocalVars {

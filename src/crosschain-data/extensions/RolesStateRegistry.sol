@@ -31,7 +31,7 @@ contract RolesStateRegistry is Broadcaster {
     function processPayload(
         uint256 payloadId_,
         bytes memory /// not useful here
-    ) external payable virtual override onlyProcessor {
+    ) external payable virtual override onlyProcessor returns (bytes memory) {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }

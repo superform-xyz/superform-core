@@ -81,6 +81,7 @@ contract SocketRouterMock is ISocketRegistry, Test {
     function _swap(uint256 amount_, address inputToken_, address bridgeToken_, bytes memory data_) internal {
         /// @dev encapsulating from
         address from = abi.decode(data_, (address));
+        console.log("msgValue in mock", msg.value);
         if (inputToken_ != NATIVE) {
             MockERC20(inputToken_).transferFrom(from, address(this), amount_);
             MockERC20(inputToken_).burn(address(this), amount_);
