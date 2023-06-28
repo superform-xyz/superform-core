@@ -61,7 +61,8 @@ abstract contract ProtocolActions is BaseSetup {
         (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
         uint256[] memory spAmountSummed;
         uint256 spAmountBeforeWithdraw;
-        (, spAmountSummed, spAmountBeforeWithdraw) = _assertBeforeAction(
+        uint256 inputBalanceBefore;
+        (, spAmountSummed, spAmountBeforeWithdraw, inputBalanceBefore) = _assertBeforeAction(
             action,
             multiSuperFormsData,
             singleSuperFormsData,
@@ -98,7 +99,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                 return;
             } else {
-                _assertAfterDeposit(action, multiSuperFormsData, singleSuperFormsData, vars);
+                _assertAfterDeposit(action, multiSuperFormsData, singleSuperFormsData, vars, inputBalanceBefore);
             }
         }
 
@@ -1464,7 +1465,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
         MultiVaultsSFData memory multiSuperFormsData
-    ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed) {
+    ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 totalSpAmount) {
         uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
         emptyAmount = new uint256[](lenSuperforms);
         spAmountSummed = new uint256[](lenSuperforms);
@@ -1473,6 +1474,7 @@ abstract contract ProtocolActions is BaseSetup {
         (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
 
         for (uint256 i = 0; i < lenSuperforms; i++) {
+            totalSpAmount += multiSuperFormsData.amounts[i];
             for (uint256 j = 0; j < lenSuperforms; j++) {
                 if (multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j]) {
                     spAmountSummed[i] += multiSuperFormsData.amounts[j];
@@ -1508,10 +1510,24 @@ abstract contract ProtocolActions is BaseSetup {
         MultiVaultsSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars
-    ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 spAmountBeforeWithdraw) {
+    )
+        internal
+        returns (
+            uint256[] memory emptyAmount,
+            uint256[] memory spAmountSummed,
+            uint256 spAmountBeforeWithdraw,
+            uint256 inputBalanceBefore
+        )
+    {
+        address token;
         if (action.multiVaults) {
+            token = multiSuperFormsData[0].liqRequests[0].token;
+            inputBalanceBefore = token != NATIVE_TOKEN
+                ? IERC20(token).balanceOf(users[action.user])
+                : users[action.user].balance;
+
             for (uint256 i = 0; i < vars.nDestinations; i++) {
-                (emptyAmount, spAmountSummed) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
+                (emptyAmount, spAmountSummed, ) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     multiSuperFormsData[i]
                 );
                 _assertMultiVaultBalance(
@@ -1522,6 +1538,12 @@ abstract contract ProtocolActions is BaseSetup {
             }
             console.log("Asserted b4 action multi");
         } else {
+            token = singleSuperFormsData[0].liqRequest.token;
+
+            inputBalanceBefore = token != NATIVE_TOKEN
+                ? IERC20(token).balanceOf(users[action.user])
+                : users[action.user].balance;
+
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (address superForm, , ) = _getSuperForm(singleSuperFormsData[i].superFormId);
                 spAmountBeforeWithdraw = IBaseForm(superForm).previewDepositTo(singleSuperFormsData[i].amount);
@@ -1539,17 +1561,32 @@ abstract contract ProtocolActions is BaseSetup {
         TestAction memory action,
         MultiVaultsSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData,
-        StagesLocalVars memory vars
+        StagesLocalVars memory vars,
+        uint256 inputBalanceBefore
     ) internal {
         vm.selectFork(FORKS[CHAIN_0]);
 
         uint256[] memory spAmountSummed;
-
+        uint256 totalSpAmount;
+        uint256 totalSpAmountAllDestinations;
+        address token;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             if (action.multiVaults) {
-                (, spAmountSummed) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(multiSuperFormsData[i]);
+                (, spAmountSummed, totalSpAmount) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
+                    multiSuperFormsData[i]
+                );
+                totalSpAmountAllDestinations += totalSpAmount;
+
+                token = multiSuperFormsData[0].liqRequests[0].token;
+
+                /// assert spToken Balance
                 _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountSummed);
             } else {
+                totalSpAmountAllDestinations += singleSuperFormsData[i].amount;
+
+                token = singleSuperFormsData[0].liqRequest.token;
+
+                /// assert spToken Balance
                 _assertSingleVaultBalance(
                     action.user,
                     singleSuperFormsData[i].superFormId,
@@ -1557,6 +1594,20 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             }
         }
+        uint256 msgValue = token != NATIVE_TOKEN ? 0 : action.msgValue;
+
+        console.log("balance now", users[action.user].balance);
+        console.log("balance Before action", inputBalanceBefore);
+        console.log("totalSpAmountAllDestinations", totalSpAmountAllDestinations);
+        console.log("msgValue", msgValue);
+        console.log("balance Before action - now", inputBalanceBefore - users[action.user].balance);
+
+        /// assert user input token balance
+        assertEq(
+            token != NATIVE_TOKEN ? IERC20(token).balanceOf(users[action.user]) : users[action.user].balance,
+            inputBalanceBefore - totalSpAmountAllDestinations - msgValue
+        );
+
         console.log("Asserted after deposit");
     }
 
