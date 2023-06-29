@@ -14,8 +14,7 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 enum Actions {
     Deposit,
     Withdraw,
-    DepositPermit2,
-    WithdrawTimelocked
+    DepositPermit2
 }
 
 enum LiquidityChange {
@@ -77,6 +76,7 @@ struct MessagingAssertVars {
 struct TestAction {
     Actions action;
     bool multiVaults;
+    bool timelocked;
     uint256 user;
     TestType testType;
     bytes4 revertError;

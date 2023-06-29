@@ -126,7 +126,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         /// @dev stage 7 and 8 are only required for timelocked forms
-        if (action.action == Actions.WithdrawTimelocked) {
+        if (action.timelocked && action.action == Actions.Withdraw) {
             /// @dev Keeper needs to know this value to be able to process unlock
             success = _stage7_process_unlock_withdraw(action, vars, 1);
             if (!success) {
@@ -142,7 +142,9 @@ abstract contract ProtocolActions is BaseSetup {
                     spAmountBeforeWithdraw
                 );
             }
-            // if (action.testType == TestType.RevertXChainWithdraw) {
+        }
+
+        if (action.timelocked && action.testType == TestType.RevertXChainWithdraw) {
             /// @dev Process payload received on source from destination (withdraw callback)
             /// @dev TODO, THERE IS NO PROCESS PAYLOAD FUNCTION IN TwoStepsFormStateRegistry to re-issue SuperPositions in case of failure!!
             success = _stage8_process_2step_payload(action, vars);
@@ -151,7 +153,7 @@ abstract contract ProtocolActions is BaseSetup {
                 return;
             } else {
                 /// @dev TODO to rework (assert SuperPositions are minted back in case of failure)
-                //_assertAfterWithdraw(action, multiSuperFormsData, singleSuperFormsData, vars);
+                // _assertAfterWithdraw(action, multiSuperFormsData, singleSuperFormsData, vars);
             }
 
             /// @dev TODO what about failed withdraws in timelocked???
@@ -732,8 +734,10 @@ abstract contract ProtocolActions is BaseSetup {
             ITwoStepsFormStateRegistry twoStepsFormStateRegistry = ITwoStepsFormStateRegistry(
                 contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]
             );
-            vm.rollFork(block.number + 20000);
-            //twoStepsFormStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
+
+            /// increase time by 5 days
+            vm.warp(block.timestamp + (86400 * 5));
+            twoStepsFormStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
         }
 
         return true;
@@ -1256,7 +1260,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[targetChainId_]);
         uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
 
-        // vm.prank(deployer);
+        vm.prank(deployer);
         if (testType == TestType.Pass) {
             TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
                 value: msgValue

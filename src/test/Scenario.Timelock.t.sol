@@ -53,6 +53,7 @@ contract ScenarioTimelockTest is ProtocolActions {
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
+                timelocked: false,
                 user: 1,
                 testType: TestType.Pass,
                 revertError: "",
@@ -67,8 +68,9 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         actions.push(
             TestAction({
-                action: Actions.WithdrawTimelocked,
+                action: Actions.Withdraw,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
+                timelocked: true,
                 user: 1,
                 testType: TestType.Pass,
                 revertError: "",
@@ -86,7 +88,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario_timelock() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;

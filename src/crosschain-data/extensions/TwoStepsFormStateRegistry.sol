@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console.sol";
+
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IERC4626TimelockForm} from "../../forms/interfaces/IERC4626TimelockForm.sol";
@@ -14,6 +16,9 @@ import "../../utils/DataPacking.sol";
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
 contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegistry {
+    /*///////////////////////////////////////////////////////////////
+                            CONSTANTS
+    //////////////////////////////////////////////////////////////*/
     bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
 
     enum TimeLockStatus {
@@ -23,74 +28,90 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     }
 
     struct TimeLockPayload {
+        uint8 isSameChain;
+        address srcSender;
         uint256 superFormId;
+        uint256 amount;
+        uint256 lockedTill;
+        uint256 xChainPayloadId;
+        uint256 xChainPayloadIndex;
         TimeLockStatus status;
     }
 
-    mapping(uint256 payloadId => mapping(uint256 index => TimeLockPayload)) public timeLockPayload;
+    /*///////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
 
-    /// @notice Checks if the caller is form allowed to send payload to this contract (only Forms are allowed)
-    /// TODO: Test this modifier
+    /// @dev tracks the total time lock payloads
+    uint256 public timeLockPayloadCounter;
+
+    /// @dev stores the timelock payloads
+    mapping(uint256 timeLockPayloadId => TimeLockPayload) public timeLockPayload;
+
+    /// @dev allows only form to write to the receive paylod
+    /// TODO: add only 2 step forms to write
     modifier onlyForm(uint256 superFormId) {
         (address superForm, , ) = _getSuperForm(superFormId);
         if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
         _;
     }
 
-    /// @notice Checks if the caller is the two steps processor
-    modifier onlyTwoStepsProcessor() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasTwoStepsProcessorRole(msg.sender))
-            revert Error.NOT_TWO_STEPS_PROCESSOR();
-        _;
-    }
-
+    /*///////////////////////////////////////////////////////////////
+                            CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
     constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
 
+    /*///////////////////////////////////////////////////////////////
+                            EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @inheritdoc ITwoStepsFormStateRegistry
-    function receivePayload(uint256 payloadId_, uint256 index_, uint256 superFormId_) external onlyForm(superFormId_) {
-        timeLockPayload[payloadId_][index_] = TimeLockPayload(superFormId_, TimeLockStatus.PENDING);
+    function receivePayload(
+        uint8 isSameChain_,
+        address srcSender_,
+        uint256 superFormId_,
+        uint256 amount_,
+        uint256 lockedTill_,
+        uint256 xChainPayloadId_,
+        uint256 xChainPayloadIndex_
+    ) external override onlyForm(superFormId_) {
+        ++timeLockPayloadCounter;
+
+        timeLockPayload[timeLockPayloadCounter] = TimeLockPayload(
+            isSameChain_,
+            srcSender_,
+            superFormId_,
+            amount_,
+            lockedTill_,
+            xChainPayloadId_,
+            xChainPayloadIndex_,
+            TimeLockStatus.PENDING
+        );
     }
 
     /// @inheritdoc ITwoStepsFormStateRegistry
     function finalizePayload(
-        uint256 payloadId_,
-        uint256 index_,
-        bytes memory ackExtraData
-    ) external payable onlyTwoStepsProcessor {
-        TimeLockPayload storage payload = timeLockPayload[payloadId_][index_];
+        uint256 timeLockPayloadId_,
+        bytes memory ambOverride_
+    ) external payable override onlyProcessor {
+        TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
 
-        if (payload.status != TimeLockStatus.PENDING) revert Error.INVALID_PAYLOAD_STATE();
-        payload.status = TimeLockStatus.PROCESSED;
+        console.log(block.timestamp);
+        console.log(p.lockedTill);
 
-        (address superForm, , ) = _getSuperForm(payload.superFormId);
-
-        /// NOTE: ERC4626TimelockForm is the only form that uses processUnlock function
-        IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
-
-        /// @dev try to processUnlock for this srcSender
-        try form.processUnlock(payloadId_, index_) {} catch (bytes memory err) {
-            /// NOTE: in every other instance it's better to re-init withdraw
-            /// NOTE: this catch will ALWAYS send a message back to source with exception of WITHDRAW_COOLDOWN_PERIOD error on Timelock
-            /// TODO: Test this case (test messaging back to src)
-
-            if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
-                /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
-                (InitSingleVaultData memory singleVaultData, address srcSender, uint64 srcChainId) = form
-                    .getSingleVaultDataAtIndex(payloadId_, index_);
-
-                bytes memory returnMessage = _constructSingleReturnData(
-                    srcSender,
-                    srcChainId,
-                    payloadId_,
-                    singleVaultData
-                );
-                _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
-            }
-
-            /// TODO: Emit something in case of WITHDRAW_COOLDOWN_PERIOD. We don't want to delete payload then
-            // emit()
+        if (p.lockedTill > block.timestamp) {
+            revert Error.LOCKED();
         }
+
+        (address superForm, , ) = _getSuperForm(p.superFormId);
+
+        IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
+        form.withdrawAfterCoolDown(p.amount, p.srcSender);
     }
+
+    /*///////////////////////////////////////////////////////////////
+                            INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after xChainWithdraw succeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets

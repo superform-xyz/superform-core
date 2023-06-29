@@ -44,6 +44,7 @@ contract Scenario10Test is ProtocolActions {
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
+                timelocked: false,
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
