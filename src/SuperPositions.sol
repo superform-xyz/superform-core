@@ -24,8 +24,10 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         uint256[] superFormIds; // if stored on index 0 it is a single Vault
     }
 
+    /// note replace this to support some new role called minter
     modifier onlyRouter() {
-        if (superRegistry.superRouter() != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.superRouter() != msg.sender && superRegistry.twoStepsFormStateRegistry() != msg.sender)
+            revert Error.NOT_SUPER_ROUTER();
         _;
     }
 

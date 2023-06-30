@@ -29,6 +29,7 @@ enum TestType {
     RevertUpdateStateSlippage,
     RevertUpdateStateRBAC,
     RevertXChainWithdraw,
+    RevertTimeLockWithdraw,
     RevertXChainDeposit
 }
 

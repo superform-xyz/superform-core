@@ -74,6 +74,7 @@ abstract contract ProtocolActions is BaseSetup {
         aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);
 
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);
+
         if (!success) {
             console.log("Stage 4 failed");
             return;
@@ -112,6 +113,7 @@ abstract contract ProtocolActions is BaseSetup {
                 console.log("Stage 6 failed");
                 return;
             } else {
+                console.log("come in here");
                 /// @dev TODO check if this is working!
                 _assertAfterFailedWithdraw(
                     action,
@@ -133,14 +135,26 @@ abstract contract ProtocolActions is BaseSetup {
                 console.log("Stage 7 failed");
                 return;
             } else {
-                _assertAfterWithdraw(
-                    action,
-                    multiSuperFormsData,
-                    singleSuperFormsData,
-                    vars,
-                    spAmountSummed,
-                    spAmountBeforeWithdraw
-                );
+                if (action.testType == TestType.Pass) {
+                    _assertAfterWithdraw(
+                        action,
+                        multiSuperFormsData,
+                        singleSuperFormsData,
+                        vars,
+                        spAmountSummed,
+                        spAmountBeforeWithdraw
+                    );
+                } else {
+                    /// @dev should assert here but issue is the current assert failure function isn't adaptible
+                    _assertAfterDirectFailedWithdraw(
+                        action,
+                        multiSuperFormsData,
+                        singleSuperFormsData,
+                        vars,
+                        spAmountSummed,
+                        spAmountBeforeWithdraw
+                    );
+                }
             }
         }
 
@@ -1723,6 +1737,35 @@ abstract contract ProtocolActions is BaseSetup {
                 _assertSingleVaultBalance(action.user, singleSuperFormsData[i].superFormId, spAmountBeforeWithdraw);
             }
         }
-        console.log("Asserted after withdraw");
+        console.log("Asserted after failed withdraw");
+    }
+
+    function _assertAfterDirectFailedWithdraw(
+        TestAction memory action,
+        MultiVaultsSFData[] memory multiSuperFormsData,
+        SingleVaultSFData[] memory singleSuperFormsData,
+        StagesLocalVars memory vars,
+        uint256[] memory spAmountsBeforeWithdraw,
+        uint256 spAmountBeforeWithdraw
+    ) internal {
+        vm.selectFork(FORKS[CHAIN_0]);
+        uint256[] memory spAmountFinal;
+
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            if (action.multiVaults) {
+                spAmountFinal = _spAmountsMultiAfterFailedWithdraw(
+                    multiSuperFormsData[i],
+                    action.user,
+                    spAmountsBeforeWithdraw,
+                    spAmountsBeforeWithdraw
+                );
+
+                _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountFinal);
+            } else {
+                /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
+                _assertSingleVaultBalance(action.user, singleSuperFormsData[i].superFormId, spAmountBeforeWithdraw);
+            }
+        }
+        console.log("Asserted after failed withdraw");
     }
 }

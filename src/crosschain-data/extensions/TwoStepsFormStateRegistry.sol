@@ -5,6 +5,7 @@ import "forge-std/console.sol";
 
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {IERC4626TimelockForm} from "../../forms/interfaces/IERC4626TimelockForm.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import {Error} from "../../utils/Error.sol";
@@ -98,7 +99,16 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         try form.withdrawAfterCoolDown(p.data.amount) {
             /// @dev transfers the collateral received
         } catch {
-            /// @dev dispatch acknowledgement to mint shares back
+            /// @dev dispatch acknowledgement to mint shares back || mint shares back
+            if (p.isXChain == 1) {}
+
+            if (p.isXChain == 0) {
+                ISuperPositions(superRegistry.superPositions()).mintSingleSP(
+                    p.srcSender,
+                    p.data.superFormId,
+                    p.data.amount
+                );
+            }
         }
     }
 

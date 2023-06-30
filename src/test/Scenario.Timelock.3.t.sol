@@ -29,11 +29,11 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [1];
-        TARGET_VAULTS[POLY][0] = [1];
+        TARGET_VAULTS[POLY][0] = [4];
         TARGET_FORM_KINDS[POLY][0] = [1];
 
         TARGET_UNDERLYINGS[POLY][1] = [1];
-        TARGET_VAULTS[POLY][1] = [1];
+        TARGET_VAULTS[POLY][1] = [4];
         TARGET_FORM_KINDS[POLY][1] = [1];
 
         AMOUNTS[POLY][0] = [7722];
@@ -72,7 +72,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 timelocked: true,
                 user: 1,
-                testType: TestType.Pass,
+                testType: TestType.RevertTimeLockWithdraw,
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
@@ -88,7 +88,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario_timelock_same_chain() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
