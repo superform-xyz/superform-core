@@ -8,12 +8,5 @@ import {InitSingleVaultData} from "../../types/DataTypes.sol";
 /// @notice Interface used by ERC4626TimelockForm. Required by TwostepsFormStateRegistry to call processUnlock() function
 interface IERC4626TimelockForm is IERC4626Form {
     /// @notice Process unlock request
-    function withdrawAfterCoolDown(uint256 amount_, address receiver_) external;
-
-    /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
-
-    function getSingleVaultDataAtIndex(
-        uint256 payloadId_,
-        uint256 index_
-    ) external view returns (InitSingleVaultData memory singleVaultData, address, uint64);
+    function withdrawAfterCoolDown(uint256 amount_) external;
 }

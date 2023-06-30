@@ -21,22 +21,28 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     using SafeERC20 for IERC20;
 
     /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
+                            MODIFIER
     //////////////////////////////////////////////////////////////*/
+    modifier onlyTwoStepStateRegistry() {
+        if (msg.sender != superRegistry.twoStepsFormStateRegistry()) {
+            revert Error.NOT_TWO_STEP_STATE_REGISTRY();
+        }
+        _;
+    }
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-
     constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function withdrawAfterCoolDown(uint256 amount_, address receiver_) external {
+    function withdrawAfterCoolDown(uint256 amount_) external onlyTwoStepStateRegistry {
         IERC4626TimelockVault v = IERC4626TimelockVault(vault);
 
-        v.redeem(amount_, receiver_, address(this));
+        /// @dev moves all redeemed tokens to the two step state registry
+        v.redeem(amount_, msg.sender, address(this));
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -59,19 +65,10 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
     ) internal virtual override returns (uint256 dstAmount) {
-        uint256 lockedTill = _processUnlock(singleVaultData_.amount);
+        uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
 
-        /// @dev record the unlock on two step form state registry
-        address twoStepFormStateRegistry = superRegistry.twoStepsFormStateRegistry();
-        ITwoStepsFormStateRegistry(twoStepFormStateRegistry).receivePayload(
-            1, /// @dev indicates same_chain
-            srcSender_,
-            singleVaultData_.superFormId,
-            singleVaultData_.amount,
-            lockedTill,
-            0,
-            0
-        );
+        /// note should we validate liq data here
+        _storePayload(0, srcSender_, lockedTill, singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -87,52 +84,31 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64 srcChainId_
+        uint64
     ) internal virtual override returns (uint256 dstAmount) {
-        uint256 lockedTill = _processUnlock(singleVaultData_.amount);
+        uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
 
-        /// @dev record the unlock on two step form state registry
-        address twoStepFormStateRegistry = superRegistry.twoStepsFormStateRegistry();
-        ITwoStepsFormStateRegistry(twoStepFormStateRegistry).receivePayload(
-            1, /// @dev indicates same_chain
-            srcSender_,
-            singleVaultData_.superFormId,
-            singleVaultData_.amount,
-            lockedTill,
-            0,
-            0
-        );
+        /// note should we validate liq data here
+        _storePayload(1, srcSender_, lockedTill, singleVaultData_);
     }
 
     /// @dev calls the vault to request unlock
     /// @notice shares are successfully burned at this point
-    function _processUnlock(uint256 amount_) internal returns (uint256 lockedTill_) {
+    function _requestUnlock(uint256 amount_) internal returns (uint256 lockedTill_) {
         IERC4626TimelockVault v = IERC4626TimelockVault(vault);
 
         v.requestUnlock(amount_, address(this));
         lockedTill_ = block.timestamp + v.getLockPeriod();
     }
 
-    /// @dev reads a payload from core state registry and construct
-    /// single init vault data
-    function getSingleVaultDataAtIndex(
-        uint256 payloadId_,
-        uint256 index_
-    ) public view returns (InitSingleVaultData memory data, address, uint64) {
-        bytes memory payloadBody = IBaseStateRegistry(superRegistry.coreStateRegistry()).payloadBody(payloadId_);
-        uint256 payloadHeader = IBaseStateRegistry(superRegistry.coreStateRegistry()).payloadHeader(payloadId_);
-
-        (, , , , address srcSender, uint64 srcChainId) = _decodeTxInfo(payloadHeader);
-
-        InitMultiVaultData memory multiVaultData = abi.decode(payloadBody, (InitMultiVaultData));
-
-        data = InitSingleVaultData({
-            payloadId: multiVaultData.payloadId,
-            superFormId: multiVaultData.superFormIds[index_],
-            amount: multiVaultData.amounts[index_],
-            maxSlippage: multiVaultData.maxSlippage[index_],
-            liqData: multiVaultData.liqData[index_],
-            extraFormData: abi.encode(payloadId_, index_)
-        });
+    /// @dev stores the withdrawal payload
+    function _storePayload(
+        uint8 type_,
+        address srcSender_,
+        uint256 lockedTill_,
+        InitSingleVaultData memory data_
+    ) internal {
+        ITwoStepsFormStateRegistry registry = ITwoStepsFormStateRegistry(superRegistry.twoStepsFormStateRegistry());
+        registry.receivePayload(type_, srcSender_, lockedTill_, data_);
     }
 }

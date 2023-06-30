@@ -10,6 +10,7 @@ import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateReg
 import {Error} from "../../utils/Error.sol";
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData} from "../../types/DataTypes.sol";
+import {LiqRequest} from "../../types/LiquidityTypes.sol";
 import "../../utils/DataPacking.sol";
 
 /// @title TwoStepsFormStateRegistry
@@ -28,13 +29,10 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     }
 
     struct TimeLockPayload {
-        uint8 isSameChain;
+        uint8 isXChain;
         address srcSender;
-        uint256 superFormId;
-        uint256 amount;
         uint256 lockedTill;
-        uint256 xChainPayloadId;
-        uint256 xChainPayloadIndex;
+        InitSingleVaultData data;
         TimeLockStatus status;
     }
 
@@ -67,24 +65,18 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
     /// @inheritdoc ITwoStepsFormStateRegistry
     function receivePayload(
-        uint8 isSameChain_,
+        uint8 type_,
         address srcSender_,
-        uint256 superFormId_,
-        uint256 amount_,
         uint256 lockedTill_,
-        uint256 xChainPayloadId_,
-        uint256 xChainPayloadIndex_
-    ) external override onlyForm(superFormId_) {
+        InitSingleVaultData memory data_
+    ) external override onlyForm(data_.superFormId) {
         ++timeLockPayloadCounter;
 
         timeLockPayload[timeLockPayloadCounter] = TimeLockPayload(
-            isSameChain_,
+            type_,
             srcSender_,
-            superFormId_,
-            amount_,
             lockedTill_,
-            xChainPayloadId_,
-            xChainPayloadIndex_,
+            data_,
             TimeLockStatus.PENDING
         );
     }
@@ -96,17 +88,18 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     ) external payable override onlyProcessor {
         TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
 
-        console.log(block.timestamp);
-        console.log(p.lockedTill);
-
         if (p.lockedTill > block.timestamp) {
             revert Error.LOCKED();
         }
 
-        (address superForm, , ) = _getSuperForm(p.superFormId);
+        (address superForm, , ) = _getSuperForm(p.data.superFormId);
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
-        form.withdrawAfterCoolDown(p.amount, p.srcSender);
+        try form.withdrawAfterCoolDown(p.data.amount) {
+            /// @dev transfers the collateral received
+        } catch {
+            /// @dev dispatch acknowledgement to mint shares back
+        }
     }
 
     /*///////////////////////////////////////////////////////////////

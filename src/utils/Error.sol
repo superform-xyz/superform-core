@@ -30,6 +30,9 @@ library Error {
     /// @dev - when msg.sender is not roles state registry
     error NOT_ROLES_STATE_REGISTRY();
 
+    /// @dev - when msg.sender is not two step state registry
+    error NOT_TWO_STEP_STATE_REGISTRY();
+
     /// @dev - when msg.sender is not protocol admin
     error NOT_PROTOCOL_ADMIN();
 
