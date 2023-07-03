@@ -40,7 +40,7 @@ contract Normal4626NoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.RevertProcessPayload,
                 revertError: "",

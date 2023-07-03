@@ -63,26 +63,59 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         requiredQuorum[srcChainId_] = quorum_;
     }
 
+    struct UpdatePayloadVars {
+        bytes32 previousPayloadProof_;
+        bytes previousPayloadBody_;
+        uint256 previousPayloadHeader_;
+        InitSingleVaultData singleVaultData;
+        uint64 srcChainId;
+        uint256 l1;
+        uint256 l2;
+    }
+
     /// @inheritdoc ICoreStateRegistry
     function updateMultiVaultPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
-        InitMultiVaultData memory multiVaultData = abi.decode(payloadBody[payloadId_], (InitMultiVaultData));
+        UpdatePayloadVars memory v_;
+        v_.previousPayloadHeader_ = payloadHeader[payloadId_];
+        v_.previousPayloadBody_ = payloadBody[payloadId_];
 
-        uint256 l1 = multiVaultData.amounts.length;
-        uint256 l2 = finalAmounts_.length;
+        v_.previousPayloadProof_ = keccak256(
+            abi.encode(AMBMessage(v_.previousPayloadHeader_, v_.previousPayloadBody_))
+        );
 
-        if (l1 != l2) {
+        InitMultiVaultData memory multiVaultData = abi.decode(v_.previousPayloadBody_, (InitMultiVaultData));
+
+        (, , , , , v_.srcChainId) = v_.previousPayloadHeader_.decodeTxInfo();
+
+        if (messageQuorum[v_.previousPayloadProof_] < getRequiredMessagingQuorum(v_.srcChainId)) {
+            revert Error.QUORUM_NOT_REACHED();
+        }
+
+        v_.l1 = multiVaultData.amounts.length;
+        v_.l2 = finalAmounts_.length;
+
+        if (v_.l1 != v_.l2) {
             revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
         }
 
-        PayloadUpdaterLib.validatePayloadUpdate(payloadHeader[payloadId_], payloadTracking[payloadId_], 1);
+        PayloadUpdaterLib.validatePayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 1);
         PayloadUpdaterLib.validateSlippageArray(finalAmounts_, multiVaultData.amounts, multiVaultData.maxSlippage);
 
         multiVaultData.amounts = finalAmounts_;
 
+        /// re-set previous message quorum to 0
+        delete messageQuorum[v_.previousPayloadProof_];
+
         payloadBody[payloadId_] = abi.encode(multiVaultData);
+
+        /// set new message quorum
+        messageQuorum[
+            keccak256(abi.encode(AMBMessage(v_.previousPayloadHeader_, payloadBody[payloadId_])))
+        ] = getRequiredMessagingQuorum(v_.srcChainId);
+
         payloadTracking[payloadId_] = PayloadState.UPDATED;
 
         emit PayloadUpdated(payloadId_);
@@ -93,14 +126,31 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
         uint256 payloadId_,
         uint256 finalAmount_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
-        InitSingleVaultData memory singleVaultData = abi.decode(payloadBody[payloadId_], (InitSingleVaultData));
+        bytes memory previousPayloadBody_ = payloadBody[payloadId_];
+        uint256 previousPayloadHeader_ = payloadHeader[payloadId_];
+        InitSingleVaultData memory singleVaultData = abi.decode(previousPayloadBody_, (InitSingleVaultData));
 
-        PayloadUpdaterLib.validatePayloadUpdate(payloadHeader[payloadId_], payloadTracking[payloadId_], 0);
+        bytes32 previousPayloadProof_ = keccak256(abi.encode(AMBMessage(previousPayloadHeader_, previousPayloadBody_)));
+
+        (, , , , , uint64 srcChainId) = previousPayloadHeader_.decodeTxInfo();
+        if (messageQuorum[previousPayloadProof_] < getRequiredMessagingQuorum(srcChainId)) {
+            revert Error.QUORUM_NOT_REACHED();
+        }
+
+        PayloadUpdaterLib.validatePayloadUpdate(previousPayloadHeader_, payloadTracking[payloadId_], 0);
         PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage);
+
+        delete messageQuorum[previousPayloadProof_];
 
         singleVaultData.amount = finalAmount_;
 
         payloadBody[payloadId_] = abi.encode(singleVaultData);
+
+        /// set new message quorum
+        messageQuorum[
+            keccak256(abi.encode(AMBMessage(previousPayloadHeader_, payloadBody[payloadId_])))
+        ] = getRequiredMessagingQuorum(srcChainId);
+
         payloadTracking[payloadId_] = PayloadState.UPDATED;
 
         emit PayloadUpdated(payloadId_);

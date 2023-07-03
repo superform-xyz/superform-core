@@ -1121,9 +1121,6 @@ abstract contract ProtocolActions is BaseSetup {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
                 finalAmounts[i] = (args.amounts[i] * (10000 - uint256(args.slippage))) / 10000;
-            } else if (args.slippage < 0) {
-                args.slippage = -args.slippage;
-                finalAmounts[i] = (args.amounts[i] * (10000 + uint256(args.slippage))) / 10000;
             }
         }
 
@@ -1172,9 +1169,6 @@ abstract contract ProtocolActions is BaseSetup {
         finalAmount = args.amount;
         if (args.slippage > 0) {
             finalAmount = (args.amount * (10000 - uint256(args.slippage))) / 10000;
-        } else if (args.slippage < 0) {
-            args.slippage = -args.slippage;
-            finalAmount = (args.amount * (10000 + uint256(args.slippage))) / 10000;
         }
 
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
@@ -1474,11 +1468,16 @@ abstract contract ProtocolActions is BaseSetup {
         IERC1155s superPositions = IERC1155s(superPositionsAddress);
 
         uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
+        console.log("currentBalanceOfSp", currentBalanceOfSp);
+        console.log("amountToAssert", amountToAssert);
+
         assertEq(currentBalanceOfSp, amountToAssert);
     }
 
     function _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
-        MultiVaultsSFData memory multiSuperFormsData
+        MultiVaultsSFData memory multiSuperFormsData,
+        bool assertWithSlippage,
+        int256 slippage
     ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 totalSpAmount) {
         uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
         emptyAmount = new uint256[](lenSuperforms);
@@ -1486,12 +1485,17 @@ abstract contract ProtocolActions is BaseSetup {
 
         // create an array of amounts summing the amounts of the same superform ids
         (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
+        uint256 finalAmount;
 
         for (uint256 i = 0; i < lenSuperforms; i++) {
             totalSpAmount += multiSuperFormsData.amounts[i];
             for (uint256 j = 0; j < lenSuperforms; j++) {
                 if (multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j]) {
-                    spAmountSummed[i] += multiSuperFormsData.amounts[j];
+                    finalAmount = multiSuperFormsData.amounts[j];
+                    if (assertWithSlippage && slippage != 0) {
+                        finalAmount = (multiSuperFormsData.amounts[j] * (10000 - uint256(slippage))) / 10000;
+                    }
+                    spAmountSummed[i] += finalAmount;
                 }
             }
             spAmountSummed[i] = IBaseForm(superForms[i]).previewDepositTo(spAmountSummed[i]);
@@ -1567,7 +1571,9 @@ abstract contract ProtocolActions is BaseSetup {
 
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (emptyAmount, spAmountSummed, ) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
-                    multiSuperFormsData[i]
+                    multiSuperFormsData[i],
+                    false,
+                    0
                 );
                 _assertMultiVaultBalance(
                     action.user,
@@ -1612,7 +1618,9 @@ abstract contract ProtocolActions is BaseSetup {
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             if (action.multiVaults) {
                 (, spAmountSummed, totalSpAmount) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
-                    multiSuperFormsData[i]
+                    multiSuperFormsData[i],
+                    true,
+                    action.slippage
                 );
                 totalSpAmountAllDestinations += totalSpAmount;
 
@@ -1625,15 +1633,14 @@ abstract contract ProtocolActions is BaseSetup {
 
                 token = singleSuperFormsData[0].liqRequest.token;
 
+                uint256 finalAmount = (singleSuperFormsData[i].amount * (10000 - uint256(action.slippage))) / 10000;
+
                 /// assert spToken Balance
-                _assertSingleVaultBalance(
-                    action.user,
-                    singleSuperFormsData[i].superFormId,
-                    singleSuperFormsData[i].amount
-                );
+                _assertSingleVaultBalance(action.user, singleSuperFormsData[i].superFormId, finalAmount);
             }
         }
         uint256 msgValue = token != NATIVE_TOKEN ? 0 : action.msgValue;
+        /*
         if (token == NATIVE_TOKEN) {
             console.log("balance now", users[action.user].balance);
             console.log("balance Before action", inputBalanceBefore);
@@ -1645,7 +1652,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev assert user input token balance
         /// @notice TODO commented for now until we have precise gas estimation, otherwise it is not possible to assert conclusively
 
-        /*
+
         assertEq(
             token != NATIVE_TOKEN ? IERC20(token).balanceOf(users[action.user]) : users[action.user].balance,
             inputBalanceBefore - totalSpAmountAllDestinations - msgValue
