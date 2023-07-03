@@ -1362,7 +1362,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.prank(deployer);
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).processTx(
-            bridgeIds[0],
+            liqBridgeKind_,
             txData,
             underlyingToken_,
             amount_
@@ -1396,7 +1396,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.prank(deployer);
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).batchProcessTx(
-            bridgeIds[0],
+            liqBridgeKinds_,
             txDatas,
             underlyingTokens_,
             amounts_
@@ -1468,8 +1468,6 @@ abstract contract ProtocolActions is BaseSetup {
         IERC1155s superPositions = IERC1155s(superPositionsAddress);
 
         uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
-        console.log("currentBalanceOfSp", currentBalanceOfSp);
-        console.log("amountToAssert", amountToAssert);
 
         assertEq(currentBalanceOfSp, amountToAssert);
     }

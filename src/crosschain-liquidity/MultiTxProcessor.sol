@@ -65,13 +65,15 @@ contract MultiTxProcessor is IMultiTxProcessor {
 
     /// @inheritdoc IMultiTxProcessor
     function batchProcessTx(
-        uint8 bridgeId_,
+        uint8[] calldata bridgeId_,
         bytes[] calldata txDatas_,
         address[] calldata approvalTokens_,
         uint256[] calldata amounts_
     ) external override onlySwapper {
-        address to = superRegistry.getBridgeAddress(bridgeId_);
+        address to;
         for (uint256 i = 0; i < txDatas_.length; i++) {
+            to = superRegistry.getBridgeAddress(bridgeId_[i]);
+
             if (approvalTokens_[i] != NATIVE) {
                 IERC20(approvalTokens_[i]).approve(to, amounts_[i]);
                 (bool success, ) = payable(to).call(txDatas_[i]);

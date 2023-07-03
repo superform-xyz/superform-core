@@ -6,11 +6,13 @@ import "../../types/LiquidityTypes.sol";
 import "../../types/DataTypes.sol";
 
 // Test Utils
-import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract Normal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
+contract KYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
+    /// @dev Access SuperFormRouter interface
+    ISuperFormRouter superRouter;
+
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -18,38 +20,36 @@ contract Normal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         AMBs = [1, 3];
 
-        CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        CHAIN_0 = BSC;
+        DST_CHAINS = [ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [1];
-        TARGET_VAULTS[POLY][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_UNDERLYINGS[ETH][0] = [0];
 
-        TARGET_FORM_KINDS[POLY][0] = [0];
+        TARGET_VAULTS[ETH][0] = [2]; /// @dev id 0 is normal 4626
 
-        AMOUNTS[POLY][0] = [4121];
+        TARGET_FORM_KINDS[ETH][0] = [2];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        AMOUNTS[ETH][0] = [31321321];
+
+        MAX_SLIPPAGE[ETH][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [1];
-
-        /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 2 * _getPriceMultiplier(CHAIN_0) * 1e18;
+        LIQ_BRIDGES[ETH][0] = [2];
 
         actions.push(
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
-                testType: TestType.RevertProcessPayload,
+                testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
+                slippage: 321, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: true,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: msgValue,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+                msgValue: 50 * 10 ** 18,
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
@@ -59,13 +59,16 @@ contract Normal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        for (uint256 act; act < actions.length; act++) {
+        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
+        superRouter = ISuperFormRouter(_superRouter);
+        for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
             _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
         }
     }
