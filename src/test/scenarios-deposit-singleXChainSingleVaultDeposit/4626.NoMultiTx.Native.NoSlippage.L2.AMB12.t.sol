@@ -2,16 +2,14 @@
 pragma solidity 0.8.19;
 
 // Contracts
-import "../types/LiquidityTypes.sol";
-import "../types/DataTypes.sol";
+import "../../types/LiquidityTypes.sol";
+import "../../types/DataTypes.sol";
 
 // Test Utils
-import "./utils/ProtocolActions.sol";
-import "./utils/AmbParams.sol";
+import "../utils/ProtocolActions.sol";
+import "../utils/AmbParams.sol";
 
-/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
-/// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario10Test is ProtocolActions {
+contract Normal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
     /// @dev Access SuperFormRouter interface
     ISuperFormRouter superRouter;
 
@@ -20,8 +18,7 @@ contract Scenario10Test is ProtocolActions {
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationSingleVault Deposit test case / using lifi bridge for all actions
-        AMBs = [2, 3];
+        AMBs = [1, 2];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];
@@ -52,7 +49,7 @@ contract Scenario10Test is ProtocolActions {
                 multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
