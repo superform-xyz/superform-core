@@ -68,7 +68,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
 
         /// note should we validate liq data here
-        _storePayload(0, srcSender_, lockedTill, singleVaultData_);
+        _storePayload(0, srcSender_, superRegistry.chainId(), lockedTill, singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
@@ -84,12 +84,12 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
-        uint64
+        uint64 srcChainId_
     ) internal virtual override returns (uint256 dstAmount) {
         uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
 
         /// note should we validate liq data here
-        _storePayload(1, srcSender_, lockedTill, singleVaultData_);
+        _storePayload(1, srcSender_, srcChainId_, lockedTill, singleVaultData_);
     }
 
     /// @dev calls the vault to request unlock
@@ -105,10 +105,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     function _storePayload(
         uint8 type_,
         address srcSender_,
+        uint64 srcChainId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     ) internal {
         ITwoStepsFormStateRegistry registry = ITwoStepsFormStateRegistry(superRegistry.twoStepsFormStateRegistry());
-        registry.receivePayload(type_, srcSender_, lockedTill_, data_);
+        registry.receivePayload(type_, srcSender_, srcChainId_, lockedTill_, data_);
     }
 }

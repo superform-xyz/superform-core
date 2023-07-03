@@ -32,6 +32,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     struct TimeLockPayload {
         uint8 isXChain;
         address srcSender;
+        uint64 srcChainId;
         uint256 lockedTill;
         InitSingleVaultData data;
         TimeLockStatus status;
@@ -68,6 +69,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     function receivePayload(
         uint8 type_,
         address srcSender_,
+        uint64 srcChainId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     ) external override onlyForm(data_.superFormId) {
@@ -76,6 +78,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         timeLockPayload[timeLockPayloadCounter] = TimeLockPayload(
             type_,
             srcSender_,
+            srcChainId_,
             lockedTill_,
             data_,
             TimeLockStatus.PENDING
@@ -100,7 +103,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             /// @dev transfers the collateral received
         } catch {
             /// @dev dispatch acknowledgement to mint shares back || mint shares back
-            if (p.isXChain == 1) {}
+            if (p.isXChain == 1) {
+                (uint256 payloadId_, ) = abi.decode(p.data.extraFormData, (uint256, uint256));
+                bytes memory message_ = _constructSingleReturnData(p.srcSender, p.srcChainId, payloadId_, p.data);
+                _dispatchAcknowledgement(p.srcChainId, message_, ambOverride_);
+            }
 
             if (p.isXChain == 0) {
                 ISuperPositions(superRegistry.superPositions()).mintSingleSP(

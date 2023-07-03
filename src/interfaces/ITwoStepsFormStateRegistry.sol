@@ -11,6 +11,7 @@ interface ITwoStepsFormStateRegistry {
     function receivePayload(
         uint8 type_,
         address srcSender_,
+        uint64 srcChainId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     ) external;

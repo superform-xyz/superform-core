@@ -129,6 +129,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         /// @dev stage 7 and 8 are only required for timelocked forms
         if (action.timelocked && action.action == Actions.Withdraw) {
+            console.log("reached here------");
             /// @dev Keeper needs to know this value to be able to process unlock
             success = _stage7_process_unlock_withdraw(action, vars, 1);
             if (!success) {
@@ -159,6 +160,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         if (action.timelocked && action.testType == TestType.RevertXChainWithdraw) {
+            console.log("reached here------");
             /// @dev Process payload received on source from destination (withdraw callback)
             /// @dev TODO, THERE IS NO PROCESS PAYLOAD FUNCTION IN TwoStepsFormStateRegistry to re-issue SuperPositions in case of failure!!
             success = _stage8_process_2step_payload(action, vars);
@@ -318,7 +320,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[CHAIN_0]);
 
         if (action.testType != TestType.RevertMainAction) {
-            vm.startPrank(users[action.user]);
+            vm.prank(users[action.user]);
             /// @dev see @pigeon for this implementation
             vm.recordLogs();
 
@@ -1016,6 +1018,7 @@ abstract contract ProtocolActions is BaseSetup {
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
         vars.superPositions = IERC1155s(ISuperRegistry(vars.stateRegistry).superPositions());
         vm.prank(users[args.user]);
+
         vars.superPositions.setApprovalForOne(vars.superRouter, args.superFormId, args.amount);
 
         vars.txData = _buildLiqBridgeTxData(
