@@ -32,7 +32,8 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     modifier onlyCoreStateRegistry() {
-        if (superRegistry.coreStateRegistry() != msg.sender) revert Error.NOT_CORE_STATE_REGISTRY();
+        if (superRegistry.coreStateRegistry() != msg.sender && superRegistry.twoStepsFormStateRegistry() != msg.sender)
+            revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 

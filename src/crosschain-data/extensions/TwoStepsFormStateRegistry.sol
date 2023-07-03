@@ -10,14 +10,17 @@ import {IERC4626TimelockForm} from "../../forms/interfaces/IERC4626TimelockForm.
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import {Error} from "../../utils/Error.sol";
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
-import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData} from "../../types/DataTypes.sol";
+import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState} from "../../types/DataTypes.sol";
 import {LiqRequest} from "../../types/LiquidityTypes.sol";
+import {DataLib} from "../../libraries/DataLib.sol";
 import "../../utils/DataPacking.sol";
 
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
 contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegistry {
+    using DataLib for uint256;
+
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -53,6 +56,13 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     modifier onlyForm(uint256 superFormId) {
         (address superForm, , ) = _getSuperForm(superFormId);
         if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
+        _;
+    }
+
+    modifier isValidPayloadId(uint256 payloadId_) {
+        if (payloadId_ > payloadsCount) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
         _;
     }
 
@@ -106,6 +116,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             if (p.isXChain == 1) {
                 (uint256 payloadId_, ) = abi.decode(p.data.extraFormData, (uint256, uint256));
                 bytes memory message_ = _constructSingleReturnData(p.srcSender, p.srcChainId, payloadId_, p.data);
+
                 _dispatchAcknowledgement(p.srcChainId, message_, ambOverride_);
             }
 
@@ -117,6 +128,40 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                 );
             }
         }
+    }
+
+    /// @inheritdoc BaseStateRegistry
+    function processPayload(
+        uint256 payloadId_,
+        bytes memory ackExtraData_
+    ) external payable virtual override onlyProcessor isValidPayloadId(payloadId_) returns (bytes memory) {
+        uint256 _payloadHeader = payloadHeader[payloadId_];
+        bytes memory _payloadBody = payloadBody[payloadId_];
+
+        if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
+            revert Error.INVALID_PAYLOAD_STATE();
+        }
+
+        (, uint256 callbackType, , , , ) = _payloadHeader.decodeTxInfo();
+
+        AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
+
+        if (callbackType == uint256(CallbackType.FAIL)) {
+            ISuperPositions(superRegistry.superPositions()).stateSync(_message);
+        }
+
+        /// @dev validates quorum
+        // v._proof = keccak256(abi.encode(v._message));
+
+        // if (messageQuorum[v._proof] < getRequiredMessagingQuorum(v.srcChainId)) {
+        //     revert Error.QUORUM_NOT_REACHED();
+        // }
+
+        /// @dev sets status as processed
+        /// @dev check for re-entrancy & relocate if needed
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+        return bytes("");
     }
 
     /*///////////////////////////////////////////////////////////////

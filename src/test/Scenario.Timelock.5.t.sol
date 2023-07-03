@@ -28,22 +28,22 @@ contract ScenarioTimelockTest is ProtocolActions {
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [1];
-        TARGET_VAULTS[POLY][0] = [4];
-        TARGET_FORM_KINDS[POLY][0] = [1];
+        TARGET_UNDERLYINGS[POLY][0] = [1, 1];
+        TARGET_VAULTS[POLY][0] = [1, 1];
+        TARGET_FORM_KINDS[POLY][0] = [1, 1];
 
-        TARGET_UNDERLYINGS[POLY][1] = [1];
-        TARGET_VAULTS[POLY][1] = [4];
-        TARGET_FORM_KINDS[POLY][1] = [1];
+        TARGET_UNDERLYINGS[POLY][1] = [1, 1];
+        TARGET_VAULTS[POLY][1] = [1, 1];
+        TARGET_FORM_KINDS[POLY][1] = [1, 1];
 
-        AMOUNTS[POLY][0] = [7722];
-        AMOUNTS[POLY][1] = [7722];
+        AMOUNTS[POLY][0] = [7722, 7722];
+        AMOUNTS[POLY][1] = [7722, 7722];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
-        MAX_SLIPPAGE[POLY][1] = [1000];
+        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
+        MAX_SLIPPAGE[POLY][1] = [1000, 1000];
 
-        LIQ_BRIDGES[POLY][0] = [1];
-        LIQ_BRIDGES[POLY][1] = [1];
+        LIQ_BRIDGES[POLY][0] = [1, 1];
+        LIQ_BRIDGES[POLY][1] = [1, 1];
 
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 5 * _getPriceMultiplier(CHAIN_0) * 1e18;
@@ -72,7 +72,7 @@ contract ScenarioTimelockTest is ProtocolActions {
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 timelocked: true,
                 user: 1,
-                testType: TestType.RevertXChainWithdraw,
+                testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
