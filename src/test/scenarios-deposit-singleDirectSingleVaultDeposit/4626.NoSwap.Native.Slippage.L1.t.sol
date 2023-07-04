@@ -9,30 +9,30 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXCNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
+contract SDD4626NoSwapNativeSlippageL1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [1, 2];
+        AMBs = [2, 3];
 
-        CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        CHAIN_0 = AVAX;
+        DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [0];
+        TARGET_UNDERLYINGS[AVAX][0] = [2];
 
-        TARGET_VAULTS[POLY][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[POLY][0] = [0];
+        TARGET_FORM_KINDS[AVAX][0] = [0];
 
-        AMOUNTS[POLY][0] = [8213];
+        AMOUNTS[AVAX][0] = [2];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE[AVAX][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [2];
+        LIQ_BRIDGES[AVAX][0] = [1];
 
         actions.push(
             TestAction({
@@ -42,7 +42,7 @@ contract SXCNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 999, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,

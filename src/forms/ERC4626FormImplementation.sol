@@ -136,6 +136,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
 
         vars.balanceAfter = vars.collateralToken.balanceOf(address(this));
+
         if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount)
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
 

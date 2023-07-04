@@ -88,7 +88,6 @@ abstract contract ProtocolActions is BaseSetup {
                 spAmountBeforeWithdraw
             );
         }
-        console.log("balance stage 4", users[action.user].balance);
 
         if (
             (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) &&
@@ -99,7 +98,8 @@ abstract contract ProtocolActions is BaseSetup {
                 console.log("Stage 5 failed");
 
                 return;
-            } else {
+            } else if (action.testType != TestType.RevertMainAction) {
+                /// @dev if we don't even process main action there is nothing to assert
                 _assertAfterDeposit(action, multiSuperFormsData, singleSuperFormsData, vars, inputBalanceBefore);
             }
         }
@@ -201,7 +201,6 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
         action.msgValue = action.msgValue + (vars.nDestinations + 1) * _getPriceMultiplier(CHAIN_0) * 1e18;
-        console.log("action.msgValue", action.msgValue);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (DST_CHAINS[i] == chainIds[j]) {
@@ -257,10 +256,16 @@ abstract contract ProtocolActions is BaseSetup {
                         llChainIds[vars.chain0Index],
                         llChainIds[vars.chainDstIndex],
                         action.multiTx,
-                        action.action
+                        action.action,
+                        action.slippage
                     )
                 );
             } else {
+                uint256 finalAmount = vars.amounts[0];
+                /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
+                if (action.slippage != 0 && CHAIN_0 == DST_CHAINS[i]) {
+                    finalAmount = (vars.amounts[0] * (10000 - uint256(action.slippage))) / 10000;
+                }
                 SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                     action.user,
                     vars.fromSrc,
@@ -270,7 +275,7 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.toDst[0],
                     vars.underlyingSrcToken[0],
                     vars.targetSuperFormIds[0],
-                    vars.amounts[0],
+                    finalAmount,
                     vars.liqBridges[0],
                     vars.maxSlippage[0],
                     vars.vaultMock[0],
@@ -394,7 +399,32 @@ abstract contract ProtocolActions is BaseSetup {
             }
             vm.stopPrank();
         } else {
-            /// @dev TODO
+            vm.startPrank(users[action.user]);
+
+            vm.expectRevert();
+
+            if (!action.multiVaults) {
+                if (vars.nDestinations == 1) {
+                    if (CHAIN_0 == DST_CHAINS[0]) {
+                        vars.singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
+                            DST_CHAINS[0],
+                            singleSuperFormsData[0],
+                            action.ambParams[0]
+                        );
+
+                        if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                            superRouter.singleDirectSingleVaultDeposit{value: action.msgValue}(
+                                vars.singleDirectSingleVaultStateReq
+                            );
+                        } else if (action.action == Actions.Withdraw) {
+                            superRouter.singleDirectSingleVaultWithdraw{value: action.msgValue}(
+                                vars.singleDirectSingleVaultStateReq
+                            );
+                        }
+                    }
+                }
+            }
+            vm.stopPrank();
         }
 
         return vars;
@@ -772,8 +802,13 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultCallDataArgs memory callDataArgs;
 
         if (len == 0) revert LEN_MISMATCH();
-
+        uint256 finalAmount;
         for (uint i = 0; i < len; i++) {
+            finalAmount = args.amounts[i];
+            /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
+            if (args.slippage != 0 && args.srcChainId == args.toChainId) {
+                finalAmount = (args.amounts[i] * (10000 - uint256(args.slippage))) / 10000;
+            }
             callDataArgs = SingleVaultCallDataArgs(
                 args.user,
                 args.fromSrc,
@@ -781,7 +816,7 @@ abstract contract ProtocolActions is BaseSetup {
                 args.toDst[i],
                 args.underlyingTokens[i],
                 args.superFormIds[i],
-                args.amounts[i],
+                finalAmount,
                 args.liqBridges[i],
                 args.maxSlippage[i],
                 args.vaultMock[i],
@@ -1475,7 +1510,8 @@ abstract contract ProtocolActions is BaseSetup {
     function _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
         MultiVaultsSFData memory multiSuperFormsData,
         bool assertWithSlippage,
-        int256 slippage
+        int256 slippage,
+        bool sameChain
     ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 totalSpAmount) {
         uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
         emptyAmount = new uint256[](lenSuperforms);
@@ -1490,7 +1526,7 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 j = 0; j < lenSuperforms; j++) {
                 if (multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j]) {
                     finalAmount = multiSuperFormsData.amounts[j];
-                    if (assertWithSlippage && slippage != 0) {
+                    if (assertWithSlippage && slippage != 0 && !sameChain) {
                         finalAmount = (multiSuperFormsData.amounts[j] * (10000 - uint256(slippage))) / 10000;
                     }
                     spAmountSummed[i] += finalAmount;
@@ -1571,7 +1607,8 @@ abstract contract ProtocolActions is BaseSetup {
                 (emptyAmount, spAmountSummed, ) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     multiSuperFormsData[i],
                     false,
-                    0
+                    0,
+                    false
                 );
                 _assertMultiVaultBalance(
                     action.user,
@@ -1618,7 +1655,8 @@ abstract contract ProtocolActions is BaseSetup {
                 (, spAmountSummed, totalSpAmount) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     multiSuperFormsData[i],
                     true,
-                    action.slippage
+                    action.slippage,
+                    vars.chain0Index == vars.chainDstIndex
                 );
                 totalSpAmountAllDestinations += totalSpAmount;
 
@@ -1631,7 +1669,11 @@ abstract contract ProtocolActions is BaseSetup {
 
                 token = singleSuperFormsData[0].liqRequest.token;
 
-                uint256 finalAmount = (singleSuperFormsData[i].amount * (10000 - uint256(action.slippage))) / 10000;
+                uint256 finalAmount = singleSuperFormsData[i].amount;
+
+                if (action.slippage != 0 && vars.chain0Index != vars.chainDstIndex) {
+                    finalAmount = (singleSuperFormsData[i].amount * (10000 - uint256(action.slippage))) / 10000;
+                }
 
                 /// assert spToken Balance
                 _assertSingleVaultBalance(action.user, singleSuperFormsData[i].superFormId, finalAmount);

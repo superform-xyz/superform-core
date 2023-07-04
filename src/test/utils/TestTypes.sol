@@ -185,6 +185,7 @@ struct MultiVaultCallDataArgs {
     uint256 liquidityBridgeToChainId;
     bool multiTx;
     Actions action;
+    int256 slippage;
 }
 
 struct BuildDepositCallDataArgs {

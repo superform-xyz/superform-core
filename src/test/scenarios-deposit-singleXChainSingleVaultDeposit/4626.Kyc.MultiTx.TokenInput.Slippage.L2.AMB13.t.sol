@@ -9,10 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract KYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
-    /// @dev Access SuperFormRouter interface
-    ISuperFormRouter superRouter;
-
+contract SXCKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -59,8 +56,6 @@ contract KYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
-        superRouter = ISuperFormRouter(_superRouter);
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
