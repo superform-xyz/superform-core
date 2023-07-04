@@ -42,6 +42,9 @@ library Error {
     /// @dev - when msg.sender is not super router
     error NOT_SUPER_ROUTER();
 
+    /// @dev - when msg.sender is not minter
+    error NOT_MINTER();
+
     /// @dev if the msg-sender is not super form factory
     error NOT_SUPERFORM_FACTORY();
 
