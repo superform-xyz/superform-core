@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
