@@ -9,7 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXCKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
+contract SXSVDKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////

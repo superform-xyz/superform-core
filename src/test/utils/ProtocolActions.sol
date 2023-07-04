@@ -262,6 +262,7 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             } else {
                 uint256 finalAmount = vars.amounts[0];
+
                 /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
                 if (action.slippage != 0 && CHAIN_0 == DST_CHAINS[i]) {
                     finalAmount = (vars.amounts[0] * (10000 - uint256(action.slippage))) / 10000;
@@ -449,7 +450,6 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperFormsData
     ) internal returns (MessagingAssertVars[] memory) {
         Stage3InternalVars memory internalVars;
-        MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
         /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
         internalVars.toMailboxes = new address[](vars.nDestinations);
@@ -517,6 +517,7 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             }
         }
+        MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
         CoreStateRegistry stateRegistry;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
@@ -582,6 +583,9 @@ abstract contract ProtocolActions is BaseSetup {
                         action.revertError,
                         action.revertRole
                     );
+
+                    console.log("aV[i].toChainId", aV[i].toChainId);
+                    console.log(" aV[i].receivedSingleVaultData.amount", aV[i].receivedSingleVaultData.amount);
 
                     vars.singleVaultsPayloadArg = UpdateSingleVaultPayloadArgs(
                         PAYLOAD_ID[aV[i].toChainId],
@@ -878,7 +882,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
 
             userRequest = ISocketRegistry.UserRequest(
-                multiTx_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
                 liqBridgeToChainId_,
                 amount_,
                 middlewareRequest,
@@ -907,7 +911,7 @@ abstract contract ProtocolActions is BaseSetup {
                     "", /// FIXME optional native amount
                     address(0),
                     underlyingToken_,
-                    multiTx_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
                     amount_,
                     liqBridgeToChainId_,
                     true,
@@ -920,7 +924,7 @@ abstract contract ProtocolActions is BaseSetup {
                     "", /// FIXME optional native amount
                     address(0),
                     underlyingToken_,
-                    multiTx_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
                     amount_,
                     liqBridgeToChainId_,
                     false,
@@ -1656,7 +1660,7 @@ abstract contract ProtocolActions is BaseSetup {
                     multiSuperFormsData[i],
                     true,
                     action.slippage,
-                    vars.chain0Index == vars.chainDstIndex
+                    CHAIN_0 == DST_CHAINS[i]
                 );
                 totalSpAmountAllDestinations += totalSpAmount;
 
@@ -1671,7 +1675,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                 uint256 finalAmount = singleSuperFormsData[i].amount;
 
-                if (action.slippage != 0 && vars.chain0Index != vars.chainDstIndex) {
+                if (action.slippage != 0 && CHAIN_0 != DST_CHAINS[i]) {
                     finalAmount = (singleSuperFormsData[i].amount * (10000 - uint256(action.slippage))) / 10000;
                 }
 

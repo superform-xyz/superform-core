@@ -10,7 +10,7 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXCNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
+contract SXSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////

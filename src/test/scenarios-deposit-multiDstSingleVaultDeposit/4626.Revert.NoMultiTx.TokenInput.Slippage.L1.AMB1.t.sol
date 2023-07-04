@@ -10,29 +10,42 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions {
+contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [1, 2];
+        AMBs = [1, 3];
 
-        CHAIN_0 = POLY;
-        DST_CHAINS = [AVAX];
+        CHAIN_0 = OP;
+        DST_CHAINS = [OP, ETH, POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[AVAX][0] = [2];
-        TARGET_VAULTS[AVAX][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_UNDERLYINGS[OP][0] = [2];
+        TARGET_UNDERLYINGS[ETH][0] = [2];
+        TARGET_UNDERLYINGS[POLY][0] = [1];
 
-        TARGET_FORM_KINDS[AVAX][0] = [0];
+        TARGET_VAULTS[OP][0] = [0];
+        TARGET_VAULTS[ETH][0] = [0];
+        TARGET_VAULTS[POLY][0] = [0];
 
-        AMOUNTS[AVAX][0] = [472186431];
+        TARGET_FORM_KINDS[OP][0] = [0];
+        TARGET_FORM_KINDS[ETH][0] = [0];
+        TARGET_FORM_KINDS[POLY][0] = [0];
 
-        MAX_SLIPPAGE[AVAX][0] = [1000];
+        AMOUNTS[OP][0] = [2];
+        AMOUNTS[ETH][0] = [5];
+        AMOUNTS[POLY][0] = [44444];
+
+        MAX_SLIPPAGE[OP][0] = [1000];
+        MAX_SLIPPAGE[ETH][0] = [1000];
+        MAX_SLIPPAGE[POLY][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[AVAX][0] = [2];
+        LIQ_BRIDGES[OP][0] = [1];
+        LIQ_BRIDGES[ETH][0] = [1];
+        LIQ_BRIDGES[POLY][0] = [1];
 
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 2 * _getPriceMultiplier(CHAIN_0) * 1e18;
@@ -42,14 +55,14 @@ contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
-                testType: TestType.RevertProcessPayload,
+                testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 742, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: true,
+                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: msgValue,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

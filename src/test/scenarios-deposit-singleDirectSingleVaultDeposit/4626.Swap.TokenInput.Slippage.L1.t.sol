@@ -9,7 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SDD4626SwapTokenInputSlippageL1 is ProtocolActions {
+contract SDSVD4626SwapTokenInputSlippageL1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ contract SDD4626SwapTokenInputSlippageL1 is ProtocolActions {
                 multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 /// @dev input token != vault underlying - swap involved
             })
         );
     }

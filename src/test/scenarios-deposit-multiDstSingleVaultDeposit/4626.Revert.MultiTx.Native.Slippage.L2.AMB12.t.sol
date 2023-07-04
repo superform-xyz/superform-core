@@ -10,39 +10,53 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions {
+contract MDSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
         AMBs = [1, 2];
+        MultiDstAMBs = [AMBs, AMBs, AMBs];
 
-        CHAIN_0 = POLY;
-        DST_CHAINS = [AVAX];
+        CHAIN_0 = OP;
+        DST_CHAINS = [POLY, AVAX, OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[AVAX][0] = [2];
-        TARGET_VAULTS[AVAX][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_UNDERLYINGS[POLY][0] = [0];
+        TARGET_UNDERLYINGS[AVAX][0] = [1];
+        TARGET_UNDERLYINGS[OP][0] = [2];
 
+        TARGET_VAULTS[POLY][0] = [0];
+        TARGET_VAULTS[AVAX][0] = [0];
+        TARGET_VAULTS[OP][0] = [0];
+
+        TARGET_FORM_KINDS[POLY][0] = [0];
         TARGET_FORM_KINDS[AVAX][0] = [0];
+        TARGET_FORM_KINDS[OP][0] = [0];
 
-        AMOUNTS[AVAX][0] = [472186431];
+        AMOUNTS[POLY][0] = [4214];
+        AMOUNTS[AVAX][0] = [6562];
+        AMOUNTS[OP][0] = [7777];
 
+        MAX_SLIPPAGE[POLY][0] = [1000];
         MAX_SLIPPAGE[AVAX][0] = [1000];
+        MAX_SLIPPAGE[OP][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
+        LIQ_BRIDGES[POLY][0] = [2];
         LIQ_BRIDGES[AVAX][0] = [2];
+        LIQ_BRIDGES[OP][0] = [2];
 
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 2 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         actions.push(
             TestAction({
-                action: Actions.Deposit,
+                action: Actions.DepositPermit2,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
-                testType: TestType.RevertProcessPayload,
+                testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
                 slippage: 742, // 0% <- if we are testing a pass this must be below each maxSlippage,

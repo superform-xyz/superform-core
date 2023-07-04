@@ -9,7 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXCKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
+contract SXSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
