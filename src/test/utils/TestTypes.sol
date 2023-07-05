@@ -77,7 +77,6 @@ struct MessagingAssertVars {
 struct TestAction {
     Actions action;
     bool multiVaults;
-    bool timelocked;
     uint256 user;
     TestType testType;
     bytes4 revertError;

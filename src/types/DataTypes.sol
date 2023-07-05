@@ -91,6 +91,21 @@ struct InitSingleVaultData {
     bytes extraFormData;
 }
 
+enum TimeLockStatus {
+    UNAVAILABLE,
+    PENDING,
+    PROCESSED
+}
+
+struct TimeLockPayload {
+    uint8 isXChain;
+    address srcSender;
+    uint64 srcChainId;
+    uint256 lockedTill;
+    InitSingleVaultData data;
+    TimeLockStatus status;
+}
+
 struct AMBMessage {
     uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag  if multi/single vault, registry id, srcSender and srcChainId
     bytes params; // decoding txInfo will point to the right datatype of params. Refer CoreStateRegistryHelper.sol

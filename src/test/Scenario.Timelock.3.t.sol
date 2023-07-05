@@ -53,7 +53,6 @@ contract ScenarioTimelockTest is ProtocolActions {
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                timelocked: false,
                 user: 1,
                 testType: TestType.Pass,
                 revertError: "",
@@ -70,7 +69,6 @@ contract ScenarioTimelockTest is ProtocolActions {
             TestAction({
                 action: Actions.Withdraw,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                timelocked: true,
                 user: 1,
                 testType: TestType.RevertTimeLockWithdraw,
                 revertError: "",

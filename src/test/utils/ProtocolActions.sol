@@ -17,6 +17,10 @@ import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 abstract contract ProtocolActions is BaseSetup {
     event FailedXChainDeposits(uint256 indexed payloadId);
 
+    bool public hasTimeLocked;
+
+    uint256 public totalTimeLocked;
+
     uint8[] public AMBs;
 
     uint8[][] public MultiDstAMBs;
@@ -59,9 +63,11 @@ abstract contract ProtocolActions is BaseSetup {
         bool success
     ) internal {
         (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
+
         uint256[] memory spAmountSummed;
         uint256 spAmountBeforeWithdraw;
         uint256 inputBalanceBefore;
+
         (, spAmountSummed, spAmountBeforeWithdraw, inputBalanceBefore) = _assertBeforeAction(
             action,
             multiSuperFormsData,
@@ -106,14 +112,13 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         /// @dev stage 6 is only required if there is any failed withdraw in the multi vaults
-        if (!action.timelocked && action.action == Actions.Withdraw && action.testType != TestType.Pass) {
+        if (!hasTimeLocked && action.action == Actions.Withdraw && action.testType != TestType.Pass) {
             bytes memory returnMessage;
             (success, returnMessage) = _stage6_process_superPositions_withdraw(action, vars);
             if (!success) {
                 console.log("Stage 6 failed");
                 return;
             } else {
-                console.log("come in here");
                 /// @dev TODO check if this is working!
                 _assertAfterFailedWithdraw(
                     action,
@@ -128,8 +133,9 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         /// @dev stage 7 and 8 are only required for timelocked forms
-        if (action.timelocked && action.action == Actions.Withdraw) {
+        if (hasTimeLocked && action.action == Actions.Withdraw) {
             vm.recordLogs();
+
             /// @dev Keeper needs to know this value to be able to process unlock
             success = _stage7_process_unlock_withdraw(action, vars, 1);
 
@@ -164,7 +170,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
 
-        if (action.timelocked && action.testType == TestType.RevertXChainWithdraw) {
+        if (hasTimeLocked && action.testType == TestType.RevertXChainWithdraw) {
             /// @dev Process payload received on source from destination (withdraw callback)
             /// @dev TODO, THERE IS NO PROCESS PAYLOAD FUNCTION IN TwoStepsFormStateRegistry to re-issue SuperPositions in case of failure!!
             success = _stage8_process_2step_payload(action, vars);
@@ -224,6 +230,7 @@ abstract contract ProtocolActions is BaseSetup {
         vars.toDst = new address[](vars.nDestinations);
         multiSuperFormsData = new MultiVaultsSFData[](vars.nDestinations);
         singleSuperFormsData = new SingleVaultSFData[](vars.nDestinations);
+
         /// @dev FIXME this probably needs to be tailored for NATIVE DEPOSITS
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
@@ -1074,7 +1081,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 action
     )
         internal
-        view
         returns (
             uint256[] memory targetSuperFormsMem,
             address[] memory underlyingSrcTokensMem,
@@ -1104,6 +1110,13 @@ abstract contract ProtocolActions is BaseSetup {
             targetSuperFormsMem[i] = vars.superFormIdsTemp[i];
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
+        }
+
+        for (uint256 j; j < vars.formKinds.length; j++) {
+            if (vars.formKinds[j] == 1) hasTimeLocked = true;
+
+            /// @dev should we map to chain id specific
+            totalTimeLocked++;
         }
     }
 
