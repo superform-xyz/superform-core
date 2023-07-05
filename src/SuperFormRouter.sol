@@ -17,8 +17,6 @@ import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
 
-import "forge-std/console.sol";
-
 /// @title SuperFormRouter
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and action information to a remote execution chain.
