@@ -2,18 +2,11 @@
 pragma solidity 0.8.19;
 
 import {IERC4626Form} from "../../test/interfaces/IERC4626Form.sol";
-import {InitSingleVaultData} from "../../types/DataTypes.sol";
+import {InitSingleVaultData, TimeLockPayload} from "../../types/DataTypes.sol";
 
 /// @title IERC4626TimelockForm
 /// @notice Interface used by ERC4626TimelockForm. Required by TwostepsFormStateRegistry to call processUnlock() function
 interface IERC4626TimelockForm is IERC4626Form {
     /// @notice Process unlock request
-    function processUnlock(uint256 payloadId, uint256 index) external;
-
-    /// @notice Getter for returning singleVaultData from the Form to the FormKeeper
-
-    function getSingleVaultDataAtIndex(
-        uint256 payloadId_,
-        uint256 index_
-    ) external view returns (InitSingleVaultData memory singleVaultData, address, uint64);
+    function withdrawAfterCoolDown(uint256 amount_, TimeLockPayload memory p_) external;
 }

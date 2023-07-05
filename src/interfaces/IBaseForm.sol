@@ -17,7 +17,7 @@ interface IBaseForm is IERC165Upgradeable {
     event VaultAdded(uint256 id, IERC4626 vault);
 
     /// @dev is emitted when a payload is processed by the destination contract.
-    event Processed(uint64 srcChainID, uint64 dstChainId, uint256 txId, uint256 amount, address vault);
+    event Processed(uint64 srcChainID, uint64 dstChainId, uint256 srcPayloadId, uint256 amount, address vault);
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL WRITE FUNCTONS
@@ -70,5 +70,10 @@ interface IBaseForm is IERC165Upgradeable {
         uint64 srcChainId_
     ) external returns (uint256 dstAmount);
 
+    /// @notice Returns the underlying token of a vault.
+    /// @return The underlying token
     function getUnderlyingOfVault() external view returns (address);
+
+    /// @dev API may need to know state of funds deployed
+    function previewDepositTo(uint256 assets_) external view returns (uint256);
 }

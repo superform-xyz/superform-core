@@ -103,7 +103,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         if (data.params.length == 32) {
             /// NOTE: assuming 32 bytes length is always proof
             /// NOTE: should validate this assumption
-            ++messageQuorum[abi.decode(data.params, (bytes32))];
+            bytes32 proofHash = abi.decode(data.params, (bytes32));
+            ++messageQuorum[proofHash];
 
             emit ProofReceived(data.params);
         } else {
@@ -120,7 +121,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     function processPayload(
         uint256 payloadId_,
         bytes memory ambOverride_
-    ) external payable virtual override onlyProcessor {}
+    ) external payable virtual override onlyProcessor returns (bytes memory) {}
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS

@@ -3,94 +3,151 @@ pragma solidity 0.8.19;
 
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {IERC4626TimelockForm} from "../../forms/interfaces/IERC4626TimelockForm.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import {Error} from "../../utils/Error.sol";
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
-import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData} from "../../types/DataTypes.sol";
+import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState, TimeLockStatus, TimeLockPayload} from "../../types/DataTypes.sol";
+import {LiqRequest} from "../../types/LiquidityTypes.sol";
+import {DataLib} from "../../libraries/DataLib.sol";
 import "../../utils/DataPacking.sol";
 
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
 contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegistry {
+    using DataLib for uint256;
+
+    /*///////////////////////////////////////////////////////////////
+                            CONSTANTS
+    //////////////////////////////////////////////////////////////*/
     bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
 
-    enum TimeLockStatus {
-        UNAVAILABLE,
-        PENDING,
-        PROCESSED
-    }
+    /*///////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
 
-    struct TimeLockPayload {
-        uint256 superFormId;
-        TimeLockStatus status;
-    }
+    /// @dev tracks the total time lock payloads
+    uint256 public timeLockPayloadCounter;
 
-    mapping(uint256 payloadId => mapping(uint256 index => TimeLockPayload)) public timeLockPayload;
+    /// @dev stores the timelock payloads
+    mapping(uint256 timeLockPayloadId => TimeLockPayload) public timeLockPayload;
 
-    /// @notice Checks if the caller is form allowed to send payload to this contract (only Forms are allowed)
-    /// TODO: Test this modifier
+    /// @dev allows only form to write to the receive paylod
+    /// TODO: add only 2 step forms to write
     modifier onlyForm(uint256 superFormId) {
         (address superForm, , ) = _getSuperForm(superFormId);
         if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
         _;
     }
 
-    /// @notice Checks if the caller is the two steps processor
-    modifier onlyTwoStepsProcessor() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasTwoStepsProcessorRole(msg.sender))
-            revert Error.NOT_TWO_STEPS_PROCESSOR();
+    modifier isValidPayloadId(uint256 payloadId_) {
+        if (payloadId_ > payloadsCount) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
         _;
     }
 
+    /*///////////////////////////////////////////////////////////////
+                            CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
     constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
 
+    /*///////////////////////////////////////////////////////////////
+                            EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @inheritdoc ITwoStepsFormStateRegistry
-    function receivePayload(uint256 payloadId_, uint256 index_, uint256 superFormId_) external onlyForm(superFormId_) {
-        timeLockPayload[payloadId_][index_] = TimeLockPayload(superFormId_, TimeLockStatus.PENDING);
+    function receivePayload(
+        uint8 type_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint256 lockedTill_,
+        InitSingleVaultData memory data_
+    ) external override onlyForm(data_.superFormId) {
+        ++timeLockPayloadCounter;
+
+        timeLockPayload[timeLockPayloadCounter] = TimeLockPayload(
+            type_,
+            srcSender_,
+            srcChainId_,
+            lockedTill_,
+            data_,
+            TimeLockStatus.PENDING
+        );
     }
 
     /// @inheritdoc ITwoStepsFormStateRegistry
     function finalizePayload(
-        uint256 payloadId_,
-        uint256 index_,
-        bytes memory ackExtraData
-    ) external payable onlyTwoStepsProcessor {
-        TimeLockPayload storage payload = timeLockPayload[payloadId_][index_];
+        uint256 timeLockPayloadId_,
+        bytes memory ambOverride_
+    ) external payable override onlyProcessor {
+        TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
 
-        if (payload.status != TimeLockStatus.PENDING) revert Error.INVALID_PAYLOAD_STATE();
-        payload.status = TimeLockStatus.PROCESSED;
+        if (p.lockedTill > block.timestamp) {
+            revert Error.LOCKED();
+        }
 
-        (address superForm, , ) = _getSuperForm(payload.superFormId);
+        (address superForm, , ) = _getSuperForm(p.data.superFormId);
 
-        /// NOTE: ERC4626TimelockForm is the only form that uses processUnlock function
         IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
+        try form.withdrawAfterCoolDown(p.data.amount, p) {} catch {
+            /// @dev dispatch acknowledgement to mint shares back || mint shares back
+            if (p.isXChain == 1) {
+                (uint256 payloadId_, ) = abi.decode(p.data.extraFormData, (uint256, uint256));
+                bytes memory message_ = _constructSingleReturnData(p.srcSender, p.srcChainId, payloadId_, p.data);
 
-        /// @dev try to processUnlock for this srcSender
-        try form.processUnlock(payloadId_, index_) {} catch (bytes memory err) {
-            /// NOTE: in every other instance it's better to re-init withdraw
-            /// NOTE: this catch will ALWAYS send a message back to source with exception of WITHDRAW_COOLDOWN_PERIOD error on Timelock
-            /// TODO: Test this case (test messaging back to src)
-
-            if (WITHDRAW_COOLDOWN_PERIOD != keccak256(err)) {
-                /// catch doesnt have an access to singleVaultData, we use mirrored mapping on form (to test)
-                (InitSingleVaultData memory singleVaultData, address srcSender, uint64 srcChainId) = form
-                    .getSingleVaultDataAtIndex(payloadId_, index_);
-
-                bytes memory returnMessage = _constructSingleReturnData(
-                    srcSender,
-                    srcChainId,
-                    payloadId_,
-                    singleVaultData
-                );
-                _dispatchAcknowledgement(srcChainId, returnMessage, ackExtraData); /// NOTE: ackExtraData needs to be always specified 'just in case' we fail
+                _dispatchAcknowledgement(p.srcChainId, message_, ambOverride_);
             }
 
-            /// TODO: Emit something in case of WITHDRAW_COOLDOWN_PERIOD. We don't want to delete payload then
-            // emit()
+            if (p.isXChain == 0) {
+                ISuperPositions(superRegistry.superPositions()).mintSingleSP(
+                    p.srcSender,
+                    p.data.superFormId,
+                    p.data.amount
+                );
+            }
         }
     }
+
+    /// @inheritdoc BaseStateRegistry
+    function processPayload(
+        uint256 payloadId_,
+        bytes memory ackExtraData_
+    ) external payable virtual override onlyProcessor isValidPayloadId(payloadId_) returns (bytes memory) {
+        uint256 _payloadHeader = payloadHeader[payloadId_];
+        bytes memory _payloadBody = payloadBody[payloadId_];
+
+        if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
+            revert Error.INVALID_PAYLOAD_STATE();
+        }
+
+        (, uint256 callbackType, , , , ) = _payloadHeader.decodeTxInfo();
+
+        AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
+
+        if (callbackType == uint256(CallbackType.FAIL)) {
+            ISuperPositions(superRegistry.superPositions()).stateSync(_message);
+        }
+
+        /// @dev validates quorum
+        // v._proof = keccak256(abi.encode(v._message));
+
+        // if (messageQuorum[v._proof] < getRequiredMessagingQuorum(v.srcChainId)) {
+        //     revert Error.QUORUM_NOT_REACHED();
+        // }
+
+        /// @dev sets status as processed
+        /// @dev check for re-entrancy & relocate if needed
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+        return bytes("");
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after xChainWithdraw succeds.
     /// @dev Constructs return message in case of a FAILURE to perform redemption of already unlocked assets
