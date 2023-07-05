@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
@@ -10,7 +8,7 @@ import {IERC4626TimelockForm} from "../../forms/interfaces/IERC4626TimelockForm.
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import {Error} from "../../utils/Error.sol";
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
-import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState} from "../../types/DataTypes.sol";
+import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState, TimeLockStatus, TimeLockPayload} from "../../types/DataTypes.sol";
 import {LiqRequest} from "../../types/LiquidityTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 import "../../utils/DataPacking.sol";
@@ -25,21 +23,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
     bytes32 immutable WITHDRAW_COOLDOWN_PERIOD = keccak256(abi.encodeWithSignature("WITHDRAW_COOLDOWN_PERIOD()"));
-
-    enum TimeLockStatus {
-        UNAVAILABLE,
-        PENDING,
-        PROCESSED
-    }
-
-    struct TimeLockPayload {
-        uint8 isXChain;
-        address srcSender;
-        uint64 srcChainId;
-        uint256 lockedTill;
-        InitSingleVaultData data;
-        TimeLockStatus status;
-    }
 
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
@@ -109,9 +92,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         (address superForm, , ) = _getSuperForm(p.data.superFormId);
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
-        try form.withdrawAfterCoolDown(p.data.amount) {
-            /// @dev transfers the collateral received
-        } catch {
+        try form.withdrawAfterCoolDown(p.data.amount, p) {} catch {
             /// @dev dispatch acknowledgement to mint shares back || mint shares back
             if (p.isXChain == 1) {
                 (uint256 payloadId_, ) = abi.decode(p.data.extraFormData, (uint256, uint256));
