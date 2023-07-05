@@ -2,47 +2,48 @@
 pragma solidity 0.8.19;
 
 // Contracts
-import "../types/LiquidityTypes.sol";
-import "../types/DataTypes.sol";
+import "../../types/LiquidityTypes.sol";
+import "../../types/DataTypes.sol";
+
 // Test Utils
-import "./utils/ProtocolActions.sol";
-import "./utils/AmbParams.sol";
+import "../utils/ProtocolActions.sol";
+import "../utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario4Test is ProtocolActions {
+contract Scenario5Test is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationXChainDeposit Full singleDestinationXChainWithdraw Deposit test case
+        /// @dev singleDestinationDirectDeposit singleDestinationDirectWithdraw
 
         AMBs = [1, 2];
 
         CHAIN_0 = ETH;
-        DST_CHAINS = [ARBI];
+        DST_CHAINS = [ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ARBI][0] = [1];
-        TARGET_VAULTS[ARBI][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][0] = [0];
+        TARGET_UNDERLYINGS[ETH][0] = [2];
+        TARGET_VAULTS[ETH][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[ETH][0] = [0];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [1];
-        TARGET_VAULTS[ARBI][1] = [0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][1] = [0];
+        TARGET_UNDERLYINGS[ETH][1] = [2];
+        TARGET_VAULTS[ETH][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[ETH][1] = [0];
 
-        AMOUNTS[ARBI][0] = [3213];
-        AMOUNTS[ARBI][1] = [3213];
+        AMOUNTS[ETH][0] = [9831];
+        AMOUNTS[ETH][1] = [9831];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000];
-        MAX_SLIPPAGE[ARBI][1] = [1000];
+        MAX_SLIPPAGE[ETH][0] = [1000];
+        MAX_SLIPPAGE[ETH][1] = [1000];
 
-        LIQ_BRIDGES[ARBI][0] = [1];
-        LIQ_BRIDGES[ARBI][1] = [1];
+        LIQ_BRIDGES[ETH][0] = [1];
+        LIQ_BRIDGES[ETH][1] = [1];
 
         /// @dev check if we need to have this here (it's being overriden)
-        // uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         /// @dev push in order the actions should be executed
         actions.push(

@@ -103,7 +103,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         if (data.params.length == 32) {
             /// NOTE: assuming 32 bytes length is always proof
             /// NOTE: should validate this assumption
-            ++messageQuorum[abi.decode(data.params, (bytes32))];
+            bytes32 proofHash = abi.decode(data.params, (bytes32));
+            ++messageQuorum[proofHash];
 
             emit ProofReceived(data.params);
         } else {

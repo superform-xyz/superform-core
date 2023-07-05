@@ -806,7 +806,7 @@ abstract contract BaseSetup is DSTest, Test {
             vm.selectFork(FORKS[targetChainId_]);
             int256 price = _getLatestPrice(PRICE_FEEDS[targetChainId_]);
 
-            multiplier = 2 * uint256(ethUsdPrice / price);
+            multiplier = 3 * uint256(ethUsdPrice / price);
 
             /// @dev return to initial fork
 

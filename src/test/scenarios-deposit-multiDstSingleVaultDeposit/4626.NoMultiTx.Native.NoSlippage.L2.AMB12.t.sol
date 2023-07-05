@@ -2,43 +2,50 @@
 pragma solidity 0.8.19;
 
 // Contracts
-import "../types/LiquidityTypes.sol";
-import "../types/DataTypes.sol";
+import "../../types/LiquidityTypes.sol";
+import "../../types/DataTypes.sol";
 
 // Test Utils
-import {MockERC20} from "./mocks/MockERC20.sol";
-import "./utils/ProtocolActions.sol";
-import "./utils/AmbParams.sol";
+import "../utils/ProtocolActions.sol";
+import "../utils/AmbParams.sol";
 
-/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
-/// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario14Test is ProtocolActions {
-    /*//////////////////////////////////////////////////////////////
-                !! CONSTRUCTOR !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
+contract MDSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
-
-        /// @dev 2 - Hyperlane
-        /// @dev 3 - Celer
-        AMBs = [2, 3];
+        /*//////////////////////////////////////////////////////////////
+                !! WARNING !!  DEFINE TEST SETTINGS HERE
+    //////////////////////////////////////////////////////////////*/
+        AMBs = [1, 2];
+        MultiDstAMBs = [AMBs, AMBs, AMBs];
 
         CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        DST_CHAINS = [AVAX, ETH, POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [0];
+        TARGET_UNDERLYINGS[AVAX][0] = [0];
+        TARGET_UNDERLYINGS[ETH][0] = [0];
+        TARGET_UNDERLYINGS[POLY][0] = [1];
 
+        TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [0]; /// @dev id 0 is normal 4626
         TARGET_VAULTS[POLY][0] = [0]; /// @dev id 0 is normal 4626
 
+        TARGET_FORM_KINDS[AVAX][0] = [0];
+        TARGET_FORM_KINDS[ETH][0] = [0];
         TARGET_FORM_KINDS[POLY][0] = [0];
 
-        AMOUNTS[POLY][0] = [23183];
+        AMOUNTS[AVAX][0] = [98512890];
+        AMOUNTS[ETH][0] = [421821994];
+        AMOUNTS[POLY][0] = [42134];
 
+        MAX_SLIPPAGE[AVAX][0] = [1000];
+        MAX_SLIPPAGE[ETH][0] = [1000];
         MAX_SLIPPAGE[POLY][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [1];
+        LIQ_BRIDGES[AVAX][0] = [2];
+        LIQ_BRIDGES[ETH][0] = [2];
+        LIQ_BRIDGES[POLY][0] = [2];
 
         actions.push(
             TestAction({
@@ -50,9 +57,9 @@ contract Scenario14Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2), // DST POLY 3 ETH, (1 ETH, 1 ETH)
+                ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH, 3 = NATIVE_TOKEN
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

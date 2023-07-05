@@ -17,6 +17,8 @@ import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
 import {Error} from "./utils/Error.sol";
 import "./utils/DataPacking.sol";
 
+import "forge-std/console.sol";
+
 /// @title SuperFormRouter
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and action information to a remote execution chain.
@@ -143,11 +145,12 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
     /// @inheritdoc ISuperFormRouter
     function multiDstSingleVaultDeposit(MultiDstSingleVaultStateReq calldata req) external payable override {
+        uint64 srcChainId = superRegistry.chainId();
         uint64 dstChainId;
 
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             dstChainId = req.dstChainIds[i];
-            if (superRegistry.chainId() == dstChainId) {
+            if (srcChainId == dstChainId) {
                 singleDirectSingleVaultDeposit(
                     SingleDirectSingleVaultStateReq(dstChainId, req.superFormsData[i], req.extraDataPerDst[i])
                 );
@@ -173,6 +176,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         if (vars.srcChainId == req.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
+
         (ambData, vars.currentPayloadId) = _buildDepositAmbData(req.dstChainId, req.superFormData);
 
         vars.liqRequest = req.superFormData.liqRequest;

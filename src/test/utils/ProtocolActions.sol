@@ -28,6 +28,14 @@ abstract contract ProtocolActions is BaseSetup {
     uint64 public CHAIN_0;
 
     uint64[] public DST_CHAINS;
+    uint64[] public uniqueDSTs;
+
+    struct UniqueDSTInfo {
+        uint256 payloadNumber;
+        uint256 nRepetitions;
+    }
+
+    mapping(uint64 chainId => UniqueDSTInfo info) public usedDSTs;
 
     mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYINGS;
 
@@ -41,6 +49,8 @@ abstract contract ProtocolActions is BaseSetup {
 
     /// @dev 1 for socket, 2 for lifi
     mapping(uint64 chainId => mapping(uint256 index => uint8[] liqBridgeId)) public LIQ_BRIDGES;
+
+    mapping(uint64 chainId => mapping(uint256 index => TestType testType)) public TEST_TYPE_PER_DST;
 
     /// NOTE: Now that we can pass individual actions, this array is only useful for more extended simulations
     TestAction[] public actions;
@@ -95,7 +105,6 @@ abstract contract ProtocolActions is BaseSetup {
                 spAmountBeforeWithdraw
             );
         }
-        console.log("balance stage 4", users[action.user].balance);
 
         if (
             (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) &&
@@ -106,7 +115,8 @@ abstract contract ProtocolActions is BaseSetup {
                 console.log("Stage 5 failed");
 
                 return;
-            } else {
+            } else if (action.testType != TestType.RevertMainAction) {
+                /// @dev if we don't even process main action there is nothing to assert
                 _assertAfterDeposit(action, multiSuperFormsData, singleSuperFormsData, vars, inputBalanceBefore);
             }
         }
@@ -235,7 +245,6 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
         action.msgValue = action.msgValue + (vars.nDestinations + 1) * _getPriceMultiplier(CHAIN_0) * 1e18;
-        console.log("action.msgValue", action.msgValue);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (DST_CHAINS[i] == chainIds[j]) {
@@ -291,10 +300,17 @@ abstract contract ProtocolActions is BaseSetup {
                         llChainIds[vars.chain0Index],
                         llChainIds[vars.chainDstIndex],
                         action.multiTx,
-                        action.action
+                        action.action,
+                        action.slippage
                     )
                 );
             } else {
+                uint256 finalAmount = vars.amounts[0];
+
+                /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
+                if (action.slippage != 0 && CHAIN_0 == DST_CHAINS[i]) {
+                    finalAmount = (vars.amounts[0] * (10000 - uint256(action.slippage))) / 10000;
+                }
                 SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                     action.user,
                     vars.fromSrc,
@@ -304,7 +320,7 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.toDst[0],
                     vars.underlyingSrcToken[0],
                     vars.targetSuperFormIds[0],
-                    vars.amounts[0],
+                    finalAmount,
                     vars.liqBridges[0],
                     vars.maxSlippage[0],
                     vars.vaultMock[0],
@@ -427,7 +443,32 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
         } else {
-            /// @dev TODO
+            vm.startPrank(users[action.user]);
+
+            vm.expectRevert();
+
+            if (!action.multiVaults) {
+                if (vars.nDestinations == 1) {
+                    if (CHAIN_0 == DST_CHAINS[0]) {
+                        vars.singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
+                            DST_CHAINS[0],
+                            singleSuperFormsData[0],
+                            action.ambParams[0]
+                        );
+
+                        if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                            superRouter.singleDirectSingleVaultDeposit{value: action.msgValue}(
+                                vars.singleDirectSingleVaultStateReq
+                            );
+                        } else if (action.action == Actions.Withdraw) {
+                            superRouter.singleDirectSingleVaultWithdraw{value: action.msgValue}(
+                                vars.singleDirectSingleVaultStateReq
+                            );
+                        }
+                    }
+                }
+            }
+            vm.stopPrank();
         }
 
         return vars;
@@ -452,24 +493,37 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperFormsData
     ) internal returns (MessagingAssertVars[] memory) {
         Stage3InternalVars memory internalVars;
-        MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
+
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            if (usedDSTs[DST_CHAINS[i]].payloadNumber == 0) {
+                /// @dev NOTE: re-set struct to 0 to reset repetitions for multi action
+                delete usedDSTs[DST_CHAINS[i]];
+
+                ++usedDSTs[DST_CHAINS[i]].payloadNumber;
+                uniqueDSTs.push(DST_CHAINS[i]);
+            } else {
+                // add repetitions
+                ++usedDSTs[DST_CHAINS[i]].payloadNumber;
+            }
+        }
+        vars.nUniqueDsts = uniqueDSTs.length;
 
         /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
-        internalVars.toMailboxes = new address[](vars.nDestinations);
-        internalVars.expDstDomains = new uint32[](vars.nDestinations);
+        internalVars.toMailboxes = new address[](vars.nUniqueDsts);
+        internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);
 
-        internalVars.endpoints = new address[](vars.nDestinations);
-        internalVars.lzChainIds = new uint16[](vars.nDestinations);
+        internalVars.endpoints = new address[](vars.nUniqueDsts);
+        internalVars.lzChainIds = new uint16[](vars.nUniqueDsts);
 
-        internalVars.celerBusses = new address[](vars.nDestinations);
-        internalVars.celerChainIds = new uint64[](vars.nDestinations);
+        internalVars.celerBusses = new address[](vars.nUniqueDsts);
+        internalVars.celerChainIds = new uint64[](vars.nUniqueDsts);
 
-        internalVars.forkIds = new uint256[](vars.nDestinations);
+        internalVars.forkIds = new uint256[](vars.nUniqueDsts);
 
         internalVars.k = 0;
         for (uint256 i = 0; i < chainIds.length; i++) {
-            for (uint256 j = 0; j < vars.nDestinations; j++) {
-                if (DST_CHAINS[j] == chainIds[i]) {
+            for (uint256 j = 0; j < vars.nUniqueDsts; j++) {
+                if (uniqueDSTs[j] == chainIds[i]) {
                     internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
 
@@ -485,6 +539,7 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
         }
+        delete uniqueDSTs;
         vars.logs = vm.getRecordedLogs();
 
         for (uint256 index; index < AMBs.length; index++) {
@@ -520,18 +575,21 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             }
         }
+        MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
         CoreStateRegistry stateRegistry;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            aV[i].initialFork = vm.activeFork();
             aV[i].toChainId = DST_CHAINS[i];
+            if (usedDSTs[aV[i].toChainId].nRepetitions == 0) {
+                usedDSTs[aV[i].toChainId].nRepetitions = usedDSTs[aV[i].toChainId].payloadNumber;
+            }
             vm.selectFork(FORKS[aV[i].toChainId]);
 
             if (CHAIN_0 != aV[i].toChainId) {
                 stateRegistry = CoreStateRegistry(payable(getContract(aV[i].toChainId, "CoreStateRegistry")));
 
                 /// @dev NOTE: it's better to assert here inside the loop
-                aV[i].receivedPayloadId = stateRegistry.payloadsCount();
+                aV[i].receivedPayloadId = stateRegistry.payloadsCount() - usedDSTs[aV[i].toChainId].payloadNumber + 1;
                 aV[i].data = abi.decode(stateRegistry.payload(aV[i].receivedPayloadId), (AMBMessage));
 
                 /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
@@ -552,8 +610,9 @@ abstract contract ProtocolActions is BaseSetup {
 
                     assertEq(aV[i].expectedSingleVaultData.amount, aV[i].receivedSingleVaultData.amount);
                 }
+
+                --usedDSTs[aV[i].toChainId].payloadNumber;
             }
-            //vm.selectFork(aV.initialFork);
         }
         return aV;
     }
@@ -568,6 +627,7 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal returns (bool success) {
         /// assume it will pass by default
         success = true;
+
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].toChainId = DST_CHAINS[i];
             if (CHAIN_0 != aV[i].toChainId) {
@@ -626,15 +686,16 @@ abstract contract ProtocolActions is BaseSetup {
                         } else if (singleSuperFormsData.length > 0) {
                             _updateSingleVaultPayload(vars.singleVaultsPayloadArg);
                         }
+                        console.log("grabbing logs");
 
                         vm.recordLogs();
+
                         (success, ) = _processPayload(
                             PAYLOAD_ID[aV[i].toChainId],
                             aV[i].toChainId,
                             action.testType,
                             action.revertError
                         );
-
                         vars.logs = vm.getRecordedLogs();
 
                         _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
@@ -695,6 +756,7 @@ abstract contract ProtocolActions is BaseSetup {
                     unchecked {
                         PAYLOAD_ID[aV[i].toChainId]++;
                     }
+                    console.log("grabbing logs");
 
                     vm.recordLogs();
                     /// note: this is high-lvl processPayload function, even if this happens outside of the user view
@@ -705,7 +767,6 @@ abstract contract ProtocolActions is BaseSetup {
                         action.testType,
                         action.revertError
                     );
-
                     vars.logs = vm.getRecordedLogs();
 
                     _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
@@ -722,6 +783,7 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal returns (bool success) {
         /// assume it will pass by default
         success = true;
+        console.log("stage5");
         uint256 toChainId;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             toChainId = DST_CHAINS[i];
@@ -808,8 +870,13 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultCallDataArgs memory callDataArgs;
 
         if (len == 0) revert LEN_MISMATCH();
-
+        uint256 finalAmount;
         for (uint i = 0; i < len; i++) {
+            finalAmount = args.amounts[i];
+            /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
+            if (args.slippage != 0 && args.srcChainId == args.toChainId) {
+                finalAmount = (args.amounts[i] * (10000 - uint256(args.slippage))) / 10000;
+            }
             callDataArgs = SingleVaultCallDataArgs(
                 args.user,
                 args.fromSrc,
@@ -817,7 +884,7 @@ abstract contract ProtocolActions is BaseSetup {
                 args.toDst[i],
                 args.underlyingTokens[i],
                 args.superFormIds[i],
-                args.amounts[i],
+                finalAmount,
                 args.liqBridges[i],
                 args.maxSlippage[i],
                 args.vaultMock[i],
@@ -879,7 +946,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
 
             userRequest = ISocketRegistry.UserRequest(
-                multiTx_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
                 liqBridgeToChainId_,
                 amount_,
                 middlewareRequest,
@@ -908,7 +975,7 @@ abstract contract ProtocolActions is BaseSetup {
                     "", /// FIXME optional native amount
                     address(0),
                     underlyingToken_,
-                    multiTx_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
                     amount_,
                     liqBridgeToChainId_,
                     true,
@@ -921,7 +988,7 @@ abstract contract ProtocolActions is BaseSetup {
                     "", /// FIXME optional native amount
                     address(0),
                     underlyingToken_,
-                    multiTx_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
                     amount_,
                     liqBridgeToChainId_,
                     false,
@@ -1164,9 +1231,6 @@ abstract contract ProtocolActions is BaseSetup {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
                 finalAmounts[i] = (args.amounts[i] * (10000 - uint256(args.slippage))) / 10000;
-            } else if (args.slippage < 0) {
-                args.slippage = -args.slippage;
-                finalAmounts[i] = (args.amounts[i] * (10000 + uint256(args.slippage))) / 10000;
             }
         }
 
@@ -1215,9 +1279,6 @@ abstract contract ProtocolActions is BaseSetup {
         finalAmount = args.amount;
         if (args.slippage > 0) {
             finalAmount = (args.amount * (10000 - uint256(args.slippage))) / 10000;
-        } else if (args.slippage < 0) {
-            args.slippage = -args.slippage;
-            finalAmount = (args.amount * (10000 + uint256(args.slippage))) / 10000;
         }
 
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
@@ -1403,7 +1464,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.prank(deployer);
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).processTx(
-            bridgeIds[0],
+            liqBridgeKind_,
             txData,
             underlyingToken_,
             amount_
@@ -1437,7 +1498,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.prank(deployer);
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).batchProcessTx(
-            bridgeIds[0],
+            liqBridgeKinds_,
             txDatas,
             underlyingTokens_,
             amounts_
@@ -1509,11 +1570,16 @@ abstract contract ProtocolActions is BaseSetup {
         IERC1155s superPositions = IERC1155s(superPositionsAddress);
 
         uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
+
         assertEq(currentBalanceOfSp, amountToAssert);
     }
 
     function _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
-        MultiVaultsSFData memory multiSuperFormsData
+        MultiVaultsSFData memory multiSuperFormsData,
+        bool assertWithSlippage,
+        int256 slippage,
+        bool sameChain,
+        uint256 repetitions
     ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 totalSpAmount) {
         uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
         emptyAmount = new uint256[](lenSuperforms);
@@ -1521,12 +1587,19 @@ abstract contract ProtocolActions is BaseSetup {
 
         // create an array of amounts summing the amounts of the same superform ids
         (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
+        uint256 finalAmount;
 
         for (uint256 i = 0; i < lenSuperforms; i++) {
             totalSpAmount += multiSuperFormsData.amounts[i];
             for (uint256 j = 0; j < lenSuperforms; j++) {
                 if (multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j]) {
-                    spAmountSummed[i] += multiSuperFormsData.amounts[j];
+                    finalAmount = multiSuperFormsData.amounts[j];
+                    if (assertWithSlippage && slippage != 0 && !sameChain) {
+                        finalAmount = (multiSuperFormsData.amounts[j] * (10000 - uint256(slippage))) / 10000;
+                    }
+                    finalAmount = finalAmount * repetitions;
+
+                    spAmountSummed[i] += finalAmount;
                 }
             }
             spAmountSummed[i] = IBaseForm(superForms[i]).previewDepositTo(spAmountSummed[i]);
@@ -1602,7 +1675,11 @@ abstract contract ProtocolActions is BaseSetup {
 
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (emptyAmount, spAmountSummed, ) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
-                    multiSuperFormsData[i]
+                    multiSuperFormsData[i],
+                    false,
+                    0,
+                    false,
+                    1
                 );
                 _assertMultiVaultBalance(
                     action.user,
@@ -1645,9 +1722,15 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 totalSpAmountAllDestinations;
         address token;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
+            uint256 repetitions = usedDSTs[DST_CHAINS[i]].nRepetitions;
+
             if (action.multiVaults) {
                 (, spAmountSummed, totalSpAmount) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
-                    multiSuperFormsData[i]
+                    multiSuperFormsData[i],
+                    true,
+                    action.slippage,
+                    CHAIN_0 == DST_CHAINS[i],
+                    repetitions
                 );
                 totalSpAmountAllDestinations += totalSpAmount;
 
@@ -1660,15 +1743,20 @@ abstract contract ProtocolActions is BaseSetup {
 
                 token = singleSuperFormsData[0].liqRequest.token;
 
+                uint256 finalAmount = singleSuperFormsData[i].amount;
+
+                if (action.slippage != 0 && CHAIN_0 != DST_CHAINS[i]) {
+                    finalAmount = (singleSuperFormsData[i].amount * (10000 - uint256(action.slippage))) / 10000;
+                }
+
+                finalAmount = repetitions * finalAmount;
+
                 /// assert spToken Balance
-                _assertSingleVaultBalance(
-                    action.user,
-                    singleSuperFormsData[i].superFormId,
-                    singleSuperFormsData[i].amount
-                );
+                _assertSingleVaultBalance(action.user, singleSuperFormsData[i].superFormId, finalAmount);
             }
         }
         uint256 msgValue = token != NATIVE_TOKEN ? 0 : action.msgValue;
+        /*
         if (token == NATIVE_TOKEN) {
             console.log("balance now", users[action.user].balance);
             console.log("balance Before action", inputBalanceBefore);
@@ -1680,7 +1768,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev assert user input token balance
         /// @notice TODO commented for now until we have precise gas estimation, otherwise it is not possible to assert conclusively
 
-        /*
+
         assertEq(
             token != NATIVE_TOKEN ? IERC20(token).balanceOf(users[action.user]) : users[action.user].balance,
             inputBalanceBefore - totalSpAmountAllDestinations - msgValue

@@ -58,6 +58,7 @@ struct StagesLocalVars {
     uint8[] liqBridges;
     uint256 chain0Index;
     uint256 chainDstIndex;
+    uint256 nUniqueDsts;
 }
 
 struct MessagingAssertVars {
@@ -185,6 +186,7 @@ struct MultiVaultCallDataArgs {
     uint256 liquidityBridgeToChainId;
     bool multiTx;
     Actions action;
+    int256 slippage;
 }
 
 struct BuildDepositCallDataArgs {
