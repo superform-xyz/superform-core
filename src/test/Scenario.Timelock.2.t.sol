@@ -24,7 +24,7 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         AMBs = [1, 2];
 
-        CHAIN_0 = POLY;
+        CHAIN_0 = OP;
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action

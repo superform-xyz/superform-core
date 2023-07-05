@@ -17,6 +17,10 @@ import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 abstract contract ProtocolActions is BaseSetup {
     event FailedXChainDeposits(uint256 indexed payloadId);
 
+    bool public hasTimeLocked;
+
+    uint256 public totalTimeLocked;
+
     uint8[] public AMBs;
 
     uint8[][] public MultiDstAMBs;
@@ -59,9 +63,11 @@ abstract contract ProtocolActions is BaseSetup {
         bool success
     ) internal {
         (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
+
         uint256[] memory spAmountSummed;
         uint256 spAmountBeforeWithdraw;
         uint256 inputBalanceBefore;
+
         (, spAmountSummed, spAmountBeforeWithdraw, inputBalanceBefore) = _assertBeforeAction(
             action,
             multiSuperFormsData,
@@ -74,6 +80,7 @@ abstract contract ProtocolActions is BaseSetup {
         aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperFormsData, singleSuperFormsData);
 
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperFormsData, act);
+
         if (!success) {
             console.log("Stage 4 failed");
             return;
@@ -105,7 +112,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         /// @dev stage 6 is only required if there is any failed withdraw in the multi vaults
-        if (action.action == Actions.Withdraw && action.testType == TestType.RevertXChainWithdraw) {
+        if (!hasTimeLocked && action.action == Actions.Withdraw && action.testType != TestType.Pass) {
             bytes memory returnMessage;
             (success, returnMessage) = _stage6_process_superPositions_withdraw(action, vars);
             if (!success) {
@@ -126,35 +133,61 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         /// @dev stage 7 and 8 are only required for timelocked forms
-        if (action.action == Actions.WithdrawTimelocked) {
+        if (hasTimeLocked && action.action == Actions.Withdraw) {
+            vm.recordLogs();
+
             /// @dev Keeper needs to know this value to be able to process unlock
             success = _stage7_process_unlock_withdraw(action, vars, 1);
+
+            for (uint256 i; i < DST_CHAINS.length; i++) {
+                _payloadDeliveryHelper(CHAIN_0, DST_CHAINS[i], vm.getRecordedLogs());
+            }
+
             if (!success) {
                 console.log("Stage 7 failed");
                 return;
-            } else {
-                _assertAfterWithdraw(
-                    action,
-                    multiSuperFormsData,
-                    singleSuperFormsData,
-                    vars,
-                    spAmountSummed,
-                    spAmountBeforeWithdraw
-                );
+            } else if (action.testType != TestType.RevertXChainWithdraw) {
+                if (action.testType == TestType.Pass) {
+                    _assertAfterWithdraw(
+                        action,
+                        multiSuperFormsData,
+                        singleSuperFormsData,
+                        vars,
+                        spAmountSummed,
+                        spAmountBeforeWithdraw
+                    );
+                } else {
+                    /// @dev should assert here but issue is the current assert failure function isn't adaptible
+                    _assertAfterTimelockFailedWithdraw(
+                        action,
+                        multiSuperFormsData,
+                        singleSuperFormsData,
+                        vars,
+                        spAmountSummed,
+                        spAmountBeforeWithdraw
+                    );
+                }
             }
-            // if (action.testType == TestType.RevertXChainWithdraw) {
+        }
+
+        if (hasTimeLocked && action.testType == TestType.RevertXChainWithdraw) {
             /// @dev Process payload received on source from destination (withdraw callback)
             /// @dev TODO, THERE IS NO PROCESS PAYLOAD FUNCTION IN TwoStepsFormStateRegistry to re-issue SuperPositions in case of failure!!
             success = _stage8_process_2step_payload(action, vars);
             if (!success) {
                 console.log("Stage 8 failed");
                 return;
-            } else {
-                /// @dev TODO to rework (assert SuperPositions are minted back in case of failure)
-                //_assertAfterWithdraw(action, multiSuperFormsData, singleSuperFormsData, vars);
             }
 
-            /// @dev TODO what about failed withdraws in timelocked???
+            /// @dev should assert here but issue is the current assert failure function isn't adaptible
+            _assertAfterTimelockFailedWithdraw(
+                action,
+                multiSuperFormsData,
+                singleSuperFormsData,
+                vars,
+                spAmountSummed,
+                spAmountBeforeWithdraw
+            );
         }
     }
 
@@ -197,6 +230,7 @@ abstract contract ProtocolActions is BaseSetup {
         vars.toDst = new address[](vars.nDestinations);
         multiSuperFormsData = new MultiVaultsSFData[](vars.nDestinations);
         singleSuperFormsData = new SingleVaultSFData[](vars.nDestinations);
+
         /// @dev FIXME this probably needs to be tailored for NATIVE DEPOSITS
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
@@ -302,7 +336,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[CHAIN_0]);
 
         if (action.testType != TestType.RevertMainAction) {
-            vm.startPrank(users[action.user]);
+            vm.prank(users[action.user]);
             /// @dev see @pigeon for this implementation
             vm.recordLogs();
 
@@ -392,7 +426,6 @@ abstract contract ProtocolActions is BaseSetup {
                     }
                 }
             }
-            vm.stopPrank();
         } else {
             /// @dev TODO
         }
@@ -725,6 +758,7 @@ abstract contract ProtocolActions is BaseSetup {
         StagesLocalVars memory vars,
         uint256 unlockId_
     ) internal returns (bool success) {
+        console.log("process unlock withdraw");
         vm.prank(deployer);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             vm.recordLogs();
@@ -732,8 +766,10 @@ abstract contract ProtocolActions is BaseSetup {
             ITwoStepsFormStateRegistry twoStepsFormStateRegistry = ITwoStepsFormStateRegistry(
                 contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]
             );
-            vm.rollFork(block.number + 20000);
-            //twoStepsFormStateRegistry.finalizePayload(unlockId_, generateAckParams(AMBs));
+
+            /// increase time by 5 days
+            vm.warp(block.timestamp + (86400 * 5));
+            twoStepsFormStateRegistry.finalizePayload{value: 240 * 1e18}(unlockId_, generateAckParams(AMBs));
         }
 
         return true;
@@ -998,6 +1034,7 @@ abstract contract ProtocolActions is BaseSetup {
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
         vars.superPositions = IERC1155s(ISuperRegistry(vars.stateRegistry).superPositions());
         vm.prank(users[args.user]);
+
         vars.superPositions.setApprovalForOne(vars.superRouter, args.superFormId, args.amount);
 
         vars.txData = _buildLiqBridgeTxData(
@@ -1044,7 +1081,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 action
     )
         internal
-        view
         returns (
             uint256[] memory targetSuperFormsMem,
             address[] memory underlyingSrcTokensMem,
@@ -1074,6 +1110,13 @@ abstract contract ProtocolActions is BaseSetup {
             targetSuperFormsMem[i] = vars.superFormIdsTemp[i];
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
+        }
+
+        for (uint256 j; j < vars.formKinds.length; j++) {
+            if (vars.formKinds[j] == 1) hasTimeLocked = true;
+
+            /// @dev should we map to chain id specific
+            totalTimeLocked++;
         }
     }
 
@@ -1225,7 +1268,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
 
         vm.prank(deployer);
-        if (testType == TestType.Pass) {
+        if (testType == TestType.Pass || testType == TestType.RevertXChainWithdraw) {
             CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
                 value: msgValue
             }(payloadId_, generateAckParams(AMBs));
@@ -1256,19 +1299,11 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[targetChainId_]);
         uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
 
-        // vm.prank(deployer);
-        if (testType == TestType.Pass) {
+        vm.prank(deployer);
+        if (testType == TestType.RevertXChainWithdraw) {
             TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
                 value: msgValue
-            }(payloadId_, generateAckParams(AMBs));
-        } else if (testType == TestType.RevertProcessPayload) {
-            vm.expectRevert();
-
-            TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
-                value: msgValue
-            }(payloadId_, generateAckParams(AMBs));
-
-            return false;
+            }(payloadId_, bytes(""));
         }
 
         vm.selectFork(initialFork);
@@ -1719,6 +1754,35 @@ abstract contract ProtocolActions is BaseSetup {
                 _assertSingleVaultBalance(action.user, singleSuperFormsData[i].superFormId, spAmountBeforeWithdraw);
             }
         }
-        console.log("Asserted after withdraw");
+        console.log("Asserted after failed withdraw");
+    }
+
+    function _assertAfterTimelockFailedWithdraw(
+        TestAction memory action,
+        MultiVaultsSFData[] memory multiSuperFormsData,
+        SingleVaultSFData[] memory singleSuperFormsData,
+        StagesLocalVars memory vars,
+        uint256[] memory spAmountsBeforeWithdraw,
+        uint256 spAmountBeforeWithdraw
+    ) internal {
+        vm.selectFork(FORKS[CHAIN_0]);
+        uint256[] memory spAmountFinal;
+
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            if (action.multiVaults) {
+                spAmountFinal = _spAmountsMultiAfterFailedWithdraw(
+                    multiSuperFormsData[i],
+                    action.user,
+                    spAmountsBeforeWithdraw,
+                    spAmountsBeforeWithdraw
+                );
+
+                _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountFinal);
+            } else {
+                /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
+                _assertSingleVaultBalance(action.user, singleSuperFormsData[i].superFormId, spAmountBeforeWithdraw);
+            }
+        }
+        console.log("Asserted after failed withdraw");
     }
 }

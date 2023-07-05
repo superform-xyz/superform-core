@@ -14,8 +14,7 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 enum Actions {
     Deposit,
     Withdraw,
-    DepositPermit2,
-    WithdrawTimelocked
+    DepositPermit2
 }
 
 enum LiquidityChange {
@@ -30,6 +29,7 @@ enum TestType {
     RevertUpdateStateSlippage,
     RevertUpdateStateRBAC,
     RevertXChainWithdraw,
+    RevertTimeLockWithdraw,
     RevertXChainDeposit
 }
 

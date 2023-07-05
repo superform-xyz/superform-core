@@ -24,13 +24,22 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         uint256[] superFormIds; // if stored on index 0 it is a single Vault
     }
 
+    /// note replace this to support some new role called minter in super registry
+    modifier onlyMinter() {
+        if (superRegistry.superRouter() != msg.sender && superRegistry.twoStepsFormStateRegistry() != msg.sender)
+            revert Error.NOT_MINTER();
+        _;
+    }
+
     modifier onlyRouter() {
-        if (superRegistry.superRouter() != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.superRouter() != msg.sender && superRegistry.twoStepsFormStateRegistry() != msg.sender)
+            revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyCoreStateRegistry() {
-        if (superRegistry.coreStateRegistry() != msg.sender) revert Error.NOT_CORE_STATE_REGISTRY();
+        if (superRegistry.coreStateRegistry() != msg.sender && superRegistry.twoStepsFormStateRegistry() != msg.sender)
+            revert Error.NOT_CORE_STATE_REGISTRY();
         _;
     }
 
@@ -54,7 +63,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// @inheritdoc ISuperPositions
-    function mintSingleSP(address owner_, uint256 superFormId_, uint256 amount_) external override onlyRouter {
+    function mintSingleSP(address owner_, uint256 superFormId_, uint256 amount_) external override onlyMinter {
         _mint(owner_, superFormId_, amount_, "");
     }
 
@@ -63,7 +72,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         address owner_,
         uint256[] memory superFormIds_,
         uint256[] memory amounts_
-    ) external override onlyRouter {
+    ) external override onlyMinter {
         _batchMint(owner_, superFormIds_, amounts_, "");
     }
 
