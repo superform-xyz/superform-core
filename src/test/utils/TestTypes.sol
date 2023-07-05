@@ -58,6 +58,7 @@ struct StagesLocalVars {
     uint8[] liqBridges;
     uint256 chain0Index;
     uint256 chainDstIndex;
+    uint256 nUniqueDsts;
 }
 
 struct MessagingAssertVars {

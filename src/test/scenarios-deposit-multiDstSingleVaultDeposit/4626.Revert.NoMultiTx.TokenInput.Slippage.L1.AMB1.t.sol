@@ -17,6 +17,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
         AMBs = [1, 3];
+        MultiDstAMBs = [AMBs, AMBs, AMBs];
 
         CHAIN_0 = OP;
         DST_CHAINS = [OP, ETH, POLY];
@@ -47,9 +48,6 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[POLY][0] = [1];
 
-        /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 2 * _getPriceMultiplier(CHAIN_0) * 1e18;
-
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -61,7 +59,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: msgValue,
+                msgValue: 50 * 10 ** 18,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

@@ -17,7 +17,7 @@ interface IBaseForm is IERC165Upgradeable {
     event VaultAdded(uint256 id, IERC4626 vault);
 
     /// @dev is emitted when a payload is processed by the destination contract.
-    event Processed(uint64 srcChainID, uint64 dstChainId, uint256 payloadId, uint256 amount, address vault);
+    event Processed(uint64 srcChainID, uint64 dstChainId, uint256 srcPayloadId, uint256 amount, address vault);
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL WRITE FUNCTONS
