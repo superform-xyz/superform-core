@@ -9,7 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SDSVD4626TimelockedNoSwapNativeSlippageL1 is ProtocolActions {
+contract SDSVD4626TimelockedNoSwapTokenInputSlippageL1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -23,9 +23,9 @@ contract SDSVD4626TimelockedNoSwapNativeSlippageL1 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][0] = [1];
 
-        TARGET_VAULTS[ETH][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [1]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[ETH][0] = [0];
+        TARGET_FORM_KINDS[ETH][0] = [1];
 
         AMOUNTS[ETH][0] = [100];
 
@@ -46,7 +46,7 @@ contract SDSVD4626TimelockedNoSwapNativeSlippageL1 is ProtocolActions {
                 multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
