@@ -17,6 +17,7 @@ import {LiFiMock} from "../mocks/LiFiMock.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {VaultMockRevertDeposit} from "../mocks/VaultMockRevertDeposit.sol";
+import {ERC4626TimelockMockRevertWithdrawal} from "../mocks/ERC4626TimelockMockRevertWithdrawal.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {Permit2Clone} from "../mocks/Permit2Clone.sol";
@@ -96,7 +97,13 @@ abstract contract BaseSetup is DSTest, Test {
     uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
-    string[] public VAULT_KINDS = ["VaultMock", "ERC4626TimelockMock", "kycDAO4626", "VaultMockRevertDeposit"];
+    string[] public VAULT_KINDS = [
+        "VaultMock",
+        "ERC4626TimelockMock",
+        "kycDAO4626",
+        "VaultMockRevertDeposit",
+        "ERC4626TimelockMockRevertWithdrawal"
+    ];
     struct VaultInfo {
         bytes[] vaultBytecode;
         string[] vaultKinds;
@@ -743,12 +750,15 @@ abstract contract BaseSetup is DSTest, Test {
         /// @dev form 1 (normal 4626)
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMock).creationCode);
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertDeposit).creationCode);
+
         vaultBytecodes2[1].vaultKinds.push("VaultMock");
         vaultBytecodes2[1].vaultKinds.push("VaultMockRevertDeposit");
 
         /// @dev form 2 (timelocked 4626)
         vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMock).creationCode);
         vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMock");
+        vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMockRevertWithdrawal).creationCode);
+        vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMockRevertWithdrawal");
 
         /// @dev form 3 (kycdao 4626)
         vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626).creationCode);
@@ -796,7 +806,7 @@ abstract contract BaseSetup is DSTest, Test {
             vm.selectFork(FORKS[targetChainId_]);
             int256 price = _getLatestPrice(PRICE_FEEDS[targetChainId_]);
 
-            multiplier = 2 * uint256(ethUsdPrice / price);
+            multiplier = 3 * uint256(ethUsdPrice / price);
 
             /// @dev return to initial fork
 

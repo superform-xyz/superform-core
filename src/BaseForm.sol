@@ -131,9 +131,8 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @notice get Supershare decimals of the ERC20 vault representation
     function superformYieldTokenDecimals() external view virtual returns (uint256);
 
-    /// @notice Returns the underlying token of a vault.
-    /// @return The underlying token
-    function getUnderlyingOfVault() public view virtual returns (address);
+    /// @inheritdoc IBaseForm
+    function getUnderlyingOfVault() public view virtual override returns (address);
 
     /// @notice Returns the amount of underlying tokens each share of a vault is worth.
     /// @return The pricePerVaultShare value
@@ -154,8 +153,8 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @notice https://eips.ethereum.org/EIPS/eip-4626
     function getPreviewPricePerVaultShare() public view virtual returns (uint256);
 
-    /// @dev API may need to know state of funds deployed
-    function previewDepositTo(uint256 assets_) public view virtual returns (uint256);
+    /// @inheritdoc IBaseForm
+    function previewDepositTo(uint256 assets_) public view virtual override returns (uint256);
 
     /// @notice positionBalance() -> .vaultIds&destAmounts
     /// @return how much of an asset + interest (accrued) is to withdraw from the Vault

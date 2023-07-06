@@ -14,7 +14,7 @@ import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
-contract ScenarioTimelockTest is ProtocolActions {
+contract ScenarioTimelockTest5 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -24,26 +24,26 @@ contract ScenarioTimelockTest is ProtocolActions {
 
         AMBs = [1, 2];
 
-        CHAIN_0 = POLY;
+        CHAIN_0 = OP;
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [1];
-        TARGET_VAULTS[POLY][0] = [1];
-        TARGET_FORM_KINDS[POLY][0] = [1];
+        TARGET_UNDERLYINGS[POLY][0] = [1, 1];
+        TARGET_VAULTS[POLY][0] = [1, 1];
+        TARGET_FORM_KINDS[POLY][0] = [1, 1];
 
-        TARGET_UNDERLYINGS[POLY][1] = [1];
-        TARGET_VAULTS[POLY][1] = [1];
-        TARGET_FORM_KINDS[POLY][1] = [1];
+        TARGET_UNDERLYINGS[POLY][1] = [1, 1];
+        TARGET_VAULTS[POLY][1] = [1, 1];
+        TARGET_FORM_KINDS[POLY][1] = [1, 1];
 
-        AMOUNTS[POLY][0] = [7722];
-        AMOUNTS[POLY][1] = [7722];
+        AMOUNTS[POLY][0] = [7722, 7722];
+        AMOUNTS[POLY][1] = [7722, 7722];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
-        MAX_SLIPPAGE[POLY][1] = [1000];
+        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
+        MAX_SLIPPAGE[POLY][1] = [1000, 1000];
 
-        LIQ_BRIDGES[POLY][0] = [1];
-        LIQ_BRIDGES[POLY][1] = [1];
+        LIQ_BRIDGES[POLY][0] = [1, 1];
+        LIQ_BRIDGES[POLY][1] = [1, 1];
 
         /// @dev check if we need to have this here (it's being overriden)
         uint256 msgValue = 5 * _getPriceMultiplier(CHAIN_0) * 1e18;
