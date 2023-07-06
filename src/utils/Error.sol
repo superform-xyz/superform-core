@@ -12,6 +12,9 @@ library Error {
     /// @dev error thrown when address input is address 0
     error ZERO_ADDRESS();
 
+    /// @dev error thrown when beacon id already exists
+    error BEACON_ID_ALREADY_EXISTS();
+
     /// @dev - when msg.sender is not core state registry
     error NOT_CORE_STATE_REGISTRY();
 
