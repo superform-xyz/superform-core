@@ -85,10 +85,16 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     ) external payable override onlyProcessor {
         TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
 
+        if (p.status != TimeLockStatus.PENDING) {
+            revert Error.INVALID_PAYLOAD_STATUS();
+        }
+
         if (p.lockedTill > block.timestamp) {
             revert Error.LOCKED();
         }
 
+        /// @dev set status here to prevent re-entrancy
+        p.status = TimeLockStatus.PROCESSED;
         (address superForm, , ) = _getSuperForm(p.data.superFormId);
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
@@ -109,6 +115,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                 );
             }
         }
+
+        /// @dev restoring state for gas saving
+        delete timeLockPayload[timeLockPayloadId_];
     }
 
     /// @inheritdoc BaseStateRegistry
