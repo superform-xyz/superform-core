@@ -9,44 +9,44 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SDSVD4626SwapNativeSlippagePermit2L2 is ProtocolActions {
+contract SXSVDTimelocked4626NoMultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 3];
+        AMBs = [1, 3];
 
-        CHAIN_0 = ETH;
-        DST_CHAINS = [ETH];
+        CHAIN_0 = OP;
+        DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][0] = [2];
+        TARGET_UNDERLYINGS[ARBI][0] = [2];
 
-        TARGET_VAULTS[ETH][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [1]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[ETH][0] = [0];
+        TARGET_FORM_KINDS[ARBI][0] = [1];
 
-        AMOUNTS[ETH][0] = [100];
+        AMOUNTS[ARBI][0] = [412];
 
-        MAX_SLIPPAGE[ETH][0] = [1000];
+        MAX_SLIPPAGE[ARBI][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[ETH][0] = [2];
+        LIQ_BRIDGES[ARBI][0] = [2];
 
         actions.push(
             TestAction({
-                action: Actions.DepositPermit2,
+                action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 11, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 321, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

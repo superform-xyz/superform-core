@@ -6,6 +6,8 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {IPermit2} from "../vendor/dragonfly-xyz/IPermit2.sol";
 import {Error} from "../utils/Error.sol";
 
+import "forge-std/console.sol";
+
 /**
  * @title Liquidity Handler.
  * @author Zeropoint Labs.
@@ -46,6 +48,8 @@ abstract contract LiquidityHandler {
                         permit2Data_,
                         (uint256, uint256, bytes)
                     );
+
+                    console.log("owner_", owner_);
 
                     IPermit2(permit2_).permitTransferFrom(
                         // The permit message.
