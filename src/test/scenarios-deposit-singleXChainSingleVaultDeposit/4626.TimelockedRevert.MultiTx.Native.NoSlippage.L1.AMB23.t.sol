@@ -9,7 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SDSVD4626SwapNativeSlippagePermit2L2 is ProtocolActions {
+contract SXSVDTimelockedRevert4626NoMultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -17,36 +17,36 @@ contract SDSVD4626SwapNativeSlippagePermit2L2 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         AMBs = [2, 3];
 
-        CHAIN_0 = ARBI;
-        DST_CHAINS = [ARBI];
+        CHAIN_0 = OP;
+        DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ARBI][0] = [2];
+        TARGET_UNDERLYINGS[POLY][0] = [2];
 
-        TARGET_VAULTS[ARBI][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[POLY][0] = [5]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[ARBI][0] = [0];
+        TARGET_FORM_KINDS[POLY][0] = [1];
 
-        AMOUNTS[ARBI][0] = [100];
+        AMOUNTS[POLY][0] = [2];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000];
+        MAX_SLIPPAGE[POLY][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[ARBI][0] = [2];
+        LIQ_BRIDGES[POLY][0] = [1];
 
         actions.push(
             TestAction({
-                action: Actions.DepositPermit2,
+                action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
-                testType: TestType.Pass,
+                testType: TestType.RevertProcessPayload,
                 revertError: "",
                 revertRole: "",
-                slippage: 11, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: true,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

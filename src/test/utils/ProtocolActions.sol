@@ -1040,7 +1040,11 @@ abstract contract ProtocolActions is BaseSetup {
             ? args.externalToken
             : args.underlyingToken;
 
+        /// DOMAIN SEPARATOR 0x7f58c5e4853ee1044a9464ec09890a6a21093dfc1fe4952ad7a8723718e3717e
         /// @dev permit2 calldata
+
+        vm.selectFork(FORKS[args.srcChainId]);
+
         if (action == Actions.DepositPermit2) {
             v.permit = IPermit2.PermitTransferFrom({
                 permitted: IPermit2.TokenPermissions({token: IERC20(address(liqRequestToken)), amount: args.amount}),
@@ -1062,8 +1066,6 @@ abstract contract ProtocolActions is BaseSetup {
             liqRequestToken == NATIVE_TOKEN ? args.amount : 0,
             v.permit2Calldata /// @dev will be empty if action == Actions.Deposit
         );
-
-        vm.selectFork(FORKS[args.srcChainId]);
 
         if (liqRequestToken != NATIVE_TOKEN) {
             /// @dev - APPROVE transfer to SuperFormRouter (because of Socket)

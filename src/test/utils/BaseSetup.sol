@@ -18,6 +18,7 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {VaultMockRevertDeposit} from "../mocks/VaultMockRevertDeposit.sol";
 import {ERC4626TimelockMockRevertWithdrawal} from "../mocks/ERC4626TimelockMockRevertWithdrawal.sol";
+import {ERC4626TimelockMockRevertDeposit} from "../mocks/ERC4626TimelockMockRevertDeposit.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {Permit2Clone} from "../mocks/Permit2Clone.sol";
@@ -102,7 +103,8 @@ abstract contract BaseSetup is DSTest, Test {
         "ERC4626TimelockMock",
         "kycDAO4626",
         "VaultMockRevertDeposit",
-        "ERC4626TimelockMockRevertWithdrawal"
+        "ERC4626TimelockMockRevertWithdrawal",
+        "ERC4626TimelockMockRevertDeposit"
     ];
     struct VaultInfo {
         bytes[] vaultBytecode;
@@ -759,6 +761,8 @@ abstract contract BaseSetup is DSTest, Test {
         vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMock");
         vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMockRevertWithdrawal).creationCode);
         vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMockRevertWithdrawal");
+        vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMockRevertDeposit).creationCode);
+        vaultBytecodes2[2].vaultKinds.push("ERC4626TimelockMockRevertDeposit");
 
         /// @dev form 3 (kycdao 4626)
         vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626).creationCode);
