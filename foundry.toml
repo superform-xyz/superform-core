@@ -11,7 +11,7 @@ libs = ["lib"]
 fs_permissions = [
     { access = "read-write", path = "./script/"}
 ]
-
+viaIR = true
 [rpc_endpoints]
 ethereum = "${ETHEREUM_RPC_URL}"
 polygon = "${POLYGON_RPC_URL}"

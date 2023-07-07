@@ -121,10 +121,17 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
 
+        /// @dev for all form kinds including timelocked (first stage)
+        /// @dev if there is a failure we immediately re-mint superShares
         /// @dev stage 6 is only required if there is any failed withdraw in the multi vaults
-        if (!hasTimeLocked && action.action == Actions.Withdraw && action.testType != TestType.Pass) {
+        if (action.action == Actions.Withdraw && action.testType != TestType.Pass) {
             bytes memory returnMessage;
-            (success, returnMessage) = _stage6_process_superPositions_withdraw(action, vars);
+            (success, returnMessage) = _stage6_process_superPositions_withdraw(
+                action,
+                vars,
+                multiSuperFormsData,
+                singleSuperFormsData
+            );
             if (!success) {
                 console.log("Stage 6 failed");
                 return;
@@ -201,6 +208,13 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
+    struct BuildReqDataVars {
+        uint256 i;
+        uint256 j;
+        uint256 k;
+        uint256 finalAmount;
+    }
+
     /// @dev STEP 1: Build Request Data
     /// NOTE: This whole step should be looked upon as PROTOCOL action, not USER action
     /// Request is built for user, but all of operations here would be performed by protocol and not even it's smart contracts
@@ -254,11 +268,16 @@ abstract contract ProtocolActions is BaseSetup {
             }
 
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
-            (vars.targetSuperFormIds, vars.underlyingSrcToken, vars.vaultMock) = _targetVaults(
-                CHAIN_0,
-                DST_CHAINS[i],
-                actionIndex
-            );
+            (
+                vars.targetSuperFormIds,
+                vars.underlyingSrcToken,
+                vars.vaultMock,
+                vars.revertingDepositVaults,
+                vars.revertingWithdrawVaults,
+                vars.nRevertingDepositVaults,
+                vars.nRevertingWithdrawVaults,
+                vars.nRevertingWithdrawTimelockedVaults
+            ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex);
 
             vars.toDst = new address[](vars.targetSuperFormIds.length);
 
@@ -301,7 +320,13 @@ abstract contract ProtocolActions is BaseSetup {
                         llChainIds[vars.chainDstIndex],
                         action.multiTx,
                         action.action,
-                        action.slippage
+                        action.slippage,
+                        vars.revertingDepositVaults,
+                        vars.revertingWithdrawVaults,
+                        vars.nRevertingDepositVaults,
+                        vars.nRevertingDepositVaults,
+                        vars.nRevertingWithdrawTimelockedVaults,
+                        action.multiVaults
                     )
                 );
             } else {
@@ -328,7 +353,13 @@ abstract contract ProtocolActions is BaseSetup {
                     DST_CHAINS[i],
                     llChainIds[vars.chain0Index],
                     llChainIds[vars.chainDstIndex],
-                    action.multiTx
+                    action.multiTx,
+                    vars.revertingDepositVaults,
+                    vars.revertingWithdrawVaults,
+                    vars.nRevertingDepositVaults,
+                    vars.nRevertingDepositVaults,
+                    vars.nRevertingWithdrawTimelockedVaults,
+                    action.multiVaults
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
@@ -658,7 +689,11 @@ abstract contract ProtocolActions is BaseSetup {
 
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex);
+                            (, vars.underlyingSrcToken, , , , , , ) = _targetVaults(
+                                CHAIN_0,
+                                DST_CHAINS[i],
+                                actionIndex
+                            );
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -702,7 +737,11 @@ abstract contract ProtocolActions is BaseSetup {
                     } else if (action.testType == TestType.RevertProcessPayload) {
                         /// @dev FIXME brute copied this here, likely the whole if else can be optimized (we are trying to detect reverts at processPayload stage)
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex);
+                            (, vars.underlyingSrcToken, , , , , , ) = _targetVaults(
+                                CHAIN_0,
+                                DST_CHAINS[i],
+                                actionIndex
+                            );
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -800,19 +839,52 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
-    /// NOTE: For 2-way comms we need to now process payload on Source again
+    /// @dev STEP 6 Process dst to src payload (re-mint of SuperPositions for failed withdraws (inc. 1st stage timelock failures - unlock request))
     function _stage6_process_superPositions_withdraw(
         TestAction memory action,
-        StagesLocalVars memory vars
+        StagesLocalVars memory vars,
+        MultiVaultsSFData[] memory multiSuperFormsData,
+        SingleVaultSFData[] memory singleSuperFormsData
     ) internal returns (bool success, bytes memory returnMessage) {
         /// assume it will pass by default
         success = true;
+        uint256 toChainId;
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            toChainId = DST_CHAINS[i];
 
-        unchecked {
-            PAYLOAD_ID[CHAIN_0]++;
+            if (CHAIN_0 != toChainId) {
+                uint256 nRevertingWithdrawTimelockedVaults;
+
+                /// @dev this must not be called if all vaults are timelocked in a given destination
+                if (action.multiVaults) {
+                    (, , , , , nRevertingWithdrawTimelockedVaults) = abi.decode(
+                        multiSuperFormsData[i].extraFormData,
+                        (uint256[], uint256[], uint256[], uint256, uint256, uint256)
+                    );
+                    if (nRevertingWithdrawTimelockedVaults == multiSuperFormsData[i].superFormIds.length) {
+                        continue;
+                    }
+                } else {
+                    (, , , , , nRevertingWithdrawTimelockedVaults) = abi.decode(
+                        singleSuperFormsData[i].extraFormData,
+                        (uint256[], uint256[], uint256[], uint256, uint256, uint256)
+                    );
+                    if (nRevertingWithdrawTimelockedVaults == 1) {
+                        continue;
+                    }
+                }
+                unchecked {
+                    PAYLOAD_ID[CHAIN_0]++;
+                }
+
+                (success, returnMessage) = _processPayload(
+                    PAYLOAD_ID[CHAIN_0],
+                    CHAIN_0,
+                    action.testType,
+                    action.revertError
+                );
+            }
         }
-
-        (success, returnMessage) = _processPayload(PAYLOAD_ID[CHAIN_0], CHAIN_0, action.testType, action.revertError);
     }
 
     function _stage7_process_unlock_withdraw(
@@ -892,7 +964,13 @@ abstract contract ProtocolActions is BaseSetup {
                 args.toChainId,
                 args.liquidityBridgeSrcChainId,
                 args.liquidityBridgeToChainId,
-                args.multiTx
+                args.multiTx,
+                args.revertingDepositVaults,
+                args.revertingWithdrawVaults,
+                args.nRevertingDepositVaults,
+                args.nRevertingWithdrawVaults,
+                args.nRevertingWithdrawTimelockedVaults,
+                args.multiVaults
             );
             if (args.action == Actions.Deposit || args.action == Actions.DepositPermit2) {
                 superFormData = _buildSingleVaultDepositCallData(callDataArgs, args.action);
@@ -902,7 +980,19 @@ abstract contract ProtocolActions is BaseSetup {
             liqRequests[i] = superFormData.liqRequest;
         }
 
-        superFormsData = MultiVaultsSFData(args.superFormIds, args.amounts, args.maxSlippage, liqRequests, "");
+        superFormsData = MultiVaultsSFData(
+            args.superFormIds,
+            args.amounts,
+            args.maxSlippage,
+            liqRequests,
+            abi.encode(
+                args.revertingDepositVaults,
+                args.revertingWithdrawVaults,
+                args.nRevertingDepositVaults,
+                args.nRevertingDepositVaults,
+                args.nRevertingWithdrawTimelockedVaults
+            )
+        );
     }
 
     function _buildLiqBridgeTxData(
@@ -1081,7 +1171,21 @@ abstract contract ProtocolActions is BaseSetup {
         }
         vm.selectFork(v.initialFork);
 
-        superFormData = SingleVaultSFData(args.superFormId, args.amount, args.maxSlippage, v.liqReq, "");
+        superFormData = SingleVaultSFData(
+            args.superFormId,
+            args.amount,
+            args.maxSlippage,
+            v.liqReq,
+            args.multiVaults
+                ? bytes("")
+                : abi.encode(
+                    args.revertingDepositVaults,
+                    args.revertingWithdrawVaults,
+                    args.nRevertingDepositVaults,
+                    args.nRevertingDepositVaults,
+                    args.nRevertingWithdrawTimelockedVaults
+                )
+        );
     }
 
     struct SingleVaultWithdrawLocalVars {
@@ -1127,7 +1231,21 @@ abstract contract ProtocolActions is BaseSetup {
             ""
         );
 
-        superFormData = SingleVaultSFData(args.superFormId, args.amount, args.maxSlippage, vars.liqReq, "");
+        superFormData = SingleVaultSFData(
+            args.superFormId,
+            args.amount,
+            args.maxSlippage,
+            vars.liqReq,
+            args.multiVaults
+                ? bytes("")
+                : abi.encode(
+                    args.revertingDepositVaults,
+                    args.revertingWithdrawVaults,
+                    args.nRevertingDepositVaults,
+                    args.nRevertingDepositVaults,
+                    args.nRevertingWithdrawTimelockedVaults
+                )
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -1153,7 +1271,12 @@ abstract contract ProtocolActions is BaseSetup {
         returns (
             uint256[] memory targetSuperFormsMem,
             address[] memory underlyingSrcTokensMem,
-            address[] memory vaultMocksMem
+            address[] memory vaultMocksMem,
+            uint256[] memory revertingDepositVaults,
+            uint256[] memory revertingWithdrawVaults,
+            uint256 nRevertingDepositVaults,
+            uint256 nRevertingWithdrawVaults,
+            uint256 nRevertingWithdrawTimelocked
         )
     {
         TargetVaultsVars memory vars;
@@ -1164,6 +1287,9 @@ abstract contract ProtocolActions is BaseSetup {
         vars.superFormIdsTemp = _superFormIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
 
         vars.len = vars.superFormIdsTemp.length;
+
+        revertingDepositVaults = new uint256[](vars.len);
+        revertingWithdrawVaults = new uint256[](vars.len);
 
         if (vars.len == 0) revert LEN_VAULTS_ZERO();
 
@@ -1179,6 +1305,14 @@ abstract contract ProtocolActions is BaseSetup {
             targetSuperFormsMem[i] = vars.superFormIdsTemp[i];
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
+            if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5) {
+                revertingDepositVaults[i] = 1;
+                ++nRevertingDepositVaults;
+            } else if (vars.vaultIds[i] == 4) {
+                revertingWithdrawVaults[i] = 1;
+                ++nRevertingWithdrawTimelocked;
+            }
+            /// @dev need more if else conditions for other kinds of vaults
         }
 
         for (uint256 j; j < vars.formKinds.length; j++) {

@@ -28,7 +28,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
         TARGET_UNDERLYINGS[POLY][0] = [1];
 
         TARGET_VAULTS[OP][0] = [0];
-        TARGET_VAULTS[ETH][0] = [0];
+        TARGET_VAULTS[ETH][0] = [3];
         TARGET_VAULTS[POLY][0] = [0];
 
         TARGET_FORM_KINDS[OP][0] = [0];
@@ -47,6 +47,9 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
         LIQ_BRIDGES[OP][0] = [1];
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[POLY][0] = [1];
+
+        /// if testing a revert, do we test the revert on the whole destination?
+        /// to assert values, it is best to find the indexes that didn't revert
 
         actions.push(
             TestAction({

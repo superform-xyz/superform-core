@@ -906,6 +906,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     function _deployWithCreate2(bytes memory bytecode_, uint256 salt_) internal returns (address addr) {
+        /// @solidity memory-safe-assembly
         assembly {
             addr := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
 
