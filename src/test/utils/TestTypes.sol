@@ -59,11 +59,6 @@ struct StagesLocalVars {
     uint256 chain0Index;
     uint256 chainDstIndex;
     uint256 nUniqueDsts;
-    uint256[] revertingDepositVaults;
-    uint256[] revertingWithdrawVaults;
-    uint256 nRevertingDepositVaults;
-    uint256 nRevertingWithdrawVaults;
-    uint256 nRevertingWithdrawTimelockedVaults;
 }
 
 struct MessagingAssertVars {
@@ -179,12 +174,6 @@ struct SingleVaultCallDataArgs {
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
     bool multiTx;
-    uint256[] revertingDepositVaults;
-    uint256[] revertingWithdrawVaults;
-    uint256 nRevertingDepositVaults;
-    uint256 nRevertingWithdrawVaults;
-    uint256 nRevertingWithdrawTimelockedVaults;
-    bool multiVaults;
 }
 
 struct MultiVaultCallDataArgs {
@@ -205,12 +194,6 @@ struct MultiVaultCallDataArgs {
     bool multiTx;
     Actions action;
     int256 slippage;
-    uint256[] revertingDepositVaults;
-    uint256[] revertingWithdrawVaults;
-    uint256 nRevertingDepositVaults;
-    uint256 nRevertingWithdrawVaults;
-    uint256 nRevertingWithdrawTimelockedVaults;
-    bool multiVaults;
 }
 
 struct BuildDepositCallDataArgs {
