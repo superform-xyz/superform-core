@@ -1213,7 +1213,7 @@ abstract contract ProtocolActions is BaseSetup {
             targetSuperFormsMem[i] = vars.superFormIdsTemp[i];
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
-            if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5) {
+            if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
                 revertingDepositSFsPerDst.push(vars.superFormIdsTemp[i]);
             } else if (vars.vaultIds[i] == 4) {
                 revertingWithdrawTimelockedSFsPerDst.push(vars.superFormIdsTemp[i]);

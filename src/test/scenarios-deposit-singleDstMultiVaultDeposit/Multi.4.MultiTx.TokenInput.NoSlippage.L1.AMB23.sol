@@ -11,31 +11,34 @@ import "../utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract SDMVDMultiNoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
+contract SDMVDMulti4MultiTxTokenInputNoSlippageL1AMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-        //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////*/
+        /// @dev singleDestinationMultiVault Deposit test case
+        AMBs = [2, 3];
 
-        AMBs = [1, 2];
-
-        CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        CHAIN_0 = ARBI;
+        DST_CHAINS = [ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [0, 0];
+        TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[POLY][0] = [0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [4]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[POLY][0] = [0, 0];
+        TARGET_FORM_KINDS[ETH][0] = [1];
 
-        AMOUNTS[POLY][0] = [3213, 12];
+        AMOUNTS[ETH][0] = [421];
 
-        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
+        MAX_SLIPPAGE[ETH][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [1, 1];
+        LIQ_BRIDGES[ETH][0] = [1];
+
+        /// @dev check if we need to have this here (it's being overriden)
+        uint256 msgValue = 2 * _getPriceMultiplier(CHAIN_0) * 1e18;
 
         actions.push(
             TestAction({
@@ -46,10 +49,10 @@ contract SDMVDMultiNoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
+                multiTx: true,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                msgValue: msgValue,
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

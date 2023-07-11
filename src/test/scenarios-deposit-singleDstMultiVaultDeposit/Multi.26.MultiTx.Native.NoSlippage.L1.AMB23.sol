@@ -6,22 +6,19 @@ import "../../types/LiquidityTypes.sol";
 import "../../types/DataTypes.sol";
 
 // Test Utils
-import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario15Test is ProtocolActions {
-    /*//////////////////////////////////////////////////////////////
-                !! CONSTRUCTOR !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
+contract SDMVDMulti26MultiTxNativeNoSlippageL2AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
+        /*//////////////////////////////////////////////////////////////
+                !! WARNING !!  DEFINE TEST SETTINGS HERE
+        //////////////////////////////////////////////////////////////*/
 
-        /// @dev 2 - Hyperlane
-        /// @dev 3 - Celer
-        AMBs = [2, 3];
+        AMBs = [1, 3];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];
@@ -29,16 +26,16 @@ contract Scenario15Test is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [0, 0];
 
-        TARGET_VAULTS[POLY][0] = [0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[POLY][0] = [2, 6]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[POLY][0] = [0, 0];
+        TARGET_FORM_KINDS[POLY][0] = [2, 2];
 
-        AMOUNTS[POLY][0] = [23183, 12];
+        AMOUNTS[POLY][0] = [114, 2412];
 
         MAX_SLIPPAGE[POLY][0] = [1000, 1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [1, 1];
+        LIQ_BRIDGES[POLY][0] = [2, 2];
 
         actions.push(
             TestAction({
@@ -49,10 +46,10 @@ contract Scenario15Test is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
+                multiTx: true,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH, 3 = NATIVE_TOKEN
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
@@ -61,8 +58,8 @@ contract Scenario15Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario_native() public {
-        for (uint256 act = 0; act < actions.length; act++) {
+    function test_scenario() public {
+        for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
