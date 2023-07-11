@@ -191,8 +191,11 @@ library Error {
     /// @dev is emitted when the payload is invalid
     error INVALID_PAYLOAD();
 
-    /// @dev is emitted if srchain ids mismatch in state sync
-    error SRC_CHAIN_IDS_MISMATCH();
+    /// @dev is emitted if src senders mismatch in state sync
+    error SRC_SENDER_MISMATCH();
+
+    /// @dev is emitted if src tx types mismatch in state sync
+    error SRC_TX_TYPE_MISMATCH();
 
     /// @dev is emitted if dsthain ids mismatch in state sync
     error DST_CHAIN_IDS_MISMATCH();
