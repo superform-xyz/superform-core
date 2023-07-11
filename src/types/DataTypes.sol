@@ -108,7 +108,7 @@ struct TimeLockPayload {
 
 struct AMBMessage {
     uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag  if multi/single vault, registry id, srcSender and srcChainId
-    bytes params; // decoding txInfo will point to the right datatype of params. Refer CoreStateRegistryHelper.sol
+    bytes params; // decoding txInfo will point to the right datatype of params. Refer PayloadHelper.sol
 }
 
 struct AMBFactoryMessage {

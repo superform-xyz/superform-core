@@ -37,6 +37,8 @@ contract SDMVDMulti00NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [2, 2];
 
+        vm.selectFork(FORKS[CHAIN_0]);
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -47,8 +49,8 @@ contract SDMVDMulti00NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

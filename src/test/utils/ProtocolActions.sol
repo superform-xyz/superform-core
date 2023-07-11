@@ -256,10 +256,12 @@ abstract contract ProtocolActions is BaseSetup {
         multiSuperFormsData = new MultiVaultsSFData[](vars.nDestinations);
         singleSuperFormsData = new SingleVaultSFData[](vars.nDestinations);
 
-        /// @dev FIXME this probably needs to be tailored for NATIVE DEPOSITS
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
-        action.msgValue = action.msgValue + (vars.nDestinations + 1) * _getPriceMultiplier(CHAIN_0) * 1e18;
+        if (action.externalToken == 3) {
+            action.msgValue = action.msgValue + _sumOfAmounts();
+        }
+
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (DST_CHAINS[i] == chainIds[j]) {
@@ -855,22 +857,23 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            vm.recordLogs();
             initialFork = vm.activeFork();
 
             vm.selectFork(FORKS[DST_CHAINS[i]]);
+
             ITwoStepsFormStateRegistry twoStepsFormStateRegistry = ITwoStepsFormStateRegistry(
                 contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]
             );
 
             /// increase time by 5 days
             vm.warp(block.timestamp + (86400 * 5));
+            (uint256 msgValue, bytes memory ackParams) = generateAckGasFeesAndParams(CHAIN_0, AMBs);
 
             vm.prank(deployer);
-            twoStepsFormStateRegistry.finalizePayload{value: 240 * 1e18}(unlockId_, generateAckParams(AMBs));
-
-            vm.selectFork(initialFork);
+            twoStepsFormStateRegistry.finalizePayload{value: msgValue}(unlockId_, ackParams);
         }
+
+        vm.selectFork(initialFork);
     }
 
     /// NOTE: to process failed messages from 2 step forms registry on xchain withdraws
@@ -1373,13 +1376,20 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[targetChainId_]);
-        uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
+
+        uint256 msgValue;
+        bytes memory ackParams;
+
+        /// @dev only generate if acknowledgement is needed
+        if (targetChainId_ != CHAIN_0) {
+            (msgValue, ackParams) = generateAckGasFeesAndParams(CHAIN_0, AMBs);
+        }
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {
             CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
                 value: msgValue
-            }(payloadId_, generateAckParams(AMBs));
+            }(payloadId_, ackParams);
         } else if (testType == TestType.RevertProcessPayload) {
             /// @dev WARNING the try catch silences the revert, therefore the only way to assert is via emit
             vm.expectEmit();
@@ -1388,7 +1398,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             returnMessage = CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
                 value: msgValue
-            }(payloadId_, generateAckParams(AMBs));
+            }(payloadId_, ackParams);
             return (false, returnMessage);
         }
 
@@ -1405,13 +1415,16 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[targetChainId_]);
-        uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
+
+        /// @dev no acknowledgement is needed;
+        uint256 msgValue;
+        bytes memory ackParams;
 
         vm.prank(deployer);
 
         TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
             value: msgValue
-        }(payloadId_, bytes(""));
+        }(payloadId_, ackParams);
 
         vm.selectFork(initialFork);
         return true;
@@ -2009,5 +2022,18 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
         console.log("Asserted after failed withdraw");
+    }
+
+    /// @dev Returns the sum of token amounts
+    function _sumOfAmounts() internal view returns (uint256 totalAmounts) {
+        for (uint256 i; i < DST_CHAINS.length; i++) {
+            for (uint256 j; j < actions.length; j++) {
+                uint256[] memory amounts = AMOUNTS[DST_CHAINS[i]][j];
+
+                for (uint256 k; k < amounts.length; k++) {
+                    totalAmounts += amounts[k];
+                }
+            }
+        }
     }
 }

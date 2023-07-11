@@ -1,25 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
-import {ICoreStateRegistryHelper} from "../../interfaces/ICoreStateRegistryHelper.sol";
+import {IPayloadHelper} from "../../interfaces/IPayloadHelper.sol";
 import {AMBMessage, CallbackType, ReturnMultiData, ReturnSingleData, InitMultiVaultData, InitSingleVaultData} from "../../types/DataTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 
-contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
+contract PayloadHelper is IPayloadHelper {
     using DataLib for uint256;
 
     IBaseStateRegistry public immutable payloadRegistry;
-    ISuperRegistry public immutable superRegistry;
 
-    constructor(address payloadRegistry_, address superRegistry_) {
+    constructor(address payloadRegistry_) {
         payloadRegistry = IBaseStateRegistry(payloadRegistry_);
-        superRegistry = ISuperRegistry(superRegistry_);
     }
 
-    /// @inheritdoc ICoreStateRegistryHelper
+    /// @inheritdoc IPayloadHelper
     function decodePayload(
         uint256 dstPayloadId_
     )
@@ -84,29 +81,5 @@ contract CoreStateRegistryHelper is ICoreStateRegistryHelper {
         }
 
         return (txType_, callbackType_, srcSender_, srcChainId_, amounts, slippage, superformIds, srcPayloadId);
-    }
-
-    /// @inheritdoc ICoreStateRegistryHelper
-    function estimateFees(
-        uint8[] memory ambIds_,
-        uint64 dstChainId_,
-        bytes memory message_,
-        bytes[] memory extraData_
-    ) external view returns (uint256 totalFees, uint256[] memory) {
-        uint256 len = ambIds_.length;
-        uint256[] memory fees = new uint256[](len);
-        for (uint256 i; i < len; ) {
-            fees[i] = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_,
-                message_,
-                extraData_[i]
-            );
-
-            totalFees += fees[i];
-
-            unchecked {
-                ++i;
-            }
-        }
     }
 }

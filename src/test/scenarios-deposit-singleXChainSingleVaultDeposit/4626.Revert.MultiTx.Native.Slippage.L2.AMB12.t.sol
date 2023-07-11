@@ -34,8 +34,7 @@ contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [2];
 
-        /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 2 * _getPriceMultiplier(CHAIN_0) * 1e18;
+        vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
             TestAction({
@@ -47,8 +46,8 @@ contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
                 revertRole: "",
                 slippage: 742, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: msgValue,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

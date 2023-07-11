@@ -43,6 +43,8 @@ contract Scenario3Test is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [1, 1];
         LIQ_BRIDGES[ETH][0] = [1];
 
+        vm.selectFork(FORKS[CHAIN_0]);
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -53,8 +55,8 @@ contract Scenario3Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

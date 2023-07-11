@@ -55,8 +55,8 @@ contract MDSVD4626RevertTimelockedMultiTxNativeNoSlippageL1AMB23 is ProtocolActi
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

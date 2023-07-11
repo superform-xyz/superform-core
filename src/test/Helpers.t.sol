@@ -6,7 +6,8 @@ import "../types/LiquidityTypes.sol";
 import "../types/DataTypes.sol";
 
 /// Interfaces
-import {ICoreStateRegistryHelper} from "../interfaces/ICoreStateRegistryHelper.sol";
+import {IPayloadHelper} from "../interfaces/IPayloadHelper.sol";
+import {IFeeHelper} from "../interfaces/IFeeHelper.sol";
 
 // Test Utils
 import {MockERC20} from "./mocks/MockERC20.sol";
@@ -15,7 +16,7 @@ import "./utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract CoreStateRegistryHelperTest is ProtocolActions {
+contract PayloadHelperTest is ProtocolActions {
     /// @dev Access SuperFormRouter interface
     ISuperFormRouter superRouter;
 
@@ -42,21 +43,23 @@ contract CoreStateRegistryHelperTest is ProtocolActions {
 
         MAX_SLIPPAGE[POLY][0] = [1000];
 
-        /// @dev 1 for socket, 2 for lifi
+        /// @dev 1 for SOCKET, 2 for LI.FI
         LIQ_BRIDGES[POLY][0] = [1];
+
+        vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
+                multiVaults: false,
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
@@ -83,8 +86,11 @@ contract CoreStateRegistryHelperTest is ProtocolActions {
 
         vm.selectFork(FORKS[DST_CHAINS[0]]);
 
-        address _coreStateRegistryHelper = contracts[DST_CHAINS[0]][bytes32(bytes("CoreStateRegistryHelper"))];
-        ICoreStateRegistryHelper helper = ICoreStateRegistryHelper(_coreStateRegistryHelper);
+        address _PayloadHelper = contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))];
+        IPayloadHelper helper = IPayloadHelper(_PayloadHelper);
+
+        address _FeeHelper = contracts[DST_CHAINS[0]][bytes32(bytes("FeeHelper"))];
+        IFeeHelper feeHelper = IFeeHelper(_FeeHelper);
 
         (
             uint8 txType,
@@ -110,7 +116,7 @@ contract CoreStateRegistryHelperTest is ProtocolActions {
 
         /// @notice: just asserting if fees are greater than 0
         /// no way to write serious tests on forked testnet at this point. should come back to this later on.
-        (uint256 totalFees, ) = helper.estimateFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
+        (uint256 totalFees, ) = feeHelper.estimateFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
         assertGe(totalFees, 0);
     }
 }
