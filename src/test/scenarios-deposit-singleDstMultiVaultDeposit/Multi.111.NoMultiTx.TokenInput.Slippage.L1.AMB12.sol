@@ -37,6 +37,8 @@ contract SDMVDMulti111NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [2, 2, 2];
 
+        vm.selectFork(FORKS[CHAIN_0]);
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
