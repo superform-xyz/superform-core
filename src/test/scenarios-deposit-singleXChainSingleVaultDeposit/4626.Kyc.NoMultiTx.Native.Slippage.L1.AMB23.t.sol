@@ -36,8 +36,6 @@ contract SXSVDKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
 
         vm.selectFork(FORKS[CHAIN_0]);
 
-        uint256 nativeTokenAmounts = 8213;
-
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -49,7 +47,7 @@ contract SXSVDKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
                 slippage: 600, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)) + nativeTokenAmounts,
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

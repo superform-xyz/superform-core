@@ -49,8 +49,6 @@ contract MDSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
 
         vm.selectFork(FORKS[CHAIN_0]);
 
-        uint256 totalNativeTokensIn = 98512890 + 421821994 + 42134;
-
         vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
@@ -64,7 +62,7 @@ contract MDSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)) + totalNativeTokensIn,
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

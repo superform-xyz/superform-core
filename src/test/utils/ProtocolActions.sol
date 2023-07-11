@@ -241,10 +241,11 @@ abstract contract ProtocolActions is BaseSetup {
         multiSuperFormsData = new MultiVaultsSFData[](vars.nDestinations);
         singleSuperFormsData = new SingleVaultSFData[](vars.nDestinations);
 
-        /// @dev FIXME this probably needs to be tailored for NATIVE DEPOSITS
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
-        // action.msgValue = action.msgValue;
+        if (action.externalToken == 3) {
+            action.msgValue = action.msgValue + _sumOfAmounts();
+        }
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             for (uint256 j = 0; j < chainIds.length; j++) {
@@ -1886,5 +1887,18 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
         console.log("Asserted after failed withdraw");
+    }
+
+    /// @dev Returns the sum of token amounts
+    function _sumOfAmounts() internal view returns (uint256 totalAmounts) {
+        for (uint256 i; i < DST_CHAINS.length; i++) {
+            for (uint256 j; j < actions.length; j++) {
+                uint256[] memory amounts = AMOUNTS[DST_CHAINS[i]][j];
+
+                for (uint256 k; k < amounts.length; k++) {
+                    totalAmounts += amounts[k];
+                }
+            }
+        }
     }
 }
