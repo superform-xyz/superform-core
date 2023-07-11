@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 /// @dev lib imports
 import "./BaseSetup.sol";
-import "../../utils/DataPacking.sol";
+import {DataLib} from "../../libraries/DataLib.sol";
 import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
 import {ISocketRegistry} from "../../vendor/socket/ISocketRegistry.sol";
 import {ILiFi} from "../../vendor/lifi/ILiFi.sol";
@@ -15,6 +15,8 @@ import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateReg
 import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 
 abstract contract ProtocolActions is BaseSetup {
+    using DataLib for uint256;
+
     event FailedXChainDeposits(uint256 indexed payloadId);
 
     bool public hasTimeLocked;
@@ -282,7 +284,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             for (uint256 k = 0; k < vars.targetSuperFormIds.length; k++) {
                 if (CHAIN_0 == DST_CHAINS[i] || (action.action == Actions.Withdraw && CHAIN_0 != DST_CHAINS[i])) {
-                    (vars.superFormT, , ) = _getSuperForm(vars.targetSuperFormIds[k]);
+                    (vars.superFormT, , ) = vars.targetSuperFormIds[k].getSuperForm();
                     vars.toDst[k] = payable(vars.superFormT);
                 } else {
                     vars.toDst[k] = payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
@@ -1262,7 +1264,7 @@ abstract contract ProtocolActions is BaseSetup {
                 )
             );
 
-            superFormIds_[i] = _packSuperForm(superForm, FORM_BEACON_IDS[formKinds_[i]], chainId_);
+            superFormIds_[i] = DataLib.packSuperForm(superForm, FORM_BEACON_IDS[formKinds_[i]], chainId_);
         }
 
         return superFormIds_;
@@ -1655,7 +1657,7 @@ abstract contract ProtocolActions is BaseSetup {
         spAmountSummed = new uint256[](v.lenSuperforms);
 
         // create an array of amounts summing the amounts of the same superform ids
-        (v.superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
+        (v.superForms, , ) = DataLib.getSuperForms(multiSuperFormsData.superFormIds);
 
         for (v.i = 0; v.i < v.lenSuperforms; v.i++) {
             totalSpAmount += multiSuperFormsData.amounts[v.i];
@@ -1698,7 +1700,7 @@ abstract contract ProtocolActions is BaseSetup {
         spAmountFinal = new uint256[](lenSuperforms);
 
         // create an array of amounts summing the amounts of the same superform ids
-        (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
+        (address[] memory superForms, , ) = DataLib.getSuperForms(multiSuperFormsData.superFormIds);
         bool foundRevertingWithdraw;
         bool foundRevertingWithdrawTimelocked;
         for (uint256 i = 0; i < lenSuperforms; i++) {
@@ -1733,7 +1735,7 @@ abstract contract ProtocolActions is BaseSetup {
         spAmountFinal = new uint256[](lenSuperforms);
 
         // create an array of amounts summing the amounts of the same superform ids
-        (address[] memory superForms, , ) = _getSuperForms(multiSuperFormsData.superFormIds);
+        (address[] memory superForms, , ) = DataLib.getSuperForms(multiSuperFormsData.superFormIds);
 
         for (uint256 i = 0; i < lenSuperforms; i++) {
             spAmountFinal[i] = currentSPBeforeWithdaw[i];
@@ -1794,7 +1796,7 @@ abstract contract ProtocolActions is BaseSetup {
                 : users[action.user].balance;
 
             for (uint256 i = 0; i < vars.nDestinations; i++) {
-                (address superForm, , ) = _getSuperForm(singleSuperFormsData[i].superFormId);
+                (address superForm, , ) = singleSuperFormsData[i].superFormId.getSuperForm();
                 spAmountBeforeWithdraw = IBaseForm(superForm).previewDepositTo(singleSuperFormsData[i].amount);
                 _assertSingleVaultBalance(
                     action.user,

@@ -14,8 +14,8 @@ import {IFormBeacon} from "./interfaces/IFormBeacon.sol";
 import {IBridgeValidator} from "./interfaces/IBridgeValidator.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
+import {DataLib} from "./libraries/DataLib.sol";
 import {Error} from "./utils/Error.sol";
-import "./utils/DataPacking.sol";
 
 /// @title SuperFormRouter
 /// @author Zeropoint Labs.
@@ -23,6 +23,7 @@ import "./utils/DataPacking.sol";
 /// @dev extends Liquidity Handler.
 contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     using SafeERC20 for IERC20;
+    using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
                                 State Variables
@@ -109,7 +110,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             for (uint256 j = 0; j < req.superFormsData.liqRequests.length; j++) {
                 vars.liqRequest = req.superFormsData.liqRequests[j];
                 /// @dev dispatch liquidity data
-                (superForm, , ) = _getSuperForm(req.superFormsData.superFormIds[j]);
+                (superForm, , ) = req.superFormsData.superFormIds[j].getSuperForm();
 
                 _validateAndDispatchTokens(
                     vars.liqRequest,
@@ -179,7 +180,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
         vars.liqRequest = req.superFormData.liqRequest;
 
-        (address superForm, , ) = _getSuperForm(req.superFormData.superFormId);
+        (address superForm, , ) = req.superFormData.superFormId.getSuperForm();
 
         _validateAndDispatchTokens(
             vars.liqRequest,
@@ -469,7 +470,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
     function _dispatchAmbMessage(DispatchAMBMessageVars memory vars) internal {
         AMBMessage memory ambMessage = AMBMessage(
-            _packTxInfo(
+            DataLib.packTxInfo(
                 uint8(vars.txType),
                 uint8(CallbackType.INIT),
                 vars.multiVaults,
@@ -538,7 +539,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         address superForm;
         uint256 dstAmount;
         /// @dev decode superforms
-        (superForm, , ) = _getSuperForm(ambData_.superFormId);
+        (superForm, , ) = ambData_.superFormId.getSuperForm();
 
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = _directDeposit(
@@ -571,7 +572,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
         uint256[] memory dstAmounts = new uint256[](len);
         /// @dev decode superforms
-        (superForms, , ) = _getSuperForms(ambData_.superFormIds);
+        (superForms, , ) = DataLib.getSuperForms(ambData_.superFormIds);
 
         for (uint256 i = 0; i < len; i++) {
             /// @dev deposits collateral to a given vault and mint vault positions.
@@ -626,7 +627,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         address srcSender_
     ) internal {
         /// @dev decode superforms
-        (address superForm, , ) = _getSuperForm(ambData_.superFormId);
+        (address superForm, , ) = ambData_.superFormId.getSuperForm();
 
         _directWithdraw(
             superForm,
@@ -650,7 +651,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         address srcSender_
     ) internal {
         /// @dev decode superforms
-        (address[] memory superForms, , ) = _getSuperForms(ambData_.superFormIds);
+        (address[] memory superForms, , ) = DataLib.getSuperForms(ambData_.superFormIds);
 
         for (uint256 i = 0; i < superForms.length; i++) {
             /// @dev deposits collateral to a given vault and mint vault positions.
@@ -671,11 +672,11 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         uint64 dstChainId_,
         SingleVaultSFData memory superFormData_
     ) internal view returns (bool) {
-        if (dstChainId_ != _getDestinationChain(superFormData_.superFormId)) return false;
+        if (dstChainId_ != DataLib.getDestinationChain(superFormData_.superFormId)) return false;
 
         if (superFormData_.maxSlippage > 10000) return false;
 
-        (, uint32 formBeaconId_, ) = _getSuperForm(superFormData_.superFormId);
+        (, uint32 formBeaconId_, ) = superFormData_.superFormId.getSuperForm();
 
         return !IFormBeacon(ISuperFormFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused();
     }
@@ -702,7 +703,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         bool txDataAmountValid;
         for (uint256 i = 0; i < len; i++) {
             if (superFormsData_.maxSlippage[i] > 10000) return false;
-            (, uint32 formBeaconId_, uint64 sfDstChainId) = _getSuperForm(superFormsData_.superFormIds[i]);
+            (, uint32 formBeaconId_, uint64 sfDstChainId) = superFormsData_.superFormIds[i].getSuperForm();
             if (dstChainId != sfDstChainId) return false;
 
             if (IFormBeacon(ISuperFormFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused())
@@ -741,13 +742,17 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         }
 
         /// @dev slippage and paused validation
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i; i < len; ) {
             if (superFormsData_.maxSlippage[i] > 10000) return false;
-            (, uint32 formBeaconId_, uint64 sfDstChainId) = _getSuperForm(superFormsData_.superFormIds[i]);
+            (, uint32 formBeaconId_, uint64 sfDstChainId) = superFormsData_.superFormIds[i].getSuperForm();
             if (dstChainId != sfDstChainId) return false;
 
             if (IFormBeacon(ISuperFormFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused())
                 return false;
+
+            unchecked {
+                ++i;
+            }
         }
 
         return true;

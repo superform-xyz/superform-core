@@ -12,7 +12,6 @@ import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {ITwoStepsFormStateRegistry} from "../interfaces/ITwoStepsFormStateRegistry.sol";
 import {Error} from "../utils/Error.sol";
-import "../utils/DataPacking.sol";
 
 /// @title ERC4626TimelockForm
 /// @notice Form implementation to handle timelock extension for ERC4626 vaults

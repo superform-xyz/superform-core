@@ -10,12 +10,13 @@ import {InitSingleVaultData} from "../types/DataTypes.sol";
 import {BaseForm} from "../BaseForm.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {Error} from "../utils/Error.sol";
-import "../utils/DataPacking.sol";
+import {DataLib} from "../libraries/DataLib.sol";
 
 /// @title ERC4626FormImplementation
 /// @notice Has common internal functions that can be re-used by actual form implementations
 abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
+    using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
@@ -196,7 +197,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         InitSingleVaultData memory singleVaultData_,
         uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
-        (, , uint64 dstChainId) = _getSuperForm(singleVaultData_.superFormId);
+        (, , uint64 dstChainId) = singleVaultData_.superFormId.getSuperForm();
         address vaultLoc = vault;
 
         IERC4626 v = IERC4626(vaultLoc);
@@ -226,7 +227,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
         xChainWithdrawLocalVars memory vars;
-        (, , vars.dstChainId) = _getSuperForm(singleVaultData_.superFormId);
+        (, , vars.dstChainId) = singleVaultData_.superFormId.getSuperForm();
         vars.vaultLoc = vault;
 
         IERC4626 v = IERC4626(vars.vaultLoc);

@@ -77,4 +77,25 @@ library DataLib {
             revert Error.INVALID_CHAIN_ID();
         }
     }
+
+    /// @dev returns the destination chain of a given superForm
+    /// @param superFormId_ is the id of the superform
+    /// @return chainId_ is the chain id
+    function getDestinationChain(uint256 superFormId_) internal pure returns (uint64 chainId_) {
+        chainId_ = uint64(superFormId_ >> 192);
+    }
+
+    /// @dev generates the superFormId
+    /// @param superForm_ is the address of the superForm
+    /// @param formBeaconId_ is the type of the form
+    /// @param chainId_ is the chain id on which the superForm is deployed
+    function packSuperForm(
+        address superForm_,
+        uint32 formBeaconId_,
+        uint64 chainId_
+    ) internal pure returns (uint256 superFormId_) {
+        superFormId_ = uint256(uint160(superForm_));
+        superFormId_ |= uint256(formBeaconId_) << 160;
+        superFormId_ |= uint256(chainId_) << 192;
+    }
 }

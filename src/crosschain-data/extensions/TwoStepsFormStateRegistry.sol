@@ -11,7 +11,6 @@ import {BaseStateRegistry} from "../BaseStateRegistry.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState, TimeLockStatus, TimeLockPayload} from "../../types/DataTypes.sol";
 import {LiqRequest} from "../../types/LiquidityTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
-import "../../utils/DataPacking.sol";
 
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
@@ -37,7 +36,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @dev allows only form to write to the receive paylod
     /// TODO: add only 2 step forms to write
     modifier onlyForm(uint256 superFormId) {
-        (address superForm, , ) = _getSuperForm(superFormId);
+        (address superForm, , ) = superFormId.getSuperForm();
         if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
         _;
     }
@@ -95,7 +94,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
         /// @dev set status here to prevent re-entrancy
         p.status = TimeLockStatus.PROCESSED;
-        (address superForm, , ) = _getSuperForm(p.data.superFormId);
+        (address superForm, , ) = p.data.superFormId.getSuperForm();
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
         try form.withdrawAfterCoolDown(p.data.amount, p) {} catch {
@@ -170,7 +169,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         return
             abi.encode(
                 AMBMessage(
-                    _packTxInfo(
+                    DataLib.packTxInfo(
                         uint8(TransactionType.WITHDRAW),
                         uint8(CallbackType.FAIL),
                         0,
