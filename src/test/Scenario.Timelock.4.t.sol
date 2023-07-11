@@ -69,7 +69,7 @@ contract ScenarioTimelockTest4 is ProtocolActions {
                 action: Actions.Withdraw,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 1,
-                testType: TestType.RevertXChainWithdraw,
+                testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,

@@ -11,55 +11,31 @@ import "../utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario6Test is ProtocolActions {
+contract SDMVDMulti31MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationXChainDeposit with multi tx (single processing) & batch processing
+        //////////////////////////////////////////////////////////////*/
 
-        AMBs = [1, 2];
+        AMBs = [1, 3];
 
-        CHAIN_0 = ETH;
-        DST_CHAINS = [ARBI];
+        CHAIN_0 = ARBI;
+        DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ARBI][0] = [0];
-        TARGET_VAULTS[ARBI][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][0] = [0];
+        TARGET_UNDERLYINGS[OP][0] = [1, 0];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [1, 1];
-        TARGET_VAULTS[ARBI][1] = [0, 0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][1] = [0, 0];
+        TARGET_VAULTS[OP][0] = [3, 1]; /// @dev id 0 is normal 4626
 
-        AMOUNTS[ARBI][0] = [12337];
-        AMOUNTS[ARBI][1] = [721, 13];
+        TARGET_FORM_KINDS[OP][0] = [0, 1];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000];
-        MAX_SLIPPAGE[ARBI][1] = [1000, 1000];
+        AMOUNTS[OP][0] = [21412, 4214521];
 
-        LIQ_BRIDGES[ARBI][0] = [1];
-        LIQ_BRIDGES[ARBI][1] = [1, 1];
+        MAX_SLIPPAGE[OP][0] = [1000, 1000];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
-        /// @dev push in order the actions should be executed
-        actions.push(
-            TestAction({
-                action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 0,
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: true,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
-        );
+        /// @dev 1 for socket, 2 for lifi
+        LIQ_BRIDGES[OP][0] = [2, 2];
 
         actions.push(
             TestAction({
@@ -69,11 +45,11 @@ contract Scenario6Test is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 11, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
                 msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
@@ -83,7 +59,7 @@ contract Scenario6Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;

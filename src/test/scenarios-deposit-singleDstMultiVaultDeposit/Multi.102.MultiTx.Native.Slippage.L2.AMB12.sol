@@ -6,66 +6,50 @@ import "../../types/LiquidityTypes.sol";
 import "../../types/DataTypes.sol";
 
 // Test Utils
-import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
+/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
+/// @dev FIXME - using unoptimized multiDstMultivault function
+contract SDMVDMulti102MultiTxNativeSlippageL1AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
-        AMBs = [1, 3];
-        MultiDstAMBs = [AMBs, AMBs, AMBs];
+        //////////////////////////////////////////////////////////////*/
 
-        CHAIN_0 = OP;
-        DST_CHAINS = [OP, ETH, POLY];
+        AMBs = [1, 2];
+
+        CHAIN_0 = ETH;
+        DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [2];
-        TARGET_UNDERLYINGS[ETH][0] = [2];
-        TARGET_UNDERLYINGS[POLY][0] = [1];
+        TARGET_UNDERLYINGS[OP][0] = [2, 1, 0];
 
-        TARGET_VAULTS[OP][0] = [0];
-        TARGET_VAULTS[ETH][0] = [3];
-        TARGET_VAULTS[POLY][0] = [0];
+        TARGET_VAULTS[OP][0] = [1, 0, 2]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[OP][0] = [0];
-        TARGET_FORM_KINDS[ETH][0] = [0];
-        TARGET_FORM_KINDS[POLY][0] = [0];
+        TARGET_FORM_KINDS[OP][0] = [1, 0, 2];
 
-        AMOUNTS[OP][0] = [2];
-        AMOUNTS[ETH][0] = [5];
-        AMOUNTS[POLY][0] = [44444];
+        AMOUNTS[OP][0] = [5555, 791421458, 5553];
 
-        MAX_SLIPPAGE[OP][0] = [1000];
-        MAX_SLIPPAGE[ETH][0] = [1000];
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE[OP][0] = [1000, 1000, 1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[OP][0] = [1];
-        LIQ_BRIDGES[ETH][0] = [1];
-        LIQ_BRIDGES[POLY][0] = [1];
-
-        vm.selectFork(FORKS[CHAIN_0]);
-
-        /// if testing a revert, do we test the revert on the whole destination?
-        /// to assert values, it is best to find the indexes that didn't revert
+        LIQ_BRIDGES[OP][0] = [1, 1, 1];
 
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
+                multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
+                slippage: 774, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: true,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
                 msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
@@ -82,6 +66,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
             _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
         }
     }

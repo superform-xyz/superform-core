@@ -11,31 +11,31 @@ import "../utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract SDMVDMultiNoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
+contract SDMVDMulti4MultiTxTokenInputNoSlippageL1AMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-        //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////*/
+        /// @dev singleDestinationMultiVault Deposit test case
+        AMBs = [2, 3];
 
-        AMBs = [1, 2];
-
-        CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        CHAIN_0 = ARBI;
+        DST_CHAINS = [ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [0, 0];
+        TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[POLY][0] = [0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [4]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[POLY][0] = [0, 0];
+        TARGET_FORM_KINDS[ETH][0] = [1];
 
-        AMOUNTS[POLY][0] = [3213, 12];
+        AMOUNTS[ETH][0] = [421];
 
-        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
+        MAX_SLIPPAGE[ETH][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [1, 1];
+        LIQ_BRIDGES[ETH][0] = [1];
 
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -51,7 +51,7 @@ contract SDMVDMultiNoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
                 multiTx: false,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
                 msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

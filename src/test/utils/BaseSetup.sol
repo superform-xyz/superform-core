@@ -9,7 +9,6 @@ import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 
 /// @dev test utils & mocks
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
@@ -20,6 +19,8 @@ import {VaultMockRevertDeposit} from "../mocks/VaultMockRevertDeposit.sol";
 import {ERC4626TimelockMockRevertWithdrawal} from "../mocks/ERC4626TimelockMockRevertWithdrawal.sol";
 import {ERC4626TimelockMockRevertDeposit} from "../mocks/ERC4626TimelockMockRevertDeposit.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
+import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
+import {kycDAO4626RevertDeposit} from "../mocks/kycDAO4626RevertDeposit.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {Permit2Clone} from "../mocks/Permit2Clone.sol";
 import {KYCDaoNFTMock} from "../mocks/KYCDaoNFTMock.sol";
@@ -105,17 +106,14 @@ abstract contract BaseSetup is DSTest, Test {
         "kycDAO4626",
         "VaultMockRevertDeposit",
         "ERC4626TimelockMockRevertWithdrawal",
-        "ERC4626TimelockMockRevertDeposit"
+        "ERC4626TimelockMockRevertDeposit",
+        "kycDAO4626RevertDeposit"
     ];
     struct VaultInfo {
         bytes[] vaultBytecode;
         string[] vaultKinds;
     }
     mapping(uint32 formBeaconId => VaultInfo vaultInfo) vaultBytecodes2;
-
-    bytes[] public vault4626Bytecodes;
-    bytes[] public vaultKycBytecodes;
-    bytes[] public vaultTiemlockedBytecodes;
 
     mapping(uint256 vaultId => string[] names) VAULT_NAMES;
 
@@ -770,6 +768,8 @@ abstract contract BaseSetup is DSTest, Test {
         /// @dev form 3 (kycdao 4626)
         vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626).creationCode);
         vaultBytecodes2[3].vaultKinds.push("kycDAO4626");
+        vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertDeposit).creationCode);
+        vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertDeposit");
 
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
         for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
@@ -909,6 +909,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     function _deployWithCreate2(bytes memory bytecode_, uint256 salt_) internal returns (address addr) {
+        /// @solidity memory-safe-assembly
         assembly {
             addr := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
 

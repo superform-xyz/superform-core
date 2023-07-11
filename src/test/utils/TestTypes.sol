@@ -28,8 +28,6 @@ enum TestType {
     RevertProcessPayload,
     RevertUpdateStateSlippage,
     RevertUpdateStateRBAC,
-    RevertXChainWithdraw,
-    RevertTimeLockWithdraw,
     RevertXChainDeposit
 }
 
@@ -151,6 +149,13 @@ struct SetupVars {
 /*//////////////////////////////////////////////////////////////
                     ARGS TYPES
 //////////////////////////////////////////////////////////////*/
+
+struct CallDataArgs {
+    MultiVaultsSFData[] multiSuperFormsData;
+    SingleVaultSFData[] singleSuperFormsData;
+    MultiVaultCallDataArgs[] multiSuperFormsCallData;
+    SingleVaultCallDataArgs[] singleSuperFormsCallData;
+}
 
 struct SingleVaultCallDataArgs {
     uint256 user;

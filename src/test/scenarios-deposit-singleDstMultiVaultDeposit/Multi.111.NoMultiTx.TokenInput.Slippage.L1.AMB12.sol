@@ -11,33 +11,31 @@ import "../utils/AmbParams.sol";
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario2Test is ProtocolActions {
+contract SDMVDMulti111NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationMultiVault Deposit test case
-        AMBs = [1, 3];
+        //////////////////////////////////////////////////////////////*/
 
-        CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        AMBs = [1, 2];
+
+        CHAIN_0 = ETH;
+        DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [0, 0];
+        TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
 
-        TARGET_VAULTS[POLY][0] = [0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [1, 1, 1]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[POLY][0] = [0, 0];
+        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
 
-        AMOUNTS[POLY][0] = [3213, 12];
+        AMOUNTS[AVAX][0] = [214, 798, 55312];
 
-        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
+        MAX_SLIPPAGE[AVAX][0] = [1000, 1000, 1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [1, 1];
-
-        vm.selectFork(FORKS[CHAIN_0]);
+        LIQ_BRIDGES[AVAX][0] = [2, 2, 2];
 
         actions.push(
             TestAction({
@@ -47,11 +45,11 @@ contract Scenario2Test is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
                 msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
