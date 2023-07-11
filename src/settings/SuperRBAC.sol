@@ -7,7 +7,6 @@ import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 import {AMBFactoryMessage, AMBMessage} from "../types/DataTypes.sol";
-import "../utils/DataPacking.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.

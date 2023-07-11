@@ -8,12 +8,14 @@ import {IMessageBus} from "../../../vendor/celer/IMessageBus.sol";
 import {IMessageReceiver} from "../../../vendor/celer/IMessageReceiver.sol";
 import {Error} from "../../../utils/Error.sol";
 import {AMBMessage, BroadCastAMBExtraData} from "../../../types/DataTypes.sol";
-import "../../../utils/DataPacking.sol";
+import {DataLib} from "../../../libraries/DataLib.sol";
 
 /// @title CelerImplementation
 /// @author Zeropoint Labs
 /// @dev allows state registries to use celer for crosschain communication
 contract CelerImplementation is IAmbImplementation, IMessageReceiver {
+    using DataLib for uint256;
+
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
@@ -177,7 +179,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         AMBMessage memory decoded = abi.decode(message_, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId, , ) = _decodeTxInfo(decoded.txInfo);
+        (, , , uint8 registryId, , ) = decoded.txInfo.decodeTxInfo();
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
