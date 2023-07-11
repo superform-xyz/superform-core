@@ -7,13 +7,14 @@ import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {Error} from "./utils/Error.sol";
-import "./utils/DataPacking.sol";
+import {DataLib} from "./libraries/DataLib.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
 contract SuperPositions is ISuperPositions, ERC1155s {
-    string public dynamicURI;
+    using DataLib for uint256;
 
+    string public dynamicURI;
     ISuperRegistry public immutable superRegistry;
 
     /// @dev maps all transaction data routed through the smart contract.
@@ -103,7 +104,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateMultiSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 txType, uint256 callbackType, , , , uint64 returnDataSrcChainId) = _decodeTxInfo(data_.txInfo);
+        (uint256 txType, uint256 callbackType, , , , uint64 returnDataSrcChainId) = data_.txInfo.decodeTxInfo();
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -115,7 +116,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         uint8 multi;
         address srcSender;
-        (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(transactionInfo.txInfo);
+        (, , multi, , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
 
         if (multi == 0) revert Error.INVALID_PAYLOAD();
 
@@ -137,7 +138,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 txType, uint256 callbackType, , , , uint64 returnDataSrcChainId) = _decodeTxInfo(data_.txInfo);
+        (uint256 txType, uint256 callbackType, , , , uint64 returnDataSrcChainId) = data_.txInfo.decodeTxInfo();
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -149,7 +150,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         uint8 multi;
         address srcSender;
-        (, , multi, , srcSender, srcChainId_) = _decodeTxInfo(transactionInfo.txInfo);
+        (, , multi, , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
 
         if (multi == 1) revert Error.INVALID_PAYLOAD();
 

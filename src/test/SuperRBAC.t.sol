@@ -8,7 +8,6 @@ import {RolesStateRegistry} from "../crosschain-data/extensions/RolesStateRegist
 import "./utils/BaseSetup.sol";
 import "./utils/Utilities.sol";
 import {Error} from "../utils/Error.sol";
-import "../utils/DataPacking.sol";
 
 contract SuperformRolesTest is BaseSetup {
     uint64 internal chainId = ETH;

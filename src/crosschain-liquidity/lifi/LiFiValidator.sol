@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import {BridgeValidator} from "../BridgeValidator.sol";
 import {ILiFi} from "../../vendor/lifi/ILiFi.sol";
 import {Error} from "../../utils/Error.sol";
-import "../../utils/DataPacking.sol";
 
 /// @title lifi verification contract
 /// @author Zeropoint Labs

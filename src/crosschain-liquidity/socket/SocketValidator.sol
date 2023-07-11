@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 import {BridgeValidator} from "../BridgeValidator.sol";
 import {ISocketRegistry} from "../../vendor/socket/ISocketRegistry.sol";
 import {Error} from "../../utils/Error.sol";
-import "../../utils/DataPacking.sol";
 
 /// @title Socket verification contract
 /// @author Zeropoint Labs
