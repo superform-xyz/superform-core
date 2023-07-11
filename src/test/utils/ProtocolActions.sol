@@ -1663,12 +1663,15 @@ abstract contract ProtocolActions is BaseSetup {
             totalSpAmount += multiSuperFormsData.amounts[v.i];
             for (v.j = 0; v.j < v.lenSuperforms; v.j++) {
                 v.foundRevertingDeposit = false;
+                console.log(v.i);
+                console.log(v.j);
+                console.log("AA");
 
                 if (lenRevertDeposit > 0) {
                     v.foundRevertingDeposit =
                         revertingDepositSFs[v.i][dstIndex] == multiSuperFormsData.superFormIds[v.i];
                 }
-
+                console.log("BB");
                 if (
                     multiSuperFormsData.superFormIds[v.i] == multiSuperFormsData.superFormIds[v.j] &&
                     !v.foundRevertingDeposit
