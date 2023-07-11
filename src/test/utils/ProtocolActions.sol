@@ -244,7 +244,8 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev FIXME this probably needs to be tailored for NATIVE DEPOSITS
         /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
         /// @dev the sum of native assets needed in each state request
-        action.msgValue = action.msgValue + (vars.nDestinations + 1) * _getPriceMultiplier(CHAIN_0) * 1e18;
+        // action.msgValue = action.msgValue;
+
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (DST_CHAINS[i] == chainIds[j]) {
@@ -816,22 +817,23 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     function _stage7_process_unlock_withdraw(
-        TestAction memory action,
+        TestAction memory,
         StagesLocalVars memory vars,
         uint256 unlockId_
     ) internal returns (bool success) {
-        console.log("process unlock withdraw");
-        vm.prank(deployer);
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            vm.recordLogs();
             vm.selectFork(FORKS[DST_CHAINS[i]]);
+
             ITwoStepsFormStateRegistry twoStepsFormStateRegistry = ITwoStepsFormStateRegistry(
                 contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]
             );
 
             /// increase time by 5 days
             vm.warp(block.timestamp + (86400 * 5));
-            twoStepsFormStateRegistry.finalizePayload{value: 240 * 1e18}(unlockId_, generateAckParams(AMBs));
+            (uint256 msgValue, bytes memory ackParams) = generateAckGasFeesAndParams(CHAIN_0, AMBs);
+
+            vm.prank(deployer);
+            twoStepsFormStateRegistry.finalizePayload{value: msgValue}(unlockId_, ackParams);
         }
 
         return true;
@@ -1328,13 +1330,20 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[targetChainId_]);
-        uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
+
+        uint256 msgValue;
+        bytes memory ackParams;
+
+        /// @dev only generate if acknowledgement is needed
+        if (targetChainId_ != CHAIN_0) {
+            (msgValue, ackParams) = generateAckGasFeesAndParams(CHAIN_0, AMBs);
+        }
 
         vm.prank(deployer);
         if (testType == TestType.Pass || testType == TestType.RevertXChainWithdraw) {
             CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
                 value: msgValue
-            }(payloadId_, generateAckParams(AMBs));
+            }(payloadId_, ackParams);
         } else if (testType == TestType.RevertProcessPayload) {
             /// @dev WARNING the try catch silences the revert, therefore the only way to assert is via emit
             vm.expectEmit();
@@ -1343,7 +1352,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             returnMessage = CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
                 value: msgValue
-            }(payloadId_, generateAckParams(AMBs));
+            }(payloadId_, ackParams);
             return (false, returnMessage);
         }
 
@@ -1360,13 +1369,16 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[targetChainId_]);
-        uint256 msgValue = 240 * 1e18; /// @FIXME: try more accurate estimations
+
+        /// @dev no acknowledgement is needed;
+        uint256 msgValue;
+        bytes memory ackParams;
 
         vm.prank(deployer);
         if (testType == TestType.RevertXChainWithdraw) {
             TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
                 value: msgValue
-            }(payloadId_, bytes(""));
+            }(payloadId_, ackParams);
         }
 
         vm.selectFork(initialFork);

@@ -34,6 +34,8 @@ contract SXSVDTimelocked4626NoMultiTxTokenInputSlippageL2AMB13 is ProtocolAction
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ARBI][0] = [2];
 
+        vm.selectFork(FORKS[CHAIN_0]);
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -44,8 +46,8 @@ contract SXSVDTimelocked4626NoMultiTxTokenInputSlippageL2AMB13 is ProtocolAction
                 revertRole: "",
                 slippage: 321, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

@@ -126,7 +126,8 @@ struct SetupVars {
     address rolesStateRegistry;
     address factoryStateRegistry;
     address coreStateRegistry;
-    address coreStateRegistryHelper;
+    address PayloadHelper;
+    address FeeHelper;
     address twoStepsFormStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
