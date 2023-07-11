@@ -104,7 +104,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateMultiSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 txType, uint256 callbackType, , , , uint64 returnDataSrcChainId) = data_.txInfo.decodeTxInfo();
+        (uint256 returnTxType, uint256 callbackType, , , address returnDataSrcSender, ) = data_.txInfo.decodeTxInfo();
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -116,11 +116,12 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         uint8 multi;
         address srcSender;
-        (, , multi, , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
+        uint256 txType;
+        (txType, , multi, , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
 
         if (multi == 0) revert Error.INVALID_PAYLOAD();
-
-        if (returnDataSrcChainId != srcChainId_) revert Error.SRC_CHAIN_IDS_MISMATCH();
+        if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
+        if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
             _batchMint(srcSender, transactionInfo.superFormIds, returnData.amounts, "");
@@ -138,7 +139,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 txType, uint256 callbackType, , , , uint64 returnDataSrcChainId) = data_.txInfo.decodeTxInfo();
+        (uint256 txType, uint256 callbackType, , , address returnDataSrcSender, ) = data_.txInfo.decodeTxInfo();
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -154,7 +155,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         if (multi == 1) revert Error.INVALID_PAYLOAD();
 
-        if (returnDataSrcChainId != srcChainId_) revert Error.SRC_CHAIN_IDS_MISMATCH();
+        if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
             _mint(srcSender, transactionInfo.superFormIds[0], returnData.amount, "");

@@ -57,6 +57,7 @@ import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {TwoStepsFormStateRegistry} from "../../crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
 import {PayloadHelper} from "../../crosschain-data/utils/PayloadHelper.sol";
 import {FeeHelper} from "../../crosschain-data/utils/FeeHelper.sol";
+import {QuorumManager} from "../../crosschain-data/utils/QuorumManager.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////
@@ -629,7 +630,7 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstCelerChainId
                     );
 
-                    CoreStateRegistry(payable(vars.coreStateRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
+                    QuorumManager(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
                 }
             }
         }
