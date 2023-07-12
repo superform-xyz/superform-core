@@ -21,6 +21,7 @@ import {ERC4626TimelockMockRevertDeposit} from "../mocks/ERC4626TimelockMockReve
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 import {kycDAO4626RevertDeposit} from "../mocks/kycDAO4626RevertDeposit.sol";
+import {kycDAO4626RevertWithdraw} from "../mocks/kycDAO4626RevertWithdraw.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {Permit2Clone} from "../mocks/Permit2Clone.sol";
 import {KYCDaoNFTMock} from "../mocks/KYCDaoNFTMock.sol";
@@ -108,7 +109,8 @@ abstract contract BaseSetup is DSTest, Test {
         "VaultMockRevertDeposit",
         "ERC4626TimelockMockRevertWithdrawal",
         "ERC4626TimelockMockRevertDeposit",
-        "kycDAO4626RevertDeposit"
+        "kycDAO4626RevertDeposit",
+        "kycDAO4626RevertWithdraw"
     ];
     struct VaultInfo {
         bytes[] vaultBytecode;
@@ -771,6 +773,8 @@ abstract contract BaseSetup is DSTest, Test {
         vaultBytecodes2[3].vaultKinds.push("kycDAO4626");
         vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertDeposit).creationCode);
         vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertDeposit");
+        vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertWithdraw).creationCode);
+        vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertWithdraw");
 
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
         for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
