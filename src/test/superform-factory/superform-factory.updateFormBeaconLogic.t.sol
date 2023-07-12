@@ -131,11 +131,11 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         );
 
         // @dev Updating The Form With Invalid Beacon
-        uint32 formBeaconId_invalid = 9999;
+        uint32 formBeaconId2 = 9999;
 
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).updateFormBeaconLogic(
-            formBeaconId_invalid,
+            formBeaconId2,
             formImplementation
         );
     }

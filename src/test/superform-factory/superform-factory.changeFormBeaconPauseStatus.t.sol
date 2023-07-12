@@ -29,7 +29,7 @@ contract SuperFormFactoryChangePauseTest is BaseSetup {
 
         address superRegistry = getContract(chainId, "SuperRegistry");
 
-        // @dev Deploying Forms
+        /// @dev Deploying Forms
         address formImplementation1 = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
 
@@ -95,20 +95,20 @@ contract SuperFormFactoryChangePauseTest is BaseSetup {
 
         address superRegistry = getContract(chainId, "SuperRegistry");
 
-        // @dev Deploying Forms
+        /// @dev Deploying Forms
         address formImplementation1 = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
         uint32 formBeaconId_invalid = 999;
 
 
-        // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
+        /// @dev Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
             formImplementation1,
             formBeaconId,
             salt
         );
 
-        // @dev Invalid Form Beacon For Pausing
+        /// @dev Invalid Form Beacon For Pausing
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
             formBeaconId_invalid,

@@ -7,22 +7,18 @@ import {SuperFormFactory} from "src/SuperFormFactory.sol";
 import {FactoryStateRegistry} from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ERC4626Form} from "src/forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "src/forms/ERC4626TimelockForm.sol";
+import {FormBeacon} from "src/forms/FormBeacon.sol";
 import "src/test/utils/BaseSetup.sol";
 import "src/test/utils/Utilities.sol";
 import {Error} from "src/utils/Error.sol";
 import "src/utils/DataPacking.sol";
 
 contract SuperFormFactoryAddBeaconTest is BaseSetup {
-    /// @dev emitted when a new form is entered into the factory
-    /// @param form is the address of the new form
-    /// @param formId is the id of the new form
-    event FormCreated(address indexed form, uint256 indexed formId);
-
-    /// @dev emitted when a new SuperForm is created
-    /// @param formId is the id of the form
-    /// @param vault is the address of the vault
-    /// @param superFormId is the id of the superform - pair (form,vault)
-    event SuperFormCreated(uint256 indexed formId, address indexed vault, uint256 indexed superFormId);
+    /// @dev emitted when Beacon Is Added
+    /// @param formImplementation is the address of the formImplementation
+    /// @param beacon is the beacon address using create2
+    /// @param formBeaconId is the beacon ID
+    event FormBeaconAdded(address indexed formImplementation, address indexed beacon, uint256 indexed formBeaconId);
 
     uint64 internal chainId = ETH;
 
@@ -31,22 +27,27 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
     }
     
     /// Testing superform creation by adding beacon
-    /// TODO: Implement create2 in superform ID to assert superform address is same as the one provided
     function test_addForm() public {
         vm.startPrank(deployer);
         address formImplementation = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
         uint32 formBeaconId = 0;
 
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        /// @dev create2 event
+        address superformBeacon= address(new FormBeacon{salt: salt}(getContract(chainId, "SuperRegistry"), formImplementation));
+
+        /// @dev FIXME: Need to fix the superformBeacon emitted
+        vm.expectEmit(true, false, true, true);
+        emit FormBeaconAdded(formImplementation, superformBeacon, formBeaconId);
+
+        address beacon_returned = SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
             formImplementation,
             formBeaconId,
             salt
         );
-
     }
 
-    /// Testing adding two beacons with same formBeaconId
-    /// Should Revert With BEACON_ID_ALREADY_EXISTS
+    /// @dev Testing adding two beacons with same formBeaconId
+    /// @dev Should Revert With BEACON_ID_ALREADY_EXISTS
     function test_revert_addForm_sameBeaconID() public {
         
         address formImplementation1 = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
@@ -80,8 +81,8 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(form, formId, salt);
     }
 
-    /// Testing adding becon with wrong form
-    /// Should Revert With ERC165_UNSUPPORTED
+    /// @dev Testing adding becon with wrong form
+    /// @dev Should Revert With ERC165_UNSUPPORTED
     function test_revert_addForm_interfaceUnsupported() public {
         address form = address(0x1);
         uint32 formId = 1;
