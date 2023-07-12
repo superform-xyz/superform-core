@@ -269,7 +269,6 @@ abstract contract ProtocolActions is BaseSetup {
                     break;
                 }
             }
-
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
             (vars.targetSuperFormIds, vars.underlyingSrcToken, vars.vaultMock) = _targetVaults(
                 CHAIN_0,
@@ -1640,6 +1639,7 @@ abstract contract ProtocolActions is BaseSetup {
         bool foundRevertingDeposit;
         uint256 i;
         uint256 j;
+        uint256 k;
     }
 
     function _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
@@ -1663,15 +1663,14 @@ abstract contract ProtocolActions is BaseSetup {
             totalSpAmount += multiSuperFormsData.amounts[v.i];
             for (v.j = 0; v.j < v.lenSuperforms; v.j++) {
                 v.foundRevertingDeposit = false;
-                console.log(v.i);
-                console.log(v.j);
-                console.log("AA");
 
                 if (lenRevertDeposit > 0) {
-                    v.foundRevertingDeposit =
-                        revertingDepositSFs[v.i][dstIndex] == multiSuperFormsData.superFormIds[v.i];
+                    for (v.k = 0; v.k < lenRevertDeposit; v.k++) {
+                        v.foundRevertingDeposit =
+                            revertingDepositSFs[dstIndex][v.k] == multiSuperFormsData.superFormIds[v.i];
+                        if (v.foundRevertingDeposit) break;
+                    }
                 }
-                console.log("BB");
                 if (
                     multiSuperFormsData.superFormIds[v.i] == multiSuperFormsData.superFormIds[v.j] &&
                     !v.foundRevertingDeposit
@@ -1713,10 +1712,17 @@ abstract contract ProtocolActions is BaseSetup {
                 foundRevertingWithdrawTimelocked = false;
 
                 if (lenRevertWithdraw > 0) {
-                    foundRevertingWithdraw = revertingWithdrawSFs[dstIndex][i] == multiSuperFormsData.superFormIds[i];
+                    for (uint k = 0; k < lenRevertWithdraw; k++) {
+                        foundRevertingWithdraw =
+                            revertingWithdrawSFs[dstIndex][k] == multiSuperFormsData.superFormIds[i];
+                        if (foundRevertingWithdraw) break;
+                    }
                 } else if (lenRevertWithdrawTimelocked > 0) {
-                    foundRevertingWithdrawTimelocked =
-                        revertingWithdrawTimelockedSFs[dstIndex][i] == multiSuperFormsData.superFormIds[i];
+                    for (uint k = 0; k < lenRevertWithdrawTimelocked; k++) {
+                        foundRevertingWithdrawTimelocked =
+                            revertingWithdrawTimelockedSFs[dstIndex][k] == multiSuperFormsData.superFormIds[i];
+                        if (foundRevertingWithdrawTimelocked) break;
+                    }
                 }
                 if (
                     multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j] &&
