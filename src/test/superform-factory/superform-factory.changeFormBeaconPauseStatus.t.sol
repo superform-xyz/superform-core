@@ -98,7 +98,7 @@ contract SuperFormFactoryTest is BaseSetup {
         // @dev Deploying Forms
         address formImplementation1 = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
-        uint32 formBeaconId_invalid = 1;
+        uint32 formBeaconId_invalid = 999;
 
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested

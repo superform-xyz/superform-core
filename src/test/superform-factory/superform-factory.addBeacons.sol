@@ -34,7 +34,7 @@ contract SuperFormFactoryTest is BaseSetup {
         
         for (uint32 i = 0; i < MAX_FORMS; i++) {
             formImplementations[i]= (address(new ERC4626Form(getContract(chainId, "SuperRegistry"))));
-            formBeaconIds[i]= i;
+            formBeaconIds[i]= i + 10;
         }
 
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacons(
