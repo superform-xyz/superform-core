@@ -9,7 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXSVWNormal4626NativeSlippageL1AMB23 is ProtocolActions {
+contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -17,7 +17,7 @@ contract SXSVWNormal4626NativeSlippageL1AMB23 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         AMBs = [2, 3];
 
-        CHAIN_0 = POLY;
+        CHAIN_0 = OP;
         DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
@@ -34,8 +34,8 @@ contract SXSVWNormal4626NativeSlippageL1AMB23 is ProtocolActions {
 
         TARGET_FORM_KINDS[OP][1] = [0];
 
-        AMOUNTS[OP][0] = [541135];
-        AMOUNTS[OP][1] = [541135];
+        AMOUNTS[OP][0] = [8764];
+        AMOUNTS[OP][1] = [8764];
 
         MAX_SLIPPAGE[OP][0] = [1000];
         MAX_SLIPPAGE[OP][1] = [1000];

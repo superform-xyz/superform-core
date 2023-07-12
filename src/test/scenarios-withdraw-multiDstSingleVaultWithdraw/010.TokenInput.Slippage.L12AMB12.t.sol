@@ -9,40 +9,68 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXSVWNormal4626NativeSlippageL1AMB23 is ProtocolActions {
+contract MDSVW010NativeSlippageL12AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 3];
+        AMBs = [1, 2];
+        MultiDstAMBs = [AMBs, AMBs, AMBs];
 
-        CHAIN_0 = POLY;
-        DST_CHAINS = [OP];
-
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [0];
-
-        TARGET_VAULTS[OP][0] = [0]; /// @dev id 0 is normal 4626
-
-        TARGET_FORM_KINDS[OP][0] = [0];
+        CHAIN_0 = ARBI;
+        DST_CHAINS = [ARBI, OP, AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][1] = [0];
+        TARGET_UNDERLYINGS[ARBI][0] = [2];
+        TARGET_UNDERLYINGS[OP][0] = [1];
+        TARGET_UNDERLYINGS[AVAX][0] = [1];
 
-        TARGET_VAULTS[OP][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [1]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[OP][1] = [0];
+        TARGET_FORM_KINDS[ARBI][0] = [0];
+        TARGET_FORM_KINDS[OP][0] = [1];
+        TARGET_FORM_KINDS[AVAX][0] = [0];
 
-        AMOUNTS[OP][0] = [541135];
-        AMOUNTS[OP][1] = [541135];
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[ARBI][1] = [2];
+        TARGET_UNDERLYINGS[OP][1] = [1];
+        TARGET_UNDERLYINGS[AVAX][1] = [1];
 
+        TARGET_VAULTS[ARBI][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][1] = [1]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][1] = [0]; /// @dev id 0 is normal 4626
+
+        TARGET_FORM_KINDS[ARBI][1] = [0];
+        TARGET_FORM_KINDS[OP][1] = [1];
+        TARGET_FORM_KINDS[AVAX][1] = [0];
+
+        AMOUNTS[ARBI][0] = [777];
+        AMOUNTS[OP][0] = [955];
+        AMOUNTS[AVAX][0] = [42141];
+
+        AMOUNTS[ARBI][1] = [777];
+        AMOUNTS[OP][1] = [955];
+        AMOUNTS[AVAX][1] = [42141];
+
+        MAX_SLIPPAGE[ARBI][0] = [1000];
         MAX_SLIPPAGE[OP][0] = [1000];
+        MAX_SLIPPAGE[AVAX][0] = [1000];
+
+        MAX_SLIPPAGE[ARBI][1] = [1000];
         MAX_SLIPPAGE[OP][1] = [1000];
+        MAX_SLIPPAGE[AVAX][1] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
+        LIQ_BRIDGES[ARBI][0] = [1];
         LIQ_BRIDGES[OP][0] = [1];
-        LIQ_BRIDGES[OP][1] = [1];
+        LIQ_BRIDGES[AVAX][0] = [1];
+
+        LIQ_BRIDGES[ARBI][1] = [2];
+        LIQ_BRIDGES[OP][1] = [2];
+        LIQ_BRIDGES[AVAX][1] = [2];
 
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -54,7 +82,7 @@ contract SXSVWNormal4626NativeSlippageL1AMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 775, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
                 msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),

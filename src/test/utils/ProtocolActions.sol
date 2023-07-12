@@ -81,6 +81,7 @@ abstract contract ProtocolActions is BaseSetup {
         StagesLocalVars memory vars,
         bool success
     ) internal {
+        console.log("new-action");
         (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
 
         uint256[] memory spAmountSummed;
@@ -1807,6 +1808,8 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (address superForm, , ) = singleSuperFormsData[i].superFormId.getSuperForm();
                 spAmountBeforeWithdraw = IBaseForm(superForm).previewDepositTo(singleSuperFormsData[i].amount);
+
+                console.log("spAmountBeforeWithdraw", spAmountBeforeWithdraw);
                 _assertSingleVaultBalance(
                     action.user,
                     singleSuperFormsData[i].superFormId,

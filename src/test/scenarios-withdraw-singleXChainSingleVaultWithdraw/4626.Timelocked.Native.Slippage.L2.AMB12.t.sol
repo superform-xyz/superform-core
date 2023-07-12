@@ -17,7 +17,7 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         AMBs = [1, 2];
 
-        CHAIN_0 = OP;
+        CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
@@ -55,6 +55,22 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 224, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+            })
+        );
+
+        actions.push(
+            TestAction({
+                action: Actions.Withdraw,
+                multiVaults: false, //!!WARNING turn on or off multi vaults
+                user: 0,
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
                 msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
