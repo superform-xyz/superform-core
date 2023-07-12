@@ -12,7 +12,7 @@ import "src/test/utils/Utilities.sol";
 import {Error} from "src/utils/Error.sol";
 import "src/utils/DataPacking.sol";
 
-contract SuperFormFactoryTest is BaseSetup {
+contract SuperFormFactoryAddBeaconTest is BaseSetup {
     /// @dev emitted when a new form is entered into the factory
     /// @param form is the address of the new form
     /// @param formId is the id of the new form

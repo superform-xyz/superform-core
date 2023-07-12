@@ -11,7 +11,7 @@ import "src/test/utils/Utilities.sol";
 import {Error} from "src/utils/Error.sol";
 import "src/utils/DataPacking.sol";
 
-contract SuperFormFactoryTest is BaseSetup {
+contract SuperFormFactoryCreateSuperformTest is BaseSetup {
 
     uint64 internal chainId = ETH;
 
