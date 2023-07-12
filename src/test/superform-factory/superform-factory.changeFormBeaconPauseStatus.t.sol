@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {ISuperFormFactory} from "src/interfaces/ISuperFormFactory.sol";
-import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
-import {SuperFormFactory} from "src/SuperFormFactory.sol";
-import {FactoryStateRegistry} from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import {ERC4626Form} from "src/forms/ERC4626Form.sol";
-import {ERC4626TimelockForm} from "src/forms/ERC4626TimelockForm.sol";
-import "src/test/utils/BaseSetup.sol";
-import "src/test/utils/Utilities.sol";
-import {Error} from "src/utils/Error.sol";
-import "src/utils/DataPacking.sol";
+import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {SuperFormFactory} from "../../SuperFormFactory.sol";
+import {FactoryStateRegistry} from "../../crosschain-data/extensions/FactoryStateRegistry.sol";
+import {ERC4626Form} from "../../forms/ERC4626Form.sol";
+import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
+import "../utils/BaseSetup.sol";
+import "../utils/Utilities.sol";
+import {Error} from "../../utils/Error.sol";
+import "../../utils/DataPacking.sol";
 
 contract SuperFormFactoryChangePauseTest is BaseSetup {
 
