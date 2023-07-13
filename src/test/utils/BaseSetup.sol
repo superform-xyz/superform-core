@@ -963,8 +963,8 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     ///@dev Compute the address of the contract to be deployed
-    function getAddress(bytes memory bytecode_, uint salt_) public view returns (address) {
-        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt_, keccak256(bytecode_)));
+    function getAddress(bytes memory bytecode_, bytes32 salt_, address deployer_) public view returns (address) {
+        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), deployer_, salt_, keccak256(bytecode_)));
 
         // NOTE: cast last 20 bytes of hash to address
         return address(uint160(uint(hash)));
