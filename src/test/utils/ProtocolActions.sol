@@ -19,7 +19,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     event FailedXChainDeposits(uint256 indexed payloadId);
 
-    bool public hasTimeLocked;
+    mapping(uint256 chainIdIndex => bool) hasTimelocked;
 
     uint8[] public AMBs;
 
@@ -165,10 +165,11 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         /// @dev stage 7 and 8 are only required for timelocked forms
-        if (hasTimeLocked && action.action == Actions.Withdraw) {
+        if (action.action == Actions.Withdraw) {
             vm.recordLogs();
 
             /// @dev Keeper needs to know this value to be able to process unlock
+            /// @dev FIXME unlockId is hardcoded here
             _stage7_finalize_timelocked_payload(action, vars, 1);
 
             for (uint256 i; i < DST_CHAINS.length; i++) {
@@ -190,7 +191,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
 
-        if (hasTimeLocked && action.action == Actions.Withdraw) {
+        if (action.action == Actions.Withdraw) {
             /// @dev Process payload received on source from destination (withdraw callback, for failed withdraws)
             _stage8_process_failed_timelocked_xchain_remint(action, vars);
 
@@ -209,7 +210,6 @@ abstract contract ProtocolActions is BaseSetup {
         delete revertingDepositSFs;
         delete revertingWithdrawSFs;
         delete revertingWithdrawTimelockedSFs;
-        delete hasTimeLocked;
     }
 
     struct BuildReqDataVars {
@@ -276,7 +276,8 @@ abstract contract ProtocolActions is BaseSetup {
             (vars.targetSuperFormIds, vars.underlyingSrcToken, vars.vaultMock) = _targetVaults(
                 CHAIN_0,
                 DST_CHAINS[i],
-                actionIndex
+                actionIndex,
+                i
             );
 
             vars.toDst = new address[](vars.targetSuperFormIds.length);
@@ -375,13 +376,21 @@ abstract contract ProtocolActions is BaseSetup {
         bool sameChainDstHasRevertingVault;
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (CHAIN_0 == DST_CHAINS[i]) {
+                console.log("bb");
                 if (revertingDepositSFs.length > 0) {
-                    if (revertingDepositSFs[i].length > 0) {
+                    if (
+                        revertingDepositSFs[i].length > 0 &&
+                        (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
+                    ) {
                         sameChainDstHasRevertingVault = true;
                         break;
                     }
-                } else if (revertingWithdrawSFs.length > 0) {
-                    if (revertingWithdrawSFs[i].length > 0) {
+                }
+                if (revertingWithdrawSFs.length > 0) {
+                    console.log("a");
+                    console.log(revertingWithdrawSFs[i].length);
+
+                    if (revertingWithdrawSFs[i].length > 0 && action.action == Actions.Withdraw) {
                         sameChainDstHasRevertingVault = true;
                         break;
                     }
@@ -661,7 +670,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex);
+                            (, vars.underlyingSrcToken, ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -705,7 +714,7 @@ abstract contract ProtocolActions is BaseSetup {
                     } else if (action.testType == TestType.RevertProcessPayload) {
                         /// @dev FIXME brute copied this here, likely the whole if else can be optimized (we are trying to detect reverts at processPayload stage)
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex);
+                            (, vars.underlyingSrcToken, ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -864,20 +873,23 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            initialFork = vm.activeFork();
+            if (hasTimelocked[i]) {
+                initialFork = vm.activeFork();
 
-            vm.selectFork(FORKS[DST_CHAINS[i]]);
+                vm.selectFork(FORKS[DST_CHAINS[i]]);
 
-            ITwoStepsFormStateRegistry twoStepsFormStateRegistry = ITwoStepsFormStateRegistry(
-                contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]
-            );
+                ITwoStepsFormStateRegistry twoStepsFormStateRegistry = ITwoStepsFormStateRegistry(
+                    contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]
+                );
 
-            /// increase time by 5 days
-            vm.warp(block.timestamp + (86400 * 5));
-            (uint256 msgValue, bytes memory ackParams) = generateAckGasFeesAndParams(CHAIN_0, AMBs);
+                /// increase time by 5 days
+                vm.warp(block.timestamp + (86400 * 5));
+                (uint256 msgValue, bytes memory ackParams) = generateAckGasFeesAndParams(CHAIN_0, AMBs);
 
-            vm.prank(deployer);
-            twoStepsFormStateRegistry.finalizePayload{value: msgValue}(unlockId_, ackParams);
+                vm.prank(deployer);
+                twoStepsFormStateRegistry.finalizePayload{value: msgValue}(unlockId_, ackParams);
+            }
+            delete hasTimelocked[i];
         }
 
         vm.selectFork(initialFork);
@@ -921,9 +933,12 @@ abstract contract ProtocolActions is BaseSetup {
         for (uint i = 0; i < len; i++) {
             finalAmount = args.amounts[i];
             /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
-            if (args.slippage != 0 && ((args.srcChainId == args.toChainId  &&
-                        (args.action == Actions.Deposit || args.action == Actions.DepositPermit2)) ||
-                        (args.action == Actions.Withdraw))) {
+            if (
+                args.slippage != 0 &&
+                ((args.srcChainId == args.toChainId &&
+                    (args.action == Actions.Deposit || args.action == Actions.DepositPermit2)) ||
+                    (args.action == Actions.Withdraw))
+            ) {
                 finalAmount = (args.amounts[i] * (10000 - uint256(args.slippage))) / 10000;
             }
             callDataArgs = SingleVaultCallDataArgs(
@@ -1198,7 +1213,8 @@ abstract contract ProtocolActions is BaseSetup {
     function _targetVaults(
         uint64 chain0,
         uint64 chain1,
-        uint256 action
+        uint256 action,
+        uint256 dst
     )
         internal
         returns (
@@ -1232,20 +1248,26 @@ abstract contract ProtocolActions is BaseSetup {
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
             if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
                 revertingDepositSFsPerDst.push(vars.superFormIdsTemp[i]);
-            } else if (vars.vaultIds[i] == 4) {
+            }
+            if (vars.vaultIds[i] == 4) {
                 revertingWithdrawTimelockedSFsPerDst.push(vars.superFormIdsTemp[i]);
+            }
+            if (vars.vaultIds[i] == 7) {
+                revertingWithdrawSFsPerDst.push(vars.superFormIdsTemp[i]);
             }
             /// @dev need more if else conditions for other kinds of vaults
         }
 
         revertingDepositSFs.push(revertingDepositSFsPerDst);
+        revertingWithdrawSFs.push(revertingWithdrawSFsPerDst);
         revertingWithdrawTimelockedSFs.push(revertingWithdrawTimelockedSFsPerDst);
 
         delete revertingDepositSFsPerDst;
+        delete revertingWithdrawSFsPerDst;
         delete revertingWithdrawTimelockedSFsPerDst;
 
         for (uint256 j; j < vars.formKinds.length; j++) {
-            if (vars.formKinds[j] == 1) hasTimeLocked = true;
+            if (vars.formKinds[j] == 1) hasTimelocked[dst] = true;
         }
     }
 
