@@ -25,19 +25,27 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
     function setUp() public override {
         super.setUp();
     }
+
+    function getBytecodeFormBeacon(address superRegistry_, address formLogic_) public pure returns (bytes memory) {
+        bytes memory bytecode = type(FormBeacon).creationCode;
+
+        return abi.encodePacked(bytecode, abi.encode(superRegistry_, formLogic_));
+    }
     
     /// Testing superform creation by adding beacon
     function test_addForm() public {
-        vm.startPrank(deployer);
+        
         address formImplementation = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
         uint32 formBeaconId = 0;
 
-        /// @dev create2 event
-        address superformBeacon= address(new FormBeacon{salt: salt}(getContract(chainId, "SuperRegistry"), formImplementation));
+        /// @dev create2 address calculation
+        bytes memory byteCode = getBytecodeFormBeacon(getContract(chainId, "SuperRegistry"), formImplementation);
+        address superFormMockBeacon = getAddress(byteCode, uint(salt));
 
+        vm.startPrank(deployer);
         /// @dev FIXME: Need to fix the superformBeacon emitted
         vm.expectEmit(true, false, true, true);
-        emit FormBeaconAdded(formImplementation, superformBeacon, formBeaconId);
+        emit FormBeaconAdded(formImplementation, superFormMockBeacon, formBeaconId);
 
         address beacon_returned = SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
             formImplementation,
@@ -54,7 +62,7 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
         address formImplementation2 = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
         uint32 formBeaconId = 0;
 
-        vm.startPrank(deployer);
+        vm.prank(deployer);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
             formImplementation1,
             formBeaconId,
@@ -70,8 +78,8 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
 
     }
 
-    /// Testing adding form with form address 0
-    /// Should Revert With ZERO_ADDRESS
+    /// @dev Testing adding form with form address 0
+    /// @dev Should Revert With ZERO_ADDRESS
     function test_revert_addForm_addressZero() public {
         address form = address(0);
         uint32 formId = 1;
