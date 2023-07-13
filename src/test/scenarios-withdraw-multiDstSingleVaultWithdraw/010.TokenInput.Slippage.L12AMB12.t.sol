@@ -55,13 +55,7 @@ contract MDSVW010NativeSlippageL12AMB12 is ProtocolActions {
         AMOUNTS[OP][1] = [955];
         AMOUNTS[AVAX][1] = [42141];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000];
-        MAX_SLIPPAGE[OP][0] = [1000];
-        MAX_SLIPPAGE[AVAX][0] = [1000];
-
-        MAX_SLIPPAGE[ARBI][1] = [1000];
-        MAX_SLIPPAGE[OP][1] = [1000];
-        MAX_SLIPPAGE[AVAX][1] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ARBI][0] = [1];
@@ -98,11 +92,11 @@ contract MDSVW010NativeSlippageL12AMB12 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 775, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
                 msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 /// @dev on Withdraws external token (to receive, cannot be native)
             })
         );
     }

@@ -39,8 +39,7 @@ contract ScenarioTimelockTest4 is ProtocolActions {
         AMOUNTS[POLY][0] = [7722];
         AMOUNTS[POLY][1] = [7722];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
-        MAX_SLIPPAGE[POLY][1] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[POLY][0] = [1];
         LIQ_BRIDGES[POLY][1] = [1];

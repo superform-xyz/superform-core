@@ -37,8 +37,7 @@ contract MDMVDMulti111563NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
         AMOUNTS[AVAX][0] = [999, 9999, 99999];
         AMOUNTS[OP][0] = [5435, 5543, 5557];
 
-        MAX_SLIPPAGE[AVAX][0] = [1000, 1000, 1000];
-        MAX_SLIPPAGE[OP][0] = [1000, 1000, 1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [1, 1, 1];

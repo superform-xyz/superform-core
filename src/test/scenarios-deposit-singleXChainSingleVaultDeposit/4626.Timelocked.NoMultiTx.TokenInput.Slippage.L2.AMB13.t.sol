@@ -29,7 +29,7 @@ contract SXSVDTimelocked4626NoMultiTxTokenInputSlippageL2AMB13 is ProtocolAction
 
         AMOUNTS[ARBI][0] = [412];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ARBI][0] = [2];

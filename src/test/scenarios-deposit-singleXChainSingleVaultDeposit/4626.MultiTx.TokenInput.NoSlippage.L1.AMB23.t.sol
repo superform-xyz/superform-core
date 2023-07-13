@@ -29,7 +29,7 @@ contract SXSVDNormal4626MultiTokenInputNoSlippageL1AMB23 is ProtocolActions {
 
         AMOUNTS[OP][0] = [133];
 
-        MAX_SLIPPAGE[OP][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[OP][0] = [1];

@@ -9,7 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXSVWTimelockedNativeSlippage is ProtocolActions {
+contract SXSVWRevertTimelockedNativeSlippage is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -37,8 +37,7 @@ contract SXSVWTimelockedNativeSlippage is ProtocolActions {
         AMOUNTS[ARBI][0] = [111];
         AMOUNTS[ARBI][1] = [111];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000];
-        MAX_SLIPPAGE[ARBI][1] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ARBI][0] = [2];
@@ -70,11 +69,11 @@ contract SXSVWTimelockedNativeSlippage is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 224, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
                 msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

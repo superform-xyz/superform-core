@@ -37,8 +37,7 @@ contract MDMVDMulti0026MultiTxNativeNoSlippageL1AMB23 is ProtocolActions {
         AMOUNTS[POLY][0] = [42, 21];
         AMOUNTS[ETH][0] = [44, 22];
 
-        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
-        MAX_SLIPPAGE[ETH][0] = [1000, 1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [2, 2];

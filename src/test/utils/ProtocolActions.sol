@@ -44,6 +44,10 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 nRepetitions;
     }
 
+    uint256 SLIPPAGE;
+
+    uint256 MAX_SLIPPAGE;
+
     mapping(uint64 chainId => UniqueDSTInfo info) public usedDSTs;
 
     mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYINGS;
@@ -53,8 +57,6 @@ abstract contract ProtocolActions is BaseSetup {
     mapping(uint64 chainId => mapping(uint256 action => uint32[] formKinds)) public TARGET_FORM_KINDS;
 
     mapping(uint64 chainId => mapping(uint256 index => uint256[] action)) public AMOUNTS;
-
-    mapping(uint64 chainId => mapping(uint256 index => uint256[] action)) public MAX_SLIPPAGE;
 
     /// @dev 1 for socket, 2 for lifi
     mapping(uint64 chainId => mapping(uint256 index => uint8[] liqBridgeId)) public LIQ_BRIDGES;
@@ -293,8 +295,6 @@ abstract contract ProtocolActions is BaseSetup {
 
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
-            vars.maxSlippage = MAX_SLIPPAGE[DST_CHAINS[i]][actionIndex];
-
             vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
 
             if (action.multiVaults) {
@@ -310,7 +310,7 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.targetSuperFormIds,
                         vars.amounts,
                         vars.liqBridges,
-                        vars.maxSlippage,
+                        MAX_SLIPPAGE,
                         vars.vaultMock,
                         CHAIN_0,
                         DST_CHAINS[i],
@@ -324,8 +324,15 @@ abstract contract ProtocolActions is BaseSetup {
             } else {
                 uint256 finalAmount = vars.amounts[0];
 
-                /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
-                if (action.slippage != 0 && CHAIN_0 == DST_CHAINS[i]) {
+                /// @dev in sameChain deposit actions, slippage is encoded in the request (extracted from bridge api)
+                /// @dev for all withdraw actions we also encode slippage to simulate a maxWithdraw case (if we input same amount in scenario)
+                /// @note for partial withdraws its negligible the effect of this extra slippage param as it is just for testing
+                if (
+                    action.slippage != 0 &&
+                    ((CHAIN_0 == DST_CHAINS[i] &&
+                        (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)) ||
+                        (action.action == Actions.Withdraw))
+                ) {
                     finalAmount = (vars.amounts[0] * (10000 - uint256(action.slippage))) / 10000;
                 }
                 SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
@@ -339,7 +346,7 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.targetSuperFormIds[0],
                     finalAmount,
                     vars.liqBridges[0],
-                    vars.maxSlippage[0],
+                    MAX_SLIPPAGE,
                     vars.vaultMock[0],
                     CHAIN_0,
                     DST_CHAINS[i],
@@ -910,10 +917,13 @@ abstract contract ProtocolActions is BaseSetup {
 
         if (len == 0) revert LEN_MISMATCH();
         uint256 finalAmount;
+        uint256[] memory maxSlippageTemp = new uint256[](len);
         for (uint i = 0; i < len; i++) {
             finalAmount = args.amounts[i];
             /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
-            if (args.slippage != 0 && args.srcChainId == args.toChainId) {
+            if (args.slippage != 0 && ((args.srcChainId == args.toChainId  &&
+                        (args.action == Actions.Deposit || args.action == Actions.DepositPermit2)) ||
+                        (args.action == Actions.Withdraw))) {
                 finalAmount = (args.amounts[i] * (10000 - uint256(args.slippage))) / 10000;
             }
             callDataArgs = SingleVaultCallDataArgs(
@@ -925,7 +935,7 @@ abstract contract ProtocolActions is BaseSetup {
                 args.superFormIds[i],
                 finalAmount,
                 args.liqBridges[i],
-                args.maxSlippage[i],
+                args.maxSlippage,
                 args.vaultMock[i],
                 args.srcChainId,
                 args.toChainId,
@@ -939,15 +949,16 @@ abstract contract ProtocolActions is BaseSetup {
                 superFormData = _buildSingleVaultWithdrawCallData(callDataArgs);
             }
             liqRequests[i] = superFormData.liqRequest;
+            maxSlippageTemp[i] = args.maxSlippage;
         }
 
-        superFormsData = MultiVaultsSFData(args.superFormIds, args.amounts, args.maxSlippage, liqRequests, "");
+        superFormsData = MultiVaultsSFData(args.superFormIds, args.amounts, maxSlippageTemp, liqRequests, "");
     }
 
     function _buildLiqBridgeTxData(
         uint8 liqBridgeKind_,
-        address externalToken_,
-        address underlyingToken_,
+        address externalToken_, // this is underlying for withdraws
+        address underlyingToken_, // this is external token (to receive in the end) for withdraws
         address from_,
         uint64 toChainId_,
         bool multiTx_,
@@ -1144,6 +1155,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.prank(users[args.user]);
 
         vars.superPositions.setApprovalForOne(vars.superRouter, args.superFormId, args.amount);
+        console.log("args.toDst", args.toDst);
 
         vars.txData = _buildLiqBridgeTxData(
             args.liqBridge,

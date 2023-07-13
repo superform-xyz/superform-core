@@ -41,8 +41,7 @@ contract Scenario11Test is ProtocolActions {
         AMOUNTS[ARBI][0] = [7722, 11, 3];
         AMOUNTS[ARBI][1] = [7722, 11, 3];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000, 1000, 1000];
-        MAX_SLIPPAGE[ARBI][1] = [1000, 1000, 1000];
+        MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[ARBI][0] = [1, 2, 1];
         LIQ_BRIDGES[ARBI][1] = [1, 1, 2];

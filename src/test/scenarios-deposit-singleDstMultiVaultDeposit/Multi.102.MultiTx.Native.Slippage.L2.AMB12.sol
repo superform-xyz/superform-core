@@ -32,7 +32,7 @@ contract SDMVDMulti102MultiTxNativeSlippageL1AMB12 is ProtocolActions {
 
         AMOUNTS[OP][0] = [5555, 791421458, 5553];
 
-        MAX_SLIPPAGE[OP][0] = [1000, 1000, 1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[OP][0] = [1, 1, 1];

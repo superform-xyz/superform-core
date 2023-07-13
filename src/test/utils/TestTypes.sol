@@ -52,7 +52,6 @@ struct StagesLocalVars {
     address[] toDst;
     uint256[] targetSuperFormIds;
     uint256[] amounts;
-    uint256[] maxSlippage;
     uint8[] liqBridges;
     uint256 chain0Index;
     uint256 chainDstIndex;
@@ -184,7 +183,7 @@ struct MultiVaultCallDataArgs {
     uint256[] superFormIds;
     uint256[] amounts;
     uint8[] liqBridges;
-    uint256[] maxSlippage;
+    uint256 maxSlippage;
     address[] vaultMock;
     uint64 srcChainId;
     uint64 toChainId;

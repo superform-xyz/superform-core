@@ -9,7 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
+contract SXSVWRevertKyc4626TokenInputNoSlippageL1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -37,8 +37,7 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
         AMOUNTS[AVAX][0] = [1123];
         AMOUNTS[AVAX][1] = [1123];
 
-        MAX_SLIPPAGE[AVAX][0] = [1000];
-        MAX_SLIPPAGE[AVAX][1] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [1];

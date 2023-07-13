@@ -29,7 +29,7 @@ contract SXSVDKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
 
         AMOUNTS[ARBI][0] = [8213];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ARBI][0] = [1];

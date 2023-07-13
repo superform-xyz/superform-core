@@ -37,8 +37,7 @@ contract MDMVDMulti0000NoMultiTxTokenInputSlippageL2AMB12 is ProtocolActions {
         AMOUNTS[POLY][0] = [24, 421412];
         AMOUNTS[ETH][0] = [2141, 21412];
 
-        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
-        MAX_SLIPPAGE[ETH][0] = [1000, 1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [2, 2];
