@@ -30,4 +30,13 @@ interface IPayloadHelper {
             uint256[] memory superFormIds,
             uint256 srcPayloadId
         );
+
+    /// @dev returns decoded two step form payloads
+    /// @param timelockPayloadId_ is the unique identifier of payload in two step registry
+    function decodeTimeLockPayload(
+        uint256 timelockPayloadId_
+    )
+        external
+        view
+        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superFormId, uint256 amount);
 }

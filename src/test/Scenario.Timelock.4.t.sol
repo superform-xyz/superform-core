@@ -45,8 +45,6 @@ contract ScenarioTimelockTest4 is ProtocolActions {
         LIQ_BRIDGES[POLY][0] = [1];
         LIQ_BRIDGES[POLY][1] = [1];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
@@ -58,8 +56,6 @@ contract ScenarioTimelockTest4 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
@@ -74,8 +70,6 @@ contract ScenarioTimelockTest4 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
