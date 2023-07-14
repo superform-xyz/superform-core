@@ -31,21 +31,33 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
 
         return abi.encodePacked(bytecode, abi.encode(superRegistry_, formLogic_));
     }
-    
+
     /// Testing superform creation by adding beacon
     function test_addForm() public {
-        
         address formImplementation = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
         uint32 formBeaconId = 0;
 
         /// @dev create2 address calculation
         bytes memory byteCode = getBytecodeFormBeacon(getContract(chainId, "SuperRegistry"), formImplementation);
-        address superFormMockBeacon = getAddress(byteCode, uint(salt));
+        address superFormMockBeacon = getAddress(byteCode, salt, getContract(chainId, "SuperFormFactory"));
+
+        address superFormMockBeacon2 = computeCreate2Address(
+            salt,
+            hashInitCode(
+                type(FormBeacon).creationCode,
+                abi.encode(getContract(chainId, "SuperRegistry"), formImplementation)
+            ),
+            getContract(chainId, "SuperFormFactory")
+        );
 
         vm.startPrank(deployer);
         /// @dev FIXME: Need to fix the superformBeacon emitted
-        vm.expectEmit(true, false, true, true);
+        vm.expectEmit(true, true, true, true);
         emit FormBeaconAdded(formImplementation, superFormMockBeacon, formBeaconId);
+
+        console.log("superFormMockBeacon", superFormMockBeacon);
+
+        console.log("superFormMockBeacon2", superFormMockBeacon2);
 
         address beacon_returned = SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
             formImplementation,
@@ -57,7 +69,6 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
     /// @dev Testing adding two beacons with same formBeaconId
     /// @dev Should Revert With BEACON_ID_ALREADY_EXISTS
     function test_revert_addForm_sameBeaconID() public {
-        
         address formImplementation1 = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
         address formImplementation2 = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
         uint32 formBeaconId = 0;
@@ -68,14 +79,13 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
             formBeaconId,
             salt
         );
-        
+
         vm.expectRevert(Error.BEACON_ID_ALREADY_EXISTS.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
             formImplementation2,
             formBeaconId,
             salt
         );
-
     }
 
     /// @dev Testing adding form with form address 0
