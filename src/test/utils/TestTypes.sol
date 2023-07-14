@@ -56,6 +56,7 @@ struct StagesLocalVars {
     uint256 chain0Index;
     uint256 chainDstIndex;
     uint256 nUniqueDsts;
+    bool[] partialWithdrawVaults;
 }
 
 struct MessagingAssertVars {
@@ -172,6 +173,7 @@ struct SingleVaultCallDataArgs {
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
     bool multiTx;
+    bool partialWithdrawVault;
 }
 
 struct MultiVaultCallDataArgs {
@@ -192,6 +194,7 @@ struct MultiVaultCallDataArgs {
     bool multiTx;
     Actions action;
     int256 slippage;
+    bool[] partialWithdrawVaults;
 }
 
 struct BuildDepositCallDataArgs {

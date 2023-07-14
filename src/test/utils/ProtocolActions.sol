@@ -58,6 +58,8 @@ abstract contract ProtocolActions is BaseSetup {
 
     mapping(uint64 chainId => mapping(uint256 index => uint256[] action)) public AMOUNTS;
 
+    mapping(uint64 chainId => mapping(uint256 index => bool[] action)) public PARTIAL;
+
     /// @dev 1 for socket, 2 for lifi
     mapping(uint64 chainId => mapping(uint256 index => uint8[] liqBridgeId)) public LIQ_BRIDGES;
 
@@ -87,10 +89,10 @@ abstract contract ProtocolActions is BaseSetup {
         (multiSuperFormsData, singleSuperFormsData, vars) = _stage1_buildReqData(action, act);
 
         uint256[] memory spAmountSummed;
-        uint256 spAmountBeforeWithdraw;
+        uint256[] memory spAmountBeforeWithdrawPerDst;
         uint256 inputBalanceBefore;
 
-        (, spAmountSummed, spAmountBeforeWithdraw, inputBalanceBefore) = _assertBeforeAction(
+        (, spAmountSummed, spAmountBeforeWithdrawPerDst, inputBalanceBefore) = _assertBeforeAction(
             action,
             multiSuperFormsData,
             singleSuperFormsData,
@@ -117,7 +119,7 @@ abstract contract ProtocolActions is BaseSetup {
                 singleSuperFormsData,
                 vars,
                 spAmountSummed,
-                spAmountBeforeWithdraw,
+                spAmountBeforeWithdrawPerDst,
                 false
             );
         }
@@ -141,7 +143,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         /// @dev for all form kinds including timelocked (first stage)
         /// @dev if there is a failure we immediately re-mint superShares
-        /// @dev stage 6 is only required if there is any failed withdraw in the multi vaults
+        /// @dev stage 6 is only required if there is any failed cross chain withdraws
         if (action.action == Actions.Withdraw && action.testType != TestType.Pass) {
             bytes memory returnMessage;
             (success, returnMessage) = _stage6_process_superPositions_withdraw(action, vars, multiSuperFormsData);
@@ -158,7 +160,7 @@ abstract contract ProtocolActions is BaseSetup {
                     singleSuperFormsData,
                     vars,
                     spAmountSummed,
-                    spAmountBeforeWithdraw,
+                    spAmountBeforeWithdrawPerDst,
                     returnMessage
                 );
             }
@@ -185,7 +187,7 @@ abstract contract ProtocolActions is BaseSetup {
                     singleSuperFormsData,
                     vars,
                     spAmountSummed,
-                    spAmountBeforeWithdraw,
+                    spAmountBeforeWithdrawPerDst,
                     true
                 );
             }
@@ -203,7 +205,7 @@ abstract contract ProtocolActions is BaseSetup {
                 singleSuperFormsData,
                 vars,
                 spAmountSummed,
-                spAmountBeforeWithdraw
+                spAmountBeforeWithdrawPerDst
             );
         }
 
@@ -273,12 +275,12 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
-            (vars.targetSuperFormIds, vars.underlyingSrcToken, vars.vaultMock) = _targetVaults(
-                CHAIN_0,
-                DST_CHAINS[i],
-                actionIndex,
-                i
-            );
+            (
+                vars.targetSuperFormIds,
+                vars.underlyingSrcToken,
+                vars.vaultMock,
+                vars.partialWithdrawVaults
+            ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
 
             vars.toDst = new address[](vars.targetSuperFormIds.length);
 
@@ -319,7 +321,8 @@ abstract contract ProtocolActions is BaseSetup {
                         llChainIds[vars.chainDstIndex],
                         action.multiTx,
                         action.action,
-                        action.slippage
+                        action.slippage,
+                        vars.partialWithdrawVaults
                     )
                 );
             } else {
@@ -336,6 +339,7 @@ abstract contract ProtocolActions is BaseSetup {
                 ) {
                     finalAmount = (vars.amounts[0] * (10000 - uint256(action.slippage))) / 10000;
                 }
+
                 SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                     action.user,
                     vars.fromSrc,
@@ -353,7 +357,8 @@ abstract contract ProtocolActions is BaseSetup {
                     DST_CHAINS[i],
                     llChainIds[vars.chain0Index],
                     llChainIds[vars.chainDstIndex],
-                    action.multiTx
+                    action.multiTx,
+                    vars.partialWithdrawVaults.length > 0 ? vars.partialWithdrawVaults[0] : false
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
@@ -376,7 +381,6 @@ abstract contract ProtocolActions is BaseSetup {
         bool sameChainDstHasRevertingVault;
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (CHAIN_0 == DST_CHAINS[i]) {
-                console.log("bb");
                 if (revertingDepositSFs.length > 0) {
                     if (
                         revertingDepositSFs[i].length > 0 &&
@@ -387,9 +391,6 @@ abstract contract ProtocolActions is BaseSetup {
                     }
                 }
                 if (revertingWithdrawSFs.length > 0) {
-                    console.log("a");
-                    console.log(revertingWithdrawSFs[i].length);
-
                     if (revertingWithdrawSFs[i].length > 0 && action.action == Actions.Withdraw) {
                         sameChainDstHasRevertingVault = true;
                         break;
@@ -670,7 +671,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                            (, vars.underlyingSrcToken, , ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -714,7 +715,7 @@ abstract contract ProtocolActions is BaseSetup {
                     } else if (action.testType == TestType.RevertProcessPayload) {
                         /// @dev FIXME brute copied this here, likely the whole if else can be optimized (we are trying to detect reverts at processPayload stage)
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                            (, vars.underlyingSrcToken, , ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -956,7 +957,8 @@ abstract contract ProtocolActions is BaseSetup {
                 args.toChainId,
                 args.liquidityBridgeSrcChainId,
                 args.liquidityBridgeToChainId,
-                args.multiTx
+                args.multiTx,
+                args.partialWithdrawVaults.length > 0 ? args.partialWithdrawVaults[i] : false
             );
             if (args.action == Actions.Deposit || args.action == Actions.DepositPermit2) {
                 superFormData = _buildSingleVaultDepositCallData(callDataArgs, args.action);
@@ -967,7 +969,13 @@ abstract contract ProtocolActions is BaseSetup {
             maxSlippageTemp[i] = args.maxSlippage;
         }
 
-        superFormsData = MultiVaultsSFData(args.superFormIds, args.amounts, maxSlippageTemp, liqRequests, "");
+        superFormsData = MultiVaultsSFData(
+            args.superFormIds,
+            args.amounts,
+            maxSlippageTemp,
+            liqRequests,
+            abi.encode(args.partialWithdrawVaults)
+        );
     }
 
     function _buildLiqBridgeTxData(
@@ -1146,7 +1154,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
         vm.selectFork(v.initialFork);
 
-        superFormData = SingleVaultSFData(args.superFormId, args.amount, args.maxSlippage, v.liqReq, "");
+        superFormData = SingleVaultSFData(args.superFormId, args.amount, args.maxSlippage, v.liqReq, abi.encode(false));
     }
 
     struct SingleVaultWithdrawLocalVars {
@@ -1170,7 +1178,6 @@ abstract contract ProtocolActions is BaseSetup {
         vm.prank(users[args.user]);
 
         vars.superPositions.setApprovalForOne(vars.superRouter, args.superFormId, args.amount);
-        console.log("args.toDst", args.toDst);
 
         vars.txData = _buildLiqBridgeTxData(
             args.liqBridge,
@@ -1193,7 +1200,13 @@ abstract contract ProtocolActions is BaseSetup {
             ""
         );
 
-        superFormData = SingleVaultSFData(args.superFormId, args.amount, args.maxSlippage, vars.liqReq, "");
+        superFormData = SingleVaultSFData(
+            args.superFormId,
+            args.amount,
+            args.maxSlippage,
+            vars.liqReq,
+            abi.encode(args.partialWithdrawVault)
+        );
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -1220,13 +1233,16 @@ abstract contract ProtocolActions is BaseSetup {
         returns (
             uint256[] memory targetSuperFormsMem,
             address[] memory underlyingSrcTokensMem,
-            address[] memory vaultMocksMem
+            address[] memory vaultMocksMem,
+            bool[] memory partialWithdrawVaults
         )
     {
         TargetVaultsVars memory vars;
         vars.underlyingTokens = TARGET_UNDERLYINGS[chain1][action];
         vars.vaultIds = TARGET_VAULTS[chain1][action];
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
+
+        partialWithdrawVaults = PARTIAL[chain1][action];
 
         vars.superFormIdsTemp = _superFormIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
 
@@ -1663,8 +1679,22 @@ abstract contract ProtocolActions is BaseSetup {
         IERC1155s superPositions = IERC1155s(superPositionsAddress);
 
         uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
-
         assertEq(currentBalanceOfSp, amountToAssert);
+    }
+
+    function _assertSingleVaultPartialWithdrawBalance(
+        uint256 user,
+        uint256 superFormId,
+        uint256 amountToAssert
+    ) internal {
+        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+
+        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
+
+        IERC1155s superPositions = IERC1155s(superPositionsAddress);
+
+        uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
+        assertGt(currentBalanceOfSp, amountToAssert);
     }
 
     struct DepositMultiSPCalculationVars {
@@ -1804,11 +1834,13 @@ abstract contract ProtocolActions is BaseSetup {
         returns (
             uint256[] memory emptyAmount,
             uint256[] memory spAmountSummed,
-            uint256 spAmountBeforeWithdraw,
+            uint256[] memory spAmountBeforeWithdrawPerDestination,
             uint256 inputBalanceBefore
         )
     {
+        /// @dev spAmountSummed likely needs to be a double array
         address token;
+        bool partialWithdrawVault;
         if (action.multiVaults) {
             token = multiSuperFormsData[0].liqRequests[0].token;
             inputBalanceBefore = token != NATIVE_TOKEN
@@ -1838,17 +1870,27 @@ abstract contract ProtocolActions is BaseSetup {
             inputBalanceBefore = token != NATIVE_TOKEN
                 ? IERC20(token).balanceOf(users[action.user])
                 : users[action.user].balance;
-
+            spAmountBeforeWithdrawPerDestination = new uint256[](vars.nDestinations);
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (address superForm, , ) = singleSuperFormsData[i].superFormId.getSuperForm();
-                spAmountBeforeWithdraw = IBaseForm(superForm).previewDepositTo(singleSuperFormsData[i].amount);
-
-                console.log("spAmountBeforeWithdraw", spAmountBeforeWithdraw);
-                _assertSingleVaultBalance(
-                    action.user,
-                    singleSuperFormsData[i].superFormId,
-                    action.action == Actions.Withdraw ? spAmountBeforeWithdraw : 0
+                partialWithdrawVault = abi.decode(singleSuperFormsData[i].extraFormData, (bool));
+                spAmountBeforeWithdrawPerDestination[i] = IBaseForm(superForm).previewDepositTo(
+                    singleSuperFormsData[i].amount
                 );
+
+                if (!partialWithdrawVault) {
+                    _assertSingleVaultBalance(
+                        action.user,
+                        singleSuperFormsData[i].superFormId,
+                        action.action == Actions.Withdraw ? spAmountBeforeWithdrawPerDestination[i] : 0
+                    );
+                } else {
+                    _assertSingleVaultPartialWithdrawBalance(
+                        action.user,
+                        singleSuperFormsData[i].superFormId,
+                        spAmountBeforeWithdrawPerDestination[i]
+                    );
+                }
             }
             console.log("Asserted b4 action");
         }
@@ -1939,65 +1981,87 @@ abstract contract ProtocolActions is BaseSetup {
         console.log("Asserted after deposit");
     }
 
+    struct AssertAfterWithdrawVars {
+        uint256[] spAmountFinal;
+        uint256 lenRevertWithdraw;
+        uint256 lenRevertWithdrawTimelocked;
+        bool foundRevertingWithdraw;
+        bool foundRevertingWithdrawTimelocked;
+        bool sameDst;
+        bool partialWithdrawVault;
+    }
+
     function _assertAfterWithdraw(
         TestAction memory action,
         MultiVaultsSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars,
         uint256[] memory spAmountsBeforeWithdraw,
-        uint256 spAmountBeforeWithdraw,
+        uint256[] memory spAmountBeforeWithdrawPerDst,
         bool stage7
     ) internal {
         vm.selectFork(FORKS[CHAIN_0]);
-        uint256[] memory spAmountFinal;
-        uint256 lenRevertWithdraw;
-        uint256 lenRevertWithdrawTimelocked;
-        bool foundRevertingWithdraw;
-        bool foundRevertingWithdrawTimelocked;
-        bool sameDst;
+
+        AssertAfterWithdrawVars memory v;
+
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            sameDst = CHAIN_0 == DST_CHAINS[i];
-            lenRevertWithdraw = 0;
-            lenRevertWithdrawTimelocked = 0;
+            v.sameDst = CHAIN_0 == DST_CHAINS[i];
+            v.lenRevertWithdraw = 0;
+            v.lenRevertWithdrawTimelocked = 0;
             if (revertingWithdrawSFs.length > 0)
                 /// @ev if doubleArray exists
-                lenRevertWithdraw = revertingWithdrawSFs[i].length;
+                v.lenRevertWithdraw = revertingWithdrawSFs[i].length;
 
             if (revertingWithdrawTimelockedSFs.length > 0)
-                lenRevertWithdrawTimelocked = revertingWithdrawTimelockedSFs[i].length;
+                v.lenRevertWithdrawTimelocked = revertingWithdrawTimelockedSFs[i].length;
 
             if (action.multiVaults) {
-                spAmountFinal = _spAmountsMultiAfterWithdraw(
+                v.spAmountFinal = _spAmountsMultiAfterWithdraw(
                     multiSuperFormsData[i],
                     action.user,
                     spAmountsBeforeWithdraw,
-                    lenRevertWithdraw,
-                    lenRevertWithdrawTimelocked,
+                    v.lenRevertWithdraw,
+                    v.lenRevertWithdrawTimelocked,
                     stage7,
-                    sameDst,
+                    v.sameDst,
                     i
                 );
 
-                _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountFinal);
+                _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, v.spAmountFinal);
             } else {
-                foundRevertingWithdraw = false;
-                foundRevertingWithdrawTimelocked = false;
+                v.foundRevertingWithdraw = false;
+                v.foundRevertingWithdrawTimelocked = false;
+                v.partialWithdrawVault = abi.decode(singleSuperFormsData[i].extraFormData, (bool));
 
-                if (lenRevertWithdraw > 0) {
-                    foundRevertingWithdraw = revertingWithdrawSFs[i][0] == singleSuperFormsData[i].superFormId;
-                } else if (lenRevertWithdrawTimelocked > 0) {
-                    foundRevertingWithdrawTimelocked =
+                if (v.lenRevertWithdraw > 0) {
+                    v.foundRevertingWithdraw = revertingWithdrawSFs[i][0] == singleSuperFormsData[i].superFormId;
+                } else if (v.lenRevertWithdrawTimelocked > 0) {
+                    v.foundRevertingWithdrawTimelocked =
                         revertingWithdrawTimelockedSFs[i][0] == singleSuperFormsData[i].superFormId;
                 }
 
-                /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
-                _assertSingleVaultBalance(
-                    action.user,
-                    singleSuperFormsData[i].superFormId,
-                    (foundRevertingWithdraw || foundRevertingWithdrawTimelocked) && stage7 && sameDst
-                        ? spAmountBeforeWithdraw
-                        : spAmountBeforeWithdraw - singleSuperFormsData[i].amount
-                );
+                if (!v.partialWithdrawVault) {
+                    /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
+                    _assertSingleVaultBalance(
+                        action.user,
+                        singleSuperFormsData[i].superFormId,
+                        v.sameDst &&
+                            (((v.foundRevertingWithdraw || v.foundRevertingWithdrawTimelocked) && stage7) ||
+                                (v.foundRevertingWithdraw && !stage7))
+                            ? spAmountBeforeWithdrawPerDst[i]
+                            : spAmountBeforeWithdrawPerDst[i] - singleSuperFormsData[i].amount
+                    );
+                } else {
+                    _assertSingleVaultPartialWithdrawBalance(
+                        action.user,
+                        singleSuperFormsData[i].superFormId,
+                        v.sameDst &&
+                            (((v.foundRevertingWithdraw || v.foundRevertingWithdrawTimelocked) && stage7) ||
+                                (v.foundRevertingWithdraw && !stage7))
+                            ? spAmountBeforeWithdrawPerDst[i]
+                            : spAmountBeforeWithdrawPerDst[i] - singleSuperFormsData[i].amount
+                    );
+                }
             }
         }
         console.log("Asserted after withdraw");
@@ -2009,7 +2073,7 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars,
         uint256[] memory spAmountsBeforeWithdraw,
-        uint256 spAmountBeforeWithdraw,
+        uint256[] memory spAmountBeforeWithdrawPerDst,
         bytes memory returnMessage
     ) internal {
         AMBMessage memory message = abi.decode(returnMessage, (AMBMessage));
@@ -2033,7 +2097,11 @@ abstract contract ProtocolActions is BaseSetup {
                 _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountFinal);
             } else {
                 /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
-                _assertSingleVaultBalance(action.user, singleSuperFormsData[i].superFormId, spAmountBeforeWithdraw);
+                _assertSingleVaultBalance(
+                    action.user,
+                    singleSuperFormsData[i].superFormId,
+                    spAmountBeforeWithdrawPerDst[i]
+                );
             }
         }
         console.log("Asserted after failed withdraw");
@@ -2045,7 +2113,7 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars,
         uint256[] memory spAmountsBeforeWithdraw,
-        uint256 spAmountBeforeWithdraw
+        uint256[] memory spAmountBeforeWithdrawPerDst
     ) internal {
         vm.selectFork(FORKS[CHAIN_0]);
         uint256[] memory spAmountFinal;
@@ -2063,7 +2131,11 @@ abstract contract ProtocolActions is BaseSetup {
                     _assertMultiVaultBalance(action.user, multiSuperFormsData[i].superFormIds, spAmountFinal);
                 } else {
                     /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
-                    _assertSingleVaultBalance(action.user, singleSuperFormsData[i].superFormId, spAmountBeforeWithdraw);
+                    _assertSingleVaultBalance(
+                        action.user,
+                        singleSuperFormsData[i].superFormId,
+                        spAmountBeforeWithdrawPerDst[i]
+                    );
                 }
             }
         }

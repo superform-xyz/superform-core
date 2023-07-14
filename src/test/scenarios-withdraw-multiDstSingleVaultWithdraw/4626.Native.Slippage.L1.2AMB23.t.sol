@@ -47,6 +47,14 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
         AMOUNTS[AVAX][0] = [11];
         AMOUNTS[AVAX][1] = [10];
 
+        /*
+        PARTIAL[OP][0] = [false];
+        PARTIAL[OP][1] = [false];
+
+        PARTIAL[AVAX][0] = [false];
+        */
+        PARTIAL[AVAX][1] = [true];
+
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
