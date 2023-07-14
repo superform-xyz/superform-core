@@ -6,64 +6,47 @@ import "../../types/LiquidityTypes.sol";
 import "../../types/DataTypes.sol";
 
 // Test Utils
-import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
+contract SDSVD4626TimelockedSwapTokenInputSlippageL2 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [1, 3];
-        MultiDstAMBs = [AMBs, AMBs, AMBs];
-
-        CHAIN_0 = OP;
-        DST_CHAINS = [OP, ETH, POLY];
+        AMBs = [2, 3];
+        /// works for OP only??
+        CHAIN_0 = ETH; /// @dev NOTE: polygon has an issue with permit2, avax doesn't have permit2
+        DST_CHAINS = [ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [2];
         TARGET_UNDERLYINGS[ETH][0] = [2];
-        TARGET_UNDERLYINGS[POLY][0] = [1];
 
-        TARGET_VAULTS[OP][0] = [0];
-        TARGET_VAULTS[ETH][0] = [3];
-        TARGET_VAULTS[POLY][0] = [0];
+        TARGET_VAULTS[ETH][0] = [1]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[OP][0] = [0];
-        TARGET_FORM_KINDS[ETH][0] = [0];
-        TARGET_FORM_KINDS[POLY][0] = [0];
+        TARGET_FORM_KINDS[ETH][0] = [1];
 
-        AMOUNTS[OP][0] = [2];
-        AMOUNTS[ETH][0] = [5];
-        AMOUNTS[POLY][0] = [44444];
+        AMOUNTS[ETH][0] = [100];
 
-        MAX_SLIPPAGE[OP][0] = [1000];
         MAX_SLIPPAGE[ETH][0] = [1000];
-        MAX_SLIPPAGE[POLY][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[OP][0] = [1];
-        LIQ_BRIDGES[ETH][0] = [1];
-        LIQ_BRIDGES[POLY][0] = [1];
-
-        /// if testing a revert, do we test the revert on the whole destination?
-        /// to assert values, it is best to find the indexes that didn't revert
+        LIQ_BRIDGES[ETH][0] = [2];
 
         actions.push(
             TestAction({
-                action: Actions.Deposit,
+                action: Actions.DepositPermit2,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
@@ -73,13 +56,14 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
             _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
         }
     }

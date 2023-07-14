@@ -17,22 +17,22 @@ contract SDSVD4626SwapNativeSlippagePermit2L2 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         AMBs = [2, 3];
 
-        CHAIN_0 = ETH;
-        DST_CHAINS = [ETH];
+        CHAIN_0 = ARBI;
+        DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][0] = [1];
+        TARGET_UNDERLYINGS[ARBI][0] = [2];
 
-        TARGET_VAULTS[ETH][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [0]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[ETH][0] = [0];
+        TARGET_FORM_KINDS[ARBI][0] = [0];
 
-        AMOUNTS[ETH][0] = [100];
+        AMOUNTS[ARBI][0] = [100];
 
-        MAX_SLIPPAGE[ETH][0] = [1000];
+        MAX_SLIPPAGE[ARBI][0] = [1000];
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[ETH][0] = [2];
+        LIQ_BRIDGES[ARBI][0] = [2];
 
         actions.push(
             TestAction({
@@ -46,7 +46,7 @@ contract SDSVD4626SwapNativeSlippagePermit2L2 is ProtocolActions {
                 multiTx: false,
                 ambParams: generateAmbParams(DST_CHAINS.length, 2),
                 msgValue: 50 * 10 ** 18,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
