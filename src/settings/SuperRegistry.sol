@@ -3,13 +3,14 @@ pragma solidity 0.8.19;
 
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {QuorumManager} from "../crosschain-data/utils/QuorumManager.sol";
 import {Error} from "../utils/Error.sol";
 
 /// @title SuperRegistry
 /// @author Zeropoint Labs.
 /// @dev FIXME: this should be decentralized and protected by a timelock contract.
 /// @dev Keeps information on all protocolAddresses used in the SuperForms ecosystem.
-contract SuperRegistry is ISuperRegistry {
+contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev chainId represents the superform chain id.
     uint64 public chainId;
 
@@ -189,6 +190,11 @@ contract SuperRegistry is ISuperRegistry {
             stateRegistryIds[x] = y;
             emit SetStateRegistryAddress(y, x);
         }
+    }
+
+    /// @inheritdoc QuorumManager
+    function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyCaller {
+        requiredQuorum[srcChainId_] = quorum_;
     }
 
     /*///////////////////////////////////////////////////////////////

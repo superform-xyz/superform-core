@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
-import {QuorumManager} from "../utils/QuorumManager.sol";
 import {LiquidityHandler} from "../../crosschain-liquidity/LiquidityHandler.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {ICoreStateRegistry} from "../../interfaces/ICoreStateRegistry.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {IBridgeValidator} from "../../interfaces/IBridgeValidator.sol";
 import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, AckAMBData, AMBExtraData, ReturnMultiData, ReturnSingleData} from "../../types/DataTypes.sol";
@@ -22,7 +22,7 @@ import {Error} from "../../utils/Error.sol";
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between SuperForm Core Contracts deployed on all supported networks
-contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager, ICoreStateRegistry {
+contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateRegistry {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
 
@@ -57,11 +57,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @inheritdoc QuorumManager
-    function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
-        requiredQuorum[srcChainId_] = quorum_;
-    }
 
     struct UpdatePayloadVars {
         bytes32 previousPayloadProof_;
@@ -284,6 +279,13 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                 ++i;
             }
         }
+    }
+
+    /// @dev returns the required quorum for the src chain id from super registry
+    /// @param chainId is the src chain id
+    /// @return the quorum configured for the chain id
+    function getRequiredMessagingQuorum(uint64 chainId) public view returns (uint256) {
+        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -539,7 +541,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                         1,
                         STATE_REGISTRY_TYPE,
                         srcSender_,
-                        srcChainId_
+                        superRegistry.chainId()
                     ),
                     abi.encode(ReturnMultiData(payloadId_, amounts))
                 )
@@ -565,7 +567,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, QuorumManager
                         0,
                         STATE_REGISTRY_TYPE,
                         srcSender_,
-                        srcChainId_
+                        superRegistry.chainId()
                     ),
                     abi.encode(ReturnSingleData(payloadId_, amount))
                 )

@@ -12,12 +12,14 @@ import {IBroadcaster} from "./interfaces/IBroadcaster.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {Error} from "./utils/Error.sol";
-import "./utils/DataPacking.sol";
+import {DataLib} from "./libraries/DataLib.sol";
 
 /// @title SuperForms Factory
 /// @dev A secure, and easily queryable central point of access for all SuperForms on any given chain,
 /// @author Zeropoint Labs.
 contract SuperFormFactory is ISuperFormFactory {
+    using DataLib for uint256;
+
     /*///////////////////////////////////////////////////////////////
                             Constants
     //////////////////////////////////////////////////////////////*/
@@ -110,7 +112,7 @@ contract SuperFormFactory is ISuperFormFactory {
         );
 
         /// @dev this will always be unique because superForm is unique.
-        superFormId_ = _packSuperForm(superForm_, formBeaconId_, superRegistry.chainId());
+        superFormId_ = DataLib.packSuperForm(superForm_, formBeaconId_, superRegistry.chainId());
 
         vaultToSuperForms[vault_].push(superFormId_);
         /// @dev FIXME do we need to store info of all superforms just for external querying? Could save gas here
@@ -198,7 +200,7 @@ contract SuperFormFactory is ISuperFormFactory {
         chainIds_ = new uint64[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = _getSuperForm(superFormIds_[i]);
+            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = superFormIds_[i].getSuperForm();
         }
     }
 
@@ -206,7 +208,7 @@ contract SuperFormFactory is ISuperFormFactory {
     function getSuperForm(
         uint256 superFormId
     ) external pure override returns (address superForm_, uint32 formBeaconId_, uint64 chainId_) {
-        (superForm_, formBeaconId_, chainId_) = _getSuperForm(superFormId);
+        (superForm_, formBeaconId_, chainId_) = superFormId.getSuperForm();
     }
 
     /// @inheritdoc ISuperFormFactory
@@ -229,7 +231,7 @@ contract SuperFormFactory is ISuperFormFactory {
         chainIds_ = new uint64[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = _getSuperForm(superFormIds_[i]);
+            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = superFormIds_[i].getSuperForm();
         }
     }
 
@@ -254,7 +256,7 @@ contract SuperFormFactory is ISuperFormFactory {
         uint64 chainIdRes;
         uint64 chainId = superRegistry.chainId();
         for (uint256 i = 0; i < len; i++) {
-            (, , chainIdRes) = _getSuperForm(superFormIds_[i]);
+            (, , chainIdRes) = superFormIds_[i].getSuperForm();
             if (chainIdRes == chainId) {
                 unchecked {
                     ++superForms_;

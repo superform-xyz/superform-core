@@ -43,6 +43,8 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1RepeatingDstMulti
         LIQ_BRIDGES[ARBI][0] = [1];
         LIQ_BRIDGES[ETH][0] = [1];
 
+        vm.selectFork(FORKS[CHAIN_0]);
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -53,8 +55,8 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1RepeatingDstMulti
                 revertRole: "",
                 slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, AMBs.length),
-                msgValue: 50 * 10 ** 18,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

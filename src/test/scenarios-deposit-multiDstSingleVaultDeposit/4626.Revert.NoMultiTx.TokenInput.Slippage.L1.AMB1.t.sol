@@ -48,6 +48,8 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[POLY][0] = [1];
 
+        vm.selectFork(FORKS[CHAIN_0]);
+
         /// if testing a revert, do we test the revert on the whole destination?
         /// to assert values, it is best to find the indexes that didn't revert
 
@@ -61,8 +63,8 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
                 revertRole: "",
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

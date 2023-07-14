@@ -42,8 +42,7 @@ contract Scenario5Test is ProtocolActions {
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[ETH][1] = [1];
 
-        /// @dev check if we need to have this here (it's being overriden)
-        uint256 msgValue = 1 * _getPriceMultiplier(CHAIN_0) * 1e18;
+        vm.selectFork(FORKS[CHAIN_0]);
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -56,8 +55,8 @@ contract Scenario5Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
@@ -71,8 +70,8 @@ contract Scenario5Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateAmbParams(DST_CHAINS.length, 2),
-                msgValue: 50 * 10 ** 18,
+                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
+                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

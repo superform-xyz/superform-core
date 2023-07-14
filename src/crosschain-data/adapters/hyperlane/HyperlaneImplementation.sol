@@ -9,12 +9,14 @@ import {ISuperRegistry} from "../../../interfaces/ISuperRegistry.sol";
 import {IInterchainGasPaymaster} from "../../../vendor/hyperlane/IInterchainGasPaymaster.sol";
 import {AMBMessage, BroadCastAMBExtraData} from "../../../types/DataTypes.sol";
 import {Error} from "../../../utils/Error.sol";
-import "../../../utils/DataPacking.sol";
+import {DataLib} from "../../../libraries/DataLib.sol";
 
 /// @title HyperlaneImplementation
 /// @author Zeropoint Labs
 /// @dev allows state registries to use hyperlane for crosschain communication
 contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
+    using DataLib for uint256;
+
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
@@ -163,7 +165,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         AMBMessage memory decoded = abi.decode(body_, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId, , ) = _decodeTxInfo(decoded.txInfo);
+        (, , , uint8 registryId, , ) = decoded.txInfo.decodeTxInfo();
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 

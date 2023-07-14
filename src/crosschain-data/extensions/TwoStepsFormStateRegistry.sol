@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {IERC4626TimelockForm} from "../../forms/interfaces/IERC4626TimelockForm.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
@@ -11,7 +12,6 @@ import {BaseStateRegistry} from "../BaseStateRegistry.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState, TimeLockStatus, TimeLockPayload} from "../../types/DataTypes.sol";
 import {LiqRequest} from "../../types/LiquidityTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
-import "../../utils/DataPacking.sol";
 
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
@@ -37,7 +37,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @dev allows only form to write to the receive paylod
     /// TODO: add only 2 step forms to write
     modifier onlyForm(uint256 superFormId) {
-        (address superForm, , ) = _getSuperForm(superFormId);
+        (address superForm, , ) = superFormId.getSuperForm();
         if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
         _;
     }
@@ -95,7 +95,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
         /// @dev set status here to prevent re-entrancy
         p.status = TimeLockStatus.PROCESSED;
-        (address superForm, , ) = _getSuperForm(p.data.superFormId);
+        (address superForm, , ) = p.data.superFormId.getSuperForm();
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
         try form.withdrawAfterCoolDown(p.data.amount, p) {} catch {
@@ -132,7 +132,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             revert Error.INVALID_PAYLOAD_STATE();
         }
 
-        (, uint256 callbackType, , , , ) = _payloadHeader.decodeTxInfo();
+        (, uint256 callbackType, , , , uint64 srcChainId) = _payloadHeader.decodeTxInfo();
 
         AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
 
@@ -141,17 +141,24 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         }
 
         /// @dev validates quorum
-        // v._proof = keccak256(abi.encode(v._message));
+        bytes32 _proof = keccak256(abi.encode(_message));
 
-        // if (messageQuorum[v._proof] < getRequiredMessagingQuorum(v.srcChainId)) {
-        //     revert Error.QUORUM_NOT_REACHED();
-        // }
+        if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
+            revert Error.QUORUM_NOT_REACHED();
+        }
 
         /// @dev sets status as processed
         /// @dev check for re-entrancy & relocate if needed
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
         return bytes("");
+    }
+
+    /// @dev returns the required quorum for the src chain id from super registry
+    /// @param chainId is the src chain id
+    /// @return the quorum configured for the chain id
+    function getRequiredMessagingQuorum(uint64 chainId) public view returns (uint256) {
+        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -170,13 +177,13 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         return
             abi.encode(
                 AMBMessage(
-                    _packTxInfo(
+                    DataLib.packTxInfo(
                         uint8(TransactionType.WITHDRAW),
                         uint8(CallbackType.FAIL),
                         0,
                         STATE_REGISTRY_TYPE,
                         srcSender_,
-                        srcChainId_
+                        superRegistry.chainId()
                     ),
                     abi.encode(ReturnSingleData(payloadId_, singleVaultData_.amount))
                 )

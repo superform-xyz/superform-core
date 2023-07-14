@@ -10,13 +10,15 @@ import {Error} from "../../../utils/Error.sol";
 import {ILayerZeroReceiver} from "../../../vendor/layerzero/ILayerZeroReceiver.sol";
 import {ILayerZeroUserApplicationConfig} from "../../../vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
 import {ILayerZeroEndpoint} from "../../../vendor/layerzero/ILayerZeroEndpoint.sol";
-import "../../../utils/DataPacking.sol";
+import {DataLib} from "../../../libraries/DataLib.sol";
 
 /// @dev FIXME: this contract could use better overrides from interfaces
 /// @title LayerzeroImplementation
 /// @author Zeropoint Labs
 /// @dev allows state registries to use hyperlane for crosschain communication
 contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicationConfig, ILayerZeroReceiver {
+    using DataLib for uint256;
+
     uint256 private constant RECEIVER_OFFSET = 1;
 
     /*///////////////////////////////////////////////////////////////
@@ -127,7 +129,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId, , ) = _decodeTxInfo(decoded.txInfo);
+        (, , , uint8 registryId, , ) = decoded.txInfo.decodeTxInfo();
 
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
@@ -300,6 +302,8 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         bytes memory message_,
         bytes memory extraData_
     ) external view override returns (uint256 fees) {
-        (fees, ) = lzEndpoint.estimateFees(ambChainId[dstChainId_], address(this), message_, false, extraData_);
+        if (ambChainId[dstChainId_] != 0) {
+            (fees, ) = lzEndpoint.estimateFees(ambChainId[dstChainId_], address(this), message_, false, extraData_);
+        }
     }
 }
