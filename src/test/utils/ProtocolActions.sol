@@ -31,6 +31,10 @@ abstract contract ProtocolActions is BaseSetup {
 
     uint64[] public uniqueDSTs;
 
+    uint256 public msgValue;
+
+    bytes[] public ambParams;
+
     uint256[][] public revertingDepositSFs;
     uint256[][] public revertingWithdrawSFs;
     uint256[][] public revertingWithdrawTimelockedSFs;
@@ -253,13 +257,11 @@ abstract contract ProtocolActions is BaseSetup {
 
         vars.lzEndpoints_1 = new address[](vars.nDestinations);
         vars.toDst = new address[](vars.nDestinations);
-        multiSuperFormsData = new MultiVaultsSFData[](vars.nDestinations);
-        singleSuperFormsData = new SingleVaultSFData[](vars.nDestinations);
 
-        /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
-        /// @dev the sum of native assets needed in each state request
-        if (action.externalToken == 3) {
-            action.msgValue = action.msgValue + _sumOfAmounts();
+        if (action.multiVaults) {
+            multiSuperFormsData = new MultiVaultsSFData[](vars.nDestinations);
+        } else {
+            singleSuperFormsData = new SingleVaultSFData[](vars.nDestinations);
         }
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
@@ -355,6 +357,22 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
         }
+
+        vm.selectFork(FORKS[CHAIN_0]);
+
+        (msgValue, ambParams) = getAmbParamsAndFees(
+            DST_CHAINS,
+            AMBs,
+            users[action.user],
+            multiSuperFormsData,
+            singleSuperFormsData
+        );
+
+        /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
+        /// @dev the sum of native assets needed in each state request
+        if (action.externalToken == 3) {
+            msgValue = msgValue + _sumOfAmounts();
+        }
     }
 
     /// @dev STEP 2: Run Source Chain Action
@@ -396,26 +414,26 @@ abstract contract ProtocolActions is BaseSetup {
                     AMBs,
                     DST_CHAINS[0],
                     multiSuperFormsData[0],
-                    action.ambParams[0]
+                    ambParams[0]
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                    superRouter.singleDstMultiVaultDeposit{value: action.msgValue}(vars.singleDstMultiVaultStateReq);
+                    superRouter.singleDstMultiVaultDeposit{value: msgValue}(vars.singleDstMultiVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
-                    superRouter.singleDstMultiVaultWithdraw{value: action.msgValue}(vars.singleDstMultiVaultStateReq);
+                    superRouter.singleDstMultiVaultWithdraw{value: msgValue}(vars.singleDstMultiVaultStateReq);
                 }
             } else if (vars.nDestinations > 1) {
                 vars.multiDstMultiVaultStateReq = MultiDstMultiVaultsStateReq(
                     MultiDstAMBs,
                     DST_CHAINS,
                     multiSuperFormsData,
-                    action.ambParams
+                    ambParams
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                    superRouter.multiDstMultiVaultDeposit{value: action.msgValue}(vars.multiDstMultiVaultStateReq);
+                    superRouter.multiDstMultiVaultDeposit{value: msgValue}(vars.multiDstMultiVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
-                    superRouter.multiDstMultiVaultWithdraw{value: action.msgValue}(vars.multiDstMultiVaultStateReq);
+                    superRouter.multiDstMultiVaultWithdraw{value: msgValue}(vars.multiDstMultiVaultStateReq);
                 }
             }
         } else {
@@ -425,15 +443,15 @@ abstract contract ProtocolActions is BaseSetup {
                         AMBs,
                         DST_CHAINS[0],
                         singleSuperFormsData[0],
-                        action.ambParams[0]
+                        ambParams[0]
                     );
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                        superRouter.singleXChainSingleVaultDeposit{value: action.msgValue}(
+                        superRouter.singleXChainSingleVaultDeposit{value: msgValue}(
                             vars.singleXChainSingleVaultStateReq
                         );
                     } else if (action.action == Actions.Withdraw) {
-                        superRouter.singleXChainSingleVaultWithdraw{value: action.msgValue}(
+                        superRouter.singleXChainSingleVaultWithdraw{value: msgValue}(
                             vars.singleXChainSingleVaultStateReq
                         );
                     }
@@ -441,15 +459,15 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
                         DST_CHAINS[0],
                         singleSuperFormsData[0],
-                        action.ambParams[0]
+                        ambParams[0]
                     );
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                        superRouter.singleDirectSingleVaultDeposit{value: action.msgValue}(
+                        superRouter.singleDirectSingleVaultDeposit{value: msgValue}(
                             vars.singleDirectSingleVaultStateReq
                         );
                     } else if (action.action == Actions.Withdraw) {
-                        superRouter.singleDirectSingleVaultWithdraw{value: action.msgValue}(
+                        superRouter.singleDirectSingleVaultWithdraw{value: msgValue}(
                             vars.singleDirectSingleVaultStateReq
                         );
                     }
@@ -459,12 +477,12 @@ abstract contract ProtocolActions is BaseSetup {
                     MultiDstAMBs,
                     DST_CHAINS,
                     singleSuperFormsData,
-                    action.ambParams
+                    ambParams
                 );
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                    superRouter.multiDstSingleVaultDeposit{value: action.msgValue}(vars.multiDstSingleVaultStateReq);
+                    superRouter.multiDstSingleVaultDeposit{value: msgValue}(vars.multiDstSingleVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
-                    superRouter.multiDstSingleVaultWithdraw{value: action.msgValue}(vars.multiDstSingleVaultStateReq);
+                    superRouter.multiDstSingleVaultWithdraw{value: msgValue}(vars.multiDstSingleVaultStateReq);
                 }
             }
         }
@@ -1871,7 +1889,7 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             }
         }
-        uint256 msgValue = token != NATIVE_TOKEN ? 0 : action.msgValue;
+        uint256 msgValue = token != NATIVE_TOKEN ? 0 : msgValue;
         /*
         if (token == NATIVE_TOKEN) {
             console.log("balance now", users[action.user].balance);

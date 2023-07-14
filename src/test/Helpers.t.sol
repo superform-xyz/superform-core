@@ -46,8 +46,6 @@ contract PayloadHelperTest is ProtocolActions {
         /// @dev 1 for SOCKET, 2 for LI.FI
         LIQ_BRIDGES[POLY][0] = [1];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -58,8 +56,6 @@ contract PayloadHelperTest is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
@@ -69,7 +65,7 @@ contract PayloadHelperTest is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_payload_helper() public {
+    function test_helper_tttt() public {
         address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
         superRouter = ISuperFormRouter(_superRouter);
 

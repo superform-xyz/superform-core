@@ -58,6 +58,7 @@ import {TwoStepsFormStateRegistry} from "../../crosschain-data/extensions/TwoSte
 import {PayloadHelper} from "../../crosschain-data/utils/PayloadHelper.sol";
 import {FeeHelper} from "../../crosschain-data/utils/FeeHelper.sol";
 import {QuorumManager} from "../../crosschain-data/utils/QuorumManager.sol";
+import "../../types/DataTypes.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////
@@ -979,6 +980,10 @@ abstract contract BaseSetup is DSTest, Test {
         return address(uint160(uint(hash)));
     }
 
+    /*//////////////////////////////////////////////////////////////
+                GAS ESTIMATION & PAYLOAD HELPERS
+    //////////////////////////////////////////////////////////////*/
+
     /// @dev Estimate the gas fees
     function estimateMsgValue(
         uint64[] memory dstChainIds,
@@ -1016,6 +1021,93 @@ abstract contract BaseSetup is DSTest, Test {
         }
 
         return ambParams;
+    }
+
+    /// @dev Estimates the gas fees and gas params
+    function getAmbParamsAndFees(
+        uint64[] memory dstChainIds,
+        uint8[] memory selectedAmbIds,
+        address user,
+        MultiVaultsSFData[] memory multiSuperFormsData,
+        SingleVaultSFData[] memory singleSuperFormsData
+    ) internal view returns (uint256, bytes[] memory) {
+        uint256 dstCount = dstChainIds.length;
+
+        uint256 msgValue;
+        bytes[] memory ambParams = new bytes[](dstCount);
+
+        require(dstCount == multiSuperFormsData.length + singleSuperFormsData.length, "Invalid Lengths");
+
+        bytes[] memory messages = new bytes[](dstCount);
+
+        for (uint256 i; i < singleSuperFormsData.length; i++) {
+            bytes memory ambData = abi.encode(
+                InitSingleVaultData(
+                    2 ** 256 - 1, /// @dev uses max payload id
+                    singleSuperFormsData[i].superFormId,
+                    singleSuperFormsData[i].amount,
+                    singleSuperFormsData[i].maxSlippage,
+                    singleSuperFormsData[i].liqRequest,
+                    singleSuperFormsData[i].extraFormData
+                )
+            );
+            messages[i] = abi.encode(AMBMessage(2 * 256 - 1, ambData));
+        }
+
+        for (uint256 i; i < multiSuperFormsData.length; i++) {
+            bytes memory ambData = abi.encode(
+                InitMultiVaultData(
+                    2 ** 256 - 1, /// @dev uses max payload id
+                    multiSuperFormsData[i].superFormIds,
+                    multiSuperFormsData[i].amounts,
+                    multiSuperFormsData[i].maxSlippage,
+                    multiSuperFormsData[i].liqRequests,
+                    multiSuperFormsData[i].extraFormData
+                )
+            );
+
+            messages[i] = abi.encode(AMBMessage(2 * 256 - 1, ambData));
+        }
+
+        for (uint256 i; i < dstCount; i++) {
+            (uint256 tempFees, bytes memory tempParams) = generateAmbParamsAndFeesPerDst(
+                dstChainIds[i],
+                selectedAmbIds,
+                messages[i]
+            );
+
+            msgValue += tempFees;
+            ambParams[i] = tempParams;
+        }
+
+        console.log("msg value", msgValue);
+        return (msgValue, ambParams);
+    }
+
+    /// @dev Generates the amb params for the entire action
+    function generateAmbParamsAndFeesPerDst(
+        uint64 dstChainId,
+        uint8[] memory selectedAmbIds,
+        bytes memory message
+    ) internal view returns (uint256, bytes memory) {
+        uint256 ambCount = selectedAmbIds.length;
+
+        address _FeeHelper = contracts[dstChainId][bytes32(bytes("FeeHelper"))];
+        FeeHelper feeHelper = FeeHelper(_FeeHelper);
+
+        bytes[] memory paramsPerAMB = new bytes[](ambCount);
+        paramsPerAMB = generateExtraData(selectedAmbIds);
+
+        uint256 totalFees;
+        uint256[] memory gasPerAMB = new uint256[](ambCount);
+        (totalFees, gasPerAMB) = feeHelper.estimateFees(selectedAmbIds, dstChainId, message, paramsPerAMB);
+
+        console.log("total Fees", totalFees);
+        console.logBytes(message);
+        console.log("2");
+        AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
+
+        return (totalFees, abi.encode(SingleDstAMBParams(totalFees, abi.encode(extraData))));
     }
 
     /// @dev Generates the amb params for the entire action
