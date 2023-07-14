@@ -51,7 +51,7 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
         );
 
         vm.startPrank(deployer);
-        /// @dev FIXME: Need to fix the superformBeacon emitted
+        /// @dev Event With Beacon
         vm.expectEmit(true, true, true, true);
         emit FormBeaconAdded(formImplementation, superFormMockBeacon, formBeaconId);
 
