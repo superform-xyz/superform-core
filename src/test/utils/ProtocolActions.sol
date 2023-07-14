@@ -97,6 +97,7 @@ abstract contract ProtocolActions is BaseSetup {
             singleSuperFormsData,
             vars
         );
+
         vars = _stage2_run_src_action(action, multiSuperFormsData, singleSuperFormsData, vars);
         console.log("Stage 2 complete");
 
@@ -885,10 +886,14 @@ abstract contract ProtocolActions is BaseSetup {
 
             /// increase time by 5 days
             vm.warp(block.timestamp + (86400 * 5));
-            (uint256 msgValue, bytes memory ackParams) = generateAckGasFeesAndParams(CHAIN_0, AMBs);
+            (uint256 nativeFee, bytes memory ackAmbParams) = _generateAckGasFeesAndParamsForTimeLock(
+                CHAIN_0,
+                AMBs,
+                unlockId_
+            );
 
             vm.prank(deployer);
-            twoStepsFormStateRegistry.finalizePayload{value: msgValue}(unlockId_, ackParams);
+            twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(unlockId_, ackAmbParams);
         }
 
         vm.selectFork(initialFork);
@@ -1395,19 +1400,19 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[targetChainId_]);
 
-        uint256 msgValue;
-        bytes memory ackParams;
+        uint256 nativeFee;
+        bytes memory ackAmbParams;
 
         /// @dev only generate if acknowledgement is needed
         if (targetChainId_ != CHAIN_0) {
-            (msgValue, ackParams) = generateAckGasFeesAndParams(CHAIN_0, AMBs);
+            (nativeFee, ackAmbParams) = _generateAckGasFeesAndParams(CHAIN_0, AMBs, payloadId_);
         }
 
         vm.prank(deployer);
         if (testType == TestType.Pass) {
             CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
-                value: msgValue
-            }(payloadId_, ackParams);
+                value: nativeFee
+            }(payloadId_, ackAmbParams);
         } else if (testType == TestType.RevertProcessPayload) {
             /// @dev WARNING the try catch silences the revert, therefore the only way to assert is via emit
             vm.expectEmit();
@@ -1415,8 +1420,8 @@ abstract contract ProtocolActions is BaseSetup {
             emit FailedXChainDeposits(payloadId_);
 
             returnMessage = CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
-                value: msgValue
-            }(payloadId_, ackParams);
+                value: nativeFee
+            }(payloadId_, ackAmbParams);
             return (false, returnMessage);
         }
 
@@ -1889,26 +1894,20 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             }
         }
-        uint256 msgValue = token != NATIVE_TOKEN ? 0 : msgValue;
-        /*
+
         if (token == NATIVE_TOKEN) {
             console.log("balance now", users[action.user].balance);
             console.log("balance Before action", inputBalanceBefore);
-            console.log("totalSpAmountAllDestinations", totalSpAmountAllDestinations);
             console.log("msgValue", msgValue);
-            console.log("balance Before action - now", inputBalanceBefore - users[action.user].balance);
-            console.log("msg.value - remainder", msgValue - (inputBalanceBefore - users[action.user].balance));
+            console.log("balance now + msgValue", msgValue + users[action.user].balance);
         }
         /// @dev assert user input token balance
-        /// @notice TODO commented for now until we have precise gas estimation, otherwise it is not possible to assert conclusively
 
-
-        assertEq(
-            token != NATIVE_TOKEN ? IERC20(token).balanceOf(users[action.user]) : users[action.user].balance,
-            inputBalanceBefore - totalSpAmountAllDestinations - msgValue
-        );
-        */
-        console.log("Asserted after deposit");
+        // assertEq(
+        //     token != NATIVE_TOKEN ? IERC20(token).balanceOf(users[action.user]) : users[action.user].balance,
+        //     inputBalanceBefore - totalSpAmountAllDestinations - msgValue
+        // );
+        // console.log("Asserted after deposit");
     }
 
     function _assertAfterWithdraw(

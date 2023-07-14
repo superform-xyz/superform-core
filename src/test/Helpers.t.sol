@@ -56,7 +56,7 @@ contract PayloadHelperTest is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
@@ -65,7 +65,7 @@ contract PayloadHelperTest is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_helper_tttt() public {
+    function test_helper() public {
         address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
         superRouter = ISuperFormRouter(_superRouter);
 
