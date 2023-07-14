@@ -64,9 +64,9 @@ library DataLib {
         chainIds_ = new uint64[](superFormIds_.length);
 
         assembly ("memory-safe") {
-            // pointer to the end of the superFormIds_ array (shl(5, mload(superFormIds_)) == mul(32, mload(superFormIds_))
+            /// @dev pointer to the end of the superFormIds_ array (shl(5, mload(superFormIds_)) == mul(32, mload(superFormIds_))
             let end := add(add(superFormIds_, 0x20), shl(5, mload(superFormIds_)))
-            // initialize pointers for all the 4 arrays
+            /// @dev initialize pointers for all the 4 arrays
             let i := add(superFormIds_, 0x20)
             let j := add(superForms_, 0x20)
             let k := add(formIds_, 0x20)
@@ -75,16 +75,16 @@ library DataLib {
             let superFormId := 0
             for {} 1 {} {
                 superFormId := mload(i)
-                // execute what getSuperForm() does on a single superFormId and store the results in the respective arrays
+                /// @dev execute what getSuperForm() does on a single superFormId and store the results in the respective arrays
                 mstore(j, superFormId)
                 mstore(k, shr(160, superFormId))
                 mstore(l, shr(192, superFormId))
-                // increment pointers
+                /// @dev increment pointers
                 i := add(i, 0x20)
                 j := add(j, 0x20)
                 k := add(k, 0x20)
                 l := add(l, 0x20)
-                // check if we've reached the end of the array
+                /// @dev check if we've reached the end of the array
                 if iszero(lt(i, end)) { break }
             }
         }
