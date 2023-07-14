@@ -72,7 +72,7 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
         address formImplementation2 = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
         uint32 formBeaconId = 0;
 
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
             formImplementation1,
             formBeaconId,
