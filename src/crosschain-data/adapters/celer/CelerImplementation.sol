@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
+
 import {IBaseStateRegistry} from "../../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../../interfaces/IAmbImplementation.sol";
 import {ISuperRegistry} from "../../../interfaces/ISuperRegistry.sol";
@@ -68,7 +69,8 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
         /// calculate the exact fee needed
         uint256 feesReq = messageBus.calcFee(message_);
-        /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3
+
+        /// NOTE: works only on EVM-networks & contracts using CREATE2/CREATE3
         messageBus.sendMessage{value: feesReq}(authorizedImpl[chainId], chainId, message_);
 
         /// Refund unused fees

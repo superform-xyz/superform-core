@@ -34,8 +34,6 @@ contract SDSVD4626RevertNoSwapNativeNoSlippageL2 is ProtocolActions {
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ARBI][0] = [2];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -46,8 +44,6 @@ contract SDSVD4626RevertNoSwapNativeNoSlippageL2 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 /// @dev input token != vault underlying - swap involved
             })
         );
