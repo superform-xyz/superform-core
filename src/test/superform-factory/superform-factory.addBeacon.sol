@@ -11,7 +11,6 @@ import {FormBeacon} from "../../forms/FormBeacon.sol";
 import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
 import {Error} from "../../utils/Error.sol";
-import "../../utils/DataPacking.sol";
 
 contract SuperFormFactoryAddBeaconTest is BaseSetup {
     /// @dev emitted when Beacon Is Added
