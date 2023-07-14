@@ -12,7 +12,6 @@ import {BaseStateRegistry} from "../BaseStateRegistry.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState, TimeLockStatus, TimeLockPayload} from "../../types/DataTypes.sol";
 import {LiqRequest} from "../../types/LiquidityTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
-import "forge-std/console.sol";
 
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
@@ -77,7 +76,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             data_,
             TimeLockStatus.PENDING
         );
-        console.log("timelock payload id: %s", timeLockPayloadCounter);
     }
 
     /// @inheritdoc ITwoStepsFormStateRegistry
@@ -86,7 +84,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         bytes memory ambOverride_
     ) external payable override onlyProcessor {
         TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
-        console.log("timelock payload status: %s", uint256(p.status));
         if (p.status != TimeLockStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
