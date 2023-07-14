@@ -360,7 +360,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[CHAIN_0]);
 
-        (msgValue, ambParams) = getAmbParamsAndFees(
+        (msgValue, ambParams) = _getAmbParamsAndFees(
             DST_CHAINS,
             AMBs,
             users[action.user],

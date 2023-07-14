@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import "forge-std/console.sol";
 import {IBaseStateRegistry} from "../../../interfaces/IBaseStateRegistry.sol";
 import {IAmbImplementation} from "../../../interfaces/IAmbImplementation.sol";
 import {ISuperRegistry} from "../../../interfaces/ISuperRegistry.sol";
@@ -71,9 +70,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         /// calculate the exact fee needed
         uint256 feesReq = messageBus.calcFee(message_);
 
-        console.log(feesReq, "fee request");
-        console.log(msg.value, "msg value");
-        /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3
+        /// NOTE: works only on EVM-networks & contracts using CREATE2/CREATE3
         messageBus.sendMessage{value: feesReq}(authorizedImpl[chainId], chainId, message_);
 
         /// Refund unused fees
@@ -209,8 +206,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
     /// @inheritdoc IAmbImplementation
     function estimateFees(uint64, bytes memory message_, bytes memory) external view override returns (uint256 fees) {
-        console.logBytes(message_);
-        console.log("1");
         /// @notice celer just returns the source-chain fees.
         /// @notice for destination chain, estimation should be made offchain
         return messageBus.calcFee(message_);
