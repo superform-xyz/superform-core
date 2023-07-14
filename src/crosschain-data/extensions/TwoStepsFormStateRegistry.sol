@@ -163,6 +163,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
     }
 
+    /// @inheritdoc ITwoStepsFormStateRegistry
+    function getTimeLockPayload(uint256 payloadId_) external view returns (TimeLockPayload memory timeLockPayload_) {
+        return timeLockPayload[payloadId_];
+    }
+
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/

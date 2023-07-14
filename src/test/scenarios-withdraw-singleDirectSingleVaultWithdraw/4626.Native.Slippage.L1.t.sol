@@ -43,8 +43,6 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
         LIQ_BRIDGES[OP][0] = [1];
         LIQ_BRIDGES[OP][1] = [1];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -55,8 +53,6 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
                 revertRole: "",
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
@@ -71,8 +67,6 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
                 revertRole: "",
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

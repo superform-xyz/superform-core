@@ -43,8 +43,7 @@ contract SXSVWRevertKyc4626TokenInputNoSlippageL1 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [1];
         LIQ_BRIDGES[AVAX][1] = [1];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
+        /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -55,9 +54,7 @@ contract SXSVWRevertKyc4626TokenInputNoSlippageL1 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 
@@ -71,9 +68,7 @@ contract SXSVWRevertKyc4626TokenInputNoSlippageL1 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

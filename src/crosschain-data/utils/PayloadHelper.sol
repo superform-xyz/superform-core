@@ -2,18 +2,22 @@
 pragma solidity 0.8.19;
 
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
+import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
+
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {IPayloadHelper} from "../../interfaces/IPayloadHelper.sol";
-import {AMBMessage, CallbackType, ReturnMultiData, ReturnSingleData, InitMultiVaultData, InitSingleVaultData} from "../../types/DataTypes.sol";
+import {AMBMessage, CallbackType, ReturnMultiData, ReturnSingleData, InitMultiVaultData, InitSingleVaultData, TimeLockPayload} from "../../types/DataTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 
 contract PayloadHelper is IPayloadHelper {
     using DataLib for uint256;
 
     IBaseStateRegistry public immutable payloadRegistry;
+    ITwoStepsFormStateRegistry public immutable twoStepRegistry;
 
-    constructor(address payloadRegistry_) {
+    constructor(address payloadRegistry_, address twoStepRegistry_) {
         payloadRegistry = IBaseStateRegistry(payloadRegistry_);
+        twoStepRegistry = ITwoStepsFormStateRegistry(twoStepRegistry_);
     }
 
     /// @inheritdoc IPayloadHelper
@@ -81,5 +85,24 @@ contract PayloadHelper is IPayloadHelper {
         }
 
         return (txType_, callbackType_, srcSender_, srcChainId_, amounts, slippage, superformIds, srcPayloadId);
+    }
+
+    /// @inheritdoc IPayloadHelper
+    function decodeTimeLockPayload(
+        uint256 timelockPayloadId_
+    )
+        external
+        view
+        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superFormId, uint256 amount)
+    {
+        TimeLockPayload memory payload = twoStepRegistry.getTimeLockPayload(timelockPayloadId_);
+
+        return (
+            payload.srcSender,
+            payload.srcChainId,
+            payload.data.payloadId,
+            payload.data.superFormId,
+            payload.data.amount
+        );
     }
 }

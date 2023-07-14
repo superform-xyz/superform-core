@@ -43,8 +43,6 @@ contract MDMVDMulti0026MultiTxNativeNoSlippageL1AMB23 is ProtocolActions {
         LIQ_BRIDGES[POLY][0] = [2, 2];
         LIQ_BRIDGES[ETH][0] = [2, 2];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -55,8 +53,6 @@ contract MDMVDMulti0026MultiTxNativeNoSlippageL1AMB23 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

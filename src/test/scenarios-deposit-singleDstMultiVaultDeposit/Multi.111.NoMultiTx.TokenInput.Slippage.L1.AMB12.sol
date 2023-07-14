@@ -37,8 +37,6 @@ contract SDMVDMulti111NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -49,8 +47,6 @@ contract SDMVDMulti111NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

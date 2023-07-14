@@ -46,8 +46,6 @@ contract Scenario11Test is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [1, 2, 1];
         LIQ_BRIDGES[ARBI][1] = [1, 1, 2];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
@@ -59,8 +57,6 @@ contract Scenario11Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
@@ -75,8 +71,6 @@ contract Scenario11Test is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

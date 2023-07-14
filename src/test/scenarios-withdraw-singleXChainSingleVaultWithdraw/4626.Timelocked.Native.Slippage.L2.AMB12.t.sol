@@ -43,8 +43,6 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [2];
         LIQ_BRIDGES[ARBI][1] = [2];
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -55,8 +53,6 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 224, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
@@ -71,8 +67,6 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 224, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
