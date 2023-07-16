@@ -91,7 +91,8 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateMultiDstMultiVault(
-        MultiDstMultiVaultsStateReq calldata req_
+        MultiDstMultiVaultsStateReq calldata req_,
+        bool isDeposit
     ) external view override returns (uint256 totalFees) {
         for (uint256 i; i < req_.dstChainIds.length; ) {
             uint256 totalDstGas;
@@ -101,6 +102,9 @@ contract FeeHelper is IFeeHelper {
             totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequests);
 
             /// @dev step 3: estimate update cost (only for deposit)
+            if (isDeposit)
+                totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], req_.superFormsData[i].superFormIds.length);
+
             /// @dev step 4: estimate execution costs in dst
             /// @dev step 5: estimation execution cost of acknowledgement
 
@@ -114,7 +118,8 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateSingleDstMultiVault(
-        SingleDstMultiVaultsStateReq memory req_
+        SingleDstMultiVaultsStateReq memory req_,
+        bool isDeposit
     ) external view override returns (uint256 totalFees) {
         uint256 totalDstGas;
         /// @dev step 1: estimate amb costs
@@ -123,6 +128,8 @@ contract FeeHelper is IFeeHelper {
         totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormsData.liqRequests);
 
         /// @dev step 3: estimate update cost (only for deposit)
+        if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, req_.superFormsData.superFormIds.length);
+
         /// @dev step 4: estimate execution costs in dst
         /// @dev step 5: estimation execution cost of acknowledgement
 
@@ -131,7 +138,8 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateMultiDstSingleVault(
-        MultiDstSingleVaultStateReq calldata req_
+        MultiDstSingleVaultStateReq calldata req_,
+        bool isDeposit
     ) external view override returns (uint256 totalFees) {
         for (uint256 i; i < req_.dstChainIds.length; ) {
             uint256 totalDstGas;
@@ -141,6 +149,8 @@ contract FeeHelper is IFeeHelper {
             totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequest.castToArray());
 
             /// @dev step 3: estimate update cost (only for deposit)
+            if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
+
             /// @dev step 4: estimate execution costs in dst
             /// @dev step 5: estimation execution cost of acknowledgement
 
@@ -153,7 +163,8 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateSingleXChainSingleVault(
-        SingleXChainSingleVaultStateReq memory req_
+        SingleXChainSingleVaultStateReq memory req_,
+        bool isDeposit
     ) external view override returns (uint256 totalFees) {
         uint256 totalDstGas;
         /// @dev step 1: estimate amb costs
@@ -162,6 +173,8 @@ contract FeeHelper is IFeeHelper {
         totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormData.liqRequest.castToArray());
 
         /// @dev step 3: estimate update cost (only for deposit)
+        if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
+
         /// @dev step 4: estimate execution costs in dst
         /// @dev step 5: estimation execution cost of acknowledgement
 
@@ -170,7 +183,8 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateSingleDirectSingleVault(
-        SingleDirectSingleVaultStateReq memory req_
+        SingleDirectSingleVaultStateReq memory req_,
+        bool isDeposit
     ) external view override returns (uint256 totalFees) {
         /// @dev only if timelock form is involved estimate the two step cost
         if (req_.superFormData.superFormId == TIMELOCK_FORM_ID) {}
@@ -234,5 +248,12 @@ contract FeeHelper is IFeeHelper {
         }
 
         return totalSwaps * config.swapGasUsed;
+    }
+
+    /// @dev helps estimate the dst chain update payload fee
+    function _estimateUpdateCost(uint64 dstChainId_, uint256 vaultsCount_) internal view returns (uint256 gasUsed) {
+        FeeConfig memory config = feeConfig[dstChainId_];
+
+        return vaultsCount_ * config.updateGasUsed;
     }
 }

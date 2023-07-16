@@ -24,34 +24,39 @@ interface IFeeHelper {
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return totalFees is the native_tokens to be sent along the transaction
     function estimateMultiDstMultiVault(
-        MultiDstMultiVaultsStateReq calldata req_
+        MultiDstMultiVaultsStateReq calldata req_,
+        bool isDeposit
     ) external view returns (uint256 totalFees);
 
     /// @dev estimates the gas fees for single destination and multi vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return totalFees is the native_tokens to be sent along the transaction
     function estimateSingleDstMultiVault(
-        SingleDstMultiVaultsStateReq memory req_
+        SingleDstMultiVaultsStateReq memory req_,
+        bool isDeposit
     ) external view returns (uint256 totalFees);
 
     /// @dev estimates the gas fees for multiple destination and single vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return totalFees is the native_tokens to be sent along the transaction
     function estimateMultiDstSingleVault(
-        MultiDstSingleVaultStateReq calldata req_
+        MultiDstSingleVaultStateReq calldata req_,
+        bool isDeposit
     ) external view returns (uint256 totalFees);
 
     /// @dev estimates the gas fees for single destination and single vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return totalFees is the native_tokens to be sent along the transaction
     function estimateSingleXChainSingleVault(
-        SingleXChainSingleVaultStateReq memory req_
+        SingleXChainSingleVaultStateReq memory req_,
+        bool isDeposit
     ) external view returns (uint256 totalFees);
 
     /// @dev estimates the gas fees for same chain operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return totalFees is the native_tokens to be sent along the transaction
     function estimateSingleDirectSingleVault(
-        SingleDirectSingleVaultStateReq memory req_
+        SingleDirectSingleVaultStateReq memory req_,
+        bool isDeposit
     ) external view returns (uint256 totalFees);
 }
