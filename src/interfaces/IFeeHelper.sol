@@ -7,6 +7,43 @@ import "../types/DataTypes.sol";
 /// @author ZeroPoint Labs
 /// @dev helps decoding the bytes payload and returns meaningful information
 interface IFeeHelper {
+    /*///////////////////////////////////////////////////////////////
+                        PREVILAGES ADMIN ONLY FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev admin config/update source chain config for estimation
+    /// @param configType_ is the type of config from 1 -> 4
+    /// @param config_ is the encoded new configuration
+    function setSameChainConfig(uint256 configType_, bytes memory config_) external;
+
+    /// @dev admin config destination chain config for estimation
+    /// @param chainId_ is the identifier of new chain id
+    /// @param dstGasPriceOracle_ is the gas price oracle
+    /// @param dstNativeFeedOracle_ is the native price feed oracle
+    /// @param swapGasUsed_ is the swap gas params
+    /// @param updateGasUsed_ is the update gas params
+    /// @param depositGasUsed_ is the deposit per vault gas on the chain
+    /// @param withdrawGasUsed_ is the withdraw per vault gas on the chain
+    function addChain(
+        uint64 chainId_,
+        address dstGasPriceOracle_,
+        address dstNativeFeedOracle_,
+        uint256 swapGasUsed_,
+        uint256 updateGasUsed_,
+        uint256 depositGasUsed_,
+        uint256 withdrawGasUsed_
+    ) external;
+
+    /// @dev admin update remote chain config for estimation
+    /// @param chainId_ is the remote chain's identifier
+    /// @param configType_ is the type of config from 1 -> 6
+    /// @param config_ is the encoded new configuration
+    function setDstChainConfig(uint64 chainId_, uint256 configType_, bytes memory config_) external;
+
+    /*///////////////////////////////////////////////////////////////
+                        EXTERNAL VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @dev returns the gas fees estimation in native tokens if we send message through a combination of AMBs
     /// @param ambIds_ is the identifier of different AMBs
     /// @param dstChainId_ is the identifier of the destination chain

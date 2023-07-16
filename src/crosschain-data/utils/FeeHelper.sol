@@ -70,15 +70,84 @@ contract FeeHelper is IFeeHelper {
                         PREVILAGES ADMIN ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev admin intialize a new destination chain for estimation
-    function setFeeConfig(
-        uint64 chainId,
-        address nativePriceFeed,
-        uint64 swapGasUsed,
-        uint64 updateGasUsed,
-        uint64 depositGasUsed,
-        uint64 superPositionGasUsed
-    ) external onlyProtocolAdmin {}
+    /// @inheritdoc IFeeHelper
+    function setSameChainConfig(uint256 configType_, bytes memory config_) external override onlyProtocolAdmin {
+        /// Type 1: GAS PRICE ORACLE
+        if (configType_ == 1) {
+            srcGasPriceOracle = AggregatorV3Interface(abi.decode(config_, (address)));
+        }
+
+        /// Type 2: NATIVE TOKEN PRICE FEED ORACLE
+        if (configType_ == 2) {
+            srcNativeFeedOracle = AggregatorV3Interface(abi.decode(config_, (address)));
+        }
+
+        /// Type 3: ACKNOWLEDGEMENT GAS COST PER VAULT
+        if (configType_ == 3) {
+            ackNativeGasCost = abi.decode(config_, (uint256));
+        }
+
+        /// Type 4: TWO STEP FORM COST
+        if (configType_ == 4) {
+            twoStepFeeCost = abi.decode(config_, (uint256));
+        }
+    }
+
+    /// @inheritdoc IFeeHelper
+    function addChain(
+        uint64 chainId_,
+        address dstGasPriceOracle_,
+        address dstNativeFeedOracle_,
+        uint256 swapGasUsed_,
+        uint256 updateGasUsed_,
+        uint256 depositGasUsed_,
+        uint256 withdrawGasUsed_
+    ) external override onlyProtocolAdmin {
+        dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
+        dstNativeFeedOracle[chainId_] = AggregatorV3Interface(dstNativeFeedOracle_);
+
+        swapGasUsed[chainId_] = swapGasUsed_;
+        updateGasUsed[chainId_] = updateGasUsed_;
+        depositGasUsed[chainId_] = depositGasUsed_;
+        withdrawGasUsed[chainId_] = withdrawGasUsed_;
+    }
+
+    /// @inheritdoc IFeeHelper
+    function setDstChainConfig(
+        uint64 chainId_,
+        uint256 configType_,
+        bytes memory config_
+    ) external override onlyProtocolAdmin {
+        /// Type 1: DST GAS PRICE ORACLE
+        if (configType_ == 1) {
+            dstGasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+        }
+
+        /// Type 2: DST TOKEN PRICE FEED ORACLE
+        if (configType_ == 2) {
+            dstNativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+        }
+
+        /// Type 3: SWAP GAS COST PER TX FOR MULTI-TX
+        if (configType_ == 3) {
+            swapGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// Type 4: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
+        if (configType_ == 4) {
+            updateGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// Type 5: DEPOSIT GAS COST PER TX
+        if (configType_ == 5) {
+            depositGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// Type 6: WITHDRAW GAS COST PER TX
+        if (configType_ == 6) {
+            withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+    }
 
     /*///////////////////////////////////////////////////////////////
                                 VIEW FUNCTIONS
