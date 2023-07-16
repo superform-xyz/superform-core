@@ -39,6 +39,7 @@ contract FeeHelper is IFeeHelper {
     AggregatorV3Interface public srcNativeFeedOracle;
     AggregatorV3Interface public srcGasPriceOracle;
     uint256 public ackNativeGasCost;
+    uint256 public twoStepFeeCost;
 
     /// xchain params
     mapping(uint64 chainId => AggregatorV3Interface) public dstNativeFeedOracle;
@@ -237,8 +238,12 @@ contract FeeHelper is IFeeHelper {
         SingleDirectSingleVaultStateReq calldata req_,
         bool isDeposit
     ) external view override returns (uint256 totalFees) {
-        /// @dev only if timelock form is involved estimate the two step cost
-        if (req_.superFormData.superFormId == TIMELOCK_FORM_ID) {}
+        /// @dev only if timelock form withdrawal is involved
+        if (!isDeposit && req_.superFormData.superFormId == TIMELOCK_FORM_ID) {
+            (, int256 gasPrice, , , ) = srcGasPriceOracle.latestRoundData();
+
+            return twoStepFeeCost * uint256(gasPrice);
+        }
     }
 
     /// @inheritdoc IFeeHelper
@@ -358,7 +363,7 @@ contract FeeHelper is IFeeHelper {
     ) internal pure returns (bytes memory message_) {
         bytes memory ambData = abi.encode(
             InitSingleVaultData(
-                2 ** 256 - 1, /// @dev uses max payload id
+                2 ** 256 - 1, /// @dev uses max payload id (should use registry to get latest id)
                 sfData_.superFormId,
                 sfData_.amount,
                 sfData_.maxSlippage,
@@ -375,7 +380,7 @@ contract FeeHelper is IFeeHelper {
     ) internal pure returns (bytes memory message_) {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
-                2 ** 256 - 1, /// @dev uses max payload id
+                2 ** 256 - 1, /// @dev uses max payload id (should use registry to get latest id)
                 sfData_.superFormIds,
                 sfData_.amounts,
                 sfData_.maxSlippage,
