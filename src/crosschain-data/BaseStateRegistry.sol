@@ -180,6 +180,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         }
     }
 
+    /// @inheritdoc IBaseStateRegistry
     function payload(uint256 payloadId_) external view returns (bytes memory payload_) {
         return abi.encode(AMBMessage(payloadHeader[payloadId_], payloadBody[payloadId_]));
     }

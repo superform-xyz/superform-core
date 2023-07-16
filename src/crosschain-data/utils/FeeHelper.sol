@@ -14,6 +14,11 @@ import {ArrayCastLib} from "../../libraries/ArrayCastLib.sol";
 import "../../types/DataTypes.sol";
 import "../../types/LiquidityTypes.sol";
 
+/// @dev interface to read public variable from state registry
+interface ReadOnlyBaseRegistry is IBaseStateRegistry {
+    function payloadsCount() external view returns (uint256);
+}
+
 /// @title IPayloadHelper
 /// @author ZeroPoint Labs
 /// @dev helps estimating the cost for the entire transaction lifecycle
@@ -429,10 +434,10 @@ contract FeeHelper is IFeeHelper {
     /// @dev generates the amb message for single vault data
     function _generateSingleVaultMessage(
         SingleVaultSFData memory sfData_
-    ) internal pure returns (bytes memory message_) {
+    ) internal view returns (bytes memory message_) {
         bytes memory ambData = abi.encode(
             InitSingleVaultData(
-                2 ** 256 - 1, /// @dev uses max payload id (should use registry to get latest id)
+                _getNextPayloadId(),
                 sfData_.superFormId,
                 sfData_.amount,
                 sfData_.maxSlippage,
@@ -446,10 +451,10 @@ contract FeeHelper is IFeeHelper {
     /// @dev generates the amb message for multi vault data
     function _generateMultiVaultMessage(
         MultiVaultsSFData memory sfData_
-    ) internal pure returns (bytes memory message_) {
+    ) internal view returns (bytes memory message_) {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
-                2 ** 256 - 1, /// @dev uses max payload id (should use registry to get latest id)
+                _getNextPayloadId(),
                 sfData_.superFormIds,
                 sfData_.amounts,
                 sfData_.maxSlippage,
@@ -480,5 +485,12 @@ contract FeeHelper is IFeeHelper {
 
         /// 10 ** 36 is raw decimal correction; multiply before divide
         nativeFee = ((dstUsdValue * 10 ** 36) / uint256(srcNativeTokenPrice));
+    }
+
+    /// @dev helps generate the new payload id
+    /// note: next payload id = current payload id + 1
+    function _getNextPayloadId() internal view returns (uint256 nextPayloadId) {
+        nextPayloadId = ReadOnlyBaseRegistry(superRegistry.coreStateRegistry()).payloadsCount();
+        ++nextPayloadId;
     }
 }
