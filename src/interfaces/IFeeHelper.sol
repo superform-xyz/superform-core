@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "../types/DataTypes.sol";
+
 /// @title IFeeHelper
 /// @author ZeroPoint Labs
 /// @dev helps decoding the bytes payload and returns meaningful information
@@ -17,4 +19,39 @@ interface IFeeHelper {
         bytes memory message_,
         bytes[] memory extraData_
     ) external view returns (uint256 totalFees, uint256[] memory);
+
+    /// @dev estimates the gas fees for multiple destination and multi vault operation
+    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @return totalFees is the native_tokens to be sent along the transaction
+    function estimateMultiDstMultiVault(
+        MultiDstMultiVaultsStateReq calldata req_
+    ) external view returns (uint256 totalFees);
+
+    /// @dev estimates the gas fees for single destination and multi vault operation
+    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @return totalFees is the native_tokens to be sent along the transaction
+    function estimateSingleDstMultiVault(
+        SingleDstMultiVaultsStateReq memory req_
+    ) external view returns (uint256 totalFees);
+
+    /// @dev estimates the gas fees for multiple destination and single vault operation
+    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @return totalFees is the native_tokens to be sent along the transaction
+    function estimateMultiDstSingleVault(
+        MultiDstSingleVaultStateReq calldata req_
+    ) external view returns (uint256 totalFees);
+
+    /// @dev estimates the gas fees for single destination and single vault operation
+    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @return totalFees is the native_tokens to be sent along the transaction
+    function estimateSingleXChainSingleVault(
+        SingleXChainSingleVaultStateReq memory req_
+    ) external view returns (uint256 totalFees);
+
+    /// @dev estimates the gas fees for same chain operation
+    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @return totalFees is the native_tokens to be sent along the transaction
+    function estimateSingleDirectSingleVault(
+        SingleDirectSingleVaultStateReq memory req_
+    ) external view returns (uint256 totalFees);
 }
