@@ -90,7 +90,14 @@ contract FeeHelper is IFeeHelper {
     ) external view override returns (uint256 totalFees) {
         for (uint256 i; i < req_.dstChainIds.length; ) {
             uint256 totalDstGas;
+
             /// @dev step 1: estimate amb costs
+            totalFees += _estimateAMBFees(
+                req_.ambIds[i],
+                req_.dstChainIds[i],
+                _generateMultiVaultMessage(req_.superFormsData[i]),
+                req_.extraDataPerDst[i]
+            );
 
             /// @dev step 2: estimate if swap costs are involved
             totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequests);
@@ -126,11 +133,18 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateSingleDstMultiVault(
-        SingleDstMultiVaultsStateReq memory req_,
+        SingleDstMultiVaultsStateReq calldata req_,
         bool isDeposit
     ) external view override returns (uint256 totalFees) {
         uint256 totalDstGas;
+
         /// @dev step 1: estimate amb costs
+        totalFees += _estimateAMBFees(
+            req_.ambIds,
+            req_.dstChainId,
+            _generateMultiVaultMessage(req_.superFormsData),
+            req_.extraData
+        );
 
         /// @dev step 2: estimate if swap costs are involved
         totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormsData.liqRequests);
@@ -156,7 +170,14 @@ contract FeeHelper is IFeeHelper {
     ) external view override returns (uint256 totalFees) {
         for (uint256 i; i < req_.dstChainIds.length; ) {
             uint256 totalDstGas;
+
             /// @dev step 1: estimate amb costs
+            totalFees += _estimateAMBFees(
+                req_.ambIds[i],
+                req_.dstChainIds[i],
+                _generateSingleVaultMessage(req_.superFormsData[i]),
+                req_.extraDataPerDst[i]
+            );
 
             /// @dev step 2: estimate if swap costs are involved
             totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequest.castToArray());
@@ -182,11 +203,17 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateSingleXChainSingleVault(
-        SingleXChainSingleVaultStateReq memory req_,
+        SingleXChainSingleVaultStateReq calldata req_,
         bool isDeposit
     ) external view override returns (uint256 totalFees) {
         uint256 totalDstGas;
         /// @dev step 1: estimate amb costs
+        totalFees += _estimateAMBFees(
+            req_.ambIds,
+            req_.dstChainId,
+            _generateSingleVaultMessage(req_.superFormData),
+            req_.extraData
+        );
 
         /// @dev step 2: estimate if swap costs are involved
         totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormData.liqRequest.castToArray());
@@ -207,7 +234,7 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateSingleDirectSingleVault(
-        SingleDirectSingleVaultStateReq memory req_,
+        SingleDirectSingleVaultStateReq calldata req_,
         bool isDeposit
     ) external view override returns (uint256 totalFees) {
         /// @dev only if timelock form is involved estimate the two step cost
@@ -221,7 +248,7 @@ contract FeeHelper is IFeeHelper {
         uint64 dstChainId_,
         bytes memory message_,
         bytes[] memory extraData_
-    ) external view returns (uint256 totalFees, uint256[] memory) {
+    ) public view returns (uint256 totalFees, uint256[] memory) {
         uint256 len = ambIds_.length;
         uint256[] memory fees = new uint256[](len);
 
@@ -246,6 +273,32 @@ contract FeeHelper is IFeeHelper {
     /*///////////////////////////////////////////////////////////////
                         INTERNAL/HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev helps estimate the cross-chain message costs
+    function _estimateAMBFees(
+        uint8[] calldata ambIds_,
+        uint64 dstChainId_,
+        bytes memory message_,
+        bytes calldata extraData_
+    ) public view returns (uint256 totalFees) {
+        uint256 len = ambIds_.length;
+
+        SingleDstAMBParams memory decodedAmbParams = abi.decode(extraData_, (SingleDstAMBParams));
+        AMBExtraData memory decodedAmbData = abi.decode(decodedAmbParams.encodedAMBExtraData, (AMBExtraData));
+
+        /// @dev just checks the estimate for sending message from src -> dst
+        for (uint256 i; i < len; ) {
+            totalFees += IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+                dstChainId_,
+                message_,
+                decodedAmbData.extraDataPerAMB[i]
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
 
     /// @dev helps estimate the dst chain swap gas limit (if multi-tx is involved)
     function _estimateSwapFees(
@@ -299,6 +352,40 @@ contract FeeHelper is IFeeHelper {
         return gasCost * uint256(gasPrice);
     }
 
+    /// @dev generates the amb message for single vault data
+    function _generateSingleVaultMessage(
+        SingleVaultSFData memory sfData_
+    ) internal pure returns (bytes memory message_) {
+        bytes memory ambData = abi.encode(
+            InitSingleVaultData(
+                2 ** 256 - 1, /// @dev uses max payload id
+                sfData_.superFormId,
+                sfData_.amount,
+                sfData_.maxSlippage,
+                sfData_.liqRequest,
+                sfData_.extraFormData
+            )
+        );
+        message_ = abi.encode(AMBMessage(2 * 256 - 1, ambData));
+    }
+
+    /// @dev generates the amb message for multi vault data
+    function _generateMultiVaultMessage(
+        MultiVaultsSFData memory sfData_
+    ) internal pure returns (bytes memory message_) {
+        bytes memory ambData = abi.encode(
+            InitMultiVaultData(
+                2 ** 256 - 1, /// @dev uses max payload id
+                sfData_.superFormIds,
+                sfData_.amounts,
+                sfData_.maxSlippage,
+                sfData_.liqRequests,
+                sfData_.extraFormData
+            )
+        );
+        message_ = abi.encode(AMBMessage(2 * 256 - 1, ambData));
+    }
+
     /// @dev helps convert the dst gas fee into src chain native fee
     /// note: check decimals (not validated yet)
     /// note: https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
@@ -317,6 +404,7 @@ contract FeeHelper is IFeeHelper {
         /// @dev is the final native tokens
         (, int256 srcNativeTokenPrice, , , ) = srcNativeFeedOracle.latestRoundData();
 
-        nativeFee = (dstUsdValue / uint256(srcNativeTokenPrice));
+        /// 10 ** 36 is raw decimal correction; multiply before divide
+        nativeFee = ((dstUsdValue * 10 ** 36) / uint256(srcNativeTokenPrice));
     }
 }

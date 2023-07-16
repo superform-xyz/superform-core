@@ -32,7 +32,7 @@ interface IFeeHelper {
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return totalFees is the native_tokens to be sent along the transaction
     function estimateSingleDstMultiVault(
-        SingleDstMultiVaultsStateReq memory req_,
+        SingleDstMultiVaultsStateReq calldata req_,
         bool isDeposit
     ) external view returns (uint256 totalFees);
 
@@ -48,7 +48,7 @@ interface IFeeHelper {
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return totalFees is the native_tokens to be sent along the transaction
     function estimateSingleXChainSingleVault(
-        SingleXChainSingleVaultStateReq memory req_,
+        SingleXChainSingleVaultStateReq calldata req_,
         bool isDeposit
     ) external view returns (uint256 totalFees);
 
@@ -56,7 +56,7 @@ interface IFeeHelper {
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return totalFees is the native_tokens to be sent along the transaction
     function estimateSingleDirectSingleVault(
-        SingleDirectSingleVaultStateReq memory req_,
+        SingleDirectSingleVaultStateReq calldata req_,
         bool isDeposit
     ) external view returns (uint256 totalFees);
 }
