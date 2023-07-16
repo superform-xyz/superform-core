@@ -102,6 +102,6 @@ contract SocketValidator is BridgeValidator {
     function _decodeCallData(
         bytes calldata data
     ) internal pure returns (ISocketRegistry.UserRequest memory userRequest) {
-        ISocketRegistry.UserRequest memory userRequest = abi.decode(data[4:], (ISocketRegistry.UserRequest));
+        (userRequest) = abi.decode(data[4:], (ISocketRegistry.UserRequest));
     }
 }
