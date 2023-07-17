@@ -9,7 +9,7 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
+contract MDSVWNormal4626NativeSlippageL1AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -23,7 +23,7 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [0];
-        TARGET_UNDERLYINGS[AVAX][0] = [2];
+        TARGET_UNDERLYINGS[AVAX][0] = [1];
 
         TARGET_VAULTS[OP][0] = [0]; /// @dev id 0 is normal 4626
         TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
@@ -33,7 +33,7 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][1] = [0];
-        TARGET_UNDERLYINGS[AVAX][1] = [2];
+        TARGET_UNDERLYINGS[AVAX][1] = [1];
 
         TARGET_VAULTS[OP][1] = [0]; /// @dev id 0 is normal 4626
         TARGET_VAULTS[AVAX][1] = [0]; /// @dev id 0 is normal 4626
@@ -41,13 +41,12 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
         TARGET_FORM_KINDS[OP][1] = [0];
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
-        AMOUNTS[OP][0] = [1000];
-        AMOUNTS[OP][1] = [500];
+        AMOUNTS[OP][0] = [541135];
+        AMOUNTS[OP][1] = [541135];
 
-        AMOUNTS[AVAX][0] = [750];
-        AMOUNTS[AVAX][1] = [250];
+        AMOUNTS[AVAX][0] = [11];
+        AMOUNTS[AVAX][1] = [10];
 
-        PARTIAL[OP][1] = [true];
         PARTIAL[AVAX][1] = [true];
 
         MAX_SLIPPAGE = 1000;
@@ -56,8 +55,8 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
         LIQ_BRIDGES[OP][0] = [1];
         LIQ_BRIDGES[OP][1] = [1];
 
-        LIQ_BRIDGES[AVAX][0] = [2];
-        LIQ_BRIDGES[AVAX][1] = [2];
+        LIQ_BRIDGES[AVAX][0] = [1];
+        LIQ_BRIDGES[AVAX][1] = [1];
 
         actions.push(
             TestAction({
@@ -67,7 +66,7 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 743, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
@@ -81,7 +80,7 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 743, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
