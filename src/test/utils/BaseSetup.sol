@@ -901,7 +901,7 @@ abstract contract BaseSetup is DSTest, Test {
         LayerZeroHelper(getContract(currentChainId, "LayerZeroHelper")).help(
             endpoints,
             lzChainIds,
-            1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+            5000000, /// note: using some max limit
             forkIds,
             logs
         );
