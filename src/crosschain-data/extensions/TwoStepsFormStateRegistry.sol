@@ -13,6 +13,8 @@ import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVault
 import {LiqRequest} from "../../types/LiquidityTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 
+import "forge-std/console.sol";
+
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
@@ -136,6 +138,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
 
         if (callbackType == uint256(CallbackType.FAIL)) {
+            console.log("callbackType", uint256(callbackType));
             ISuperPositions(superRegistry.superPositions()).stateSync(_message);
         }
 

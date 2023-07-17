@@ -957,8 +957,6 @@ abstract contract ProtocolActions is BaseSetup {
         for (uint i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
             /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
-            console.log("slippage", uint256(args.slippage));
-            console.log("args.action", uint256(args.action));
 
             if (
                 args.slippage != 0 &&
@@ -966,7 +964,6 @@ abstract contract ProtocolActions is BaseSetup {
                     (args.action == Actions.Deposit || args.action == Actions.DepositPermit2)) ||
                     (args.action == Actions.Withdraw))
             ) {
-                console.log("A");
                 finalAmounts[i] = (args.amounts[i] * (10000 - uint256(args.slippage))) / 10000;
             }
             callDataArgs = SingleVaultCallDataArgs(
@@ -1876,8 +1873,8 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (emptyAmount, spAmountSummed, ) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     multiSuperFormsData[i],
-                    true,
-                    action.slippage,
+                    false,
+                    0,
                     false,
                     1,
                     0,

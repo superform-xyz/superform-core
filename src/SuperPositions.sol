@@ -8,6 +8,7 @@ import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {Error} from "./utils/Error.sol";
 import {DataLib} from "./libraries/DataLib.sol";
+import "forge-std/console.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
@@ -104,7 +105,9 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateMultiSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 returnTxType, uint256 callbackType, , , address returnDataSrcSender, ) = data_.txInfo.decodeTxInfo();
+        (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
+            .txInfo
+            .decodeTxInfo();
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -114,10 +117,9 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         TransactionInfo memory transactionInfo = txHistory[returnData.payloadId];
 
-        uint8 multi;
         address srcSender;
         uint256 txType;
-        (txType, , multi, , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
+        (txType, , , , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
 
         if (multi == 0) revert Error.INVALID_PAYLOAD();
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
@@ -139,7 +141,11 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 txType, uint256 callbackType, , , address returnDataSrcSender, ) = data_.txInfo.decodeTxInfo();
+        (uint256 txType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
+            .txInfo
+            .decodeTxInfo();
+
+        console.log("callbackType", uint256(callbackType));
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -149,9 +155,9 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         TransactionInfo memory transactionInfo = txHistory[returnData.payloadId];
 
-        uint8 multi;
         address srcSender;
-        (, , multi, , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
+        (, , , , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
+        console.log("multi", multi);
 
         if (multi == 1) revert Error.INVALID_PAYLOAD();
 

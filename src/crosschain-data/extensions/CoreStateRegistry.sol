@@ -327,7 +327,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 multiVaultData.amounts[i] = 0;
             } catch {
                 if (!errors) errors = true;
-                continue;
             }
 
             unchecked {
@@ -372,7 +371,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         bool fulfilment;
         bool errors;
 
-        for (uint256 i; i < numberOfVaults; ++i) {
+        for (uint256 i; i < numberOfVaults; ) {
             /// @dev FIXME: whole msg.value is transferred here, in multi sync this needs to be split
 
             underlying = IERC20(IBaseForm(superForms[i]).getUnderlyingOfVault());
@@ -402,15 +401,16 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     if (!fulfilment) fulfilment = true;
                     /// @dev marks the indexes that require a callback mint of SuperPositions
                     dstAmounts[i] = dstAmount;
-                    continue;
                 } catch {
                     if (!errors) errors = true;
 
                     failedDeposits[payloadId_].push(multiVaultData.superFormIds[i]);
-                    continue;
                 }
             } else {
                 revert Error.BRIDGE_TOKENS_PENDING();
+            }
+            unchecked {
+                ++i;
             }
         }
 
