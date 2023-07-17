@@ -32,10 +32,10 @@ contract SDMVDMulti111NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
 
         AMOUNTS[AVAX][0] = [214, 798, 55312];
 
-        MAX_SLIPPAGE[AVAX][0] = [1000, 1000, 1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[AVAX][0] = [2, 2, 2];
+        LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
 
         actions.push(
             TestAction({

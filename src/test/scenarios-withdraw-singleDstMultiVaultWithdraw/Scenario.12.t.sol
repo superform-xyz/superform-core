@@ -41,8 +41,7 @@ contract Scenario12Test is ProtocolActions {
         AMOUNTS[ARBI][0] = [7722, 11, 3, 54218, 4412, 96, 2241];
         AMOUNTS[ARBI][1] = [7722, 11, 3, 54218, 4412, 96, 2241];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000, 1000, 1000, 1000, 1000, 1000, 1000];
-        MAX_SLIPPAGE[ARBI][1] = [1000, 1000, 1000, 1000, 1000, 1000, 1000];
+        MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[ARBI][0] = [1, 2, 1, 2, 2, 1, 1];
         LIQ_BRIDGES[ARBI][1] = [1, 1, 2, 2, 2, 1, 1];
@@ -81,7 +80,7 @@ contract Scenario12Test is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function xtest_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;

@@ -39,9 +39,7 @@ contract MDSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
         AMOUNTS[AVAX][0] = [6562];
         AMOUNTS[OP][0] = [7777];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
-        MAX_SLIPPAGE[AVAX][0] = [1000];
-        MAX_SLIPPAGE[OP][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [2];

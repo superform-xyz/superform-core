@@ -39,9 +39,7 @@ contract MDSVD4626RevertTimelockedNoMultiTxTokenInputNoSlippageL2AMB23 is Protoc
         AMOUNTS[ARBI][0] = [666];
         AMOUNTS[POLY][0] = [22];
 
-        MAX_SLIPPAGE[ETH][0] = [1000];
-        MAX_SLIPPAGE[ARBI][0] = [1000];
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ETH][0] = [2];

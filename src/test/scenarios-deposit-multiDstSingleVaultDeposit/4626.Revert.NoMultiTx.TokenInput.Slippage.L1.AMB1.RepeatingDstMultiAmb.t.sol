@@ -36,8 +36,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1RepeatingDstMulti
         AMOUNTS[ARBI][0] = [242];
         AMOUNTS[ETH][0] = [144];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000];
-        MAX_SLIPPAGE[ETH][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ARBI][0] = [1];

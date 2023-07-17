@@ -84,7 +84,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         bytes memory ambOverride_
     ) external payable override onlyProcessor {
         TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
-
         if (p.status != TimeLockStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }

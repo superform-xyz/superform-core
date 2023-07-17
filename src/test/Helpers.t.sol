@@ -41,7 +41,7 @@ contract PayloadHelperTest is ProtocolActions {
 
         AMOUNTS[POLY][0] = [23183];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for SOCKET, 2 for LI.FI
         LIQ_BRIDGES[POLY][0] = [1];
@@ -108,7 +108,9 @@ contract PayloadHelperTest is ProtocolActions {
         assertEq(srcChainId, 10); /// chain id of optimism is 10
         assertEq(srcPayloadId, 1);
         assertEq(amounts, AMOUNTS[POLY][0]);
-        assertEq(slippage, MAX_SLIPPAGE[POLY][0] = [1000]);
+        for (uint256 i = 0; i < slippage.length; ++i) {
+            assertEq(slippage[i], MAX_SLIPPAGE);
+        }
 
         /// @notice: just asserting if fees are greater than 0
         /// no way to write serious tests on forked testnet at this point. should come back to this later on.

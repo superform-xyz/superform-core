@@ -6,52 +6,49 @@ import "../../types/LiquidityTypes.sol";
 import "../../types/DataTypes.sol";
 
 // Test Utils
-import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-import {ISuperFormRouter} from "../../interfaces/ISuperFormRouter.sol";
-import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
-
-contract ScenarioKYCDaoTest is ProtocolActions {
+contract SXSVWRevertKyc4626TokenInputNoSlippageL1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationMultiVault, same underlying test.
-        /// @dev FIXME: currently not testing the case where we mix liq bridges but underlyings are the same (protocol actions is only picking up the first liq bridge kind)
+        AMBs = [1, 3];
 
-        AMBs = [1, 2];
-
-        CHAIN_0 = POLY;
-        DST_CHAINS = [POLY];
+        CHAIN_0 = AVAX;
+        DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [1];
-        TARGET_VAULTS[POLY][0] = [2];
-        TARGET_FORM_KINDS[POLY][0] = [2];
+        TARGET_UNDERLYINGS[AVAX][0] = [2];
 
-        TARGET_UNDERLYINGS[POLY][1] = [1];
-        TARGET_VAULTS[POLY][1] = [2];
-        TARGET_FORM_KINDS[POLY][1] = [2];
+        TARGET_VAULTS[AVAX][0] = [7]; /// @dev id 0 is normal 4626
 
-        AMOUNTS[POLY][0] = [7722];
-        AMOUNTS[POLY][1] = [7722];
+        TARGET_FORM_KINDS[AVAX][0] = [2];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
-        MAX_SLIPPAGE[POLY][1] = [1000];
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[AVAX][1] = [2];
 
-        LIQ_BRIDGES[POLY][0] = [1];
-        LIQ_BRIDGES[POLY][1] = [1];
+        TARGET_VAULTS[AVAX][1] = [7]; /// @dev id 0 is normal 4626
+
+        TARGET_FORM_KINDS[AVAX][1] = [2];
+
+        AMOUNTS[AVAX][0] = [1123];
+        AMOUNTS[AVAX][1] = [1123];
+
+        MAX_SLIPPAGE = 1000;
+
+        /// @dev 1 for socket, 2 for lifi
+        LIQ_BRIDGES[AVAX][0] = [1];
+        LIQ_BRIDGES[AVAX][1] = [1];
 
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 1,
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
@@ -65,7 +62,7 @@ contract ScenarioKYCDaoTest is ProtocolActions {
             TestAction({
                 action: Actions.Withdraw,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 1,
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",

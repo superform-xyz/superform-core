@@ -35,7 +35,7 @@ contract Scenario14Test is ProtocolActions {
 
         AMOUNTS[POLY][0] = [23183];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [1];

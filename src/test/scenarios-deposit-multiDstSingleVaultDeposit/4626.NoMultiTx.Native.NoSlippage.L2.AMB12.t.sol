@@ -38,9 +38,7 @@ contract MDSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
         AMOUNTS[ETH][0] = [421821994];
         AMOUNTS[POLY][0] = [42134];
 
-        MAX_SLIPPAGE[AVAX][0] = [1000];
-        MAX_SLIPPAGE[ETH][0] = [1000];
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [2];

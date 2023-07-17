@@ -4,51 +4,48 @@ pragma solidity 0.8.19;
 // Contracts
 import "../../types/LiquidityTypes.sol";
 import "../../types/DataTypes.sol";
-// import "forge-std/console.sol";
 
 // Test Utils
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
-/// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario8Test is ProtocolActions {
-    /// @dev Access SuperFormRouter interface
-    ISuperFormRouter superRouter;
-
+contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationSingleVault Deposit test case with permit2
-
-        AMBs = [1, 2];
+        AMBs = [1, 3];
 
         CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [2];
-        TARGET_VAULTS[POLY][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[POLY][0] = [0];
+        TARGET_UNDERLYINGS[AVAX][0] = [2];
 
-        TARGET_UNDERLYINGS[POLY][1] = [2];
-        TARGET_VAULTS[POLY][1] = [0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[POLY][1] = [0];
+        TARGET_VAULTS[AVAX][0] = [7]; /// @dev id 0 is normal 4626
 
-        AMOUNTS[POLY][0] = [47212];
-        AMOUNTS[POLY][1] = [47212];
+        TARGET_FORM_KINDS[AVAX][0] = [2];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
-        MAX_SLIPPAGE[POLY][1] = [1000];
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[AVAX][1] = [2];
 
-        LIQ_BRIDGES[POLY][0] = [1];
-        LIQ_BRIDGES[POLY][1] = [1];
+        TARGET_VAULTS[AVAX][1] = [7]; /// @dev id 0 is normal 4626
+
+        TARGET_FORM_KINDS[AVAX][1] = [2];
+
+        AMOUNTS[AVAX][0] = [31231];
+        AMOUNTS[AVAX][1] = [31231];
+
+        MAX_SLIPPAGE = 1000;
+
+        /// @dev 1 for socket, 2 for lifi
+        LIQ_BRIDGES[AVAX][0] = [1];
+        LIQ_BRIDGES[AVAX][1] = [1];
 
         actions.push(
             TestAction({
-                action: Actions.DepositPermit2,
+                action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
@@ -59,7 +56,6 @@ contract Scenario8Test is ProtocolActions {
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
-
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
@@ -80,9 +76,6 @@ contract Scenario8Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
-        superRouter = ISuperFormRouter(_superRouter);
-
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
