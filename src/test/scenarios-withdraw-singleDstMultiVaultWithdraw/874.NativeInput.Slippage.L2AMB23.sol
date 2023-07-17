@@ -19,10 +19,8 @@ contract SDMVW874NativeInputSlippageL2AMB23 is ProtocolActions {
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationMultiVault, same underlying test.
-        /// @dev FIXME: currently not testing the case where we mix liq bridges but underlyings are the same (protocol actions is only picking up the first liq bridge kind)
 
-        AMBs = [2, 3];
+        AMBs = [1, 3];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];

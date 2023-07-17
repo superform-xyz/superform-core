@@ -16,7 +16,7 @@ import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario12Test is ProtocolActions {
+contract SDMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -24,7 +24,7 @@ contract Scenario12Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationMultiVault, large test
 
-        AMBs = [1, 2];
+        AMBs = [3, 2];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];

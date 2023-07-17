@@ -952,18 +952,22 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultCallDataArgs memory callDataArgs;
 
         if (len == 0) revert LEN_MISMATCH();
-        uint256 finalAmount;
+        uint256[] memory finalAmounts = new uint256[](len);
         uint256[] memory maxSlippageTemp = new uint256[](len);
         for (uint i = 0; i < len; i++) {
-            finalAmount = args.amounts[i];
+            finalAmounts[i] = args.amounts[i];
             /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
+            console.log("slippage", uint256(args.slippage));
+            console.log("args.action", uint256(args.action));
+
             if (
                 args.slippage != 0 &&
                 ((args.srcChainId == args.toChainId &&
                     (args.action == Actions.Deposit || args.action == Actions.DepositPermit2)) ||
                     (args.action == Actions.Withdraw))
             ) {
-                finalAmount = (args.amounts[i] * (10000 - uint256(args.slippage))) / 10000;
+                console.log("A");
+                finalAmounts[i] = (args.amounts[i] * (10000 - uint256(args.slippage))) / 10000;
             }
             callDataArgs = SingleVaultCallDataArgs(
                 args.user,
@@ -972,7 +976,7 @@ abstract contract ProtocolActions is BaseSetup {
                 args.toDst[i],
                 args.underlyingTokens[i],
                 args.superFormIds[i],
-                finalAmount,
+                finalAmounts[i],
                 args.liqBridges[i],
                 args.maxSlippage,
                 args.vaultMock[i],
@@ -994,7 +998,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         superFormsData = MultiVaultsSFData(
             args.superFormIds,
-            args.amounts,
+            finalAmounts,
             maxSlippageTemp,
             liqRequests,
             abi.encode(args.partialWithdrawVaults)
@@ -1285,13 +1289,13 @@ abstract contract ProtocolActions is BaseSetup {
             targetSuperFormsMem[i] = vars.superFormIdsTemp[i];
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
-            if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6 || vars.vaultIds[i] == 8) {
+            if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
                 revertingDepositSFsPerDst.push(vars.superFormIdsTemp[i]);
             }
             if (vars.vaultIds[i] == 4) {
                 revertingWithdrawTimelockedSFsPerDst.push(vars.superFormIdsTemp[i]);
             }
-            if (vars.vaultIds[i] == 7) {
+            if (vars.vaultIds[i] == 7 || vars.vaultIds[i] == 8) {
                 revertingWithdrawSFsPerDst.push(vars.superFormIdsTemp[i]);
             }
             /// @dev need more if else conditions for other kinds of vaults
@@ -1872,8 +1876,8 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (emptyAmount, spAmountSummed, ) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     multiSuperFormsData[i],
-                    false,
-                    0,
+                    true,
+                    action.slippage,
                     false,
                     1,
                     0,
