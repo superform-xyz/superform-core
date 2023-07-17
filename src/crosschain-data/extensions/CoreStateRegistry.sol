@@ -182,7 +182,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         v._message = AMBMessage(v._payloadHeader, v._payloadBody);
 
-        if (v.callbackType == uint256(CallbackType.RETURN)) {
+        /// @dev mint superPositions for successful deposits or remint for failed withdraws
+        if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             v.multi == 1
                 ? ISuperPositions(superRegistry.superPositions()).stateMultiSync(v._message)
                 : ISuperPositions(superRegistry.superPositions()).stateSync(v._message);

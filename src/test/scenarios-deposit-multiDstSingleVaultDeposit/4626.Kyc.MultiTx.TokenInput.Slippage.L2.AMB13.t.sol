@@ -38,16 +38,12 @@ contract MDSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
         AMOUNTS[BSC][0] = [2]; /// @dev NOTE: for direct chain transfers, 2 is the minimum otherwise it reverts with ZERO_SHARES()
         AMOUNTS[ETH][0] = [7999];
 
-        MAX_SLIPPAGE[AVAX][0] = [1000];
-        MAX_SLIPPAGE[BSC][0] = [1000];
-        MAX_SLIPPAGE[ETH][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [2];
         LIQ_BRIDGES[BSC][0] = [2];
         LIQ_BRIDGES[ETH][0] = [2];
-
-        vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
             TestAction({
@@ -59,8 +55,6 @@ contract MDSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
                 revertRole: "",
                 slippage: 412, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

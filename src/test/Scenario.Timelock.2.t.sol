@@ -41,13 +41,10 @@ contract ScenarioTimelockTest2 is ProtocolActions {
         AMOUNTS[POLY][0] = [7722];
         AMOUNTS[POLY][1] = [7722];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
-        MAX_SLIPPAGE[POLY][1] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[POLY][0] = [1];
         LIQ_BRIDGES[POLY][1] = [1];
-
-        vm.selectFork(FORKS[CHAIN_0]);
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -60,8 +57,6 @@ contract ScenarioTimelockTest2 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
@@ -76,8 +71,6 @@ contract ScenarioTimelockTest2 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

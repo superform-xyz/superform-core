@@ -41,12 +41,10 @@ contract PayloadHelperTest is ProtocolActions {
 
         AMOUNTS[POLY][0] = [23183];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for SOCKET, 2 for LI.FI
         LIQ_BRIDGES[POLY][0] = [1];
-
-        vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
             TestAction({
@@ -58,9 +56,7 @@ contract PayloadHelperTest is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
@@ -69,7 +65,7 @@ contract PayloadHelperTest is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_payload_helper() public {
+    function test_helper() public {
         address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
         superRouter = ISuperFormRouter(_superRouter);
 
@@ -112,7 +108,9 @@ contract PayloadHelperTest is ProtocolActions {
         assertEq(srcChainId, 10); /// chain id of optimism is 10
         assertEq(srcPayloadId, 1);
         assertEq(amounts, AMOUNTS[POLY][0]);
-        assertEq(slippage, MAX_SLIPPAGE[POLY][0] = [1000]);
+        for (uint256 i = 0; i < slippage.length; ++i) {
+            assertEq(slippage[i], MAX_SLIPPAGE);
+        }
 
         /// @notice: just asserting if fees are greater than 0
         /// no way to write serious tests on forked testnet at this point. should come back to this later on.

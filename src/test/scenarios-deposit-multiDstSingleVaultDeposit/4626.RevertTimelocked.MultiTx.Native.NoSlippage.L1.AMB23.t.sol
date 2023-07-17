@@ -35,8 +35,7 @@ contract MDSVD4626RevertTimelockedMultiTxNativeNoSlippageL1AMB23 is ProtocolActi
         AMOUNTS[ETH][0] = [111];
         AMOUNTS[ARBI][0] = [565322];
 
-        MAX_SLIPPAGE[ETH][0] = [1000];
-        MAX_SLIPPAGE[ARBI][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ETH][0] = [1];
@@ -55,8 +54,6 @@ contract MDSVD4626RevertTimelockedMultiTxNativeNoSlippageL1AMB23 is ProtocolActi
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

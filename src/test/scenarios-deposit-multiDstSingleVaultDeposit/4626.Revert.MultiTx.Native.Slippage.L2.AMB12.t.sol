@@ -39,9 +39,7 @@ contract MDSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
         AMOUNTS[AVAX][0] = [6562];
         AMOUNTS[OP][0] = [7777];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
-        MAX_SLIPPAGE[AVAX][0] = [1000];
-        MAX_SLIPPAGE[OP][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [2];
@@ -55,8 +53,6 @@ contract MDSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
         TEST_TYPE_PER_DST[AVAX][0] = TestType.Pass;
         TEST_TYPE_PER_DST[OP][0] = TestType.Pass;
 
-        vm.selectFork(FORKS[CHAIN_0]);
-
         actions.push(
             TestAction({
                 action: Actions.DepositPermit2,
@@ -67,8 +63,6 @@ contract MDSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
                 revertRole: "",
                 slippage: 742, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

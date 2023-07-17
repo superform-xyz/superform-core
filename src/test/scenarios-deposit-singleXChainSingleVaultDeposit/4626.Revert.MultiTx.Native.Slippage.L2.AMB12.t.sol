@@ -29,12 +29,10 @@ contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
 
         AMOUNTS[AVAX][0] = [472186431];
 
-        MAX_SLIPPAGE[AVAX][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [2];
-
-        vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
             TestAction({
@@ -46,8 +44,6 @@ contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
                 revertRole: "",
                 slippage: 742, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

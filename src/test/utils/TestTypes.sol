@@ -52,11 +52,11 @@ struct StagesLocalVars {
     address[] toDst;
     uint256[] targetSuperFormIds;
     uint256[] amounts;
-    uint256[] maxSlippage;
     uint8[] liqBridges;
     uint256 chain0Index;
     uint256 chainDstIndex;
     uint256 nUniqueDsts;
+    bool[] partialWithdrawVaults;
 }
 
 struct MessagingAssertVars {
@@ -82,8 +82,6 @@ struct TestAction {
     bytes32 revertRole; // temporary until errors are added to RBAC libraries
     int256 slippage;
     bool multiTx;
-    bytes[] ambParams;
-    uint256 msgValue;
     uint256 externalToken;
 }
 
@@ -173,6 +171,7 @@ struct SingleVaultCallDataArgs {
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
     bool multiTx;
+    bool partialWithdrawVault;
 }
 
 struct MultiVaultCallDataArgs {
@@ -184,7 +183,7 @@ struct MultiVaultCallDataArgs {
     uint256[] superFormIds;
     uint256[] amounts;
     uint8[] liqBridges;
-    uint256[] maxSlippage;
+    uint256 maxSlippage;
     address[] vaultMock;
     uint64 srcChainId;
     uint64 toChainId;
@@ -193,6 +192,7 @@ struct MultiVaultCallDataArgs {
     bool multiTx;
     Actions action;
     int256 slippage;
+    bool[] partialWithdrawVaults;
 }
 
 struct BuildDepositCallDataArgs {

@@ -32,7 +32,7 @@ contract SDMVDMulti26MultiTxNativeNoSlippageL2AMB13 is ProtocolActions {
 
         AMOUNTS[POLY][0] = [114, 2412];
 
-        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [2, 2];
@@ -47,8 +47,6 @@ contract SDMVDMulti26MultiTxNativeNoSlippageL2AMB13 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

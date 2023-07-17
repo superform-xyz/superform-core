@@ -29,12 +29,10 @@ contract SXSVDNormal4626MultiTokenInputNoSlippageL1AMB23 is ProtocolActions {
 
         AMOUNTS[OP][0] = [133];
 
-        MAX_SLIPPAGE[OP][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[OP][0] = [1];
-
-        vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
             TestAction({
@@ -46,8 +44,6 @@ contract SXSVDNormal4626MultiTokenInputNoSlippageL1AMB23 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

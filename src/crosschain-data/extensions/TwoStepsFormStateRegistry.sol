@@ -84,7 +84,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         bytes memory ambOverride_
     ) external payable override onlyProcessor {
         TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
-
         if (p.status != TimeLockStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -159,6 +158,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @return the quorum configured for the chain id
     function getRequiredMessagingQuorum(uint64 chainId) public view returns (uint256) {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
+    }
+
+    /// @inheritdoc ITwoStepsFormStateRegistry
+    function getTimeLockPayload(uint256 payloadId_) external view returns (TimeLockPayload memory timeLockPayload_) {
+        return timeLockPayload[payloadId_];
     }
 
     /*///////////////////////////////////////////////////////////////

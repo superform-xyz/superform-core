@@ -29,12 +29,10 @@ contract SXSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
 
         AMOUNTS[ETH][0] = [31321321];
 
-        MAX_SLIPPAGE[ETH][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ETH][0] = [2];
-
-        vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
             TestAction({
@@ -46,8 +44,6 @@ contract SXSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
                 revertRole: "",
                 slippage: 321, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

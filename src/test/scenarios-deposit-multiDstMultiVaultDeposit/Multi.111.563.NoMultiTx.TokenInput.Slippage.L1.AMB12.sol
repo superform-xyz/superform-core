@@ -9,40 +9,49 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract SDSVD4626KycNoSwapTokenInputNoSlippageL2 is ProtocolActions {
+/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
+/// @dev FIXME - using unoptimized multiDstMultivault function
+contract MDMVDMulti111563NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 3];
+        //////////////////////////////////////////////////////////////*/
 
-        CHAIN_0 = POLY;
-        DST_CHAINS = [POLY];
+        AMBs = [1, 2];
+        MultiDstAMBs = [AMBs, AMBs];
+
+        CHAIN_0 = ETH;
+        DST_CHAINS = [AVAX, OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [2];
+        TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
+        TARGET_UNDERLYINGS[OP][0] = [2, 2, 2];
 
-        TARGET_VAULTS[POLY][0] = [2]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [1, 1, 1]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [5, 6, 3]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[POLY][0] = [2];
+        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
+        TARGET_FORM_KINDS[OP][0] = [1, 2, 0];
 
-        AMOUNTS[POLY][0] = [1231];
+        AMOUNTS[AVAX][0] = [999, 9999, 99999];
+        AMOUNTS[OP][0] = [5435, 5543, 5557];
 
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [2];
+        LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
+        LIQ_BRIDGES[OP][0] = [1, 1, 1];
 
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
+                multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
@@ -54,7 +63,7 @@ contract SDSVD4626KycNoSwapTokenInputNoSlippageL2 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;

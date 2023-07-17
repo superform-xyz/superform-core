@@ -38,18 +38,12 @@ contract MDSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
         AMOUNTS[ETH][0] = [421821994];
         AMOUNTS[POLY][0] = [42134];
 
-        MAX_SLIPPAGE[AVAX][0] = [1000];
-        MAX_SLIPPAGE[ETH][0] = [1000];
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [2];
         LIQ_BRIDGES[ETH][0] = [2];
         LIQ_BRIDGES[POLY][0] = [2];
-
-        vm.selectFork(FORKS[CHAIN_0]);
-
-        vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
             TestAction({
@@ -61,8 +55,6 @@ contract MDSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );

@@ -38,16 +38,12 @@ contract MDSVDKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
         AMOUNTS[OP][0] = [4];
         AMOUNTS[ARBI][0] = [5];
 
-        MAX_SLIPPAGE[ETH][0] = [1000];
-        MAX_SLIPPAGE[OP][0] = [1000];
-        MAX_SLIPPAGE[ARBI][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[OP][0] = [1];
         LIQ_BRIDGES[ARBI][0] = [1];
-
-        vm.selectFork(FORKS[CHAIN_0]);
 
         actions.push(
             TestAction({
@@ -59,8 +55,6 @@ contract MDSVDKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
                 revertRole: "",
                 slippage: 821, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                ambParams: generateCoreStateRegistryParams(DST_CHAINS, AMBs),
-                msgValue: estimateMsgValue(DST_CHAINS, AMBs, generateExtraData(AMBs)),
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
