@@ -47,6 +47,12 @@ interface ISuperRegistry {
     /// @dev is emitted when a new multi tx processor is configured.
     event MultiTxProcessorUpdated(address indexed oldMultiTxProcessor, address indexed multiTxProcessor);
 
+    /// @dev is emitted when a new tx processor is configured.
+    event TxProcessorUpdated(address indexed oldTxProcessor, address indexed txProcessor);
+
+    /// @dev is emitted when a new tx updater is configured.
+    event TxUpdaterUpdated(address indexed oldTxUpdater, address indexed txUpdater);
+
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(uint256 indexed bridgeId, address indexed bridgeAddress);
 
@@ -104,6 +110,14 @@ interface ISuperRegistry {
     /// @dev allows admin to set the multi tx processor address
     /// @param multiTxProcessor_ the address of the multi tx processor
     function setMultiTxProcessor(address multiTxProcessor_) external;
+
+    /// @dev allows admin to set the tx processor address
+    /// @param txProcessor_ the address of the tx processor
+    function setTxProcessor(address txProcessor_) external;
+
+    /// @dev allows admin to set the tx processor address
+    /// @param txUpdater_ the address of the tx updater
+    function setTxUpdater(address txUpdater_) external;
 
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @param bridgeId_         represents the bridge unqiue identifier.
@@ -166,6 +180,12 @@ interface ISuperRegistry {
     /// @dev returns the id of the multi tx processor module
     function MULTI_TX_PROCESSOR() external view returns (bytes32);
 
+    /// @dev returns the id of the tx processor module
+    function TX_PROCESSOR() external view returns (bytes32);
+
+    /// @dev returns the id of the tx updater module
+    function TX_UPDATER() external view returns (bytes32);
+
     /// @dev gets the address of a contract.
     /// @param protocolAddressId_ is the id of the contract
     function getProtocolAddress(bytes32 protocolAddressId_) external view returns (address);
@@ -205,6 +225,14 @@ interface ISuperRegistry {
     /// @dev gets the multi tx processor
     /// @return multiTxProcessor_ the address of the multi tx processor
     function multiTxProcessor() external view returns (address multiTxProcessor_);
+
+    /// @dev gets the tx processor
+    /// @return txProcessor_ the address of the tx processor
+    function txProcessor() external view returns (address txProcessor_);
+
+    /// @dev gets the tx updater
+    /// @return txUpdater_ the address of the tx updater
+    function txUpdater() external view returns (address txUpdater_);
 
     /// @dev gets the address of a bridge
     /// @param bridgeId_ is the id of a bridge

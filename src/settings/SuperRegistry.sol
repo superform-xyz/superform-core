@@ -38,6 +38,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override SUPER_POSITIONS = keccak256("SUPER_POSITIONS");
     bytes32 public constant override SUPER_RBAC = keccak256("SUPER_RBAC");
     bytes32 public constant override MULTI_TX_PROCESSOR = keccak256("MULTI_TX_PROCESSOR");
+    bytes32 public constant override TX_PROCESSOR = keccak256("TX_PROCESSOR");
+    bytes32 public constant override TX_UPDATER = keccak256("TX_UPDATER");
 
     modifier onlyCaller() {
         if (!ISuperRBAC(getProtocolAddress(SUPER_RBAC)).hasProtocolAdminRole(msg.sender)) {
@@ -146,6 +148,22 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
+    function setTxProcessor(address txProcessor_) external override onlyCaller {
+        address oldTxProcessor = protocolAddresses[TX_PROCESSOR];
+        protocolAddresses[TX_PROCESSOR] = txProcessor_;
+
+        emit TxProcessorUpdated(oldTxProcessor, txProcessor_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setTxUpdater(address txUpdater_) external override onlyCaller {
+        address oldTxUpdater = protocolAddresses[TX_UPDATER];
+        protocolAddresses[TX_UPDATER] = txUpdater_;
+
+        emit TxProcessorUpdated(oldTxUpdater, txUpdater_);
+    }
+
+    /// @inheritdoc ISuperRegistry
     function setBridgeAddresses(
         uint8[] memory bridgeId_,
         address[] memory bridgeAddress_,
@@ -249,6 +267,16 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function multiTxProcessor() external view override returns (address multiTxProcessor_) {
         multiTxProcessor_ = getProtocolAddress(MULTI_TX_PROCESSOR);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function txProcessor() external view override returns (address txProcessor_) {
+        txProcessor_ = getProtocolAddress(TX_PROCESSOR);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function txUpdater() external view override returns (address txUpdater_) {
+        txUpdater_ = getProtocolAddress(TX_UPDATER);
     }
 
     /// @inheritdoc ISuperRegistry
