@@ -1124,9 +1124,13 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (, , , , uint256[] memory amounts, , , ) = vars.payloadHelper.decodePayload(payloadId);
+        (, , , , uint256[] memory amounts, , uint256[] memory superFormIds, ) = vars.payloadHelper.decodePayload(
+            payloadId
+        );
 
-        vars.message = abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, amounts))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, superFormIds, amounts)))
+        );
 
         (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateFees(
             selectedAmbIds,
@@ -1161,9 +1165,13 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (, , uint256 payloadId, , uint256 amount) = vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
+        (, , uint256 payloadId, uint256 superFormId, uint256 amount) = vars.payloadHelper.decodeTimeLockPayload(
+            timelockPayloadId
+        );
 
-        vars.message = abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, amount))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superFormId, amount)))
+        );
 
         (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateFees(
             selectedAmbIds,

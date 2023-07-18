@@ -121,7 +121,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     function processPayload(
         uint256 payloadId_,
         bytes memory ambOverride_
-    ) external payable virtual override onlyProcessor returns (bytes memory) {}
+    ) external payable virtual override onlyProcessor returns (bytes memory savedMessage, bytes memory returnMessage) {}
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS

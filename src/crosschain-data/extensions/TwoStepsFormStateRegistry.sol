@@ -13,8 +13,6 @@ import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVault
 import {LiqRequest} from "../../types/LiquidityTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 
-import "forge-std/console.sol";
-
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
@@ -125,7 +123,15 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     function processPayload(
         uint256 payloadId_,
         bytes memory ackExtraData_
-    ) external payable virtual override onlyProcessor isValidPayloadId(payloadId_) returns (bytes memory) {
+    )
+        external
+        payable
+        virtual
+        override
+        onlyProcessor
+        isValidPayloadId(payloadId_)
+        returns (bytes memory savedMessage, bytes memory returnMessage)
+    {
         uint256 _payloadHeader = payloadHeader[payloadId_];
         bytes memory _payloadBody = payloadBody[payloadId_];
 
@@ -138,7 +144,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
 
         if (callbackType == uint256(CallbackType.FAIL)) {
-            console.log("callbackType", uint256(callbackType));
             ISuperPositions(superRegistry.superPositions()).stateSync(_message);
         }
 
@@ -152,8 +157,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         /// @dev sets status as processed
         /// @dev check for re-entrancy & relocate if needed
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-
-        return bytes("");
     }
 
     /// @dev returns the required quorum for the src chain id from super registry
@@ -192,7 +195,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                         srcSender_,
                         superRegistry.chainId()
                     ),
-                    abi.encode(ReturnSingleData(payloadId_, singleVaultData_.amount))
+                    abi.encode(ReturnSingleData(payloadId_, singleVaultData_.superFormId, singleVaultData_.amount))
                 )
             );
     }

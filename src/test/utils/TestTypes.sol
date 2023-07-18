@@ -28,7 +28,8 @@ enum TestType {
     RevertProcessPayload,
     RevertUpdateStateSlippage,
     RevertUpdateStateRBAC,
-    RevertXChainDeposit
+    RevertXChainDeposit,
+    RevertVaultsWithdraw
 }
 
 struct StagesLocalVars {

@@ -37,6 +37,10 @@ contract SDMVW874NativeInputSlippageL2AMB23 is ProtocolActions {
         AMOUNTS[ARBI][0] = [7722, 11, 3];
         AMOUNTS[ARBI][1] = [7722, 11, 3];
 
+        /// 7293, 10, 2
+
+        // expected at the end 7293, 10, 2
+
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[ARBI][0] = [2, 2, 2];

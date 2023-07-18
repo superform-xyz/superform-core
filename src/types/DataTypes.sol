@@ -118,11 +118,13 @@ struct AMBFactoryMessage {
 
 struct ReturnMultiData {
     uint256 payloadId;
+    uint256[] superFormIds;
     uint256[] amounts;
 }
 
 struct ReturnSingleData {
     uint256 payloadId;
+    uint256 superFormId;
     uint256 amount;
 }
 

@@ -8,7 +8,6 @@ import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {Error} from "./utils/Error.sol";
 import {DataLib} from "./libraries/DataLib.sol";
-import "forge-std/console.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
@@ -19,12 +18,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint256 transactionId => TransactionInfo transactionInfo) public txHistory;
-
-    struct TransactionInfo {
-        uint256 txInfo;
-        uint256[] superFormIds; // if stored on index 0 it is a single Vault
-    }
+    mapping(uint256 transactionId => uint256 txInfo) public txHistory;
 
     /// note replace this to support some new role called minter in super registry
     modifier onlyMinter() {
@@ -93,12 +87,8 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// @inheritdoc ISuperPositions
-    function updateTxHistory(
-        uint256 payloadId_,
-        uint256 txInfo_,
-        uint256[] memory superFormIds_
-    ) external override onlyRouter {
-        txHistory[payloadId_] = TransactionInfo(txInfo_, superFormIds_);
+    function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external override onlyRouter {
+        txHistory[payloadId_] = txInfo_;
     }
 
     /// @inheritdoc ISuperPositions
@@ -115,21 +105,21 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
 
-        TransactionInfo memory transactionInfo = txHistory[returnData.payloadId];
+        uint256 txInfo = txHistory[returnData.payloadId];
 
         address srcSender;
         uint256 txType;
-        (txType, , , , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
+        (txType, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         if (multi == 0) revert Error.INVALID_PAYLOAD();
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
-            _batchMint(srcSender, transactionInfo.superFormIds, returnData.amounts, "");
+            _batchMint(srcSender, returnData.superFormIds, returnData.amounts, "");
         } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
             /// @dev mint back super positions
-            _batchMint(srcSender, transactionInfo.superFormIds, returnData.amounts, "");
+            _batchMint(srcSender, returnData.superFormIds, returnData.amounts, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -145,28 +135,25 @@ contract SuperPositions is ISuperPositions, ERC1155s {
             .txInfo
             .decodeTxInfo();
 
-        console.log("callbackType", uint256(callbackType));
-
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
             if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
 
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
 
-        TransactionInfo memory transactionInfo = txHistory[returnData.payloadId];
+        uint256 txInfo = txHistory[returnData.payloadId];
 
         address srcSender;
-        (, , , , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
-        console.log("multi", multi);
+        (, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         if (multi == 1) revert Error.INVALID_PAYLOAD();
 
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
-            _mint(srcSender, transactionInfo.superFormIds[0], returnData.amount, "");
+            _mint(srcSender, returnData.superFormId, returnData.amount, "");
         } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
-            _mint(srcSender, transactionInfo.superFormIds[0], returnData.amount, "");
+            _mint(srcSender, returnData.superFormId, returnData.amount, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
