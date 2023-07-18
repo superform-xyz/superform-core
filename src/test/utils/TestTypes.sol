@@ -39,8 +39,6 @@ struct StagesLocalVars {
     SingleDstMultiVaultsStateReq singleDstMultiVaultStateReq;
     SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;
     SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
-    MultiVaultsSFData[] multiSuperFormsData;
-    SingleVaultSFData[] singleSuperFormsData;
     UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
     UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;

@@ -30,7 +30,7 @@ contract SXSVDNormal4626RevertXChainDepositNoMultiTxTokenInputSlippageL1AMB1 is 
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][1] = [2];
-        TARGET_VAULTS[POLY][1] = [0]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[POLY][1] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[POLY][1] = [0];
         AMOUNTS[POLY][1] = [125];
 
@@ -120,6 +120,9 @@ contract SXSVDNormal4626RevertXChainDepositNoMultiTxTokenInputSlippageL1AMB1 is 
 
         /// @dev check WETH balance of users[0] on OP
         vm.selectFork(FORKS[OP]);
-        console.log("users[0]'s WETH on OP post-rescueFailedDeposits:", MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]));
+        console.log(
+            "users[0]'s WETH on OP post-rescueFailedDeposits:",
+            MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0])
+        );
     }
 }

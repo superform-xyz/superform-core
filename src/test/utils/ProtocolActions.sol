@@ -100,12 +100,15 @@ abstract contract ProtocolActions is BaseSetup {
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
             /// @dev starting with 1 failed deposit per dst chain
             LiqRequest[] memory liqRequests = new LiqRequest[](1);
-            liqRequests[0] = vars.singleSuperFormsData[0].liqRequest;
+            liqRequests[0] = singleSuperFormsData[0].liqRequest;
 
+            vm.prank(deployer);
             CoreStateRegistry(payable(getContract(chainIds[vars.chain0Index], "CoreStateRegistry")))
                 .rescueFailedDeposits(PAYLOAD_ID[chainIds[vars.chainDstIndex]], liqRequests);
 
             /// make relevant assertions here
+
+            return;
         }
 
         (, spAmountSummed, spAmountBeforeWithdrawPerDst, inputBalanceBefore) = _assertBeforeAction(
@@ -376,7 +379,11 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.partialWithdrawVaults.length > 0 ? vars.partialWithdrawVaults[0] : false
                 );
 
-                if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2 || action.action == Actions.RescueFailedDeposit) {
+                if (
+                    action.action == Actions.Deposit ||
+                    action.action == Actions.DepositPermit2 ||
+                    action.action == Actions.RescueFailedDeposit
+                ) {
                     singleSuperFormsData[i] = _buildSingleVaultDepositCallData(singleVaultCallDataArgs, action.action);
                 } else {
                     singleSuperFormsData[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs);
