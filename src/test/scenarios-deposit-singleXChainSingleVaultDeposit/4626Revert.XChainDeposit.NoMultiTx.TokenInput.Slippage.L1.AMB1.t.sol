@@ -23,17 +23,22 @@ contract SXSVDNormal4626RevertXChainDepositNoMultiTxTokenInputSlippageL1AMB1 is 
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [1];
+        TARGET_UNDERLYINGS[POLY][0] = [2];
         TARGET_VAULTS[POLY][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
-
         TARGET_FORM_KINDS[POLY][0] = [0];
-
         AMOUNTS[POLY][0] = [4121];
+
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[POLY][1] = [2];
+        TARGET_VAULTS[POLY][1] = [0]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_FORM_KINDS[POLY][1] = [0];
+        AMOUNTS[POLY][1] = [125];
 
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [1];
+        LIQ_BRIDGES[POLY][1] = [1];
 
         actions.push(
             TestAction({
@@ -44,6 +49,20 @@ contract SXSVDNormal4626RevertXChainDepositNoMultiTxTokenInputSlippageL1AMB1 is 
                 revertError: "",
                 revertRole: "",
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+            })
+        );
+
+        actions.push(
+            TestAction({
+                action: Actions.RescueFailedDeposit,
+                multiVaults: false, //!!WARNING turn on or off multi vaults
+                user: 0,
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 112, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
@@ -65,43 +84,39 @@ contract SXSVDNormal4626RevertXChainDepositNoMultiTxTokenInputSlippageL1AMB1 is 
             _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
         }
 
-        vm.selectFork(FORKS[OP]);
-        console.log("users[0]'s WETH on OP, pre-rescueFailedDeposits:", MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]));
+        // vm.selectFork(FORKS[OP]);
+        // console.log("users[0]'s WETH on OP, pre-rescueFailedDeposits:", MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]));
 
-        vm.selectFork(FORKS[POLY]);
-        MockERC20 weth = MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]));
-        console.log("users[0]'s WETH on POLY pre-rescueFailedDeposits:", weth.balanceOf(users[0]));
+        // vm.selectFork(FORKS[POLY]);
+        // MockERC20 weth = MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]));
+        // console.log("users[0]'s WETH on POLY pre-rescueFailedDeposits:", weth.balanceOf(users[0]));
 
-        /// @dev FIXME: don't see any WETH transferred to CoreStateRegistry on POLY
-        console.log("CoreStateRegistry's WETH on POLY, pre-rescueFailedDeposits:", weth.balanceOf(0x991bdBB5D32b60aB8ef95ff0cD994ed62289b1E6));
+        // /// @dev FIXME: don't see any WETH transferred to CoreStateRegistry on POLY
+        // console.log("CoreStateRegistry's WETH on POLY, pre-rescueFailedDeposits:", weth.balanceOf(0x82d4BcAcDef9c8F3eB3339d72C52DB735FD58f0b));
 
-        /// @dev need to manually transfer WETH to CoreStateRegistry on POLY, to simulate the case
-        vm.prank(users[0]);
-        weth.transfer(0x991bdBB5D32b60aB8ef95ff0cD994ed62289b1E6, 5000);
+        // LiqRequest[] memory liqRequests = new LiqRequest[](1);
+        // liqRequests[0] = LiqRequest(
+        //     1, /// @dev socket bridge
+        //     _buildLiqBridgeTxData(
+        //         1,
+        //         getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]), /// @dev WETH
+        //         getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]), /// @dev WETH
+        //         getContract(DST_CHAINS[0], "CoreStateRegistry"), /// @dev CoreStateRegistry on dst chain
+        //         CHAIN_0,
+        //         false,
+        //         users[0],
+        //         CHAIN_0,
+        //         129 // 4121
+        //     ),
+        //     getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]), /// @dev WETH,
+        //     129, // 4121,
+        //     0,
+        //     ""
+        // );
 
-        LiqRequest[] memory liqRequests = new LiqRequest[](1);
-        liqRequests[0] = LiqRequest(
-            1, /// @dev socket bridge
-            _buildLiqBridgeTxData(
-                1,
-                getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]), /// @dev WETH
-                getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]), /// @dev WETH
-                0x991bdBB5D32b60aB8ef95ff0cD994ed62289b1E6, /// @dev CoreStateRegistry on dst chain
-                CHAIN_0,
-                false,
-                users[0],
-                CHAIN_0,
-                4121
-            ),
-            getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]), /// @dev WETH,
-            4121,
-            0,
-            ""
-        );
-
-        vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(DST_CHAINS[0], "CoreStateRegistry")))
-            .rescueFailedDeposits(1, liqRequests);
+        // vm.prank(deployer);
+        // CoreStateRegistry(payable(getContract(DST_CHAINS[0], "CoreStateRegistry")))
+        //     .rescueFailedDeposits(1, liqRequests);
 
         /// @dev check WETH balance of users[0] on OP
         vm.selectFork(FORKS[OP]);
