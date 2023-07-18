@@ -270,7 +270,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 liqData_[i].txData,
                 liqData_[i].token,
                 liqData_[i].amount,
-                v.srcSender,
+                address(this), /// @dev - FIX: to send tokens from this contract when rescuing deposits, not from v.srcSender
                 liqData_[i].nativeAmount,
                 liqData_[i].permit2data,
                 superRegistry.PERMIT2()
