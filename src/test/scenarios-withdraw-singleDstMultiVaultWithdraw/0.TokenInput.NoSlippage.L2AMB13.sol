@@ -13,7 +13,7 @@ import {ISuperFormRouter} from "../../interfaces/ISuperFormRouter.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
-contract SDMVW874NativeInputSlippageL2AMB23 is ProtocolActions {
+contract SDMVW0TokenInputNoSlippageL2AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -22,29 +22,27 @@ contract SDMVW874NativeInputSlippageL2AMB23 is ProtocolActions {
 
         AMBs = [1, 3];
 
-        CHAIN_0 = ETH;
+        CHAIN_0 = POLY;
         DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ARBI][0] = [0, 0, 1];
-        TARGET_VAULTS[ARBI][0] = [8, 7, 4]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][0] = [0, 2, 1];
+        TARGET_UNDERLYINGS[ARBI][0] = [1];
+        TARGET_VAULTS[ARBI][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[ARBI][0] = [0];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [0, 0, 1];
-        TARGET_VAULTS[ARBI][1] = [8, 7, 4]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][1] = [0, 2, 1];
+        TARGET_UNDERLYINGS[ARBI][1] = [1];
+        TARGET_VAULTS[ARBI][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[ARBI][1] = [0];
 
-        AMOUNTS[ARBI][0] = [7722, 11, 3];
-        AMOUNTS[ARBI][1] = [7722, 11, 3];
+        AMOUNTS[ARBI][0] = [15];
+        AMOUNTS[ARBI][1] = [2];
 
-        /// 7293, 10, 2
-
-        // expected at the end 7293, 10, 2
+        PARTIAL[ARBI][1] = [true];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ARBI][0] = [2, 2, 2];
-        LIQ_BRIDGES[ARBI][1] = [2, 2, 2];
+        LIQ_BRIDGES[ARBI][0] = [2];
+        LIQ_BRIDGES[ARBI][1] = [2];
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -55,9 +53,9 @@ contract SDMVW874NativeInputSlippageL2AMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 555, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 
@@ -69,9 +67,9 @@ contract SDMVW874NativeInputSlippageL2AMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 555, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
