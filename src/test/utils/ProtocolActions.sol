@@ -80,6 +80,66 @@ abstract contract ProtocolActions is BaseSetup {
                             MAIN INTERNAL
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev 'n' deposits rescued per payloadId per destination chain
+    /// TODO: add slippage, test rescuing deposits from multiple superforms,
+    /// optimise (+ generalise if possible) args in singleVaultCallDataArgs,
+    /// add assertions
+    function _rescueFailedDeposits(
+        TestAction memory action,
+        uint256 actionIndex
+    ) internal {
+        if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
+            vm.selectFork(FORKS[DST_CHAINS[0]]);
+
+            address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
+            uint256[] memory rescueSuperformIds;
+
+            rescueSuperformIds = CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
+
+            LiqRequest[] memory liqRequests = new LiqRequest[](rescueSuperformIds.length);
+
+            SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
+                action.user,
+                coreStateRegistryDst,
+                action.externalToken == 3
+                    ? NATIVE_TOKEN
+                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
+                coreStateRegistryDst,
+                getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][actionIndex][0]]),
+                rescueSuperformIds[0], /// @dev initiating with first rescueSuperformId
+                AMOUNTS[CHAIN_0][actionIndex][0], /// @dev yet to add slippage
+                LIQ_BRIDGES[CHAIN_0][actionIndex][0],
+                MAX_SLIPPAGE,
+                action.externalToken == 3
+                    ? NATIVE_TOKEN
+                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
+                CHAIN_0,
+                DST_CHAINS[0], /// unsure about its usage
+                CHAIN_0, /// llChainIds[vars.chain0Index],
+                DST_CHAINS[0], /// llChainIds[vars.chainDstIndex],
+                action.multiTx,
+                false
+            );
+
+            for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
+                singleVaultCallDataArgs.superFormId = rescueSuperformIds[i];
+                liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
+            }
+
+            vm.prank(deployer);
+            CoreStateRegistry(coreStateRegistryDst)
+                .rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
+
+            /// make relevant assertions here
+            /// @dev check WETH balance of users[0] on OP
+            vm.selectFork(FORKS[OP]);
+            console.log(
+                "users[0]'s WETH on OP post-rescueFailedDeposits:",
+                MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0])
+            );
+        }
+    }
+
     function _runMainStages(
         TestAction memory action,
         uint256 act,
@@ -95,21 +155,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256[] memory spAmountSummed;
         uint256[] memory spAmountBeforeWithdrawPerDst;
         uint256 inputBalanceBefore;
-
-        /// @dev rescueFailedDeposit only needs stage 1, hence placed here with a separate Action
-        if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
-            /// @dev starting with 1 failed deposit per dst chain
-            LiqRequest[] memory liqRequests = new LiqRequest[](1);
-            liqRequests[0] = singleSuperFormsData[0].liqRequest;
-
-            vm.prank(deployer);
-            CoreStateRegistry(payable(getContract(chainIds[vars.chain0Index], "CoreStateRegistry")))
-                .rescueFailedDeposits(PAYLOAD_ID[chainIds[vars.chainDstIndex]], liqRequests);
-
-            /// make relevant assertions here
-
-            return;
-        }
 
         (, spAmountSummed, spAmountBeforeWithdrawPerDst, inputBalanceBefore) = _assertBeforeAction(
             action,

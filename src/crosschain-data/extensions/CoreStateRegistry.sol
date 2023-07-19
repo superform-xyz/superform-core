@@ -229,6 +229,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     }
 
     /// @inheritdoc ICoreStateRegistry
+    /// @dev rescue failed deposits from liqData_.length superforms, per payloadId_, per chainId
     function rescueFailedDeposits(
         uint256 payloadId_,
         LiqRequest[] memory liqData_
@@ -287,6 +288,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     /// @return the quorum configured for the chain id
     function getRequiredMessagingQuorum(uint64 chainId) public view returns (uint256) {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
+    }
+
+    /// @dev returns array of superformIds whose deposits need to be rescued, for a given payloadId
+    function getFailedDeposits(uint256 payloadId) external view returns (uint256[] memory) {
+        return failedDeposits[payloadId];
     }
 
     /*///////////////////////////////////////////////////////////////
