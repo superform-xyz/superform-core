@@ -14,7 +14,8 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 enum Actions {
     Deposit,
     Withdraw,
-    DepositPermit2
+    DepositPermit2,
+    RescueFailedDeposit
 }
 
 enum LiquidityChange {
@@ -38,8 +39,6 @@ struct StagesLocalVars {
     SingleDstMultiVaultsStateReq singleDstMultiVaultStateReq;
     SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;
     SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
-    MultiVaultsSFData[] multiSuperFormsData;
-    SingleVaultSFData[] singleSuperFormsData;
     UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
     UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;
