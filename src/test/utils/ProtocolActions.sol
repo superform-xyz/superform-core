@@ -935,18 +935,24 @@ abstract contract ProtocolActions is BaseSetup {
         /// assume it will pass by default
         success = true;
 
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
+        for (uint256 i = 0; i > vars.nDestinations; i++) {
             if (CHAIN_0 != DST_CHAINS[i] && revertingWithdrawTimelockedSFs[i].length > 0) {
-                unchecked {
-                    TWO_STEP_PAYLOAD_ID[CHAIN_0]++;
-                }
-
-                success = _processTwoStepPayload(
-                    TWO_STEP_PAYLOAD_ID[CHAIN_0],
-                    CHAIN_0,
-                    action.testType,
-                    action.revertError
+                IBaseStateRegistry twoStepsFormStateRegistry = IBaseStateRegistry(
+                    contracts[CHAIN_0][bytes32(bytes("TwoStepsFormStateRegistry"))]
                 );
+
+                if (twoStepsFormStateRegistry.payload(TWO_STEP_PAYLOAD_ID[CHAIN_0] + 1).length > 0) {
+                    unchecked {
+                        TWO_STEP_PAYLOAD_ID[CHAIN_0]++;
+                    }
+
+                    success = _processTwoStepPayload(
+                        TWO_STEP_PAYLOAD_ID[CHAIN_0],
+                        CHAIN_0,
+                        action.testType,
+                        action.revertError
+                    );
+                }
             }
         }
     }
@@ -2340,7 +2346,7 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
         }
-        console.log("Asserted after failed withdraw");
+        console.log("Asserted after failed timelock withdraw");
     }
 
     /// @dev Returns the sum of token amounts
