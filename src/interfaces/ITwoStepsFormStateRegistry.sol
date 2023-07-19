@@ -25,4 +25,7 @@ interface ITwoStepsFormStateRegistry {
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
     /// @return timeLockPayload_ the timelock payload stored
     function getTimeLockPayload(uint256 payloadId_) external view returns (TimeLockPayload memory timeLockPayload_);
+
+    /// @dev allows users to read the timeLockPayloadCounter
+    function timeLockPayloadCounter() external view returns (uint256);
 }

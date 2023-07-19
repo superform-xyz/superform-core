@@ -13,7 +13,7 @@ import {ISuperFormRouter} from "../../interfaces/ISuperFormRouter.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
 
-contract SDMVW141TokenInputSlippageL1AMB12 is ProtocolActions {
+contract SDMVW142TokenInputSlippageL1AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -27,12 +27,12 @@ contract SDMVW141TokenInputSlippageL1AMB12 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [1, 1, 1];
-        TARGET_VAULTS[AVAX][0] = [1, 4, 1]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
+        TARGET_VAULTS[AVAX][0] = [1, 4, 2]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 2];
 
         TARGET_UNDERLYINGS[AVAX][1] = [1, 1, 1];
-        TARGET_VAULTS[AVAX][1] = [1, 4, 1]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[AVAX][1] = [1, 1, 1];
+        TARGET_VAULTS[AVAX][1] = [1, 4, 2]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[AVAX][1] = [1, 1, 2];
 
         AMOUNTS[AVAX][0] = [421412, 88888, 7777];
         AMOUNTS[AVAX][1] = [214, 88888, 777];
