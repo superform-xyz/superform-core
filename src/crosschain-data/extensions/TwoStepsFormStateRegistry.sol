@@ -82,7 +82,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     function finalizePayload(
         uint256 timeLockPayloadId_,
         bytes memory ambOverride_
-    ) external payable override onlyProcessor {
+    ) external payable override onlyProcessor returns (bytes memory returnMessage) {
         TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
         if (p.status != TimeLockStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
@@ -101,9 +101,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             /// @dev dispatch acknowledgement to mint shares back || mint shares back
             if (p.isXChain == 1) {
                 (uint256 payloadId_, ) = abi.decode(p.data.extraFormData, (uint256, uint256));
-                bytes memory message_ = _constructSingleReturnData(p.srcSender, p.srcChainId, payloadId_, p.data);
+                returnMessage = _constructSingleReturnData(p.srcSender, p.srcChainId, payloadId_, p.data);
 
-                _dispatchAcknowledgement(p.srcChainId, message_, ambOverride_);
+                _dispatchAcknowledgement(p.srcChainId, returnMessage, ambOverride_);
             }
 
             if (p.isXChain == 0) {
@@ -130,7 +130,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         override
         onlyProcessor
         isValidPayloadId(payloadId_)
-        returns (bytes memory savedMessage, bytes memory returnMessage)
+        returns (bytes memory, bytes memory)
     {
         uint256 _payloadHeader = payloadHeader[payloadId_];
         bytes memory _payloadBody = payloadBody[payloadId_];
