@@ -81,7 +81,7 @@ abstract contract ProtocolActions is BaseSetup {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev 'n' deposits rescued per payloadId per destination chain
-    /// TODO: add slippage, test rescuing deposits from multiple superforms,
+    /// TODO: test rescuing deposits from multiple superforms,
     /// optimise (+ generalise if possible) args in singleVaultCallDataArgs
     function _rescueFailedDeposits(
         TestAction memory action,
@@ -100,6 +100,9 @@ abstract contract ProtocolActions is BaseSetup {
 
             LiqRequest[] memory liqRequests = new LiqRequest[](rescueSuperformIds.length);
 
+            /// @dev simulating slippage from bridges
+            uint256 finalAmount = (AMOUNTS[CHAIN_0][actionIndex][0] * (10000 - uint256(action.slippage))) / 10000;
+
             SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                 action.user,
                 coreStateRegistryDst,
@@ -109,7 +112,7 @@ abstract contract ProtocolActions is BaseSetup {
                 coreStateRegistryDst,
                 getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][actionIndex][0]]),
                 rescueSuperformIds[0], /// @dev initiating with first rescueSuperformId
-                AMOUNTS[CHAIN_0][actionIndex][0], /// @dev yet to add slippage
+                finalAmount,
                 LIQ_BRIDGES[CHAIN_0][actionIndex][0],
                 MAX_SLIPPAGE,
                 action.externalToken == 3
@@ -135,7 +138,7 @@ abstract contract ProtocolActions is BaseSetup {
             vm.selectFork(FORKS[OP]);
             uint256 userWethBalanceAfter = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
 
-            assertEq(userWethBalanceAfter, userWethBalanceBefore + AMOUNTS[CHAIN_0][actionIndex][0]);
+            assertEq(userWethBalanceAfter, userWethBalanceBefore + finalAmount);
         }
     }
 
