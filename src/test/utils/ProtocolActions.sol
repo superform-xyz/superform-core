@@ -82,13 +82,15 @@ abstract contract ProtocolActions is BaseSetup {
 
     /// @dev 'n' deposits rescued per payloadId per destination chain
     /// TODO: add slippage, test rescuing deposits from multiple superforms,
-    /// optimise (+ generalise if possible) args in singleVaultCallDataArgs,
-    /// add assertions
+    /// optimise (+ generalise if possible) args in singleVaultCallDataArgs
     function _rescueFailedDeposits(
         TestAction memory action,
         uint256 actionIndex
     ) internal {
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
+            vm.selectFork(FORKS[OP]);
+            uint256 userWethBalanceBefore = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+
             vm.selectFork(FORKS[DST_CHAINS[0]]);
 
             address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
@@ -130,13 +132,10 @@ abstract contract ProtocolActions is BaseSetup {
             CoreStateRegistry(coreStateRegistryDst)
                 .rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
 
-            /// make relevant assertions here
-            /// @dev check WETH balance of users[0] on OP
             vm.selectFork(FORKS[OP]);
-            console.log(
-                "users[0]'s WETH on OP post-rescueFailedDeposits:",
-                MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0])
-            );
+            uint256 userWethBalanceAfter = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+
+            assertEq(userWethBalanceAfter, userWethBalanceBefore + AMOUNTS[CHAIN_0][actionIndex][0]);
         }
     }
 
