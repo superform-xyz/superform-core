@@ -72,7 +72,7 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
         uint256 expectedNumberOfSuperforms = UNDERLYING_TOKENS.length * VAULT_KINDS.length;
 
         assertEq(
-            SuperFormFactory(getContract(chainId, "SuperFormFactory")).getAllSuperFormsList(),
+            SuperFormFactory(getContract(chainId, "SuperFormFactory")).getSuperFormCount(),
             expectedNumberOfSuperforms
         );
 

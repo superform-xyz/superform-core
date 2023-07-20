@@ -148,7 +148,4 @@ interface ISuperFormFactory {
     /// @dev returns the number of superforms
     /// @return superForms_ is the number of superforms
     function getSuperFormCount() external view returns (uint256 superForms_);
-
-    /// @dev returns the number of superforms for the given chain (where this call is made)
-    function getAllChainSuperFormsList() external view returns (uint256 superForms_);
 }
