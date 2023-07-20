@@ -11,7 +11,7 @@ import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
 /// @dev test CoreStateRegistry.rescueFailedDeposits()
-contract SXSVDNormal4626RevertXChainDepositNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
+contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
