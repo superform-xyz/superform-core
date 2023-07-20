@@ -178,15 +178,9 @@ abstract contract ProtocolActions is BaseSetup {
 
         /// @dev stage 7 and 8 are only required for timelocked forms
         if (action.action == Actions.Withdraw) {
-            vm.recordLogs();
-
             /// @dev Keeper needs to know this value to be able to process unlock
             /// @dev FIXME unlockId is hardcoded here
             returnMessagesTimelockedWithdraw = _stage7_finalize_timelocked_payload(action, vars);
-
-            for (uint256 i; i < DST_CHAINS.length; i++) {
-                _payloadDeliveryHelper(CHAIN_0, DST_CHAINS[i], vm.getRecordedLogs());
-            }
 
             console.log("Stage 7 complete");
 
@@ -917,6 +911,7 @@ abstract contract ProtocolActions is BaseSetup {
                 );
 
                 currentUnlockId = twoStepsFormStateRegistry.timeLockPayloadCounter();
+                vm.recordLogs();
 
                 for (uint256 j = countTimelocked[i]; j > 0; j--) {
                     /// increase time by 5 days
@@ -928,11 +923,15 @@ abstract contract ProtocolActions is BaseSetup {
                     );
 
                     vm.prank(deployer);
+
                     returnMessages[i] = twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
                         currentUnlockId - j + 1,
                         ackAmbParams
                     );
                 }
+
+                Vm.Log[] memory logs = vm.getRecordedLogs();
+                _payloadDeliveryHelper(CHAIN_0, DST_CHAINS[i], logs);
             }
         }
 
