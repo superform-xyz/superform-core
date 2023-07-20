@@ -179,7 +179,6 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @inheritdoc ISuperFormFactory
-    ///@dev TODO are extra return types needed? Just superFormIds_ now with getSuperForm functionality? including chainIds w/o broadcasting
     function getAllSuperFormsFromVault(
         address vault_
     )
@@ -188,19 +187,15 @@ contract SuperFormFactory is ISuperFormFactory {
         override
         returns (
             uint256[] memory superFormIds_,
-            address[] memory superForms_,
-            uint32[] memory formBeaconIds_,
-            uint64[] memory chainIds_
+            address[] memory superForms_
         )
     {
         superFormIds_ = vaultToSuperForms[vault_];
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
-        formBeaconIds_ = new uint32[](len);
-        chainIds_ = new uint64[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = superFormIds_[i].getSuperForm();
+            (superForms_[i], ,) = superFormIds_[i].getSuperForm();
         }
     }
 
