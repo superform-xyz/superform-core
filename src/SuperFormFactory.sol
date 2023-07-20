@@ -245,24 +245,6 @@ contract SuperFormFactory is ISuperFormFactory {
         superForms_ = superForms.length;
     }
 
-    /// @inheritdoc ISuperFormFactory
-    ///@dev TODO can remove this function
-    function getAllChainSuperFormsList() external view override returns (uint256 superForms_) {
-        uint256[] memory superFormIds_ = superForms;
-        uint256 len = superFormIds_.length;
-
-        uint64 chainIdRes;
-        uint64 chainId = superRegistry.chainId();
-        for (uint256 i = 0; i < len; i++) {
-            (, , chainIdRes) = superFormIds_[i].getSuperForm();
-            if (chainIdRes == chainId) {
-                unchecked {
-                    ++superForms_;
-                }
-            }
-        }
-    }
-
     /*///////////////////////////////////////////////////////////////
                         Internal Functions
     //////////////////////////////////////////////////////////////*/
