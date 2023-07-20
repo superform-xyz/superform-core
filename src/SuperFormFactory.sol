@@ -212,26 +212,21 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @inheritdoc ISuperFormFactory
-    ///@dev TODO don't need chainIds_, and probably not formBeaconIds_
     function getAllSuperForms()
         external
         view
         override
         returns (
             uint256[] memory superFormIds_,
-            address[] memory superForms_,
-            uint32[] memory formBeaconIds_,
-            uint64[] memory chainIds_
+            address[] memory superForms_
         )
     {
         superFormIds_ = superForms;
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
-        formBeaconIds_ = new uint32[](len);
-        chainIds_ = new uint64[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = superFormIds_[i].getSuperForm();
+            (superForms_[i], ,) = superFormIds_[i].getSuperForm();
         }
     }
 

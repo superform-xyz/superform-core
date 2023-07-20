@@ -129,16 +129,12 @@ interface ISuperFormFactory {
     /// @dev Returns all SuperForms
     /// @return superFormIds_ is the id of the superform
     /// @return vaults_ is the address of the vault
-    /// @return formBeaconIds_ is the form id
-    /// @return chainIds_ is the chain id
     function getAllSuperForms()
         external
         view
         returns (
             uint256[] memory superFormIds_,
-            address[] memory vaults_,
-            uint32[] memory formBeaconIds_,
-            uint64[] memory chainIds_
+            address[] memory vaults_
         );
 
     /// @dev returns the number of forms
