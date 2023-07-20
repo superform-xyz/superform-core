@@ -50,7 +50,7 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
         vm.selectFork(FORKS[chainId]);
 
         /// @dev testing the getAllSuperForms function
-        (vars.superFormIds_, vars.superForms_, vars.formIds_, vars.chainIds_) = SuperFormFactory(
+        (vars.superFormIds_, vars.superForms_) = SuperFormFactory(
             getContract(chainId, "SuperFormFactory")
         ).getAllSuperForms();
 
