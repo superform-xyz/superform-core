@@ -39,8 +39,7 @@ contract SuperFormFactory is ISuperFormFactory {
 
     mapping(address vault => uint256[] superFormIds) public vaultToSuperForms;
 
-    ///@dev TODO mapped to array as well
-    // mapping(address vault => uint256 formBeaconId) public vaultToFormBeaconId;
+    mapping(address vault => uint256 formBeaconId) public vaultToFormBeaconId;
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
@@ -113,6 +112,9 @@ contract SuperFormFactory is ISuperFormFactory {
         superFormId_ = DataLib.packSuperForm(superForm_, formBeaconId_, superRegistry.chainId());
 
         vaultToSuperForms[vault_].push(superFormId_);
+
+        /// @dev Mapping vaults to formBeaconId for use in Backend
+        vaultToFormBeaconId[vault_] = formBeaconId_;
         /// @dev FIXME do we need to store info of all superforms just for external querying? Could save gas here
         superForms.push(superFormId_);
         // vaultToFormBeaconId[vault_] = formBeaconId_;
@@ -270,6 +272,10 @@ contract SuperFormFactory is ISuperFormFactory {
         (uint256 superFormId, address vaultAddress) = abi.decode(message_, (uint256, address));
         /// FIXME: do we need extra checks before pushing here?
         vaultToSuperForms[vaultAddress].push(superFormId);
+
+        /// @dev Unpacking superform ID and setting formBeaconId in vaultToFormBeaconId
+        (, uint32 formBeaconId_, ) = superFormId.getSuperForm();
+        vaultToFormBeaconId[vaultAddress] = formBeaconId_;
 
         /// @dev do we need to store info of all superforms just for external querying? Could save gas here
         superForms.push(superFormId);
