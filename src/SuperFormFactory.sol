@@ -236,14 +236,12 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @inheritdoc ISuperFormFactory
-    ///@dev TODO should be renamed to getFormCount
-    function getAllFormsList() external view override returns (uint256 forms_) {
+    function getFormCount() external view override returns (uint256 forms_) {
         forms_ = formBeacons.length;
     }
 
     /// @inheritdoc ISuperFormFactory
-    ///@dev TODO should be renamed to getSuperFormCount
-    function getAllSuperFormsList() external view override returns (uint256 superForms_) {
+    function getSuperFormCount() external view override returns (uint256 superForms_) {
         superForms_ = superForms.length;
     }
 
