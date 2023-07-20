@@ -100,7 +100,6 @@ contract SuperFormFactory is ISuperFormFactory {
         if (tFormBeacon == address(0)) revert Error.FORM_DOES_NOT_EXIST();
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
-        /// @dev TODO - should we predict superform address?
         superForm_ = address(
             new BeaconProxy(
                 address(tFormBeacon),
@@ -280,5 +279,11 @@ contract SuperFormFactory is ISuperFormFactory {
         if (formBeacon[formBeaconId] == address(0)) revert Error.INVALID_FORM_ID();
 
         FormBeacon(formBeacon[formBeaconId]).changePauseStatus(status);
+    }
+
+    function getBytecodeFormBeacon(address superRegistry_, address formLogic_) public pure returns (bytes memory) {
+        bytes memory bytecode = type(FormBeacon).creationCode;
+
+        return abi.encodePacked(bytecode, abi.encode(superRegistry_, formLogic_));
     }
 }
