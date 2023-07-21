@@ -29,7 +29,7 @@ contract SDSVD4626KycNoSwapTokenInputNoSlippageL2 is ProtocolActions {
 
         AMOUNTS[POLY][0] = [1231];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [2];

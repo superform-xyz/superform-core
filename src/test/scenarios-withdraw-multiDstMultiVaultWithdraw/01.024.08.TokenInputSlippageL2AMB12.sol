@@ -16,7 +16,7 @@ import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.
 
 /// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
 /// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario12Test is ProtocolActions {
+contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -24,28 +24,65 @@ contract Scenario12Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationMultiVault, large test
 
-        AMBs = [3, 2];
+        AMBs = [1, 2];
+        MultiDstAMBs = [AMBs, AMBs, AMBs];
 
         CHAIN_0 = ETH;
-        DST_CHAINS = [ARBI];
+        DST_CHAINS = [ETH, POLY, AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ARBI][0] = [1, 1, 1, 0, 0, 0, 0];
-        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0, 0, 0, 0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0, 0, 0, 0];
+        /// first 3 superforms are equal
+        TARGET_UNDERLYINGS[ETH][0] = [2, 2];
+        TARGET_VAULTS[ETH][0] = [0, 1]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[ETH][0] = [0, 1];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [1, 1, 1, 0, 0, 0, 0];
-        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0, 0, 0, 0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0, 0, 0, 0];
+        /// all superforms are different
+        TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
+        TARGET_VAULTS[POLY][0] = [0, 2, 4]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[POLY][0] = [0, 2, 1];
 
-        AMOUNTS[ARBI][0] = [7722, 11, 3, 54218, 4412, 96, 2241];
-        AMOUNTS[ARBI][1] = [7722, 11, 3, 54218, 4412, 96, 2241];
+        /// all superforms are different
+        TARGET_UNDERLYINGS[AVAX][0] = [2, 2];
+        TARGET_VAULTS[AVAX][0] = [0, 8]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[AVAX][0] = [0, 0];
 
-        MAX_SLIPPAGE[ARBI][0] = [1000, 1000, 1000, 1000, 1000, 1000, 1000];
-        MAX_SLIPPAGE[ARBI][1] = [1000, 1000, 1000, 1000, 1000, 1000, 1000];
+        TARGET_UNDERLYINGS[ETH][1] = [2, 2];
+        TARGET_VAULTS[ETH][1] = [0, 1]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[ETH][1] = [0, 1];
 
-        LIQ_BRIDGES[ARBI][0] = [1, 2, 1, 2, 2, 1, 1];
-        LIQ_BRIDGES[ARBI][1] = [1, 1, 2, 2, 2, 1, 1];
+        /// all superforms are different
+        TARGET_UNDERLYINGS[POLY][1] = [0, 1, 2];
+        TARGET_VAULTS[POLY][1] = [0, 2, 4]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[POLY][1] = [0, 2, 1];
+
+        /// all superforms are different
+        TARGET_UNDERLYINGS[AVAX][1] = [2, 2];
+        TARGET_VAULTS[AVAX][1] = [0, 8]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[AVAX][1] = [0, 0];
+
+        AMOUNTS[ETH][0] = [25, 5235];
+        AMOUNTS[ETH][1] = [11, 5235];
+
+        PARTIAL[ETH][1] = [true, false];
+
+        AMOUNTS[POLY][0] = [9765, 9765, 222];
+        AMOUNTS[POLY][1] = [9765, 9765, 2];
+
+        PARTIAL[POLY][1] = [false, false, true];
+
+        AMOUNTS[AVAX][0] = [7342, 1243];
+        AMOUNTS[AVAX][1] = [7342, 1243];
+
+        MAX_SLIPPAGE = 1000;
+
+        LIQ_BRIDGES[ETH][0] = [2, 2, 2, 2];
+        LIQ_BRIDGES[ETH][1] = [2, 2, 2, 2];
+
+        LIQ_BRIDGES[POLY][0] = [2, 2, 2, 2];
+        LIQ_BRIDGES[POLY][1] = [2, 2, 2, 2];
+
+        LIQ_BRIDGES[AVAX][0] = [2, 2, 2, 2];
+        LIQ_BRIDGES[AVAX][1] = [2, 2, 2, 2];
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -56,9 +93,9 @@ contract Scenario12Test is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                slippage: 643, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: true,
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 
@@ -70,9 +107,9 @@ contract Scenario12Test is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 643, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

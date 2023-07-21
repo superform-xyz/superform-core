@@ -29,7 +29,7 @@ contract SXSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
 
         AMOUNTS[POLY][0] = [4121];
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [1];

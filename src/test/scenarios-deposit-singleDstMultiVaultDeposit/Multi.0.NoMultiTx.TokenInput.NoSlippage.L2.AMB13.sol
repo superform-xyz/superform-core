@@ -32,7 +32,7 @@ contract SDMVDMulti0NoMultiTxTokenInputNoSlippageL2AMB13 is ProtocolActions {
 
         AMOUNTS[ETH][0] = [45512];
 
-        MAX_SLIPPAGE[ETH][0] = [1000];
+        MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ETH][0] = [2];

@@ -14,7 +14,8 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 enum Actions {
     Deposit,
     Withdraw,
-    DepositPermit2
+    DepositPermit2,
+    RescueFailedDeposit
 }
 
 enum LiquidityChange {
@@ -28,7 +29,8 @@ enum TestType {
     RevertProcessPayload,
     RevertUpdateStateSlippage,
     RevertUpdateStateRBAC,
-    RevertXChainDeposit
+    RevertXChainDeposit,
+    RevertVaultsWithdraw
 }
 
 struct StagesLocalVars {
@@ -38,8 +40,6 @@ struct StagesLocalVars {
     SingleDstMultiVaultsStateReq singleDstMultiVaultStateReq;
     SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;
     SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
-    MultiVaultsSFData[] multiSuperFormsData;
-    SingleVaultSFData[] singleSuperFormsData;
     UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
     UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;
@@ -52,11 +52,11 @@ struct StagesLocalVars {
     address[] toDst;
     uint256[] targetSuperFormIds;
     uint256[] amounts;
-    uint256[] maxSlippage;
     uint8[] liqBridges;
     uint256 chain0Index;
     uint256 chainDstIndex;
     uint256 nUniqueDsts;
+    bool[] partialWithdrawVaults;
 }
 
 struct MessagingAssertVars {
@@ -171,6 +171,7 @@ struct SingleVaultCallDataArgs {
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
     bool multiTx;
+    bool partialWithdrawVault;
 }
 
 struct MultiVaultCallDataArgs {
@@ -182,7 +183,7 @@ struct MultiVaultCallDataArgs {
     uint256[] superFormIds;
     uint256[] amounts;
     uint8[] liqBridges;
-    uint256[] maxSlippage;
+    uint256 maxSlippage;
     address[] vaultMock;
     uint64 srcChainId;
     uint64 toChainId;
@@ -191,6 +192,7 @@ struct MultiVaultCallDataArgs {
     bool multiTx;
     Actions action;
     int256 slippage;
+    bool[] partialWithdrawVaults;
 }
 
 struct BuildDepositCallDataArgs {

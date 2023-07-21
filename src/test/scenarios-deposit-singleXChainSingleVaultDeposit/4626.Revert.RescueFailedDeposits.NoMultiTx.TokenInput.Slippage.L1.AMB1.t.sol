@@ -4,73 +4,67 @@ pragma solidity 0.8.19;
 // Contracts
 import "../../types/LiquidityTypes.sol";
 import "../../types/DataTypes.sol";
-// import "forge-std/console.sol";
 
 // Test Utils
+import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-/// @dev TODO - we should do assertions on final balances of users at the end of each test scenario
-/// @dev FIXME - using unoptimized multiDstMultivault function
-contract Scenario8Test is ProtocolActions {
-    /// @dev Access SuperFormRouter interface
-    ISuperFormRouter superRouter;
-
+/// @dev test CoreStateRegistry.rescueFailedDeposits()
+contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationSingleVault Deposit test case with permit2
-
-        AMBs = [1, 2];
+        AMBs = [1, 3];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [2];
-        TARGET_VAULTS[POLY][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[POLY][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[POLY][0] = [0];
+        AMOUNTS[POLY][0] = [4121];
 
-        TARGET_UNDERLYINGS[POLY][1] = [2];
-        TARGET_VAULTS[POLY][1] = [0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[POLY][1] = [0];
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[OP][1] = [2];
+        TARGET_VAULTS[OP][1] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_FORM_KINDS[OP][1] = [0];
+        AMOUNTS[OP][1] = [125];
 
-        AMOUNTS[POLY][0] = [47212];
-        AMOUNTS[POLY][1] = [47212];
+        MAX_SLIPPAGE = 1000;
 
-        MAX_SLIPPAGE[POLY][0] = [1000];
-        MAX_SLIPPAGE[POLY][1] = [1000];
-
+        /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [1];
-        LIQ_BRIDGES[POLY][1] = [1];
+        LIQ_BRIDGES[OP][1] = [1];
 
         actions.push(
             TestAction({
-                action: Actions.DepositPermit2,
+                action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
-                testType: TestType.Pass,
+                testType: TestType.RevertProcessPayload,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 
         actions.push(
             TestAction({
-                action: Actions.Withdraw,
+                action: Actions.RescueFailedDeposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 112, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
@@ -80,18 +74,17 @@ contract Scenario8Test is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
-        superRouter = ISuperFormRouter(_superRouter);
-
-        for (uint256 act = 0; act < actions.length; act++) {
+        for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultsSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
-
-            _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
+            if (action.action == Actions.RescueFailedDeposit)
+                _rescueFailedDeposits(action, act);
+            else
+                _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
         }
     }
 }

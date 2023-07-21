@@ -2,55 +2,52 @@
 pragma solidity 0.8.19;
 
 // Contracts
-import "../types/LiquidityTypes.sol";
-import "../types/DataTypes.sol";
+import "../../types/LiquidityTypes.sol";
+import "../../types/DataTypes.sol";
 
 // Test Utils
-import {MockERC20} from "./mocks/MockERC20.sol";
-import "./utils/ProtocolActions.sol";
-import "./utils/AmbParams.sol";
+import "../utils/ProtocolActions.sol";
+import "../utils/AmbParams.sol";
 
-import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
-
-contract ScenarioTimelockTest5 is ProtocolActions {
+contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationSingleVault, Timelocked, same underlying test.
-
-        AMBs = [1, 2];
+        AMBs = [1, 3];
 
         CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [1, 1];
-        TARGET_VAULTS[POLY][0] = [1, 1];
-        TARGET_FORM_KINDS[POLY][0] = [1, 1];
+        TARGET_UNDERLYINGS[AVAX][0] = [2];
 
-        TARGET_UNDERLYINGS[POLY][1] = [1, 1];
-        TARGET_VAULTS[POLY][1] = [1, 1];
-        TARGET_FORM_KINDS[POLY][1] = [1, 1];
+        TARGET_VAULTS[AVAX][0] = [7]; /// @dev id 0 is normal 4626
 
-        AMOUNTS[POLY][0] = [7722, 7722];
-        AMOUNTS[POLY][1] = [7722, 7722];
+        TARGET_FORM_KINDS[AVAX][0] = [2];
 
-        MAX_SLIPPAGE[POLY][0] = [1000, 1000];
-        MAX_SLIPPAGE[POLY][1] = [1000, 1000];
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[AVAX][1] = [2];
 
-        LIQ_BRIDGES[POLY][0] = [1, 1];
-        LIQ_BRIDGES[POLY][1] = [1, 1];
+        TARGET_VAULTS[AVAX][1] = [7]; /// @dev id 0 is normal 4626
 
-        /// @dev push in order the actions should be executed
+        TARGET_FORM_KINDS[AVAX][1] = [2];
+
+        AMOUNTS[AVAX][0] = [31231];
+        AMOUNTS[AVAX][1] = [31231];
+
+        MAX_SLIPPAGE = 1000;
+
+        /// @dev 1 for socket, 2 for lifi
+        LIQ_BRIDGES[AVAX][0] = [1];
+        LIQ_BRIDGES[AVAX][1] = [1];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 1,
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
@@ -59,12 +56,11 @@ contract ScenarioTimelockTest5 is ProtocolActions {
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
-
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 1,
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",

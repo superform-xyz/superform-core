@@ -65,6 +65,7 @@ contract SuperFormFactory is ISuperFormFactory {
     ) public override onlyProtocolAdmin returns (address beacon) {
         if (formImplementation_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(formImplementation_)) revert Error.ERC165_UNSUPPORTED();
+        if (formBeacon[formBeaconId_] != address(0)) revert Error.BEACON_ID_ALREADY_EXISTS();
         if (!ERC165Checker.supportsInterface(formImplementation_, type(IBaseForm).interfaceId))
             revert Error.FORM_INTERFACE_UNSUPPORTED();
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();

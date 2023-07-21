@@ -53,7 +53,6 @@ contract LiFiMock is Test {
 
         if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
         MockERC20(inputToken_).burn(address(this), amount_);
-
         uint256 prevForkId = vm.activeFork();
         vm.selectFork(toForkId);
         MockERC20(inputToken_).mint(receiver_, amount_);
