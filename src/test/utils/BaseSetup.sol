@@ -627,11 +627,6 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstCelerImplementation
                     );
 
-                    CelerImplementation(payable(vars.celerImplementation)).setReceiver(
-                        vars.dstCelerChainId,
-                        vars.dstCelerImplementation
-                    );
-
                     CelerImplementation(payable(vars.celerImplementation)).setChainId(
                         vars.dstChainId,
                         vars.dstCelerChainId
