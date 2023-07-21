@@ -130,4 +130,37 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
             address(0)
         );
     }
+
+    function test_revert_createSuperForm_vaultBeaconCombinationExists() public {
+        vm.startPrank(deployer);
+        
+        vm.selectFork(FORKS[chainId]);
+
+        address superRegistry = getContract(chainId, "SuperRegistry");
+
+        /// @dev Deploying Forms
+        address formImplementation = address(new ERC4626Form(superRegistry));
+        uint32 formBeaconId = 0;
+
+
+        // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
+        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+            formImplementation,
+            formBeaconId,
+            salt
+        );
+
+        /// @dev Creating superform using beacon
+        SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
+            formBeaconId,
+            formImplementation
+        );
+
+        /// @dev Creating superform using same beacon and vault
+        vm.expectRevert(Error.VAULT_BEACON_COMBNATION_EXISTS.selector);
+        SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
+            formBeaconId,
+            formImplementation
+        );
+    }
 }
