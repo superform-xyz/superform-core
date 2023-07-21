@@ -41,6 +41,8 @@ contract SuperFormFactory is ISuperFormFactory {
 
     mapping(address vault => uint256[] formBeaconId) public vaultToFormBeaconId;
 
+    mapping(bytes32 vaultBeaconCombination => uint256 superFormIds) public vaultBeaconToSuperForms;
+
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
         _;
@@ -100,6 +102,10 @@ contract SuperFormFactory is ISuperFormFactory {
         if (tFormBeacon == address(0)) revert Error.FORM_DOES_NOT_EXIST();
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
+        /// @dev Same vault and beacon should be used only once to create superform
+        bytes32 vaultBeaconCombination = keccak256(abi.encode(tFormBeacon, vault_));
+        if (vaultBeaconToSuperForms[vaultBeaconCombination] != 0) revert Error.VAULT_BEACON_COMBNATION_EXISTS();
+
         superForm_ = address(
             new BeaconProxy(
                 address(tFormBeacon),
@@ -114,6 +120,8 @@ contract SuperFormFactory is ISuperFormFactory {
 
         /// @dev Mapping vaults to formBeaconId for use in Backend
         vaultToFormBeaconId[vault_].push(formBeaconId_);
+
+        vaultBeaconToSuperForms[vaultBeaconCombination]= superFormId_;
         /// @dev FIXME do we need to store info of all superforms just for external querying? Could save gas here
         superForms.push(superFormId_);
 
