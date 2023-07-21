@@ -2,60 +2,71 @@
 pragma solidity 0.8.19;
 
 // Contracts
-import "../types/LiquidityTypes.sol";
-import "../types/DataTypes.sol";
+import "../../types/LiquidityTypes.sol";
+import "../../types/DataTypes.sol";
 
 // Test Utils
-import {MockERC20} from "./mocks/MockERC20.sol";
-import "./utils/ProtocolActions.sol";
-import "./utils/AmbParams.sol";
+import "../utils/ProtocolActions.sol";
+import "../utils/AmbParams.sol";
 
-import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
-
-contract ScenarioTimelockTest is ProtocolActions {
+contract MDSVW10NativeSlippageL2AMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationSingleVault, Timelocked, same underlying test.
+        AMBs = [2, 3];
+        MultiDstAMBs = [AMBs, AMBs];
 
-        AMBs = [1, 2];
-
-        CHAIN_0 = POLY;
-        DST_CHAINS = [POLY];
+        CHAIN_0 = AVAX;
+        DST_CHAINS = [OP, ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [1];
-        TARGET_VAULTS[POLY][0] = [1];
-        TARGET_FORM_KINDS[POLY][0] = [1];
+        TARGET_UNDERLYINGS[OP][0] = [2];
+        TARGET_UNDERLYINGS[ARBI][0] = [1];
 
-        TARGET_UNDERLYINGS[POLY][1] = [1];
-        TARGET_VAULTS[POLY][1] = [1];
-        TARGET_FORM_KINDS[POLY][1] = [1];
+        TARGET_VAULTS[OP][0] = [1]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [0]; /// @dev id 0 is normal 4626
 
-        AMOUNTS[POLY][0] = [7722];
-        AMOUNTS[POLY][1] = [7722];
+        TARGET_FORM_KINDS[OP][0] = [1];
+        TARGET_FORM_KINDS[ARBI][0] = [0];
+
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[OP][1] = [2];
+        TARGET_UNDERLYINGS[ARBI][1] = [1];
+
+        TARGET_VAULTS[OP][1] = [1]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][1] = [0]; /// @dev id 0 is normal 4626
+
+        TARGET_FORM_KINDS[OP][1] = [1];
+        TARGET_FORM_KINDS[ARBI][1] = [0];
+
+        AMOUNTS[OP][0] = [900];
+        AMOUNTS[OP][1] = [900];
+
+        AMOUNTS[ARBI][0] = [1000];
+        AMOUNTS[ARBI][1] = [1000];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[POLY][0] = [1];
-        LIQ_BRIDGES[POLY][1] = [1];
+        /// @dev 1 for socket, 2 for lifi
+        LIQ_BRIDGES[OP][0] = [2];
+        LIQ_BRIDGES[OP][1] = [2];
 
-        /// @dev push in order the actions should be executed
+        LIQ_BRIDGES[ARBI][0] = [2];
+        LIQ_BRIDGES[ARBI][1] = [2];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 1,
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 124, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 
@@ -63,13 +74,13 @@ contract ScenarioTimelockTest is ProtocolActions {
             TestAction({
                 action: Actions.Withdraw,
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 1,
+                user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 124, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }

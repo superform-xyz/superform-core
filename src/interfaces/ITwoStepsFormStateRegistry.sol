@@ -19,10 +19,16 @@ interface ITwoStepsFormStateRegistry {
     /// @notice Form Keeper finalizes payload to process Timelock withdraw fully
     /// @param payloadId is the id of the payload to finalize
     /// @param ackExtraData_ is the AMBMessage data to send back to the source stateSync with request to re-mint SuperPositions
-    function finalizePayload(uint256 payloadId, bytes memory ackExtraData_) external payable;
+    function finalizePayload(
+        uint256 payloadId,
+        bytes memory ackExtraData_
+    ) external payable returns (bytes memory returnMessage);
 
     /// @dev allows users to read the timeLockPayload_ stored per payloadId_
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
     /// @return timeLockPayload_ the timelock payload stored
     function getTimeLockPayload(uint256 payloadId_) external view returns (TimeLockPayload memory timeLockPayload_);
+
+    /// @dev allows users to read the timeLockPayloadCounter
+    function timeLockPayloadCounter() external view returns (uint256);
 }

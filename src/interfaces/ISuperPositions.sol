@@ -58,8 +58,7 @@ interface ISuperPositions {
     /// @dev saves the message being sent together with the associated id formulated in super router
     /// @param payloadId_ is the id of the message being saved
     /// @param txInfo_ is the relevant information of the transaction being saved
-    /// @param superFormIds_ are the ids of the super positions being saved
-    function updateTxHistory(uint256 payloadId_, uint256 txInfo_, uint256[] memory superFormIds_) external;
+    function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external;
 
     function setDynamicURI(string memory dynamicURI_) external;
 

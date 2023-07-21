@@ -57,7 +57,10 @@ interface IBaseStateRegistry {
     /// NOTE: sending `0x` in ambOverride_ will trigger no acknowledgement
     /// NOTE: this should handle reverting the state on source chain in-case of failure
     /// (or) can implement scenario based reverting like in coreStateRegistry
-    function processPayload(uint256 payloadId_, bytes memory ambOverride_) external payable returns (bytes memory);
+    function processPayload(
+        uint256 payloadId_,
+        bytes memory ambOverride_
+    ) external payable returns (bytes memory savedMessage, bytes memory returnMessage);
 
     /// @dev allows users to read the bytes payload_ stored per payloadId_
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain

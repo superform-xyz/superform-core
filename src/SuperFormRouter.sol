@@ -494,11 +494,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             ambParams.encodedAMBExtraData
         );
 
-        ISuperPositions(superRegistry.superPositions()).updateTxHistory(
-            vars.currentPayloadId,
-            ambMessage.txInfo,
-            vars.superFormIds
-        );
+        ISuperPositions(superRegistry.superPositions()).updateTxHistory(vars.currentPayloadId, ambMessage.txInfo);
     }
 
     function _directDeposit(
