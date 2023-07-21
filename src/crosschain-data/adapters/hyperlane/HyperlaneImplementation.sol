@@ -141,7 +141,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /// @inheritdoc IMessageRecipient
-    function handle(uint32 origin_, bytes32, bytes calldata body_) external override {
+    function handle(uint32 origin_, bytes32 sender_, bytes calldata body_) external override {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
@@ -149,9 +149,9 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.INVALID_CALLER();
         }
 
-        // if (sender_ != castAddr(authorizedImpl[origin_])) {
-        //     revert Error.INVALID_CALLER();
-        // }
+        if (sender_ != castAddr(authorizedImpl[origin_])) {
+            revert Error.INVALID_CALLER();
+        }
 
         bytes32 hash = keccak256(body_);
 
