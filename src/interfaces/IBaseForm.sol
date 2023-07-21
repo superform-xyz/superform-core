@@ -71,8 +71,20 @@ interface IBaseForm is IERC165Upgradeable {
     ) external returns (uint256 dstAmount);
 
     /// @notice Returns the underlying token of a vault.
-    /// @return The underlying token
-    function getUnderlyingOfVault() external view returns (address);
+    /// @return The asset being deposited into the vault used for accounting, depositing, and withdrawing
+    function getVaultAsset() external view returns (address);
+
+    /// @notice Returns the name of the vault.
+    /// @return The name of the vault
+    function getVaultName() external view returns (string memory);
+
+    /// @notice Returns the symbol of a vault.
+    /// @return The symbol associated with a vault
+    function getVaultSymbol() external view returns (string memory);
+
+    /// @notice Returns the number of decimals in a vault for accounting purposes
+    /// @return The number of decimals in the vault balance
+    function getVaultDecimals() external view returns (uint256);
 
     /// @dev API may need to know state of funds deployed
     function previewDepositTo(uint256 assets_) external view returns (uint256);

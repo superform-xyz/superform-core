@@ -389,7 +389,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         for (uint256 i; i < numberOfVaults; ) {
             /// @dev FIXME: whole msg.value is transferred here, in multi sync this needs to be split
 
-            underlying = IERC20(IBaseForm(superForms[i]).getUnderlyingOfVault());
+            underlying = IERC20(IBaseForm(superForms[i]).getVaultAsset());
 
             /// @dev This will revert ALL of the transactions if one of them fails.
             if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
@@ -506,7 +506,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         (address superForm_, , ) = singleVaultData.superFormId.getSuperForm();
 
-        IERC20 underlying = IERC20(IBaseForm(superForm_).getUnderlyingOfVault());
+        IERC20 underlying = IERC20(IBaseForm(superForm_).getVaultAsset());
 
         /// @dev NOTE: This will revert with an error only descriptive of the first possible revert out of many
         /// 1. Not enough tokens on this contract == BRIDGE_TOKENS_PENDING
