@@ -94,21 +94,28 @@ contract HyperlaneImplementationTest is BaseSetup {
         hyperlaneImplementation.dispatchPayload{value: 0.1 ether}(users[0], chainIds[5], abi.encode(ambMessage), abi.encode(ambExtraData));
     }
 
-    function test_revert_handle_duplicatePayload_invalidCaller() public {
+    function test_revert_handle_duplicatePayload_invalidSrcChainSender_invalidCaller() public {
         AMBMessage memory ambMessage;
+
+        /// @dev setting authorizedImpl[ETH] to HyperlaneImplementation on ETH, as it was smh reset to 0 (after setting in BaseSetup)
+        hyperlaneImplementation.setReceiver(1, getContract(1, "HyperlaneImplementation"));  
 
         (ambMessage,,) = setupBroadcastPayloadAMBData(users[0]);
 
         vm.prank(MAILBOX);
-        hyperlaneImplementation.handle(uint32(ETH), "", abi.encode(ambMessage));
+        hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(address(hyperlaneImplementation)))), abi.encode(ambMessage));
 
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
         vm.prank(MAILBOX);
-        hyperlaneImplementation.handle(uint32(ETH), "", abi.encode(ambMessage));
+        hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(address(hyperlaneImplementation)))), abi.encode(ambMessage));
+
+        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.prank(MAILBOX);
+        hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(bond))), abi.encode(ambMessage));
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
-        hyperlaneImplementation.handle(uint32(ETH), "", abi.encode(ambMessage));
+        hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(address(hyperlaneImplementation)))), abi.encode(ambMessage));
     }
 
     function setupBroadcastPayloadAMBData(address _srcSender) public returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
