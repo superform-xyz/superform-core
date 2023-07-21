@@ -9,81 +9,67 @@ import "../../types/DataTypes.sol";
 import "../utils/ProtocolActions.sol";
 import "../utils/AmbParams.sol";
 
-contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
+import {ISuperFormRouter} from "../../interfaces/ISuperFormRouter.sol";
+import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155.sol";
+
+contract SDMVW142TokenInputSlippageL1AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 3];
-        MultiDstAMBs = [AMBs, AMBs];
 
-        CHAIN_0 = POLY;
-        DST_CHAINS = [OP, AVAX];
+        AMBs = [1, 3];
 
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [0];
-        TARGET_UNDERLYINGS[AVAX][0] = [2];
-
-        TARGET_VAULTS[OP][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
-
-        TARGET_FORM_KINDS[OP][0] = [0];
-        TARGET_FORM_KINDS[AVAX][0] = [0];
+        CHAIN_0 = ETH;
+        DST_CHAINS = [AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][1] = [0];
-        TARGET_UNDERLYINGS[AVAX][1] = [2];
+        TARGET_UNDERLYINGS[AVAX][0] = [1, 1, 1];
+        TARGET_VAULTS[AVAX][0] = [1, 4, 2]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 2];
 
-        TARGET_VAULTS[OP][1] = [0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[AVAX][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_UNDERLYINGS[AVAX][1] = [1, 1, 1];
+        TARGET_VAULTS[AVAX][1] = [1, 4, 2]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[AVAX][1] = [1, 1, 2];
 
-        TARGET_FORM_KINDS[OP][1] = [0];
-        TARGET_FORM_KINDS[AVAX][1] = [0];
+        AMOUNTS[AVAX][0] = [421412, 88888, 7777];
+        AMOUNTS[AVAX][1] = [214, 88888, 777];
 
-        AMOUNTS[OP][0] = [1000];
-        AMOUNTS[OP][1] = [500];
-
-        AMOUNTS[AVAX][0] = [750];
-        AMOUNTS[AVAX][1] = [250];
-
-        PARTIAL[OP][1] = [true];
-        PARTIAL[AVAX][1] = [true];
+        PARTIAL[AVAX][1] = [true, false, true];
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[OP][0] = [1];
-        LIQ_BRIDGES[OP][1] = [1];
+        LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
+        LIQ_BRIDGES[AVAX][1] = [1, 1, 1];
 
-        LIQ_BRIDGES[AVAX][0] = [2];
-        LIQ_BRIDGES[AVAX][1] = [2];
-
+        /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
+                multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 743, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                slippage: 86, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: true,
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
 
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
+                multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 743, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 86, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
             })
         );
     }
