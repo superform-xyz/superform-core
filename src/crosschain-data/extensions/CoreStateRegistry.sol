@@ -168,7 +168,15 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     function processPayload(
         uint256 payloadId_,
         bytes memory ackExtraData_
-    ) external payable virtual override onlyProcessor isValidPayloadId(payloadId_) returns (bytes memory) {
+    )
+        external
+        payable
+        virtual
+        override
+        onlyProcessor
+        isValidPayloadId(payloadId_)
+        returns (bytes memory savedMessage, bytes memory returnMessage)
+    {
         CoreProcessPayloadLocalVars memory v;
 
         v._payloadBody = payloadBody[payloadId_];
@@ -182,6 +190,15 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         v._message = AMBMessage(v._payloadHeader, v._payloadBody);
 
+        savedMessage = abi.encode(v._message);
+
+        /// @dev validates quorum
+        v._proof = keccak256(savedMessage);
+
+        if (messageQuorum[v._proof] < getRequiredMessagingQuorum(v.srcChainId)) {
+            revert Error.QUORUM_NOT_REACHED();
+        }
+
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             v.multi == 1
@@ -191,34 +208,25 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         if (v.callbackType == uint8(CallbackType.INIT)) {
             if (v.txType == uint8(TransactionType.WITHDRAW)) {
-                v.returnMessage = v.multi == 1
+                returnMessage = v.multi == 1
                     ? _processMultiWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId)
                     : _processSingleWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId);
             }
 
             if (v.txType == uint8(TransactionType.DEPOSIT)) {
-                v.returnMessage = v.multi == 1
+                returnMessage = v.multi == 1
                     ? _processMultiDeposit(payloadId_, v._payloadBody, v.srcSender, v.srcChainId)
                     : _processSingleDeposit(payloadId_, v._payloadBody, v.srcSender, v.srcChainId);
             }
         }
 
-        /// @dev validates quorum
-        v._proof = keccak256(abi.encode(v._message));
-
-        if (messageQuorum[v._proof] < getRequiredMessagingQuorum(v.srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
-        }
-
-        if (v.returnMessage.length > 0) {
-            _dispatchAcknowledgement(v.srcChainId, v.returnMessage, ackExtraData_);
+        if (returnMessage.length > 0) {
+            _dispatchAcknowledgement(v.srcChainId, returnMessage, ackExtraData_);
         }
 
         /// @dev sets status as processed
         /// @dev check for re-entrancy & relocate if needed
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-
-        return v.returnMessage;
     }
 
     struct RescueFailedDepositsLocalVars {
@@ -333,7 +341,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 multiVaultData.amounts[i] = 0;
             } catch {
                 if (!errors) errors = true;
-                continue;
             }
 
             unchecked {
@@ -350,6 +357,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     multiVaultData.payloadId,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
+                    multiVaultData.superFormIds,
                     multiVaultData.amounts
                 );
         }
@@ -378,7 +386,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         bool fulfilment;
         bool errors;
 
-        for (uint256 i; i < numberOfVaults; ++i) {
+        for (uint256 i; i < numberOfVaults; ) {
             /// @dev FIXME: whole msg.value is transferred here, in multi sync this needs to be split
 
             underlying = IERC20(IBaseForm(superForms[i]).getUnderlyingOfVault());
@@ -408,15 +416,16 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     if (!fulfilment) fulfilment = true;
                     /// @dev marks the indexes that require a callback mint of SuperPositions
                     dstAmounts[i] = dstAmount;
-                    continue;
                 } catch {
                     if (!errors) errors = true;
 
                     failedDeposits[payloadId_].push(multiVaultData.superFormIds[i]);
-                    continue;
                 }
             } else {
                 revert Error.BRIDGE_TOKENS_PENDING();
+            }
+            unchecked {
+                ++i;
             }
         }
 
@@ -429,6 +438,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     multiVaultData.payloadId,
                     TransactionType.DEPOSIT,
                     CallbackType.RETURN,
+                    multiVaultData.superFormIds,
                     dstAmounts
                 );
         }
@@ -472,6 +482,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     singleVaultData.payloadId,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
+                    singleVaultData.superFormId,
                     singleVaultData.amount
                 );
         }
@@ -515,6 +526,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         singleVaultData.payloadId,
                         TransactionType.DEPOSIT,
                         CallbackType.RETURN,
+                        singleVaultData.superFormId,
                         dstAmount
                     );
             } catch {
@@ -536,6 +548,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 payloadId_,
         TransactionType txType,
         CallbackType returnType,
+        uint256[] memory superFormIds_,
         uint256[] memory amounts
     ) internal view returns (bytes memory) {
         /// @notice Send Data to Source to issue superform positions.
@@ -550,7 +563,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         srcSender_,
                         superRegistry.chainId()
                     ),
-                    abi.encode(ReturnMultiData(payloadId_, amounts))
+                    abi.encode(ReturnMultiData(payloadId_, superFormIds_, amounts))
                 )
             );
     }
@@ -562,6 +575,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 payloadId_,
         TransactionType txType,
         CallbackType returnType,
+        uint256 superFormId_,
         uint256 amount
     ) internal view returns (bytes memory) {
         /// @notice Send Data to Source to issue superform positions.
@@ -576,7 +590,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         srcSender_,
                         superRegistry.chainId()
                     ),
-                    abi.encode(ReturnSingleData(payloadId_, amount))
+                    abi.encode(ReturnSingleData(payloadId_, superFormId_, amount))
                 )
             );
     }

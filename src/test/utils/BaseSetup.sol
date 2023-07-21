@@ -16,6 +16,7 @@ import {LiFiMock} from "../mocks/LiFiMock.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {VaultMockRevertDeposit} from "../mocks/VaultMockRevertDeposit.sol";
+import {VaultMockRevertWithdraw} from "../mocks/VaultMockRevertWithdraw.sol";
 import {ERC4626TimelockMockRevertWithdrawal} from "../mocks/ERC4626TimelockMockRevertWithdrawal.sol";
 import {ERC4626TimelockMockRevertDeposit} from "../mocks/ERC4626TimelockMockRevertDeposit.sol";
 import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
@@ -111,7 +112,8 @@ abstract contract BaseSetup is DSTest, Test {
         "ERC4626TimelockMockRevertWithdrawal",
         "ERC4626TimelockMockRevertDeposit",
         "kycDAO4626RevertDeposit",
-        "kycDAO4626RevertWithdraw"
+        "kycDAO4626RevertWithdraw",
+        "VaultMockRevertWithdraw"
     ];
     struct VaultInfo {
         bytes[] vaultBytecode;
@@ -754,9 +756,10 @@ abstract contract BaseSetup is DSTest, Test {
         /// @dev form 1 (normal 4626)
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMock).creationCode);
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertDeposit).creationCode);
-
+        vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertWithdraw).creationCode);
         vaultBytecodes2[1].vaultKinds.push("VaultMock");
         vaultBytecodes2[1].vaultKinds.push("VaultMockRevertDeposit");
+        vaultBytecodes2[1].vaultKinds.push("VaultMockRevertWithdraw");
 
         /// @dev form 2 (timelocked 4626)
         vaultBytecodes2[2].vaultBytecode.push(type(ERC4626TimelockMock).creationCode);
@@ -893,7 +896,7 @@ abstract contract BaseSetup is DSTest, Test {
         LayerZeroHelper(getContract(currentChainId, "LayerZeroHelper")).help(
             endpoints,
             lzChainIds,
-            1000000, /// (change to 2000000) @dev This is the gas value to send - value needs to be tested and probably be lower
+            5000000, /// note: using some max limit
             forkIds,
             logs
         );
@@ -1116,9 +1119,13 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (, , , , uint256[] memory amounts, , , ) = vars.payloadHelper.decodePayload(payloadId);
+        (, , , , uint256[] memory amounts, , uint256[] memory superFormIds, ) = vars.payloadHelper.decodePayload(
+            payloadId
+        );
 
-        vars.message = abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, amounts))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, superFormIds, amounts)))
+        );
 
         (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateFees(
             selectedAmbIds,
@@ -1153,9 +1160,13 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (, , uint256 payloadId, , uint256 amount) = vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
+        (, , uint256 payloadId, uint256 superFormId, uint256 amount) = vars.payloadHelper.decodeTimeLockPayload(
+            timelockPayloadId
+        );
 
-        vars.message = abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, amount))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superFormId, amount)))
+        );
 
         (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateFees(
             selectedAmbIds,
