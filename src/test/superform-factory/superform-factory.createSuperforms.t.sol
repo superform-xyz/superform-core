@@ -98,10 +98,28 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
         );
 
         /// @dev Creating superform using beacon
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
+        (uint256 superFormIdCreated, address superFormCreated) = SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
             formBeaconId,
             formImplementation
         );
+
+        (uint256[] memory superFormIds_, address[] memory superForms_) = SuperFormFactory(getContract(chainId, "SuperFormFactory")).getAllSuperFormsFromVault(formImplementation);
+
+        assertEq(
+            superFormIdCreated,
+            superFormIds_[superFormIds_.length - 1]
+        );
+
+        assertEq(
+            superFormCreated,
+            superForms_[superForms_.length - 1]
+        );
+
+        uint256 totalSuperForms = SuperFormFactory(getContract(chainId, "SuperFormFactory")).getFormCount();
+        assertEq(
+            totalSuperForms,
+            4
+        );        
     }
 
     function test_revert_createSuperForm_addressZero() public {
