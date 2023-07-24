@@ -5,6 +5,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {LiqRequest, TransactionType, CallbackType, MultiVaultsSFData, SingleVaultSFData, MultiDstMultiVaultsStateReq, SingleDstMultiVaultsStateReq, MultiDstSingleVaultStateReq, SingleXChainSingleVaultStateReq, SingleDirectSingleVaultStateReq, InitMultiVaultData, InitSingleVaultData, AMBMessage, SingleDstAMBParams} from "./types/DataTypes.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
+import {IFeeCollector} from "./interfaces/IFeeCollector.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperFormRouter} from "./interfaces/ISuperFormRouter.sol";
@@ -72,6 +73,8 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 )
             );
         }
+
+        _forwardFee();
     }
 
     /// @inheritdoc ISuperFormRouter
@@ -140,6 +143,8 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
             emit CrossChainInitiated(vars.currentPayloadId);
         }
+
+        /// FIXME: single dst needs re-write for enabling gas forwarding
     }
 
     /// @inheritdoc ISuperFormRouter
@@ -164,6 +169,8 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 );
             }
         }
+
+        _forwardFee();
     }
 
     /// @inheritdoc ISuperFormRouter
@@ -210,6 +217,8 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             )
         );
 
+        /// FIXME: single dst needs re-write for enabling gas forwarding
+
         emit CrossChainInitiated(vars.currentPayloadId);
     }
 
@@ -225,8 +234,9 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         (ambData, vars.currentPayloadId) = _buildDepositAmbData(req.dstChainId, req.superFormData);
 
         /// @dev same chain action
-
         _directSingleDeposit(msg.sender, req.superFormData.liqRequest, ambData);
+
+        /// FIXME: single dst needs re-write for enabling gas forwarding
 
         emit Completed(vars.currentPayloadId);
     }
@@ -243,6 +253,8 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 )
             );
         }
+
+        _forwardFee();
     }
 
     /// @inheritdoc ISuperFormRouter
@@ -296,6 +308,8 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
             emit CrossChainInitiated(vars.currentPayloadId);
         }
+
+        /// FIXME: single dst needs re-write for enabling gas forwarding
     }
 
     /// @inheritdoc ISuperFormRouter
@@ -319,6 +333,8 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 );
             }
         }
+
+        _forwardFee();
     }
 
     /// @inheritdoc ISuperFormRouter
@@ -351,6 +367,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             )
         );
 
+        /// FIXME: single dst needs re-write for enabling gas forwarding
         emit CrossChainInitiated(vars.currentPayloadId);
     }
 
@@ -370,6 +387,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
         _directSingleWithdraw(req.superFormData.liqRequest, ambData, msg.sender);
 
+        /// FIXME: single dst needs re-write for enabling gas forwarding
         emit Completed(vars.currentPayloadId);
     }
 
@@ -752,6 +770,14 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         }
 
         return true;
+    }
+
+    /// @dev forwards the residual fees to fee collector
+    function _forwardFee() internal {
+        uint256 residualFee = address(this).balance;
+        if (residualFee > 0) {
+            IFeeCollector(superRegistry.getFeeCollector()).makePayment{value: residualFee}(msg.sender);
+        }
     }
 
     /*///////////////////////////////////////////////////////////////

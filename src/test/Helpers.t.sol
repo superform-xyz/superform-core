@@ -114,7 +114,7 @@ contract PayloadHelperTest is ProtocolActions {
 
         /// @notice: just asserting if fees are greater than 0
         /// no way to write serious tests on forked testnet at this point. should come back to this later on.
-        (uint256 totalFees, ) = feeHelper.estimateFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
-        assertGe(totalFees, 0);
+        (uint256 ambFees, ) = feeHelper.estimateAMBFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
+        assertGe(ambFees, 0);
     }
 }

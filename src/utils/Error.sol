@@ -246,4 +246,14 @@ library Error {
 
     /// @dev error thrown when the unlock reques
     error LOCKED();
+
+    /*///////////////////////////////////////////////////////////////
+                        FEE COLLECTOR ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev error thrown when user pays zero
+    error ZERO_MSG_VALUE();
+
+    /// @dev error thrown when fees withdrawal fails
+    error FAILED_WITHDRAW();
 }
