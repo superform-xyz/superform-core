@@ -13,9 +13,9 @@ contract Fix is Script {
     function deploy() external {
         vm.startBroadcast(vm.envUint("DEPLOYER_KEY"));
 
-        LayerzeroImplementation(payable(0x7319f5443c84f1e130603094997E26D1C08250dc)).setLzEndpoint(
-            0x3c2269811836af69497E5F486A85D7316753cf62
-        );
+        // LayerzeroImplementation(payable(0x7319f5443c84f1e130603094997E26D1C08250dc)).setLzEndpoint(
+        //     0x3c2269811836af69497E5F486A85D7316753cf62
+        // );
 
         CelerImplementation(payable(0x651B484c7c42aCc5C70dE7749B5F0e0C68cA6A10)).setCelerBus(
             0x95714818fdd7a5454F73Da9c777B3ee6EbAEEa6B

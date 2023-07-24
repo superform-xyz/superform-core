@@ -378,10 +378,10 @@ abstract contract AbstractDeploy is Script {
 
         SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
         /// @dev 4.1- deploy Layerzero Implementation
-        vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
+        vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry), lzEndpoints[i]));
         contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
-        LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
+        // LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
         /// @dev 4.2- deploy Hyperlane Implementation
         vars.hyperlaneImplementation = address(
