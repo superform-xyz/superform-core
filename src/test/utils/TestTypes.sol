@@ -123,7 +123,7 @@ struct SetupVars {
     address factoryStateRegistry;
     address coreStateRegistry;
     address PayloadHelper;
-    address FeeHelper;
+    address feeHelper;
     address twoStepsFormStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
@@ -134,6 +134,7 @@ struct SetupVars {
     address dstCelerImplementation;
     address dstStateRegistry;
     address multiTxProcessor;
+    address feeCollector;
     address superRegistry;
     address superRBAC;
     address canonicalPermit2;

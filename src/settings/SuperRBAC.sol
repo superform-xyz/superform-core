@@ -16,6 +16,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     bytes32 public immutable PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
+    bytes32 public constant override FEE_ADMIN_ROLE = keccak256("FEE_ADMIN_ROLE");
     bytes32 public constant override SYNC_REVOKE_ROLE = keccak256("SYNC_REVOKE_ROLE");
     bytes32 public constant override SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
     bytes32 public constant override CORE_CONTRACTS_ROLE = keccak256("CORE_CONTRACTS_ROLE");
@@ -28,6 +29,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     constructor(address admin_) {
         _setupRole(PROTOCOL_ADMIN_ROLE, admin_);
 
+        _setRoleAdmin(FEE_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -48,6 +50,11 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function grantProtocolAdminRole(address admin_) external override {
         grantRole(PROTOCOL_ADMIN_ROLE, admin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function grantFeeAdminRole(address admin_) external override {
+        grantRole(FEE_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -184,6 +191,11 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function hasProtocolAdminRole(address admin_) external view override returns (bool) {
         return hasRole(PROTOCOL_ADMIN_ROLE, admin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasFeeAdminRole(address admin_) external view override returns (bool) {
+        return hasRole(FEE_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
