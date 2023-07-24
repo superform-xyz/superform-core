@@ -53,6 +53,9 @@ interface ISuperRegistry {
     /// @dev is emitted when a new tx updater is configured.
     event TxUpdaterUpdated(address indexed oldTxUpdater, address indexed txUpdater);
 
+    /// @dev is emitted when a new fee collector is configured.
+    event FeeCollectorUpdated(address indexed oldFeeCollector, address indexed feeCollector);
+
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(uint256 indexed bridgeId, address indexed bridgeAddress);
 
@@ -86,6 +89,10 @@ interface ISuperRegistry {
     /// @dev sets the superform factory address.
     /// @param superFormFactory_ the address of the superform factory
     function setSuperFormFactory(address superFormFactory_) external;
+
+    /// @dev sets the superform fee collector address.
+    /// @param feeCollector_ the address of the fee collector
+    function setFeeCollector(address feeCollector_) external;
 
     /// @dev sets the state registry address.
     /// @param coreStateRegistry_ the address of the state registry
@@ -158,6 +165,9 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the superform factory module
     function SUPERFORM_FACTORY() external view returns (bytes32);
+
+    /// @dev returns the id of the superform fee collector
+    function FEE_COLLECTOR() external view returns (bytes32);
 
     /// @dev returns the id of the core state registry module
     function CORE_STATE_REGISTRY() external view returns (bytes32);
@@ -263,4 +273,8 @@ interface ISuperRegistry {
     /// @param ambId_ is the id of a bridge
     /// @return ambAddress_ is the address of the form
     function getAmbAddress(uint8 ambId_) external view returns (address ambAddress_);
+
+    /// @dev gets the address of fee collector
+    /// @return feeCollector_ is the address of the fee collector
+    function getFeeCollector() external view returns (address feeCollector_);
 }

@@ -32,6 +32,7 @@ abstract contract ProtocolActions is BaseSetup {
     uint64[] public uniqueDSTs;
 
     uint256 public msgValue;
+    uint256 public dstValue;
 
     bytes[] public ambParams;
 
@@ -83,10 +84,7 @@ abstract contract ProtocolActions is BaseSetup {
     /// @dev 'n' deposits rescued per payloadId per destination chain
     /// TODO: test rescuing deposits from multiple superforms,
     /// optimise (+ generalise if possible) args in singleVaultCallDataArgs
-    function _rescueFailedDeposits(
-        TestAction memory action,
-        uint256 actionIndex
-    ) internal {
+    function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
             vm.selectFork(FORKS[OP]);
             uint256 userWethBalanceBefore = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
@@ -132,8 +130,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
 
             vm.prank(deployer);
-            CoreStateRegistry(coreStateRegistryDst)
-                .rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
+            CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
 
             vm.selectFork(FORKS[OP]);
             uint256 userWethBalanceAfter = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
@@ -444,19 +441,13 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[CHAIN_0]);
 
-        (msgValue, ambParams) = _getAmbParamsAndFees(
+        ambParams = _getAmbParamsAndFees(
             DST_CHAINS,
             AMBs,
             users[action.user],
             multiSuperFormsData,
             singleSuperFormsData
         );
-
-        /// @dev with multi state requests, the entire msg.value is used. Msg.value in that case should cover
-        /// @dev the sum of native assets needed in each state request
-        if (action.externalToken == 3) {
-            msgValue = msgValue + _sumOfAmounts();
-        }
     }
 
     /// @dev STEP 2: Run Source Chain Action
@@ -467,6 +458,9 @@ abstract contract ProtocolActions is BaseSetup {
         StagesLocalVars memory vars
     ) internal returns (StagesLocalVars memory) {
         SuperFormRouter superRouter = SuperFormRouter(vars.fromSrc);
+
+        /// address is the same across all chains cuz of CREATE2
+        FeeHelper feeHelper = FeeHelper(getContract(1, "FeeHelper"));
         bool sameChainDstHasRevertingVault;
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (CHAIN_0 == DST_CHAINS[i]) {
@@ -488,14 +482,9 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
         vm.selectFork(FORKS[CHAIN_0]);
-
-        vm.prank(users[action.user]);
         /// @dev see @pigeon for this implementation
         vm.recordLogs();
 
-        if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
-            vm.expectRevert();
-        }
         if (action.multiVaults) {
             if (vars.nDestinations == 1) {
                 vars.singleDstMultiVaultStateReq = SingleDstMultiVaultsStateReq(
@@ -506,8 +495,28 @@ abstract contract ProtocolActions is BaseSetup {
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                    (, , dstValue, msgValue) = feeHelper.estimateSingleDstMultiVault(
+                        vars.singleDstMultiVaultStateReq,
+                        true
+                    );
+                    vm.prank(users[action.user]);
+
+                    if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                        vm.expectRevert();
+                    }
+
                     superRouter.singleDstMultiVaultDeposit{value: msgValue}(vars.singleDstMultiVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
+                    (, , dstValue, msgValue) = feeHelper.estimateSingleDstMultiVault(
+                        vars.singleDstMultiVaultStateReq,
+                        false
+                    );
+                    vm.prank(users[action.user]);
+
+                    if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                        vm.expectRevert();
+                    }
+
                     superRouter.singleDstMultiVaultWithdraw{value: msgValue}(vars.singleDstMultiVaultStateReq);
                 }
             } else if (vars.nDestinations > 1) {
@@ -519,8 +528,28 @@ abstract contract ProtocolActions is BaseSetup {
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                    (, , dstValue, msgValue) = feeHelper.estimateMultiDstMultiVault(
+                        vars.multiDstMultiVaultStateReq,
+                        true
+                    );
+                    vm.prank(users[action.user]);
+
+                    if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                        vm.expectRevert();
+                    }
+
                     superRouter.multiDstMultiVaultDeposit{value: msgValue}(vars.multiDstMultiVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
+                    (, , dstValue, msgValue) = feeHelper.estimateMultiDstMultiVault(
+                        vars.multiDstMultiVaultStateReq,
+                        false
+                    );
+                    vm.prank(users[action.user]);
+
+                    if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                        vm.expectRevert();
+                    }
+
                     superRouter.multiDstMultiVaultWithdraw{value: msgValue}(vars.multiDstMultiVaultStateReq);
                 }
             }
@@ -535,10 +564,30 @@ abstract contract ProtocolActions is BaseSetup {
                     );
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                        (, , dstValue, msgValue) = feeHelper.estimateSingleXChainSingleVault(
+                            vars.singleXChainSingleVaultStateReq,
+                            true
+                        );
+                        vm.prank(users[action.user]);
+
+                        if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                            vm.expectRevert();
+                        }
+
                         superRouter.singleXChainSingleVaultDeposit{value: msgValue}(
                             vars.singleXChainSingleVaultStateReq
                         );
                     } else if (action.action == Actions.Withdraw) {
+                        (, , dstValue, msgValue) = feeHelper.estimateSingleXChainSingleVault(
+                            vars.singleXChainSingleVaultStateReq,
+                            false
+                        );
+                        vm.prank(users[action.user]);
+
+                        if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                            vm.expectRevert();
+                        }
+
                         superRouter.singleXChainSingleVaultWithdraw{value: msgValue}(
                             vars.singleXChainSingleVaultStateReq
                         );
@@ -551,10 +600,30 @@ abstract contract ProtocolActions is BaseSetup {
                     );
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                        (, , dstValue, msgValue) = feeHelper.estimateSingleDirectSingleVault(
+                            vars.singleDirectSingleVaultStateReq,
+                            true
+                        );
+                        vm.prank(users[action.user]);
+
+                        if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                            vm.expectRevert();
+                        }
+
                         superRouter.singleDirectSingleVaultDeposit{value: msgValue}(
                             vars.singleDirectSingleVaultStateReq
                         );
                     } else if (action.action == Actions.Withdraw) {
+                        (, , dstValue, msgValue) = feeHelper.estimateSingleDirectSingleVault(
+                            vars.singleDirectSingleVaultStateReq,
+                            false
+                        );
+                        vm.prank(users[action.user]);
+
+                        if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                            vm.expectRevert();
+                        }
+
                         superRouter.singleDirectSingleVaultWithdraw{value: msgValue}(
                             vars.singleDirectSingleVaultStateReq
                         );
@@ -568,8 +637,28 @@ abstract contract ProtocolActions is BaseSetup {
                     ambParams
                 );
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                    (, , dstValue, msgValue) = feeHelper.estimateMultiDstSingleVault(
+                        vars.multiDstSingleVaultStateReq,
+                        true
+                    );
+                    vm.prank(users[action.user]);
+
+                    if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                        vm.expectRevert();
+                    }
+
                     superRouter.multiDstSingleVaultDeposit{value: msgValue}(vars.multiDstSingleVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
+                    (, , dstValue, msgValue) = feeHelper.estimateMultiDstSingleVault(
+                        vars.multiDstSingleVaultStateReq,
+                        true
+                    );
+                    vm.prank(users[action.user]);
+
+                    if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
+                        vm.expectRevert();
+                    }
+
                     superRouter.multiDstSingleVaultWithdraw{value: msgValue}(vars.multiDstSingleVaultStateReq);
                 }
             }

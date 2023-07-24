@@ -31,6 +31,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev core protocol addresses identifiers
     bytes32 public constant override SUPER_ROUTER = keccak256("SUPER_ROUTER");
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
+    bytes32 public constant override FEE_COLLECTOR = keccak256("FEE_COLLECTOR");
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
     bytes32 public constant override TWO_STEPS_FORM_STATE_REGISTRY = keccak256("TWO_STEPS_FORM_STATE_REGISTRY");
     bytes32 public constant override FACTORY_STATE_REGISTRY = keccak256("FACTORY_STATE_REGISTRY");
@@ -89,6 +90,14 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         protocolAddresses[SUPERFORM_FACTORY] = superFormFactory_;
 
         emit SuperFormFactoryUpdated(oldSuperFormFactory, superFormFactory_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setFeeCollector(address feeCollector_) external override onlyCaller {
+        address oldFeeCollector = protocolAddresses[FEE_COLLECTOR];
+        protocolAddresses[FEE_COLLECTOR] = feeCollector_;
+
+        emit FeeCollectorUpdated(oldFeeCollector, feeCollector_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -297,6 +306,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistry(uint8 registryId_) external view override returns (address registryAddress_) {
         registryAddress_ = registryAddresses[registryId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getFeeCollector() external view returns (address feeCollector_) {
+        feeCollector_ = getProtocolAddress(FEE_COLLECTOR);
     }
 
     /// @inheritdoc ISuperRegistry

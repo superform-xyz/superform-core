@@ -14,6 +14,8 @@ import {ArrayCastLib} from "../../libraries/ArrayCastLib.sol";
 import "../../types/DataTypes.sol";
 import "../../types/LiquidityTypes.sol";
 
+import "forge-std/console.sol";
+
 /// @dev interface to read public variable from state registry
 interface ReadOnlyBaseRegistry is IBaseStateRegistry {
     function payloadsCount() external view returns (uint256);
@@ -29,6 +31,7 @@ contract FeeHelper is IFeeHelper {
     /*///////////////////////////////////////////////////////////////
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint256 public constant TIMELOCK_FORM_ID = 1;
 
     /*///////////////////////////////////////////////////////////////
@@ -43,6 +46,8 @@ contract FeeHelper is IFeeHelper {
     /// same chain params
     AggregatorV3Interface public srcNativeFeedOracle;
     AggregatorV3Interface public srcGasPriceOracle;
+
+    uint256 public srcGasPrice;
     uint256 public ackNativeGasCost;
     uint256 public twoStepFeeCost;
 
@@ -53,6 +58,7 @@ contract FeeHelper is IFeeHelper {
     mapping(uint64 chainId => uint256 gasForUpdate) public updateGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public depositGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
+    mapping(uint256 chainId => uint256 defaultGasPrice) public dstGasPrice;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -96,6 +102,11 @@ contract FeeHelper is IFeeHelper {
         if (configType_ == 4) {
             twoStepFeeCost = abi.decode(config_, (uint256));
         }
+
+        /// Type 5: GAS PRICE
+        if (configType_ == 5) {
+            srcGasPrice = abi.decode(config_, (uint256));
+        }
     }
 
     /// @inheritdoc IFeeHelper
@@ -106,7 +117,8 @@ contract FeeHelper is IFeeHelper {
         uint256 swapGasUsed_,
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
-        uint256 withdrawGasUsed_
+        uint256 withdrawGasUsed_,
+        uint256 defaultGasPrice_
     ) external override onlyProtocolAdmin {
         dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
         dstNativeFeedOracle[chainId_] = AggregatorV3Interface(dstNativeFeedOracle_);
@@ -115,6 +127,7 @@ contract FeeHelper is IFeeHelper {
         updateGasUsed[chainId_] = updateGasUsed_;
         depositGasUsed[chainId_] = depositGasUsed_;
         withdrawGasUsed[chainId_] = withdrawGasUsed_;
+        dstGasPrice[chainId_] = defaultGasPrice_;
     }
 
     /// @inheritdoc IFeeHelper
@@ -152,6 +165,11 @@ contract FeeHelper is IFeeHelper {
         if (configType_ == 6) {
             withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
+
+        /// Type 6: GAS PRICE
+        if (configType_ == 6) {
+            dstGasPrice[chainId_] = abi.decode(config_, (uint256));
+        }
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -162,12 +180,12 @@ contract FeeHelper is IFeeHelper {
     function estimateMultiDstMultiVault(
         MultiDstMultiVaultsStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 totalFees) {
+    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         for (uint256 i; i < req_.dstChainIds.length; ) {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            totalFees += _estimateAMBFees(
+            srcAmount += _estimateAMBFees(
                 req_.ambIds[i],
                 req_.dstChainIds[i],
                 _generateMultiVaultMessage(req_.superFormsData[i]),
@@ -192,29 +210,34 @@ contract FeeHelper is IFeeHelper {
             /// @dev step 5: estimation processing cost of acknowledgement
             /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
             if (isDeposit)
-                totalFees += _estimateAckProcessingCost(
+                srcAmount += _estimateAckProcessingCost(
                     req_.dstChainIds.length,
                     req_.superFormsData[i].superFormIds.length
                 );
 
-            /// @dev step 6: convert all dst gas estimates to src chain estimate
-            totalFees += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
+            /// @dev step 6: estimate liq amount
+            if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormsData[i].liqRequests);
+
+            /// @dev step 7: convert all dst gas estimates to src chain estimate
+            dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
             unchecked {
                 ++i;
             }
         }
+
+        totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
     /// @inheritdoc IFeeHelper
     function estimateSingleDstMultiVault(
         SingleDstMultiVaultsStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 totalFees) {
+    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         uint256 totalDstGas;
 
         /// @dev step 1: estimate amb costs
-        totalFees += _estimateAMBFees(
+        srcAmount += _estimateAMBFees(
             req_.ambIds,
             req_.dstChainId,
             _generateMultiVaultMessage(req_.superFormsData),
@@ -232,22 +255,27 @@ contract FeeHelper is IFeeHelper {
         totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, req_.superFormsData.superFormIds.length);
 
         /// @dev step 5: estimation execution cost of acknowledgement
-        if (isDeposit) totalFees += _estimateAckProcessingCost(1, req_.superFormsData.superFormIds.length);
+        if (isDeposit) srcAmount += _estimateAckProcessingCost(1, req_.superFormsData.superFormIds.length);
 
-        /// @dev step 6: convert all dst gas estimates to src chain estimate
-        totalFees += _convertToNativeFee(req_.dstChainId, totalDstGas);
+        /// @dev step 6: estimate liq amount
+        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormsData.liqRequests);
+
+        /// @dev step 7: convert all dst gas estimates to src chain estimate
+        dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
+
+        totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
     /// @inheritdoc IFeeHelper
     function estimateMultiDstSingleVault(
         MultiDstSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 totalFees) {
+    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         for (uint256 i; i < req_.dstChainIds.length; ) {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            totalFees += _estimateAMBFees(
+            srcAmount += _estimateAMBFees(
                 req_.ambIds[i],
                 req_.dstChainIds[i],
                 _generateSingleVaultMessage(req_.superFormsData[i]),
@@ -265,25 +293,30 @@ contract FeeHelper is IFeeHelper {
             totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], 1);
 
             /// @dev step 5: estimation execution cost of acknowledgement
-            if (isDeposit) totalFees += _estimateAckProcessingCost(req_.dstChainIds.length, 1);
+            if (isDeposit) srcAmount += _estimateAckProcessingCost(req_.dstChainIds.length, 1);
 
-            /// @dev step 6: convert all dst gas estimates to src chain estimate
-            totalFees += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
+            /// @dev step 6: estimate the liqAmount
+            if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormsData[i].liqRequest.castToArray());
+
+            /// @dev step 7: convert all dst gas estimates to src chain estimate
+            dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
             unchecked {
                 ++i;
             }
         }
+
+        totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
     /// @inheritdoc IFeeHelper
     function estimateSingleXChainSingleVault(
         SingleXChainSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 totalFees) {
+    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         uint256 totalDstGas;
         /// @dev step 1: estimate amb costs
-        totalFees += _estimateAMBFees(
+        srcAmount += _estimateAMBFees(
             req_.ambIds,
             req_.dstChainId,
             _generateSingleVaultMessage(req_.superFormData),
@@ -301,28 +334,35 @@ contract FeeHelper is IFeeHelper {
         totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, 1);
 
         /// @dev step 5: estimation execution cost of acknowledgement
-        if (isDeposit) totalFees += _estimateAckProcessingCost(1, 1);
+        if (isDeposit) srcAmount += _estimateAckProcessingCost(1, 1);
 
-        /// @dev step 6: convert all dst gas estimates to src chain estimate
-        totalFees += _convertToNativeFee(req_.dstChainId, totalDstGas);
+        /// @dev step 6: estimate the liq amount
+        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormData.liqRequest.castToArray());
+
+        /// @dev step 7: convert all dst gas estimates to src chain estimate
+        dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
+
+        totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
     /// @inheritdoc IFeeHelper
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 totalFees) {
+    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         /// @dev only if timelock form withdrawal is involved
         if (!isDeposit && req_.superFormData.superFormId == TIMELOCK_FORM_ID) {
-            (, int256 gasPrice, , , ) = srcGasPriceOracle.latestRoundData();
-
-            return twoStepFeeCost * uint256(gasPrice);
+            srcAmount += twoStepFeeCost * _getGasPrice(0);
         }
+
+        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormData.liqRequest.castToArray());
+
+        /// note: not adding dstAmount to save some GAS
+        totalAmount = liqAmount + srcAmount;
     }
 
     /// @inheritdoc IFeeHelper
-    /// @dev OUTDATED!! might change and use for just amb gas estimation
-    function estimateFees(
+    function estimateAMBFees(
         uint8[] memory ambIds_,
         uint64 dstChainId_,
         bytes memory message_,
@@ -389,7 +429,7 @@ contract FeeHelper is IFeeHelper {
         for (uint256 i; i < liqReq_.length; ) {
             /// @dev checks if tx_data receiver is multiTxProcessor
             if (
-                IBridgeValidator(superRegistry.getBridgeAddress(liqReq_[i].bridgeId)).decodeReceiver(
+                IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).decodeReceiver(
                     liqReq_[i].txData
                 ) == superRegistry.multiTxProcessor()
             ) {
@@ -401,7 +441,24 @@ contract FeeHelper is IFeeHelper {
             }
         }
 
+        if (totalSwaps == 0) {
+            return 0;
+        }
+
         return totalSwaps * swapGasUsed[dstChainId_];
+    }
+
+    /// @dev helps estimate the liq amount involved in the tx
+    function _estimateLiqAmount(LiqRequest[] memory req_) internal pure returns (uint256 liqAmount) {
+        for (uint256 i; i < req_.length; ) {
+            if (req_[i].token == NATIVE) {
+                liqAmount += req_[i].amount;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /// @dev helps estimate the dst chain update payload gas limit
@@ -426,9 +483,8 @@ contract FeeHelper is IFeeHelper {
         uint256 vaultsCount_
     ) internal view returns (uint256 nativeFee) {
         uint256 gasCost = dstChainCount_ * vaultsCount_ * ackNativeGasCost;
-        (, int256 gasPrice, , , ) = srcGasPriceOracle.latestRoundData();
 
-        return gasCost * uint256(gasPrice);
+        return gasCost * _getGasPrice(0);
     }
 
     /// @dev generates the amb message for single vault data
@@ -470,21 +526,22 @@ contract FeeHelper is IFeeHelper {
     /// note: https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
     /// all native tokens should be 18 decimals across all EVMs
     function _convertToNativeFee(uint64 dstChainId_, uint256 dstGas) internal view returns (uint256 nativeFee) {
-        (, int256 gasPrice, , , ) = dstGasPriceOracle[dstChainId_].latestRoundData();
-
         /// @dev is the native dst chain gas used
-        uint256 dstNativeFee = dstGas * uint256(gasPrice);
+        uint256 dstNativeFee = dstGas * _getGasPrice(dstChainId_);
 
-        (, int256 dstNativeTokenPrice, , , ) = dstNativeFeedOracle[dstChainId_].latestRoundData();
+        if (dstNativeFee == 0) {
+            return 0;
+        }
 
         /// @dev is the conversion of dst native tokens to usd equivalent (26 decimal)
-        uint256 dstUsdValue = dstNativeFee * uint256(dstNativeTokenPrice);
+        uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_);
 
-        /// @dev is the final native tokens
-        (, int256 srcNativeTokenPrice, , , ) = srcNativeFeedOracle.latestRoundData();
+        if (dstUsdValue == 0) {
+            return 0;
+        }
 
         /// 10 ** 36 is raw decimal correction; multiply before divide
-        nativeFee = ((dstUsdValue * 10 ** 36) / uint256(srcNativeTokenPrice));
+        nativeFee = ((dstUsdValue * 10 ** 36) / _getNativeTokenPrice(0));
     }
 
     /// @dev helps generate the new payload id
@@ -492,5 +549,45 @@ contract FeeHelper is IFeeHelper {
     function _getNextPayloadId() internal view returns (uint256 nextPayloadId) {
         nextPayloadId = ReadOnlyBaseRegistry(superRegistry.coreStateRegistry()).payloadsCount();
         ++nextPayloadId;
+    }
+
+    /// @dev helps return the current gas price of different networks
+    /// note: returns default set values if an oracle is not configured for the network
+    function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
+        if (chainId_ == 0) {
+            if (address(srcGasPriceOracle) != address(0)) {
+                (, int256 gasPrice, , , ) = srcGasPriceOracle.latestRoundData();
+                return uint256(gasPrice);
+            }
+
+            return srcGasPrice;
+        }
+
+        if (address(dstGasPriceOracle[chainId_]) != address(0)) {
+            (, int256 gasPrice, , , ) = dstGasPriceOracle[chainId_].latestRoundData();
+            return uint256(gasPrice);
+        }
+
+        return dstGasPrice[chainId_];
+    }
+
+    /// @dev helps return the dst chain token price of different networks
+    /// note: returns `0` - if no oracle is set
+    function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
+        if (chainId_ == 0) {
+            if (address(srcNativeFeedOracle) != address(0)) {
+                (, int256 srcTokenPrice, , , ) = srcNativeFeedOracle.latestRoundData();
+                return uint256(srcTokenPrice);
+            }
+
+            return 0;
+        }
+
+        if (address(dstGasPriceOracle[chainId_]) != address(0)) {
+            (, int256 dstTokenPrice, , , ) = dstNativeFeedOracle[chainId_].latestRoundData();
+            return uint256(dstTokenPrice);
+        }
+
+        return 0;
     }
 }
