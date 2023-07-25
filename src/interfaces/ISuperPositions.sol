@@ -11,6 +11,9 @@ interface ISuperPositions {
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev is emitted when a dynamic uri is updated
+    event DynamicURIUpdated(string oldURI, string newURI, bool frozen);
+
     /// @dev is emitted when a cross-chain withdraw return data is received.
     event Status(uint256 txId, uint64 status);
 
@@ -60,7 +63,10 @@ interface ISuperPositions {
     /// @param txInfo_ is the relevant information of the transaction being saved
     function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external;
 
-    function setDynamicURI(string memory dynamicURI_) external;
+    /// @dev sets the dynamic uri for NFT
+    /// @param dynamicURI_ is the dynamic uri of the NFT
+    /// @param freeze_ is to prevent updating the metadata once migrated to IPFS
+    function setDynamicURI(string memory dynamicURI_, bool freeze_) external;
 
     /// FIXME: Temp extension need to make approve at superRouter, may change with arch
     function setApprovalForAll(address operator, bool approved) external;

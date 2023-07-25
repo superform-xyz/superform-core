@@ -178,7 +178,7 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateMultiDstMultiVault(
-        MultiDstMultiVaultsStateReq calldata req_,
+        MultiDstMultiVaultStateReq calldata req_,
         bool isDeposit
     ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         for (uint256 i; i < req_.dstChainIds.length; ) {
@@ -230,43 +230,6 @@ contract FeeHelper is IFeeHelper {
     }
 
     /// @inheritdoc IFeeHelper
-    function estimateSingleDstMultiVault(
-        SingleDstMultiVaultsStateReq calldata req_,
-        bool isDeposit
-    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
-        uint256 totalDstGas;
-
-        /// @dev step 1: estimate amb costs
-        srcAmount += _estimateAMBFees(
-            req_.ambIds,
-            req_.dstChainId,
-            _generateMultiVaultMessage(req_.superFormsData),
-            req_.extraData
-        );
-
-        /// @dev step 2: estimate if swap costs are involved
-        totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormsData.liqRequests);
-
-        /// @dev step 3: estimate update cost (only for deposit)
-        if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, req_.superFormsData.superFormIds.length);
-
-        /// @dev step 4: estimate execution costs in dst
-        /// note: only execution cost (not acknowledgement messaging cost)
-        totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, req_.superFormsData.superFormIds.length);
-
-        /// @dev step 5: estimation execution cost of acknowledgement
-        if (isDeposit) srcAmount += _estimateAckProcessingCost(1, req_.superFormsData.superFormIds.length);
-
-        /// @dev step 6: estimate liq amount
-        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormsData.liqRequests);
-
-        /// @dev step 7: convert all dst gas estimates to src chain estimate
-        dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
-
-        totalAmount = srcAmount + dstAmount + liqAmount;
-    }
-
-    /// @inheritdoc IFeeHelper
     function estimateMultiDstSingleVault(
         MultiDstSingleVaultStateReq calldata req_,
         bool isDeposit
@@ -305,6 +268,43 @@ contract FeeHelper is IFeeHelper {
                 ++i;
             }
         }
+
+        totalAmount = srcAmount + dstAmount + liqAmount;
+    }
+
+    /// @inheritdoc IFeeHelper
+    function estimateSingleXChainMultiVault(
+        SingleXChainMultiVaultStateReq calldata req_,
+        bool isDeposit
+    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
+        uint256 totalDstGas;
+
+        /// @dev step 1: estimate amb costs
+        srcAmount += _estimateAMBFees(
+            req_.ambIds,
+            req_.dstChainId,
+            _generateMultiVaultMessage(req_.superFormsData),
+            req_.extraData
+        );
+
+        /// @dev step 2: estimate if swap costs are involved
+        totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormsData.liqRequests);
+
+        /// @dev step 3: estimate update cost (only for deposit)
+        if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, req_.superFormsData.superFormIds.length);
+
+        /// @dev step 4: estimate execution costs in dst
+        /// note: only execution cost (not acknowledgement messaging cost)
+        totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, req_.superFormsData.superFormIds.length);
+
+        /// @dev step 5: estimation execution cost of acknowledgement
+        if (isDeposit) srcAmount += _estimateAckProcessingCost(1, req_.superFormsData.superFormIds.length);
+
+        /// @dev step 6: estimate liq amount
+        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormsData.liqRequests);
+
+        /// @dev step 7: convert all dst gas estimates to src chain estimate
+        dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
     }
@@ -356,6 +356,24 @@ contract FeeHelper is IFeeHelper {
         }
 
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormData.liqRequest.castToArray());
+
+        /// note: not adding dstAmount to save some GAS
+        totalAmount = liqAmount + srcAmount;
+    }
+
+    /// @inheritdoc IFeeHelper
+    function estimateSingleDirectMultiVault(
+        SingleDirectMultiVaultStateReq calldata req_,
+        bool isDeposit
+    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
+        for (uint256 i; i < req_.superFormData.superFormIds.length; ) {
+            /// @dev only if timelock form withdrawal is involved
+            if (!isDeposit && req_.superFormData.superFormIds[i] == TIMELOCK_FORM_ID) {
+                srcAmount += twoStepFeeCost * _getGasPrice(0);
+            }
+        }
+
+        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormData.liqRequests);
 
         /// note: not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
@@ -505,15 +523,13 @@ contract FeeHelper is IFeeHelper {
     }
 
     /// @dev generates the amb message for multi vault data
-    function _generateMultiVaultMessage(
-        MultiVaultsSFData memory sfData_
-    ) internal view returns (bytes memory message_) {
+    function _generateMultiVaultMessage(MultiVaultSFData memory sfData_) internal view returns (bytes memory message_) {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
                 _getNextPayloadId(),
                 sfData_.superFormIds,
                 sfData_.amounts,
-                sfData_.maxSlippage,
+                sfData_.maxSlippages,
                 sfData_.liqRequests,
                 sfData_.extraFormData
             )
