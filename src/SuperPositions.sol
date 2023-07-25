@@ -21,7 +21,8 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     /// @dev is the base uri set by admin
     string public dynamicURI;
 
-    /// @dev
+    /// @dev is the base uri frozen status
+    bool public dynamicURIFrozen;
 
     /// @dev is the super registry address
     ISuperRegistry public immutable superRegistry;
@@ -188,8 +189,16 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
     /// @dev PREVILEGED ADMIN ONLY FUNCTION.
     /// @param dynamicURI_ represents the dynamicURI for the ERC1155 super positions
-    function setDynamicURI(string memory dynamicURI_) external onlyProtocolAdmin {
+    function setDynamicURI(string memory dynamicURI_, bool freeze) external onlyProtocolAdmin {
+        if (dynamicURIFrozen) {
+            revert Error.DYNAMIC_URI_FROZEN();
+        }
+
+        string memory oldURI = dynamicURI;
         dynamicURI = dynamicURI_;
+        dynamicURIFrozen = freeze;
+
+        emit DynamicURIUpdated(oldURI, dynamicURI_, freeze);
     }
 
     /*///////////////////////////////////////////////////////////////

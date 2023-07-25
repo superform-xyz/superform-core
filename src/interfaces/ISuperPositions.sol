@@ -11,6 +11,9 @@ interface ISuperPositions {
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev is emitted when a dynamic uri is updated
+    event DynamicURIUpdated(string oldURI, string newURI, bool frozen);
+
     /// @dev is emitted when a cross-chain withdraw return data is received.
     event Status(uint256 txId, uint64 status);
 

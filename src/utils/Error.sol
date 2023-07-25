@@ -259,4 +259,11 @@ library Error {
 
     /// @dev error thrown when fees withdrawal fails
     error FAILED_WITHDRAW();
+
+    /*///////////////////////////////////////////////////////////////
+                        SUPER POSITIONS ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev error thrown when the uri cannot be updated
+    error DYNAMIC_URI_FROZEN();
 }
