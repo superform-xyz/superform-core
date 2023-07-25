@@ -112,8 +112,6 @@ interface ISuperFormFactory {
     /// @param vault_ is the address of a vault
     /// @return superFormIds_ is the id of the superform
     /// @return superForms_ is the address of the superform
-    /// @return formBeaconIds_ is the form id
-    /// @return chainIds_ is the chain id
     function getAllSuperFormsFromVault(
         address vault_
     )
@@ -121,34 +119,25 @@ interface ISuperFormFactory {
         view
         returns (
             uint256[] memory superFormIds_,
-            address[] memory superForms_,
-            uint32[] memory formBeaconIds_,
-            uint64[] memory chainIds_
+            address[] memory superForms_
         );
 
     /// @dev Returns all SuperForms
     /// @return superFormIds_ is the id of the superform
     /// @return vaults_ is the address of the vault
-    /// @return formBeaconIds_ is the form id
-    /// @return chainIds_ is the chain id
     function getAllSuperForms()
         external
         view
         returns (
             uint256[] memory superFormIds_,
-            address[] memory vaults_,
-            uint32[] memory formBeaconIds_,
-            uint64[] memory chainIds_
+            address[] memory vaults_
         );
 
     /// @dev returns the number of forms
     /// @return forms_ is the number of forms
-    function getAllFormsList() external view returns (uint256 forms_);
+    function getFormCount() external view returns (uint256 forms_);
 
     /// @dev returns the number of superforms
     /// @return superForms_ is the number of superforms
-    function getAllSuperFormsList() external view returns (uint256 superForms_);
-
-    /// @dev returns the number of superforms for the given chain (where this call is made)
-    function getAllChainSuperFormsList() external view returns (uint256 superForms_);
+    function getSuperFormCount() external view returns (uint256 superForms_);
 }
