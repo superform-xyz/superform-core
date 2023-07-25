@@ -594,7 +594,6 @@ abstract contract ProtocolActions is BaseSetup {
                     }
                 } else {
                     vars.singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
-                        DST_CHAINS[0],
                         singleSuperFormsData[0],
                         ambParams[0]
                     );

@@ -178,7 +178,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             dstChainId = req.dstChainIds[i];
             if (srcChainId == dstChainId) {
                 singleDirectSingleVaultDeposit(
-                    SingleDirectSingleVaultStateReq(dstChainId, req.superFormsData[i], req.extraDataPerDst[i])
+                    SingleDirectSingleVaultStateReq(req.superFormsData[i], req.extraDataPerDst[i])
                 );
             } else {
                 singleXChainSingleVaultDeposit(
@@ -248,17 +248,15 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     /// @inheritdoc ISuperFormRouter
     function singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req) public payable override {
         ActionLocalVars memory vars;
-
         vars.srcChainId = superRegistry.chainId();
-        // if (vars.srcChainId != req.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
         (ambData, vars.currentPayloadId) = _buildDepositAmbData(vars.srcChainId, req.superFormData);
 
-        /// @dev same chain action
+        /// @dev same chain action & forward residual fee to fee collector
         _directSingleDeposit(msg.sender, req.superFormData.liqRequest, ambData);
-
         _forwardFee();
+
         emit Completed(vars.currentPayloadId);
     }
 
@@ -349,7 +347,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             dstChainId = req.dstChainIds[i];
             if (superRegistry.chainId() == dstChainId) {
                 singleDirectSingleVaultWithdraw(
-                    SingleDirectSingleVaultStateReq(dstChainId, req.superFormsData[i], req.extraDataPerDst[i])
+                    SingleDirectSingleVaultStateReq(req.superFormsData[i], req.extraDataPerDst[i])
                 );
             } else {
                 singleXChainSingleVaultWithdraw(
@@ -405,14 +403,11 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     /// @inheritdoc ISuperFormRouter
     function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req) public payable override {
         ActionLocalVars memory vars;
-
         vars.srcChainId = superRegistry.chainId();
-
-        if (vars.srcChainId != req.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
 
-        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(msg.sender, req.dstChainId, req.superFormData);
+        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(msg.sender, vars.srcChainId, req.superFormData);
 
         /// @dev same chain action
         _directSingleWithdraw(req.superFormData.liqRequest, ambData, msg.sender);

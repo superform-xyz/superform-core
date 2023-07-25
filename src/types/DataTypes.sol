@@ -68,7 +68,6 @@ struct SingleXChainSingleVaultStateReq {
 }
 
 struct SingleDirectSingleVaultStateReq {
-    uint64 dstChainId;
     SingleVaultSFData superFormData;
     bytes extraData;
 }
