@@ -495,10 +495,13 @@ abstract contract ProtocolActions is BaseSetup {
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                    (, , dstValue, msgValue) = feeHelper.estimateSingleDstMultiVault(
-                        vars.singleDstMultiVaultStateReq,
-                        true
-                    );
+                    (, , dstValue, msgValue) = CHAIN_0 != DST_CHAINS[0]
+                        ? feeHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, true)
+                        : feeHelper.estimateSingleDirectMultiVault(
+                            SingleDirectMultiVaultStateReq(multiSuperFormsData[0]),
+                            true
+                        );
+
                     vm.prank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
@@ -511,10 +514,13 @@ abstract contract ProtocolActions is BaseSetup {
                             SingleDirectMultiVaultStateReq(multiSuperFormsData[0])
                         );
                 } else if (action.action == Actions.Withdraw) {
-                    (, , dstValue, msgValue) = feeHelper.estimateSingleDstMultiVault(
-                        vars.singleDstMultiVaultStateReq,
-                        false
-                    );
+                    (, , dstValue, msgValue) = CHAIN_0 != DST_CHAINS[0]
+                        ? feeHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, false)
+                        : feeHelper.estimateSingleDirectMultiVault(
+                            SingleDirectMultiVaultStateReq(multiSuperFormsData[0]),
+                            false
+                        );
+
                     vm.prank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
