@@ -528,7 +528,7 @@ abstract contract ProtocolActions is BaseSetup {
                         );
                 }
             } else if (vars.nDestinations > 1) {
-                vars.multiDstMultiVaultStateReq = MultiDstMultiVaultsStateReq(
+                vars.multiDstMultiVaultStateReq = MultiDstMultiVaultStateReq(
                     MultiDstAMBs,
                     DST_CHAINS,
                     multiSuperFormsData,

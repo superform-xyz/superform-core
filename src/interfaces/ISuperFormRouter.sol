@@ -40,7 +40,7 @@ interface ISuperFormRouter {
 
     /// @dev Performs multi destination x multi vault deposits
     /// @param req is the request object containing all the necessary data for the action
-    function multiDstMultiVaultDeposit(MultiDstMultiVaultsStateReq calldata req) external payable;
+    function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req) external payable;
 
     /// @dev Performs single xchain destination x single vault deposits
     /// @param req is the request object containing all the necessary data for the action
@@ -68,7 +68,7 @@ interface ISuperFormRouter {
 
     /// @dev Performs multi destination x multi vault withdraws
     /// @param req is the request object containing all the necessary data for the action
-    function multiDstMultiVaultWithdraw(MultiDstMultiVaultsStateReq calldata req) external payable;
+    function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req) external payable;
 
     /// @dev Performs single xchain destination x single vault withdraws
     /// @param req is the request object containing all the necessary data for the action

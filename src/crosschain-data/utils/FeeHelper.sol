@@ -178,7 +178,7 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateMultiDstMultiVault(
-        MultiDstMultiVaultsStateReq calldata req_,
+        MultiDstMultiVaultStateReq calldata req_,
         bool isDeposit
     ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         for (uint256 i; i < req_.dstChainIds.length; ) {

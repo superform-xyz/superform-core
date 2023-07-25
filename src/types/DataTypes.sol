@@ -39,7 +39,7 @@ struct SingleVaultSFData {
     bytes extraFormData; // extraFormData
 }
 
-struct MultiDstMultiVaultsStateReq {
+struct MultiDstMultiVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
     MultiVaultSFData[] superFormsData;

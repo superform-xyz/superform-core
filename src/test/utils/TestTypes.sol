@@ -34,7 +34,7 @@ enum TestType {
 
 struct StagesLocalVars {
     Vm.Log[] logs;
-    MultiDstMultiVaultsStateReq multiDstMultiVaultStateReq;
+    MultiDstMultiVaultStateReq multiDstMultiVaultStateReq;
     MultiDstSingleVaultStateReq multiDstSingleVaultStateReq;
     SingleXChainMultiVaultStateReq singleDstMultiVaultStateReq;
     SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;

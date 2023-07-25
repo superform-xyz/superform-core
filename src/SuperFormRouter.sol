@@ -76,7 +76,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     receive() external payable {}
 
     /// @inheritdoc ISuperFormRouter
-    function multiDstMultiVaultDeposit(MultiDstMultiVaultsStateReq calldata req) external payable override {
+    function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req) external payable override {
         /// @dev sets here to prevent fee forwarding in children functions
         isTxOngoing = true;
 
@@ -278,7 +278,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     }
 
     /// @inheritdoc ISuperFormRouter
-    function multiDstMultiVaultWithdraw(MultiDstMultiVaultsStateReq calldata req) external payable override {
+    function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req) external payable override {
         /// @dev sets here to prevent fee forwarding in children functions
         isTxOngoing = true;
 
