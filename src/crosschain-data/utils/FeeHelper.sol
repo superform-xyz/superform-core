@@ -231,7 +231,7 @@ contract FeeHelper is IFeeHelper {
 
     /// @inheritdoc IFeeHelper
     function estimateSingleDstMultiVault(
-        SingleDstMultiVaultsStateReq calldata req_,
+        SingleXChainMultiVaultStateReq calldata req_,
         bool isDeposit
     ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         uint256 totalDstGas;

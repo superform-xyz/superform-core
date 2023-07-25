@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
+
 import "forge-std/Test.sol";
 
 import "../../types/LiquidityTypes.sol";
-
 import "../../types/DataTypes.sol";
-
 import {MockERC20} from "../mocks/MockERC20.sol";
 
 /*//////////////////////////////////////////////////////////////
@@ -37,7 +36,7 @@ struct StagesLocalVars {
     Vm.Log[] logs;
     MultiDstMultiVaultsStateReq multiDstMultiVaultStateReq;
     MultiDstSingleVaultStateReq multiDstSingleVaultStateReq;
-    SingleDstMultiVaultsStateReq singleDstMultiVaultStateReq;
+    SingleXChainMultiVaultStateReq singleDstMultiVaultStateReq;
     SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;
     SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
     UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;

@@ -77,7 +77,7 @@ interface IFeeHelper {
     /// @return dstAmount is the gas expense on dst chain in terms of src chain's native tokens
     /// @return totalAmount is the native_tokens to be sent along the transaction
     function estimateSingleDstMultiVault(
-        SingleDstMultiVaultsStateReq calldata req_,
+        SingleXChainMultiVaultStateReq calldata req_,
         bool isDeposit
     ) external view returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
 

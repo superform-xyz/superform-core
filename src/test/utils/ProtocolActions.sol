@@ -487,7 +487,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         if (action.multiVaults) {
             if (vars.nDestinations == 1) {
-                vars.singleDstMultiVaultStateReq = SingleDstMultiVaultsStateReq(
+                vars.singleDstMultiVaultStateReq = SingleXChainMultiVaultStateReq(
                     AMBs,
                     DST_CHAINS[0],
                     multiSuperFormsData[0],
@@ -505,7 +505,11 @@ abstract contract ProtocolActions is BaseSetup {
                         vm.expectRevert();
                     }
 
-                    superRouter.singleDstMultiVaultDeposit{value: msgValue}(vars.singleDstMultiVaultStateReq);
+                    CHAIN_0 != DST_CHAINS[0]
+                        ? superRouter.singleXChainMultiVaultDeposit{value: msgValue}(vars.singleDstMultiVaultStateReq)
+                        : superRouter.singleDirectMultiVaultDeposit{value: msgValue}(
+                            SingleDirectMultiVaultStateReq(multiSuperFormsData[0])
+                        );
                 } else if (action.action == Actions.Withdraw) {
                     (, , dstValue, msgValue) = feeHelper.estimateSingleDstMultiVault(
                         vars.singleDstMultiVaultStateReq,
@@ -593,10 +597,7 @@ abstract contract ProtocolActions is BaseSetup {
                         );
                     }
                 } else {
-                    vars.singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(
-                        singleSuperFormsData[0],
-                        ambParams[0]
-                    );
+                    vars.singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(singleSuperFormsData[0]);
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                         (, , dstValue, msgValue) = feeHelper.estimateSingleDirectSingleVault(
