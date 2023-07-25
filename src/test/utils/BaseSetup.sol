@@ -1018,7 +1018,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint64[] memory dstChainIds,
         uint8[] memory selectedAmbIds,
         address user,
-        MultiVaultsSFData[] memory multiSuperFormsData,
+        MultiVaultSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData
     ) internal view returns (bytes[] memory) {
         uint256 dstCount = dstChainIds.length;
@@ -1049,7 +1049,7 @@ abstract contract BaseSetup is DSTest, Test {
                     2 ** 256 - 1, /// @dev uses max payload id
                     multiSuperFormsData[i].superFormIds,
                     multiSuperFormsData[i].amounts,
-                    multiSuperFormsData[i].maxSlippage,
+                    multiSuperFormsData[i].maxSlippages,
                     multiSuperFormsData[i].liqRequests,
                     multiSuperFormsData[i].extraFormData
                 )

@@ -14,11 +14,24 @@ import {DataLib} from "./libraries/DataLib.sol";
 contract SuperPositions is ISuperPositions, ERC1155s {
     using DataLib for uint256;
 
+    /*///////////////////////////////////////////////////////////////
+                        STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev is the base uri set by admin
     string public dynamicURI;
+
+    /// @dev
+
+    /// @dev is the super registry address
     ISuperRegistry public immutable superRegistry;
 
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint256 transactionId => uint256 txInfo) public txHistory;
+
+    /*///////////////////////////////////////////////////////////////
+                            MODIFIER
+    //////////////////////////////////////////////////////////////*/
 
     /// note replace this to support some new role called minter in super registry
     modifier onlyMinter() {
@@ -44,7 +57,11 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         _;
     }
 
-    /// @param dynamicURI_              URL for external metadata of ERC1155 SuperPositions
+    /*///////////////////////////////////////////////////////////////
+                            CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
+
+    /// @param dynamicURI_  URL for external metadata of ERC1155 SuperPositions
     /// @param superRegistry_ the superform registry contract
 
     constructor(string memory dynamicURI_, address superRegistry_) {
@@ -52,6 +69,10 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         superRegistry = ISuperRegistry(superRegistry_);
     }
+
+    /*///////////////////////////////////////////////////////////////
+                        EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// FIXME: Temp extension need to make approve at superRouter, may change with arch
     function setApprovalForAll(address operator, bool approved) public virtual override(ISuperPositions, ERC1155s) {
@@ -162,28 +183,26 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            ADMIN FUNCTIONS
+                        PREVILAGED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @param dynamicURI_    represents the dynamicURI for the ERC1155 super positions
+    /// @dev PREVILEGED ADMIN ONLY FUNCTION.
+    /// @param dynamicURI_ represents the dynamicURI for the ERC1155 super positions
     function setDynamicURI(string memory dynamicURI_) external onlyProtocolAdmin {
         dynamicURI = dynamicURI_;
     }
 
     /*///////////////////////////////////////////////////////////////
-                            Read Only Functions
+                        READ-ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc ERC1155s
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155s) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
 
     /// @notice Used to construct return url
     function _baseURI() internal view override returns (string memory) {
         return dynamicURI;
-    }
-
-    /**
-     * @dev See {ERC1155s-supportsInterface}.
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155s) returns (bool) {
-        return super.supportsInterface(interfaceId);
     }
 }

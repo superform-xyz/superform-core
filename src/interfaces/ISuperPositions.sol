@@ -60,6 +60,8 @@ interface ISuperPositions {
     /// @param txInfo_ is the relevant information of the transaction being saved
     function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external;
 
+    /// @dev sets the dynamic uri for NFT
+    /// @param dynamicURI_ is the dynamic uri of the NFT
     function setDynamicURI(string memory dynamicURI_) external;
 
     /// FIXME: Temp extension need to make approve at superRouter, may change with arch

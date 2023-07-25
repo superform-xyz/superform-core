@@ -505,15 +505,13 @@ contract FeeHelper is IFeeHelper {
     }
 
     /// @dev generates the amb message for multi vault data
-    function _generateMultiVaultMessage(
-        MultiVaultsSFData memory sfData_
-    ) internal view returns (bytes memory message_) {
+    function _generateMultiVaultMessage(MultiVaultSFData memory sfData_) internal view returns (bytes memory message_) {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
                 _getNextPayloadId(),
                 sfData_.superFormIds,
                 sfData_.amounts,
-                sfData_.maxSlippage,
+                sfData_.maxSlippages,
                 sfData_.liqRequests,
                 sfData_.extraFormData
             )

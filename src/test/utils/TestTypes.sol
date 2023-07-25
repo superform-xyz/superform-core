@@ -66,7 +66,7 @@ struct MessagingAssertVars {
     uint256 receivedPayloadId;
     uint64 toChainId;
     bool success;
-    MultiVaultsSFData expectedMultiVaultsData;
+    MultiVaultSFData expectedMultiVaultsData;
     SingleVaultSFData expectedSingleVaultData;
     InitMultiVaultData receivedMultiVaultData;
     InitSingleVaultData receivedSingleVaultData;
@@ -150,7 +150,7 @@ struct SetupVars {
 //////////////////////////////////////////////////////////////*/
 
 struct CallDataArgs {
-    MultiVaultsSFData[] multiSuperFormsData;
+    MultiVaultSFData[] multiSuperFormsData;
     SingleVaultSFData[] singleSuperFormsData;
     MultiVaultCallDataArgs[] multiSuperFormsCallData;
     SingleVaultCallDataArgs[] singleSuperFormsCallData;

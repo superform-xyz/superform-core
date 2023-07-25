@@ -22,11 +22,11 @@ enum PayloadState {
 }
 
 //; Liq Data: 0 (chainId 1) => [LiqData (SfData1)] | 1 (chainId 2) => [LiqData (SfData3 + SfData4)] | 2 (chainId 3) => [LiqData (SfData5) | 3 (chainId 3) => [LiqData (SfData6)]
-struct MultiVaultsSFData {
+struct MultiVaultSFData {
     // superFormids must have same destination. Can have different different underlyings
     uint256[] superFormIds;
     uint256[] amounts;
-    uint256[] maxSlippage;
+    uint256[] maxSlippages;
     LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
     bytes extraFormData; // extraFormData
 }
@@ -42,14 +42,14 @@ struct SingleVaultSFData {
 struct MultiDstMultiVaultsStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
-    MultiVaultsSFData[] superFormsData;
+    MultiVaultSFData[] superFormsData;
     bytes[] extraDataPerDst; /// encoded array of SingleDstAMBParams; length == no of dstChainIds
 }
 
 struct SingleDstMultiVaultsStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
-    MultiVaultsSFData superFormsData;
+    MultiVaultSFData superFormsData;
     bytes extraData;
 }
 
