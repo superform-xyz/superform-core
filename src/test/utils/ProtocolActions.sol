@@ -1863,7 +1863,6 @@ abstract contract ProtocolActions is BaseSetup {
         bool[] memory partialWithdrawVaults
     ) internal {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
-
         address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
 
         IERC1155s superPositions = IERC1155s(superPositionsAddress);

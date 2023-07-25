@@ -309,12 +309,35 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     }
 
     /// @inheritdoc ISuperFormRouter
+    function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req) external payable override {
+        uint64 dstChainId;
+
+        /// @dev sets here to prevent fee forwarding in children functions
+        isTxOngoing = true;
+
+        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
+            dstChainId = req.dstChainIds[i];
+            if (superRegistry.chainId() == dstChainId) {
+                singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(req.superFormsData[i]));
+            } else {
+                singleXChainSingleVaultWithdraw(
+                    SingleXChainSingleVaultStateReq(
+                        req.ambIds[i],
+                        dstChainId,
+                        req.superFormsData[i],
+                        req.extraDataPerDst[i]
+                    )
+                );
+            }
+        }
+
+        /// @dev resets here to forward fee
+        delete isTxOngoing;
+        _forwardFee();
+    }
+
+    /// @inheritdoc ISuperFormRouter
     function singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req) public payable override {
-        ActionLocalVars memory vars;
-        InitMultiVaultData memory ambData;
-
-        vars.srcChainId = superRegistry.chainId();
-
         /// @dev validate superFormsData
         if (!_validateSuperFormsWithdrawData(req.superFormsData, req.dstChainId))
             revert Error.INVALID_SUPERFORMS_DATA();
@@ -325,6 +348,10 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             req.superFormsData.amounts
         );
 
+        ActionLocalVars memory vars;
+        InitMultiVaultData memory ambData;
+
+        vars.srcChainId = superRegistry.chainId();
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev write packed txData
@@ -354,34 +381,6 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
         _forwardFee();
         emit CrossChainInitiated(vars.currentPayloadId);
-    }
-
-    /// @inheritdoc ISuperFormRouter
-    function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req) external payable override {
-        uint64 dstChainId;
-
-        /// @dev sets here to prevent fee forwarding in children functions
-        isTxOngoing = true;
-
-        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
-            dstChainId = req.dstChainIds[i];
-            if (superRegistry.chainId() == dstChainId) {
-                singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(req.superFormsData[i]));
-            } else {
-                singleXChainSingleVaultWithdraw(
-                    SingleXChainSingleVaultStateReq(
-                        req.ambIds[i],
-                        dstChainId,
-                        req.superFormsData[i],
-                        req.extraDataPerDst[i]
-                    )
-                );
-            }
-        }
-
-        /// @dev resets here to forward fee
-        delete isTxOngoing;
-        _forwardFee();
     }
 
     /// @inheritdoc ISuperFormRouter
@@ -437,6 +436,12 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         ActionLocalVars memory vars;
         vars.srcChainId = superRegistry.chainId();
         vars.currentPayloadId = ++payloadIds;
+
+        ISuperPositions(superRegistry.superPositions()).burnBatchSP(
+            msg.sender,
+            req.superFormData.superFormIds,
+            req.superFormData.amounts
+        );
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
             vars.currentPayloadId,
