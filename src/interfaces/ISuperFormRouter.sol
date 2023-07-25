@@ -62,25 +62,29 @@ interface ISuperFormRouter {
                         EXTERNAL WITHDRAW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev Performs multi destination x multi vault withdraws
-    /// @param req is the request object containing all the necessary data for the action
-    function multiDstMultiVaultWithdraw(MultiDstMultiVaultsStateReq calldata req) external payable;
-
-    /// @dev Performs single destination x multi vault withdraws
-    /// @param req is the request object containing all the necessary data for the action
-    function singleDstMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req) external payable;
-
     /// @dev Performs multi destination x single vault withdraws
     /// @param req is the request object containing all the necessary data for the action
     function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req) external payable;
+
+    /// @dev Performs multi destination x multi vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
+    function multiDstMultiVaultWithdraw(MultiDstMultiVaultsStateReq calldata req) external payable;
 
     /// @dev Performs single xchain destination x single vault withdraws
     /// @param req is the request object containing all the necessary data for the action
     function singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req) external payable;
 
+    /// @dev Performs single destination x multi vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
+    function singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req) external payable;
+
     /// @dev Performs single direct x single vault withdraws
     /// @param req is the request object containing all the necessary data for the action
     function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req) external payable;
+
+    /// @dev Performs single direct x multi vault withdraws
+    /// @param req is the request object containing all the necessary data for the action
+    function singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req) external payable;
 
     /*///////////////////////////////////////////////////////////////
                         External View Functions

@@ -521,7 +521,11 @@ abstract contract ProtocolActions is BaseSetup {
                         vm.expectRevert();
                     }
 
-                    superRouter.singleDstMultiVaultWithdraw{value: msgValue}(vars.singleDstMultiVaultStateReq);
+                    CHAIN_0 != DST_CHAINS[0]
+                        ? superRouter.singleXChainMultiVaultWithdraw{value: msgValue}(vars.singleDstMultiVaultStateReq)
+                        : superRouter.singleDirectMultiVaultWithdraw{value: msgValue}(
+                            SingleDirectMultiVaultStateReq(multiSuperFormsData[0])
+                        );
                 }
             } else if (vars.nDestinations > 1) {
                 vars.multiDstMultiVaultStateReq = MultiDstMultiVaultsStateReq(
