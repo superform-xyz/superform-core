@@ -65,7 +65,8 @@ interface ISuperPositions {
 
     /// @dev sets the dynamic uri for NFT
     /// @param dynamicURI_ is the dynamic uri of the NFT
-    function setDynamicURI(string memory dynamicURI_) external;
+    /// @param freeze_ is to prevent updating the metadata once migrated to IPFS
+    function setDynamicURI(string memory dynamicURI_, bool freeze_) external;
 
     /// FIXME: Temp extension need to make approve at superRouter, may change with arch
     function setApprovalForAll(address operator, bool approved) external;

@@ -189,7 +189,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
     /// @dev PREVILEGED ADMIN ONLY FUNCTION.
     /// @param dynamicURI_ represents the dynamicURI for the ERC1155 super positions
-    function setDynamicURI(string memory dynamicURI_, bool freeze) external onlyProtocolAdmin {
+    function setDynamicURI(string memory dynamicURI_, bool freeze) external override onlyProtocolAdmin {
         if (dynamicURIFrozen) {
             revert Error.DYNAMIC_URI_FROZEN();
         }
