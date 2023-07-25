@@ -261,22 +261,6 @@ contract SuperFormFactory is ISuperFormFactory {
         );
     }
 
-    /// @dev synchornize new superform id created on a remote chain
-    /// @notice is a part of broadcasting / dispatching through factory state registry
-    /// @param message_ is the crosschain message received.
-    function _syncNewSuperform(bytes memory message_) internal {
-        (uint256 superFormId, address vaultAddress) = abi.decode(message_, (uint256, address));
-        /// FIXME: do we need extra checks before pushing here?
-        vaultToSuperForms[vaultAddress].push(superFormId);
-
-        /// @dev Unpacking superform ID and setting formBeaconId in vaultToFormBeaconId
-        (, uint32 formBeaconId_, ) = superFormId.getSuperForm();
-        vaultToFormBeaconId[vaultAddress].push(formBeaconId_);
-
-        /// @dev do we need to store info of all superforms just for external querying? Could save gas here
-        superForms.push(superFormId);
-    }
-
     /// @dev synchornize beacon status update message from remote chain
     /// @notice is a part of broadcasting / dispatching through factory state registry
     /// @param message_ is the crosschain message received.

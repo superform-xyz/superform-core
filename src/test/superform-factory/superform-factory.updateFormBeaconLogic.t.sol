@@ -6,6 +6,7 @@ import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
+import {ERC4626FormInterfaceNotSupported} from "../mocks/InterfaceNotSupported/ERC4626InterFaceNotSupported.sol";
 import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
@@ -136,6 +137,34 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).updateFormBeaconLogic(
             formBeaconId2,
             formImplementation
+        );
+    }
+
+    function test_revert_updateFormBeaconLogic_FORM_INTERFACE_UNSUPPORTED() public {
+        vm.startPrank(deployer);
+        
+        vm.selectFork(FORKS[chainId]);
+
+        address superRegistry = getContract(chainId, "SuperRegistry");
+
+        // @dev Deploying Forms
+        address formImplementation = address(new ERC4626Form(superRegistry));
+        uint32 formBeaconId = 0;
+
+
+        // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
+        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+            formImplementation,
+            formBeaconId,
+            salt
+        );
+
+        address formImplementation_interface_unsupported = address(new ERC4626FormInterfaceNotSupported(superRegistry));
+        
+        vm.expectRevert(Error.FORM_INTERFACE_UNSUPPORTED.selector);
+        SuperFormFactory(getContract(chainId, "SuperFormFactory")).updateFormBeaconLogic(
+            formBeaconId,
+            formImplementation_interface_unsupported
         );
     }
 }
