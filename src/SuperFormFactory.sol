@@ -39,8 +39,9 @@ contract SuperFormFactory is ISuperFormFactory {
 
     mapping(address vault => uint256[] superFormIds) public vaultToSuperForms;
 
-    ///@dev TODO mapped to array as well
-    // mapping(address vault => uint256 formBeaconId) public vaultToFormBeaconId;
+    mapping(address vault => uint256[] formBeaconId) public vaultToFormBeaconId;
+
+    mapping(bytes32 vaultBeaconCombination => uint256 superFormIds) public vaultBeaconToSuperForms;
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
@@ -98,12 +99,13 @@ contract SuperFormFactory is ISuperFormFactory {
     ) external override returns (uint256 superFormId_, address superForm_) {
         address tFormBeacon = formBeacon[formBeaconId_];
         if (vault_ == address(0)) revert Error.ZERO_ADDRESS();
-        ///@dev TODO review if logic is still applicable; vaults can be added to multiple Forms
-        // if (vaultToFormBeaconId[vault_] != 0) revert Error.VAULT_ALREADY_HAS_FORM();
         if (tFormBeacon == address(0)) revert Error.FORM_DOES_NOT_EXIST();
         if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
-        /// @dev TODO - should we predict superform address?
+        /// @dev Same vault and beacon should be used only once to create superform
+        bytes32 vaultBeaconCombination = keccak256(abi.encode(tFormBeacon, vault_));
+        if (vaultBeaconToSuperForms[vaultBeaconCombination] != 0) revert Error.VAULT_BEACON_COMBNATION_EXISTS();
+
         superForm_ = address(
             new BeaconProxy(
                 address(tFormBeacon),
@@ -115,9 +117,13 @@ contract SuperFormFactory is ISuperFormFactory {
         superFormId_ = DataLib.packSuperForm(superForm_, formBeaconId_, superRegistry.chainId());
 
         vaultToSuperForms[vault_].push(superFormId_);
+
+        /// @dev Mapping vaults to formBeaconId for use in Backend
+        vaultToFormBeaconId[vault_].push(formBeaconId_);
+
+        vaultBeaconToSuperForms[vaultBeaconCombination]= superFormId_;
         /// @dev FIXME do we need to store info of all superforms just for external querying? Could save gas here
         superForms.push(superFormId_);
-        // vaultToFormBeaconId[vault_] = formBeaconId_;
 
         emit SuperFormCreated(formBeaconId_, vault_, superFormId_, superForm_);
     }
@@ -179,7 +185,6 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @inheritdoc ISuperFormFactory
-    ///@dev TODO are extra return types needed? Just superFormIds_ now with getSuperForm functionality? including chainIds w/o broadcasting
     function getAllSuperFormsFromVault(
         address vault_
     )
@@ -188,19 +193,15 @@ contract SuperFormFactory is ISuperFormFactory {
         override
         returns (
             uint256[] memory superFormIds_,
-            address[] memory superForms_,
-            uint32[] memory formBeaconIds_,
-            uint64[] memory chainIds_
+            address[] memory superForms_
         )
     {
         superFormIds_ = vaultToSuperForms[vault_];
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
-        formBeaconIds_ = new uint32[](len);
-        chainIds_ = new uint64[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = superFormIds_[i].getSuperForm();
+            (superForms_[i], ,) = superFormIds_[i].getSuperForm();
         }
     }
 
@@ -212,57 +213,32 @@ contract SuperFormFactory is ISuperFormFactory {
     }
 
     /// @inheritdoc ISuperFormFactory
-    ///@dev TODO don't need chainIds_, and probably not formBeaconIds_
     function getAllSuperForms()
         external
         view
         override
         returns (
             uint256[] memory superFormIds_,
-            address[] memory superForms_,
-            uint32[] memory formBeaconIds_,
-            uint64[] memory chainIds_
+            address[] memory superForms_
         )
     {
         superFormIds_ = superForms;
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
-        formBeaconIds_ = new uint32[](len);
-        chainIds_ = new uint64[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], formBeaconIds_[i], chainIds_[i]) = superFormIds_[i].getSuperForm();
+            (superForms_[i], ,) = superFormIds_[i].getSuperForm();
         }
     }
 
     /// @inheritdoc ISuperFormFactory
-    ///@dev TODO should be renamed to getFormCount
-    function getAllFormsList() external view override returns (uint256 forms_) {
+    function getFormCount() external view override returns (uint256 forms_) {
         forms_ = formBeacons.length;
     }
 
     /// @inheritdoc ISuperFormFactory
-    ///@dev TODO should be renamed to getSuperFormCount
-    function getAllSuperFormsList() external view override returns (uint256 superForms_) {
+    function getSuperFormCount() external view override returns (uint256 superForms_) {
         superForms_ = superForms.length;
-    }
-
-    /// @inheritdoc ISuperFormFactory
-    ///@dev TODO can remove this function
-    function getAllChainSuperFormsList() external view override returns (uint256 superForms_) {
-        uint256[] memory superFormIds_ = superForms;
-        uint256 len = superFormIds_.length;
-
-        uint64 chainIdRes;
-        uint64 chainId = superRegistry.chainId();
-        for (uint256 i = 0; i < len; i++) {
-            (, , chainIdRes) = superFormIds_[i].getSuperForm();
-            if (chainIdRes == chainId) {
-                unchecked {
-                    ++superForms_;
-                }
-            }
-        }
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -285,18 +261,6 @@ contract SuperFormFactory is ISuperFormFactory {
         );
     }
 
-    /// @dev synchornize new superform id created on a remote chain
-    /// @notice is a part of broadcasting / dispatching through factory state registry
-    /// @param message_ is the crosschain message received.
-    function _syncNewSuperform(bytes memory message_) internal {
-        (uint256 superFormId, address vaultAddress) = abi.decode(message_, (uint256, address));
-        /// FIXME: do we need extra checks before pushing here?
-        vaultToSuperForms[vaultAddress].push(superFormId);
-
-        /// @dev do we need to store info of all superforms just for external querying? Could save gas here
-        superForms.push(superFormId);
-    }
-
     /// @dev synchornize beacon status update message from remote chain
     /// @notice is a part of broadcasting / dispatching through factory state registry
     /// @param message_ is the crosschain message received.
@@ -306,5 +270,11 @@ contract SuperFormFactory is ISuperFormFactory {
         if (formBeacon[formBeaconId] == address(0)) revert Error.INVALID_FORM_ID();
 
         FormBeacon(formBeacon[formBeaconId]).changePauseStatus(status);
+    }
+
+    function getBytecodeFormBeacon(address superRegistry_, address formLogic_) public pure returns (bytes memory) {
+        bytes memory bytecode = type(FormBeacon).creationCode;
+
+        return abi.encodePacked(bytecode, abi.encode(superRegistry_, formLogic_));
     }
 }

@@ -178,6 +178,9 @@ library Error {
     /// @dev emitted when a vault has already been added to a form kind
     error VAULT_ALREADY_HAS_FORM();
 
+    /// @dev emitted when same vault and beacon is used to create new superform
+    error VAULT_BEACON_COMBNATION_EXISTS();
+
     /*///////////////////////////////////////////////////////////////
                         SUPER ROUTER ERRORS
     //////////////////////////////////////////////////////////////*/
