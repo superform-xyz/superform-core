@@ -422,10 +422,10 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
 
             /// @dev 5.1 - deploy Layerzero Implementation
-            vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry), lzEndpoints[i]));
+            vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
             contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
-            // LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
+            LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
             /// @dev 5.2 - deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(

@@ -26,7 +26,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////*/
     uint16[] public broadcastChains;
     ISuperRegistry public immutable superRegistry;
-    ILayerZeroEndpoint public immutable lzEndpoint;
+    ILayerZeroEndpoint public lzEndpoint;
 
     /// @dev prevents layerzero relayer from replaying payload
     mapping(uint16 => mapping(uint64 => bool)) public isValid;
@@ -60,9 +60,9 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////*/
 
     /// @param superRegistry_ is the super registry address
-    constructor(ISuperRegistry superRegistry_, address endpoint_) {
+    constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
-        lzEndpoint = ILayerZeroEndpoint(endpoint_);
+        // lzEndpoint = ILayerZeroEndpoint(endpoint_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -246,6 +246,14 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /*///////////////////////////////////////////////////////////////
                             LZ Application config
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows protocol admin to configure layerzero endpoint
+    /// @param endpoint_ is the layerzero endpoint on the deployed network
+    function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
+        if (address(lzEndpoint) == address(0)) {
+            lzEndpoint = ILayerZeroEndpoint(endpoint_);
+        }
+    }
 
     function getConfig(
         uint16 version_,
