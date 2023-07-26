@@ -7,7 +7,7 @@ import {BaseForm} from "./BaseFormInterfaceNotSupported.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for IERC4626 vaults
-contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation {
+abstract contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
