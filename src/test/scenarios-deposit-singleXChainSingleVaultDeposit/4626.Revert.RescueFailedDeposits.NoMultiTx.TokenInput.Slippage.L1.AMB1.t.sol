@@ -76,15 +76,13 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1A
     function test_scenario() public {
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
-            MultiVaultsSFData[] memory multiSuperFormsData;
+            MultiVaultSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
-            if (action.action == Actions.RescueFailedDeposit)
-                _rescueFailedDeposits(action, act);
-            else
-                _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
+            if (action.action == Actions.RescueFailedDeposit) _rescueFailedDeposits(action, act);
+            else _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
         }
     }
 }

@@ -81,6 +81,13 @@ contract LiFiValidator is BridgeValidator {
         if (liqDataToken_ != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
     }
 
+    /// @inheritdoc BridgeValidator
+    function decodeReceiver(bytes calldata txData_) external pure override returns (address receiver_) {
+        (ILiFi.BridgeData memory bridgeData, ) = _decodeCallData(txData_);
+
+        return bridgeData.receiver;
+    }
+
     /// @dev allows admin to add new chain ids in future
     /// @param superChainIds_ is the identifier of the chain within superform protocol
     /// @param lifiChainIds_ is the identifier of the chain given by the bridge

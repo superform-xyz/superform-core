@@ -37,6 +37,7 @@ import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {SuperFormRouter} from "../../SuperFormRouter.sol";
+import {FeeCollector} from "../../FeeCollector.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
 import {SuperRBAC} from "../../settings/SuperRBAC.sol";
 import {SuperPositions} from "../../SuperPositions.sol";
@@ -234,13 +235,7 @@ abstract contract BaseSetup is DSTest, Test {
                         CHAINLINK VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint64 => address) public PRICE_FEEDS;
-
-    address public constant ETHEREUM_ETH_USD_FEED = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-    address public constant BSC_BNB_USD_FEED = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
-    address public constant AVALANCHE_AVAX_USD_FEED = 0x0A77230d17318075983913bC2145DB16C7366156;
-    address public constant POLYGON_MATIC_USD_FEED = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
-    address public constant FANTOM_FTM_USD_FEED = 0xf4766552D15AE4d256Ad41B6cf2933482B0680dc;
+    mapping(uint64 => mapping(uint64 => address)) public PRICE_FEEDS;
 
     /*//////////////////////////////////////////////////////////////
                         RPC VARIABLES
@@ -404,8 +399,8 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
 
             /// @dev 4.5.2- deploy Fee Helper
-            vars.FeeHelper = address(new FeeHelper{salt: salt}(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("FeeHelper"))] = vars.FeeHelper;
+            vars.feeHelper = address(new FeeHelper{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("FeeHelper"))] = vars.feeHelper;
 
             address[] memory registryAddresses = new address[](4);
             registryAddresses[0] = vars.coreStateRegistry;
@@ -574,15 +569,19 @@ abstract contract BaseSetup is DSTest, Test {
 
             SuperRegistry(vars.superRegistry).setMultiTxProcessor(vars.multiTxProcessor);
 
-            /// @dev 15 - Super Registry extra setters
+            /// @dev 15 - Deploy FeeCollector
+            vars.feeCollector = address(new FeeCollector{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes32("FeeCollector"))] = vars.feeCollector;
 
+            SuperRegistry(vars.superRegistry).setFeeCollector(vars.feeCollector);
+
+            /// @dev 16 - Super Registry extra setters
             SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
 
             /// @dev configures lzImplementation and hyperlane to super registry
             SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
-            /// @dev 16 Setup extra RBAC
-
+            /// @dev 17 Setup extra RBAC
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
@@ -602,6 +601,7 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstLzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
                     vars.dstCelerImplementation = getContract(vars.chainId, "CelerImplementation");
+                    vars.feeHelper = getContract(vars.chainId, "FeeHelper");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId,
@@ -633,6 +633,33 @@ abstract contract BaseSetup is DSTest, Test {
                     );
 
                     QuorumManager(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
+
+                    /// swap gas cost: 50000
+                    /// update gas cost: 40000
+                    /// deposit gas cost: 70000
+                    /// withdraw gas cost: 80000
+                    /// default gas price: 50 Gwei
+                    FeeHelper(payable(vars.feeHelper)).addChain(
+                        vars.dstChainId,
+                        address(0),
+                        PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                        50000,
+                        40000,
+                        70000,
+                        80000,
+                        50 * 10 ** 9 wei
+                    );
+                } else {
+                    /// ack gas cost: 40000
+                    /// two step form cost: 50000
+                    /// default gas price: 50 Gwei
+                    FeeHelper(payable(vars.feeHelper)).setSameChainConfig(
+                        2,
+                        abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
+                    );
+                    FeeHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(40000));
+                    FeeHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50000));
+                    FeeHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50 * 10 ** 9 wei));
                 }
             }
         }
@@ -728,14 +755,56 @@ abstract contract BaseSetup is DSTest, Test {
             celerChainIdsStorage[chainIds[i]] = celer_chainIds[i];
         }
 
-        mapping(uint64 => address) storage priceFeeds = PRICE_FEEDS;
-        priceFeeds[ETH] = ETHEREUM_ETH_USD_FEED;
-        priceFeeds[BSC] = BSC_BNB_USD_FEED;
-        priceFeeds[AVAX] = AVALANCHE_AVAX_USD_FEED;
-        priceFeeds[POLY] = POLYGON_MATIC_USD_FEED;
-        priceFeeds[ARBI] = address(0);
-        priceFeeds[OP] = address(0);
-        //priceFeeds[FTM] = FANTOM_FTM_USD_FEED;
+        /// price feeds on all chains
+        mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;
+
+        /// ETH
+        priceFeeds[ETH][ETH] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][BSC] = 0x14e613AC84a31f709eadbdF89C6CC390fDc9540A;
+        priceFeeds[ETH][AVAX] = 0xFF3EEb22B5E3dE6e705b44749C2559d704923FD7;
+        priceFeeds[ETH][POLY] = 0x7bAC85A8a13A4BcD8abb3eB7d6b4d632c5a57676;
+        priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+
+        /// BSC
+        priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
+        priceFeeds[BSC][ETH] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        priceFeeds[BSC][AVAX] = address(0);
+        priceFeeds[BSC][POLY] = 0x7CA57b0cA6367191c94C8914d7Df09A57655905f;
+        priceFeeds[BSC][OP] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+
+        /// AVAX
+        priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
+        priceFeeds[AVAX][BSC] = address(0);
+        priceFeeds[AVAX][ETH] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        priceFeeds[AVAX][POLY] = address(0);
+        priceFeeds[AVAX][OP] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+
+        /// POLYGON
+        priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
+        priceFeeds[POLY][AVAX] = address(0);
+        priceFeeds[POLY][BSC] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
+        priceFeeds[POLY][ETH] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        priceFeeds[POLY][OP] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+
+        /// OPTIMISM
+        priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][POLY] = address(0);
+        priceFeeds[OP][AVAX] = address(0);
+        priceFeeds[OP][BSC] = address(0);
+        priceFeeds[OP][ETH] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+
+        /// ARBITRUM
+        priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][OP] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][POLY] = 0x52099D4523531f678Dfc568a7B1e5038aadcE1d6;
+        priceFeeds[ARBI][AVAX] = address(0);
+        priceFeeds[ARBI][BSC] = address(0);
+        priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
 
         /// @dev setup bridges. 1 is the socket mock
         bridgeIds.push(1);
@@ -789,10 +858,8 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 i = 0; i < chainIds.length; i++) {
             vm.selectFork(FORKS[chainIds[i]]);
 
-            uint256 multiplier = _getPriceMultiplier(chainIds[i]);
-
-            uint256 amountDeployer = 10000000 * multiplier * 1e18;
-            uint256 amountUSER = 1000 * multiplier * 1e18;
+            uint256 amountDeployer = 1e24;
+            uint256 amountUSER = 1e24;
 
             vm.deal(deployer, amountDeployer);
 
@@ -800,48 +867,6 @@ abstract contract BaseSetup is DSTest, Test {
             vm.deal(users[1], amountUSER);
             vm.deal(users[2], amountUSER);
         }
-    }
-
-    function _getPriceMultiplier(uint64 targetChainId_) internal returns (uint256) {
-        uint256 multiplier;
-
-        if (targetChainId_ == ETH || targetChainId_ == ARBI || targetChainId_ == OP) {
-            /// @dev default multiplier for chains with ETH native token
-
-            multiplier = 1;
-        } else {
-            uint256 initialFork = vm.activeFork();
-
-            vm.selectFork(FORKS[ETH]);
-
-            int256 ethUsdPrice = _getLatestPrice(PRICE_FEEDS[ETH]);
-
-            vm.selectFork(FORKS[targetChainId_]);
-            int256 price = _getLatestPrice(PRICE_FEEDS[targetChainId_]);
-
-            multiplier = 3 * uint256(ethUsdPrice / price);
-
-            /// @dev return to initial fork
-
-            vm.selectFork(initialFork);
-        }
-
-        return multiplier;
-    }
-
-    function _getLatestPrice(address priceFeed_) internal view returns (int256) {
-        // prettier-ignore
-        (
-            /* uint80 roundID */
-            ,
-            int256 price,
-            /*uint startedAt*/
-            ,
-            /*uint timeStamp*/
-            ,
-            /*uint80 answeredInRound*/
-        ) = AggregatorV3Interface(priceFeed_).latestRoundData();
-        return price;
     }
 
     function _fundUnderlyingTokens(uint256 amount) private {
@@ -993,12 +1018,11 @@ abstract contract BaseSetup is DSTest, Test {
         uint64[] memory dstChainIds,
         uint8[] memory selectedAmbIds,
         address user,
-        MultiVaultsSFData[] memory multiSuperFormsData,
+        MultiVaultSFData[] memory multiSuperFormsData,
         SingleVaultSFData[] memory singleSuperFormsData
-    ) internal view returns (uint256, bytes[] memory) {
+    ) internal view returns (bytes[] memory) {
         uint256 dstCount = dstChainIds.length;
 
-        uint256 msgValue;
         bytes[] memory ambParams = new bytes[](dstCount);
 
         require(dstCount == multiSuperFormsData.length + singleSuperFormsData.length, "Invalid Lengths");
@@ -1025,7 +1049,7 @@ abstract contract BaseSetup is DSTest, Test {
                     2 ** 256 - 1, /// @dev uses max payload id
                     multiSuperFormsData[i].superFormIds,
                     multiSuperFormsData[i].amounts,
-                    multiSuperFormsData[i].maxSlippage,
+                    multiSuperFormsData[i].maxSlippages,
                     multiSuperFormsData[i].liqRequests,
                     multiSuperFormsData[i].extraFormData
                 )
@@ -1041,11 +1065,10 @@ abstract contract BaseSetup is DSTest, Test {
                 messages[i]
             );
 
-            msgValue += tempFees;
             ambParams[i] = tempParams;
         }
 
-        return (msgValue, ambParams);
+        return ambParams;
     }
 
     /// @dev Generates the extraData for each amb
@@ -1083,7 +1106,7 @@ abstract contract BaseSetup is DSTest, Test {
 
         uint256 totalFees;
         uint256[] memory gasPerAMB = new uint256[](ambCount);
-        (totalFees, gasPerAMB) = feeHelper.estimateFees(selectedAmbIds, dstChainId, message, paramsPerAMB);
+        (totalFees, gasPerAMB) = feeHelper.estimateAMBFees(selectedAmbIds, dstChainId, message, paramsPerAMB);
 
         AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
 
@@ -1127,7 +1150,7 @@ abstract contract BaseSetup is DSTest, Test {
             AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, superFormIds, amounts)))
         );
 
-        (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateFees(
+        (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateAMBFees(
             selectedAmbIds,
             dstChainId,
             abi.encode(vars.message),
@@ -1168,7 +1191,7 @@ abstract contract BaseSetup is DSTest, Test {
             AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superFormId, amount)))
         );
 
-        (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateFees(
+        (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateAMBFees(
             selectedAmbIds,
             dstChainId,
             abi.encode(vars.message),

@@ -16,6 +16,10 @@ interface ISuperRBAC {
     /// @param admin_ the address to grant the role to
     function grantProtocolAdminRole(address admin_) external;
 
+    /// @dev grants the FEE_ADMIN_ROLE to the given address
+    /// @param admin_ the address to grant the role to
+    function grantFeeAdminRole(address admin_) external;
+
     /// @dev revokes the DEFAULT_ADMIN_ROLE from given address
     /// @param admin_ the address to revoke the role from
     function revokeProtocolAdminRole(address admin_) external;
@@ -89,6 +93,9 @@ interface ISuperRBAC {
     /// @dev returns the id of the protocol admin role
     function PROTOCOL_ADMIN_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of the fee admin role
+    function FEE_ADMIN_ROLE() external view returns (bytes32);
+
     /// @dev returns the id of the emergency admin role
     function EMERGENCY_ADMIN_ROLE() external view returns (bytes32);
 
@@ -113,6 +120,10 @@ interface ISuperRBAC {
     /// @dev returns wether the given address has the protocol admin role
     /// @param admin_ the address to check
     function hasProtocolAdminRole(address admin_) external view returns (bool);
+
+    /// @dev returns wether the given address has the fee admin role
+    /// @param admin_ the address to check
+    function hasFeeAdminRole(address admin_) external view returns (bool);
 
     /// @dev returns wether the given address has the emergency admin role
     /// @param admin_ the address to check

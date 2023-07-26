@@ -17,8 +17,8 @@ contract SXSVWNormal4626NativeSlippageL2AMB23 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         AMBs = [2, 3];
 
-        CHAIN_0 = ARBI;
-        DST_CHAINS = [AVAX];
+        CHAIN_0 = ARBI; // 4
+        DST_CHAINS = [AVAX]; // 2
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [1];
@@ -80,7 +80,7 @@ contract SXSVWNormal4626NativeSlippageL2AMB23 is ProtocolActions {
     function test_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
-            MultiVaultsSFData[] memory multiSuperFormsData;
+            MultiVaultSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
