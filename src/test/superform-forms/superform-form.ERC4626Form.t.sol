@@ -247,7 +247,7 @@ contract SuperFormERC4626FormTest is BaseSetup {
         );
     }
 
-    function test_superformVaultShareBalance() public {
+    function test_superformVaultTotalAssets() public {
         vm.startPrank(deployer);
         
         vm.selectFork(FORKS[chainId]);
@@ -284,7 +284,7 @@ contract SuperFormERC4626FormTest is BaseSetup {
         );
     }
 
-    function test_superformVaultPricePerVaultShare() public {
+    function test_superformVaultShareBalance() public {
         vm.startPrank(deployer);
         
         vm.selectFork(FORKS[chainId]);
@@ -321,7 +321,7 @@ contract SuperFormERC4626FormTest is BaseSetup {
         );
     }
 
-    function test_superformVaultDecimals() public {
+    function test_superformVaultPricePerVaultShare() public {
         vm.startPrank(deployer);
         
         vm.selectFork(FORKS[chainId]);
@@ -358,7 +358,7 @@ contract SuperFormERC4626FormTest is BaseSetup {
         );
     }
 
-    function test_superformVaultName() public {
+    function test_superformVaultDecimals() public {
         vm.startPrank(deployer);
         
         vm.selectFork(FORKS[chainId]);
@@ -395,7 +395,7 @@ contract SuperFormERC4626FormTest is BaseSetup {
         );
     }
 
-    function test_superformVaultTotalAssets() public {
+    function test_superformVaultName() public {
         vm.startPrank(deployer);
         
         vm.selectFork(FORKS[chainId]);
@@ -428,7 +428,7 @@ contract SuperFormERC4626FormTest is BaseSetup {
 
         assertEq(
             vaultName,
-            "SUP-Mock"
+            "Mock Vault"
         );
     }
 
@@ -465,7 +465,7 @@ contract SuperFormERC4626FormTest is BaseSetup {
 
         assertEq(
             tokenName,
-            "SUP-Mock"
+            "Superform Mock Vault"
         );
     }
 }
