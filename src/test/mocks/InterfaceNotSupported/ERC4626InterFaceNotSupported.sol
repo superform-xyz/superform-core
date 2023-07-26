@@ -7,7 +7,7 @@ import {BaseForm} from "./BaseFormInterfaceNotSupported.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for IERC4626 vaults
-abstract contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation {
+contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
@@ -50,4 +50,10 @@ abstract contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation 
     ) internal override returns (uint256 dstAmount) {
         dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
     }
+
+    function getVaultName() external view override returns (string memory) {}
+
+    function getVaultSymbol() external view override returns (string memory) {}
+
+    function getVaultDecimals() external view override returns (uint256) {}
 }
