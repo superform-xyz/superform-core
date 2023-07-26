@@ -56,7 +56,7 @@ contract SXSVDTimelocked4626NoMultiTxTokenInputSlippageL2AMB13 is ProtocolAction
     function test_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
-            MultiVaultsSFData[] memory multiSuperFormsData;
+            MultiVaultSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;

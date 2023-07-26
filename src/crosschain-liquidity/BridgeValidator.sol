@@ -52,4 +52,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         address srcSender_,
         address liqDataToken_
     ) external view virtual override;
+
+    /// @inheritdoc IBridgeValidator
+    function decodeReceiver(bytes calldata txData_) external pure virtual override returns (address receiver_);
 }

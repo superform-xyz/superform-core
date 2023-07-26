@@ -31,6 +31,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev core protocol addresses identifiers
     bytes32 public constant override SUPER_ROUTER = keccak256("SUPER_ROUTER");
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
+    bytes32 public constant override FEE_COLLECTOR = keccak256("FEE_COLLECTOR");
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
     bytes32 public constant override TWO_STEPS_FORM_STATE_REGISTRY = keccak256("TWO_STEPS_FORM_STATE_REGISTRY");
     bytes32 public constant override FACTORY_STATE_REGISTRY = keccak256("FACTORY_STATE_REGISTRY");
@@ -38,6 +39,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override SUPER_POSITIONS = keccak256("SUPER_POSITIONS");
     bytes32 public constant override SUPER_RBAC = keccak256("SUPER_RBAC");
     bytes32 public constant override MULTI_TX_PROCESSOR = keccak256("MULTI_TX_PROCESSOR");
+    bytes32 public constant override TX_PROCESSOR = keccak256("TX_PROCESSOR");
+    bytes32 public constant override TX_UPDATER = keccak256("TX_UPDATER");
 
     modifier onlyCaller() {
         if (!ISuperRBAC(getProtocolAddress(SUPER_RBAC)).hasProtocolAdminRole(msg.sender)) {
@@ -87,6 +90,14 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         protocolAddresses[SUPERFORM_FACTORY] = superFormFactory_;
 
         emit SuperFormFactoryUpdated(oldSuperFormFactory, superFormFactory_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setFeeCollector(address feeCollector_) external override onlyCaller {
+        address oldFeeCollector = protocolAddresses[FEE_COLLECTOR];
+        protocolAddresses[FEE_COLLECTOR] = feeCollector_;
+
+        emit FeeCollectorUpdated(oldFeeCollector, feeCollector_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -143,6 +154,22 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         protocolAddresses[MULTI_TX_PROCESSOR] = multiTxProcessor_;
 
         emit MultiTxProcessorUpdated(oldMultiTxProcessor, multiTxProcessor_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setTxProcessor(address txProcessor_) external override onlyCaller {
+        address oldTxProcessor = protocolAddresses[TX_PROCESSOR];
+        protocolAddresses[TX_PROCESSOR] = txProcessor_;
+
+        emit TxProcessorUpdated(oldTxProcessor, txProcessor_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setTxUpdater(address txUpdater_) external override onlyCaller {
+        address oldTxUpdater = protocolAddresses[TX_UPDATER];
+        protocolAddresses[TX_UPDATER] = txUpdater_;
+
+        emit TxProcessorUpdated(oldTxUpdater, txUpdater_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -252,6 +279,16 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
+    function txProcessor() external view override returns (address txProcessor_) {
+        txProcessor_ = getProtocolAddress(TX_PROCESSOR);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function txUpdater() external view override returns (address txUpdater_) {
+        txUpdater_ = getProtocolAddress(TX_UPDATER);
+    }
+
+    /// @inheritdoc ISuperRegistry
     function getBridgeAddress(uint8 bridgeId_) external view override returns (address bridgeAddress_) {
         bridgeAddress_ = bridgeAddresses[bridgeId_];
     }
@@ -269,6 +306,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistry(uint8 registryId_) external view override returns (address registryAddress_) {
         registryAddress_ = registryAddresses[registryId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getFeeCollector() external view returns (address feeCollector_) {
+        feeCollector_ = getProtocolAddress(FEE_COLLECTOR);
     }
 
     /// @inheritdoc ISuperRegistry

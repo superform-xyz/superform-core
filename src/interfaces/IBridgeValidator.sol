@@ -30,4 +30,9 @@ interface IBridgeValidator {
         address srcSender_,
         address liqDataToken_
     ) external view;
+
+    /// @dev decoded txData and returns the receiver address
+    /// @param txData_ is the txData of the cross chain deposit
+    /// @return receiver_ is the recipient address inscribed in the tx data
+    function decodeReceiver(bytes calldata txData_) external pure returns (address receiver_);
 }

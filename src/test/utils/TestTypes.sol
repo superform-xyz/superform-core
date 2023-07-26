@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
+
 import "forge-std/Test.sol";
 
 import "../../types/LiquidityTypes.sol";
-
 import "../../types/DataTypes.sol";
-
 import {MockERC20} from "../mocks/MockERC20.sol";
 
 /*//////////////////////////////////////////////////////////////
@@ -14,7 +13,8 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 enum Actions {
     Deposit,
     Withdraw,
-    DepositPermit2
+    DepositPermit2,
+    RescueFailedDeposit
 }
 
 enum LiquidityChange {
@@ -28,18 +28,17 @@ enum TestType {
     RevertProcessPayload,
     RevertUpdateStateSlippage,
     RevertUpdateStateRBAC,
-    RevertXChainDeposit
+    RevertXChainDeposit,
+    RevertVaultsWithdraw
 }
 
 struct StagesLocalVars {
     Vm.Log[] logs;
-    MultiDstMultiVaultsStateReq multiDstMultiVaultStateReq;
+    MultiDstMultiVaultStateReq multiDstMultiVaultStateReq;
     MultiDstSingleVaultStateReq multiDstSingleVaultStateReq;
-    SingleDstMultiVaultsStateReq singleDstMultiVaultStateReq;
+    SingleXChainMultiVaultStateReq singleDstMultiVaultStateReq;
     SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;
     SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
-    MultiVaultsSFData[] multiSuperFormsData;
-    SingleVaultSFData[] singleSuperFormsData;
     UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
     UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;
@@ -66,7 +65,7 @@ struct MessagingAssertVars {
     uint256 receivedPayloadId;
     uint64 toChainId;
     bool success;
-    MultiVaultsSFData expectedMultiVaultsData;
+    MultiVaultSFData expectedMultiVaultsData;
     SingleVaultSFData expectedSingleVaultData;
     InitMultiVaultData receivedMultiVaultData;
     InitSingleVaultData receivedSingleVaultData;
@@ -123,7 +122,7 @@ struct SetupVars {
     address factoryStateRegistry;
     address coreStateRegistry;
     address PayloadHelper;
-    address FeeHelper;
+    address feeHelper;
     address twoStepsFormStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
@@ -134,6 +133,7 @@ struct SetupVars {
     address dstCelerImplementation;
     address dstStateRegistry;
     address multiTxProcessor;
+    address feeCollector;
     address superRegistry;
     address superRBAC;
     address canonicalPermit2;
@@ -149,7 +149,7 @@ struct SetupVars {
 //////////////////////////////////////////////////////////////*/
 
 struct CallDataArgs {
-    MultiVaultsSFData[] multiSuperFormsData;
+    MultiVaultSFData[] multiSuperFormsData;
     SingleVaultSFData[] singleSuperFormsData;
     MultiVaultCallDataArgs[] multiSuperFormsCallData;
     SingleVaultCallDataArgs[] singleSuperFormsCallData;

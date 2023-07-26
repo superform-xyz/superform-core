@@ -71,7 +71,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
     function test_scenario() public {
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
-            MultiVaultsSFData[] memory multiSuperFormsData;
+            MultiVaultSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;

@@ -178,6 +178,9 @@ library Error {
     /// @dev emitted when a vault has already been added to a form kind
     error VAULT_ALREADY_HAS_FORM();
 
+    /// @dev emitted when same vault and beacon is used to create new superform
+    error VAULT_BEACON_COMBNATION_EXISTS();
+
     /*///////////////////////////////////////////////////////////////
                         SUPER ROUTER ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -246,4 +249,21 @@ library Error {
 
     /// @dev error thrown when the unlock reques
     error LOCKED();
+
+    /*///////////////////////////////////////////////////////////////
+                        FEE COLLECTOR ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev error thrown when user pays zero
+    error ZERO_MSG_VALUE();
+
+    /// @dev error thrown when fees withdrawal fails
+    error FAILED_WITHDRAW();
+
+    /*///////////////////////////////////////////////////////////////
+                        SUPER POSITIONS ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev error thrown when the uri cannot be updated
+    error DYNAMIC_URI_FROZEN();
 }

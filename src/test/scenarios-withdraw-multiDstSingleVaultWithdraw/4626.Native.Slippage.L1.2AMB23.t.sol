@@ -23,7 +23,7 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [0];
-        TARGET_UNDERLYINGS[AVAX][0] = [1];
+        TARGET_UNDERLYINGS[AVAX][0] = [2];
 
         TARGET_VAULTS[OP][0] = [0]; /// @dev id 0 is normal 4626
         TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
@@ -33,7 +33,7 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][1] = [0];
-        TARGET_UNDERLYINGS[AVAX][1] = [1];
+        TARGET_UNDERLYINGS[AVAX][1] = [2];
 
         TARGET_VAULTS[OP][1] = [0]; /// @dev id 0 is normal 4626
         TARGET_VAULTS[AVAX][1] = [0]; /// @dev id 0 is normal 4626
@@ -41,18 +41,13 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
         TARGET_FORM_KINDS[OP][1] = [0];
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
-        AMOUNTS[OP][0] = [541135];
-        AMOUNTS[OP][1] = [541135];
+        AMOUNTS[OP][0] = [1000];
+        AMOUNTS[OP][1] = [500];
 
-        AMOUNTS[AVAX][0] = [11];
-        AMOUNTS[AVAX][1] = [10];
+        AMOUNTS[AVAX][0] = [750];
+        AMOUNTS[AVAX][1] = [250];
 
-        /*
-        PARTIAL[OP][0] = [false];
-        PARTIAL[OP][1] = [false];
-
-        PARTIAL[AVAX][0] = [false];
-        */
+        PARTIAL[OP][1] = [true];
         PARTIAL[AVAX][1] = [true];
 
         MAX_SLIPPAGE = 1000;
@@ -72,7 +67,7 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 743, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
             })
@@ -86,7 +81,7 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 743, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
@@ -100,7 +95,7 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
     function test_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
-            MultiVaultsSFData[] memory multiSuperFormsData;
+            MultiVaultSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;

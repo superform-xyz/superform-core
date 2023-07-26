@@ -14,16 +14,25 @@ import {DataLib} from "./libraries/DataLib.sol";
 contract SuperPositions is ISuperPositions, ERC1155s {
     using DataLib for uint256;
 
+    /*///////////////////////////////////////////////////////////////
+                        STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev is the base uri set by admin
     string public dynamicURI;
+
+    /// @dev is the base uri frozen status
+    bool public dynamicURIFrozen;
+
+    /// @dev is the super registry address
     ISuperRegistry public immutable superRegistry;
 
     /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint256 transactionId => TransactionInfo transactionInfo) public txHistory;
+    mapping(uint256 transactionId => uint256 txInfo) public txHistory;
 
-    struct TransactionInfo {
-        uint256 txInfo;
-        uint256[] superFormIds; // if stored on index 0 it is a single Vault
-    }
+    /*///////////////////////////////////////////////////////////////
+                            MODIFIER
+    //////////////////////////////////////////////////////////////*/
 
     /// note replace this to support some new role called minter in super registry
     modifier onlyMinter() {
@@ -49,7 +58,11 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         _;
     }
 
-    /// @param dynamicURI_              URL for external metadata of ERC1155 SuperPositions
+    /*///////////////////////////////////////////////////////////////
+                            CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
+
+    /// @param dynamicURI_  URL for external metadata of ERC1155 SuperPositions
     /// @param superRegistry_ the superform registry contract
 
     constructor(string memory dynamicURI_, address superRegistry_) {
@@ -57,6 +70,10 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         superRegistry = ISuperRegistry(superRegistry_);
     }
+
+    /*///////////////////////////////////////////////////////////////
+                        EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// FIXME: Temp extension need to make approve at superRouter, may change with arch
     function setApprovalForAll(address operator, bool approved) public virtual override(ISuperPositions, ERC1155s) {
@@ -92,19 +109,17 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// @inheritdoc ISuperPositions
-    function updateTxHistory(
-        uint256 payloadId_,
-        uint256 txInfo_,
-        uint256[] memory superFormIds_
-    ) external override onlyRouter {
-        txHistory[payloadId_] = TransactionInfo(txInfo_, superFormIds_);
+    function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external override onlyRouter {
+        txHistory[payloadId_] = txInfo_;
     }
 
     /// @inheritdoc ISuperPositions
     function stateMultiSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 returnTxType, uint256 callbackType, , , address returnDataSrcSender, ) = data_.txInfo.decodeTxInfo();
+        (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
+            .txInfo
+            .decodeTxInfo();
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -112,22 +127,21 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
 
-        TransactionInfo memory transactionInfo = txHistory[returnData.payloadId];
+        uint256 txInfo = txHistory[returnData.payloadId];
 
-        uint8 multi;
         address srcSender;
         uint256 txType;
-        (txType, , multi, , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
+        (txType, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         if (multi == 0) revert Error.INVALID_PAYLOAD();
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
-            _batchMint(srcSender, transactionInfo.superFormIds, returnData.amounts, "");
+            _batchMint(srcSender, returnData.superFormIds, returnData.amounts, "");
         } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
             /// @dev mint back super positions
-            _batchMint(srcSender, transactionInfo.superFormIds, returnData.amounts, "");
+            _batchMint(srcSender, returnData.superFormIds, returnData.amounts, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -139,7 +153,9 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 txType, uint256 callbackType, , , address returnDataSrcSender, ) = data_.txInfo.decodeTxInfo();
+        (uint256 txType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
+            .txInfo
+            .decodeTxInfo();
 
         /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
@@ -147,20 +163,19 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
 
-        TransactionInfo memory transactionInfo = txHistory[returnData.payloadId];
+        uint256 txInfo = txHistory[returnData.payloadId];
 
-        uint8 multi;
         address srcSender;
-        (, , multi, , srcSender, srcChainId_) = transactionInfo.txInfo.decodeTxInfo();
+        (, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         if (multi == 1) revert Error.INVALID_PAYLOAD();
 
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
-            _mint(srcSender, transactionInfo.superFormIds[0], returnData.amount, "");
+            _mint(srcSender, returnData.superFormId, returnData.amount, "");
         } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
-            _mint(srcSender, transactionInfo.superFormIds[0], returnData.amount, "");
+            _mint(srcSender, returnData.superFormId, returnData.amount, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -169,28 +184,34 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /*///////////////////////////////////////////////////////////////
-                            ADMIN FUNCTIONS
+                        PREVILAGED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev PREVILEGED admin ONLY FUNCTION.
-    /// @param dynamicURI_    represents the dynamicURI for the ERC1155 super positions
-    function setDynamicURI(string memory dynamicURI_) external onlyProtocolAdmin {
+    /// @dev PREVILEGED ADMIN ONLY FUNCTION.
+    /// @param dynamicURI_ represents the dynamicURI for the ERC1155 super positions
+    function setDynamicURI(string memory dynamicURI_, bool freeze) external override onlyProtocolAdmin {
+        if (dynamicURIFrozen) {
+            revert Error.DYNAMIC_URI_FROZEN();
+        }
+
+        string memory oldURI = dynamicURI;
         dynamicURI = dynamicURI_;
+        dynamicURIFrozen = freeze;
+
+        emit DynamicURIUpdated(oldURI, dynamicURI_, freeze);
     }
 
     /*///////////////////////////////////////////////////////////////
-                            Read Only Functions
+                        READ-ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc ERC1155s
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155s) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
 
     /// @notice Used to construct return url
     function _baseURI() internal view override returns (string memory) {
         return dynamicURI;
-    }
-
-    /**
-     * @dev See {ERC1155s-supportsInterface}.
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155s) returns (bool) {
-        return super.supportsInterface(interfaceId);
     }
 }
