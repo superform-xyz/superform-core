@@ -647,6 +647,8 @@ abstract contract ProtocolActions is BaseSetup {
         }
         delete uniqueDSTs;
         vars.logs = vm.getRecordedLogs();
+
+        /// @dev store Stage 2 - 3 logs in the test state
         for(uint256 i = 0; i < vars.logs.length; i++) {
             srcLogs.push(vars.logs[i]);
         }
@@ -684,6 +686,7 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             }
         }
+
         MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
         CoreStateRegistry stateRegistry;

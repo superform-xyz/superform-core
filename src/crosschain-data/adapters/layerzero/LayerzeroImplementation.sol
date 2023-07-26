@@ -62,7 +62,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /// @param superRegistry_ is the super registry address
     constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
-        // lzEndpoint = ILayerZeroEndpoint(endpoint_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -145,7 +144,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /*///////////////////////////////////////////////////////////////
                         LZ External Functions
     //////////////////////////////////////////////////////////////*/
-
     /// @inheritdoc ILayerZeroReceiver
     function lzReceive(
         uint16 srcChainId_,
