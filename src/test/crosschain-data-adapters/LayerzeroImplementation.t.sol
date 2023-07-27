@@ -21,6 +21,7 @@ contract LayerzeroImplementationTest is ProtocolActions {
     event UaSendVersionSet(address ua, uint16 version);
     event UaReceiveVersionSet(address ua, uint16 version);
     event UaForceResumeReceive(uint16 chainId, bytes srcAddress);
+    event PayloadReceived(uint64 srcChainId, uint64 dstChainId, uint256 payloadId);
 
     address public constant LZ_ENDPOINT_ETH = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant LZ_ENDPOINT_OP = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -29,182 +30,34 @@ contract LayerzeroImplementationTest is ProtocolActions {
     ISuperRegistry public superRegistry;
     LayerzeroImplementation layerzeroImplementation;
     address public bond;
+    bytes public srcAddressOP;
 
     function setUp() public override {
         super.setUp();
 
-        ////////////// forceResumeReceive(), retryMessage() setup //////////////
-        AMBs = [1, 3];
-        CHAIN_0 = OP;
-        DST_CHAINS = [ETH];
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][0] = [1];
-        TARGET_VAULTS[ETH][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ETH][0] = [0];
-        AMOUNTS[ETH][0] = [133];
-
-        MAX_SLIPPAGE = 1000;
-
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[ETH][0] = [1];
-
-        ///////////////////// remaining funcs setup ///////////////////////
         vm.selectFork(FORKS[ETH]);
         superRegistry = ISuperRegistry(getContract(ETH, "SuperRegistry"));
         layerzeroImplementation = LayerzeroImplementation(payable(superRegistry.getAmbAddress(1)));
+
+        srcAddressOP = abi.encodePacked(
+            getContract(ETH, "LayerzeroImplementation"),
+            getContract(OP, "LayerzeroImplementation")
+        );
+
         /// @dev malicious caller
         bond = address(7);
         /// @dev (who's a brokie)
         vm.deal(bond, 1 ether);
     }
 
-    function test_forceResumeReceive_and_revert_invalidCaller() public {
-        depositfromOPtoETH();
-
-        vm.selectFork(FORKS[ETH]);
-
-        /// @dev Simulate receiving the same msg, with same nonce (by re-using same logs from Stage 2 - 3 of
-        /// @dev the previous successful msg), but this time with 0 gasLimit from Lzhelper,
-        /// @dev so that txn gets stuck in LZ_ENDPOINT_ETH.storedPayload[][]
-        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).help(
-            LZ_ENDPOINT_ETH,
-            0, /// NOTE: 0 gasLimit ensures revert
-            FORKS[ETH],
-            srcLogs /// @dev -> repeated logs
-        );
-
-        bytes memory srcAddressOP = abi.encodePacked(
-            getContract(ETH, "LayerzeroImplementation"),
-            getContract(OP, "LayerzeroImplementation")
-        );
-        /// @dev verify the msg to be present in LZ_ENDPOINT_ETH.storedPayload[][]
-        /// @dev 111 is lz_chainId for OP
-        assertEq(ILzEndpoint(LZ_ENDPOINT_ETH).hasStoredPayload(111, srcAddressOP), true);
-
-        /// @dev first testing revert on invalid caller
-        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
-        layerzeroImplementation.forceResumeReceive(111, srcAddressOP);
-
-        /// @dev remove the unexecuted blocked msg from LZ_ENDPOINT_ETH, using forceResumeReceive()
-        vm.prank(deployer);
-        layerzeroImplementation.forceResumeReceive(111, srcAddressOP);
-
-        /// @dev verify the msg to be removed from LZ_ENDPOINT_ETH
-        assertEq(ILzEndpoint(LZ_ENDPOINT_ETH).hasStoredPayload(111, srcAddressOP), false);
-    }
-
-    function test_retryMessage_and_revert_invalidPayload_invalidPayloadState_duplicatePayload() public {
-        depositfromOPtoETH();
-
-        vm.selectFork(FORKS[ETH]);
-
-        bytes memory srcAddressOP = abi.encodePacked(
-            getContract(ETH, "LayerzeroImplementation"),
-            getContract(OP, "LayerzeroImplementation")
-        );
-
-        /// @dev duplicate msg (with same nonce as previous successful action)
-        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).help(LZ_ENDPOINT_ETH, 5000000, FORKS[ETH], srcLogs);
-
-        // console.log("FAILED_MESSAGES");
-        // console.logBytes32(layerzeroImplementation.failedMessages(111, srcAddressOP, 2));
-        // console.log(ILzEndpoint(LZ_ENDPOINT_ETH).hasStoredPayload(111, srcAddressOP));
-
-        bytes memory payload = abi.decode(srcLogs[0].data, (bytes));
-
-        vm.expectRevert(Error.INVALID_PAYLOAD_STATE.selector);
-        /// @dev NOTE nonce = 1, instead of 2
-        layerzeroImplementation.retryMessage(111, srcAddressOP, 1, payload);
-
-        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
-        layerzeroImplementation.retryMessage(111, srcAddressOP, 2, payload);
-
-        // LayerZeroPacket.Packet memory packet = LayerZeroPacket.getPacket(payload);
-
-        /// @dev FIXME: the line above throws arithmetic over/underflow error, hence hardcoding the payload in this call for now
-        bytes
-            memory fixedPayload = hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000a7e5f4552091a69125d5dfcb7b8c2659029395bdf0100000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000001000000015c77b7ee63b818289ba07c96e78bd2b43a6b10bb000000000000000000000000000000000000000000000000000000000000008500000000000000000000000000000000000000000000000000000000000003e800000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
-        vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
-        layerzeroImplementation.retryMessage(111, srcAddressOP, 2, fixedPayload);
-    }
-
-    function test_revert_broadcastPayload_invalidCaller() public {
-        AMBMessage memory ambMessage;
-        BroadCastAMBExtraData memory ambExtraData;
-        address coreStateRegistry;
-
-        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
-
-        vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
-        layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
-            users[0],
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
-        );
-    }
-
-    function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId() public {
-        AMBMessage memory ambMessage;
-        BroadCastAMBExtraData memory ambExtraData;
-        address coreStateRegistry;
-
-        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
-
-        vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
-        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
-            users[0],
-            chainIds[5],
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
-        );
-
-        vm.expectRevert(Error.INVALID_SRC_CHAIN_ID.selector);
-        vm.prank(coreStateRegistry);
-        /// @dev NOTE the use of zkSync's chainId: 324, whose trustedRemote is not set
-        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
-            users[0],
-            324,
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
-        );
-    }
-
-    function test_revert_lzReceive_invalidCaller_invalidSrcSender() public {
-        bytes memory srcAddressOP = abi.encodePacked(
-            getContract(ETH, "LayerzeroImplementation"),
-            getContract(OP, "LayerzeroImplementation")
-        );
-
-        vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
-        layerzeroImplementation.lzReceive(111, srcAddressOP, 1, "");
-
-        vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
-        vm.prank(LZ_ENDPOINT_ETH);
-        /// @dev NOTE the use of 101 (ETH's lz_chainId) instead of 111 (optimism's)
-        layerzeroImplementation.lzReceive(101, srcAddressOP, 1, "");
-    }
-
-    function test_revert_nonblockingLzReceive_invalidCaller() public {
-        bytes memory srcAddressOP = abi.encodePacked(
-            getContract(ETH, "LayerzeroImplementation"),
-            getContract(OP, "LayerzeroImplementation")
-        );
-
-        vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
-        layerzeroImplementation.nonblockingLzReceive(111, srcAddressOP, 1, "");
-    }
-
     function test_setLzEndpoint() public {
+        /// @dev resetting lzEndpoint's storage slot to 0 (which was set in BaseSetup)
+        vm.store(address(layerzeroImplementation), bytes32(uint256(1)), bytes32(uint256(0)));
+
         vm.startPrank(deployer);
         layerzeroImplementation.setLzEndpoint(LZ_ENDPOINT_OP); /// optimism
 
-        /// @dev lzEndPoint doesn't change as it's only supposed to be called once (which it was in BaseSetup)
-        assertEq(address(layerzeroImplementation.lzEndpoint()), LZ_ENDPOINT_ETH);
+        assertEq(address(layerzeroImplementation.lzEndpoint()), LZ_ENDPOINT_OP);
     }
 
     function test_setChainId() public {
@@ -271,10 +124,6 @@ contract LayerzeroImplementationTest is ProtocolActions {
     /// @dev uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
     function test_setTrustedRemote_isTrustedRemote_and_revert_invalidCaller() public {
         vm.startPrank(deployer);
-        bytes memory srcAddressOP = abi.encodePacked(
-            getContract(OP, "LayerzeroImplementation"),
-            address(layerzeroImplementation)
-        );
         layerzeroImplementation.setTrustedRemote(111, srcAddressOP);
 
         assertEq(layerzeroImplementation.isTrustedRemote(111, srcAddressOP), true);
@@ -288,37 +137,181 @@ contract LayerzeroImplementationTest is ProtocolActions {
         layerzeroImplementation.setTrustedRemote(109, srcAddressPOLY);
     }
 
-    function depositfromOPtoETH() internal {
-        actions.push(
-            TestAction({
-                action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 0,
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: true,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
-        );
+    function test_forceResumeReceive_and_revert_invalidCaller() public {
+        vm.selectFork(FORKS[ETH]);
 
-        /// @dev send first msg (deposit) from ETH to OP
-        for (uint256 act = 0; act < actions.length; act++) {
-            TestAction memory action = actions[act];
-            MultiVaultSFData[] memory multiSuperFormsData;
-            SingleVaultSFData[] memory singleSuperFormsData;
-            MessagingAssertVars[] memory aV;
-            StagesLocalVars memory vars;
-            bool success;
+        _depositfromETHtoOP(0);
 
-            _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
-        }
+        vm.selectFork(FORKS[OP]);
+
+        /// @dev verify the msg to be present in LZ_ENDPOINT_OP.storedPayload[][]
+        /// @dev 101 is lz_chainId for ETH
+        assertEq(ILzEndpoint(LZ_ENDPOINT_OP).hasStoredPayload(101, srcAddressOP), true);
+
+        /// @dev first testing revert on invalid caller
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.prank(bond);
+        layerzeroImplementation.forceResumeReceive(101, srcAddressOP);
+
+        /// @dev remove the unexecuted blocked msg from LZ_ENDPOINT_OP, using forceResumeReceive()
+        vm.prank(deployer);
+        layerzeroImplementation.forceResumeReceive(101, srcAddressOP);
+
+        /// @dev verify the msg to be removed from LZ_ENDPOINT_OP
+        assertEq(ILzEndpoint(LZ_ENDPOINT_OP).hasStoredPayload(101, srcAddressOP), false);
     }
 
-    function setupBroadcastPayloadAMBData(
+    function test_retryMessage_and_revert_invalidPayload_invalidPayloadState() public {
+        _resetCoreStateRegistry(FORKS[OP], false);
+
+        vm.selectFork(FORKS[ETH]);
+
+        Vm.Log[] memory logs = _depositfromETHtoOP(500000);
+
+        _resetCoreStateRegistry(FORKS[OP], true);
+
+        bytes memory payload;
+        for (uint256 i; i < logs.length; i++) {
+            Vm.Log memory log = logs[i];
+
+            if (log.topics[0] == 0xe9bded5f24a4168e4f3bf44e00298c993b22376aad8c58c7dda9718a54cbea82) {
+                bytes memory _data = abi.decode(log.data, (bytes));
+                LayerZeroPacket.Packet memory _packet = LayerZeroPacket.getPacket(_data);
+                payload = _packet.payload;
+            }
+        }
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_STATE.selector);
+        /// @dev NOTE nonce = 1, instead of 2
+        layerzeroImplementation.retryMessage(101, srcAddressOP, 1, payload);
+
+        bytes memory invalidPayload = hex"0007";
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        layerzeroImplementation.retryMessage(101, srcAddressOP, 2, invalidPayload);
+
+        vm.expectEmit(false, false, false, true, getContract(ETH, "CoreStateRegistry"));
+        emit PayloadReceived(ETH, OP, 1);
+        layerzeroImplementation.retryMessage(101, srcAddressOP, 2, payload);
+    }
+
+    function test_revert_broadcastPayload_invalidCaller() public {
+        AMBMessage memory ambMessage;
+        BroadCastAMBExtraData memory ambExtraData;
+        address coreStateRegistry;
+
+        (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[0]);
+
+        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.prank(bond);
+        layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
+    }
+
+    function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId() public {
+        AMBMessage memory ambMessage;
+        BroadCastAMBExtraData memory ambExtraData;
+        address coreStateRegistry;
+
+        (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[0]);
+
+        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.prank(bond);
+        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
+            users[0],
+            chainIds[5],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
+
+        vm.expectRevert(Error.INVALID_SRC_CHAIN_ID.selector);
+        vm.prank(coreStateRegistry);
+        /// @dev NOTE the use of zkSync's chainId: 324, whose trustedRemote is not set
+        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
+            users[0],
+            324,
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
+    }
+
+    function test_revert_lzReceive_invalidCaller_duplicatePayload_invalidSrcSender() public {
+        vm.selectFork(FORKS[ETH]);
+
+        Vm.Log[] memory logs = _depositfromETHtoOP(500000);
+
+        bytes memory payload;
+        for (uint256 i; i < logs.length; i++) {
+            Vm.Log memory log = logs[i];
+
+            if (log.topics[0] == 0xe9bded5f24a4168e4f3bf44e00298c993b22376aad8c58c7dda9718a54cbea82) {
+                bytes memory _data = abi.decode(log.data, (bytes));
+                LayerZeroPacket.Packet memory _packet = LayerZeroPacket.getPacket(_data);
+                payload = _packet.payload;
+            }
+        }
+
+        vm.selectFork(FORKS[OP]);
+
+        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.prank(bond);
+        layerzeroImplementation.lzReceive(101, srcAddressOP, 2, payload);
+
+        vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
+        vm.prank(LZ_ENDPOINT_OP);
+        layerzeroImplementation.lzReceive(101, srcAddressOP, 2, payload);
+
+        vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
+        vm.prank(LZ_ENDPOINT_OP);
+        /// @dev NOTE the use of 111 (OP's lz_chainId as srcChainId on OP) instead of 101 (ETH's)
+        layerzeroImplementation.lzReceive(111, srcAddressOP, 2, payload);
+    }
+
+    function test_revert_nonblockingLzReceive_invalidCaller() public {
+        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.prank(bond);
+        layerzeroImplementation.nonblockingLzReceive(111, srcAddressOP, "");
+    }
+
+    function _depositfromETHtoOP(uint256 gasLimit_) internal returns (Vm.Log[] memory) {
+        bytes memory crossChainMsg = abi.encode(AMBMessage(DataLib.packTxInfo(0, 1, 1, 1, deployer, ETH), bytes("")));
+
+        address coreStateRegistryETH = getContract(ETH, "CoreStateRegistry");
+        vm.deal(coreStateRegistryETH, 1 ether);
+        vm.prank(coreStateRegistryETH);
+
+        vm.recordLogs();
+        layerzeroImplementation.dispatchPayload{value: 1 ether}(bond, OP, crossChainMsg, bytes(""));
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        /// @dev payload will fail in _nonblockLzReceive
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).help(
+            LZ_ENDPOINT_OP,
+            gasLimit_, /// note: using `0` to get the payload stored in LZ_ENDPOINT
+            FORKS[OP],
+            logs
+        );
+
+        return logs;
+    }
+
+    function _resetCoreStateRegistry(uint256 forkId, bool isReset) internal {
+        vm.selectFork(forkId);
+        vm.startPrank(deployer);
+
+        uint8[] memory registryId_ = new uint8[](1);
+        registryId_[0] = 1;
+
+        address[] memory registryAddress_ = new address[](1);
+        registryAddress_[0] = isReset ? getContract(OP, "CoreStateRegistry") : address(1);
+        superRegistry.setStateRegistryAddress(registryId_, registryAddress_);
+    }
+
+    function _setupBroadcastPayloadAMBData(
         address _srcSender
-    ) public returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
+    ) internal returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
         AMBMessage memory ambMessage = AMBMessage(
             DataLib.packTxInfo(
                 uint8(TransactionType.DEPOSIT), /// @dev TransactionType

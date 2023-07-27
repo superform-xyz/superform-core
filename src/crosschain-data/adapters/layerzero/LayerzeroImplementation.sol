@@ -119,7 +119,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /*///////////////////////////////////////////////////////////////
                         Core Internal Functions
     //////////////////////////////////////////////////////////////*/
-    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, uint64 _nonce, bytes memory _payload) internal {
+    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, bytes memory _payload) internal {
         /// @dev decodes payload received
         AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
 
@@ -164,7 +164,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     function nonblockingLzReceive(
         uint16 srcChainId_,
         bytes memory srcAddress_,
-        uint64 nonce_,
         bytes memory payload_
     ) public {
         // only internal transaction
@@ -172,7 +171,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
             revert Error.INVALID_CALLER();
         }
 
-        _nonblockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_);
+        _nonblockingLzReceive(srcChainId_, srcAddress_, payload_);
     }
 
     function retryMessage(
@@ -196,7 +195,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         failedMessages[srcChainId_][srcAddress_][nonce_] = bytes32(0);
 
         // execute the message. revert if it fails again
-        _nonblockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_);
+        _nonblockingLzReceive(srcChainId_, srcAddress_, payload_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -233,7 +232,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         bytes memory payload_
     ) internal {
         // try-catch all errors/exceptions
-        try this.nonblockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_) {
+        try this.nonblockingLzReceive(srcChainId_, srcAddress_, payload_) {
             // do nothing
         } catch {
             // error / exception

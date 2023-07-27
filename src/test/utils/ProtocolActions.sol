@@ -36,8 +36,6 @@ abstract contract ProtocolActions is BaseSetup {
 
     bytes[] public ambParams;
 
-    Vm.Log[] public srcLogs;
-
     uint256[][] public revertingDepositSFs;
     uint256[][] public revertingWithdrawSFs;
     uint256[][] public revertingWithdrawTimelockedSFs;
@@ -746,11 +744,6 @@ abstract contract ProtocolActions is BaseSetup {
         }
         delete uniqueDSTs;
         vars.logs = vm.getRecordedLogs();
-
-        /// @dev store Stage 2 - 3 logs in the test state
-        for (uint256 i = 0; i < vars.logs.length; i++) {
-            srcLogs.push(vars.logs[i]);
-        }
 
         for (uint256 index; index < AMBs.length; index++) {
             if (AMBs[index] == 1) {
