@@ -2,6 +2,8 @@
 pragma solidity 0.8.19;
 
 import "../utils/BaseSetup.sol";
+import "../../../lib/pigeon/src/layerzero/lib/LZPacket.sol";
+
 import {TransactionType, CallbackType, AMBMessage} from "../../types/DataTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
@@ -9,14 +11,12 @@ import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {LayerzeroImplementation} from "../../crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import {CoreStateRegistry} from "../../crosschain-data/extensions/CoreStateRegistry.sol";
 import {Error} from "../../utils/Error.sol";
-import "../utils/ProtocolActions.sol";
-import "../../../lib/pigeon/src/layerzero/lib/LZPacket.sol";
 
 interface ILzEndpoint {
     function hasStoredPayload(uint16 _srcChainId, bytes calldata _srcAddress) external view returns (bool);
 }
 
-contract LayerzeroImplementationTest is ProtocolActions {
+contract LayerzeroImplementationTest is BaseSetup {
     /// @dev event emitted from LZ_ENDPOINT_ETH
     event UaSendVersionSet(address ua, uint16 version);
     event UaReceiveVersionSet(address ua, uint16 version);
