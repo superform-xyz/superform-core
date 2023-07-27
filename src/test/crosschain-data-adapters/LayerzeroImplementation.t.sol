@@ -12,7 +12,6 @@ import {Error} from "../../utils/Error.sol";
 import "../utils/ProtocolActions.sol";
 import "../../../lib/pigeon/src/layerzero/lib/LZPacket.sol";
 
-
 interface ILzEndpoint {
     function hasStoredPayload(uint16 _srcChainId, bytes calldata _srcAddress) external view returns (bool);
 }
@@ -64,7 +63,7 @@ contract LayerzeroImplementationTest is ProtocolActions {
 
         vm.selectFork(FORKS[ETH]);
 
-        /// @dev Simulate receiving the same msg, with same nonce (by re-using same logs from Stage 2 - 3 of 
+        /// @dev Simulate receiving the same msg, with same nonce (by re-using same logs from Stage 2 - 3 of
         /// @dev the previous successful msg), but this time with 0 gasLimit from Lzhelper,
         /// @dev so that txn gets stuck in LZ_ENDPOINT_ETH.storedPayload[][]
         LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).help(
@@ -74,7 +73,10 @@ contract LayerzeroImplementationTest is ProtocolActions {
             srcLogs /// @dev -> repeated logs
         );
 
-        bytes memory srcAddressOP = abi.encodePacked(getContract(ETH, "LayerzeroImplementation"), getContract(OP, "LayerzeroImplementation"));
+        bytes memory srcAddressOP = abi.encodePacked(
+            getContract(ETH, "LayerzeroImplementation"),
+            getContract(OP, "LayerzeroImplementation")
+        );
         /// @dev verify the msg to be present in LZ_ENDPOINT_ETH.storedPayload[][]
         /// @dev 111 is lz_chainId for OP
         assertEq(ILzEndpoint(LZ_ENDPOINT_ETH).hasStoredPayload(111, srcAddressOP), true);
@@ -97,15 +99,13 @@ contract LayerzeroImplementationTest is ProtocolActions {
 
         vm.selectFork(FORKS[ETH]);
 
-        bytes memory srcAddressOP = abi.encodePacked(getContract(ETH, "LayerzeroImplementation"), getContract(OP, "LayerzeroImplementation"));
+        bytes memory srcAddressOP = abi.encodePacked(
+            getContract(ETH, "LayerzeroImplementation"),
+            getContract(OP, "LayerzeroImplementation")
+        );
 
         /// @dev duplicate msg (with same nonce as previous successful action)
-        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).help(
-            LZ_ENDPOINT_ETH,
-            5000000,
-            FORKS[ETH],
-            srcLogs
-        );
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).help(LZ_ENDPOINT_ETH, 5000000, FORKS[ETH], srcLogs);
 
         // console.log("FAILED_MESSAGES");
         // console.logBytes32(layerzeroImplementation.failedMessages(111, srcAddressOP, 2));
@@ -123,7 +123,8 @@ contract LayerzeroImplementationTest is ProtocolActions {
         // LayerZeroPacket.Packet memory packet = LayerZeroPacket.getPacket(payload);
 
         /// @dev FIXME: the line above throws arithmetic over/underflow error, hence hardcoding the payload in this call for now
-        bytes memory fixedPayload = hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000a7e5f4552091a69125d5dfcb7b8c2659029395bdf0100000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000001000000015c77b7ee63b818289ba07c96e78bd2b43a6b10bb000000000000000000000000000000000000000000000000000000000000008500000000000000000000000000000000000000000000000000000000000003e800000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
+        bytes
+            memory fixedPayload = hex"0000000000000000000000000000000000000000000000000000000000000020000000000000000a7e5f4552091a69125d5dfcb7b8c2659029395bdf0100000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000220000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000001000000015c77b7ee63b818289ba07c96e78bd2b43a6b10bb000000000000000000000000000000000000000000000000000000000000008500000000000000000000000000000000000000000000000000000000000003e800000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
         layerzeroImplementation.retryMessage(111, srcAddressOP, 2, fixedPayload);
     }
@@ -137,7 +138,11 @@ contract LayerzeroImplementationTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
-        layerzeroImplementation.broadcastPayload{value: 0.1 ether}(users[0], abi.encode(ambMessage), abi.encode(ambExtraData));
+        layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId() public {
@@ -149,16 +154,29 @@ contract LayerzeroImplementationTest is ProtocolActions {
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
-        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(users[0], chainIds[5], abi.encode(ambMessage), abi.encode(ambExtraData));
+        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
+            users[0],
+            chainIds[5],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
 
         vm.expectRevert(Error.INVALID_SRC_CHAIN_ID.selector);
         vm.prank(coreStateRegistry);
         /// @dev NOTE the use of zkSync's chainId: 324, whose trustedRemote is not set
-        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(users[0], 324, abi.encode(ambMessage), abi.encode(ambExtraData));
+        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
+            users[0],
+            324,
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_lzReceive_invalidCaller_invalidSrcSender() public {
-        bytes memory srcAddressOP = abi.encodePacked(getContract(ETH, "LayerzeroImplementation"), getContract(OP, "LayerzeroImplementation"));
+        bytes memory srcAddressOP = abi.encodePacked(
+            getContract(ETH, "LayerzeroImplementation"),
+            getContract(OP, "LayerzeroImplementation")
+        );
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
@@ -171,7 +189,10 @@ contract LayerzeroImplementationTest is ProtocolActions {
     }
 
     function test_revert_nonblockingLzReceive_invalidCaller() public {
-        bytes memory srcAddressOP = abi.encodePacked(getContract(ETH, "LayerzeroImplementation"), getContract(OP, "LayerzeroImplementation"));
+        bytes memory srcAddressOP = abi.encodePacked(
+            getContract(ETH, "LayerzeroImplementation"),
+            getContract(OP, "LayerzeroImplementation")
+        );
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
@@ -215,7 +236,7 @@ contract LayerzeroImplementationTest is ProtocolActions {
         bytes memory response = layerzeroImplementation.getConfig(0, 10, address(0), 6);
         assertEq(abi.encode(CHAINLINK_lzOracle), response);
 
-        /// @dev testing revert here and not separately, to avoid making the call above twice and facing 
+        /// @dev testing revert here and not separately, to avoid making the call above twice and facing
         /// the error, 'You cannot overwrite `prank` until it is applied at least once' otherwise
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
@@ -250,14 +271,20 @@ contract LayerzeroImplementationTest is ProtocolActions {
     /// @dev uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
     function test_setTrustedRemote_isTrustedRemote_and_revert_invalidCaller() public {
         vm.startPrank(deployer);
-        bytes memory srcAddressOP = abi.encodePacked(getContract(OP, "LayerzeroImplementation"), address(layerzeroImplementation));
+        bytes memory srcAddressOP = abi.encodePacked(
+            getContract(OP, "LayerzeroImplementation"),
+            address(layerzeroImplementation)
+        );
         layerzeroImplementation.setTrustedRemote(111, srcAddressOP);
 
         assertEq(layerzeroImplementation.isTrustedRemote(111, srcAddressOP), true);
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
-        bytes memory srcAddressPOLY = abi.encodePacked(getContract(POLY, "LayerzeroImplementation"), address(layerzeroImplementation));
+        bytes memory srcAddressPOLY = abi.encodePacked(
+            getContract(POLY, "LayerzeroImplementation"),
+            address(layerzeroImplementation)
+        );
         layerzeroImplementation.setTrustedRemote(109, srcAddressPOLY);
     }
 
@@ -279,7 +306,7 @@ contract LayerzeroImplementationTest is ProtocolActions {
         /// @dev send first msg (deposit) from ETH to OP
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
-            MultiVaultsSFData[] memory multiSuperFormsData;
+            MultiVaultSFData[] memory multiSuperFormsData;
             SingleVaultSFData[] memory singleSuperFormsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
@@ -289,7 +316,9 @@ contract LayerzeroImplementationTest is ProtocolActions {
         }
     }
 
-    function setupBroadcastPayloadAMBData(address _srcSender) public returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
+    function setupBroadcastPayloadAMBData(
+        address _srcSender
+    ) public returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
         AMBMessage memory ambMessage = AMBMessage(
             DataLib.packTxInfo(
                 uint8(TransactionType.DEPOSIT), /// @dev TransactionType
@@ -302,7 +331,7 @@ contract LayerzeroImplementationTest is ProtocolActions {
             "" /// ambData
         );
 
-        /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10]; 
+        /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10];
         /// @dev excluding chainIds[0] = 1 i.e. ETH, as no point broadcasting to same chain
         uint256[] memory gasPerDst = new uint256[](5);
         for (uint i = 0; i < gasPerDst.length; i++) {
@@ -312,14 +341,11 @@ contract LayerzeroImplementationTest is ProtocolActions {
         /// @dev keeping extraDataPerDst empty for now
         bytes[] memory extraDataPerDst = new bytes[](5);
 
-        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(
-          gasPerDst,
-          extraDataPerDst
-        );
+        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
 
         address coreStateRegistry = getContract(1, "CoreStateRegistry");
         /// @dev bcoz we're simulating layerzeroImplementation.broadcastPayload() from CoreStateRegistry (below),
-        /// we need sufficient ETH in CoreStateRegistry and LayerzeroImplementation. On mainnet, these funds will 
+        /// we need sufficient ETH in CoreStateRegistry and LayerzeroImplementation. On mainnet, these funds will
         /// come from the user via SuperFormRouter
         vm.deal(coreStateRegistry, 10 ether);
         vm.deal(address(layerzeroImplementation), 10 ether);
