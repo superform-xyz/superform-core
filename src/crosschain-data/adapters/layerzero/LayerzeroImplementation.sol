@@ -39,12 +39,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////*/
 
     mapping(uint16 => bytes) public trustedRemoteLookup;
-
-    event SetTrustedRemote(uint16 _srcChainId, bytes _srcAddress);
-
     mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32))) public failedMessages;
 
     event MessageFailed(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload);
+    event SetTrustedRemote(uint16 _srcChainId, bytes _srcAddress);
 
     /*///////////////////////////////////////////////////////////////
                                 Modifiers
@@ -107,6 +105,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
     function setChainId(uint64 superChainId_, uint16 ambChainId_) external onlyProtocolAdmin {
+        if (superChainId_ == 0 || ambChainId_ == 0) {
+            revert Error.INVALID_CHAIN_ID();
+        }
+
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
 
@@ -117,14 +119,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /*///////////////////////////////////////////////////////////////
                         Core Internal Functions
     //////////////////////////////////////////////////////////////*/
-    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, uint64 _nonce, bytes memory _payload) internal {
-        if (isValid[_srcChainId][_nonce] == true) {
-            revert Error.DUPLICATE_PAYLOAD();
-        }
-
-        /// NOTE: changing state earlier to prevent re-entrancy.
-        isValid[_srcChainId][_nonce] = true;
-
+    function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, bytes memory _payload) internal {
         /// @dev decodes payload received
         AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
 
@@ -140,7 +135,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /*///////////////////////////////////////////////////////////////
                         LZ External Functions
     //////////////////////////////////////////////////////////////*/
-
     /// @inheritdoc ILayerZeroReceiver
     function lzReceive(
         uint16 srcChainId_,
@@ -153,8 +147,13 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
             revert Error.INVALID_CALLER();
         }
 
+        if (isValid[srcChainId_][nonce_]) {
+            revert Error.DUPLICATE_PAYLOAD();
+        }
+
+        isValid[srcChainId_][nonce_] = true;
+
         bytes memory trustedRemote = trustedRemoteLookup[srcChainId_];
-        // if will still block the message pathway from (srcChainId, srcAddress). should not receive message from untrusted remote.
         if (srcAddress_.length != trustedRemote.length && keccak256(srcAddress_) != keccak256(trustedRemote)) {
             revert Error.INVALID_SRC_SENDER();
         }
@@ -165,14 +164,14 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     function nonblockingLzReceive(
         uint16 srcChainId_,
         bytes memory srcAddress_,
-        uint64 nonce_,
         bytes memory payload_
     ) public {
         // only internal transaction
         if (msg.sender != address(this)) {
             revert Error.INVALID_CALLER();
         }
-        _nonblockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_);
+
+        _nonblockingLzReceive(srcChainId_, srcAddress_, payload_);
     }
 
     function retryMessage(
@@ -183,16 +182,20 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     ) public payable {
         // assert there is message to retry
         bytes32 payloadHash = failedMessages[srcChainId_][srcAddress_][nonce_];
+
         if (payloadHash == bytes32(0)) {
             revert Error.INVALID_PAYLOAD_STATE();
         }
+
         if (keccak256(payload_) != payloadHash) {
             revert Error.INVALID_PAYLOAD();
         }
+
         // clear the stored message
         failedMessages[srcChainId_][srcAddress_][nonce_] = bytes32(0);
+
         // execute the message. revert if it fails again
-        _nonblockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_);
+        _nonblockingLzReceive(srcChainId_, srcAddress_, payload_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -229,7 +232,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         bytes memory payload_
     ) internal {
         // try-catch all errors/exceptions
-        try this.nonblockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_) {
+        try this.nonblockingLzReceive(srcChainId_, srcAddress_, payload_) {
             // do nothing
         } catch {
             // error / exception
@@ -292,8 +295,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////*/
 
     function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {
-        bytes memory trustedSource = trustedRemoteLookup[srcChainId_];
-        return keccak256(trustedSource) == keccak256(srcAddress_);
+        return keccak256(trustedRemoteLookup[srcChainId_]) == keccak256(srcAddress_);
     }
 
     /// @inheritdoc IAmbImplementation

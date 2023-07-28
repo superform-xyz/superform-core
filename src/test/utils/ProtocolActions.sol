@@ -778,6 +778,7 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             }
         }
+
         MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
         CoreStateRegistry stateRegistry;
