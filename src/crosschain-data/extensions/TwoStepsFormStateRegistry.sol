@@ -195,7 +195,13 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                         srcSender_,
                         superRegistry.chainId()
                     ),
-                    abi.encode(ReturnSingleData(payloadId_, singleVaultData_.superFormId, singleVaultData_.amount))
+                    abi.encode(
+                        ReturnSingleData(
+                            singleVaultData_.payloadId,
+                            singleVaultData_.superFormId,
+                            singleVaultData_.amount
+                        )
+                    )
                 )
             );
     }

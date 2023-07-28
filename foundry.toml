@@ -1,6 +1,12 @@
 [profile.default]
 solc-version = "0.8.19"
-gas_reports = ["SuperFormRouter", "BaseForm", "SuperFormFactory", "SuperPositions", "MultiTxProcessor"]
+gas_reports = [
+    "SuperFormRouter",
+    "BaseForm",
+    "SuperFormFactory",
+    "SuperPositions",
+    "MultiTxProcessor",
+]
 libraries = []
 optimizer = true
 optimizer_runs = 1000
@@ -8,9 +14,7 @@ test = 'src/test'
 verbosity = 0
 ffi = true
 libs = ["lib"]
-fs_permissions = [
-    { access = "read-write", path = "./script/"}
-]
+fs_permissions = [{ access = "read-write", path = "./script/" }]
 [rpc_endpoints]
 ethereum = "${ETHEREUM_RPC_URL}"
 polygon = "${POLYGON_RPC_URL}"
