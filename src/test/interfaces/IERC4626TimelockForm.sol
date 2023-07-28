@@ -13,7 +13,13 @@ interface IERC4626TimelockForm is IERC20 {
 
     function vaultSharesIsERC4626() external pure returns (bool);
 
-    function getUnderlyingOfVault() external view returns (address);
+    function getVaultAsset() external view returns (address);
+
+    function getVaultName() external view returns (string memory);
+
+    function getVaultSymbol() external view returns (string memory);
+
+    function getVaultDecimals() external view returns (uint256);
 
     function getPricePerVaultShare() external view returns (uint256);
 
