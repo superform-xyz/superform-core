@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {InitSingleVaultData} from "../../../types/DataTypes.sol";
-import {ERC4626FormImplementation} from "./ERC4626ImplementationInterfaceNotSupported.sol";
-import {BaseForm} from "./BaseFormInterfaceNotSupported.sol";
+import {InitSingleVaultData} from "../../types/DataTypes.sol";
+import {ERC4626FormImplementation} from "../../forms/ERC4626FormImplementation.sol";
+import {BaseForm} from "../../BaseForm.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for IERC4626 vaults
-contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation {
+contract ERC4626FormExternal is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
@@ -51,9 +51,23 @@ contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation {
         dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
     }
 
-    function getVaultName() external view override returns (string memory) {}
+    /// @dev Wrapping Internal Functions
 
-    function getVaultSymbol() external view override returns (string memory) {}
+    function vaultSharesAmountToUnderlyingAmount(
+        uint256 vaultSharesAmount_
+    ) view public returns (uint256) {
+        return _vaultSharesAmountToUnderlyingAmount(vaultSharesAmount_, 0);
+    }
 
-    function getVaultDecimals() external view override returns (uint256) {}
+    function vaultSharesAmountToUnderlyingAmountRoundingUp(
+        uint256 vaultSharesAmount_
+    ) public view returns (uint256) {
+        return _vaultSharesAmountToUnderlyingAmountRoundingUp(vaultSharesAmount_, 0);
+    }
+
+    function underlyingAmountToVaultSharesAmount(
+        uint256 underlyingAmount_
+    ) public view returns (uint256) {
+        return _underlyingAmountToVaultSharesAmount(underlyingAmount_, 0);
+    }
 }
