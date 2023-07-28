@@ -100,7 +100,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
                 messageId,
                 domain,
                 0, /// abi.decode(d.extraDataPerDst[i], (uint256))
-                msg.sender /// @FIXME should refund to the user, now refunds to core state registry - Sujith / Smit
+                msg.sender /// @FIXME should refund to the user, now refunds to core state registry - Sujith
             );
         }
     }

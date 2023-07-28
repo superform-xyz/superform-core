@@ -574,11 +574,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             );
     }
 
-    function _dispatchAcknowledgement(
-        uint64 dstChainId_, /// TODO: here it's dstChainId but when it's called it's srcChainId
-        bytes memory message_,
-        bytes memory ackExtraData_
-    ) internal {
+    function _dispatchAcknowledgement(uint64 dstChainId_, bytes memory message_, bytes memory ackExtraData_) internal {
         AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
         uint8[] memory ambIds_ = ackData.ambIds;
 

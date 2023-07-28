@@ -85,7 +85,7 @@ abstract contract ProtocolActions is BaseSetup {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev 'n' deposits rescued per payloadId per destination chain
-    /// TODO: test rescuing deposits from multiple superforms - SMIT
+    /// TODO: test rescuing deposits from multiple superforms - Smit
     /// optimise (+ generalise if possible) args in singleVaultCallDataArgs
     function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {

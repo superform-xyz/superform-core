@@ -162,7 +162,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
             revert Error.INVALID_CALLER();
         }
 
-        /// FIXME: check why this fails - Sujith
+        /// FIXME: check why this fails - Smit
         // if (sender_ != castAddr(authorizedImpl[origin_])) {
         //     revert INVALID_CALLER();
         // }
