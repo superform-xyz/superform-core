@@ -54,7 +54,7 @@ contract SuperPositionTest is BaseSetup {
 
     /// Test revert for invalid txType (single)
     function test_InvalidTxTypeSingle() public {
-        uint256 txInfo = DataLib.packTxInfo(3, 1, 0, 1, address(0), ETH);
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
         ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
@@ -64,8 +64,9 @@ contract SuperPositionTest is BaseSetup {
     }
 
     /// Test revert for invalid txType (multi)
+    /// case: accidental messaging back for failed withdrawals with CallBackType FAIL
     function test_InvalidTxTypeMulti() public {
-        uint256 txInfo = DataLib.packTxInfo(3, 1, 0, 1, address(0), ETH);
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
 
         uint256[] memory x = new uint256[](1);
         x[0] = 100;
@@ -75,6 +76,6 @@ contract SuperPositionTest is BaseSetup {
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
         vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
-        superPositions.stateSync(maliciousMessage);
+        superPositions.stateMultiSync(maliciousMessage);
     }
 }

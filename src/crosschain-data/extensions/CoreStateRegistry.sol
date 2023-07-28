@@ -457,7 +457,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
         /// @dev Store PayloadId in extraFormData (tbd: 1-step flow doesnt need this)
-        singleVaultData.extraFormData = abi.encode(payloadId_, 0);
+        singleVaultData.extraFormData = abi.encode(singleVaultData.payloadId, 0);
 
         DataLib.validateSuperFormChainId(singleVaultData.superFormId, superRegistry.chainId());
 

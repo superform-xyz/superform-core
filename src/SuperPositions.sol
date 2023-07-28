@@ -147,7 +147,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 txType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
+        (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
             .txInfo
             .decodeTxInfo();
 
@@ -159,12 +159,13 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         uint256 txInfo = txHistory[returnData.payloadId];
 
+        uint256 txType;
         address srcSender;
-        (, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
+        (txType, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         if (multi == 1) revert Error.INVALID_PAYLOAD();
-
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
+        if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
             _mint(srcSender, returnData.superFormId, returnData.amount, "");
