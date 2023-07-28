@@ -102,7 +102,7 @@ abstract contract AbstractDeploySingle is Script {
         "FeeHelper"
     ];
 
-    bytes32 constant salt = "SUPERFORM_2ND_TEST";
+    bytes32 constant salt = "SUPERFORM_3RD_TEST";
 
     enum Chains {
         Ethereum,
