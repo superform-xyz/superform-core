@@ -8,11 +8,11 @@ gas_reports = [
     "MultiTxProcessor",
 ]
 libraries = []
-optimizer = false
+optimizer = true
 optimizer_runs = 1000
 test = 'src/test'
 verbosity = 0
-ffi = false
+ffi = true
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
 [rpc_endpoints]
