@@ -2,18 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {PositionsSplitter} from "ERC1155s/splitter/PositionsSplitter.sol";
 import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 
 /// @dev Protocol imports
-import {IBaseStateRegistry} from "../src/interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../src/crosschain-data/extensions/CoreStateRegistry.sol";
 import {RolesStateRegistry} from "../src/crosschain-data/extensions/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import {ISuperFormRouter} from "../src/interfaces/ISuperFormRouter.sol";
 import {ISuperFormFactory} from "../src/interfaces/ISuperFormFactory.sol";
-import {IBaseForm} from "../src/interfaces/IBaseForm.sol";
 import {SuperFormRouter} from "../src/SuperFormRouter.sol";
 import {SuperRegistry} from "../src/settings/SuperRegistry.sol";
 import {SuperRBAC} from "../src/settings/SuperRBAC.sol";
@@ -30,8 +26,10 @@ import {HyperlaneImplementation} from "../src/crosschain-data/adapters/hyperlane
 import {CelerImplementation} from "../src/crosschain-data/adapters/celer/CelerImplementation.sol";
 import {IMailbox} from "../src/vendor/hyperlane/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../src/vendor/hyperlane/IInterchainGasPaymaster.sol";
-import {IMessageBus} from "../src/vendor/celer/IMessageBus.sol";
 import {TwoStepsFormStateRegistry} from "../src/crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
+import {PayloadHelper} from "../src/crosschain-data/utils/PayloadHelper.sol";
+import {FeeHelper} from "../src/crosschain-data/utils/FeeHelper.sol";
+import {QuorumManager} from "../src/crosschain-data/utils/QuorumManager.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -68,6 +66,8 @@ struct SetupVars {
     address socketValidator;
     address lifiValidator;
     address kycDao4626Form;
+    address PayloadHelper;
+    address feeHelper;
 }
 
 abstract contract AbstractDeploySingle is Script {
@@ -78,7 +78,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[19] public contractNames = [
+    string[21] public contractNames = [
         "CoreStateRegistry",
         "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
@@ -97,10 +97,12 @@ abstract contract AbstractDeploySingle is Script {
         "MultiTxProcessor",
         "SuperRegistry",
         "SuperRBAC",
-        "PositionsSplitter"
+        "PositionsSplitter",
+        "PayloadHelper",
+        "FeeHelper"
     ];
 
-    bytes32 constant salt = "SUPERFORM_69";
+    bytes32 constant salt = "SUPERFORM_2ND_TEST";
 
     enum Chains {
         Ethereum,
@@ -242,6 +244,12 @@ abstract contract AbstractDeploySingle is Script {
     uint256 public constant milionTokensE18 = 1 ether;
 
     /*//////////////////////////////////////////////////////////////
+                        CHAINLINK VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    mapping(uint64 => mapping(uint64 => address)) public PRICE_FEEDS;
+
+    /*//////////////////////////////////////////////////////////////
                         KYC DAO VALIDITY VARIABLES
     //////////////////////////////////////////////////////////////*/
 
@@ -376,6 +384,16 @@ abstract contract AbstractDeploySingle is Script {
         registryIds[2] = 3;
         registryIds[3] = 4;
 
+        /// @dev 3.5.1- deploy Payload Helper
+        vars.PayloadHelper = address(
+            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.twoStepsFormStateRegistry)
+        );
+        contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
+
+        /// @dev 3.5.2- deploy Fee Helper
+        vars.feeHelper = address(new FeeHelper{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("FeeHelper"))] = vars.feeHelper;
+
         SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
         /// @dev 4.1- deploy Layerzero Implementation
         vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
@@ -456,7 +474,9 @@ abstract contract AbstractDeploySingle is Script {
         SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
 
         /// @dev 11 - Deploy SuperPositions
-        vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));
+        vars.superPositions = address(
+            new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry)
+        );
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
@@ -536,6 +556,35 @@ abstract contract AbstractDeploySingle is Script {
                     vars.dstChainId,
                     vars.dstCelerChainId
                 );
+
+                QuorumManager(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
+
+                /// swap gas cost: 50000
+                /// update gas cost: 40000
+                /// deposit gas cost: 70000
+                /// withdraw gas cost: 80000
+                /// default gas price: 50 Gwei
+                FeeHelper(payable(vars.feeHelper)).addChain(
+                    vars.dstChainId,
+                    address(0),
+                    PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                    50000,
+                    40000,
+                    70000,
+                    80000,
+                    50 * 10 ** 9 wei
+                );
+            } else {
+                /// ack gas cost: 40000
+                /// two step form cost: 50000
+                /// default gas price: 50 Gwei
+                FeeHelper(payable(vars.feeHelper)).setSameChainConfig(
+                    2,
+                    abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
+                );
+                FeeHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(40000));
+                FeeHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50000));
+                FeeHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50 * 10 ** 9 wei));
             }
         }
         vm.stopBroadcast();
@@ -620,6 +669,57 @@ abstract contract AbstractDeploySingle is Script {
             0xA7649aa944b7Dce781859C18913c2Dc8A97f03e4,
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
         ];
+
+        /// price feeds on all chains
+        mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;
+
+        /// ETH
+        priceFeeds[ETH][ETH] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][BSC] = 0x14e613AC84a31f709eadbdF89C6CC390fDc9540A;
+        priceFeeds[ETH][AVAX] = 0xFF3EEb22B5E3dE6e705b44749C2559d704923FD7;
+        priceFeeds[ETH][POLY] = 0x7bAC85A8a13A4BcD8abb3eB7d6b4d632c5a57676;
+        priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+
+        /// BSC
+        priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
+        priceFeeds[BSC][ETH] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        priceFeeds[BSC][AVAX] = address(0);
+        priceFeeds[BSC][POLY] = 0x7CA57b0cA6367191c94C8914d7Df09A57655905f;
+        priceFeeds[BSC][OP] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+
+        /// AVAX
+        priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
+        priceFeeds[AVAX][BSC] = address(0);
+        priceFeeds[AVAX][ETH] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        priceFeeds[AVAX][POLY] = address(0);
+        priceFeeds[AVAX][OP] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+
+        /// POLYGON
+        priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
+        priceFeeds[POLY][AVAX] = address(0);
+        priceFeeds[POLY][BSC] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
+        priceFeeds[POLY][ETH] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        priceFeeds[POLY][OP] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+
+        /// OPTIMISM
+        priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][POLY] = address(0);
+        priceFeeds[OP][AVAX] = address(0);
+        priceFeeds[OP][BSC] = address(0);
+        priceFeeds[OP][ETH] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+
+        /// ARBITRUM
+        priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][OP] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][POLY] = 0x52099D4523531f678Dfc568a7B1e5038aadcE1d6;
+        priceFeeds[ARBI][AVAX] = address(0);
+        priceFeeds[ARBI][BSC] = address(0);
+        priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
     }
 
     function exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {
