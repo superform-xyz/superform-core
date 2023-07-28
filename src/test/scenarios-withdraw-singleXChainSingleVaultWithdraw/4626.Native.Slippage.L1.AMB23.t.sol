@@ -1,13 +1,8 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// Contracts
-import "../../types/LiquidityTypes.sol";
-import "../../types/DataTypes.sol";
-
 // Test Utils
 import "../utils/ProtocolActions.sol";
-import "../utils/AmbParams.sol";
 
 contract SXSVWNormal4626NativeSlippageL1AMB23 is ProtocolActions {
     function setUp() public override {

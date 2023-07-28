@@ -51,7 +51,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice receive enables refund processing for gas payments
-    /// @dev FIXME: check for re-entrancy in all gas refunds
     receive() external payable {}
 
     /// @inheritdoc IAmbImplementation
@@ -93,8 +92,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         }
 
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-        /// FIXME:should we check the length ?? anyway out of index will fail if the length
-        /// mistmatches
+        /// FIXME:should we check the length ?? anyway out of index will fail if the length mistmatches - Sujith
         uint256 totalChains = broadcastChains.length;
 
         /// calculate the exact fee needed
@@ -128,7 +126,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
 
-        /// FIXME: @dev should handle a way to pop
+        /// FIXME: @dev should handle a way to pop. Why? - Sujith
         broadcastChains.push(ambChainId_);
 
         emit ChainAdded(superChainId_);
@@ -164,7 +162,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
             revert Error.INVALID_CALLER();
         }
 
-        /// FIXME: check why this fails
+        /// FIXME: check why this fails - Sujith
         // if (sender_ != castAddr(authorizedImpl[origin_])) {
         //     revert INVALID_CALLER();
         // }

@@ -13,7 +13,6 @@ contract SocketRouterMock is ISocketRegistry, Test {
 
     receive() external payable {}
 
-    /// @dev FIXME Native case missing
     function outboundTransferTo(ISocketRegistry.UserRequest calldata userRequest_) external payable override {
         ISocketRegistry.BridgeRequest memory bridgeRequest = userRequest_.bridgeRequest;
 

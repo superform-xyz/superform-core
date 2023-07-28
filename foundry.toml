@@ -2,11 +2,11 @@
 solc-version = "0.8.19"
 gas_reports = ["SuperFormRouter", "BaseForm", "SuperFormFactory", "SuperPositions", "MultiTxProcessor"]
 libraries = []
-optimizer = true
+optimizer = false
 optimizer_runs = 1000
 test = 'src/test'
 verbosity = 0
-ffi = true
+ffi = false
 libs = ["lib"]
 fs_permissions = [
     { access = "read-write", path = "./script/"}

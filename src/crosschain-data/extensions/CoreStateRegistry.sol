@@ -6,7 +6,6 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
 import {LiquidityHandler} from "../../crosschain-liquidity/LiquidityHandler.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
-import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {ICoreStateRegistry} from "../../interfaces/ICoreStateRegistry.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
@@ -327,12 +326,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 amount: multiVaultData.amounts[i],
                 maxSlippage: multiVaultData.maxSlippage[i],
                 liqData: multiVaultData.liqData[i],
-                extraFormData: multiVaultData.extraFormData
+                extraFormData: abi.encode(payloadId_, i) /// @dev Store destination payloadId_ & index in extraFormData (tbd: 1-step flow doesnt need this)
             });
-
-            /// @dev Store destination payloadId_ & index in extraFormData (tbd: 1-step flow doesnt need this)
-            /// FIXME: Decide and move this logic inside the above initialization of the struct
-            singleVaultData.extraFormData = abi.encode(payloadId_, i);
 
             (address superForm_, , ) = singleVaultData.superFormId.getSuperForm();
 
@@ -386,8 +381,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         bool errors;
 
         for (uint256 i; i < numberOfVaults; ) {
-            /// @dev FIXME: whole msg.value is transferred here, in multi sync this needs to be split
-
             underlying = IERC20(IBaseForm(superForms[i]).getVaultAsset());
 
             /// @dev This will revert ALL of the transactions if one of them fails.
@@ -397,7 +390,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
                 DataLib.validateSuperFormChainId(multiVaultData.superFormIds[i], superRegistry.chainId());
 
-                /// Note / FIXME ?: dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
+                /// Note: dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
                 try
                     IBaseForm(superForms[i]).xChainDepositIntoVault(
                         InitSingleVaultData({
@@ -464,10 +457,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         (address superForm_, , ) = singleVaultData.superFormId.getSuperForm();
 
         /// @dev Withdraw from Form
-        /// TODO: we can do returns(ErrorCode errorCode) and have those also returned here from each individual try/catch (droping revert is risky)
-        /// that's also the only way to get error type out of the try/catch
-        /// NOTE: opted for just returning CallbackType.FAIL as we always end up with superPositions.returnPosition() anyways
-        /// FIXME: try/catch may introduce some security concerns as reverting is final, while try/catch proceeds with the call further
         try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
             // Handle the case when the external call succeeds
         } catch {
@@ -484,7 +473,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 );
         }
 
-        /// TODO: else if for FAIL callbackType could save some gas for users if we process it in stateSyncError() function
         return "";
     }
 
@@ -509,7 +497,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         /// 1. Not enough tokens on this contract == BRIDGE_TOKENS_PENDING
         /// 2. Fail to .transfer() == BRIDGE_TOKENS_PENDING
         /// 3. xChainDepositIntoVault() reverting on anything == BRIDGE_TOKENS_PENDING
-        /// FIXME: Add reverts at the Form level
+        /// Note: Should add reverts at the Form level
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.transfer(superForm_, singleVaultData.amount);
 

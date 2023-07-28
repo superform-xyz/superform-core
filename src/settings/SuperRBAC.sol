@@ -6,7 +6,7 @@ import {IBroadcaster} from "../interfaces/IBroadcaster.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
-import {AMBFactoryMessage, AMBMessage} from "../types/DataTypes.sol";
+import {AMBFactoryMessage} from "../types/DataTypes.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.

@@ -5,7 +5,6 @@ import "../utils/BaseSetup.sol";
 import {TransactionType, CallbackType, AMBMessage} from "../../types/DataTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {CelerImplementation} from "../../crosschain-data/adapters/celer/CelerImplementation.sol";
 import {CoreStateRegistry} from "../../crosschain-data/extensions/CoreStateRegistry.sol";
 import {Error} from "../../utils/Error.sol";
@@ -64,7 +63,7 @@ contract CelerImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
-        celerImplementation.setReceiver(10, getContract(10, "CelerImplementation"));        
+        celerImplementation.setReceiver(10, getContract(10, "CelerImplementation"));
     }
 
     function test_setChainId() public {
@@ -88,7 +87,7 @@ contract CelerImplementationTest is BaseSetup {
     }
 
     function test_broadcastPayload() public {
-        /// @dev need to call setCelerBus(), setReceiver(), setChainId() before calling broadcastPayload(), 
+        /// @dev need to call setCelerBus(), setReceiver(), setChainId() before calling broadcastPayload(),
         /// but we don't need to, as it's already done in BaseSetup
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
@@ -99,7 +98,7 @@ contract CelerImplementationTest is BaseSetup {
         /// @dev only checking topic1 as it is the only one indexed in the Message event
         vm.expectEmit(true, false, false, true, CELER_BUS);
 
-        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10]; 
+        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
         for (uint i = 1; i < chainIds.length; i++) {
             emit Message(
                 address(celerImplementation),
@@ -111,7 +110,11 @@ contract CelerImplementationTest is BaseSetup {
         }
 
         vm.prank(coreStateRegistry);
-        celerImplementation.broadcastPayload{value: 0.1 ether}(users[0], abi.encode(ambMessage), abi.encode(ambExtraData));
+        celerImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_broadcastPayload_invalidCaller() public {
@@ -124,7 +127,11 @@ contract CelerImplementationTest is BaseSetup {
         vm.expectRevert(Error.INVALID_CALLER.selector);
 
         vm.prank(bond);
-        celerImplementation.broadcastPayload{value: 0.1 ether}(users[0], abi.encode(ambMessage), abi.encode(ambExtraData));
+        celerImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_broadcastPayload_gasRefundFailed() public {
@@ -157,31 +164,58 @@ contract CelerImplementationTest is BaseSetup {
         vm.expectRevert(Error.GAS_REFUND_FAILED.selector);
         vm.prank(coreStateRegistry);
         /// @dev note first arg to be dai, second arg to be optimism
-        celerImplementation.dispatchPayload{value: 0.1 ether}(dai, chainIds[5], abi.encode(ambMessage), abi.encode(ambExtraData));
+        celerImplementation.dispatchPayload{value: 0.1 ether}(
+            dai,
+            chainIds[5],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
-        celerImplementation.dispatchPayload{value: 0.1 ether}(users[0], chainIds[5], abi.encode(ambMessage), abi.encode(ambExtraData));
+        celerImplementation.dispatchPayload{value: 0.1 ether}(
+            users[0],
+            chainIds[5],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_executeMessage_duplicatePayload_invalidCaller() public {
         AMBMessage memory ambMessage;
 
-        (ambMessage,,) = setupBroadcastPayloadAMBData(users[0]);
+        (ambMessage, , ) = setupBroadcastPayloadAMBData(users[0]);
 
         vm.prank(CELER_BUS);
-        celerImplementation.executeMessage{value: 0.1 ether}(users[0], ETH, abi.encode(ambMessage), getContract(ETH, "CelerHelper"));
+        celerImplementation.executeMessage{value: 0.1 ether}(
+            users[0],
+            ETH,
+            abi.encode(ambMessage),
+            getContract(ETH, "CelerHelper")
+        );
 
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
         vm.prank(CELER_BUS);
-        celerImplementation.executeMessage{value: 0.1 ether}(users[0], ETH, abi.encode(ambMessage), getContract(ETH, "CelerHelper"));
+        celerImplementation.executeMessage{value: 0.1 ether}(
+            users[0],
+            ETH,
+            abi.encode(ambMessage),
+            getContract(ETH, "CelerHelper")
+        );
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
-        celerImplementation.executeMessage{value: 0.1 ether}(users[0], ETH, abi.encode(ambMessage), getContract(ETH, "CelerHelper"));
+        celerImplementation.executeMessage{value: 0.1 ether}(
+            users[0],
+            ETH,
+            abi.encode(ambMessage),
+            getContract(ETH, "CelerHelper")
+        );
     }
 
-    function setupBroadcastPayloadAMBData(address _srcSender) public returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
+    function setupBroadcastPayloadAMBData(
+        address _srcSender
+    ) public returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
         AMBMessage memory ambMessage = AMBMessage(
             DataLib.packTxInfo(
                 uint8(TransactionType.DEPOSIT), /// @dev TransactionType
@@ -194,7 +228,7 @@ contract CelerImplementationTest is BaseSetup {
             "" /// ambData
         );
 
-        /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10]; 
+        /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10];
         /// @dev excluding chainIds[0] = 1 i.e. ETH, as no point broadcasting to same chain
         uint256[] memory gasPerDst = new uint256[](5);
         for (uint i = 0; i < gasPerDst.length; i++) {
@@ -204,14 +238,11 @@ contract CelerImplementationTest is BaseSetup {
         /// @dev keeping extraDataPerDst empty for now
         bytes[] memory extraDataPerDst = new bytes[](5);
 
-        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(
-          gasPerDst,
-          extraDataPerDst
-        );
+        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
 
         address coreStateRegistry = getContract(1, "CoreStateRegistry");
         /// @dev bcoz we're simulating celerImplementation.broadcastPayload() from CoreStateRegistry (below),
-        /// we need sufficient ETH in CoreStateRegistry and CelerImplementation. On mainnet, these funds will 
+        /// we need sufficient ETH in CoreStateRegistry and CelerImplementation. On mainnet, these funds will
         /// come from the user via SuperFormRouter
         vm.deal(coreStateRegistry, 10 ether);
         vm.deal(address(celerImplementation), 10 ether);

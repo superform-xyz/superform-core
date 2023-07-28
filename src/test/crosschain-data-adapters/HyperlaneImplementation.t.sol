@@ -5,7 +5,6 @@ import "../utils/BaseSetup.sol";
 import {TransactionType, CallbackType, AMBMessage} from "../../types/DataTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {HyperlaneImplementation} from "../../crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import {CoreStateRegistry} from "../../crosschain-data/extensions/CoreStateRegistry.sol";
 import {Error} from "../../utils/Error.sol";
@@ -47,7 +46,7 @@ contract HyperlaneImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
-        hyperlaneImplementation.setReceiver(10, getContract(10, "HyperlaneImplementation"));        
+        hyperlaneImplementation.setReceiver(10, getContract(10, "HyperlaneImplementation"));
     }
 
     function test_setChainId() public {
@@ -79,7 +78,11 @@ contract HyperlaneImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
-        hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(users[0], abi.encode(ambMessage), abi.encode(ambExtraData));
+        hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_dispatchPayload_invalidCaller() public {
@@ -91,23 +94,36 @@ contract HyperlaneImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
-        hyperlaneImplementation.dispatchPayload{value: 0.1 ether}(users[0], chainIds[5], abi.encode(ambMessage), abi.encode(ambExtraData));
+        hyperlaneImplementation.dispatchPayload{value: 0.1 ether}(
+            users[0],
+            chainIds[5],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_handle_duplicatePayload_invalidSrcChainSender_invalidCaller() public {
         AMBMessage memory ambMessage;
 
         /// @dev setting authorizedImpl[ETH] to HyperlaneImplementation on ETH, as it was smh reset to 0 (after setting in BaseSetup)
-        hyperlaneImplementation.setReceiver(1, getContract(1, "HyperlaneImplementation"));  
+        hyperlaneImplementation.setReceiver(1, getContract(1, "HyperlaneImplementation"));
 
-        (ambMessage,,) = setupBroadcastPayloadAMBData(users[0]);
+        (ambMessage, , ) = setupBroadcastPayloadAMBData(users[0]);
 
         vm.prank(MAILBOX);
-        hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(address(hyperlaneImplementation)))), abi.encode(ambMessage));
+        hyperlaneImplementation.handle(
+            uint32(ETH),
+            bytes32(uint256(uint160(address(hyperlaneImplementation)))),
+            abi.encode(ambMessage)
+        );
 
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
         vm.prank(MAILBOX);
-        hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(address(hyperlaneImplementation)))), abi.encode(ambMessage));
+        hyperlaneImplementation.handle(
+            uint32(ETH),
+            bytes32(uint256(uint160(address(hyperlaneImplementation)))),
+            abi.encode(ambMessage)
+        );
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(MAILBOX);
@@ -115,10 +131,16 @@ contract HyperlaneImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
-        hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(address(hyperlaneImplementation)))), abi.encode(ambMessage));
+        hyperlaneImplementation.handle(
+            uint32(ETH),
+            bytes32(uint256(uint160(address(hyperlaneImplementation)))),
+            abi.encode(ambMessage)
+        );
     }
 
-    function setupBroadcastPayloadAMBData(address _srcSender) public returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
+    function setupBroadcastPayloadAMBData(
+        address _srcSender
+    ) public returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
         AMBMessage memory ambMessage = AMBMessage(
             DataLib.packTxInfo(
                 uint8(TransactionType.DEPOSIT), /// @dev TransactionType
@@ -131,7 +153,7 @@ contract HyperlaneImplementationTest is BaseSetup {
             "" /// ambData
         );
 
-        /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10]; 
+        /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10];
         /// @dev excluding chainIds[0] = 1 i.e. ETH, as no point broadcasting to same chain
         uint256[] memory gasPerDst = new uint256[](5);
         for (uint i = 0; i < gasPerDst.length; i++) {
@@ -141,14 +163,11 @@ contract HyperlaneImplementationTest is BaseSetup {
         /// @dev keeping extraDataPerDst empty for now
         bytes[] memory extraDataPerDst = new bytes[](5);
 
-        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(
-          gasPerDst,
-          extraDataPerDst
-        );
+        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
 
         address coreStateRegistry = getContract(1, "CoreStateRegistry");
         /// @dev bcoz we're simulating hyperlaneImplementation.broadcastPayload() from CoreStateRegistry (below),
-        /// we need sufficient ETH in CoreStateRegistry and HyperlaneImplementation. On mainnet, these funds will 
+        /// we need sufficient ETH in CoreStateRegistry and HyperlaneImplementation. On mainnet, these funds will
         /// come from the user via SuperFormRouter
         vm.deal(coreStateRegistry, 10 ether);
         vm.deal(address(hyperlaneImplementation), 10 ether);
