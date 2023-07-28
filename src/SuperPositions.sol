@@ -67,18 +67,12 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
     constructor(string memory dynamicURI_, address superRegistry_) {
         dynamicURI = dynamicURI_;
-
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// FIXME: Temp extension need to make approve at superRouter, may change with arch
-    function setApprovalForAll(address operator, bool approved) public virtual override(ISuperPositions, ERC1155s) {
-        super.setApprovalForAll(operator, approved);
-    }
 
     /// @inheritdoc ISuperPositions
     function mintSingleSP(address owner_, uint256 superFormId_, uint256 amount_) external override onlyMinter {
