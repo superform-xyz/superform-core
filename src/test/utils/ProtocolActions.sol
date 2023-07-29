@@ -14,6 +14,9 @@ import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 
+import {IBaseForm} from "../../interfaces/IBaseForm.sol";
+import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
+
 abstract contract ProtocolActions is BaseSetup {
     using DataLib for uint256;
 
@@ -82,7 +85,7 @@ abstract contract ProtocolActions is BaseSetup {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev 'n' deposits rescued per payloadId per destination chain
-    /// TODO: test rescuing deposits from multiple superforms,
+    /// TODO: test rescuing deposits from multiple superforms - Smit
     /// optimise (+ generalise if possible) args in singleVaultCallDataArgs
     function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
@@ -221,7 +224,6 @@ abstract contract ProtocolActions is BaseSetup {
             } else if (toAssert) {
                 console.log("Stage 6 complete - asserting");
 
-                /// @dev TODO check if this is working!
                 _assertAfterFailedWithdraw(
                     action,
                     multiSuperFormsData,
@@ -238,7 +240,6 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev stage 7 and 8 are only required for timelocked forms
         if (action.action == Actions.Withdraw) {
             /// @dev Keeper needs to know this value to be able to process unlock
-            /// @dev FIXME unlockId is hardcoded here
             returnMessagesTimelockedWithdraw = _stage7_finalize_timelocked_payload(action, vars);
 
             console.log("Stage 7 complete");
@@ -306,7 +307,6 @@ abstract contract ProtocolActions is BaseSetup {
     {
         if (action.revertError != bytes4(0) && action.testType == TestType.Pass) revert MISMATCH_TEST_TYPE();
 
-        /// FIXME: Separate concerns in tests, this revert is for protocol level operation
         if (
             (action.testType != TestType.RevertUpdateStateRBAC && action.revertRole != bytes32(0)) ||
             (action.testType == TestType.RevertUpdateStateRBAC && action.revertRole == bytes32(0))
@@ -902,7 +902,6 @@ abstract contract ProtocolActions is BaseSetup {
 
                         _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
                     } else if (action.testType == TestType.RevertProcessPayload) {
-                        /// @dev FIXME brute copied this here, likely the whole if else can be optimized (we are trying to detect reverts at processPayload stage)
                         if (action.multiTx) {
                             (, vars.underlyingSrcToken, , ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                             if (action.multiVaults) {
@@ -1213,21 +1212,21 @@ abstract contract ProtocolActions is BaseSetup {
             if (externalToken_ != underlyingToken_) {
                 middlewareRequest = ISocketRegistry.MiddlewareRequest(
                     1, /// request id
-                    0, /// FIXME optional native amount
+                    0,
                     externalToken_,
                     abi.encode(from_)
                 );
 
                 bridgeRequest = ISocketRegistry.BridgeRequest(
                     1, /// request id
-                    0, /// FIXME optional native amount
+                    0,
                     underlyingToken_,
                     abi.encode(from_, FORKS[toChainId_])
                 );
             } else {
                 bridgeRequest = ISocketRegistry.BridgeRequest(
                     1, /// request id
-                    0, /// FIXME optional native amount
+                    0,
                     underlyingToken_,
                     abi.encode(from_, FORKS[toChainId_])
                 );
@@ -1260,7 +1259,7 @@ abstract contract ProtocolActions is BaseSetup {
                 bridgeData = ILiFi.BridgeData(
                     bytes32("1"), /// request id
                     "",
-                    "", /// FIXME optional native amount
+                    "",
                     address(0),
                     underlyingToken_,
                     multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
@@ -1273,7 +1272,7 @@ abstract contract ProtocolActions is BaseSetup {
                 bridgeData = ILiFi.BridgeData(
                     bytes32("1"), /// request id
                     "",
-                    "", /// FIXME optional native amount
+                    "",
                     address(0),
                     underlyingToken_,
                     multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
@@ -1344,10 +1343,8 @@ abstract contract ProtocolActions is BaseSetup {
             v.permit2Calldata = abi.encode(v.permit.nonce, v.permit.deadline, v.sig);
         }
 
-        /// @dev FIXME: currently only producing liqRequests for non-permit2 ERC20 transfers!!!
-        /// @dev TODO: need to test native requests and permit2 requests
         v.liqReq = LiqRequest(
-            args.liqBridge, /// @dev FIXME: hardcoded for now - but this should be a different bridge per type of transaction
+            args.liqBridge,
             v.txData,
             liqRequestToken,
             args.amount,
@@ -1406,14 +1403,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.amount
         );
 
-        vars.liqReq = LiqRequest(
-            args.liqBridge, /// @dev FIXME: hardcoded for now
-            vars.txData,
-            args.underlyingToken,
-            args.amount,
-            0,
-            ""
-        );
+        vars.liqReq = LiqRequest(args.liqBridge, vars.txData, args.underlyingToken, args.amount, 0, "");
 
         superFormData = SingleVaultSFData(
             args.superFormId,
@@ -1513,12 +1503,6 @@ abstract contract ProtocolActions is BaseSetup {
         if (vaultIds_.length != underlyingTokens_.length) revert INVALID_TARGETS();
 
         for (uint256 i = 0; i < vaultIds_.length; i++) {
-            /// NOTE/FIXME: This should be allowed to revert (or not) at the core level.
-            /// Can produce false positive. (What if we revert here, but not in the core)
-            if (underlyingTokens_[i] > UNDERLYING_TOKENS.length) revert WRONG_UNDERLYING_ID();
-            if (vaultIds_[i] > VAULT_KINDS.length) revert WRONG_UNDERLYING_ID();
-            if (formKinds_[i] > FORM_BEACON_IDS.length) revert WRONG_FORMBEACON_ID();
-
             address superForm = getContract(
                 chainId_,
                 string.concat(
@@ -1708,7 +1692,7 @@ abstract contract ProtocolActions is BaseSetup {
             /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
                 1, /// request id
-                0, /// FIXME optional native amount
+                0,
                 underlyingToken_,
                 abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_])
             );
@@ -1716,7 +1700,7 @@ abstract contract ProtocolActions is BaseSetup {
             /// @dev empty bridge request
             bridgeRequest = ISocketRegistry.BridgeRequest(
                 0, /// id
-                0, /// FIXME optional native amount
+                0,
                 address(0),
                 abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_])
             );
@@ -1747,7 +1731,7 @@ abstract contract ProtocolActions is BaseSetup {
             bridgeData = ILiFi.BridgeData(
                 bytes32("1"), /// request id
                 "",
-                "", /// FIXME optional native amount
+                "",
                 address(0),
                 underlyingToken_,
                 getContract(toChainId_, "CoreStateRegistry"),
@@ -2447,8 +2431,7 @@ abstract contract ProtocolActions is BaseSetup {
         bool[] memory partialWithdrawVaults;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            /// @dev probably not testing multiDstMultIVault same chain due to no return message for failed cases?
-            /// @dev TODO
+            /// @dev TODO probably not testing multiDstMultIVault same chain due to no return message for failed cases? - Joao
             if (action.multiVaults && returnMessages[i].length > 0) {
                 partialWithdrawVaults = abi.decode(multiSuperFormsData[i].extraFormData, (bool[]));
 
@@ -2517,10 +2500,6 @@ abstract contract ProtocolActions is BaseSetup {
             if (revertingWithdrawTimelockedSFs[i].length > 0) {
                 if (action.multiVaults) {
                     v.partialWithdrawVaults = abi.decode(multiSuperFormsData[i].extraFormData, (bool[]));
-                    /// @dev TODO  we need to combine
-                    /// returnMultiData = abi.decode(abi.decode(returnMessagesNormal[i], (AMBMessage)).params, (ReturnMultiData))
-                    /// if it exists
-                    /// with a returnData from finalizePayload of timelocked vaults that failed, and pass that to the internal function below
 
                     if (returnMessagesNormal.length > 0 && returnMessagesNormal[i].length > 0) {
                         v.returnMultiData = abi.decode(

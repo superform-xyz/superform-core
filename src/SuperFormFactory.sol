@@ -5,7 +5,7 @@ import {ERC165Checker} from "openzeppelin-contracts/contracts/utils/introspectio
 import {BeaconProxy} from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
 import {BaseForm} from "./BaseForm.sol";
 import {FormBeacon} from "./forms/FormBeacon.sol";
-import {AMBFactoryMessage, AMBMessage} from "./types/DataTypes.sol";
+import {AMBFactoryMessage} from "./types/DataTypes.sol";
 import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {IBroadcaster} from "./interfaces/IBroadcaster.sol";
@@ -121,8 +121,8 @@ contract SuperFormFactory is ISuperFormFactory {
         /// @dev Mapping vaults to formBeaconId for use in Backend
         vaultToFormBeaconId[vault_].push(formBeaconId_);
 
-        vaultBeaconToSuperForms[vaultBeaconCombination]= superFormId_;
-        /// @dev FIXME do we need to store info of all superforms just for external querying? Could save gas here
+        vaultBeaconToSuperForms[vaultBeaconCombination] = superFormId_;
+
         superForms.push(superFormId_);
 
         emit SuperFormCreated(formBeaconId_, vault_, superFormId_, superForm_);
@@ -187,21 +187,13 @@ contract SuperFormFactory is ISuperFormFactory {
     /// @inheritdoc ISuperFormFactory
     function getAllSuperFormsFromVault(
         address vault_
-    )
-        external
-        view
-        override
-        returns (
-            uint256[] memory superFormIds_,
-            address[] memory superForms_
-        )
-    {
+    ) external view override returns (uint256[] memory superFormIds_, address[] memory superForms_) {
         superFormIds_ = vaultToSuperForms[vault_];
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], ,) = superFormIds_[i].getSuperForm();
+            (superForms_[i], , ) = superFormIds_[i].getSuperForm();
         }
     }
 
@@ -217,17 +209,14 @@ contract SuperFormFactory is ISuperFormFactory {
         external
         view
         override
-        returns (
-            uint256[] memory superFormIds_,
-            address[] memory superForms_
-        )
+        returns (uint256[] memory superFormIds_, address[] memory superForms_)
     {
         superFormIds_ = superForms;
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], ,) = superFormIds_[i].getSuperForm();
+            (superForms_[i], , ) = superFormIds_[i].getSuperForm();
         }
     }
 

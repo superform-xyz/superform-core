@@ -1,14 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
-import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
-import {FactoryStateRegistry} from "../../crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
-import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import "../utils/BaseSetup.sol";
-import "../utils/Utilities.sol";
 import {Error} from "../../utils/Error.sol";
 
 contract SuperFormFactoryAddBeaconsTest is BaseSetup {
@@ -22,17 +17,17 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
     function setUp() public override {
         super.setUp();
     }
-    
+
     /// @dev Testing superform creation by adding multiple forms
     function test_addForms() public {
         vm.startPrank(deployer);
 
         address[] memory formImplementations = new address[](MAX_FORMS);
         uint32[] memory formBeaconIds = new uint32[](MAX_FORMS);
-        
+
         for (uint32 i = 0; i < MAX_FORMS; i++) {
-            formImplementations[i]= (address(new ERC4626Form(getContract(chainId, "SuperRegistry"))));
-            formBeaconIds[i]= i + 10;
+            formImplementations[i] = (address(new ERC4626Form(getContract(chainId, "SuperRegistry"))));
+            formBeaconIds[i] = i + 10;
         }
 
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacons(
@@ -48,10 +43,10 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
         address[] memory formImplementations = new address[](MAX_FORMS);
         uint32[] memory formBeaconIds = new uint32[](MAX_FORMS);
         uint32 FORM_BEACON_ID = 0;
-        
+
         for (uint32 i = 0; i < MAX_FORMS; i++) {
-            formImplementations[i]= address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
-            formBeaconIds[i]= FORM_BEACON_ID;
+            formImplementations[i] = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
+            formBeaconIds[i] = FORM_BEACON_ID;
         }
 
         vm.prank(deployer);
@@ -62,7 +57,6 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
             formBeaconIds,
             salt
         );
-
     }
 
     /// @dev Testing adding form with form address 0
@@ -70,11 +64,11 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
     function test_revert_addForms_addressZero() public {
         address[] memory formImplementations = new address[](MAX_FORMS);
         uint32[] memory formBeaconIds = new uint32[](MAX_FORMS);
-        
+
         /// Providing zero address to each of the forms
         for (uint32 i = 0; i < MAX_FORMS; i++) {
-            formImplementations[i]= address(0);
-            formBeaconIds[i]= i;
+            formImplementations[i] = address(0);
+            formBeaconIds[i] = i;
         }
 
         vm.prank(deployer);
@@ -92,16 +86,16 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
     function test_revert_addForm_interfaceUnsupported() public {
         address[] memory formImplementations = new address[](MAX_FORMS);
         uint32[] memory formBeaconIds = new uint32[](MAX_FORMS);
-        
+
         /// Keeping all but one beacon with right form
         for (uint32 i = 0; i < MAX_FORMS - 1; i++) {
-            formImplementations[i]= address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
-            formBeaconIds[i]= i;
+            formImplementations[i] = address(new ERC4626Form(getContract(chainId, "SuperRegistry")));
+            formBeaconIds[i] = i;
         }
 
         /// Last Beacon with wrong form
-        formImplementations[MAX_FORMS-1]= address(0x1);
-        formBeaconIds[MAX_FORMS-1]= formBeaconIds[MAX_FORMS-2] + 1;
+        formImplementations[MAX_FORMS - 1] = address(0x1);
+        formBeaconIds[MAX_FORMS - 1] = formBeaconIds[MAX_FORMS - 2] + 1;
 
         vm.prank(deployer);
 

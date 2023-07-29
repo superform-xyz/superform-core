@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {ISuperFormFactory} from "../interfaces/ISuperFormFactory.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {SuperRBAC} from "../settings/SuperRBAC.sol";
 import {RolesStateRegistry} from "../crosschain-data/extensions/RolesStateRegistry.sol";
 import "./utils/BaseSetup.sol";
-import "./utils/Utilities.sol";
-import {Error} from "../utils/Error.sol";
 
 contract SuperformRolesTest is BaseSetup {
     uint64 internal chainId = ETH;

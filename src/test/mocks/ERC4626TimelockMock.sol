@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import {ERC4626} from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
 import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {IERC4626TimelockVault} from "../../forms/interfaces/IERC4626TimelockVault.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 /// @notice Mock ERC4626Timelock contract

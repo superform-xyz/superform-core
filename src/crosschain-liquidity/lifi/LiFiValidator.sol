@@ -34,7 +34,6 @@ contract LiFiValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    /// @dev FIXME: do we want to disable destination calls?
     function validateTxData(
         bytes calldata txData_,
         uint64 srcChainId_,

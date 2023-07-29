@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC1155s} from "ERC1155s/ERC1155s.sol";
-import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
+import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
