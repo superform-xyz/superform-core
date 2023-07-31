@@ -34,7 +34,7 @@ jobs:
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
-          FOUNDRY_PROFILE: default
+          FOUNDRY_PROFILE: ci
       - name: check coverage
         run: forge coverage --report lcov && lcov --remove lcov.info  -o lcov.info 'src/test/*' 'script/*'
         env:
@@ -73,7 +73,7 @@ jobs:
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
-          FOUNDRY_PROFILE: default
+          FOUNDRY_PROFILE: ci
 
 
   #slither:
