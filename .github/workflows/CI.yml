@@ -22,7 +22,7 @@ jobs:
       - name: dependencies
         run: forge install
       - name: tests
-        run: forge test -vvv
+        run: forge test
         env:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
@@ -59,8 +59,6 @@ jobs:
         run: forge install
       - name: check contract sizes
         run: forge build --sizes
-        env:
-          FOUNDRY_PROFILE: 'default'
       - name: check gas snapshots
         run: forge snapshot --check
         env:
