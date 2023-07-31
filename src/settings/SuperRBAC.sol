@@ -13,11 +13,11 @@ import {AMBFactoryMessage} from "../types/DataTypes.sol";
 /// @dev Contract to manage roles in the entire superForm protocol
 contract SuperRBAC is ISuperRBAC, AccessControl {
     uint8 public constant STATE_REGISTRY_TYPE = 2;
+    bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
     bytes32 public immutable PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
     bytes32 public constant override FEE_ADMIN_ROLE = keccak256("FEE_ADMIN_ROLE");
-    bytes32 public constant override SYNC_REVOKE_ROLE = keccak256("SYNC_REVOKE_ROLE");
     bytes32 public constant override SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
     bytes32 public constant override CORE_CONTRACTS_ROLE = keccak256("CORE_CONTRACTS_ROLE");
     bytes32 public constant override PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
@@ -58,6 +58,20 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
+    function revokeFeeAdminRole(address admin_, bytes memory extraData_) external payable override {
+        revokeRole(FEE_ADMIN_ROLE, admin_);
+
+        if (extraData_.length > 0) {
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
+                SYNC_REVOKE,
+                abi.encode(FEE_ADMIN_ROLE, admin_)
+            );
+
+            _broadcast(abi.encode(rolesPayload), extraData_);
+        }
+    }
+
+    /// @inheritdoc ISuperRBAC
     function revokeProtocolAdminRole(address admin_) external override {
         revokeRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
@@ -83,7 +97,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         if (extraData_.length > 0) {
             AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
+                SYNC_REVOKE,
                 abi.encode(SWAPPER_ROLE, swapper_)
             );
 
@@ -102,7 +116,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         if (extraData_.length > 0) {
             AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
+                SYNC_REVOKE,
                 abi.encode(CORE_CONTRACTS_ROLE, coreContracts_)
             );
 
@@ -121,7 +135,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         if (extraData_.length > 0) {
             AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
+                SYNC_REVOKE,
                 abi.encode(PROCESSOR_ROLE, processor_)
             );
 
@@ -143,7 +157,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         if (extraData_.length > 0) {
             AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
+                SYNC_REVOKE,
                 abi.encode(TWOSTEPS_PROCESSOR_ROLE, twoStepsProcessor_)
             );
 
@@ -162,7 +176,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         if (extraData_.length > 0) {
             AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE_ROLE,
+                SYNC_REVOKE,
                 abi.encode(UPDATER_ROLE, updater_)
             );
 
@@ -176,7 +190,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         AMBFactoryMessage memory rolesPayload = abi.decode(data_, (AMBFactoryMessage));
 
-        if (rolesPayload.messageType == SYNC_REVOKE_ROLE) {
+        if (rolesPayload.messageType == SYNC_REVOKE) {
             (bytes32 role, address affectedAddress) = abi.decode(rolesPayload.message, (bytes32, address));
 
             /// @dev no one can update the default admin role
@@ -201,11 +215,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function hasEmergencyAdminRole(address emergencyAdmin_) external view override returns (bool) {
         return hasRole(EMERGENCY_ADMIN_ROLE, emergencyAdmin_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasSyncRevokeRole(address syncRevoker_) external view override returns (bool) {
-        return hasRole(SYNC_REVOKE_ROLE, syncRevoker_);
     }
 
     /// @inheritdoc ISuperRBAC
