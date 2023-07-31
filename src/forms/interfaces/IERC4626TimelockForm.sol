@@ -1,7 +1,7 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC4626Form} from "../../test/interfaces/IERC4626Form.sol";
+import {IERC4626Form} from "./IERC4626Form.sol";
 import {InitSingleVaultData, TimeLockPayload} from "../../types/DataTypes.sol";
 
 /// @title IERC4626TimelockForm
@@ -9,4 +9,6 @@ import {InitSingleVaultData, TimeLockPayload} from "../../types/DataTypes.sol";
 interface IERC4626TimelockForm is IERC4626Form {
     /// @notice Process unlock request
     function withdrawAfterCoolDown(uint256 amount_, TimeLockPayload memory p_) external;
+
+    function unlockId(uint256 unlockCounter) external view returns (InitSingleVaultData memory singleVaultData);
 }

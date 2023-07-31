@@ -1,18 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
-import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
-import {FactoryStateRegistry} from "../../crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {ERC4626FormInterfaceNotSupported} from "../mocks/InterfaceNotSupported/ERC4626InterFaceNotSupported.sol";
 import "../utils/BaseSetup.sol";
-import "../utils/Utilities.sol";
 import {Error} from "../../utils/Error.sol";
 
 contract SuperFormFactoryCreateSuperformTest is BaseSetup {
-
     uint64 internal chainId = ETH;
 
     function setUp() public override {
@@ -47,18 +42,14 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
     function test_utility_superForms() public {
         UtilityArgs memory vars;
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         /// @dev testing the getAllSuperForms function
-        (vars.superFormIds_, vars.superForms_) = SuperFormFactory(
-            getContract(chainId, "SuperFormFactory")
-        ).getAllSuperForms();
+        (vars.superFormIds_, vars.superForms_) = SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+            .getAllSuperForms();
 
-        assertEq(
-            vars.superFormIds_.length,
-            vars.superForms_.length
-        );
+        assertEq(vars.superFormIds_.length, vars.superForms_.length);
 
         /// @dev Testing Coss Chain Superform Deployments
         vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
@@ -76,12 +67,11 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
             SuperFormFactory(getContract(chainId, "SuperFormFactory")).getSuperFormCount(),
             expectedNumberOfSuperforms
         );
-
     }
 
     function test_base_setup_superForms() public {
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         address superRegistry = getContract(chainId, "SuperRegistry");
@@ -89,7 +79,6 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
         /// @dev Deploying Forms
         address formImplementation = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
-
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
@@ -99,33 +88,25 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
         );
 
         /// @dev Creating superform using beacon
-        (uint256 superFormIdCreated, address superFormCreated) = SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
-            formBeaconId,
-            formImplementation
-        );
+        (uint256 superFormIdCreated, address superFormCreated) = SuperFormFactory(
+            getContract(chainId, "SuperFormFactory")
+        ).createSuperForm(formBeaconId, formImplementation);
 
-        (uint256[] memory superFormIds_, address[] memory superForms_) = SuperFormFactory(getContract(chainId, "SuperFormFactory")).getAllSuperFormsFromVault(formImplementation);
+        (uint256[] memory superFormIds_, address[] memory superForms_) = SuperFormFactory(
+            getContract(chainId, "SuperFormFactory")
+        ).getAllSuperFormsFromVault(formImplementation);
 
-        assertEq(
-            superFormIdCreated,
-            superFormIds_[superFormIds_.length - 1]
-        );
+        assertEq(superFormIdCreated, superFormIds_[superFormIds_.length - 1]);
 
-        assertEq(
-            superFormCreated,
-            superForms_[superForms_.length - 1]
-        );
+        assertEq(superFormCreated, superForms_[superForms_.length - 1]);
 
         uint256 totalSuperForms = SuperFormFactory(getContract(chainId, "SuperFormFactory")).getFormCount();
-        assertEq(
-            totalSuperForms,
-            4
-        );        
+        assertEq(totalSuperForms, 4);
     }
 
     function test_revert_createSuperForm_addressZero() public {
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         address superRegistry = getContract(chainId, "SuperRegistry");
@@ -133,7 +114,6 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
         /// @dev Deploying Forms
         address formImplementation1 = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
-
 
         /// Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
@@ -144,15 +124,12 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
 
         /// @dev Creating superform using beacon
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
-            formBeaconId,
-            address(0)
-        );
+        SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(formBeaconId, address(0));
     }
 
     function test_revert_createSuperForm_vaultBeaconCombinationExists() public {
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         address superRegistry = getContract(chainId, "SuperRegistry");
@@ -160,7 +137,6 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
         /// @dev Deploying Forms
         address formImplementation = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
-
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
@@ -170,22 +146,16 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
         );
 
         /// @dev Creating superform using beacon
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
-            formBeaconId,
-            formImplementation
-        );
+        SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(formBeaconId, formImplementation);
 
         /// @dev Creating superform using same beacon and vault
         vm.expectRevert(Error.VAULT_BEACON_COMBNATION_EXISTS.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
-            formBeaconId,
-            formImplementation
-        );
+        SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(formBeaconId, formImplementation);
     }
 
     function test_revert_createSuperForm_interfaceNotSupported() public {
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         address superRegistry = getContract(chainId, "SuperRegistry");
@@ -193,7 +163,6 @@ contract SuperFormFactoryCreateSuperformTest is BaseSetup {
         /// @dev Deploying Forms
         address formImplementation = address(new ERC4626FormInterfaceNotSupported(superRegistry));
         uint32 formBeaconId = 0;
-
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         vm.expectRevert(Error.FORM_INTERFACE_UNSUPPORTED.selector);

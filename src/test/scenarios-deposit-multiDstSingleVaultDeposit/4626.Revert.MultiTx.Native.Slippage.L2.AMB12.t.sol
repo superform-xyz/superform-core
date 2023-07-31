@@ -1,14 +1,8 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-// Contracts
-import "../../types/LiquidityTypes.sol";
-import "../../types/DataTypes.sol";
-
 // Test Utils
-import {MockERC20} from "../mocks/MockERC20.sol";
 import "../utils/ProtocolActions.sol";
-import "../utils/AmbParams.sol";
 
 contract MDSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions {
     function setUp() public override {

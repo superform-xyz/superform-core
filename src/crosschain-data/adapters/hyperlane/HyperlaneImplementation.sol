@@ -70,13 +70,13 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         }
 
         uint32 domain = ambChainId[dstChainId_];
-        /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3
+        /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3. What is the meaning of this FIXME? - Sujith
         bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
 
         igp.payForGas{value: msg.value}(
             messageId,
             domain,
-            500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)),
+            500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)). Should not be hardcoded - Sujith
             srcSender_ /// @dev should refund to the user, now refunds to core state registry
         );
     }
@@ -88,8 +88,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         }
 
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-        /// FIXME:should we check the length ?? anyway out of index will fail if the length
-        /// mistmatches
+        /// FIXME:should we check the length ?? anyway out of index will fail if the length mistmatches. Why? - Sujith
 
         uint256 totalChains = broadcastChains.length;
         for (uint64 i; i < totalChains; i++) {
@@ -101,7 +100,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
                 messageId,
                 domain,
                 0, /// abi.decode(d.extraDataPerDst[i], (uint256))
-                msg.sender /// @FIXME should refund to the user, now refunds to core state registry
+                msg.sender /// @FIXME should refund to the user, now refunds to core state registry - Sujith
             );
         }
     }

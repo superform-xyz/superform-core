@@ -98,7 +98,7 @@ library Error {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev general error when msg.sender isn't a valid caller
-    /// TODO: all errors that throw this should be refactored into more specific error messages
+    /// TODO: all errors that throw this should be refactored into more specific error messages - Sujith
     error INVALID_CALLER();
 
     /// @dev general error when src chain sender is not valid
@@ -120,7 +120,7 @@ library Error {
     error INVALID_PAYLOAD_ID();
 
     /// @dev if payload state is not valid
-    /// TODO: all errors that throw this should be refactored into more specific error messages
+    /// TODO: all errors that throw this should be refactored into more specific error messages - Sujith
     error INVALID_PAYLOAD_STATE();
 
     /// @dev if update payload function was called on a wrong payload
@@ -144,7 +144,7 @@ library Error {
     /// @dev is gas refunds failed
     error GAS_REFUND_FAILED();
 
-    /// TODO: insert description
+    /// @dev error thrown if any of the ambs in indexes +1 are repeated  (index 0)
     error INVALID_PROOF_BRIDGE_ID();
 
     /// @dev if less than 2 AMBs are passed in the state request

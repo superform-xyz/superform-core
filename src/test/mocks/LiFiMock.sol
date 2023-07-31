@@ -13,7 +13,6 @@ contract LiFiMock is Test {
 
     receive() external payable {}
 
-    /// @dev FIXME LiFi does not work like this, it is just for testing purposes
     function swapAndStartBridgeTokensViaBridge(
         ILiFi.BridgeData calldata bridgeData,
         ILiFi.SwapData[] calldata swapData

@@ -66,7 +66,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     constructor(ISuperRegistry superRegistry_, uint8 stateRegistryType_) {
         superRegistry = superRegistry_;
 
-        /// TODO: move state registry type to superregistry??
+        /// TODO: move state registry type to superregistry?? - Sujith
         STATE_REGISTRY_TYPE = stateRegistryType_;
     }
 

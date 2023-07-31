@@ -12,9 +12,8 @@ import {Error} from "../../utils/Error.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 import {ArrayCastLib} from "../../libraries/ArrayCastLib.sol";
 import "../../types/DataTypes.sol";
-import "../../types/LiquidityTypes.sol";
 
-import "forge-std/console.sol";
+import "../../types/LiquidityTypes.sol";
 
 /// @dev interface to read public variable from state registry
 interface ReadOnlyBaseRegistry is IBaseStateRegistry {

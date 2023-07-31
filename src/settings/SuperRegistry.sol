@@ -8,7 +8,6 @@ import {Error} from "../utils/Error.sol";
 
 /// @title SuperRegistry
 /// @author Zeropoint Labs.
-/// @dev FIXME: this should be decentralized and protected by a timelock contract.
 /// @dev Keeps information on all protocolAddresses used in the SuperForms ecosystem.
 contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev chainId represents the superform chain id.
@@ -56,7 +55,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
-    /// @dev FIXME: remove all address 0 checks to block calls to a certain contract?
 
     /// @inheritdoc ISuperRegistry
     function setImmutables(uint64 chainId_, address permit2_) external override onlyCaller {

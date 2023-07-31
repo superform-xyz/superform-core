@@ -1,19 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
-import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {SuperFormFactory} from "../../SuperFormFactory.sol";
-import {FactoryStateRegistry} from "../../crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {ERC4626FormInterfaceNotSupported} from "../mocks/InterfaceNotSupported/ERC4626InterFaceNotSupported.sol";
 import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import "../utils/BaseSetup.sol";
-import "../utils/Utilities.sol";
 import {Error} from "../../utils/Error.sol";
 
 contract SuperFormFactoryUpdateFormTest is BaseSetup {
-
     uint64 internal chainId = ETH;
 
     event FormLogicUpdated(address indexed oldLogic, address indexed newLogic);
@@ -24,7 +19,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
 
     function test_updateFormBeaconLogic() public {
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         address superRegistry = getContract(chainId, "SuperRegistry");
@@ -32,7 +27,6 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         // @dev Deploying Forms
         address formImplementation1 = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
-
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
@@ -55,7 +49,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
 
     function test_revert_updateFormBeaconLogic_ZERO_ADDRESS() public {
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         address superRegistry = getContract(chainId, "SuperRegistry");
@@ -63,7 +57,6 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         // @dev Deploying Forms
         address formImplementation1 = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
-
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
@@ -84,7 +77,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
 
     function test_revert_updateFormBeaconLogic_ERC165_UNSUPPORTED() public {
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         address superRegistry = getContract(chainId, "SuperRegistry");
@@ -92,7 +85,6 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         // @dev Deploying Forms
         address formImplementation1 = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
-
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
@@ -113,7 +105,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
 
     function test_revert_updateFormBeaconLogic_INVALID_FORM_ID() public {
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         address superRegistry = getContract(chainId, "SuperRegistry");
@@ -121,7 +113,6 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         // @dev Deploying Forms
         address formImplementation = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId1 = 0;
-
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
@@ -142,7 +133,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
 
     function test_revert_updateFormBeaconLogic_FORM_INTERFACE_UNSUPPORTED() public {
         vm.startPrank(deployer);
-        
+
         vm.selectFork(FORKS[chainId]);
 
         address superRegistry = getContract(chainId, "SuperRegistry");
@@ -150,7 +141,6 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         // @dev Deploying Forms
         address formImplementation = address(new ERC4626Form(superRegistry));
         uint32 formBeaconId = 0;
-
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
@@ -160,7 +150,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         );
 
         address formImplementation_interface_unsupported = address(new ERC4626FormInterfaceNotSupported(superRegistry));
-        
+
         vm.expectRevert(Error.FORM_INTERFACE_UNSUPPORTED.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).updateFormBeaconLogic(
             formBeaconId,

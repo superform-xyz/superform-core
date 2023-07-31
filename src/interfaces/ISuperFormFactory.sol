@@ -64,7 +64,6 @@ interface ISuperFormFactory {
     /// @param formBeaconId_ is the form beacon we want to attach the vault to
     /// @param vault_ is the address of the vault
     /// @return superFormId_ is the id of the superform
-    /// @dev TODO: add array version of this
     function createSuperForm(
         uint32 formBeaconId_,
         address vault_
@@ -114,24 +113,12 @@ interface ISuperFormFactory {
     /// @return superForms_ is the address of the superform
     function getAllSuperFormsFromVault(
         address vault_
-    )
-        external
-        view
-        returns (
-            uint256[] memory superFormIds_,
-            address[] memory superForms_
-        );
+    ) external view returns (uint256[] memory superFormIds_, address[] memory superForms_);
 
     /// @dev Returns all SuperForms
     /// @return superFormIds_ is the id of the superform
     /// @return vaults_ is the address of the vault
-    function getAllSuperForms()
-        external
-        view
-        returns (
-            uint256[] memory superFormIds_,
-            address[] memory vaults_
-        );
+    function getAllSuperForms() external view returns (uint256[] memory superFormIds_, address[] memory vaults_);
 
     /// @dev returns the number of forms
     /// @return forms_ is the number of forms

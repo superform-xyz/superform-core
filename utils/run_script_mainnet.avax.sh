@@ -8,5 +8,4 @@ source .env
 echo Running Script: ...
 
 forge script script/Test.Mainnet.Deploy.Single.s.sol:TestMainnetDeploySingle --sig "deploy(uint256)" 2 --rpc-url $AVALANCHE_RPC_URL --broadcast \
-    --force \
     --slow 

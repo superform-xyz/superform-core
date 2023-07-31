@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {ERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
-import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
 import {InitSingleVaultData} from "../../../types/DataTypes.sol";
 import {IBaseForm} from "../../../interfaces/IBaseForm.sol";
 import {ISuperRegistry} from "../../../interfaces/ISuperRegistry.sol";
@@ -106,7 +105,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         address srcSender_,
         uint64 srcChainId_
     ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
-        /// @dev FIXME: not returning anything YET
         dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
     }
 

@@ -80,14 +80,12 @@ $ forge test
 
 #### Contract Architecture
 
-
 <img width="4245" alt="Superform v1 Smart Contract Architecture (4)" src="https://github.com/superform-xyz/superform-core/assets/33469661/0b057534-20ea-4871-8655-89454c366bf2">
 
-
-1. All external actions, except SuperForm creation, start in `SuperRouter.sol`. The user has to provide a "StateRequest" containing the amounts being    actioned into each vault in each chain, as well as liquidity information, about how the actual deposit/withdraw process will be handled
+1. All external actions, except SuperForm creation, start in `SuperRouter.sol`. The user has to provide a "StateRequest" containing the amounts being actioned into each vault in each chain, as well as liquidity information, about how the actual deposit/withdraw process will be handled
 2. Deposits/withdraws can be single or multiple destination, single or multi vault, cross-chain or direct chain. For deposit actions, the user can provide a different input token on a source chain and receive the actual underlying token (different than input token) on the destination chain, after swapping and bridging in a single call. Sometimes it is also needed to perform another extra swap at the destination for tokens with low bridge liquidity, through the usage of `MultiTxProcessor.sol`. For withdraw actions, user can choose to receive a different token than the one redeemed for from the vault, back at the source chain.
 3. The vaults themselves are wrapped by Forms - code implementations that adapt to the needs of a given vault. This wrapping action leads to the creation of SuperForms (the triplet of superForm address, form id and chain id).
-4. Any user can wrap a vault into a SuperForm using the SuperForm Factory but only the protocol may add new Form implementations. 
+4. Any user can wrap a vault into a SuperForm using the SuperForm Factory but only the protocol may add new Form implementations.
 5. Any individual tx must be of a specific kind, either all deposits or all withdraws, for all vaults and destinations
 6. Users are minted SuperPositions on successful deposits, a type of ERC-1155 we modified called ERC-1155S. On withdrawals these are burned.
 
@@ -116,3 +114,67 @@ The typical flow for a withdraw xchain transaction is:
 
 - [State Registry](https://github.com/superform-xyz/superform-core/tree/develop/src/crosschain-data/README.md)
 - [Forms](https://github.com/superform-xyz/superform-core/tree/develop/src/forms/README.md)
+
+### Gas Costs (28 July 2023)
+
+| src/SuperFormFactory.sol:SuperFormFactory contract |                 |        |        |         |         |
+| -------------------------------------------------- | --------------- | ------ | ------ | ------- | ------- |
+| Deployment Cost                                    | Deployment Size |        |        |         |         |
+| 2784387                                            | 14142           |        |        |         |         |
+| Function Name                                      | min             | avg    | median | max     | # calls |
+| addFormBeacon                                      | 4682            | 643178 | 637075 | 658975  | 2263    |
+| addFormBeacons                                     | 15028           | 656157 | 659379 | 1290841 | 4       |
+| changeFormBeaconPauseStatus                        | 5466            | 505673 | 505673 | 1005881 | 2       |
+| createSuperForm                                    | 725             | 320587 | 319818 | 341718  | 20107   |
+| getAllSuperForms                                   | 18856           | 18856  | 18856  | 18856   | 1       |
+| getAllSuperFormsFromVault                          | 1993            | 1993   | 1993   | 1993    | 1       |
+| getBytecodeFormBeacon                              | 15170           | 15170  | 15170  | 15170   | 1       |
+| getFormBeacon                                      | 635             | 930    | 635    | 2635    | 203     |
+| getFormCount                                       | 326             | 326    | 326    | 326     | 1       |
+| getSuperForm                                       | 459             | 459    | 459    | 459     | 31      |
+| getSuperFormCount                                  | 348             | 348    | 348    | 348     | 1       |
+| isFormBeaconPaused                                 | 1357            | 1357   | 1357   | 1357    | 1       |
+| updateFormBeaconLogic                              | 2600            | 7681   | 6793   | 13416   | 5       |
+
+| src/SuperFormRouter.sol:SuperFormRouter contract |                 |         |         |         |         |
+| ------------------------------------------------ | --------------- | ------- | ------- | ------- | ------- |
+| Deployment Cost                                  | Deployment Size |         |         |         |         |
+| 4338555                                          | 22089           |         |         |         |         |
+| Function Name                                    | min             | avg     | median  | max     | # calls |
+| multiDstMultiVaultDeposit                        | 630421          | 1067055 | 1012200 | 1856786 | 11      |
+| multiDstMultiVaultWithdraw                       | 563726          | 1190243 | 1500151 | 1506852 | 3       |
+| multiDstSingleVaultDeposit                       | 465047          | 781205  | 773480  | 1377258 | 14      |
+| multiDstSingleVaultWithdraw                      | 297130          | 354790  | 331307  | 460124  | 5       |
+| singleDirectSingleVaultDeposit                   | 205460          | 252437  | 258455  | 302534  | 12      |
+| singleDirectSingleVaultWithdraw                  | 24108           | 296786  | 140501  | 882035  | 4       |
+| singleXChainMultiVaultDeposit                    | 256784          | 447997  | 455178  | 656408  | 13      |
+| singleXChainMultiVaultWithdraw                   | 217273          | 238534  | 239594  | 257884  | 5       |
+| singleXChainSingleVaultDeposit                   | 244953          | 331827  | 349072  | 397602  | 14      |
+| singleXChainSingleVaultWithdraw                  | 142336          | 163485  | 162387  | 186831  | 4       |
+
+| src/SuperPositions.sol:SuperPositions contract |                 |       |        |       |         |
+| ---------------------------------------------- | --------------- | ----- | ------ | ----- | ------- |
+| Deployment Cost                                | Deployment Size |       |        |       |         |
+| 2720972                                        | 14450           |       |        |       |         |
+| Function Name                                  | min             | avg   | median | max   | # calls |
+| balanceOf                                      | 642             | 1218  | 642    | 2642  | 493     |
+| burnBatchSP                                    | 6899            | 7812  | 8059   | 9218  | 13      |
+| burnSingleSP                                   | 3513            | 3697  | 3513   | 4391  | 19      |
+| dynamicURI                                     | 1299            | 1299  | 1299   | 1299  | 1       |
+| mintBatchSP                                    | 48618           | 48618 | 48618  | 48618 | 2       |
+| mintSingleSP                                   | 24512           | 24563 | 24512  | 25395 | 17      |
+| setApprovalForOne                              | 2933            | 23333 | 24933  | 24933 | 55      |
+| setDynamicURI                                  | 2979            | 23379 | 23546  | 43446 | 4       |
+| stateMultiSync                                 | 10292           | 49599 | 51101  | 93825 | 37      |
+| stateSync                                      | 7010            | 24276 | 26910  | 27861 | 43      |
+| supportsInterface                              | 548             | 548   | 548    | 548   | 1       |
+| updateTxHistory                                | 23495           | 23850 | 23495  | 25495 | 107     |
+| uri                                            | 2332            | 2332  | 2332   | 2332  | 1       |
+
+| src/crosschain-liquidity/MultiTxProcessor.sol:MultiTxProcessor contract |                 |        |        |        |         |
+| ----------------------------------------------------------------------- | --------------- | ------ | ------ | ------ | ------- |
+| Deployment Cost                                                         | Deployment Size |        |        |        |         |
+| 962913                                                                  | 5020            |        |        |        |         |
+| Function Name                                                           | min             | avg    | median | max    | # calls |
+| batchProcessTx                                                          | 122225          | 169121 | 173375 | 228495 | 17      |
+| processTx                                                               | 71500           | 73199  | 71500  | 81119  | 12      |
