@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../utils/ProtocolActions.sol";
 
-contract SDMVDMulti4MultiTxTokenInputNoSlippageL1AMB23 is ProtocolActions {
+contract SDiMVDMulti4MultiTxTokenInputNoSlippageL1AMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////

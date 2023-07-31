@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../utils/ProtocolActions.sol";
 
-contract SDMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
+contract SDiMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
