@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 /// @dev lib imports
 import "forge-std/Test.sol";
 import "ds-test/test.sol";
-import "./TestTypes.sol";
 import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
@@ -23,19 +22,15 @@ import {ERC4626TimelockMock} from "../mocks/ERC4626TimelockMock.sol";
 import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
 import {kycDAO4626RevertDeposit} from "../mocks/kycDAO4626RevertDeposit.sol";
 import {kycDAO4626RevertWithdraw} from "../mocks/kycDAO4626RevertWithdraw.sol";
-import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {Permit2Clone} from "../mocks/Permit2Clone.sol";
 import {KYCDaoNFTMock} from "../mocks/KYCDaoNFTMock.sol";
 
 /// @dev Protocol imports
-import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../crosschain-data/extensions/CoreStateRegistry.sol";
 import {RolesStateRegistry} from "../../crosschain-data/extensions/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/extensions/FactoryStateRegistry.sol";
-import {ISuperFormRouter} from "../../interfaces/ISuperFormRouter.sol";
 import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {SuperFormRouter} from "../../SuperFormRouter.sol";
 import {FeeCollector} from "../../FeeCollector.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
@@ -53,15 +48,14 @@ import {HyperlaneImplementation} from "../../crosschain-data/adapters/hyperlane/
 import {CelerImplementation} from "../../crosschain-data/adapters/celer/CelerImplementation.sol";
 import {IMailbox} from "../../vendor/hyperlane/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../vendor/hyperlane/IInterchainGasPaymaster.sol";
-import {IMessageBus} from "../../vendor/celer/IMessageBus.sol";
 import ".././utils/AmbParams.sol";
 import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
-import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {TwoStepsFormStateRegistry} from "../../crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
 import {PayloadHelper} from "../../crosschain-data/utils/PayloadHelper.sol";
 import {FeeHelper} from "../../crosschain-data/utils/FeeHelper.sol";
 import {QuorumManager} from "../../crosschain-data/utils/QuorumManager.sol";
 import "../../types/DataTypes.sol";
+import "./TestTypes.sol";
 
 abstract contract BaseSetup is DSTest, Test {
     /*//////////////////////////////////////////////////////////////
@@ -124,7 +118,6 @@ abstract contract BaseSetup is DSTest, Test {
 
     mapping(uint256 vaultId => string[] names) VAULT_NAMES;
 
-    /// FIXME: We need to map individual formBeaconId to individual vault to have access to ERC4626Form previewFunctions
     mapping(uint64 chainId => mapping(uint32 formBeaconId => IERC4626[][] vaults)) public vaults;
     mapping(uint64 chainId => uint256 payloadId) PAYLOAD_ID;
     mapping(uint64 chainId => uint256 payloadId) TWO_STEP_PAYLOAD_ID;

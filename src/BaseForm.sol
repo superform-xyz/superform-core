@@ -112,7 +112,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         address srcSender_,
         uint64 srcChainId_
     ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
-        /// @dev FIXME: not returning anything YET
         dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
     }
 

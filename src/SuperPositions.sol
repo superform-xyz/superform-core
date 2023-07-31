@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC1155s} from "ERC1155s/ERC1155s.sol";
-import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, InitMultiVaultData, InitSingleVaultData, AMBMessage} from "./types/DataTypes.sol";
+import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
@@ -67,18 +67,12 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
     constructor(string memory dynamicURI_, address superRegistry_) {
         dynamicURI = dynamicURI_;
-
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// FIXME: Temp extension need to make approve at superRouter, may change with arch
-    function setApprovalForAll(address operator, bool approved) public virtual override(ISuperPositions, ERC1155s) {
-        super.setApprovalForAll(operator, approved);
-    }
 
     /// @inheritdoc ISuperPositions
     function mintSingleSP(address owner_, uint256 superFormId_, uint256 amount_) external override onlyMinter {
@@ -153,7 +147,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateSync(
         AMBMessage memory data_
     ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
-        (uint256 txType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
+        (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
             .txInfo
             .decodeTxInfo();
 
@@ -165,12 +159,13 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
         uint256 txInfo = txHistory[returnData.payloadId];
 
+        uint256 txType;
         address srcSender;
-        (, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
+        (txType, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         if (multi == 1) revert Error.INVALID_PAYLOAD();
-
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
+        if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
         if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
             _mint(srcSender, returnData.superFormId, returnData.amount, "");

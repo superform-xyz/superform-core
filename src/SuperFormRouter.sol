@@ -654,7 +654,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 vaultData_.maxSlippage[i],
                 vaultData_.liqData[i],
                 vaultData_.extraFormData,
-                vaultData_.liqData[i].nativeAmount, /// @dev FIXME: is this acceptable ? Note that the user fully controls the msg.value being sent
+                vaultData_.liqData[i].nativeAmount,
                 srcSender_
             );
 
@@ -687,7 +687,6 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         }
 
         /// @dev deposits collateral to a given vault and mint vault positions.
-        /// @dev FIXME: in multi deposits we split the msg.value, but this only works if we validate that the user is only depositing from one source asset (native in this case)
         dstAmount = IBaseForm(superForm).directDepositIntoVault{value: msgValue_}(
             InitSingleVaultData(payloadId_, superFormId_, amount_, maxSlippage_, liqData_, extraFormData_),
             srcSender_
