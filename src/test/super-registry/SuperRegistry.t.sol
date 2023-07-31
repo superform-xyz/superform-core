@@ -44,10 +44,12 @@ contract SuperRegistryTest is BaseSetup {
     }
 
     function test_setNewProtocolAddress() public {
-        vm.selectFork(FORKS[ETH]);
         superRegistry.setNewProtocolAddress(keccak256("SUPER_RBAC"), address(0x1));
         assertEq(superRegistry.getProtocolAddress(keccak256("SUPER_RBAC")), address(0x1));
+    }
 
+    function test_revert_setNewProtocolAddress_invalidCaller() public {
+        vm.stopPrank();
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
         superRegistry.setNewProtocolAddress(keccak256("SUPER_RBAC"), address(0x5));
@@ -187,6 +189,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setAmbAddress(ambId, ambAddress);
 
         assertEq(superRegistry.isValidAmbImpl(getContract(ETH, "LayerzeroImplementation")), true);
+        assertEq(superRegistry.isValidAmbImpl(address(0x9)), false);
     }
 
     function test_setStateRegistryAddress_and_revert_zeroAddress_invalidCaller() public {
