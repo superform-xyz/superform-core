@@ -181,14 +181,14 @@ contract CelerImplementationTest is BaseSetup {
         );
     }
 
-    function test_revert_executeMessage_duplicatePayload_invalidCaller() public {
+    function test_revert_executeMessage_duplicatePayload_invalidSrcChainSender_invalidCaller() public {
         AMBMessage memory ambMessage;
 
-        (ambMessage, , ) = setupBroadcastPayloadAMBData(users[0]);
+        (ambMessage, , ) = setupBroadcastPayloadAMBData(getContract(ETH, "CelerImplementation"));
 
         vm.prank(CELER_BUS);
         celerImplementation.executeMessage{value: 0.1 ether}(
-            users[0],
+            getContract(ETH, "CelerImplemtation"),
             ETH,
             abi.encode(ambMessage),
             getContract(ETH, "CelerHelper")
@@ -197,7 +197,16 @@ contract CelerImplementationTest is BaseSetup {
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
         vm.prank(CELER_BUS);
         celerImplementation.executeMessage{value: 0.1 ether}(
-            users[0],
+            getContract(ETH, "CelerImplemtation"),
+            ETH,
+            abi.encode(ambMessage),
+            getContract(ETH, "CelerHelper")
+        );
+
+        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.prank(CELER_BUS);
+        celerImplementation.executeMessage(
+            bond, /// @dev invalid srcChainSender
             ETH,
             abi.encode(ambMessage),
             getContract(ETH, "CelerHelper")
@@ -206,7 +215,7 @@ contract CelerImplementationTest is BaseSetup {
         vm.expectRevert(Error.INVALID_CALLER.selector);
         vm.prank(bond);
         celerImplementation.executeMessage{value: 0.1 ether}(
-            users[0],
+            getContract(ETH, "CelerImplemtation"),
             ETH,
             abi.encode(ambMessage),
             getContract(ETH, "CelerHelper")
