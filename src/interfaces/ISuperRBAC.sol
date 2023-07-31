@@ -20,6 +20,10 @@ interface ISuperRBAC {
     /// @param admin_ the address to grant the role to
     function grantFeeAdminRole(address admin_) external;
 
+    /// @dev revokes the FEE_ADMIN_ROLE from given address
+    /// @param admin_ the address to revoke the role from
+    function revokeFeeAdminRole(address admin_, bytes memory extraData_) external payable;
+
     /// @dev revokes the DEFAULT_ADMIN_ROLE from given address
     /// @param admin_ the address to revoke the role from
     function revokeProtocolAdminRole(address admin_) external;
@@ -99,9 +103,6 @@ interface ISuperRBAC {
     /// @dev returns the id of the emergency admin role
     function EMERGENCY_ADMIN_ROLE() external view returns (bytes32);
 
-    /// @dev returns the id of the sync revoke role
-    function SYNC_REVOKE_ROLE() external view returns (bytes32);
-
     /// @dev returns the id of the swapper role
     function SWAPPER_ROLE() external view returns (bytes32);
 
@@ -128,10 +129,6 @@ interface ISuperRBAC {
     /// @dev returns wether the given address has the emergency admin role
     /// @param admin_ the address to check
     function hasEmergencyAdminRole(address admin_) external view returns (bool);
-
-    /// @dev returns wether the given address has the sync revoke role
-    /// @param syncRevoke_ the address to check
-    function hasSyncRevokeRole(address syncRevoke_) external view returns (bool);
 
     /// @dev returns wether the given address has the swapper role
     /// @param swapper_ the address to check
