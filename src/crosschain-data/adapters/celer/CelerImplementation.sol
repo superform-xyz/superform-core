@@ -150,7 +150,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
     /// @inheritdoc IMessageReceiver
     function executeMessage(
-        address, /// srcContract_
+        address sender_, /// srcContract_
         uint64 srcChainId_,
         bytes calldata message_,
         address // executor
@@ -162,10 +162,9 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
             revert Error.INVALID_CALLER();
         }
 
-        /// FIXME: check why this fails - Smit
-        // if (sender_ != castAddr(authorizedImpl[origin_])) {
-        //     revert INVALID_CALLER();
-        // }
+        if (sender_ != authorizedImpl[srcChainId_]) {
+            revert Error.INVALID_CALLER();
+        }
 
         bytes32 hash = keccak256(message_);
 
