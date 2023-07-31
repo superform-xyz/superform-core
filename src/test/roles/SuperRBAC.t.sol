@@ -41,6 +41,17 @@ contract SuperRBACTest is BaseSetup {
         assertEq(superRBAC.hasFeeAdminRole(address(0x1)), true);
     }
 
+    function test_revokeFeeAdminRole() public {
+        _revokeAndCheck(
+            superRBAC.revokeFeeAdminRole.selector, 
+            superRBAC.hasFeeAdminRole.selector,
+            deployer,
+            deployer,
+            generateBroadcastParams(5, 2),
+            800 ether
+        );
+    }
+
     function test_grantEmergencyAdminRole() public {
         superRBAC.grantEmergencyAdminRole(address(0x1));
         assertEq(superRBAC.hasEmergencyAdminRole(address(0x1)), true);
@@ -133,10 +144,6 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
-    function test_hasSyncRevokeRole() public {
-        assertEq(superRBAC.hasSyncRevokeRole(deployer), false);
-    }
-
     function _revokeAndCheck(
         bytes4 revokeRole_,
         bytes4 checkRole_,
@@ -147,7 +154,7 @@ contract SuperRBACTest is BaseSetup {
     ) internal {
         vm.stopPrank();
 
-        vm.deal(actor_, 800 ether);
+        vm.deal(actor_, value_ + 1 ether);
         vm.prank(actor_);
 
         vm.recordLogs();
@@ -165,7 +172,6 @@ contract SuperRBACTest is BaseSetup {
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                // bool statusBefore = address(superRBAC).call(abi.encodeWithSelector(checkRole_, actor_));
                 ( , bytes memory statusBefore) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
                 RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
                 ( , bytes memory statusAfter) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
