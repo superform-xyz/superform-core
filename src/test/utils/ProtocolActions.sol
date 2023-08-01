@@ -85,8 +85,6 @@ abstract contract ProtocolActions is BaseSetup {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev 'n' deposits rescued per payloadId per destination chain
-    /// TODO: test rescuing deposits from multiple superforms - Smit
-    /// optimise (+ generalise if possible) args in singleVaultCallDataArgs
     function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
             vm.selectFork(FORKS[CHAIN_0]);
@@ -106,7 +104,6 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i; i < AMOUNTS[CHAIN_0][actionIndex].length; ++i) {
                 finalAmount += (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) / 10000;
             }
-            // finalAmount = (AMOUNTS[CHAIN_0][actionIndex][0] * (10000 - uint256(action.slippage))) / 10000;
 
             SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                 action.user,
