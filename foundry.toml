@@ -8,7 +8,7 @@ gas_reports = [
     "MultiTxProcessor",
 ]
 libraries = []
-optimizer = true
+optimizer = false
 optimizer_runs = 1000
 test = 'src/test'
 verbosity = 0
