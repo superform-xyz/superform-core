@@ -6,10 +6,11 @@ on:
   pull_request:
     branches: [main, develop]
 
+
 jobs:
   contract-sizes:
-    name: Forge Testing
-    runs-on: ubuntu-latest
+    name: Contract Sizes
+    runs-on: 'SuperformCore'
     steps:
       - uses: actions/checkout@v3
         with:
@@ -23,8 +24,8 @@ jobs:
         run: forge build --sizes
 
   contract-snapshot:
-    name: Forge Testing
-    runs-on: ubuntu-latest
+    name: Contract Snapshot
+    runs-on: 'SuperformCore'
     steps:
       - uses: actions/checkout@v3
         with:
@@ -47,10 +48,10 @@ jobs:
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
-          FOUNDRY_PROFILE: 'ci'
 
   test-coverage:
-    runs-on: ubuntu-latest
+    name: Test Coverage
+    runs-on: 'SuperformCore'
     steps:
       - uses: actions/checkout@v3
         with:
@@ -73,7 +74,6 @@ jobs:
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
-          FOUNDRY_PROFILE: 'ci'
 
   #slither:
     #  runs-on: ubuntu-latest
