@@ -8,13 +8,6 @@ import {Error} from "../../utils/Error.sol";
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
 contract SocketValidator is BridgeValidator {
-    mapping(uint64 => uint256) public socketChainId;
-
-    /*///////////////////////////////////////////////////////////////
-                                Events
-    //////////////////////////////////////////////////////////////*/
-    event ChainIdSet(uint64 superChainId, uint256 socketChainId);
-
     /*///////////////////////////////////////////////////////////////
                                 Constructor
     //////////////////////////////////////////////////////////////*/
@@ -43,7 +36,7 @@ contract SocketValidator is BridgeValidator {
         ISocketRegistry.UserRequest memory userRequest = _decodeCallData(txData_);
 
         /// @dev 1. chainId validation
-        if (socketChainId[dstChainId_] != userRequest.toChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
+        if (uint256(dstChainId_) != userRequest.toChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
 
@@ -70,23 +63,6 @@ contract SocketValidator is BridgeValidator {
             (userRequest.middlewareRequest.id == 0 && liqDataToken_ != userRequest.bridgeRequest.inputToken) ||
             (userRequest.middlewareRequest.id != 0 && liqDataToken_ != userRequest.middlewareRequest.inputToken)
         ) revert Error.INVALID_TXDATA_TOKEN();
-    }
-
-    /// @dev allows admin to add new chain ids in future
-    /// @param superChainIds_ is the identifier of the chain within superform protocol
-    /// @param socketChainIds_ is the identifier of the chain given by the bridge
-    function setChainIds(uint64[] memory superChainIds_, uint256[] memory socketChainIds_) external onlyProtocolAdmin {
-        for (uint256 i = 0; i < superChainIds_.length; i++) {
-            uint64 superChainIdT = superChainIds_[i];
-            uint256 socketChainIdT = socketChainIds_[i];
-            if (superChainIdT == 0 || socketChainIdT == 0) {
-                revert Error.INVALID_CHAIN_ID();
-            }
-
-            socketChainId[superChainIdT] = socketChainIdT;
-
-            emit ChainIdSet(superChainIdT, socketChainIdT);
-        }
     }
 
     /// @inheritdoc BridgeValidator

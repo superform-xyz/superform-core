@@ -122,8 +122,8 @@ abstract contract ProtocolActions is BaseSetup {
                     : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
                 CHAIN_0,
                 DST_CHAINS[0], /// unsure about its usage
-                CHAIN_0, /// llChainIds[vars.chain0Index],
-                DST_CHAINS[0], /// llChainIds[vars.chainDstIndex],
+                CHAIN_0,
+                DST_CHAINS[0],
                 action.multiTx,
                 false
             );
@@ -386,8 +386,8 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.vaultMock,
                         CHAIN_0,
                         DST_CHAINS[i],
-                        llChainIds[vars.chain0Index],
-                        llChainIds[vars.chainDstIndex],
+                        uint256(chainIds[vars.chain0Index]),
+                        uint256(chainIds[vars.chainDstIndex]),
                         action.multiTx,
                         action.action,
                         action.slippage,
@@ -424,8 +424,8 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.vaultMock[0],
                     CHAIN_0,
                     DST_CHAINS[i],
-                    llChainIds[vars.chain0Index],
-                    llChainIds[vars.chainDstIndex],
+                    uint256(chainIds[vars.chain0Index]),
+                    uint256(chainIds[vars.chainDstIndex]),
                     action.multiTx,
                     vars.partialWithdrawVaults.length > 0 ? vars.partialWithdrawVaults[0] : false
                 );
@@ -870,7 +870,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     vars.liqBridges,
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    llChainIds[vars.chainDstIndex],
+                                    uint256(chainIds[vars.chainDstIndex]),
                                     vars.underlyingSrcToken,
                                     vars.amounts
                                 );
@@ -879,7 +879,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     vars.liqBridges[0],
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    llChainIds[vars.chainDstIndex],
+                                    uint256(chainIds[vars.chainDstIndex]),
                                     vars.underlyingSrcToken[0],
                                     singleSuperFormsData[i].amount
                                 );
@@ -913,7 +913,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     vars.liqBridges,
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    llChainIds[vars.chainDstIndex],
+                                    uint256(chainIds[vars.chainDstIndex]),
                                     vars.underlyingSrcToken,
                                     vars.amounts
                                 );
@@ -922,7 +922,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     vars.liqBridges[0],
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    llChainIds[vars.chainDstIndex],
+                                    uint256(chainIds[vars.chainDstIndex]),
                                     vars.underlyingSrcToken[0],
                                     singleSuperFormsData[i].amount
                                 );
