@@ -31,20 +31,3 @@ avalanche_fork = "${AVALANCHE_LOCAL_URL}"
 arbitrum_fork = "${ARBITRUM_LOCAL_URL}"
 optimism_fork = "${OPTIMISM_LOCAL_URL}"
 fantom_fork = "${FANTOM_LOCAL_URL}"
-
-[profile.ci]
-solc-version = "0.8.19"
-gas_reports = [
-    "SuperFormRouter",
-    "BaseForm",
-    "SuperFormFactory",
-    "SuperPositions",
-    "MultiTxProcessor",
-]
-libraries = []
-optimizer = false
-test = 'src/test'
-verbosity = 0
-ffi = true
-libs = ["lib"]
-fs_permissions = [{ access = "read-write", path = "./script/" }]
