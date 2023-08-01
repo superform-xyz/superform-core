@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {SuperFormFactory} from "../../SuperFormFactory.sol";
-import {ERC4626Form} from "../../forms/ERC4626Form.sol";
-import {VaultMock} from "../mocks/VaultMock.sol";
-import {MockERC20} from "../mocks/MockERC20.sol";
-import "../utils/BaseSetup.sol";
+import {Error} from "../../utils/Error.sol";
+import "../utils/ProtocolActions.sol";
 
 contract SuperFormERC4626FormTest is BaseSetup {
     uint64 internal chainId = ETH;
@@ -412,5 +409,241 @@ contract SuperFormERC4626FormTest is BaseSetup {
         string memory tokenName = ERC4626Form(payable(superFormCreated)).superformYieldTokenName();
 
         assertEq(tokenName, "Superform Mock Vault");
+    }
+
+    function test_superFormDirectDepositWithoutAllowance() public {
+        /// scenario: user deposits with his own collateral but failed to approve
+        vm.selectFork(FORKS[ETH]);
+
+        address superForm = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "SuperForm", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperForm(superForm, FORM_BEACON_IDS[0], ETH);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            100,
+            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        /// @dev no approval before call
+        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        SuperFormRouter(payable(getContract(ETH, "SuperFormRouter"))).singleDirectSingleVaultDeposit(req);
+    }
+
+    function test_superFormDirectDepositWithAllowance() public {
+        _successfulDeposit();
+    }
+
+    function test_superFormDirectDepositWithoutCollateral() public {
+        /// scenario: user deposits by utilizing any crude collateral available in the beacon proxy
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+        /// try depositing without approval
+        address superForm = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "SuperForm", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperForm(superForm, FORM_BEACON_IDS[0], ETH);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            2e18,
+            100,
+            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        (address formBeacon, , ) = SuperFormFactory(getContract(ETH, "SuperFormFactory")).getSuperForm(superformId);
+
+        /// @dev make sure the beacon proxy has enough usdc for the user to hack it
+        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 3e18);
+        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+
+        vm.expectRevert(Error.DIRECT_DEPOSIT_INVALID_DATA.selector);
+        SuperFormRouter(payable(getContract(ETH, "SuperFormRouter"))).singleDirectSingleVaultDeposit(req);
+    }
+
+    function test_superFormDirectWithdrawalWithMaliciousTxData() public {
+        _successfulDeposit();
+
+        /// scenario: user could hack the funds from the form
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superForm = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "SuperForm", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+        address USDT = getContract(ETH, "USDT");
+        uint256 superformId = DataLib.packSuperForm(superForm, FORM_BEACON_IDS[0], ETH);
+        (address formBeacon, , ) = SuperFormFactory(getContract(ETH, "SuperFormFactory")).getSuperForm(superformId);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            100,
+            LiqRequest(1, _buildMaliciousTxData(1, USDT, formBeacon, ETH, 2e18, deployer), USDT, 2e18, 0, ""),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        /// @dev approves before call
+        vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector);
+        SuperFormRouter(payable(getContract(ETH, "SuperFormRouter"))).singleDirectSingleVaultWithdraw(req);
+    }
+
+    function test_superFormXChainWithdrawalWithMaliciousTxData() public {
+        /// @dev prank deposits (just mint super-shares)
+        _successfulDeposit();
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superForm = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "SuperForm", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperForm(superForm, FORM_BEACON_IDS[0], ETH);
+        (address formBeacon, , ) = SuperFormFactory(getContract(ETH, "SuperFormFactory")).getSuperForm(superformId);
+        address vault = IBaseForm(superForm).getVaultAddress();
+
+        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        vm.stopPrank();
+
+        /// @dev simulating withdrawals with malicious tx data
+        vm.startPrank(getContract(ETH, "CoreStateRegistry"));
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            100,
+            LiqRequest(
+                1,
+                _buildMaliciousTxData(1, getContract(ETH, "USDT"), formBeacon, ARBI, 2e18, deployer),
+                getContract(ETH, "USDT"),
+                3e18,
+                0,
+                ""
+            ),
+            ""
+        );
+
+        vm.expectRevert(Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST.selector);
+        IBaseForm(superForm).xChainWithdrawFromVault(data, deployer, ARBI);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    function _successfulDeposit() internal {
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superForm = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "SuperForm", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperForm(superForm, FORM_BEACON_IDS[0], ETH);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            100,
+            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        (address formBeacon, , ) = SuperFormFactory(getContract(ETH, "SuperFormFactory")).getSuperForm(superformId);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        SuperFormRouter(payable(getContract(ETH, "SuperFormRouter"))).singleDirectSingleVaultDeposit(req);
+    }
+
+    function _buildMaliciousTxData(
+        uint8 liqBridgeKind_,
+        address underlyingToken_,
+        address from_,
+        uint64 toChainId_,
+        uint256 amount_,
+        address receiver_
+    ) internal returns (bytes memory txData) {
+        if (liqBridgeKind_ == 1) {
+            ISocketRegistry.BridgeRequest memory bridgeRequest;
+            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
+            ISocketRegistry.UserRequest memory userRequest;
+            /// @dev middlware request is used if there is a swap involved before the bridging action
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
+            middlewareRequest = ISocketRegistry.MiddlewareRequest(
+                1, /// request id
+                0,
+                underlyingToken_,
+                abi.encode(from_, FORKS[toChainId_])
+            );
+
+            /// @dev empty bridge request
+            bridgeRequest = ISocketRegistry.BridgeRequest(
+                0, /// id
+                0,
+                address(0),
+                abi.encode(receiver_, FORKS[toChainId_])
+            );
+
+            userRequest = ISocketRegistry.UserRequest(
+                receiver_,
+                uint256(toChainId_),
+                amount_,
+                middlewareRequest,
+                bridgeRequest
+            );
+
+            txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
+        } else if (liqBridgeKind_ == 2) {
+            ILiFi.BridgeData memory bridgeData;
+            ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
+
+            swapData[0] = ILiFi.SwapData(
+                address(0), /// callTo (arbitrary)
+                address(0), /// callTo (approveTo)
+                underlyingToken_,
+                underlyingToken_,
+                amount_,
+                abi.encode(from_, FORKS[toChainId_]),
+                false // arbitrary
+            );
+
+            bridgeData = ILiFi.BridgeData(
+                bytes32("1"), /// request id
+                "",
+                "",
+                address(0),
+                underlyingToken_,
+                receiver_,
+                amount_,
+                uint256(toChainId_),
+                false,
+                true
+            );
+
+            txData = abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
+        }
     }
 }

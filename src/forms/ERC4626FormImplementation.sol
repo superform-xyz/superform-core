@@ -173,14 +173,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC4626 v = IERC4626(vault);
         address collateral = address(v.asset());
 
-        if (address(v.asset()) != collateral) revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
+        if (singleVaultData_.liqData.token != collateral) revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
 
         dstAmount = v.redeem(singleVaultData_.amount, receiver, address(this));
 
         if (len1 != 0) {
             /// @dev this check here might be too much already, but can't hurt
-            if (singleVaultData_.liqData.amount > singleVaultData_.amount)
-                revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (singleVaultData_.liqData.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             uint64 chainId = superRegistry.chainId();
 
@@ -230,8 +229,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     struct xChainWithdrawLocalVars {
         uint64 dstChainId;
-        address vaultLoc;
-        uint256 dstAmount;
+        address receiver;
+        address collateral;
         uint256 balanceBefore;
         uint256 balanceAfter;
     }
@@ -241,17 +240,22 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         address srcSender,
         uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
+        uint256 len = singleVaultData_.liqData.txData.length;
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = singleVaultData_.superFormId.getSuperForm();
-        vars.vaultLoc = vault;
 
-        IERC4626 v = IERC4626(vars.vaultLoc);
+        vars.receiver = len == 0 ? srcSender : address(this);
 
-        if (singleVaultData_.liqData.txData.length != 0) {
-            /// Note Redeem Vault positions (we operate only on positions, not assets)
-            vars.dstAmount = v.redeem(singleVaultData_.amount, address(this), address(this));
+        IERC4626 v = IERC4626(vault);
+        vars.collateral = v.asset();
 
-            vars.balanceBefore = IERC20(v.asset()).balanceOf(address(this));
+        if (vars.collateral != singleVaultData_.liqData.token) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+
+        /// Note Redeem vault positions (we operate only on positions, not assets)
+        dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
+
+        if (len != 0) {
+            if (singleVaultData_.liqData.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
             /// @dev NOTE: only allows withdraws back to source
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
@@ -271,28 +275,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                vars.dstAmount,
+                dstAmount,
                 address(this),
                 singleVaultData_.liqData.nativeAmount,
                 "",
                 superRegistry.PERMIT2()
             );
-
-            vars.balanceAfter = IERC20(v.asset()).balanceOf(address(this));
-
-            /// note: balance validation to prevent draining contract.
-            if (vars.balanceAfter < vars.balanceBefore - vars.dstAmount)
-                revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
-        } else {
-            /// Note Redeem Vault positions (we operate only on positions, not assets)
-            vars.dstAmount = v.redeem(singleVaultData_.amount, srcSender, address(this));
         }
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount - Subhasish
-        emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vars.vaultLoc);
-
-        /// Here we either fully succeed of Callback.FAIL.
-        return 0;
+        emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 
     /*///////////////////////////////////////////////////////////////
