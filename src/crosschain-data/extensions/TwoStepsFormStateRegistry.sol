@@ -105,6 +105,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             }
 
             if (p.isXChain == 0) {
+                returnMessage = _constructSingleReturnData(p.srcSender, p.srcChainId, timeLockPayloadId_, p.data);
+
                 ISuperPositions(superRegistry.superPositions()).mintSingleSP(
                     p.srcSender,
                     p.data.superFormId,

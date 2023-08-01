@@ -15,6 +15,7 @@ verbosity = 0
 ffi = true
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
+
 [rpc_endpoints]
 ethereum = "${ETHEREUM_RPC_URL}"
 polygon = "${POLYGON_RPC_URL}"

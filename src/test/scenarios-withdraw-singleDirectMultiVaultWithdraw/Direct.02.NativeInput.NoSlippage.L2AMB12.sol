@@ -4,35 +4,56 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../utils/ProtocolActions.sol";
 
-contract SDSVD4626KycNoSwapTokenInputNoSlippageL2 is ProtocolActions {
+contract SDiMVW02NativeInputNoSlippageL2AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 3];
 
-        CHAIN_0 = POLY;
-        DST_CHAINS = [POLY];
+        AMBs = [1, 2];
+
+        CHAIN_0 = OP;
+        DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [2];
+        TARGET_UNDERLYINGS[OP][0] = [2, 2];
+        TARGET_VAULTS[OP][0] = [0, 2]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[OP][0] = [0, 2];
 
-        TARGET_VAULTS[POLY][0] = [2]; /// @dev id 0 is normal 4626
+        TARGET_UNDERLYINGS[OP][1] = [2, 2];
+        TARGET_VAULTS[OP][1] = [0, 2]; /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[OP][1] = [0, 2];
 
-        TARGET_FORM_KINDS[POLY][0] = [2];
+        AMOUNTS[OP][0] = [12, 21312312];
+        AMOUNTS[OP][1] = [12, 2222];
 
-        AMOUNTS[POLY][0] = [1231];
+        PARTIAL[OP][1] = [false, true];
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 0 for same chain same collateral, 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [0];
+        LIQ_BRIDGES[OP][0] = [2, 2, 2];
+        LIQ_BRIDGES[OP][1] = [2, 2, 2];
 
+        /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
+                multiVaults: true, //!!WARNING turn on or off multi vaults
+                user: 0,
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+            })
+        );
+
+        actions.push(
+            TestAction({
+                action: Actions.Withdraw,
+                multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",

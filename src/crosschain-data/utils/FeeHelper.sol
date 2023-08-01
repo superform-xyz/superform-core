@@ -370,6 +370,10 @@ contract FeeHelper is IFeeHelper {
             if (!isDeposit && req_.superFormData.superFormIds[i] == TIMELOCK_FORM_ID) {
                 srcAmount += twoStepFeeCost * _getGasPrice(0);
             }
+
+            unchecked {
+                ++i;
+            }
         }
 
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superFormData.liqRequests);

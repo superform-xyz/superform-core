@@ -11,6 +11,7 @@ import {BaseForm} from "../BaseForm.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {Error} from "../utils/Error.sol";
 import {DataLib} from "../libraries/DataLib.sol";
+import {IPermit2} from "../vendor/dragonfly-xyz/IPermit2.sol";
 
 /// @title ERC4626FormImplementation
 /// @notice Has common internal functions that can be re-used by actual form implementations
@@ -92,12 +93,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     struct directDepositLocalVars {
         uint64 chainId;
-        address vaultLoc;
         address collateral;
         uint256 dstAmount;
         uint256 balanceBefore;
         uint256 balanceAfter;
-        IERC20 collateralToken;
     }
 
     function _processDirectDeposit(
@@ -106,27 +105,47 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     ) internal returns (uint256 dstAmount) {
         directDepositLocalVars memory vars;
 
-        vars.vaultLoc = vault;
-
-        /// note: checking balance
-        IERC4626 v = IERC4626(vars.vaultLoc);
-
+        IERC4626 v = IERC4626(vault);
         vars.collateral = address(v.asset());
-        vars.collateralToken = IERC20(vars.collateral);
-        vars.balanceBefore = vars.collateralToken.balanceOf(address(this));
+        vars.balanceBefore = IERC20(vars.collateral).balanceOf(address(this));
+
+        uint256 isSwap = singleVaultData_.liqData.txData.length;
+        uint256 isPermit = singleVaultData_.liqData.permit2data.length;
+
+        IERC20 token = IERC20(singleVaultData_.liqData.token);
+        uint256 amount = singleVaultData_.liqData.amount;
 
         /// note: handle the collateral token transfers.
-        if (singleVaultData_.liqData.txData.length == 0) {
-            if (
-                IERC20(singleVaultData_.liqData.token).allowance(srcSender_, address(this)) <
-                singleVaultData_.liqData.amount
-            ) revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+        if (isSwap == 0) {
+            if (isPermit == 0) {
+                if (IERC20(token).allowance(srcSender_, address(this)) < amount)
+                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
-            IERC20(singleVaultData_.liqData.token).safeTransferFrom(
-                srcSender_,
-                address(this),
-                singleVaultData_.liqData.amount
-            );
+                IERC20(token).safeTransferFrom(srcSender_, address(this), amount);
+            } else {
+                (uint256 nonce, uint256 deadline, bytes memory signature) = abi.decode(
+                    singleVaultData_.liqData.permit2data,
+                    (uint256, uint256, bytes)
+                );
+
+                IPermit2(superRegistry.PERMIT2()).permitTransferFrom(
+                    // The permit message.
+                    IPermit2.PermitTransferFrom({
+                        permitted: IPermit2.TokenPermissions(token, amount),
+                        nonce: nonce,
+                        deadline: deadline
+                    }),
+                    // The transfer recipient and amount.
+                    IPermit2.SignatureTransferDetails({to: address(this), requestedAmount: amount}),
+                    // The owner of the tokens, which must also be
+                    // the signer of the message, otherwise this call
+                    // will fail.
+                    srcSender_,
+                    // The packed signature that was the result of signing
+                    // the EIP712 hash of `permit`.
+                    signature
+                );
+            }
         } else {
             vars.chainId = superRegistry.chainId();
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
@@ -136,14 +155,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 true,
                 address(this),
                 srcSender_,
-                singleVaultData_.liqData.token
+                address(token)
             );
 
             dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
-                singleVaultData_.liqData.token,
-                singleVaultData_.liqData.amount,
+                address(token),
+                amount,
                 srcSender_,
                 singleVaultData_.liqData.nativeAmount,
                 singleVaultData_.liqData.permit2data,
@@ -151,7 +170,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             );
         }
 
-        vars.balanceAfter = vars.collateralToken.balanceOf(address(this));
+        vars.balanceAfter = IERC20(vars.collateral).balanceOf(address(this));
 
         if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount)
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
@@ -159,7 +178,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         if (address(v.asset()) != vars.collateral) revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
         /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease - Joao
-        vars.collateralToken.approve(vars.vaultLoc, singleVaultData_.amount);
+        IERC20(vars.collateral).approve(vault, singleVaultData_.amount);
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
 

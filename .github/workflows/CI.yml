@@ -6,23 +6,37 @@ on:
   pull_request:
     branches: [main, develop]
 
+
 jobs:
-  foundry:
-    name: Forge Testing
-    runs-on: ubuntu-latest
+  contract-sizes:
+    name: Contract Sizes
+    runs-on: 'SuperformCore'
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Setup LCOV
-        uses: hrishikesh-kadam/setup-lcov@v1
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-      - name: dependencies
+      - name: install dependencies
         run: forge install
-      - name: tests
-        run: forge test -vvv
+      - name: run size check
+        run: forge build --sizes
+
+  contract-snapshot:
+    name: Contract Snapshot
+    runs-on: 'SuperformCore'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - name: install dependencies
+        run: forge install
+      - name: run gas snapshots
+        run: forge snapshot --check
         env:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
@@ -34,16 +48,10 @@ jobs:
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
-      - name: check coverage
-        run: forge coverage --report lcov && lcov --remove lcov.info  -o lcov.info 'src/test/*' 'script/*'
-      - uses: codecov/codecov-action@v3
-        with:
-          files: ./lcov.info
-          flags: foundry
 
-
-  foundry-snapshot:
-    runs-on: ubuntu-latest
+  test-coverage:
+    name: Test Coverage
+    runs-on: 'SuperformCore'
     steps:
       - uses: actions/checkout@v3
         with:
@@ -53,10 +61,8 @@ jobs:
           version: nightly
       - name: dependencies
         run: forge install
-      - name: check contract sizes
-        run: forge build --sizes
-      - name: check gas snapshots
-        run: forge snapshot --check
+      - name: run coverage
+        run: forge coverage
         env:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
