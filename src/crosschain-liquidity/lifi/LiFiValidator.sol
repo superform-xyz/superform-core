@@ -9,13 +9,6 @@ import {Error} from "../../utils/Error.sol";
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
 contract LiFiValidator is BridgeValidator {
-    mapping(uint64 => uint256) public lifiChainId;
-
-    /*///////////////////////////////////////////////////////////////
-                                Events
-    //////////////////////////////////////////////////////////////*/
-    event ChainIdSet(uint64 superChainId, uint256 lifiChainId);
-
     /*///////////////////////////////////////////////////////////////
                                 Constructor
     //////////////////////////////////////////////////////////////*/
@@ -53,7 +46,7 @@ contract LiFiValidator is BridgeValidator {
         }
 
         /// @dev 1. chainId validation
-        if (lifiChainId[dstChainId_] != bridgeData.destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
+        if (uint256(dstChainId_) != bridgeData.destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
 
@@ -85,23 +78,6 @@ contract LiFiValidator is BridgeValidator {
         (ILiFi.BridgeData memory bridgeData, ) = _decodeCallData(txData_);
 
         return bridgeData.receiver;
-    }
-
-    /// @dev allows admin to add new chain ids in future
-    /// @param superChainIds_ is the identifier of the chain within superform protocol
-    /// @param lifiChainIds_ is the identifier of the chain given by the bridge
-    function setChainIds(uint64[] memory superChainIds_, uint256[] memory lifiChainIds_) external onlyProtocolAdmin {
-        for (uint256 i = 0; i < superChainIds_.length; i++) {
-            uint64 superChainIdT = superChainIds_[i];
-            uint256 lifiChainIdT = lifiChainIds_[i];
-            if (superChainIdT == 0 || lifiChainIdT == 0) {
-                revert Error.INVALID_CHAIN_ID();
-            }
-
-            lifiChainId[superChainIdT] = lifiChainIdT;
-
-            emit ChainIdSet(superChainIdT, lifiChainIdT);
-        }
     }
 
     /// @notice Decode lifi's calldata

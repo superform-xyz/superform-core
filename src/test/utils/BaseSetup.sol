@@ -220,8 +220,6 @@ abstract contract BaseSetup is DSTest, Test {
     uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
     uint64[] public celer_chainIds = [1, 56, 43114, 137, 42161, 10];
 
-    uint256[] public llChainIds = [1, 56, 43114, 137, 42161, 10];
-
     uint256 public constant milionTokensE18 = 1 ether;
 
     /*//////////////////////////////////////////////////////////////
@@ -452,12 +450,8 @@ abstract contract BaseSetup is DSTest, Test {
             vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
 
-            SocketValidator(vars.socketValidator).setChainIds(chainIds, llChainIds);
-
             vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
-
-            LiFiValidator(vars.lifiValidator).setChainIds(chainIds, llChainIds);
 
             vars.kycDAOMock = address(new KYCDaoNFTMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;

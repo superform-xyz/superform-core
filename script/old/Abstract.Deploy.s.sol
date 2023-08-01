@@ -407,14 +407,8 @@ abstract contract AbstractDeploy is Script {
         vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
 
-        /// @dev FIXME: set only the corresponding chain ids
-        SocketValidator(vars.socketValidator).setChainIds(s_superFormChainIds, s_llBridgeChainIds);
-
         vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
-
-        /// @dev FIXME: set only the corresponding chain ids
-        LiFiValidator(vars.lifiValidator).setChainIds(s_superFormChainIds, s_llBridgeChainIds);
 
         for (uint256 j = 0; j < 3; j++) {
             bridgeValidators[j] = vars.socketValidator;
