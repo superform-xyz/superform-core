@@ -1079,30 +1079,31 @@ abstract contract ProtocolActions is BaseSetup {
                 );
 
                 currentUnlockId = twoStepsFormStateRegistry.timeLockPayloadCounter();
-                vm.recordLogs();
+                if (currentUnlockId > 0) {
+                    vm.recordLogs();
 
-                for (uint256 j = countTimelocked[i]; j > 0; j--) {
-                    /// increase time by 5 days
-                    vm.warp(block.timestamp + (86400 * 5));
-                    (uint256 nativeFee, bytes memory ackAmbParams) = _generateAckGasFeesAndParamsForTimeLock(
-                        CHAIN_0,
-                        AMBs,
-                        currentUnlockId - j + 1
-                    );
+                    for (uint256 j = countTimelocked[i]; j > 0; j--) {
+                        /// increase time by 5 days
+                        vm.warp(block.timestamp + (86400 * 5));
+                        (uint256 nativeFee, bytes memory ackAmbParams) = _generateAckGasFeesAndParamsForTimeLock(
+                            CHAIN_0,
+                            AMBs,
+                            currentUnlockId - j + 1
+                        );
 
-                    vm.prank(deployer);
+                        vm.prank(deployer);
 
-                    returnMessages[i] = twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
-                        currentUnlockId - j + 1,
-                        ackAmbParams
-                    );
+                        returnMessages[i] = twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
+                            currentUnlockId - j + 1,
+                            ackAmbParams
+                        );
+                    }
+
+                    Vm.Log[] memory logs = vm.getRecordedLogs();
+                    _payloadDeliveryHelper(CHAIN_0, DST_CHAINS[i], logs);
                 }
-
-                Vm.Log[] memory logs = vm.getRecordedLogs();
-                _payloadDeliveryHelper(CHAIN_0, DST_CHAINS[i], logs);
             }
         }
-
         vm.selectFork(initialFork);
     }
 
@@ -1971,37 +1972,41 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 lenSuperforms = multiSuperFormsData.superFormIds.length;
         spAmountFinal = new uint256[](lenSuperforms);
 
-        // create an array of amounts summing the amounts of the same superform ids
-        (address[] memory superForms, , ) = DataLib.getSuperForms(multiSuperFormsData.superFormIds);
-        bool foundRevertingWithdraw;
-        bool foundRevertingWithdrawTimelocked;
-        for (uint256 i = 0; i < lenSuperforms; i++) {
-            spAmountFinal[i] = currentSPBeforeWithdaw[i];
+        if (sameDst && lenRevertWithdraw > 0) {
+            spAmountFinal = multiSuperFormsData.amounts;
+        } else {
+            // create an array of amounts summing the amounts of the same superform ids
+            (address[] memory superForms, , ) = DataLib.getSuperForms(multiSuperFormsData.superFormIds);
+            bool foundRevertingWithdraw;
+            bool foundRevertingWithdrawTimelocked;
+            for (uint256 i = 0; i < lenSuperforms; i++) {
+                spAmountFinal[i] = currentSPBeforeWithdaw[i];
 
-            for (uint256 j = 0; j < lenSuperforms; j++) {
-                foundRevertingWithdraw = false;
-                foundRevertingWithdrawTimelocked = false;
+                for (uint256 j = 0; j < lenSuperforms; j++) {
+                    foundRevertingWithdraw = false;
+                    foundRevertingWithdrawTimelocked = false;
 
-                if (lenRevertWithdraw > 0) {
-                    for (uint k = 0; k < lenRevertWithdraw; k++) {
-                        foundRevertingWithdraw =
-                            revertingWithdrawSFs[dstIndex][k] == multiSuperFormsData.superFormIds[i];
-                        if (foundRevertingWithdraw) break;
+                    if (lenRevertWithdraw > 0) {
+                        for (uint k = 0; k < lenRevertWithdraw; k++) {
+                            foundRevertingWithdraw =
+                                revertingWithdrawSFs[dstIndex][k] == multiSuperFormsData.superFormIds[i];
+                            if (foundRevertingWithdraw) break;
+                        }
                     }
-                }
-                if (lenRevertWithdrawTimelocked > 0) {
-                    for (uint k = 0; k < lenRevertWithdrawTimelocked; k++) {
-                        foundRevertingWithdrawTimelocked =
-                            revertingWithdrawTimelockedSFs[dstIndex][k] == multiSuperFormsData.superFormIds[i];
-                        if (foundRevertingWithdrawTimelocked) break;
+                    if (lenRevertWithdrawTimelocked > 0) {
+                        for (uint k = 0; k < lenRevertWithdrawTimelocked; k++) {
+                            foundRevertingWithdrawTimelocked =
+                                revertingWithdrawTimelockedSFs[dstIndex][k] == multiSuperFormsData.superFormIds[i];
+                            if (foundRevertingWithdrawTimelocked) break;
+                        }
                     }
-                }
 
-                if (
-                    multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j] &&
-                    !(sameDst && foundRevertingWithdraw)
-                ) {
-                    spAmountFinal[i] -= multiSuperFormsData.amounts[j];
+                    if (
+                        multiSuperFormsData.superFormIds[i] == multiSuperFormsData.superFormIds[j] &&
+                        !(sameDst && foundRevertingWithdraw)
+                    ) {
+                        spAmountFinal[i] -= multiSuperFormsData.amounts[j];
+                    }
                 }
             }
         }
@@ -2200,13 +2205,23 @@ abstract contract ProtocolActions is BaseSetup {
 
                 token = multiSuperFormsData[0].liqRequests[0].token;
 
-                /// assert spToken Balance
-                _assertMultiVaultBalance(
-                    action.user,
-                    multiSuperFormsData[i].superFormIds,
-                    spAmountSummed,
-                    new bool[](multiSuperFormsData[i].superFormIds.length)
-                );
+                if (CHAIN_0 == DST_CHAINS[i] && lenRevertDeposit > 0) {
+                    /// assert spToken Balance to zero if one of the multi vaults is reverting in same chain
+                    _assertMultiVaultBalance(
+                        action.user,
+                        multiSuperFormsData[i].superFormIds,
+                        new uint256[](multiSuperFormsData[i].superFormIds.length),
+                        new bool[](multiSuperFormsData[i].superFormIds.length)
+                    );
+                } else {
+                    /// assert spToken Balance
+                    _assertMultiVaultBalance(
+                        action.user,
+                        multiSuperFormsData[i].superFormIds,
+                        spAmountSummed,
+                        new bool[](multiSuperFormsData[i].superFormIds.length)
+                    );
+                }
             } else {
                 foundRevertingDeposit = false;
 
@@ -2361,24 +2376,24 @@ abstract contract ProtocolActions is BaseSetup {
                 v.lenRevertWithdrawTimelocked = revertingWithdrawTimelockedSFs[i].length;
 
             if (action.multiVaults) {
-                v.partialWithdrawVaults = abi.decode(multiSuperFormsData[i].extraFormData, (bool[]));
-
-                v.spAmountFinal = _spAmountsMultiAfterStage7Withdraw(
-                    multiSuperFormsData[i],
-                    action.user,
-                    spAmountsBeforeWithdraw[i],
-                    v.lenRevertWithdraw,
-                    v.lenRevertWithdrawTimelocked,
-                    v.sameDst,
-                    i
-                );
-
-                _assertMultiVaultBalance(
-                    action.user,
-                    multiSuperFormsData[i].superFormIds,
-                    v.spAmountFinal,
-                    v.partialWithdrawVaults
-                );
+                if (!(v.sameDst && v.lenRevertWithdraw > 0)) {
+                    v.partialWithdrawVaults = abi.decode(multiSuperFormsData[i].extraFormData, (bool[]));
+                    v.spAmountFinal = _spAmountsMultiAfterStage7Withdraw(
+                        multiSuperFormsData[i],
+                        action.user,
+                        spAmountsBeforeWithdraw[i],
+                        v.lenRevertWithdraw,
+                        v.lenRevertWithdrawTimelocked,
+                        v.sameDst,
+                        i
+                    );
+                    _assertMultiVaultBalance(
+                        action.user,
+                        multiSuperFormsData[i].superFormIds,
+                        v.spAmountFinal,
+                        v.partialWithdrawVaults
+                    );
+                }
             } else {
                 v.foundRevertingWithdraw = false;
                 v.foundRevertingWithdrawTimelocked = false;
@@ -2500,67 +2515,70 @@ abstract contract ProtocolActions is BaseSetup {
         AssertAfterTimelockFailedWithdraw memory v;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            if (revertingWithdrawTimelockedSFs[i].length > 0) {
-                if (action.multiVaults) {
-                    v.partialWithdrawVaults = abi.decode(multiSuperFormsData[i].extraFormData, (bool[]));
+            if (!(CHAIN_0 == DST_CHAINS[i] && revertingWithdrawSFs[i].length > 0)) {
+                if (revertingWithdrawTimelockedSFs[i].length > 0) {
+                    if (action.multiVaults) {
+                        v.partialWithdrawVaults = abi.decode(multiSuperFormsData[i].extraFormData, (bool[]));
 
-                    if (returnMessagesNormal.length > 0 && returnMessagesNormal[i].length > 0) {
-                        v.returnMultiData = abi.decode(
-                            abi.decode(returnMessagesNormal[i], (AMBMessage)).params,
-                            (ReturnMultiData)
-                        );
-                    }
+                        if (returnMessagesNormal.length > 0 && returnMessagesNormal[i].length > 0) {
+                            v.returnMultiData = abi.decode(
+                                abi.decode(returnMessagesNormal[i], (AMBMessage)).params,
+                                (ReturnMultiData)
+                            );
+                        }
 
-                    if (returnMessagesTimelocked.length > 0 && returnMessagesTimelocked[i].length > 0) {
-                        v.returnSingleData = abi.decode(
-                            abi.decode(returnMessagesTimelocked[i], (AMBMessage)).params,
-                            (ReturnSingleData)
-                        );
-                    }
-                    v.amountsThatFailed = new uint256[](multiSuperFormsData[i].superFormIds.length);
-                    for (uint256 j = 0; j < multiSuperFormsData[i].superFormIds.length; j++) {
-                        v.amountsThatFailed[j] = returnMessagesNormal.length > 0 &&
-                            returnMessagesNormal[i].length > 0 &&
-                            returnMessagesTimelocked.length > 0 &&
-                            returnMessagesTimelocked[i].length > 0
-                            ? v.returnMultiData.amounts[j]
-                            : 0;
+                        if (returnMessagesTimelocked.length > 0 && returnMessagesTimelocked[i].length > 0) {
+                            v.returnSingleData = abi.decode(
+                                abi.decode(returnMessagesTimelocked[i], (AMBMessage)).params,
+                                (ReturnSingleData)
+                            );
+                        }
 
-                        for (uint256 k = 0; k < revertingWithdrawTimelockedSFs[i].length; k++) {
-                            if (multiSuperFormsData[i].superFormIds[j] == revertingWithdrawTimelockedSFs[i][k]) {
-                                v.amountsThatFailed[j] = v.returnSingleData.amount;
+                        v.amountsThatFailed = new uint256[](multiSuperFormsData[i].superFormIds.length);
+                        for (uint256 j = 0; j < multiSuperFormsData[i].superFormIds.length; j++) {
+                            v.amountsThatFailed[j] = returnMessagesNormal.length > 0 &&
+                                returnMessagesNormal[i].length > 0 &&
+                                returnMessagesTimelocked.length > 0 &&
+                                returnMessagesTimelocked[i].length > 0
+                                ? v.returnMultiData.amounts[j]
+                                : 0;
+
+                            for (uint256 k = 0; k < revertingWithdrawTimelockedSFs[i].length; k++) {
+                                if (multiSuperFormsData[i].superFormIds[j] == revertingWithdrawTimelockedSFs[i][k]) {
+                                    v.amountsThatFailed[j] = v.returnSingleData.amount;
+                                }
                             }
                         }
-                    }
 
-                    v.spAmountFinal = _spAmountsMultiAfterFailedWithdraw(
-                        multiSuperFormsData[i],
-                        action.user,
-                        spAmountsBeforeWithdraw[i],
-                        v.amountsThatFailed
-                    );
-
-                    _assertMultiVaultBalance(
-                        action.user,
-                        multiSuperFormsData[i].superFormIds,
-                        v.spAmountFinal,
-                        v.partialWithdrawVaults
-                    );
-                } else {
-                    v.partialWithdrawVault = abi.decode(singleSuperFormsData[i].extraFormData, (bool));
-                    if (!v.partialWithdrawVault) {
-                        /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
-                        _assertSingleVaultBalance(
+                        v.spAmountFinal = _spAmountsMultiAfterFailedWithdraw(
+                            multiSuperFormsData[i],
                             action.user,
-                            singleSuperFormsData[i].superFormId,
-                            spAmountBeforeWithdrawPerDst[i]
+                            spAmountsBeforeWithdraw[i],
+                            v.amountsThatFailed
+                        );
+
+                        _assertMultiVaultBalance(
+                            action.user,
+                            multiSuperFormsData[i].superFormIds,
+                            v.spAmountFinal,
+                            v.partialWithdrawVaults
                         );
                     } else {
-                        _assertSingleVaultPartialWithdrawBalance(
-                            action.user,
-                            singleSuperFormsData[i].superFormId,
-                            spAmountBeforeWithdrawPerDst[i]
-                        );
+                        v.partialWithdrawVault = abi.decode(singleSuperFormsData[i].extraFormData, (bool));
+                        if (!v.partialWithdrawVault) {
+                            /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
+                            _assertSingleVaultBalance(
+                                action.user,
+                                singleSuperFormsData[i].superFormId,
+                                spAmountBeforeWithdrawPerDst[i]
+                            );
+                        } else {
+                            _assertSingleVaultPartialWithdrawBalance(
+                                action.user,
+                                singleSuperFormsData[i].superFormId,
+                                spAmountBeforeWithdrawPerDst[i]
+                            );
+                        }
                     }
                 }
             }
