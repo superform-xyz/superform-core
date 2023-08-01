@@ -7,7 +7,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  foundry:
+  contract-sizes:
     name: Forge Testing
     runs-on: ubuntu-latest
     steps:
@@ -21,6 +21,19 @@ jobs:
         run: forge install
       - name: run size check
         run: forge build --sizes
+
+  contract-snapshot:
+    name: Forge Testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - name: install dependencies
+        run: forge install
       - name: run gas snapshots
         run: forge snapshot --check
         env:
@@ -34,13 +47,9 @@ jobs:
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
+          FOUNDRY_PROFILE: 'ci'
 
-      - uses: codecov/codecov-action@v3
-        with:
-          files: ./lcov.info
-          flags: foundry
-
-  foundry-snapshot:
+  test-coverage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
