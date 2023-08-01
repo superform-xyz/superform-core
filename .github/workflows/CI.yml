@@ -19,11 +19,11 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-      - name: dependencies
+      - name: install dependencies
         run: forge install
-      - name: check contract sizes
+      - name: run size check
         run: forge build --sizes
-      - name: check gas snapshots
+      - name: run gas snapshots
         run: forge snapshot --check
         env:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
@@ -43,7 +43,6 @@ jobs:
         with:
           files: ./lcov.info
           flags: foundry
-
 
   # foundry-snapshot:
   #   runs-on: ubuntu-latest
