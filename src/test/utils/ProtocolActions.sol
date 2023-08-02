@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 /// @dev lib imports
 import "./BaseSetup.sol";
-import {DataLib} from "../../libraries/DataLib.sol";
 import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
 import {ISocketRegistry} from "../../vendor/socket/ISocketRegistry.sol";
 import {ILiFi} from "../../vendor/lifi/ILiFi.sol";
