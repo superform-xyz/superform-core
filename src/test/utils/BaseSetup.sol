@@ -77,7 +77,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint256[] public userKeys;
 
     uint256 public trustedRemote;
-    bytes32 public constant salt = "SUPERFORM";
+    bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
     /*//////////////////////////////////////////////////////////////
@@ -294,6 +294,8 @@ abstract contract BaseSetup is DSTest, Test {
             vars.chainId = chainIds[i];
             vars.fork = FORKS[vars.chainId];
             vars.ambAddresses = new address[](ambIds.length);
+            /// @dev salt unique to each chain
+            salt = keccak256(abi.encodePacked("SUPERFORM_ON_CHAIN", vars.chainId));
             vm.selectFork(vars.fork);
 
             vars.canonicalPermit2 = address(new Permit2Clone{salt: salt}());
