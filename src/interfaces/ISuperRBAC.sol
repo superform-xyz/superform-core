@@ -87,7 +87,7 @@ interface ISuperRBAC {
     function revokeUpdaterRole(address updater_, bytes memory extraData_) external payable;
 
     /// @dev allows sync of global roles from different chains
-    /// @notice may not work for all roles
+    /// @notice will not work for all roles
     function stateSync(bytes memory data_) external;
 
     /*///////////////////////////////////////////////////////////////

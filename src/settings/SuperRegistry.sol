@@ -177,27 +177,27 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         address[] memory bridgeValidator_
     ) external override onlyCaller {
         for (uint256 i = 0; i < bridgeId_.length; i++) {
-            uint8 x = bridgeId_[i];
-            address y = bridgeAddress_[i];
-            address z = bridgeValidator_[i];
+            uint8 bridgeId = bridgeId_[i];
+            address bridgeAddress = bridgeAddress_[i];
+            address bridgeValidatorT = bridgeValidator_[i];
 
-            bridgeAddresses[x] = y;
-            bridgeValidator[x] = z;
-            emit SetBridgeAddress(x, y);
-            emit SetBridgeValidator(x, z);
+            bridgeAddresses[bridgeId] = bridgeAddress;
+            bridgeValidator[bridgeId] = bridgeValidatorT;
+            emit SetBridgeAddress(bridgeId, bridgeAddress);
+            emit SetBridgeValidator(bridgeId, bridgeValidatorT);
         }
     }
 
     /// @inheritdoc ISuperRegistry
     function setAmbAddress(uint8[] memory ambId_, address[] memory ambAddress_) external override onlyCaller {
         for (uint256 i; i < ambId_.length; i++) {
-            address x = ambAddress_[i];
-            uint8 y = ambId_[i];
-            if (x == address(0)) revert Error.ZERO_ADDRESS();
+            address ambAddress = ambAddress_[i];
+            uint8 ambId = ambId_[i];
+            if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
 
-            ambAddresses[y] = x;
-            ambIds[x] = y;
-            emit SetAmbAddress(y, x);
+            ambAddresses[ambId] = ambAddress;
+            ambIds[ambAddress] = ambId;
+            emit SetAmbAddress(ambId, ambAddress);
         }
     }
 
@@ -207,13 +207,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         address[] memory registryAddress_
     ) external override onlyCaller {
         for (uint256 i; i < registryId_.length; i++) {
-            address x = registryAddress_[i];
-            uint8 y = registryId_[i];
-            if (x == address(0)) revert Error.ZERO_ADDRESS();
+            address registryAddress = registryAddress_[i];
+            uint8 registryId = registryId_[i];
+            if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
 
-            registryAddresses[y] = x;
-            stateRegistryIds[x] = y;
-            emit SetStateRegistryAddress(y, x);
+            registryAddresses[registryId] = registryAddress;
+            stateRegistryIds[registryAddress] = registryId;
+            emit SetStateRegistryAddress(registryId, registryAddress);
         }
     }
 

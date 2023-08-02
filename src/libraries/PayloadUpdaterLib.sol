@@ -7,12 +7,14 @@ import {PayloadState, TransactionType, CallbackType} from "../types/DataTypes.so
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {
     function validateSlippage(uint256 newAmount, uint256 maxAmount, uint256 slippage) internal pure {
+        /// @dev args validation
         if (newAmount > maxAmount) {
             revert Error.NEGATIVE_SLIPPAGE();
         }
 
         uint256 minAmount = (maxAmount * (10000 - slippage)) / 10000;
 
+        /// @dev amount must fall within the slippage bounds
         if (newAmount < minAmount) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }

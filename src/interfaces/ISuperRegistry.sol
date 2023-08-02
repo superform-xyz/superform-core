@@ -9,6 +9,7 @@ interface ISuperRegistry {
                                 Events
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev is emmitable when pseudo immutable chainId and permit2 address are set
     event SetImmutables(uint256 indexed chainId, address indexed permit2);
 
     /// @dev is emitted when an address is set.
@@ -27,7 +28,7 @@ interface ISuperRegistry {
     /// @dev is emitted when the state registry address is set.
     event CoreStateRegistryUpdated(address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
 
-    /// @dev is emitted when the state registry address is set.
+    /// @dev is emitted when the two steps form state registry address is set.
     event TwoStepsFormStateRegistryUpdated(
         address indexed oldTwoStepsFormStateRegistry,
         address indexed twoStepsFormStateRegistry
@@ -49,9 +50,6 @@ interface ISuperRegistry {
 
     /// @dev is emitted when a new tx processor is configured.
     event TxProcessorUpdated(address indexed oldTxProcessor, address indexed txProcessor);
-
-    /// @dev is emitted when a new tx updater is configured.
-    event TxUpdaterUpdated(address indexed oldTxUpdater, address indexed txUpdater);
 
     /// @dev is emitted when a new fee collector is configured.
     event FeeCollectorUpdated(address indexed oldFeeCollector, address indexed feeCollector);
@@ -98,15 +96,15 @@ interface ISuperRegistry {
     /// @param coreStateRegistry_ the address of the state registry
     function setCoreStateRegistry(address coreStateRegistry_) external;
 
-    /// @dev sets the state registry address.
+    /// @dev sets the two steps form state registry address.
     /// @param twoStepsFormStateRegistry_ the address of the state registry
     function setTwoStepsFormStateRegistry(address twoStepsFormStateRegistry_) external;
 
-    /// @dev sets the state registry address.
+    /// @dev sets the factory state registry address.
     /// @param factoryStateRegistry_ the address of the state registry
     function setFactoryStateRegistry(address factoryStateRegistry_) external;
 
-    /// @dev sets the state registry address.
+    /// @dev sets the role state registry address.
     /// @param rolesStateRegistry_ the address of the roles state registry
     function setRolesStateRegistry(address rolesStateRegistry_) external;
 
@@ -212,11 +210,11 @@ interface ISuperRegistry {
     /// @return coreStateRegistry_ the address of the state registry
     function coreStateRegistry() external view returns (address coreStateRegistry_);
 
-    /// @dev gets the form state registry address.
+    /// @dev gets the two steps form state registry address.
     /// @return twoStepsFormStateRegistry_ the address of the state registry
     function twoStepsFormStateRegistry() external view returns (address twoStepsFormStateRegistry_);
 
-    /// @dev gets the state registry address.
+    /// @dev gets the factory state registry address.
     /// @return factoryStateRegistry_ the address of the state registry
     function factoryStateRegistry() external view returns (address factoryStateRegistry_);
 

@@ -29,6 +29,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     constructor(address admin_) {
         _setupRole(PROTOCOL_ADMIN_ROLE, admin_);
 
+        /// @dev manually set role admin to PROTOCOL_ADMIN_ROLE on all roles
         _setRoleAdmin(FEE_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -62,10 +63,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(FEE_ADMIN_ROLE, admin_);
 
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE,
-                abi.encode(FEE_ADMIN_ROLE, admin_)
-            );
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(FEE_ADMIN_ROLE, admin_));
 
             _broadcast(abi.encode(rolesPayload), extraData_);
         }
@@ -96,10 +94,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(SWAPPER_ROLE, swapper_);
 
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE,
-                abi.encode(SWAPPER_ROLE, swapper_)
-            );
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(SWAPPER_ROLE, swapper_));
 
             _broadcast(abi.encode(rolesPayload), extraData_);
         }
@@ -175,10 +170,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(UPDATER_ROLE, updater_);
 
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE,
-                abi.encode(UPDATER_ROLE, updater_)
-            );
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(UPDATER_ROLE, updater_));
 
             _broadcast(abi.encode(rolesPayload), extraData_);
         }
@@ -193,8 +185,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         if (rolesPayload.messageType == SYNC_REVOKE) {
             (bytes32 role, address affectedAddress) = abi.decode(rolesPayload.message, (bytes32, address));
 
-            /// @dev no one can update the default admin role
-            if (role != PROTOCOL_ADMIN_ROLE) revokeRole(role, affectedAddress);
+            /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE and EMERGENCY_ADMIN_ROLE
+            if (role != PROTOCOL_ADMIN_ROLE || role != EMERGENCY_ADMIN_ROLE) revokeRole(role, affectedAddress);
         }
     }
 
@@ -253,7 +245,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData_, (uint8[], bytes));
 
         /// @dev ambIds are validated inside the factory state registry
-        /// @dev broadcastParams if wrong will revert in the amb implementation
+        /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
         IBroadcaster(superRegistry.rolesStateRegistry()).broadcastPayload{value: msg.value}(
             msg.sender,
             ambIds,
