@@ -36,7 +36,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev the vault this form pertains to
-    address public vault;
+    address internal vault;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS

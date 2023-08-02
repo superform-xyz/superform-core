@@ -118,7 +118,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// note: handle the collateral token transfers.
         if (!isSwap) {
             if (!isPermit) {
-                if (IERC20(token).allowance(srcSender_, address(this)) < amount)
+                if (token.allowance(srcSender_, address(this)) < amount)
                     revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
                 token.safeTransferFrom(srcSender_, address(this), amount);
