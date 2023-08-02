@@ -42,7 +42,7 @@ contract CelerImplementationTest is BaseSetup {
         celerImplementation.setCelerBus(address(0));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         celerImplementation.setCelerBus(CELER_BUS);
     }
 
@@ -62,7 +62,7 @@ contract CelerImplementationTest is BaseSetup {
         celerImplementation.setReceiver(10, address(0));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         celerImplementation.setReceiver(10, getContract(10, "CelerImplementation"));
     }
 
@@ -82,7 +82,7 @@ contract CelerImplementationTest is BaseSetup {
         celerImplementation.setChainId(0, 10); /// optimism
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         celerImplementation.setChainId(137, 137); /// polygon
     }
 
@@ -109,7 +109,7 @@ contract CelerImplementationTest is BaseSetup {
             );
         }
 
-        vm.prank(coreStateRegistry);
+        vm.startPrank(coreStateRegistry);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
             users[0],
             abi.encode(ambMessage),
@@ -126,7 +126,7 @@ contract CelerImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
 
-        vm.prank(bond);
+        vm.startPrank(bond);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
             users[0],
             abi.encode(ambMessage),
@@ -146,7 +146,7 @@ contract CelerImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.GAS_REFUND_FAILED.selector);
 
-        vm.prank(coreStateRegistry);
+        vm.startPrank(coreStateRegistry);
         /// @dev note first arg to be dai
         celerImplementation.broadcastPayload{value: 0.1 ether}(dai, abi.encode(ambMessage), abi.encode(ambExtraData));
     }
@@ -162,7 +162,7 @@ contract CelerImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(dai);
 
         vm.expectRevert(Error.GAS_REFUND_FAILED.selector);
-        vm.prank(coreStateRegistry);
+        vm.startPrank(coreStateRegistry);
         /// @dev note first arg to be dai, second arg to be optimism
         celerImplementation.dispatchPayload{value: 0.1 ether}(
             dai,
@@ -172,7 +172,7 @@ contract CelerImplementationTest is BaseSetup {
         );
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         celerImplementation.dispatchPayload{value: 0.1 ether}(
             users[0],
             chainIds[5],
@@ -186,7 +186,7 @@ contract CelerImplementationTest is BaseSetup {
 
         (ambMessage, , ) = setupBroadcastPayloadAMBData(getContract(ETH, "CelerImplementation"));
 
-        vm.prank(CELER_BUS);
+        vm.startPrank(CELER_BUS);
         celerImplementation.executeMessage{value: 0.1 ether}(
             getContract(ETH, "CelerImplemtation"),
             ETH,
@@ -195,7 +195,7 @@ contract CelerImplementationTest is BaseSetup {
         );
 
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
-        vm.prank(CELER_BUS);
+        vm.startPrank(CELER_BUS);
         celerImplementation.executeMessage{value: 0.1 ether}(
             getContract(ETH, "CelerImplemtation"),
             ETH,
@@ -204,7 +204,7 @@ contract CelerImplementationTest is BaseSetup {
         );
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(CELER_BUS);
+        vm.startPrank(CELER_BUS);
         celerImplementation.executeMessage(
             bond, /// @dev invalid srcChainSender
             ETH,
@@ -213,7 +213,7 @@ contract CelerImplementationTest is BaseSetup {
         );
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         celerImplementation.executeMessage{value: 0.1 ether}(
             getContract(ETH, "CelerImplemtation"),
             ETH,

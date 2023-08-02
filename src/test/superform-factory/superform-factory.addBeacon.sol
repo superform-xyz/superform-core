@@ -88,7 +88,7 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
         address form = address(0);
         uint32 formId = 1;
 
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(form, formId, salt);
     }
@@ -99,7 +99,7 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
         address form = address(0x1);
         uint32 formId = 1;
 
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         vm.expectRevert(Error.ERC165_UNSUPPORTED.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(form, formId, salt);
     }

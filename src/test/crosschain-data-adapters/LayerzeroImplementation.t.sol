@@ -78,7 +78,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.setChainId(0, 10); /// optimism
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         layerzeroImplementation.setChainId(137, 137); /// polygon
     }
 
@@ -92,7 +92,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         /// @dev testing revert here and not separately, to avoid making the call above twice and facing
         /// the error, 'You cannot overwrite `prank` until it is applied at least once' otherwise
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         layerzeroImplementation.setConfig(0, 10, 6, abi.encode(CHAINLINK_lzOracle));
     }
 
@@ -104,7 +104,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.setSendVersion(2);
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         layerzeroImplementation.setSendVersion(5);
     }
 
@@ -116,7 +116,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.setReceiveVersion(2);
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         layerzeroImplementation.setReceiveVersion(5);
     }
 
@@ -129,7 +129,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         assertEq(layerzeroImplementation.isTrustedRemote(111, srcAddressOP), true);
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         bytes memory srcAddressPOLY = abi.encodePacked(
             getContract(POLY, "LayerzeroImplementation"),
             address(layerzeroImplementation)
@@ -150,11 +150,11 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         /// @dev first testing revert on invalid caller
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         layerzeroImplementation.forceResumeReceive(101, srcAddressOP);
 
         /// @dev remove the unexecuted blocked msg from LZ_ENDPOINT_OP, using forceResumeReceive()
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         layerzeroImplementation.forceResumeReceive(101, srcAddressOP);
 
         /// @dev verify the msg to be removed from LZ_ENDPOINT_OP
@@ -202,7 +202,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[0]);
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
             users[0],
             abi.encode(ambMessage),
@@ -218,7 +218,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[0]);
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
             users[0],
             chainIds[5],
@@ -227,7 +227,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         );
 
         vm.expectRevert(Error.INVALID_SRC_CHAIN_ID.selector);
-        vm.prank(coreStateRegistry);
+        vm.startPrank(coreStateRegistry);
         /// @dev NOTE the use of zkSync's chainId: 324, whose trustedRemote is not set
         layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
             users[0],
@@ -256,22 +256,22 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.selectFork(FORKS[OP]);
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         layerzeroImplementation.lzReceive(101, srcAddressOP, 2, payload);
 
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
-        vm.prank(LZ_ENDPOINT_OP);
+        vm.startPrank(LZ_ENDPOINT_OP);
         layerzeroImplementation.lzReceive(101, srcAddressOP, 2, payload);
 
         vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
-        vm.prank(LZ_ENDPOINT_OP);
+        vm.startPrank(LZ_ENDPOINT_OP);
         /// @dev NOTE the use of 111 (OP's lz_chainId as srcChainId on OP) instead of 101 (ETH's)
         layerzeroImplementation.lzReceive(111, srcAddressOP, 2, payload);
     }
 
     function test_revert_nonblockingLzReceive_invalidCaller() public {
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.prank(bond);
+        vm.startPrank(bond);
         layerzeroImplementation.nonblockingLzReceive(111, srcAddressOP, "");
     }
 
@@ -280,7 +280,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         address coreStateRegistryETH = getContract(ETH, "CoreStateRegistry");
         vm.deal(coreStateRegistryETH, 1 ether);
-        vm.prank(coreStateRegistryETH);
+        vm.startPrank(coreStateRegistryETH);
 
         vm.recordLogs();
         layerzeroImplementation.dispatchPayload{value: 1 ether}(bond, OP, crossChainMsg, bytes(""));

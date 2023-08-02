@@ -131,11 +131,13 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
                 singleVaultCallDataArgs.superFormId = rescueSuperformIds[i];
                 /// @dev slippage adjusted amount that'll be withdrawn
-                singleVaultCallDataArgs.amount = (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) / 10000;
+                singleVaultCallDataArgs.amount =
+                    (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) /
+                    10000;
                 liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
             }
 
-            vm.prank(deployer);
+            vm.startPrank(deployer);
             CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
 
             vm.selectFork(FORKS[CHAIN_0]);
@@ -505,7 +507,7 @@ abstract contract ProtocolActions is BaseSetup {
                             true
                         );
 
-                    vm.prank(users[action.user]);
+                    vm.startPrank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
@@ -524,7 +526,7 @@ abstract contract ProtocolActions is BaseSetup {
                             false
                         );
 
-                    vm.prank(users[action.user]);
+                    vm.startPrank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
@@ -549,7 +551,7 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.multiDstMultiVaultStateReq,
                         true
                     );
-                    vm.prank(users[action.user]);
+                    vm.startPrank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
@@ -561,7 +563,7 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.multiDstMultiVaultStateReq,
                         false
                     );
-                    vm.prank(users[action.user]);
+                    vm.startPrank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
@@ -585,7 +587,7 @@ abstract contract ProtocolActions is BaseSetup {
                             vars.singleXChainSingleVaultStateReq,
                             true
                         );
-                        vm.prank(users[action.user]);
+                        vm.startPrank(users[action.user]);
 
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
@@ -599,7 +601,7 @@ abstract contract ProtocolActions is BaseSetup {
                             vars.singleXChainSingleVaultStateReq,
                             false
                         );
-                        vm.prank(users[action.user]);
+                        vm.startPrank(users[action.user]);
 
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
@@ -617,7 +619,7 @@ abstract contract ProtocolActions is BaseSetup {
                             vars.singleDirectSingleVaultStateReq,
                             true
                         );
-                        vm.prank(users[action.user]);
+                        vm.startPrank(users[action.user]);
 
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
@@ -631,7 +633,7 @@ abstract contract ProtocolActions is BaseSetup {
                             vars.singleDirectSingleVaultStateReq,
                             false
                         );
-                        vm.prank(users[action.user]);
+                        vm.startPrank(users[action.user]);
 
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
@@ -654,7 +656,7 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.multiDstSingleVaultStateReq,
                         true
                     );
-                    vm.prank(users[action.user]);
+                    vm.startPrank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
@@ -666,7 +668,7 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.multiDstSingleVaultStateReq,
                         true
                     );
-                    vm.prank(users[action.user]);
+                    vm.startPrank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
@@ -1091,7 +1093,7 @@ abstract contract ProtocolActions is BaseSetup {
                             currentUnlockId - j + 1
                         );
 
-                        vm.prank(deployer);
+                        vm.startPrank(deployer);
 
                         returnMessages[i] = twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
                             currentUnlockId - j + 1,
@@ -1358,7 +1360,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         if (liqRequestToken != NATIVE_TOKEN) {
             /// @dev - APPROVE transfer to SuperFormRouter (because of Socket)
-            vm.prank(users[args.user]);
+            vm.startPrank(users[args.user]);
 
             if (action == Actions.DepositPermit2) {
                 MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);
@@ -1391,7 +1393,7 @@ abstract contract ProtocolActions is BaseSetup {
         vars.superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
         vars.superPositions = IERC1155s(ISuperRegistry(vars.stateRegistry).superPositions());
-        vm.prank(users[args.user]);
+        vm.startPrank(users[args.user]);
 
         vars.superPositions.setApprovalForOne(vars.superRouter, args.superFormId, args.amount);
 
@@ -1538,14 +1540,14 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
-            vm.prank(deployer);
+            vm.startPrank(deployer);
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateMultiVaultPayload(
                 args.payloadId,
                 finalAmounts
             );
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
-            vm.prank(deployer);
+            vm.startPrank(deployer);
 
             vm.expectRevert(args.revertError); /// @dev removed string here: come to this later
 
@@ -1556,7 +1558,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             return false;
         } else if (args.testType == TestType.RevertUpdateStateRBAC) {
-            vm.prank(users[2]);
+            vm.startPrank(users[2]);
             bytes memory errorMsg = getAccessControlErrorMsg(users[2], args.revertRole);
             vm.expectRevert(errorMsg);
 
@@ -1585,14 +1587,14 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
-            vm.prank(deployer);
+            vm.startPrank(deployer);
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateSingleVaultPayload(
                 args.payloadId,
                 finalAmount
             );
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
-            vm.prank(deployer);
+            vm.startPrank(deployer);
 
             vm.expectRevert(args.revertError); /// @dev removed string here: come to this later
 
@@ -1603,7 +1605,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             return false;
         } else if (args.testType == TestType.RevertUpdateStateRBAC) {
-            vm.prank(users[2]);
+            vm.startPrank(users[2]);
             bytes memory errorMsg = getAccessControlErrorMsg(users[2], args.revertRole);
             vm.expectRevert(errorMsg);
 
@@ -1638,7 +1640,7 @@ abstract contract ProtocolActions is BaseSetup {
             (nativeFee, ackAmbParams) = _generateAckGasFeesAndParams(CHAIN_0, AMBs, payloadId_);
         }
 
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         if (testType == TestType.Pass) {
             (savedMessage, returnMessage) = CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry")))
                 .processPayload{value: nativeFee}(payloadId_, ackAmbParams);
@@ -1670,7 +1672,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev no acknowledgement is needed;
         bytes memory ackParams;
 
-        vm.prank(deployer);
+        vm.startPrank(deployer);
 
         TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
             value: msgValue
@@ -1770,7 +1772,7 @@ abstract contract ProtocolActions is BaseSetup {
             amount_
         );
 
-        vm.prank(deployer);
+        vm.startPrank(deployer);
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).processTx(
             liqBridgeKind_,
@@ -1804,7 +1806,7 @@ abstract contract ProtocolActions is BaseSetup {
                 amounts_[i]
             );
         }
-        vm.prank(deployer);
+        vm.startPrank(deployer);
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).batchProcessTx(
             liqBridgeKinds_,
