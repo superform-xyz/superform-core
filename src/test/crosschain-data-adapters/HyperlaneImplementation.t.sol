@@ -45,6 +45,8 @@ contract HyperlaneImplementationTest is BaseSetup {
         hyperlaneImplementation.setReceiver(10, address(0));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+
+        vm.stopPrank();
         vm.prank(bond);
         hyperlaneImplementation.setReceiver(10, getContract(10, "HyperlaneImplementation"));
     }
@@ -65,6 +67,8 @@ contract HyperlaneImplementationTest is BaseSetup {
         hyperlaneImplementation.setChainId(0, 10); /// optimism
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+
+        vm.stopPrank();
         vm.prank(bond);
         hyperlaneImplementation.setChainId(137, 137); /// polygon
     }
