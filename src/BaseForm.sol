@@ -36,7 +36,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev the vault this form pertains to
-    address public vault;
+    address internal vault;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -141,6 +141,11 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     /// @inheritdoc IBaseForm
     function getVaultDecimals() public view virtual override returns (uint256);
+
+    // @inheritdoc IBaseForm
+    function getVaultAddress() external view returns (address) {
+        return vault;
+    }
 
     /// @notice Returns the amount of underlying tokens each share of a vault is worth.
     /// @return The pricePerVaultShare value

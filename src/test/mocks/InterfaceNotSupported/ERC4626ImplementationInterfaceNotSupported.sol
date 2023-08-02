@@ -49,6 +49,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         return IERC4626(vault).totalAssets();
     }
 
+    function getVaultAddress() public view override returns (address) {
+        return vault;
+    }
+
     /// @inheritdoc BaseForm
     function getConvertPricePerVaultShare() public view virtual override returns (uint256) {
         uint256 vaultDecimals = IERC4626(vault).decimals();

@@ -82,6 +82,9 @@ interface IBaseForm is IERC165Upgradeable {
     /// @return The symbol associated with a vault
     function getVaultSymbol() external view returns (string memory);
 
+    /// @dev returns the vault address
+    function getVaultAddress() external view returns (address);
+
     /// @notice Returns the number of decimals in a vault for accounting purposes
     /// @return The number of decimals in the vault balance
     function getVaultDecimals() external view returns (uint256);
