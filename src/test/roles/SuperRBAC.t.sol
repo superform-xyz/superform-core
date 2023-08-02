@@ -18,25 +18,28 @@ contract SuperRBACTest is BaseSetup {
 
         vm.selectFork(FORKS[ETH]);
         superRBAC = SuperRBAC(getContract(ETH, "SuperRBAC"));
-        vm.startPrank(deployer);
     }
 
     function test_setSuperRegistry() public {
+        vm.prank(deployer);
         superRBAC.setSuperRegistry(address(0x1));
         assertEq(address(superRBAC.superRegistry()), address(0x1));
     }
 
     function test_grantProtocolAdminRole() public {
+        vm.prank(deployer);
         superRBAC.grantProtocolAdminRole(address(0x1));
         assertEq(superRBAC.hasProtocolAdminRole(address(0x1)), true);
     }
 
     function test_revokeProtocolAdminRole() public {
+        vm.prank(deployer);
         superRBAC.revokeProtocolAdminRole(deployer);
         assertEq(superRBAC.hasProtocolAdminRole(deployer), false);
     }
 
     function test_grantFeeAdminRole() public {
+        vm.prank(deployer);
         superRBAC.grantFeeAdminRole(address(0x1));
         assertEq(superRBAC.hasFeeAdminRole(address(0x1)), true);
     }
@@ -53,16 +56,19 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantEmergencyAdminRole() public {
+        vm.prank(deployer);
         superRBAC.grantEmergencyAdminRole(address(0x1));
         assertEq(superRBAC.hasEmergencyAdminRole(address(0x1)), true);
     }
 
     function test_revokeEmergencyAdminRole() public {
+        vm.prank(deployer);
         superRBAC.revokeEmergencyAdminRole(deployer);
         assertEq(superRBAC.hasEmergencyAdminRole(deployer), false);
     }
 
     function test_grantSwapperRole() public {
+        vm.prank(deployer);
         superRBAC.grantSwapperRole(address(0x1));
         assertEq(superRBAC.hasSwapperRole(address(0x1)), true);
     }
@@ -79,11 +85,13 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantCoreContractsRole() public {
+        vm.prank(deployer);
         superRBAC.grantCoreContractsRole(address(0x1));
         assertEq(superRBAC.hasCoreContractsRole(address(0x1)), true);
     }
 
     function test_revokeCoreContractsRole() public {
+        vm.prank(deployer);
         superRBAC.grantCoreContractsRole(deployer);
 
         _revokeAndCheck(
@@ -97,6 +105,7 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantProcessorRole() public {
+        vm.prank(deployer);
         superRBAC.grantProcessorRole(address(0x1));
         assertEq(superRBAC.hasProcessorRole(address(0x1)), true);
     }
@@ -113,6 +122,7 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantTwoStepsProcessorRole() public {
+        vm.prank(deployer);
         superRBAC.grantTwoStepsProcessorRole(address(0x1));
         assertEq(superRBAC.hasTwoStepsProcessorRole(address(0x1)), true);
     }
@@ -129,6 +139,7 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantUpdaterRole() public {
+        vm.prank(deployer);
         superRBAC.grantUpdaterRole(address(0x1));
         assertEq(superRBAC.hasUpdaterRole(address(0x1)), true);
     }
@@ -152,8 +163,6 @@ contract SuperRBACTest is BaseSetup {
         bytes memory extraData_,
         uint256 value_
     ) internal {
-        vm.stopPrank();
-
         vm.deal(actor_, value_ + 1 ether);
         vm.prank(actor_);
 
