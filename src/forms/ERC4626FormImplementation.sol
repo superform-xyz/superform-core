@@ -109,19 +109,19 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.collateral = address(v.asset());
         vars.balanceBefore = IERC20(vars.collateral).balanceOf(address(this));
 
-        uint256 isSwap = singleVaultData_.liqData.txData.length;
-        uint256 isPermit = singleVaultData_.liqData.permit2data.length;
+        bool isSwap = singleVaultData_.liqData.txData.length > 0;
+        bool isPermit = singleVaultData_.liqData.permit2data.length > 0;
 
         IERC20 token = IERC20(singleVaultData_.liqData.token);
         uint256 amount = singleVaultData_.liqData.amount;
 
         /// note: handle the collateral token transfers.
-        if (isSwap == 0) {
-            if (isPermit == 0) {
+        if (!isSwap) {
+            if (!isPermit) {
                 if (IERC20(token).allowance(srcSender_, address(this)) < amount)
                     revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
 
-                IERC20(token).safeTransferFrom(srcSender_, address(this), amount);
+                token.safeTransferFrom(srcSender_, address(this), amount);
             } else {
                 (uint256 nonce, uint256 deadline, bytes memory signature) = abi.decode(
                     singleVaultData_.liqData.permit2data,
