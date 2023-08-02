@@ -28,16 +28,16 @@ contract CelerImplementationTest is BaseSetup {
         bond = address(7);
         /// @dev (who's a brokie)
         vm.deal(bond, 1 ether);
-
-        vm.startPrank(deployer);
     }
 
     function test_setCelerBus() public {
+        vm.prank(deployer);
         celerImplementation.setCelerBus(CELER_BUS);
         assertEq(address(celerImplementation.messageBus()), CELER_BUS);
     }
 
     function test_revert_setCelerBus_invalidMessageBus_invalidCaller() public {
+        vm.startPrank(deployer);
         vm.expectRevert();
         celerImplementation.setCelerBus(address(0));
 
@@ -49,14 +49,17 @@ contract CelerImplementationTest is BaseSetup {
     }
 
     function test_setReceiver() public {
+        vm.startPrank(deployer);
         celerImplementation.setReceiver(10, getContract(10, "CelerImplementation")); /// optimism
         celerImplementation.setReceiver(137, getContract(137, "CelerImplementation")); /// polygon
+        vm.stopPrank();
 
         assertEq(celerImplementation.authorizedImpl(10), getContract(10, "CelerImplementation"));
         assertEq(celerImplementation.authorizedImpl(137), getContract(137, "CelerImplementation"));
     }
 
     function test_revert_setReceiver_invalidChainId_invalidAuthorizedImpl_invalidCaller() public {
+        vm.startPrank(deployer);
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         celerImplementation.setReceiver(0, getContract(10, "CelerImplementation"));
 
@@ -71,14 +74,17 @@ contract CelerImplementationTest is BaseSetup {
     }
 
     function test_setChainId() public {
+        vm.startPrank(deployer);
         celerImplementation.setChainId(10, 10); /// optimism
         celerImplementation.setChainId(137, 137); /// polygon
+        vm.stopPrank();
 
         assertEq(celerImplementation.ambChainId(10), 10);
         assertEq(celerImplementation.superChainId(137), 137);
     }
 
     function test_revert_setChainId_invalidChainId_invalidCaller() public {
+        vm.startPrank(deployer);
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         celerImplementation.setChainId(10, 0); /// optimism
 
@@ -93,6 +99,7 @@ contract CelerImplementationTest is BaseSetup {
     }
 
     function test_broadcastPayload() public {
+        vm.startPrank(deployer);
         /// @dev need to call setCelerBus(), setReceiver(), setChainId() before calling broadcastPayload(),
         /// but we don't need to, as it's already done in BaseSetup
         AMBMessage memory ambMessage;
@@ -124,6 +131,7 @@ contract CelerImplementationTest is BaseSetup {
     }
 
     function test_revert_broadcastPayload_invalidCaller() public {
+        vm.startPrank(deployer);
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
@@ -141,6 +149,7 @@ contract CelerImplementationTest is BaseSetup {
     }
 
     function test_revert_broadcastPayload_gasRefundFailed() public {
+        vm.startPrank(deployer);
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
@@ -158,6 +167,7 @@ contract CelerImplementationTest is BaseSetup {
     }
 
     function test_revert_dispatchPayload_gasRefundFailed_invalidCaller() public {
+        vm.startPrank(deployer);
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
@@ -188,6 +198,7 @@ contract CelerImplementationTest is BaseSetup {
     }
 
     function test_revert_executeMessage_duplicatePayload_invalidSrcChainSender_invalidCaller() public {
+        vm.startPrank(deployer);
         AMBMessage memory ambMessage;
 
         (ambMessage, , ) = setupBroadcastPayloadAMBData(getContract(ETH, "CelerImplementation"));
