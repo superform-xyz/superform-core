@@ -299,7 +299,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         InitSingleVaultData memory ambData;
 
         /// @dev this step validates and returns ambData from the state request
-        (ambData, vars.currentPayloadId) = _buildDepositAmbData(req.dstChainId, req.superFormData, true);
+        (ambData, vars.currentPayloadId) = _buildDepositAmbData(req.dstChainId, req.superFormData);
 
         vars.liqRequest = req.superFormData.liqRequest;
         (address superForm, , ) = req.superFormData.superFormId.getSuperForm();
@@ -341,11 +341,16 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     function _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req) internal {
         ActionLocalVars memory vars;
         vars.srcChainId = superRegistry.chainId();
+        vars.currentPayloadId = ++payloadIds;
 
-        InitSingleVaultData memory vaultData;
-
-        /// @dev this step validates and returns vaultData from the state request
-        (vaultData, vars.currentPayloadId) = _buildDepositAmbData(vars.srcChainId, req.superFormData, false);
+        InitSingleVaultData memory vaultData = InitSingleVaultData(
+            vars.currentPayloadId,
+            req.superFormData.superFormId,
+            req.superFormData.amount,
+            req.superFormData.maxSlippage,
+            req.superFormData.liqRequest,
+            req.superFormData.extraFormData
+        );
 
         /// @dev same chain action & forward residual fee to fee collector
         _directSingleDeposit(msg.sender, vaultData);
@@ -501,8 +506,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     /// @dev internal function used for validation and ambData building across different entry points
     function _buildDepositAmbData(
         uint64 dstChainId_,
-        SingleVaultSFData memory superFormData_,
-        bool emptyLiqReq
+        SingleVaultSFData memory superFormData_
     ) internal returns (InitSingleVaultData memory ambData, uint256 currentPayloadId) {
         /// @dev validate superFormsData
         if (!_validateSuperFormData(dstChainId_, superFormData_)) revert Error.INVALID_SUPERFORMS_DATA();
@@ -520,7 +524,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             superFormData_.superFormId,
             superFormData_.amount,
             superFormData_.maxSlippage,
-            emptyLiqReq ? emptyRequest : superFormData_.liqRequest,
+            emptyRequest,
             superFormData_.extraFormData
         );
     }

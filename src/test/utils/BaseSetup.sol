@@ -54,6 +54,7 @@ import {TwoStepsFormStateRegistry} from "../../crosschain-data/extensions/TwoSte
 import {PayloadHelper} from "../../crosschain-data/utils/PayloadHelper.sol";
 import {FeeHelper} from "../../crosschain-data/utils/FeeHelper.sol";
 import {QuorumManager} from "../../crosschain-data/utils/QuorumManager.sol";
+import {DataLib} from "../../libraries/DataLib.sol";
 import "../../types/DataTypes.sol";
 import "./TestTypes.sol";
 
@@ -220,7 +221,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
     uint64[] public celer_chainIds = [1, 56, 43114, 137, 42161, 10];
 
-    uint256 public constant milionTokensE18 = 1 ether;
+    uint256 public constant milionTokensE18 = 1000e18;
 
     /*//////////////////////////////////////////////////////////////
                         CHAINLINK VARIABLES

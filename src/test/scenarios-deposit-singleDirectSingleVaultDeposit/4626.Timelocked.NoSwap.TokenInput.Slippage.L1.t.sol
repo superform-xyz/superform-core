@@ -11,7 +11,7 @@ contract SDSVD4626TimelockedNoSwapTokenInputSlippageL1 is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
         AMBs = [2, 3];
-        /// works for OP only??
+
         CHAIN_0 = ETH; /// @dev NOTE: polygon has an issue with permit2, avax doesn't have permit2
         DST_CHAINS = [ETH];
 
@@ -27,7 +27,7 @@ contract SDSVD4626TimelockedNoSwapTokenInputSlippageL1 is ProtocolActions {
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[ETH][0] = [2];
+        LIQ_BRIDGES[ETH][0] = [0];
 
         actions.push(
             TestAction({

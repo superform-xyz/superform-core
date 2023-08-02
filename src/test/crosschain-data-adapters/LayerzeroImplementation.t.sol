@@ -78,6 +78,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.setChainId(0, 10); /// optimism
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.stopPrank();
         vm.prank(bond);
         layerzeroImplementation.setChainId(137, 137); /// polygon
     }
@@ -92,6 +93,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         /// @dev testing revert here and not separately, to avoid making the call above twice and facing
         /// the error, 'You cannot overwrite `prank` until it is applied at least once' otherwise
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.stopPrank();
         vm.prank(bond);
         layerzeroImplementation.setConfig(0, 10, 6, abi.encode(CHAINLINK_lzOracle));
     }
@@ -104,6 +106,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.setSendVersion(2);
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.stopPrank();
         vm.prank(bond);
         layerzeroImplementation.setSendVersion(5);
     }
@@ -116,6 +119,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.setReceiveVersion(2);
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.stopPrank();
         vm.prank(bond);
         layerzeroImplementation.setReceiveVersion(5);
     }
@@ -129,6 +133,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         assertEq(layerzeroImplementation.isTrustedRemote(111, srcAddressOP), true);
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.stopPrank();
         vm.prank(bond);
         bytes memory srcAddressPOLY = abi.encodePacked(
             getContract(POLY, "LayerzeroImplementation"),
@@ -202,6 +207,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[0]);
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
+
         vm.prank(bond);
         layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
             users[0],
@@ -218,6 +224,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[0]);
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
+
         vm.prank(bond);
         layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
             users[0],
@@ -256,6 +263,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.selectFork(FORKS[OP]);
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
+
         vm.prank(bond);
         layerzeroImplementation.lzReceive(101, srcAddressOP, 2, payload);
 
@@ -271,6 +279,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function test_revert_nonblockingLzReceive_invalidCaller() public {
         vm.expectRevert(Error.INVALID_CALLER.selector);
+
         vm.prank(bond);
         layerzeroImplementation.nonblockingLzReceive(111, srcAddressOP, "");
     }
@@ -299,7 +308,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function _resetCoreStateRegistry(uint256 forkId, bool isReset) internal {
         vm.selectFork(forkId);
-        vm.startPrank(deployer);
+        vm.prank(deployer);
 
         uint8[] memory registryId_ = new uint8[](1);
         registryId_[0] = 1;
