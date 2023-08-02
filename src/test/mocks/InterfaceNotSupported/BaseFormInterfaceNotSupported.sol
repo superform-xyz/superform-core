@@ -21,10 +21,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     uint256 internal constant PRECISION = 10 ** PRECISION_DECIMALS;
 
-    bytes32 public constant SUPER_ROUTER_ROLE = keccak256("SUPER_ROUTER_ROLE");
-
-    bytes32 public constant TOKEN_BANK_ROLE = keccak256("TOKEN_BANK_ROLE");
-
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/

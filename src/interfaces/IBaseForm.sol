@@ -70,6 +70,17 @@ interface IBaseForm is IERC165Upgradeable {
         uint64 srcChainId_
     ) external returns (uint256 dstAmount);
 
+    /// @notice get Superform name of the ERC20 vault representation
+    /// @return The ERC20 name
+    function superformYieldTokenName() external view returns (string memory);
+
+    /// @notice get Superform symbol of the ERC20 vault representation
+    /// @return The ERC20 symbol
+    function superformYieldTokenSymbol() external view returns (string memory);
+
+    /// @notice get Supershare decimals of the ERC20 vault representation
+    function superformYieldTokenDecimals() external view returns (uint256);
+
     /// @notice Returns the underlying token of a vault.
     /// @return The asset being deposited into the vault used for accounting, depositing, and withdrawing
     function getVaultAsset() external view returns (address);
@@ -82,13 +93,35 @@ interface IBaseForm is IERC165Upgradeable {
     /// @return The symbol associated with a vault
     function getVaultSymbol() external view returns (string memory);
 
-    /// @dev returns the vault address
-    function getVaultAddress() external view returns (address);
-
     /// @notice Returns the number of decimals in a vault for accounting purposes
     /// @return The number of decimals in the vault balance
     function getVaultDecimals() external view returns (uint256);
 
+    /// @dev returns the vault address
+    function getVaultAddress() external view returns (address);
+
+    /// @notice Returns the amount of underlying tokens each share of a vault is worth.
+    /// @return The pricePerVaultShare value
+    function getPricePerVaultShare() external view returns (uint256);
+
+    /// @notice Returns the amount of vault shares owned by the form.
+    /// @return The form's vault share balance
+    function getVaultShareBalance() external view returns (uint256);
+
+    /// @notice get the total amount of underlying managed in the ERC4626 vault
+    function getTotalAssets() external view returns (uint256);
+
+    /// @notice get the total amount of assets received if shares are converted
+    function getConvertPricePerVaultShare() external view returns (uint256);
+
+    /// @notice get the total amount of assets received if shares are actually redeemed
+    /// @notice https://eips.ethereum.org/EIPS/eip-4626
+    function getPreviewPricePerVaultShare() external view returns (uint256);
+
     /// @dev API may need to know state of funds deployed
     function previewDepositTo(uint256 assets_) external view returns (uint256);
+
+    /// @notice positionBalance() -> .vaultIds&destAmounts
+    /// @return how much of an asset + interest (accrued) is to withdraw from the Vault
+    function previewWithdrawFrom(uint256 assets_) external view returns (uint256);
 }
