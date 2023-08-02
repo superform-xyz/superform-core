@@ -14,9 +14,9 @@ contract SuperFormFactoryStateSyncTest is BaseSetup {
         uint32 formBeaconId = 1;
 
         vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
 
         vm.recordLogs();
-        vm.startPrank(deployer);
         SuperFormFactory(getContract(ETH, "SuperFormFactory")).changeFormBeaconPauseStatus{value: 800 ether}(
             formBeaconId,
             true,
@@ -32,7 +32,6 @@ contract SuperFormFactoryStateSyncTest is BaseSetup {
                 bool statusBefore = SuperFormFactory(getContract(chainIds[i], "SuperFormFactory")).isFormBeaconPaused(
                     formBeaconId
                 );
-
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1, "");
                 bool statusAfter = SuperFormFactory(getContract(chainIds[i], "SuperFormFactory")).isFormBeaconPaused(
                     formBeaconId
@@ -63,7 +62,5 @@ contract SuperFormFactoryStateSyncTest is BaseSetup {
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(2, "");
             }
         }
-
-        vm.stopPrank();
     }
 }
