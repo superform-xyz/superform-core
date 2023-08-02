@@ -18,7 +18,7 @@ interface ISuperFormFactory {
     /// @dev emitted when a new SuperForm is created
     /// @param formBeaconId is the id of the form beacon
     /// @param vault is the address of the vault
-    /// @param superFormId is the id of the superform - pair (form,vault)
+    /// @param superFormId is the id of the superform
     /// @param superForm is the address of the superform
     event SuperFormCreated(
         uint256 indexed formBeaconId,
@@ -37,7 +37,7 @@ interface ISuperFormFactory {
 
     /// @dev allows an admin to add a FormBeacon to the factory
     /// @param formImplementation_ is the address of a form implementation
-    /// @param formBeaconId_ is the to-be id of the form beacon
+    /// @param formBeaconId_ is the id of the form beacon (generated off-chain and equal in all chains)
     /// @param salt_ is the salt for create2
     function addFormBeacon(
         address formImplementation_,
@@ -55,19 +55,25 @@ interface ISuperFormFactory {
         bytes32 salt_
     ) external;
 
-    // 5. Forms should exist based on (everything else, including deposit/withdraw/tvl etc could be done in implementations above it)
-    //    1. Vault token type received (20, 4626, 721, or none)
-    //   2. To get/calculate the name of the resulting Superform
     /// @dev To add new vaults to Form implementations, fusing them together into SuperForms
-    /// @notice It is not possible to reliable ascertain if vault is a contract and if it is a compliant contract with a given form
-    /// @notice Perhaps this can checked at form level
     /// @param formBeaconId_ is the form beacon we want to attach the vault to
     /// @param vault_ is the address of the vault
-    /// @return superFormId_ is the id of the superform
+    /// @return superFormId_ is the id of the created superform
+    /// @return superForm_ is the address of the created superform
     function createSuperForm(
         uint32 formBeaconId_,
         address vault_
     ) external returns (uint256 superFormId_, address superForm_);
+
+    /// @dev To add new vaults to Form implementations, fusing them together into SuperForms
+    /// @param formBeaconIds_ are the form beacon ids we want to attach the vaults to
+    /// @param vaults_ are the addresses of the vaults
+    /// @return superFormIds_ are the id of the created superforms
+    /// @return superForms_ are the addresses of the created superforms
+    function createSuperForms(
+        uint32[] memory formBeaconIds_,
+        address[] memory vaults_
+    ) external returns (uint256[] memory superFormIds_, address[] memory superForms_);
 
     /// @dev to synchronize superforms added to different chains using factory registry
     /// @param data_ is the cross-chain superform id
