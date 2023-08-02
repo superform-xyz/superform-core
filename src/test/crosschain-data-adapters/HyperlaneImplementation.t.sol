@@ -45,7 +45,7 @@ contract HyperlaneImplementationTest is BaseSetup {
         hyperlaneImplementation.setReceiver(10, address(0));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.startPrank(bond);
+        vm.prank(bond);
         hyperlaneImplementation.setReceiver(10, getContract(10, "HyperlaneImplementation"));
     }
 
@@ -65,7 +65,7 @@ contract HyperlaneImplementationTest is BaseSetup {
         hyperlaneImplementation.setChainId(0, 10); /// optimism
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.startPrank(bond);
+        vm.prank(bond);
         hyperlaneImplementation.setChainId(137, 137); /// polygon
     }
 
@@ -77,7 +77,7 @@ contract HyperlaneImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.startPrank(bond);
+        vm.prank(bond);
         hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(
             users[0],
             abi.encode(ambMessage),
@@ -93,7 +93,7 @@ contract HyperlaneImplementationTest is BaseSetup {
         (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.startPrank(bond);
+        vm.prank(bond);
         hyperlaneImplementation.dispatchPayload{value: 0.1 ether}(
             users[0],
             chainIds[5],
@@ -110,7 +110,7 @@ contract HyperlaneImplementationTest is BaseSetup {
 
         (ambMessage, , ) = setupBroadcastPayloadAMBData(users[0]);
 
-        vm.startPrank(MAILBOX);
+        vm.prank(MAILBOX);
         hyperlaneImplementation.handle(
             uint32(ETH),
             bytes32(uint256(uint160(address(hyperlaneImplementation)))),
@@ -118,7 +118,7 @@ contract HyperlaneImplementationTest is BaseSetup {
         );
 
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
-        vm.startPrank(MAILBOX);
+        vm.prank(MAILBOX);
         hyperlaneImplementation.handle(
             uint32(ETH),
             bytes32(uint256(uint160(address(hyperlaneImplementation)))),
@@ -126,11 +126,11 @@ contract HyperlaneImplementationTest is BaseSetup {
         );
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.startPrank(MAILBOX);
+        vm.prank(MAILBOX);
         hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(bond))), abi.encode(ambMessage));
 
         vm.expectRevert(Error.INVALID_CALLER.selector);
-        vm.startPrank(bond);
+        vm.prank(bond);
         hyperlaneImplementation.handle(
             uint32(ETH),
             bytes32(uint256(uint160(address(hyperlaneImplementation)))),

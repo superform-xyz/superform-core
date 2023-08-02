@@ -49,7 +49,7 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
             formBeaconIds[i] = FORM_BEACON_ID;
         }
 
-        vm.startPrank(deployer);
+        vm.prank(deployer);
 
         vm.expectRevert(Error.BEACON_ID_ALREADY_EXISTS.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacons(
@@ -71,7 +71,7 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
             formBeaconIds[i] = i;
         }
 
-        vm.startPrank(deployer);
+        vm.prank(deployer);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacons(
@@ -97,7 +97,7 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
         formImplementations[MAX_FORMS - 1] = address(0x1);
         formBeaconIds[MAX_FORMS - 1] = formBeaconIds[MAX_FORMS - 2] + 1;
 
-        vm.startPrank(deployer);
+        vm.prank(deployer);
 
         vm.expectRevert(Error.ERC165_UNSUPPORTED.selector);
         SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacons(

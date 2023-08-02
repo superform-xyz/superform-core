@@ -43,7 +43,7 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeFeeAdminRole() public {
         _revokeAndCheck(
-            superRBAC.revokeFeeAdminRole.selector,
+            superRBAC.revokeFeeAdminRole.selector, 
             superRBAC.hasFeeAdminRole.selector,
             deployer,
             deployer,
@@ -69,7 +69,7 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeSwapperRole() public {
         _revokeAndCheck(
-            superRBAC.revokeSwapperRole.selector,
+            superRBAC.revokeSwapperRole.selector, 
             superRBAC.hasSwapperRole.selector,
             deployer,
             deployer,
@@ -87,7 +87,7 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.grantCoreContractsRole(deployer);
 
         _revokeAndCheck(
-            superRBAC.revokeCoreContractsRole.selector,
+            superRBAC.revokeCoreContractsRole.selector, 
             superRBAC.hasCoreContractsRole.selector,
             deployer,
             getContract(ETH, "SuperFormFactory"),
@@ -103,7 +103,7 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.revokeProcessorRole.selector,
+            superRBAC.revokeProcessorRole.selector, 
             superRBAC.hasProcessorRole.selector,
             deployer,
             deployer,
@@ -119,7 +119,7 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeTwoStepsProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.revokeTwoStepsProcessorRole.selector,
+            superRBAC.revokeTwoStepsProcessorRole.selector, 
             superRBAC.hasTwoStepsProcessorRole.selector,
             deployer,
             deployer,
@@ -135,7 +135,7 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeUpdaterRole() public {
         _revokeAndCheck(
-            superRBAC.revokeUpdaterRole.selector,
+            superRBAC.revokeUpdaterRole.selector, 
             superRBAC.hasUpdaterRole.selector,
             deployer,
             deployer,
@@ -155,18 +155,16 @@ contract SuperRBACTest is BaseSetup {
         vm.stopPrank();
 
         vm.deal(actor_, value_ + 1 ether);
-        vm.startPrank(actor_);
+        vm.prank(actor_);
 
         vm.recordLogs();
         /// @dev setting the status as false in chain id = ETH & broadcasting it
-        (bool success, ) = address(superRBAC).call{value: value_}(
-            abi.encodeWithSelector(revokeRole_, member_, extraData_)
-        );
+        (bool success, ) = address(superRBAC).call{value: value_}(abi.encodeWithSelector(revokeRole_, member_, extraData_));
         vm.startPrank(deployer);
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         /// @dev role revoked on ETH
-        (, bytes memory isRevoked) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
+        ( , bytes memory isRevoked) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
         assertEq(abi.decode(isRevoked, (bool)), false);
 
         /// @dev process the payload across all other chains
@@ -174,14 +172,14 @@ contract SuperRBACTest is BaseSetup {
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                (, bytes memory statusBefore) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
+                ( , bytes memory statusBefore) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
                 RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
-                (, bytes memory statusAfter) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
+                ( , bytes memory statusAfter) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
 
                 /// @dev assert status update before and after processing the payload
                 assertEq(abi.decode(statusBefore, (bool)), true);
                 assertEq(abi.decode(statusAfter, (bool)), false);
             }
         }
-    }
+    } 
 }
