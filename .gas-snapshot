@@ -144,6 +144,7 @@ SuperFormFactoryCreateSuperformTest:test_revert_createSuperForm_addressZero() (g
 SuperFormFactoryCreateSuperformTest:test_revert_createSuperForm_interfaceNotSupported() (gas: 2493825)
 SuperFormFactoryCreateSuperformTest:test_revert_createSuperForm_vaultBeaconCombinationExists() (gas: 3428656)
 SuperFormFactoryCreateSuperformTest:test_utility_superForms() (gas: 40683)
+SuperFormFactoryStateSyncTest:test_formBeaconStatusBroadcast() (gas: 4325337)
 SuperFormFactoryUpdateFormTest:test_revert_updateFormBeaconLogic_ERC165_UNSUPPORTED() (gas: 3140141)
 SuperFormFactoryUpdateFormTest:test_revert_updateFormBeaconLogic_FORM_INTERFACE_UNSUPPORTED() (gas: 5611840)
 SuperFormFactoryUpdateFormTest:test_revert_updateFormBeaconLogic_INVALID_FORM_ID() (gas: 3143604)

@@ -15,7 +15,6 @@ verbosity = 0
 ffi = true
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
-
 [rpc_endpoints]
 ethereum = "${ETHEREUM_RPC_URL}"
 polygon = "${POLYGON_RPC_URL}"
@@ -31,7 +30,3 @@ avalanche_fork = "${AVALANCHE_LOCAL_URL}"
 arbitrum_fork = "${ARBITRUM_LOCAL_URL}"
 optimism_fork = "${OPTIMISM_LOCAL_URL}"
 fantom_fork = "${FANTOM_LOCAL_URL}"
-
-[profile.ci]
-solc-version = "0.8.19"
-optimizer = false
