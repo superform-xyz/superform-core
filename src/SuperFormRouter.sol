@@ -70,7 +70,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice receive enables processing native token transfers into the smart contract.
-    /// @notice liquidity bridge tech fails without a native receive function.
+    /// @notice liquidity bridge fails without a native receive function.
     receive() external payable {}
 
     /// @inheritdoc ISuperFormRouter

@@ -56,7 +56,7 @@ contract LiFiValidator is BridgeValidator {
 
                 if (bridgeData.receiver != superForm_) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
-                /// @dev if cross chain deposits, then receiver address must be the token bank
+                /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry or MultiTxProcessor
                 if (
                     !(bridgeData.receiver == superRegistry.coreStateRegistry() ||
                         bridgeData.receiver == superRegistry.multiTxProcessor())
@@ -64,8 +64,6 @@ contract LiFiValidator is BridgeValidator {
             }
         } else {
             /// @dev if withdraws, then receiver address must be the srcSender
-            /// @dev what if SrcSender is a contract? can it be used to re-enter somewhere?
-            /// https://linear.app/superform/issue/SUP-2024/reentrancy-vulnerability-prevent-crafting-arbitrary-txdata-to-reenter
             if (bridgeData.receiver != srcSender_) revert Error.INVALID_TXDATA_RECEIVER();
         }
 

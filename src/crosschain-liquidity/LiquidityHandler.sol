@@ -16,7 +16,7 @@ abstract contract LiquidityHandler {
 
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    /// @dev dispatches tokens via a liquidity bridge bridge.
+    /// @dev dispatches tokens via a liquidity bridge
     /// @param bridge_ Bridge address to pass tokens to
     /// @param txData_ Socket data
     /// @param token_ Token caller deposits into superform
@@ -24,6 +24,7 @@ abstract contract LiquidityHandler {
     /// @param owner_ Owner of tokens
     /// @param nativeAmount_ msg.value or msg.value + native tokens
     /// @param permit2Data_ abi.encode of nonce, deadline & signature for the amounts being transfered
+    /// @param permit2_ Permit2 address
     function dispatchTokens(
         address bridge_,
         bytes memory txData_,
@@ -66,15 +67,18 @@ abstract contract LiquidityHandler {
                     );
                 }
             }
+            /// @dev approve bridge to spend tokens
             token.safeApprove(bridge_, amount_);
+
+            /// @dev call bridge with txData. Native amount here just contains liquidity bridge fees (if needed)
             unchecked {
                 (bool success, ) = payable(bridge_).call{value: nativeAmount_}(txData_);
                 if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
             }
         } else {
-            /// NOTE: Test if this is reachable
             if (nativeAmount_ < amount_) revert Error.INSUFFICIENT_NATIVE_AMOUNT();
 
+            /// @dev call bridge with txData. Native amount here contains liquidity bridge fees (if needed) + native tokens to swap
             unchecked {
                 (bool success, ) = payable(bridge_).call{value: nativeAmount_}(txData_);
                 if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
