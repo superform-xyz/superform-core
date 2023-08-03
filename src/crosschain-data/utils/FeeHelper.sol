@@ -14,6 +14,7 @@ import {ArrayCastLib} from "../../libraries/ArrayCastLib.sol";
 import "../../types/DataTypes.sol";
 
 import "../../types/LiquidityTypes.sol";
+import "forge-std/console.sol";
 
 /// @dev interface to read public variable from state registry
 interface ReadOnlyBaseRegistry is IBaseStateRegistry {
@@ -394,6 +395,8 @@ contract FeeHelper is IFeeHelper {
 
         /// @dev just checks the estimate for sending message from src -> dst
         for (uint256 i; i < len; ) {
+            console.log("AMB ID: %s", ambIds_[i]);
+            console.log("AMB ADDRESS: %s", superRegistry.getAmbAddress(ambIds_[i]));
             fees[i] = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
                 dstChainId_,
                 message_,

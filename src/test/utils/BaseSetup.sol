@@ -300,32 +300,38 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.canonicalPermit2 = address(new Permit2Clone{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("CanonicalPermit2"))] = vars.canonicalPermit2;
+            console.log("CHAIN_ID %s CanonicalPermit2 %s", vars.chainId, vars.canonicalPermit2);
 
             /// @dev 1.1- deploy LZ Helper from Pigeon
             vars.lzHelper = address(new LayerZeroHelper{salt: salt}());
             vm.allowCheatcodes(vars.lzHelper);
 
             contracts[vars.chainId][bytes32(bytes("LayerZeroHelper"))] = vars.lzHelper;
+            console.log("CHAIN_ID %s LayerZeroHelper %s", vars.chainId, vars.lzHelper);
 
             /// @dev 1.2- deploy Hyperlane Helper from Pigeon
             vars.hyperlaneHelper = address(new HyperlaneHelper{salt: salt}());
             vm.allowCheatcodes(vars.hyperlaneHelper);
 
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars.hyperlaneHelper;
+            console.log("CHAIN_ID %s HyperlaneHelper %s", vars.chainId, vars.hyperlaneHelper);
 
             /// @dev 1.3- deploy Celer Helper from Pigeon
             vars.celerHelper = address(new CelerHelper{salt: salt}());
             vm.allowCheatcodes(vars.celerHelper);
 
             contracts[vars.chainId][bytes32(bytes("CelerHelper"))] = vars.celerHelper;
+            console.log("CHAIN_ID %s CelerHelper %s", vars.chainId, vars.celerHelper);
 
             /// @dev 2 - Deploy SuperRBAC
             vars.superRBAC = address(new SuperRBAC{salt: salt}(deployer));
             contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
+            console.log("CHAIN_ID %s SuperRBAC %s", vars.chainId, vars.superRBAC);
 
             /// @dev 3 - Deploy SuperRegistry and assign roles
             vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
+            console.log("CHAIN_ID %s SuperRegistry %s", vars.chainId, vars.superRegistry);
 
             SuperRBAC(vars.superRBAC).setSuperRegistry(vars.superRegistry);
             SuperRegistry(vars.superRegistry).setImmutables(vars.chainId, vars.canonicalPermit2);
@@ -360,6 +366,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1));
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
+            console.log("CHAIN_ID %s CoreStateRegistry %s", vars.chainId, vars.coreStateRegistry);
 
             SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
 
@@ -369,6 +376,7 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
+            console.log("CHAIN_ID %s FactoryStateRegistry %s", vars.chainId, vars.factoryStateRegistry);
 
             SuperRegistry(vars.superRegistry).setFactoryStateRegistry(vars.factoryStateRegistry);
 
@@ -378,6 +386,7 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
+            console.log("CHAIN_ID %s TwoStepsFormStateRegistry %s", vars.chainId, vars.twoStepsFormStateRegistry);
 
             SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
 
@@ -385,6 +394,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 3));
 
             contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
+            console.log("CHAIN_ID %s RolesStateRegistry %s", vars.chainId, vars.rolesStateRegistry);
 
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
@@ -395,10 +405,12 @@ abstract contract BaseSetup is DSTest, Test {
                 new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.twoStepsFormStateRegistry)
             );
             contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
+            console.log("CHAIN_ID %s PayloadHelper %s", vars.chainId, vars.PayloadHelper);
 
             /// @dev 4.5.2- deploy Fee Helper
             vars.feeHelper = address(new FeeHelper{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("FeeHelper"))] = vars.feeHelper;
+            console.log("FEE_HELPER", vars.feeHelper);
 
             address[] memory registryAddresses = new address[](4);
             registryAddresses[0] = vars.coreStateRegistry;
@@ -440,24 +452,33 @@ abstract contract BaseSetup is DSTest, Test {
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
             vars.ambAddresses[2] = vars.celerImplementation;
 
+            console.log("LZ_IMPL", vars.lzImplementation);
+            console.log("Hyperlane_IMPL", vars.hyperlaneImplementation);
+            console.log("Celer_IMPL", vars.celerImplementation);
+
             /// @dev 6.1 deploy SocketRouterMock and LiFiRouterMock
             vars.socketRouter = address(new SocketRouterMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("SocketRouterMock"))] = vars.socketRouter;
             vm.allowCheatcodes(vars.socketRouter);
+            console.log("SocketRouterMock", vars.socketRouter);
 
             vars.lifiRouter = address(new LiFiMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
             vm.allowCheatcodes(vars.lifiRouter);
+            console.log("LiFiMock", vars.lifiRouter);
 
             /// @dev 6.2- deploy socket and lifi validator
             vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
+            console.log("SocketValidator", vars.socketValidator);
 
             vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
+            console.log("LiFiValidator", vars.lifiValidator);
 
             vars.kycDAOMock = address(new KYCDaoNFTMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
+            console.log("KYCDAOMock", vars.kycDAOMock);
 
             if (i == 0) {
                 bridgeAddresses.push(vars.socketRouter);
@@ -521,6 +542,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.factory = address(new SuperFormFactory{salt: salt}(vars.superRegistry));
 
             contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars.factory;
+            console.log("CHAIN_ID %s ERC46SuperFormFactory26Form %s", vars.chainId, vars.factory);
 
             SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
 
@@ -528,10 +550,12 @@ abstract contract BaseSetup is DSTest, Test {
             // Standard ERC4626 Form
             vars.erc4626Form = address(new ERC4626Form{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
+            console.log("CHAIN_ID %s ERC4626Form %s", vars.chainId, vars.erc4626Form);
 
             // Timelock + ERC4626 Form
             vars.erc4626TimelockForm = address(new ERC4626TimelockForm{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
+            console.log("CHAIN_ID %s ERC4626TimelockForm %s", vars.chainId, vars.erc4626TimelockForm);
 
             /// @dev 10 - Add newly deployed form  implementation to Factory, formBeaconId 1
             ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
@@ -541,12 +565,14 @@ abstract contract BaseSetup is DSTest, Test {
             // KYCDao ERC4626 Form (only for Polygon)
             vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
+            console.log("CHAIN_ID %s ERC4626KYCDaoForm %s", vars.chainId, vars.kycDao4626Form);
 
             ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
             /// @dev 12 - Deploy SuperFormRouter
             vars.superRouter = address(new SuperFormRouter{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SuperFormRouter"))] = vars.superRouter;
+            console.log("CHAIN_ID %s SuperFormRouter %s", vars.chainId, vars.superRouter);
 
             SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
 
@@ -554,18 +580,21 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
+            console.log("CHAIN_ID %s SuperPositions %s", vars.chainId, vars.superPositions);
 
             SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
             /// @dev 14 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars.multiTxProcessor;
+            console.log("CHAIN_ID %s MultiTxProcessor %s", vars.chainId, vars.multiTxProcessor);
 
             SuperRegistry(vars.superRegistry).setMultiTxProcessor(vars.multiTxProcessor);
 
             /// @dev 15 - Deploy FeeCollector
             vars.feeCollector = address(new FeeCollector{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes32("FeeCollector"))] = vars.feeCollector;
+            console.log("CHAIN_ID %s FeeCollector %s", vars.chainId, vars.feeCollector);
 
             SuperRegistry(vars.superRegistry).setFeeCollector(vars.feeCollector);
 
@@ -1009,6 +1038,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev Estimates the gas fees and gas params
     function _getAmbParamsAndFees(
+        uint64 srcChainId,
         uint64[] memory dstChainIds,
         uint8[] memory selectedAmbIds,
         address user,
@@ -1054,6 +1084,7 @@ abstract contract BaseSetup is DSTest, Test {
 
         for (uint256 i; i < dstCount; i++) {
             (uint256 tempFees, bytes memory tempParams) = _generateAmbParamsAndFeesPerDst(
+                srcChainId,
                 dstChainIds[i],
                 selectedAmbIds,
                 messages[i]
@@ -1086,13 +1117,14 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev Generates the amb params for the entire action
     function _generateAmbParamsAndFeesPerDst(
+        uint64 srcChainId,
         uint64 dstChainId,
         uint8[] memory selectedAmbIds,
         bytes memory message
     ) internal view returns (uint256, bytes memory) {
         uint256 ambCount = selectedAmbIds.length;
 
-        address _FeeHelper = contracts[dstChainId][bytes32(bytes("FeeHelper"))];
+        address _FeeHelper = contracts[srcChainId][bytes32(bytes("FeeHelper"))];
         FeeHelper feeHelper = FeeHelper(_FeeHelper);
 
         bytes[] memory paramsPerAMB = new bytes[](ambCount);
