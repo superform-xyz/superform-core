@@ -20,6 +20,8 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
 
     /// @dev Testing superform creation by adding multiple forms
     function test_addForms() public {
+        vm.selectFork(FORKS[chainId]);
+
         vm.startPrank(deployer);
 
         address[] memory formImplementations = new address[](MAX_FORMS);
@@ -40,6 +42,8 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
     /// @dev Testing adding same beacon id multiple times
     /// @dev Should Revert With BEACON_ID_ALREADY_EXISTS
     function test_revert_addForms_sameBeaconID() public {
+        vm.selectFork(FORKS[chainId]);
+
         address[] memory formImplementations = new address[](MAX_FORMS);
         uint32[] memory formBeaconIds = new uint32[](MAX_FORMS);
         uint32 FORM_BEACON_ID = 0;
@@ -62,6 +66,8 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
     /// @dev Testing adding form with form address 0
     /// @dev Should Revert With ZERO_ADDRESS
     function test_revert_addForms_addressZero() public {
+        vm.selectFork(FORKS[chainId]);
+
         address[] memory formImplementations = new address[](MAX_FORMS);
         uint32[] memory formBeaconIds = new uint32[](MAX_FORMS);
 
@@ -84,6 +90,8 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
     /// Testing adding form with wrong form
     /// Should Revert With ERC165_UNSUPPORTED
     function test_revert_addForm_interfaceUnsupported() public {
+        vm.selectFork(FORKS[chainId]);
+
         address[] memory formImplementations = new address[](MAX_FORMS);
         uint32[] memory formBeaconIds = new uint32[](MAX_FORMS);
 

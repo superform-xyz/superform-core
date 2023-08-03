@@ -480,12 +480,10 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
             console.log("KYCDAOMock", vars.kycDAOMock);
 
-            if (i == 0) {
-                bridgeAddresses.push(vars.socketRouter);
-                bridgeValidators.push(vars.socketValidator);
-                bridgeAddresses.push(vars.lifiRouter);
-                bridgeValidators.push(vars.lifiValidator);
-            }
+            bridgeAddresses.push(vars.socketRouter);
+            bridgeValidators.push(vars.socketValidator);
+            bridgeAddresses.push(vars.lifiRouter);
+            bridgeValidators.push(vars.lifiValidator);
 
             /// @dev 7.1 - Deploy UNDERLYING_TOKENS and VAULTS
             /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
@@ -611,6 +609,22 @@ abstract contract BaseSetup is DSTest, Test {
             /// FIXME: check if this is safe in all aspects
             SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
 
+            delete bridgeAddresses;
+            delete bridgeValidators;
+        }
+
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            vars.chainId = chainIds[i];
+            vars.fork = FORKS[vars.chainId];
+
+            vm.selectFork(vars.fork);
+
+            vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
+            vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
+            vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
+            vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
+            vars.feeHelper = getContract(vars.chainId, "FeeHelper");
+
             /// @dev Set all trusted remotes for each chain & configure amb chains ids
             /// @dev Set message quorum for all chain ids (as 1)
             for (uint256 j = 0; j < chainIds.length; j++) {
@@ -621,10 +635,9 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstCelerChainId = celer_chainIds[j];
 
                     /// @dev this is possible because our contracts are Create2 (same address)
-                    vars.dstLzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
-                    vars.dstHyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
-                    vars.dstCelerImplementation = getContract(vars.chainId, "CelerImplementation");
-                    vars.feeHelper = getContract(vars.chainId, "FeeHelper");
+                    vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
+                    vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
+                    vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId,

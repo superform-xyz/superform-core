@@ -130,7 +130,9 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
                 singleVaultCallDataArgs.superFormId = rescueSuperformIds[i];
                 /// @dev slippage adjusted amount that'll be withdrawn
-                singleVaultCallDataArgs.amount = (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) / 10000;
+                singleVaultCallDataArgs.amount =
+                    (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) /
+                    10000;
                 liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
             }
 
@@ -460,10 +462,11 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperFormsData,
         StagesLocalVars memory vars
     ) internal returns (StagesLocalVars memory) {
+        vm.selectFork(FORKS[CHAIN_0]);
+
         SuperFormRouter superRouter = SuperFormRouter(vars.fromSrc);
 
-        /// address is the same across all chains cuz of CREATE2
-        FeeHelper feeHelper = FeeHelper(getContract(1, "FeeHelper"));
+        FeeHelper feeHelper = FeeHelper(getContract(CHAIN_0, "FeeHelper"));
         bool sameChainDstHasRevertingVault;
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (CHAIN_0 == DST_CHAINS[i]) {
@@ -484,7 +487,6 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
         }
-        vm.selectFork(FORKS[CHAIN_0]);
         /// @dev see @pigeon for this implementation
         vm.recordLogs();
 
@@ -836,6 +838,8 @@ abstract contract ProtocolActions is BaseSetup {
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].toChainId = DST_CHAINS[i];
             if (CHAIN_0 != aV[i].toChainId) {
+                vm.selectFork(FORKS[aV[i].toChainId]);
+
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                     unchecked {
                         PAYLOAD_ID[aV[i].toChainId]++;
@@ -993,6 +997,8 @@ abstract contract ProtocolActions is BaseSetup {
         success = true;
 
         console.log("stage5");
+        vm.selectFork(FORKS[CHAIN_0]);
+
         uint256 toChainId;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             toChainId = DST_CHAINS[i];
@@ -1027,6 +1033,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// assume it will pass by default
         success = true;
         toAssert = false;
+        vm.selectFork(FORKS[CHAIN_0]);
 
         uint256 toChainId;
         returnMessages = new bytes[](vars.nDestinations);
@@ -1114,6 +1121,7 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal returns (bool success) {
         /// assume it will pass by default
         success = true;
+        vm.selectFork(FORKS[CHAIN_0]);
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             if (CHAIN_0 != DST_CHAINS[i] && revertingWithdrawTimelockedSFs[i].length > 0) {
@@ -1858,6 +1866,8 @@ abstract contract ProtocolActions is BaseSetup {
         bool[] memory partialWithdrawVaults
     ) internal {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+        vm.selectFork(FORKS[CHAIN_0]);
+
         address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
 
         IERC1155s superPositions = IERC1155s(superPositionsAddress);
@@ -1879,6 +1889,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _assertSingleVaultBalance(uint256 user, uint256 superFormId, uint256 amountToAssert) internal {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+        vm.selectFork(FORKS[CHAIN_0]);
 
         address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
 
@@ -1895,6 +1906,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 amountToAssert
     ) internal {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+        vm.selectFork(FORKS[CHAIN_0]);
 
         address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
 
@@ -1956,6 +1968,8 @@ abstract contract ProtocolActions is BaseSetup {
                     spAmountSummed[v.i] += v.finalAmount;
                 }
             }
+            vm.selectFork(FORKS[DST_CHAINS[v.i]]);
+
             spAmountSummed[v.i] = IBaseForm(v.superForms[v.i]).previewDepositTo(spAmountSummed[v.i]);
         }
     }
@@ -2148,6 +2162,8 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (v.superForm, , ) = singleSuperFormsData[i].superFormId.getSuperForm();
                 v.partialWithdrawVault = abi.decode(singleSuperFormsData[i].extraFormData, (bool));
+                vm.selectFork(FORKS[DST_CHAINS[i]]);
+
                 spAmountBeforeWithdrawPerDestination[i] = IBaseForm(v.superForm).previewDepositTo(
                     singleSuperFormsData[i].amount
                 );
