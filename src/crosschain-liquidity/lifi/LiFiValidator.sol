@@ -74,10 +74,10 @@ contract LiFiValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeReceiver(bytes calldata txData_) external pure override returns (address receiver_) {
+    function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
         (ILiFi.BridgeData memory bridgeData, ) = _decodeCallData(txData_);
 
-        return bridgeData.receiver;
+        return bridgeData.receiver == receiver_;
     }
 
     /// @notice Decode lifi's calldata

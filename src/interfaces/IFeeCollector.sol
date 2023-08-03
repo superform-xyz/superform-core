@@ -18,7 +18,7 @@ interface IFeeCollector {
     event FeesWithdrawn(address indexed receiver, uint256 amount);
 
     /*///////////////////////////////////////////////////////////////
-                    PREVILAGED ADMIN FUNCTIONS
+                    PRIVILEGED ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev withdraws funds from fee collector to multi tx processor on same chain

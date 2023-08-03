@@ -23,8 +23,7 @@ interface IBaseForm is IERC165Upgradeable {
                         EXTERNAL WRITE FUNCTONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
+    /// @dev PRIVILEGED router ONLY FUNCTION.
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
@@ -34,8 +33,6 @@ interface IBaseForm is IERC165Upgradeable {
         address srcSender_
     ) external payable returns (uint256 dstAmount);
 
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
@@ -45,8 +42,6 @@ interface IBaseForm is IERC165Upgradeable {
         address srcSender_
     ) external returns (uint256 dstAmount);
 
-    /// @dev PREVILEGED router ONLY FUNCTION.
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction
@@ -58,7 +53,6 @@ interface IBaseForm is IERC165Upgradeable {
         uint64 srcChainId_
     ) external returns (uint256 dstAmount);
 
-    /// @dev Note: At this point the router should know the SuperForm to call (form and chain), so we only need the vault address
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction

@@ -192,7 +192,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /*///////////////////////////////////////////////////////////////
-                        PREVILEGED FUNCTIONS
+                        PRIVILEGED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperPositions

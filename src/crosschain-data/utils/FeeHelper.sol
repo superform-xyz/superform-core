@@ -450,9 +450,10 @@ contract FeeHelper is IFeeHelper {
         for (uint256 i; i < liqReq_.length; ) {
             /// @dev checks if tx_data receiver is multiTxProcessor
             if (
-                IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).decodeReceiver(
-                    liqReq_[i].txData
-                ) == superRegistry.multiTxProcessor()
+                IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).validateReceiver(
+                    liqReq_[i].txData,
+                    superRegistry.multiTxProcessor()
+                )
             ) {
                 ++totalSwaps;
             }

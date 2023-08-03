@@ -29,7 +29,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc BaseForm
-    /// @dev asset() or some similar function should return all possible tokens that can be deposited into the vault so that BE can grab that properly
     function getVaultAsset() public view virtual override returns (address) {
         return address(IERC4626(vault).asset());
     }
@@ -91,6 +90,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev to avoid stack too deep errors
     struct directDepositLocalVars {
         uint64 chainId;
         address collateral;
@@ -109,7 +109,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.collateral = address(v.asset());
         vars.balanceBefore = IERC20(vars.collateral).balanceOf(address(this));
 
+        /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault asset)
         bool isSwap = singleVaultData_.liqData.txData.length > 0;
+        /// @dev if the input asset was approved with permit2
         bool isPermit = singleVaultData_.liqData.permit2data.length > 0;
 
         IERC20 token = IERC20(singleVaultData_.liqData.token);
@@ -120,14 +122,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             if (!isPermit) {
                 if (token.allowance(srcSender_, address(this)) < amount)
                     revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
-
+                /// @dev transfers input token, which is the same as vault asset, to the form
                 token.safeTransferFrom(srcSender_, address(this), amount);
             } else {
                 (uint256 nonce, uint256 deadline, bytes memory signature) = abi.decode(
                     singleVaultData_.liqData.permit2data,
                     (uint256, uint256, bytes)
                 );
-
+                /// @dev does a permit2 transfer to this contract
                 IPermit2(superRegistry.PERMIT2()).permitTransferFrom(
                     // The permit message.
                     IPermit2.PermitTransferFrom({
@@ -147,6 +149,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 );
             }
         } else {
+            /// @dev in this case, a swap is needed, first the txData is validated and then the final asset is obtained
             vars.chainId = superRegistry.chainId();
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
                 singleVaultData_.liqData.txData,
@@ -172,12 +175,13 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         vars.balanceAfter = IERC20(vars.collateral).balanceOf(address(this));
 
+        /// @dev the balance of vault tokens, ready to be deposited is compared with the previous balance
         if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount)
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
 
         if (address(v.asset()) != vars.collateral) revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
-        /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease - Joao
+        /// @dev the vault asset (collateral) is approved and deposited to the vault
         IERC20(vars.collateral).approve(vault, singleVaultData_.amount);
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
@@ -187,13 +191,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         address srcSender
     ) internal returns (uint256 dstAmount) {
         uint256 len1 = singleVaultData_.liqData.txData.length;
+        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it is this contract (before swap)
         address receiver = len1 == 0 ? srcSender : address(this);
 
         IERC4626 v = IERC4626(vault);
         address collateral = address(v.asset());
 
+        /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as the vault asset
         if (singleVaultData_.liqData.token != collateral) revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
 
+        /// @dev redeem the underlying
         dstAmount = v.redeem(singleVaultData_.amount, receiver, address(this));
 
         if (len1 != 0) {
@@ -202,7 +209,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
             uint64 chainId = superRegistry.chainId();
 
-            /// @dev NOTE: only allows withdraws to same chain
+            /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
                 singleVaultData_.liqData.txData,
                 chainId,
@@ -235,11 +242,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         IERC4626 v = IERC4626(vaultLoc);
 
-        /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease - Joao
-        /// DEVNOTE: allowance is modified inside of the IERC20.transferFrom() call
+        /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(v.asset()).approve(vaultLoc, singleVaultData_.amount);
 
-        /// DEVNOTE: This makes ERC4626Form (address(this)) owner of v.shares
+        /// @dev This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
 
         /// @dev FIXME: check subgraph if this should emit amount or dstAmount - Subhasish
@@ -263,20 +269,23 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = singleVaultData_.superFormId.getSuperForm();
 
+        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it is this contract (before swap)
         vars.receiver = len == 0 ? srcSender : address(this);
 
         IERC4626 v = IERC4626(vault);
         vars.collateral = v.asset();
 
+        /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as the vault asset
         if (vars.collateral != singleVaultData_.liqData.token) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
         /// Note Redeem vault positions (we operate only on positions, not assets)
         dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
 
         if (len != 0) {
+            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (singleVaultData_.liqData.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            /// @dev NOTE: only allows withdraws back to source
+            /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
                 singleVaultData_.liqData.txData,
                 vars.dstChainId,
@@ -287,9 +296,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.token
             );
 
-            /// Note Send Tokens to Source Chain
-            /// FEAT Note: We could also allow to pass additional chainId arg here
-            /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
             dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,

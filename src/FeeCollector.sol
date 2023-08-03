@@ -39,7 +39,7 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
     }
 
     /*///////////////////////////////////////////////////////////////
-                    PREVILAGED ADMIN FUNCTIONS
+                    PRIVILEGED ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IFeeCollector
@@ -156,10 +156,12 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
 
     /// @dev helper to move native tokens cross-chain
     function _validateAndDispatchTokens(LiqRequest memory liqRequest_, address receiver_) internal {
-        address receiverFromTxData = IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId))
-            .decodeReceiver(liqRequest_.txData);
+        bool valid = IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateReceiver(
+            liqRequest_.txData,
+            receiver_
+        );
 
-        if (receiverFromTxData != receiver_) {
+        if (!valid) {
             revert Error.INVALID_TXDATA_RECEIVER();
         }
 

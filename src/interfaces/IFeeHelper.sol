@@ -8,7 +8,7 @@ import "../types/DataTypes.sol";
 /// @dev helps decoding the bytes payload and returns meaningful information
 interface IFeeHelper {
     /*///////////////////////////////////////////////////////////////
-                        PREVILAGES ADMIN ONLY FUNCTIONS
+                        PRIVILEGED ADMIN ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev admin config/update source chain config for estimation
