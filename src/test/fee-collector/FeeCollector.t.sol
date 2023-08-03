@@ -35,6 +35,20 @@ contract FeeCollectorTest is BaseSetup {
         }
     }
 
+    function test_manipuationsBySendingFeesIntoRouter() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        /// @dev at this point the contract has 1 ether extra
+        address superRouter = getContract(ETH, "SuperFormRouter");
+        payable(superRouter).transfer(1 ether);
+
+        /// @dev make a deposit and send in 2 ether extra for other off-chain operations
+        _successfulDeposit();
+        assertEq(address(superRouter).balance, 1 ether);
+        assertEq(getContract(ETH, "FeeCollector").balance, 2 ether);
+    }
+
     function test_validationsInMakePayment() public {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -314,6 +328,40 @@ contract FeeCollectorTest is BaseSetup {
 
         vm.selectFork(FORKS[ARBI]);
         assertEq(txUpdater.balance, 1 ether);
+    }
+
+    function _successfulDeposit() internal {
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superForm = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "SuperForm", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperForm(superForm, FORM_BEACON_IDS[0], ETH);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            100,
+            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        (address formBeacon, , ) = SuperFormFactory(getContract(ETH, "SuperFormFactory")).getSuperForm(superformId);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        (, , , uint256 msgFees) = FeeHelper(getContract(ETH, "FeeHelper")).estimateSingleDirectSingleVault(req, true);
+        msgFees = msgFees + 2 ether;
+
+        SuperFormRouter(payable(getContract(ETH, "SuperFormRouter"))).singleDirectSingleVaultDeposit{value: msgFees}(
+            req
+        );
     }
 
     function _buildTxData(
