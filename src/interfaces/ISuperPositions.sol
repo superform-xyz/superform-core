@@ -67,4 +67,12 @@ interface ISuperPositions {
     /// @param dynamicURI_ is the dynamic uri of the NFT
     /// @param freeze_ is to prevent updating the metadata once migrated to IPFS
     function setDynamicURI(string memory dynamicURI_, bool freeze_) external;
+
+    /*///////////////////////////////////////////////////////////////
+                        VIEW FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev returns the payload header for a tx id on the source chain
+    /// @param txId_ is the identifier of the transaction issued by super router
+    function txHistory(uint256 txId_) external view returns (uint256);
 }

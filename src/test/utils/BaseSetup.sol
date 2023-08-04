@@ -388,12 +388,6 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
-            /// @dev 4.5.1- deploy Payload Helper
-            vars.PayloadHelper = address(
-                new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.twoStepsFormStateRegistry)
-            );
-            contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
-
             /// @dev 4.5.2- deploy Fee Helper
             vars.feeHelper = address(new FeeHelper{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("FeeHelper"))] = vars.feeHelper;
@@ -557,6 +551,16 @@ abstract contract BaseSetup is DSTest, Test {
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
+
+            /// @dev 13.1- deploy Payload Helper
+            vars.PayloadHelper = address(
+                new PayloadHelper{salt: salt}(
+                    vars.coreStateRegistry,
+                    vars.superPositions,
+                    vars.twoStepsFormStateRegistry
+                )
+            );
+            contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
 
             /// @dev 14 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
@@ -1137,7 +1141,7 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (, , , , uint256[] memory amounts, , uint256[] memory superFormIds, ) = vars.payloadHelper.decodePayload(
+        (, , , , uint256[] memory amounts, , uint256[] memory superFormIds, ) = vars.payloadHelper.decodeDstPayload(
             payloadId
         );
 

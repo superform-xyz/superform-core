@@ -28,7 +28,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint256 transactionId => uint256 txInfo) public txHistory;
+    mapping(uint256 transactionId => uint256 txInfo) public override txHistory;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIER

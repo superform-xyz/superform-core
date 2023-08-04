@@ -130,7 +130,9 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
                 singleVaultCallDataArgs.superFormId = rescueSuperformIds[i];
                 /// @dev slippage adjusted amount that'll be withdrawn
-                singleVaultCallDataArgs.amount = (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) / 10000;
+                singleVaultCallDataArgs.amount =
+                    (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) /
+                    10000;
                 liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
             }
 
@@ -869,7 +871,6 @@ abstract contract ProtocolActions is BaseSetup {
                                     vars.liqBridges,
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    uint256(chainIds[vars.chainDstIndex]),
                                     vars.underlyingSrcToken,
                                     vars.amounts
                                 );
@@ -878,7 +879,6 @@ abstract contract ProtocolActions is BaseSetup {
                                     vars.liqBridges[0],
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    uint256(chainIds[vars.chainDstIndex]),
                                     vars.underlyingSrcToken[0],
                                     singleSuperFormsData[i].amount
                                 );
@@ -912,7 +912,6 @@ abstract contract ProtocolActions is BaseSetup {
                                     vars.liqBridges,
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    uint256(chainIds[vars.chainDstIndex]),
                                     vars.underlyingSrcToken,
                                     vars.amounts
                                 );
@@ -921,7 +920,6 @@ abstract contract ProtocolActions is BaseSetup {
                                     vars.liqBridges[0],
                                     CHAIN_0,
                                     aV[i].toChainId,
-                                    uint256(chainIds[vars.chainDstIndex]),
                                     vars.underlyingSrcToken[0],
                                     singleSuperFormsData[i].amount
                                 );
@@ -1684,7 +1682,6 @@ abstract contract ProtocolActions is BaseSetup {
         address underlyingToken_,
         address from_,
         uint64 toChainId_,
-        uint256 liqBridgeToChainId_,
         uint256 amount_
     ) internal returns (bytes memory txData) {
         if (liqBridgeKind_ == 1) {
@@ -1710,7 +1707,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             userRequest = ISocketRegistry.UserRequest(
                 getContract(toChainId_, "CoreStateRegistry"),
-                liqBridgeToChainId_,
+                uint256(toChainId_),
                 amount_,
                 middlewareRequest,
                 bridgeRequest
@@ -1739,7 +1736,7 @@ abstract contract ProtocolActions is BaseSetup {
                 underlyingToken_,
                 getContract(toChainId_, "CoreStateRegistry"),
                 amount_,
-                liqBridgeToChainId_,
+                uint256(toChainId_),
                 false,
                 true
             );
@@ -1753,7 +1750,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint8 liqBridgeKind_,
         uint64 srcChainId_,
         uint64 targetChainId_,
-        uint256 liquidityBridgeDstChainId_,
         address underlyingToken_,
         uint256 amount_
     ) internal {
@@ -1765,7 +1761,6 @@ abstract contract ProtocolActions is BaseSetup {
             underlyingToken_,
             getContract(targetChainId_, "MultiTxProcessor"),
             targetChainId_,
-            liquidityBridgeDstChainId_,
             amount_
         );
 
@@ -1784,7 +1779,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint8[] memory liqBridgeKinds_,
         uint64 srcChainId_,
         uint64 targetChainId_,
-        uint256 liquidityBridgeDstChainId_,
         address[] memory underlyingTokens_,
         uint256[] memory amounts_
     ) internal {
@@ -1799,7 +1793,6 @@ abstract contract ProtocolActions is BaseSetup {
                 underlyingTokens_[i],
                 getContract(targetChainId_, "MultiTxProcessor"),
                 targetChainId_,
-                liquidityBridgeDstChainId_,
                 amounts_[i]
             );
         }

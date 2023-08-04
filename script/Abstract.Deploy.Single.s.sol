@@ -384,12 +384,6 @@ abstract contract AbstractDeploySingle is Script {
         registryIds[2] = 3;
         registryIds[3] = 4;
 
-        /// @dev 3.5.1- deploy Payload Helper
-        vars.PayloadHelper = address(
-            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.twoStepsFormStateRegistry)
-        );
-        contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
-
         /// @dev 3.5.2- deploy Fee Helper
         vars.feeHelper = address(new FeeHelper{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("FeeHelper"))] = vars.feeHelper;
@@ -478,6 +472,12 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("PositionsSplitter"))] = address(
             new PositionsSplitter{salt: salt}(IERC1155s(vars.superPositions))
         );
+
+        /// @dev 16.1 - Deploy Payload Helper
+        vars.PayloadHelper = address(
+            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superPositions, vars.twoStepsFormStateRegistry)
+        );
+        contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
 
         /// @dev 12 - Deploy MultiTx Processor
         vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
