@@ -61,7 +61,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         bytes memory /// extraData_
     ) external payable virtual override {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_STATE_REGISTRY();
         }
 
         uint64 chainId = ambChainId[dstChainId_];
@@ -88,21 +88,29 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         bytes memory extraData_
     ) external payable virtual {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_STATE_REGISTRY();
         }
 
-        BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-        /// FIXME:should we check the length ?? anyway out of index will fail if the length mistmatches - Sujith
         uint256 totalChains = broadcastChains.length;
 
-        /// calculate the exact fee needed
+        BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
+
+        if (d.gasPerDst.length != totalChains) {
+            revert Error.INVALID_GAS_PER_DST_LENGTH();
+        }
+
+        /// @dev calculates the exact fee needed
         uint256 feesReq = messageBus.calcFee(message_);
         feesReq = feesReq * totalChains;
 
-        for (uint64 i; i < totalChains; i++) {
+        for (uint64 i; i < totalChains; ) {
             uint64 chainId = broadcastChains[i];
 
             messageBus.sendMessage{value: d.gasPerDst[i]}(authorizedImpl[chainId], chainId, message_);
+
+            unchecked {
+                ++i;
+            }
         }
 
         /// Refund unused fees
@@ -159,11 +167,11 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
         if (msg.sender != address(messageBus)) {
-            revert Error.INVALID_CALLER();
+            revert Error.CALLER_NOT_MESSAGE_BUS();
         }
 
         if (sender_ != authorizedImpl[srcChainId_]) {
-            revert Error.INVALID_CALLER();
+            revert Error.INVALID_SRC_SENDER();
         }
 
         bytes32 hash = keccak256(message_);

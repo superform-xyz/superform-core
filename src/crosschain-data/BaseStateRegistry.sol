@@ -95,7 +95,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /// @inheritdoc IBaseStateRegistry
     function receivePayload(uint64 srcChainId_, bytes memory message_) external override {
         if (!superRegistry.isValidAmbImpl(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_AMB_IMPLEMENTATION();
         }
 
         AMBMessage memory data = abi.decode(message_, (AMBMessage));

@@ -43,7 +43,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     modifier onlyCaller() {
         if (!ISuperRBAC(getProtocolAddress(SUPER_RBAC)).hasProtocolAdminRole(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
     }

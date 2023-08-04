@@ -37,7 +37,7 @@ contract RolesStateRegistry is Broadcaster {
         }
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert Error.INVALID_PAYLOAD_STATE();
+            revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;

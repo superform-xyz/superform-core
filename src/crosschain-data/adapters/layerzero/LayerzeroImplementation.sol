@@ -78,7 +78,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         bytes memory extraData_
     ) external payable override {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_STATE_REGISTRY();
         }
 
         _lzSend(ambChainId[dstChainId_], message_, payable(srcSender_), address(0x0), extraData_, msg.value);
@@ -87,7 +87,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /// @inheritdoc IAmbImplementation
     function broadcastPayload(address srcSender_, bytes memory message_, bytes memory extraData_) external payable {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_STATE_REGISTRY();
         }
 
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
@@ -144,7 +144,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     ) public override {
         // lzReceive must be called by the endpoint for security
         if (msg.sender != address(lzEndpoint)) {
-            revert Error.INVALID_CALLER();
+            revert Error.CALLER_NOT_ENDPOINT();
         }
 
         if (isValid[srcChainId_][nonce_]) {
@@ -161,14 +161,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _blockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_);
     }
 
-    function nonblockingLzReceive(
-        uint16 srcChainId_,
-        bytes memory srcAddress_,
-        bytes memory payload_
-    ) public {
+    function nonblockingLzReceive(uint16 srcChainId_, bytes memory srcAddress_, bytes memory payload_) public {
         // only internal transaction
         if (msg.sender != address(this)) {
-            revert Error.INVALID_CALLER();
+            revert Error.CALLER_NOT_ENDPOINT();
         }
 
         _nonblockingLzReceive(srcChainId_, srcAddress_, payload_);
@@ -184,11 +180,11 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         bytes32 payloadHash = failedMessages[srcChainId_][srcAddress_][nonce_];
 
         if (payloadHash == bytes32(0)) {
-            revert Error.INVALID_PAYLOAD_STATE();
+            revert Error.ZERO_PAYLOAD_HASH();
         }
 
         if (keccak256(payload_) != payloadHash) {
-            revert Error.INVALID_PAYLOAD();
+            revert Error.INVALID_PAYLOAD_HASH();
         }
 
         // clear the stored message

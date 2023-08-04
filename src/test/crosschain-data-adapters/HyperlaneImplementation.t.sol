@@ -83,7 +83,7 @@ contract HyperlaneImplementationTest is BaseSetup {
 
         (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.prank(bond);
         hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(
             users[0],
@@ -100,7 +100,7 @@ contract HyperlaneImplementationTest is BaseSetup {
 
         (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.prank(bond);
         hyperlaneImplementation.dispatchPayload{value: 0.1 ether}(
             users[0],
@@ -134,11 +134,11 @@ contract HyperlaneImplementationTest is BaseSetup {
             abi.encode(ambMessage)
         );
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
         vm.prank(MAILBOX);
         hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(bond))), abi.encode(ambMessage));
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.CALLER_NOT_MAILBOX.selector);
         vm.prank(bond);
         hyperlaneImplementation.handle(
             uint32(ETH),

@@ -186,12 +186,12 @@ contract LayerzeroImplementationTest is BaseSetup {
             }
         }
 
-        vm.expectRevert(Error.INVALID_PAYLOAD_STATE.selector);
+        vm.expectRevert(Error.ZERO_PAYLOAD_HASH.selector);
         /// @dev NOTE nonce = 1, instead of 2
         layerzeroImplementation.retryMessage(101, srcAddressOP, 1, payload);
 
         bytes memory invalidPayload = hex"0007";
-        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        vm.expectRevert(Error.INVALID_PAYLOAD_HASH.selector);
         layerzeroImplementation.retryMessage(101, srcAddressOP, 2, invalidPayload);
 
         vm.expectEmit(false, false, false, true, getContract(ETH, "CoreStateRegistry"));
@@ -206,7 +206,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[0]);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
 
         vm.prank(bond);
         layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
@@ -223,7 +223,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[0]);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
 
         vm.prank(bond);
         layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
@@ -262,7 +262,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.selectFork(FORKS[OP]);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.CALLER_NOT_ENDPOINT.selector);
 
         vm.prank(bond);
         layerzeroImplementation.lzReceive(101, srcAddressOP, 2, payload);
@@ -278,7 +278,7 @@ contract LayerzeroImplementationTest is BaseSetup {
     }
 
     function test_revert_nonblockingLzReceive_invalidCaller() public {
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.CALLER_NOT_ENDPOINT.selector);
 
         vm.prank(bond);
         layerzeroImplementation.nonblockingLzReceive(111, srcAddressOP, "");

@@ -182,7 +182,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         v._payloadHeader = payloadHeader[payloadId_];
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert Error.INVALID_PAYLOAD_STATE();
+            revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
 
         (v.txType, v.callbackType, v.multi, , v.srcSender, v.srcChainId) = v._payloadHeader.decodeTxInfo();

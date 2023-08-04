@@ -40,7 +40,7 @@ library PayloadUpdaterLib {
         }
 
         if (currentPayloadState_ != PayloadState.STORED) {
-            revert Error.INVALID_PAYLOAD_STATE();
+            revert Error.PAYLOAD_ALREADY_UPDATED();
         }
 
         if (multi != isMulti) {
