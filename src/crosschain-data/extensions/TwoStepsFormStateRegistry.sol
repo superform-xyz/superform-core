@@ -49,7 +49,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -190,7 +190,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                         uint8(TransactionType.WITHDRAW),
                         uint8(CallbackType.FAIL),
                         0,
-                        STATE_REGISTRY_TYPE,
+                        superRegistry.getStateRegistryId(address(this)),
                         srcSender_,
                         superRegistry.chainId()
                     ),

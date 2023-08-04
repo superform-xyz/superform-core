@@ -134,7 +134,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
 
-        /// FIXME: @dev should handle a way to pop. Why? - Sujith
         broadcastChains.push(ambChainId_);
 
         emit ChainAdded(superChainId_);

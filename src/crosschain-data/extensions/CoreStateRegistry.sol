@@ -51,7 +51,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -539,7 +539,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         uint8(txType),
                         uint8(returnType),
                         1,
-                        STATE_REGISTRY_TYPE,
+                        superRegistry.getStateRegistryId(address(this)),
                         srcSender_,
                         superRegistry.chainId()
                     ),
@@ -565,7 +565,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         uint8(txType),
                         uint8(returnType),
                         0,
-                        STATE_REGISTRY_TYPE,
+                        superRegistry.getStateRegistryId(address(this)),
                         srcSender_,
                         superRegistry.chainId()
                     ),

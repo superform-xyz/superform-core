@@ -356,14 +356,14 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 4.1 - deploy Core State Registry
 
-            vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1));
+            vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
             SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
 
             /// @dev 4.2- deploy Factory State Registry
             vars.factoryStateRegistry = address(
-                new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 2)
+                new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry))
             );
 
             contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
@@ -372,7 +372,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 4.3 - deploy Form State Registry
             vars.twoStepsFormStateRegistry = address(
-                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 4)
+                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry))
             );
 
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
@@ -381,7 +381,7 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
 
             /// @dev 4.4- deploy Roles State Registry
-            vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 3));
+            vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
 
             contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
 

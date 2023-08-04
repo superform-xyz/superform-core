@@ -17,7 +17,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
-    uint8 public immutable STATE_REGISTRY_TYPE;
     ISuperRegistry public immutable superRegistry;
 
     /*///////////////////////////////////////////////////////////////
@@ -63,11 +62,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                         CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_, uint8 stateRegistryType_) {
+    constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
-
-        /// TODO: move state registry type to superregistry?? - Sujith
-        STATE_REGISTRY_TYPE = stateRegistryType_;
     }
 
     /*///////////////////////////////////////////////////////////////

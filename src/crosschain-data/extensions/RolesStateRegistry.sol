@@ -22,7 +22,7 @@ contract RolesStateRegistry is Broadcaster {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_, uint8 registryType_) Broadcaster(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_) Broadcaster(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS

@@ -307,6 +307,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
+    function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
+        registryId_ = stateRegistryIds[registryAddress_];
+    }
+
+    /// @inheritdoc ISuperRegistry
     function getFeeCollector() external view returns (address feeCollector_) {
         feeCollector_ = getProtocolAddress(FEE_COLLECTOR);
     }

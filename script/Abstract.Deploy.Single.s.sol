@@ -342,21 +342,21 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev 3.1 - deploy Core State Registry
 
-        vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1));
+        vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
         contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
         SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
 
         /// @dev 3.2- deploy Factory State Registry
 
-        vars.factoryStateRegistry = address(new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 2));
+        vars.factoryStateRegistry = address(new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
         contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
 
         SuperRegistry(vars.superRegistry).setFactoryStateRegistry(vars.factoryStateRegistry);
 
         /// @dev 3.3 - deploy Form State Registry
         vars.twoStepsFormStateRegistry = address(
-            new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 4)
+            new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry))
         );
 
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
@@ -364,7 +364,7 @@ abstract contract AbstractDeploySingle is Script {
         SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
 
         /// @dev 3.4- deploy Roles State Registry
-        vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 3));
+        vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
 
         contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
 

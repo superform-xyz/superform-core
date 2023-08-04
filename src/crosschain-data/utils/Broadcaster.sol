@@ -14,7 +14,7 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     ///@dev set up admin during deployment.
-    constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) {}
 
     /// @inheritdoc IBroadcaster
     function broadcastPayload(
@@ -45,7 +45,14 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
         bytes memory extraData_
     ) internal {
         AMBMessage memory newData = AMBMessage(
-            DataLib.packTxInfo(0, 0, 0, STATE_REGISTRY_TYPE, srcSender_, superRegistry.chainId()),
+            DataLib.packTxInfo(
+                0,
+                0,
+                0,
+                superRegistry.getStateRegistryId(address(this)),
+                srcSender_,
+                superRegistry.chainId()
+            ),
             message_
         );
 
@@ -69,7 +76,14 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
     ) internal {
         bytes memory proof = abi.encode(keccak256(message_));
         AMBMessage memory newData = AMBMessage(
-            DataLib.packTxInfo(0, 0, 0, STATE_REGISTRY_TYPE, srcSender_, superRegistry.chainId()),
+            DataLib.packTxInfo(
+                0,
+                0,
+                0,
+                superRegistry.getStateRegistryId(address(this)),
+                srcSender_,
+                superRegistry.chainId()
+            ),
             proof
         );
 
