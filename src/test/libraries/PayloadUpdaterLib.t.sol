@@ -93,6 +93,19 @@ contract PayloadUpdaterLibTest is Test {
 
         vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
         payloadUpdateLib.validatePayloadUpdate(txInfo4, PayloadState.STORED, 1);
+
+        /// @dev payload updater goes rogue and tries to update amounts for crafted type
+        uint256 txInfo5 = DataLib.packTxInfo(
+            uint8(TransactionType.WITHDRAW),
+            uint8(CallbackType.RETURN),
+            1,
+            1,
+            address(420),
+            1
+        );
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
+        payloadUpdateLib.validatePayloadUpdate(txInfo5, PayloadState.STORED, 1);
     }
 
     function test_validatePayloadUpdateForAlreadyUpdatedPayload() public {
@@ -108,6 +121,21 @@ contract PayloadUpdaterLibTest is Test {
 
         vm.expectRevert(Error.INVALID_PAYLOAD_STATE.selector);
         payloadUpdateLib.validatePayloadUpdate(txInfo, PayloadState.UPDATED, 1);
+    }
+
+    function test_validatePayloadUpdateForAlreadyProcessedPayload() public {
+        /// @dev payload updater goes rogue and tries to update already updated payload
+        uint256 txInfo = DataLib.packTxInfo(
+            uint8(TransactionType.DEPOSIT),
+            uint8(CallbackType.INIT),
+            1,
+            1,
+            address(420),
+            1
+        );
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_STATE.selector);
+        payloadUpdateLib.validatePayloadUpdate(txInfo, PayloadState.PROCESSED, 1);
     }
 
     function test_validatePayloadUpdateForIsMultiMismatch() public {
