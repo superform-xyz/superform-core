@@ -24,6 +24,9 @@ library Error {
     /// @dev - when msg.sender is not form
     error NOT_SUPERFORM();
 
+    /// @dev - when the address is not a state registry on super registry
+    error NOT_VALID_STATE_REGISTRY();
+
     /// @dev - when msg.sender is not form state registry
     error NOT_FORM_STATE_REGISTRY();
 
@@ -47,6 +50,12 @@ library Error {
 
     /// @dev - when msg.sender is not minter
     error NOT_MINTER();
+
+    /// @dev - when msg.sender is not burner
+    error NOT_BURNER();
+
+    /// @dev - when msg.sender is not minter state registry
+    error NOT_MINTER_STATE_REGISTRY();
 
     /// @dev if the msg-sender is not super form factory
     error NOT_SUPERFORM_FACTORY();

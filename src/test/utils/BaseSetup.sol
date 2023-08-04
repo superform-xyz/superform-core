@@ -378,6 +378,7 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
             SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
+            SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
 
             /// @dev 4.4- deploy Roles State Registry
             vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 3));
@@ -385,7 +386,6 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
 
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
-
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
             /// @dev 4.5.1- deploy Payload Helper
@@ -411,6 +411,8 @@ abstract contract BaseSetup is DSTest, Test {
             registryIds[3] = 4;
 
             SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
+            SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.coreStateRegistry);
+            SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.twoStepsFormStateRegistry);
 
             /// @dev 5.1 - deploy Layerzero Implementation
             vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
@@ -547,12 +549,13 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperFormRouter"))] = vars.superRouter;
 
             SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
+            SuperRBAC(vars.superRBAC).grantMinterRole(vars.superRouter);
+            SuperRBAC(vars.superRBAC).grantBurnerRole(vars.superRouter);
 
             /// @dev 13 - Deploy SuperPositions
             vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
-
             SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
             /// @dev 14 - Deploy MultiTx Processor

@@ -86,6 +86,36 @@ interface ISuperRBAC {
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
     function revokeUpdaterRole(address updater_, bytes memory extraData_) external payable;
 
+    /// @dev grants the MINTER_ROLE to the given address
+    /// @param minter_ the address to grant the role to
+    function grantMinterRole(address minter_) external;
+
+    /// @dev revokes the MINTER_ROLE from given address
+    /// @param minter_ the address to revoke the role from
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeMinterRole(address minter_, bytes memory extraData_) external payable;
+
+    /// @dev grants the BURNER_ROLE to the given address
+    /// @param burner_ the address to grant the role to
+    function grantBurnerRole(address burner_) external;
+
+    /// @dev revokes the BURNER_ROLE from given address
+    /// @param burner_ the address to revoke the role from
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeBurnerRole(address burner_, bytes memory extraData_) external payable;
+
+    /// @dev grants the BURNER_ROLE to the given address
+    /// @param minterStateRegistry_ the address to grant the role to
+    function grantMinterStateRegistryRole(address minterStateRegistry_) external;
+
+    /// @dev revokes the BURNER_ROLE from given address
+    /// @param minterStateRegistry_ the address to revoke the role from
+    /// @param extraData_ amb config if broadcasting is required
+    /// @notice send extraData_ as bytes(0) if no broadcasting is required
+    function revokeMinterStateRegistryRole(address minterStateRegistry_, bytes memory extraData_) external payable;
+
     /// @dev allows sync of global roles from different chains
     /// @notice may not work for all roles
     function stateSync(bytes memory data_) external;
@@ -118,35 +148,56 @@ interface ISuperRBAC {
     /// @dev returns the id of the updater role
     function UPDATER_ROLE() external view returns (bytes32);
 
-    /// @dev returns wether the given address has the protocol admin role
+    /// @dev returns the id of minter role
+    function MINTER_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of burner role
+    function BURNER_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of minter state registry role
+    function MINTER_STATE_REGISTRY() external view returns (bytes32);
+
+    /// @dev returns whether the given address has the protocol admin role
     /// @param admin_ the address to check
     function hasProtocolAdminRole(address admin_) external view returns (bool);
 
-    /// @dev returns wether the given address has the fee admin role
+    /// @dev returns whether the given address has the fee admin role
     /// @param admin_ the address to check
     function hasFeeAdminRole(address admin_) external view returns (bool);
 
-    /// @dev returns wether the given address has the emergency admin role
+    /// @dev returns whether the given address has the emergency admin role
     /// @param admin_ the address to check
     function hasEmergencyAdminRole(address admin_) external view returns (bool);
 
-    /// @dev returns wether the given address has the swapper role
+    /// @dev returns whether the given address has the swapper role
     /// @param swapper_ the address to check
     function hasSwapperRole(address swapper_) external view returns (bool);
 
-    /// @dev returns wether the given address has the core contracts role
+    /// @dev returns whether the given address has the core contracts role
     /// @param coreContracts_ the address to check
     function hasCoreContractsRole(address coreContracts_) external view returns (bool);
 
-    /// @dev returns wether the given address has the processor role
+    /// @dev returns whether the given address has the processor role
     /// @param processor_ the address to check
     function hasProcessorRole(address processor_) external view returns (bool);
 
-    /// @dev returns wether the given address has the two steps processor role
+    /// @dev returns whether the given address has the two steps processor role
     /// @param twoStepsProcessor_ the address to check
     function hasTwoStepsProcessorRole(address twoStepsProcessor_) external view returns (bool);
 
-    /// @dev returns wether the given address has the updater role
+    /// @dev returns whether the given address has the updater role
     /// @param updater_ the address to check
     function hasUpdaterRole(address updater_) external view returns (bool);
+
+    /// @dev returns whether the given address has the super positions minter role
+    /// @param minter_ the address to check
+    function hasMinterRole(address minter_) external view returns (bool);
+
+    /// @dev returns whether the given address has the super positions burner role
+    /// @param burner_ the address to check
+    function hasBurnerRole(address burner_) external view returns (bool);
+
+    /// @dev returns whether the given state registry address has the minter role
+    /// @param stateRegistry_ the address to check
+    function hasMinterStateRegistryRole(address stateRegistry_) external view returns (bool);
 }
