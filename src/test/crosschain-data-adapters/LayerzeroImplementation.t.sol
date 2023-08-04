@@ -216,6 +216,30 @@ contract LayerzeroImplementationTest is BaseSetup {
         );
     }
 
+    function test_revert_broadcastPayload_invalidExtraDataLengths() public {
+        AMBMessage memory ambMessage;
+        BroadCastAMBExtraData memory ambExtraData;
+        address coreStateRegistry;
+
+        (ambMessage, , coreStateRegistry) = _setupBroadcastPayloadAMBData(users[0]);
+
+        uint256[] memory gasPerDst = new uint256[](3);
+        for (uint i = 0; i < gasPerDst.length; i++) {
+            gasPerDst[i] = 0.1 ether;
+        }
+
+        /// @dev keeping extraDataPerDst empty for now
+        bytes[] memory extraDataPerDst = new bytes[](5);
+
+        vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
+        vm.prank(coreStateRegistry);
+        layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
+    }
+
     function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId() public {
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;

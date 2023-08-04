@@ -91,12 +91,19 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         }
 
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-        /// NOTE:should we check the length ?? anyway out of index will fail if the length
-        /// mistmatches
+        uint256 totalChains = broadcastChains.length;
 
-        for (uint256 i; i < broadcastChains.length; i++) {
+        if (d.gasPerDst.length != totalChains || d.extraDataPerDst.length != totalChains) {
+            revert Error.INVALID_EXTRA_DATA_LENGTHS();
+        }
+
+        for (uint256 i; i < totalChains; ) {
             uint16 dstChainId = broadcastChains[i];
             _lzSend(dstChainId, message_, payable(srcSender_), address(0x0), d.extraDataPerDst[i], d.gasPerDst[i]);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 

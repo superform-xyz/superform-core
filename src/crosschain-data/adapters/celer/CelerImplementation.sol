@@ -95,8 +95,8 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
 
-        if (d.gasPerDst.length != totalChains) {
-            revert Error.INVALID_GAS_PER_DST_LENGTH();
+        if (d.gasPerDst.length != totalChains || d.extraDataPerDst.length != totalChains) {
+            revert Error.INVALID_EXTRA_DATA_LENGTHS();
         }
 
         /// @dev calculates the exact fee needed

@@ -128,6 +128,40 @@ contract CelerImplementationTest is BaseSetup {
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
+
+        vm.prank(coreStateRegistry);
+        celerImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
+    }
+
+    function test_revert_broadcastPayload_invalidGasDstLength() public {
+        vm.startPrank(deployer);
+
+        AMBMessage memory ambMessage;
+        address coreStateRegistry;
+
+        (ambMessage, , coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
+
+        uint256[] memory gasPerDst = new uint256[](5);
+        for (uint i = 0; i < gasPerDst.length; i++) {
+            gasPerDst[i] = 0.1 ether;
+        }
+
+        /// @dev keeping extraDataPerDst empty for now
+        bytes[] memory extraDataPerDst = new bytes[](4);
+
+        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
+
+        vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
+        vm.prank(coreStateRegistry);
+        celerImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_broadcastPayload_invalidCaller() public {

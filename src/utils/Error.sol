@@ -179,7 +179,7 @@ library Error {
     error INVALID_AMB_IDS_LENGTH();
 
     /// @dev is thrown if the gas per dst doesn't match chain ids in broadcasting
-    error INVALID_GAS_PER_DST_LENGTH();
+    error INVALID_EXTRA_DATA_LENGTHS();
 
     /// @dev if trying to rescue a non multi failed deposit data
     error NOT_MULTI_FAILURE();

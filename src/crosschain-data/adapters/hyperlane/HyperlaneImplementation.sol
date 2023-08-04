@@ -93,8 +93,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
         uint256 totalChains = broadcastChains.length;
 
-        if (d.gasPerDst.length != totalChains) {
-            revert Error.INVALID_GAS_PER_DST_LENGTH();
+        if (d.gasPerDst.length != totalChains || d.extraDataPerDst.length != totalChains) {
+            revert Error.INVALID_EXTRA_DATA_LENGTHS();
         }
 
         for (uint64 i; i < totalChains; i++) {
