@@ -29,7 +29,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev just stores the superFormIds that are failed in a specific payload id
+    /// @dev just stores the superFormIds that failed in a specific payload id
     mapping(uint256 payloadId => uint256[] superFormIds) internal failedDeposits;
 
     /*///////////////////////////////////////////////////////////////
@@ -73,6 +73,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256[] calldata finalAmounts_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
         UpdatePayloadVars memory v_;
+        /// @dev load header and body of payload
         v_.previousPayloadHeader_ = payloadHeader[payloadId_];
         v_.previousPayloadBody_ = payloadBody[payloadId_];
 
@@ -91,25 +92,28 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         v_.l1 = multiVaultData.amounts.length;
         v_.l2 = finalAmounts_.length;
 
+        /// @dev compare number of vaults to update with provided finalAmounts length
         if (v_.l1 != v_.l2) {
             revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
         }
 
+        /// @dev validate payload update
         PayloadUpdaterLib.validatePayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 1);
         PayloadUpdaterLib.validateSlippageArray(finalAmounts_, multiVaultData.amounts, multiVaultData.maxSlippage);
 
         multiVaultData.amounts = finalAmounts_;
 
-        /// re-set previous message quorum to 0
+        /// @dev re-set previous message quorum to 0
         delete messageQuorum[v_.previousPayloadProof_];
 
         payloadBody[payloadId_] = abi.encode(multiVaultData);
 
-        /// set new message quorum
+        /// @dev set new message quorum
         messageQuorum[
             keccak256(abi.encode(AMBMessage(v_.previousPayloadHeader_, payloadBody[payloadId_])))
         ] = getRequiredMessagingQuorum(v_.srcChainId);
 
+        /// @dev define the payload status as updated
         payloadTracking[payloadId_] = PayloadState.UPDATED;
 
         emit PayloadUpdated(payloadId_);
@@ -120,6 +124,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 payloadId_,
         uint256 finalAmount_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
+        /// @dev load header and body of payload
+
         bytes memory previousPayloadBody_ = payloadBody[payloadId_];
         uint256 previousPayloadHeader_ = payloadHeader[payloadId_];
         InitSingleVaultData memory singleVaultData = abi.decode(previousPayloadBody_, (InitSingleVaultData));
@@ -131,6 +137,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             revert Error.QUORUM_NOT_REACHED();
         }
 
+        /// @dev validate payload update
         PayloadUpdaterLib.validatePayloadUpdate(previousPayloadHeader_, payloadTracking[payloadId_], 0);
         PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage);
 
@@ -140,7 +147,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         payloadBody[payloadId_] = abi.encode(singleVaultData);
 
-        /// set new message quorum
+        /// @dev set new message quorum
         messageQuorum[
             keccak256(abi.encode(AMBMessage(previousPayloadHeader_, payloadBody[payloadId_])))
         ] = getRequiredMessagingQuorum(srcChainId);
@@ -150,6 +157,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         emit PayloadUpdated(payloadId_);
     }
 
+    /// @dev local struct to avoid stack too deep errors
     struct CoreProcessPayloadLocalVars {
         bytes _payloadBody;
         uint256 _payloadHeader;
@@ -194,6 +202,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         /// @dev validates quorum
         v._proof = keccak256(savedMessage);
 
+        /// @dev The number of valid proofs (quorum) must be equal to the required messaging quorum
         if (messageQuorum[v._proof] < getRequiredMessagingQuorum(v.srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
@@ -205,6 +214,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 : ISuperPositions(superRegistry.superPositions()).stateSync(v._message);
         }
 
+        /// @dev for initial payload processing
         if (v.callbackType == uint8(CallbackType.INIT)) {
             if (v.txType == uint8(TransactionType.WITHDRAW)) {
                 returnMessage = v.multi == 1
@@ -219,6 +229,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             }
         }
 
+        /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
         if (returnMessage.length > 0) {
             _dispatchAcknowledgement(v.srcChainId, returnMessage, ackExtraData_);
         }
@@ -228,6 +239,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
     }
 
+    /// @dev local struct to avoid stack too deep errors
     struct RescueFailedDepositsLocalVars {
         uint64 dstChainId;
         uint64 srcChainId;
@@ -236,7 +248,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     }
 
     /// @inheritdoc ICoreStateRegistry
-    /// @dev rescue failed deposits from liqData_.length superforms, per payloadId_, per chainId
     function rescueFailedDeposits(
         uint256 payloadId_,
         LiqRequest[] memory liqData_
@@ -251,7 +262,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         if (l1 == 0 || l2 == 0 || l1 != l2) {
             revert Error.INVALID_RESCUE_DATA();
         }
-
         uint256 _payloadHeader = payloadHeader[payloadId_];
 
         (, , , , v.srcSender, v.srcChainId) = _payloadHeader.decodeTxInfo();
@@ -316,7 +326,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         InitSingleVaultData memory singleVaultData;
         bool errors;
 
-        /// @dev This will revert ALL of the transactions if one of them fails.
         for (uint256 i; i < multiVaultData.superFormIds.length; ) {
             DataLib.validateSuperFormChainId(multiVaultData.superFormIds[i], superRegistry.chainId());
 
@@ -332,9 +341,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             (address superForm_, , ) = singleVaultData.superFormId.getSuperForm();
 
             try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
-                /// @dev marks the indexes that don't require a callback re-mint of SuperPositions
+                /// @dev marks the indexes that don't require a callback re-mint of SuperPositions (successful withdraws)
                 multiVaultData.amounts[i] = 0;
             } catch {
+                /// @dev detect if there is at least one failed withdraw
                 if (!errors) errors = true;
             }
 
@@ -383,14 +393,14 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         for (uint256 i; i < numberOfVaults; ) {
             underlying = IERC20(IBaseForm(superForms[i]).getVaultAsset());
 
-            /// @dev This will revert ALL of the transactions if one of them fails.
             if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
                 underlying.transfer(superForms[i], multiVaultData.amounts[i]);
                 LiqRequest memory emptyRequest;
 
+                /// @dev important to validate the chainId of the superform against the chainId where this is happening
                 DataLib.validateSuperFormChainId(multiVaultData.superFormIds[i], superRegistry.chainId());
 
-                /// Note: dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
+                /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
                 try
                     IBaseForm(superForms[i]).xChainDepositIntoVault(
                         InitSingleVaultData({
@@ -406,9 +416,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     )
                 returns (uint256 dstAmount) {
                     if (!fulfilment) fulfilment = true;
-                    /// @dev marks the indexes that require a callback mint of SuperPositions
+                    /// @dev marks the indexes that require a callback mint of SuperPositions (successful)
                     dstAmounts[i] = dstAmount;
                 } catch {
+                    /// @dev if any deposit fails, we mark errors as true and add it to failedDeposits mapping for future rescuing
                     if (!errors) errors = true;
 
                     failedDeposits[payloadId_].push(multiVaultData.superFormIds[i]);
@@ -453,7 +464,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         (address superForm_, , ) = singleVaultData.superFormId.getSuperForm();
 
-        /// @dev Withdraw from Form
+        /// @dev Withdraw from superform
         try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
             // Handle the case when the external call succeeds
         } catch {
@@ -490,14 +501,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         IERC20 underlying = IERC20(IBaseForm(superForm_).getVaultAsset());
 
-        /// @dev NOTE: This will revert with an error only descriptive of the first possible revert out of many
-        /// 1. Not enough tokens on this contract == BRIDGE_TOKENS_PENDING
-        /// 2. Fail to .transfer() == BRIDGE_TOKENS_PENDING
-        /// 3. xChainDepositIntoVault() reverting on anything == BRIDGE_TOKENS_PENDING
-        /// Note: Should add reverts at the Form level
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.transfer(superForm_, singleVaultData.amount);
 
+            /// @dev deposit to superform
             try IBaseForm(superForm_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
                 uint256 dstAmount
             ) {
@@ -511,6 +518,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         dstAmount
                     );
             } catch {
+                /// @dev if any deposit fails, add it to failedDeposits mapping for future rescuing
                 failedDeposits[payloadId_].push(singleVaultData.superFormId);
 
                 emit FailedXChainDeposits(payloadId_);
@@ -531,7 +539,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256[] memory superFormIds_,
         uint256[] memory amounts
     ) internal view returns (bytes memory) {
-        /// @notice Send Data to Source to issue superform positions.
+        /// @dev Send Data to Source to issue superform positions (failed withdraws and successful deposits)
         return
             abi.encode(
                 AMBMessage(
@@ -557,7 +565,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 superFormId_,
         uint256 amount
     ) internal view returns (bytes memory) {
-        /// @notice Send Data to Source to issue superform positions.
+        /// @dev Send Data to Source to issue superform positions (failed withdraws and successful deposits)
         return
             abi.encode(
                 AMBMessage(
@@ -574,6 +582,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             );
     }
 
+    /// @dev calls the appropriate dispatch function according to the ackExtraData the keeper fed initially
     function _dispatchAcknowledgement(uint64 dstChainId_, bytes memory message_, bytes memory ackExtraData_) internal {
         AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
         uint8[] memory ambIds_ = ackData.ambIds;
