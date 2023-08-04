@@ -45,16 +45,6 @@ interface ISuperFormFactory {
         bytes32 salt_
     ) external returns (address beacon);
 
-    /// @dev allows an admin to add Form Beacons to the factory
-    /// @param formImplementations_ are the address of form implementaions
-    /// @param formBeaconIds_ are the to-be ids of the form beacons
-    /// @param salt_ is the salt for create2
-    function addFormBeacons(
-        address[] memory formImplementations_,
-        uint32[] memory formBeaconIds_,
-        bytes32 salt_
-    ) external;
-
     // 5. Forms should exist based on (everything else, including deposit/withdraw/tvl etc could be done in implementations above it)
     //    1. Vault token type received (20, 4626, 721, or none)
     //   2. To get/calculate the name of the resulting Superform
