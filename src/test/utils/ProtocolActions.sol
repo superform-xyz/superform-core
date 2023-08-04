@@ -1968,7 +1968,7 @@ abstract contract ProtocolActions is BaseSetup {
                     spAmountSummed[v.i] += v.finalAmount;
                 }
             }
-            vm.selectFork(FORKS[DST_CHAINS[v.i]]);
+            vm.selectFork(FORKS[DST_CHAINS[dstIndex]]);
 
             spAmountSummed[v.i] = IBaseForm(v.superForms[v.i]).previewDepositTo(spAmountSummed[v.i]);
         }
@@ -2141,7 +2141,7 @@ abstract contract ProtocolActions is BaseSetup {
                     false,
                     1,
                     0,
-                    0
+                    i
                 );
                 _assertMultiVaultBalance(
                     action.user,
