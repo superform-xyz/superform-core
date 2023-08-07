@@ -17,6 +17,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     address public PERMIT2;
 
     mapping(bytes32 id => address moduleAddress) private protocolAddresses;
+    mapping(bytes32 id => mapping(uint64 chainId => address moduleAddress)) private protocolAddressesCrossChain;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
     mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
@@ -42,7 +43,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override TX_UPDATER = keccak256("TX_UPDATER");
 
     modifier onlyCaller() {
-        if (!ISuperRBAC(getProtocolAddress(SUPER_RBAC)).hasProtocolAdminRole(msg.sender)) {
+        if (!ISuperRBAC(protocolAddresses[SUPER_RBAC]).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
@@ -75,6 +76,17 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
+    function setNewProtocolAddressCrossChain(
+        bytes32 protocolAddressId_,
+        address newAddress_,
+        uint64 chainId_
+    ) external override onlyCaller {
+        address oldAddress = protocolAddressesCrossChain[protocolAddressId_][chainId_];
+        protocolAddressesCrossChain[protocolAddressId_][chainId_] = newAddress_;
+        emit ProtocolAddressCrossChainUpdated(protocolAddressId_, chainId_, oldAddress, newAddress_);
+    }
+
+    /// @inheritdoc ISuperRegistry
     function setSuperRouter(address superRouter_) external override onlyCaller {
         address oldSuperRouter = protocolAddresses[SUPER_ROUTER];
         protocolAddresses[SUPER_ROUTER] = superRouter_;
@@ -104,6 +116,14 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         protocolAddresses[CORE_STATE_REGISTRY] = coreStateRegistry_;
 
         emit CoreStateRegistryUpdated(oldCoreStateRegistry, coreStateRegistry_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setCoreStateRegistryCrossChain(address coreStateRegistry_, uint64 chainId_) external override onlyCaller {
+        address oldCoreStateRegistry = protocolAddressesCrossChain[CORE_STATE_REGISTRY][chainId_];
+        protocolAddressesCrossChain[CORE_STATE_REGISTRY][chainId_] = coreStateRegistry_;
+
+        emit CoreStateRegistryCrossChainUpdated(chainId_, oldCoreStateRegistry, coreStateRegistry_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -152,6 +172,14 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         protocolAddresses[MULTI_TX_PROCESSOR] = multiTxProcessor_;
 
         emit MultiTxProcessorUpdated(oldMultiTxProcessor, multiTxProcessor_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setMultiTxProcessorCrossChain(address multiTxProcessor_, uint64 chainId_) external override onlyCaller {
+        address oldMultiTxProcessor = protocolAddressesCrossChain[MULTI_TX_PROCESSOR][chainId_];
+        protocolAddressesCrossChain[MULTI_TX_PROCESSOR][chainId_] = multiTxProcessor_;
+
+        emit MultiTxProcessorCrossChainUpdated(chainId_, oldMultiTxProcessor, multiTxProcessor_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -232,58 +260,76 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
+    function getProtocolAddressCrossChain(
+        bytes32 protocolAddressId_,
+        uint64 chainId_
+    ) public view override returns (address) {
+        return protocolAddressesCrossChain[protocolAddressId_][chainId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
     function superRouter() external view override returns (address superRouter_) {
-        superRouter_ = getProtocolAddress(SUPER_ROUTER);
+        superRouter_ = protocolAddresses[SUPER_ROUTER];
     }
 
     /// @inheritdoc ISuperRegistry
     function superFormFactory() external view override returns (address superFormFactory_) {
-        superFormFactory_ = getProtocolAddress(SUPERFORM_FACTORY);
+        superFormFactory_ = protocolAddresses[SUPERFORM_FACTORY];
     }
 
     /// @inheritdoc ISuperRegistry
     function coreStateRegistry() external view override returns (address coreStateRegistry_) {
-        coreStateRegistry_ = getProtocolAddress(CORE_STATE_REGISTRY);
+        coreStateRegistry_ = protocolAddresses[CORE_STATE_REGISTRY];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function coreStateRegistryCrossChain(uint64 chainId_) external view override returns (address coreStateRegistry_) {
+        coreStateRegistry_ = protocolAddressesCrossChain[CORE_STATE_REGISTRY][chainId_];
     }
 
     /// @inheritdoc ISuperRegistry
     function twoStepsFormStateRegistry() external view returns (address twoStepsFormStateRegistry_) {
-        twoStepsFormStateRegistry_ = getProtocolAddress(TWO_STEPS_FORM_STATE_REGISTRY);
+        twoStepsFormStateRegistry_ = protocolAddresses[TWO_STEPS_FORM_STATE_REGISTRY];
     }
 
     /// @inheritdoc ISuperRegistry
     function factoryStateRegistry() external view override returns (address factoryStateRegistry_) {
-        factoryStateRegistry_ = getProtocolAddress(FACTORY_STATE_REGISTRY);
+        factoryStateRegistry_ = protocolAddresses[FACTORY_STATE_REGISTRY];
     }
 
     /// @inheritdoc ISuperRegistry
     function rolesStateRegistry() external view override returns (address rolesStateRegistry_) {
-        rolesStateRegistry_ = getProtocolAddress(ROLES_STATE_REGISTRY);
+        rolesStateRegistry_ = protocolAddresses[ROLES_STATE_REGISTRY];
     }
 
     /// @inheritdoc ISuperRegistry
     function superPositions() external view override returns (address superPositions_) {
-        superPositions_ = getProtocolAddress(SUPER_POSITIONS);
+        superPositions_ = protocolAddresses[SUPER_POSITIONS];
     }
 
     /// @inheritdoc ISuperRegistry
     function superRBAC() external view override returns (address superRBAC_) {
-        superRBAC_ = getProtocolAddress(SUPER_RBAC);
+        superRBAC_ = protocolAddresses[SUPER_RBAC];
     }
 
     /// @inheritdoc ISuperRegistry
     function multiTxProcessor() external view override returns (address multiTxProcessor_) {
-        multiTxProcessor_ = getProtocolAddress(MULTI_TX_PROCESSOR);
+        multiTxProcessor_ = protocolAddresses[MULTI_TX_PROCESSOR];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function multiTxProcessorCrossChain(uint64 chainId_) external view override returns (address multiTxProcessor_) {
+        multiTxProcessor_ = protocolAddressesCrossChain[MULTI_TX_PROCESSOR][chainId_];
     }
 
     /// @inheritdoc ISuperRegistry
     function txProcessor() external view override returns (address txProcessor_) {
-        txProcessor_ = getProtocolAddress(TX_PROCESSOR);
+        txProcessor_ = protocolAddresses[TX_PROCESSOR];
     }
 
     /// @inheritdoc ISuperRegistry
     function txUpdater() external view override returns (address txUpdater_) {
-        txUpdater_ = getProtocolAddress(TX_UPDATER);
+        txUpdater_ = protocolAddresses[TX_UPDATER];
     }
 
     /// @inheritdoc ISuperRegistry

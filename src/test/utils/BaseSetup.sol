@@ -386,7 +386,6 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
 
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
-            SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
             /// @dev 4.5.2- deploy Fee Helper
             vars.feeHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
@@ -666,6 +665,21 @@ abstract contract BaseSetup is DSTest, Test {
         /// @dev 17 - create superforms when the whole state registry is configured
         for (uint256 i = 0; i < chainIds.length; i++) {
             vm.selectFork(FORKS[chainIds[i]]);
+
+            /// @dev for SuperRegistry on a given chainId, set CoreStateRegistry, MultiTxProcessor of all other chainIds
+            for (uint256 m = 0; m < chainIds.length; m++) {
+                if (chainIds[i] != chainIds[m]) {
+                    SuperRegistry(getContract(chainIds[i], "SuperRegistry")).setCoreStateRegistryCrossChain(
+                        getContract(chainIds[m], "CoreStateRegistry"),
+                        chainIds[m]
+                    );
+                    SuperRegistry(getContract(chainIds[i], "SuperRegistry")).setMultiTxProcessorCrossChain(
+                        getContract(chainIds[m], "MultiTxProcessor"),
+                        chainIds[m]
+                    );
+                }
+            }
+
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;

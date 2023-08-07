@@ -48,6 +48,12 @@ contract SuperRegistryTest is BaseSetup {
         assertEq(superRegistry.getProtocolAddress(keccak256("SUPER_RBAC")), address(0x1));
     }
 
+    function test_setNewProtocolAddressCrossChain() public {
+        vm.prank(deployer);
+        superRegistry.setNewProtocolAddressCrossChain(keccak256("SUPER_RBAC"), address(0x1), OP);
+        assertEq(superRegistry.getProtocolAddressCrossChain(keccak256("SUPER_RBAC"), OP), address(0x1));
+    }
+
     function test_revert_setNewProtocolAddress_invalidCaller() public {
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
 
@@ -77,6 +83,17 @@ contract SuperRegistryTest is BaseSetup {
             superRegistry.coreStateRegistry.selector,
             address(0x1)
         );
+    }
+
+    function test_setCoreStateRegistryCrossChain_and_revert_invalidCaller() public {
+        vm.prank(deployer);
+        superRegistry.setCoreStateRegistryCrossChain(address(0x1), OP);
+
+        assertEq(superRegistry.coreStateRegistryCrossChain(OP), address(0x1));
+
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.prank(bond);
+        superRegistry.setCoreStateRegistryCrossChain(address(0x2), OP);
     }
 
     function test_setTwoStepsFormStateRegistry_and_revert_invalidCaller() public {
@@ -117,6 +134,17 @@ contract SuperRegistryTest is BaseSetup {
             superRegistry.multiTxProcessor.selector,
             address(0x1)
         );
+    }
+
+    function test_setMultiTxProcessorCrossChain_and_revert_invalidCaller() public {
+        vm.prank(deployer);
+        superRegistry.setMultiTxProcessorCrossChain(address(0x1), OP);
+
+        assertEq(superRegistry.multiTxProcessorCrossChain(OP), address(0x1));
+
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.prank(bond);
+        superRegistry.setMultiTxProcessorCrossChain(address(0x2), OP);
     }
 
     function test_setTxProcessor_and_revert_invalidCaller() public {
