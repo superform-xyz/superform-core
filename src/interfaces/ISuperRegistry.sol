@@ -18,14 +18,25 @@ interface ISuperRegistry {
         address indexed newAddress
     );
 
+    /// @dev is emitted when an address is set.
+    event ProtocolAddressCrossChainUpdated(
+        bytes32 indexed protocolAddressId,
+        uint64 indexed chainId,
+        address indexed oldAddress,
+        address newAddress
+    );
+
     /// @dev is emitted when the super router address is set.
     event SuperRouterUpdated(address indexed oldSuperRouter, address indexed superRouter);
 
     /// @dev is emitted when the superform factory address is set.
     event SuperFormFactoryUpdated(address indexed oldSuperFormFactory, address indexed superFormFactory);
 
-    /// @dev is emitted when the state registry address is set.
+    /// @dev is emitted when the core state registry address is set for src chain.
     event CoreStateRegistryUpdated(address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
+
+    /// @dev is emitted when the core state registry address is set for a specific chain
+    event CoreStateRegistryCrossChainUpdated(uint64 indexed chainId, address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
 
     /// @dev is emitted when the state registry address is set.
     event TwoStepsFormStateRegistryUpdated(
@@ -46,6 +57,9 @@ interface ISuperRegistry {
 
     /// @dev is emitted when a new multi tx processor is configured.
     event MultiTxProcessorUpdated(address indexed oldMultiTxProcessor, address indexed multiTxProcessor);
+
+    /// @dev is emitted when a new multi tx processor is configured for a specific chain
+    event MultiTxProcessorCrossChainUpdated(uint64 indexed chainId, address indexed oldMultiTxProcessor, address indexed multiTxProcessor);
 
     /// @dev is emitted when a new tx processor is configured.
     event TxProcessorUpdated(address indexed oldTxProcessor, address indexed txProcessor);
@@ -82,6 +96,12 @@ interface ISuperRegistry {
     /// @param newAddress_ the new address
     function setNewProtocolAddress(bytes32 protocolAddressId_, address newAddress_) external;
 
+    /// @dev sets a new protocol address on a specific chain.
+    /// @param protocolAddressId_ the protocol address identifier on that chain
+    /// @param newAddress_ the new address on that chain
+    /// @param chainId_ the chain id of that chain
+    function setNewProtocolAddressCrossChain(bytes32 protocolAddressId_, address newAddress_, uint64 chainId_) external;
+
     /// @dev sets the super router address.
     /// @param superRouter_ the address of the super router
     function setSuperRouter(address superRouter_) external;
@@ -94,19 +114,24 @@ interface ISuperRegistry {
     /// @param feeCollector_ the address of the fee collector
     function setFeeCollector(address feeCollector_) external;
 
-    /// @dev sets the state registry address.
-    /// @param coreStateRegistry_ the address of the state registry
+    /// @dev sets the core state registry address.
+    /// @param coreStateRegistry_ the address of the core state registry
     function setCoreStateRegistry(address coreStateRegistry_) external;
 
-    /// @dev sets the state registry address.
-    /// @param twoStepsFormStateRegistry_ the address of the state registry
+    /// @dev allows admin to set the core state registry address for a specific chain
+    /// @param coreStateRegistry_ the address of the core state registry for that chain
+    /// @param chainId_ the chain id of that chain
+    function setCoreStateRegistryCrossChain(address coreStateRegistry_, uint64 chainId_) external;
+
+    /// @dev sets the two steps form state registry address.
+    /// @param twoStepsFormStateRegistry_ the address of the two steps form state registry
     function setTwoStepsFormStateRegistry(address twoStepsFormStateRegistry_) external;
 
-    /// @dev sets the state registry address.
-    /// @param factoryStateRegistry_ the address of the state registry
+    /// @dev sets the factory state registry address.
+    /// @param factoryStateRegistry_ the address of the factory state registry
     function setFactoryStateRegistry(address factoryStateRegistry_) external;
 
-    /// @dev sets the state registry address.
+    /// @dev sets the roles state registry address.
     /// @param rolesStateRegistry_ the address of the roles state registry
     function setRolesStateRegistry(address rolesStateRegistry_) external;
 
@@ -117,6 +142,11 @@ interface ISuperRegistry {
     /// @dev allows admin to set the multi tx processor address
     /// @param multiTxProcessor_ the address of the multi tx processor
     function setMultiTxProcessor(address multiTxProcessor_) external;
+
+    /// @dev allows admin to set the multi tx processor address for a specific chain
+    /// @param multiTxProcessor_ the address of the multi tx processor for that chain
+    /// @param chainId_ the chain id of that chain
+    function setMultiTxProcessorCrossChain(address multiTxProcessor_, uint64 chainId_) external;
 
     /// @dev allows admin to set the tx processor address
     /// @param txProcessor_ the address of the tx processor
@@ -200,6 +230,11 @@ interface ISuperRegistry {
     /// @param protocolAddressId_ is the id of the contract
     function getProtocolAddress(bytes32 protocolAddressId_) external view returns (address);
 
+    /// @dev gets the address of a contract on a specific chain.
+    /// @param protocolAddressId_ is the id of the contract
+    /// @param chainId_ is the chain id of that chain
+    function getProtocolAddressCrossChain(bytes32 protocolAddressId_, uint64 chainId_) external view returns (address);
+
     /// @dev gets the super router address.
     /// @return superRouter_ the address of the super router
     function superRouter() external view returns (address superRouter_);
@@ -208,16 +243,21 @@ interface ISuperRegistry {
     /// @return superFormFactory_ the address of the superform factory
     function superFormFactory() external view returns (address superFormFactory_);
 
-    /// @dev gets the state registry address.
-    /// @return coreStateRegistry_ the address of the state registry
+    /// @dev gets the core state registry address.
+    /// @return coreStateRegistry_ the address of the core state registry
     function coreStateRegistry() external view returns (address coreStateRegistry_);
+
+    /// @dev gets the core state registry address on a specific chain.
+    /// @return coreStateRegistry_ the address of the core state registry on that chain
+    /// @param chainId_ chain id of that chain
+    function coreStateRegistryCrossChain(uint64 chainId_) external view returns (address coreStateRegistry_);
 
     /// @dev gets the form state registry address.
     /// @return twoStepsFormStateRegistry_ the address of the state registry
     function twoStepsFormStateRegistry() external view returns (address twoStepsFormStateRegistry_);
 
-    /// @dev gets the state registry address.
-    /// @return factoryStateRegistry_ the address of the state registry
+    /// @dev gets the factory state registry address.
+    /// @return factoryStateRegistry_ the address of the factory state registry
     function factoryStateRegistry() external view returns (address factoryStateRegistry_);
 
     /// @dev gets the roles state registry address.
@@ -236,6 +276,11 @@ interface ISuperRegistry {
     /// @return multiTxProcessor_ the address of the multi tx processor
     function multiTxProcessor() external view returns (address multiTxProcessor_);
 
+    /// @dev gets the multi tx processor on a specific chain
+    /// @return multiTxProcessor_ the address of the multi tx processor on that chain
+    /// @param chainId_ chain id of that chain
+    function multiTxProcessorCrossChain(uint64 chainId_) external view returns (address multiTxProcessor_);
+
     /// @dev gets the tx processor
     /// @return txProcessor_ the address of the tx processor
     function txProcessor() external view returns (address txProcessor_);
@@ -253,6 +298,12 @@ interface ISuperRegistry {
     /// @param registryId_ is the id of the state registry
     /// @return registryAddress_ is the address of the state registry
     function getStateRegistry(uint8 registryId_) external view returns (address registryAddress_);
+
+    /// @dev gets the id of the registry
+    /// @notice reverts if the id is not found
+    /// @param registryAddress_ is the address of the state registry
+    /// @return registryId_ is the id of the state registry
+    function getStateRegistryId(address registryAddress_) external view returns (uint8 registryId_);
 
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry

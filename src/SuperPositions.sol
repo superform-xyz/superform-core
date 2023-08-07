@@ -28,7 +28,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint256 transactionId => uint256 txInfo) public txHistory;
+    mapping(uint256 transactionId => uint256 txInfo) public override txHistory;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIER
@@ -36,25 +36,29 @@ contract SuperPositions is ISuperPositions, ERC1155s {
 
     /// note replace this to support some new role called minter in super registry
     modifier onlyMinter() {
-        if (superRegistry.superRouter() != msg.sender && superRegistry.twoStepsFormStateRegistry() != msg.sender)
-            revert Error.NOT_MINTER();
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasMinterRole(msg.sender)) revert Error.NOT_MINTER();
+        _;
+    }
+
+    modifier onlyBurner() {
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasBurnerRole(msg.sender)) revert Error.NOT_BURNER();
         _;
     }
 
     modifier onlyRouter() {
-        if (superRegistry.superRouter() != msg.sender && superRegistry.twoStepsFormStateRegistry() != msg.sender)
-            revert Error.NOT_SUPER_ROUTER();
-        _;
-    }
-
-    modifier onlyCoreStateRegistry() {
-        if (superRegistry.coreStateRegistry() != msg.sender && superRegistry.twoStepsFormStateRegistry() != msg.sender)
-            revert Error.NOT_CORE_STATE_REGISTRY();
+        if (superRegistry.superRouter() != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
+        _;
+    }
+
+    modifier onlyMinterStateRegistry() {
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasMinterStateRegistryRole(msg.sender)) {
+            revert Error.NOT_MINTER_STATE_REGISTRY();
+        }
         _;
     }
 
@@ -89,7 +93,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /// @inheritdoc ISuperPositions
-    function burnSingleSP(address srcSender_, uint256 superFormId_, uint256 amount_) external override onlyRouter {
+    function burnSingleSP(address srcSender_, uint256 superFormId_, uint256 amount_) external override onlyBurner {
         _burn(srcSender_, superFormId_, amount_);
     }
 
@@ -98,7 +102,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
         address srcSender_,
         uint256[] memory superFormIds_,
         uint256[] memory amounts_
-    ) external override onlyRouter {
+    ) external override onlyBurner {
         _batchBurn(srcSender_, superFormIds_, amounts_);
     }
 
@@ -110,7 +114,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     /// @inheritdoc ISuperPositions
     function stateMultiSync(
         AMBMessage memory data_
-    ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
+    ) external payable override onlyMinterStateRegistry returns (uint64 srcChainId_) {
         (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
             .txInfo
             .decodeTxInfo();
@@ -146,7 +150,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     /// @inheritdoc ISuperPositions
     function stateSync(
         AMBMessage memory data_
-    ) external payable override onlyCoreStateRegistry returns (uint64 srcChainId_) {
+    ) external payable override onlyMinterStateRegistry returns (uint64 srcChainId_) {
         (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
             .txInfo
             .decodeTxInfo();

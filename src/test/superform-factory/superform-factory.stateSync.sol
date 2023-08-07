@@ -48,7 +48,7 @@ contract SuperFormFactoryStateSyncTest is BaseSetup {
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                vm.expectRevert(Error.INVALID_PAYLOAD_STATE.selector);
+                vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1, "");
             }
         }

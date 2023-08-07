@@ -123,7 +123,6 @@ The typical flow for a withdraw xchain transaction is:
 | 2784387                                            | 14142           |        |        |         |         |
 | Function Name                                      | min             | avg    | median | max     | # calls |
 | addFormBeacon                                      | 4682            | 643178 | 637075 | 658975  | 2263    |
-| addFormBeacons                                     | 15028           | 656157 | 659379 | 1290841 | 4       |
 | changeFormBeaconPauseStatus                        | 5466            | 505673 | 505673 | 1005881 | 2       |
 | createSuperForm                                    | 725             | 320587 | 319818 | 341718  | 20107   |
 | getAllSuperForms                                   | 18856           | 18856  | 18856  | 18856   | 1       |

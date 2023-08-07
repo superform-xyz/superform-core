@@ -128,6 +128,40 @@ contract CelerImplementationTest is BaseSetup {
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
+
+        vm.prank(coreStateRegistry);
+        celerImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
+    }
+
+    function test_revert_broadcastPayload_invalidGasDstLength() public {
+        vm.startPrank(deployer);
+
+        AMBMessage memory ambMessage;
+        address coreStateRegistry;
+
+        (ambMessage, , coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
+
+        uint256[] memory gasPerDst = new uint256[](5);
+        for (uint i = 0; i < gasPerDst.length; i++) {
+            gasPerDst[i] = 0.1 ether;
+        }
+
+        /// @dev keeping extraDataPerDst empty for now
+        bytes[] memory extraDataPerDst = new bytes[](4);
+
+        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
+
+        vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
+        vm.prank(coreStateRegistry);
+        celerImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_broadcastPayload_invalidCaller() public {
@@ -138,7 +172,7 @@ contract CelerImplementationTest is BaseSetup {
 
         (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
 
         vm.prank(bond);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
@@ -187,7 +221,7 @@ contract CelerImplementationTest is BaseSetup {
             abi.encode(ambExtraData)
         );
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.prank(bond);
         celerImplementation.dispatchPayload{value: 0.1 ether}(
             users[0],
@@ -220,7 +254,7 @@ contract CelerImplementationTest is BaseSetup {
             getContract(ETH, "CelerHelper")
         );
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
         vm.prank(CELER_BUS);
         celerImplementation.executeMessage(
             bond, /// @dev invalid srcChainSender
@@ -229,7 +263,7 @@ contract CelerImplementationTest is BaseSetup {
             getContract(ETH, "CelerHelper")
         );
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.CALLER_NOT_MESSAGE_BUS.selector);
         vm.prank(bond);
         celerImplementation.executeMessage{value: 0.1 ether}(
             getContract(ETH, "CelerImplemtation"),

@@ -63,34 +63,40 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         address srcSender_,
         uint64 dstChainId_,
         bytes memory message_,
-        bytes memory
+        bytes memory extraData_
     ) external payable virtual override {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_STATE_REGISTRY();
         }
 
         uint32 domain = ambChainId[dstChainId_];
-        /// FIXME: works only on EVM-networks & contracts using CREATE2/CREATE3. What is the meaning of this FIXME? - Sujith
         bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
 
         igp.payForGas{value: msg.value}(
             messageId,
             domain,
-            500000, // @dev FIXME hardcoded to 500k abi.decode(extraData_, (uint256)). Should not be hardcoded - Sujith
-            srcSender_ /// @dev should refund to the user, now refunds to core state registry
+            extraData_.length > 0 ? abi.decode(extraData_, (uint256)) : 0,
+            srcSender_
         );
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(address, bytes memory message_, bytes memory extraData_) external payable virtual {
+    function broadcastPayload(
+        address srcSender_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable virtual {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_STATE_REGISTRY();
         }
 
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-        /// FIXME:should we check the length ?? anyway out of index will fail if the length mistmatches. Why? - Sujith
-
         uint256 totalChains = broadcastChains.length;
+
+        if (d.gasPerDst.length != totalChains || d.extraDataPerDst.length != totalChains) {
+            revert Error.INVALID_EXTRA_DATA_LENGTHS();
+        }
+
         for (uint64 i; i < totalChains; i++) {
             uint32 domain = broadcastChains[i];
 
@@ -99,8 +105,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             igp.payForGas{value: d.gasPerDst[i]}(
                 messageId,
                 domain,
-                0, /// abi.decode(d.extraDataPerDst[i], (uint256))
-                msg.sender /// @FIXME should refund to the user, now refunds to core state registry - Sujith
+                d.extraDataPerDst[i].length > 0 ? abi.decode(d.extraDataPerDst[i], (uint256)) : 0,
+                srcSender_
             );
         }
     }
@@ -145,11 +151,11 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
         if (msg.sender != address(mailbox)) {
-            revert Error.INVALID_CALLER();
+            revert Error.CALLER_NOT_MAILBOX();
         }
 
         if (sender_ != castAddr(authorizedImpl[origin_])) {
-            revert Error.INVALID_CALLER();
+            revert Error.INVALID_SRC_SENDER();
         }
 
         bytes32 hash = keccak256(body_);

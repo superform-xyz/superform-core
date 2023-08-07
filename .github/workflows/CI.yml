@@ -6,11 +6,10 @@ on:
   pull_request:
     branches: [main, develop]
 
-
 jobs:
   contract-sizes:
     name: Contract Sizes
-    runs-on: 'SuperformCore'
+    runs-on: "SuperformCore"
     steps:
       - uses: actions/checkout@v3
         with:
@@ -22,45 +21,6 @@ jobs:
         run: forge install
       - name: run size check
         run: forge build --sizes
-
-  contract-snapshot:
-    name: Contract Snapshot
-    runs-on: 'SuperformCore'
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-      - name: install dependencies
-        run: forge install
-      - name: run gas snapshots
-        run: forge snapshot --check
-        env:
-          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
-          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
-          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
-          BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
-          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
-          OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
-          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
-          POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
-          AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
-          FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
-
-  test-coverage:
-    name: Test Coverage
-    runs-on: 'SuperformCore'
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-      - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-      - name: dependencies
-        run: forge install
       - name: run coverage
         run: forge coverage
         env:
@@ -75,13 +35,65 @@ jobs:
           AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
 
+  # contract-snapshot:
+  #   name: Contract Snapshot
+  #   runs-on: 'SuperformCore'
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
+  #     - uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: nightly
+  #     - name: install dependencies
+  #       run: forge install
+  #     - name: run gas snapshots
+  #       run: forge snapshot --check
+  #       env:
+  #         # make fuzzing semi-deterministic to avoid noisy gas cost estimation
+  #         # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
+  #         FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+  #         BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+  #         ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
+  #         OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
+  #         ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+  #         POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
+  #         AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
+  #         FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
+
+  # test-coverage:
+  #   name: Test Coverage
+  #   runs-on: "SuperformCore"
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
+  #     - uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: nightly
+  #     - name: dependencies
+  #       run: forge install
+  #     - name: run coverage
+  #       run: forge coverage
+  #       env:
+  #         # make fuzzing semi-deterministic to avoid noisy gas cost estimation
+  #         # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
+  #         FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+  #         BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+  #         ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
+  #         OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
+  #         ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+  #         POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
+  #         AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
+  #         FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
+
   #slither:
-    #  runs-on: ubuntu-latest
-     # steps:
-     #   - uses: actions/checkout@v3
-     #   - name: Run Slither
-     #     uses: crytic/slither-action@v0.3.0
-     #     id: slither
-     #     with: 
-     #       slither-args: '--exclude-low --exclude-medium --no-fail-pedantic --exclude-optimization --exclude-informational --filter-paths mock,interfaces,lib,tests --json-types console,detectors'
-     #       fail-on: none
+  #  runs-on: ubuntu-latest
+  # steps:
+  #   - uses: actions/checkout@v3
+  #   - name: Run Slither
+  #     uses: crytic/slither-action@v0.3.0
+  #     id: slither
+  #     with:
+  #       slither-args: '--exclude-low --exclude-medium --no-fail-pedantic --exclude-optimization --exclude-informational --filter-paths mock,interfaces,lib,tests --json-types console,detectors'
+  #       fail-on: none

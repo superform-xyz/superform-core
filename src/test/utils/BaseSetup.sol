@@ -364,7 +364,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 4.1 - deploy Core State Registry
 
-            vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 1));
+            vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
             console.log("CHAIN_ID %s CoreStateRegistry %s", vars.chainId, vars.coreStateRegistry);
 
@@ -372,7 +372,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 4.2- deploy Factory State Registry
             vars.factoryStateRegistry = address(
-                new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 2)
+                new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry))
             );
 
             contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
@@ -382,30 +382,22 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 4.3 - deploy Form State Registry
             vars.twoStepsFormStateRegistry = address(
-                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 4)
+                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry))
             );
 
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
             console.log("CHAIN_ID %s TwoStepsFormStateRegistry %s", vars.chainId, vars.twoStepsFormStateRegistry);
 
             SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
+            SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
 
             /// @dev 4.4- deploy Roles State Registry
-            vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry), 3));
+            vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
 
             contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
             console.log("CHAIN_ID %s RolesStateRegistry %s", vars.chainId, vars.rolesStateRegistry);
 
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
-
-            SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
-
-            /// @dev 4.5.1- deploy Payload Helper
-            vars.PayloadHelper = address(
-                new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.twoStepsFormStateRegistry)
-            );
-            contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
-            console.log("CHAIN_ID %s PayloadHelper %s", vars.chainId, vars.PayloadHelper);
 
             /// @dev 4.5.2- deploy Fee Helper
             vars.feeHelper = address(new FeeHelper{salt: salt}(vars.superRegistry));
@@ -425,6 +417,8 @@ abstract contract BaseSetup is DSTest, Test {
             registryIds[3] = 4;
 
             SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
+            SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.coreStateRegistry);
+            SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.twoStepsFormStateRegistry);
 
             /// @dev 5.1 - deploy Layerzero Implementation
             vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
@@ -573,14 +567,24 @@ abstract contract BaseSetup is DSTest, Test {
             console.log("CHAIN_ID %s SuperFormRouter %s", vars.chainId, vars.superRouter);
 
             SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
+            SuperRBAC(vars.superRBAC).grantMinterRole(vars.superRouter);
+            SuperRBAC(vars.superRBAC).grantBurnerRole(vars.superRouter);
 
             /// @dev 13 - Deploy SuperPositions
             vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
-            console.log("CHAIN_ID %s SuperPositions %s", vars.chainId, vars.superPositions);
-
             SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
+
+            /// @dev 13.1- deploy Payload Helper
+            vars.PayloadHelper = address(
+                new PayloadHelper{salt: salt}(
+                    vars.coreStateRegistry,
+                    vars.superPositions,
+                    vars.twoStepsFormStateRegistry
+                )
+            );
+            contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
 
             /// @dev 14 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
@@ -703,6 +707,21 @@ abstract contract BaseSetup is DSTest, Test {
         /// @dev 17 - create superforms when the whole state registry is configured
         for (uint256 i = 0; i < chainIds.length; i++) {
             vm.selectFork(FORKS[chainIds[i]]);
+
+            /// @dev for SuperRegistry on a given chainId, set CoreStateRegistry, MultiTxProcessor of all other chainIds
+            for (uint256 m = 0; m < chainIds.length; m++) {
+                if (chainIds[i] != chainIds[m]) {
+                    SuperRegistry(getContract(chainIds[i], "SuperRegistry")).setCoreStateRegistryCrossChain(
+                        getContract(chainIds[m], "CoreStateRegistry"),
+                        chainIds[m]
+                    );
+                    SuperRegistry(getContract(chainIds[i], "SuperRegistry")).setMultiTxProcessorCrossChain(
+                        getContract(chainIds[m], "MultiTxProcessor"),
+                        chainIds[m]
+                    );
+                }
+            }
+
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;
@@ -1181,7 +1200,7 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (, , , , uint256[] memory amounts, , uint256[] memory superFormIds, ) = vars.payloadHelper.decodePayload(
+        (, , , , uint256[] memory amounts, , uint256[] memory superFormIds, ) = vars.payloadHelper.decodeDstPayload(
             payloadId
         );
 

@@ -37,7 +37,7 @@ contract SuperRegistryTest is BaseSetup {
         assertEq(superRegistry.chainId(), OP);
         assertEq(address(superRegistry.PERMIT2()), getContract(OP, "CanonicalPermit2"));
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
         superRegistry.setImmutables(ETH, getContract(ETH, "CanonicalPermit2"));
     }
@@ -48,8 +48,14 @@ contract SuperRegistryTest is BaseSetup {
         assertEq(superRegistry.getProtocolAddress(keccak256("SUPER_RBAC")), address(0x1));
     }
 
+    function test_setNewProtocolAddressCrossChain() public {
+        vm.prank(deployer);
+        superRegistry.setNewProtocolAddressCrossChain(keccak256("SUPER_RBAC"), address(0x1), OP);
+        assertEq(superRegistry.getProtocolAddressCrossChain(keccak256("SUPER_RBAC"), OP), address(0x1));
+    }
+
     function test_revert_setNewProtocolAddress_invalidCaller() public {
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
 
         vm.prank(bond);
         superRegistry.setNewProtocolAddress(keccak256("SUPER_RBAC"), address(0x5));
@@ -77,6 +83,17 @@ contract SuperRegistryTest is BaseSetup {
             superRegistry.coreStateRegistry.selector,
             address(0x1)
         );
+    }
+
+    function test_setCoreStateRegistryCrossChain_and_revert_invalidCaller() public {
+        vm.prank(deployer);
+        superRegistry.setCoreStateRegistryCrossChain(address(0x1), OP);
+
+        assertEq(superRegistry.coreStateRegistryCrossChain(OP), address(0x1));
+
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.prank(bond);
+        superRegistry.setCoreStateRegistryCrossChain(address(0x2), OP);
     }
 
     function test_setTwoStepsFormStateRegistry_and_revert_invalidCaller() public {
@@ -119,6 +136,17 @@ contract SuperRegistryTest is BaseSetup {
         );
     }
 
+    function test_setMultiTxProcessorCrossChain_and_revert_invalidCaller() public {
+        vm.prank(deployer);
+        superRegistry.setMultiTxProcessorCrossChain(address(0x1), OP);
+
+        assertEq(superRegistry.multiTxProcessorCrossChain(OP), address(0x1));
+
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.prank(bond);
+        superRegistry.setMultiTxProcessorCrossChain(address(0x2), OP);
+    }
+
     function test_setTxProcessor_and_revert_invalidCaller() public {
         _setAndAssert(superRegistry.setTxProcessor.selector, superRegistry.txProcessor.selector, address(0x1));
     }
@@ -147,7 +175,7 @@ contract SuperRegistryTest is BaseSetup {
         assertEq(superRegistry.getBridgeAddress(uint8(OP)), address(0x3));
         assertEq(superRegistry.getBridgeValidator(uint8(POLY)), address(0x6));
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
         superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
     }
@@ -171,7 +199,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setAmbAddress(ambId, ambAddress);
         vm.stopPrank();
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
         superRegistry.setAmbAddress(ambId, ambAddress);
 
@@ -198,7 +226,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setAmbAddress(registryId, registryAddress);
         vm.stopPrank();
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
         superRegistry.setAmbAddress(registryId, registryAddress);
 
@@ -210,7 +238,7 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setRequiredMessagingQuorum(OP, 2);
         assertEq(superRegistry.getRequiredMessagingQuorum(OP), 2);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
         superRegistry.setRequiredMessagingQuorum(OP, 5);
     }
@@ -222,7 +250,7 @@ contract SuperRegistryTest is BaseSetup {
         (, bytes memory isSet) = address(superRegistry).call(abi.encodeWithSelector(get_, contractName_));
         assertEq(abi.decode(isSet, (bool)), true);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
         (bool success_, ) = address(superRegistry).call(abi.encodeWithSelector(set_, address(0x2)));
     }
