@@ -37,12 +37,12 @@ library PayloadUpdaterLib {
     function validatePayloadUpdate(uint256 txInfo_, PayloadState currentPayloadState_, uint8 isMulti) internal pure {
         (uint256 txType, uint256 callbackType, uint8 multi, , , ) = DataLib.decodeTxInfo(txInfo_);
 
-        if (txType != uint256(TransactionType.DEPOSIT) && callbackType != uint256(CallbackType.INIT)) {
+        if (txType != uint256(TransactionType.DEPOSIT) || callbackType != uint256(CallbackType.INIT)) {
             revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
         }
 
         if (currentPayloadState_ != PayloadState.STORED) {
-            revert Error.INVALID_PAYLOAD_STATE();
+            revert Error.PAYLOAD_ALREADY_UPDATED();
         }
 
         if (multi != isMulti) {

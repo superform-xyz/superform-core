@@ -76,6 +76,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
     /// @inheritdoc ISuperformRouter
     function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req) external payable override {
         uint256 chainId = superRegistry.chainId();
+        uint256 balanceBefore = address(this).balance - msg.value;
 
         for (uint256 i; i < req.dstChainIds.length; ) {
             if (chainId == req.dstChainIds[i]) {
@@ -95,12 +96,14 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             }
         }
 
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function multiDstSingleVaultDeposit(MultiDstSingleVaultStateReq calldata req) external payable override {
         uint64 srcChainId = superRegistry.chainId();
+        uint256 balanceBefore = address(this).balance - msg.value;
+
         uint64 dstChainId;
 
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
@@ -119,36 +122,45 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             }
         }
 
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req) external payable override {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
         _singleXChainMultiVaultDeposit(req);
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req) external payable override {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
         _singleXChainSingleVaultDeposit(req);
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req) external payable override {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
         _singleDirectSingleVaultDeposit(req);
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req) external payable override {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
         _singleDirectMultiVaultDeposit(req);
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req) external payable override {
         uint256 chainId = superRegistry.chainId();
+        uint256 balanceBefore = address(this).balance - msg.value;
 
         for (uint256 i; i < req.dstChainIds.length; ) {
             if (chainId == req.dstChainIds[i]) {
@@ -169,12 +181,13 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             }
         }
 
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req) external payable override {
         uint64 dstChainId;
+        uint256 balanceBefore = address(this).balance - msg.value;
 
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
             dstChainId = req.dstChainIds[i];
@@ -192,31 +205,39 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             }
         }
 
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req) external payable override {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
         _singleXChainMultiVaultWithdraw(req);
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req) external payable override {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
         _singleXChainSingleVaultWithdraw(req);
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req) external payable override {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
         _singleDirectSingleVaultWithdraw(req);
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
     function singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req) external payable override {
+        uint256 balanceBefore = address(this).balance - msg.value;
+
         _singleDirectMultiVaultWithdraw(req);
-        _forwardFee();
+        _forwardFee(balanceBefore);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -885,8 +906,9 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev forwards the residual fees to fee collector
-    function _forwardFee() internal {
-        uint256 residualFee = address(this).balance;
+    function _forwardFee(uint256 _balanceBefore) internal {
+        /// @dev deducts what's already available sends what's left in msg.value to fee collector
+        uint256 residualFee = address(this).balance - _balanceBefore;
 
         if (residualFee > 0) {
             IPayMaster(superRegistry.getPayMaster()).makePayment{value: residualFee}(msg.sender);

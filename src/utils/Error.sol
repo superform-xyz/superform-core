@@ -22,6 +22,18 @@ library Error {
     error NOT_SUPERFORM();
 
     /// @dev thrown when msg.sender is not factory state registry
+    error NOT_VALID_STATE_REGISTRY();
+
+    /// @dev thrown when msg.sender is not form state registry
+    error NOT_FORM_STATE_REGISTRY();
+
+    /// @dev thrown when msg.sender is not a valid amb implementation
+    error NOT_AMB_IMPLEMENTATION();
+
+    /// @dev thrown when msg.sender is not state registry
+    error NOT_STATE_REGISTRY();
+
+    /// @dev thrown when msg.sender is not factory state registry
     error NOT_FACTORY_STATE_REGISTRY();
 
     /// @dev thrown when msg.sender is not roles state registry
@@ -42,7 +54,13 @@ library Error {
     /// @dev thrown when msg.sender is not minter
     error NOT_MINTER();
 
-    /// @dev thrown if the msg-sender is not super form factory
+    /// @dev thrown when msg.sender is not burner
+    error NOT_BURNER();
+
+    /// @dev thrown when msg.sender is not minter state registry
+    error NOT_MINTER_STATE_REGISTRY();
+
+    /// @dev if the msg-sender is not super form factory
     error NOT_SUPERFORM_FACTORY();
 
     /// @dev thrown if the msg-sender is not super registry
@@ -89,9 +107,14 @@ library Error {
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev thrown when msg.sender isn't a valid caller
-    /// TODO: all errors that throw this should be refactored into more specific error messages - Sujith
-    error INVALID_CALLER();
+    /// @dev celer adapter specific error, when caller not celer message bus
+    error CALLER_NOT_MESSAGE_BUS();
+
+    /// @dev hyperlane adapter specific error, when caller not hyperlane mailbox
+    error CALLER_NOT_MAILBOX();
+
+    /// @dev layerzero adapter specific error, when caller not layerzero endpoint
+    error CALLER_NOT_ENDPOINT();
 
     /// @dev thrown when src chain sender is not valid
     error INVALID_SRC_SENDER();
@@ -111,9 +134,17 @@ library Error {
     /// @dev thrown if payload id does not exist
     error INVALID_PAYLOAD_ID();
 
-    /// @dev thrown if payload state is not valid
-    /// TODO: all errors that throw this should be refactored into more specific error messages - Sujith
-    error INVALID_PAYLOAD_STATE();
+    /// @dev is thrown is payload is already updated (during xChain deposits)
+    error PAYLOAD_ALREADY_UPDATED();
+
+    /// @dev is thrown is payload is already processed
+    error PAYLOAD_ALREADY_PROCESSED();
+
+    /// @dev is thrown if the payload hash is zero during `retryMessage` on Layezero implementation
+    error ZERO_PAYLOAD_HASH();
+
+    /// @dev is thrown if the payload hash is invalid during `retryMessage` on Layezero implementation
+    error INVALID_PAYLOAD_HASH();
 
     /// @dev thrown if update payload function was called on a wrong payload
     error INVALID_PAYLOAD_UPDATE_REQUEST();
@@ -138,6 +169,21 @@ library Error {
 
     /// @dev thrown if any of the ambs in indexes +1 are repeated  (index 0)
     error INVALID_PROOF_BRIDGE_ID();
+
+    /// @dev thrown if less than 2 AMBs are passed in the state request
+    error INVALID_AMB_IDS_LENGTH();
+
+    /// @dev thrown if the gas per dst doesn't match chain ids in broadcasting
+    error INVALID_EXTRA_DATA_LENGTHS();
+
+    /// @dev thrown if trying to rescue a non multi failed deposit data
+    error NOT_MULTI_FAILURE();
+
+    /// @dev thrown if trying to rescue a non single failed deposit data
+    error NOT_SINGLE_FAILURE();
+
+    /// @dev thrown if deposits were already rescued
+    error ALREADY_RESCUED();
 
     /// @dev thrown if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
@@ -227,6 +273,8 @@ library Error {
     /*///////////////////////////////////////////////////////////////
                         FEE COLLECTOR ERRORS
     //////////////////////////////////////////////////////////////*/
+    /// @dev - when msg.sender is not fee admin
+    error NOT_FEE_ADMIN();
 
     /// @dev thrown when user pays zero fees
     error ZERO_MSG_VALUE();

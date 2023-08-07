@@ -22,7 +22,7 @@ contract RolesStateRegistry is Broadcaster {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_, uint8 registryType_) Broadcaster(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_) Broadcaster(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -37,7 +37,7 @@ contract RolesStateRegistry is Broadcaster {
         }
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert Error.INVALID_PAYLOAD_STATE();
+            revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;

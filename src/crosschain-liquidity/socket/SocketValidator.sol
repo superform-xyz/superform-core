@@ -39,7 +39,6 @@ contract SocketValidator is BridgeValidator {
         if (uint256(dstChainId_) != userRequest.toChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
-
         if (deposit_) {
             if (srcChainId_ == dstChainId_) {
                 /// @dev If same chain deposits then receiver address must be the superform

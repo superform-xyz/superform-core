@@ -30,7 +30,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev core protocol addresses identifiers
     bytes32 public constant override SUPER_ROUTER = keccak256("SUPER_ROUTER");
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
-    bytes32 public constant override FEE_COLLECTOR = keccak256("FEE_COLLECTOR");
+    bytes32 public constant override PAYMASTER = keccak256("PAYMASTER");
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
     bytes32 public constant override TWO_STEPS_FORM_STATE_REGISTRY = keccak256("TWO_STEPS_FORM_STATE_REGISTRY");
     bytes32 public constant override FACTORY_STATE_REGISTRY = keccak256("FACTORY_STATE_REGISTRY");
@@ -43,7 +43,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     modifier onlyCaller() {
         if (!ISuperRBAC(getProtocolAddress(SUPER_RBAC)).hasProtocolAdminRole(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
     }
@@ -92,8 +92,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc ISuperRegistry
     function setPayMaster(address feeCollector_) external override onlyCaller {
-        address oldPayMaster = protocolAddresses[FEE_COLLECTOR];
-        protocolAddresses[FEE_COLLECTOR] = feeCollector_;
+        address oldPayMaster = protocolAddresses[PAYMASTER];
+        protocolAddresses[PAYMASTER] = feeCollector_;
 
         emit PayMasterUpdated(oldPayMaster, feeCollector_);
     }
@@ -307,8 +307,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function getPayMaster() external view returns (address feeCollector_) {
-        feeCollector_ = getProtocolAddress(FEE_COLLECTOR);
+    function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
+        registryId_ = stateRegistryIds[registryAddress_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getPayMaster() external view returns (address payMaster_) {
+        payMaster_ = getProtocolAddress(PAYMASTER);
     }
 
     /// @inheritdoc ISuperRegistry

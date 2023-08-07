@@ -25,11 +25,10 @@ contract HyperlaneImplementationTest is BaseSetup {
         bond = address(7);
         /// @dev (who's a brokie)
         vm.deal(bond, 1 ether);
-
-        vm.startPrank(deployer);
     }
 
     function test_setReceiver() public {
+        vm.startPrank(deployer);
         hyperlaneImplementation.setReceiver(10, getContract(10, "HyperlaneImplementation")); /// optimism
         hyperlaneImplementation.setReceiver(137, getContract(137, "HyperlaneImplementation")); /// polygon
 
@@ -38,6 +37,7 @@ contract HyperlaneImplementationTest is BaseSetup {
     }
 
     function test_revert_setReceiver_invalidChainId_invalidAuthorizedImpl_invalidCaller() public {
+        vm.startPrank(deployer);
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         hyperlaneImplementation.setReceiver(0, getContract(10, "HyperlaneImplementation"));
 
@@ -52,6 +52,7 @@ contract HyperlaneImplementationTest is BaseSetup {
     }
 
     function test_setChainId() public {
+        vm.startPrank(deployer);
         hyperlaneImplementation.setChainId(10, 10); /// optimism
         hyperlaneImplementation.setChainId(137, 137); /// polygon
 
@@ -60,6 +61,7 @@ contract HyperlaneImplementationTest is BaseSetup {
     }
 
     function test_revert_setChainId_invalidChainId_invalidCaller() public {
+        vm.startPrank(deployer);
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         hyperlaneImplementation.setChainId(10, 0); /// optimism
 
@@ -74,13 +76,14 @@ contract HyperlaneImplementationTest is BaseSetup {
     }
 
     function test_revert_broadcastPayload_invalidCaller() public {
+        vm.startPrank(deployer);
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
 
         (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.prank(bond);
         hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(
             users[0],
@@ -89,14 +92,41 @@ contract HyperlaneImplementationTest is BaseSetup {
         );
     }
 
+    function test_revert_broadcastPayload_invalidGasDstLength() public {
+        vm.startPrank(deployer);
+        AMBMessage memory ambMessage;
+        address coreStateRegistry;
+
+        (ambMessage, , coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
+
+        uint256[] memory gasPerDst = new uint256[](5);
+        for (uint i = 0; i < gasPerDst.length; i++) {
+            gasPerDst[i] = 0.1 ether;
+        }
+
+        /// @dev keeping extraDataPerDst empty for now
+        bytes[] memory extraDataPerDst = new bytes[](1);
+
+        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
+
+        vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
+        vm.prank(coreStateRegistry);
+        hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(
+            users[0],
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
+    }
+
     function test_revert_dispatchPayload_invalidCaller() public {
+        vm.startPrank(deployer);
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
 
         (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.prank(bond);
         hyperlaneImplementation.dispatchPayload{value: 0.1 ether}(
             users[0],
@@ -107,6 +137,7 @@ contract HyperlaneImplementationTest is BaseSetup {
     }
 
     function test_revert_handle_duplicatePayload_invalidSrcChainSender_invalidCaller() public {
+        vm.startPrank(deployer);
         AMBMessage memory ambMessage;
 
         /// @dev setting authorizedImpl[ETH] to HyperlaneImplementation on ETH, as it was smh reset to 0 (after setting in BaseSetup)
@@ -129,11 +160,11 @@ contract HyperlaneImplementationTest is BaseSetup {
             abi.encode(ambMessage)
         );
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
         vm.prank(MAILBOX);
         hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(bond))), abi.encode(ambMessage));
 
-        vm.expectRevert(Error.INVALID_CALLER.selector);
+        vm.expectRevert(Error.CALLER_NOT_MAILBOX.selector);
         vm.prank(bond);
         hyperlaneImplementation.handle(
             uint32(ETH),

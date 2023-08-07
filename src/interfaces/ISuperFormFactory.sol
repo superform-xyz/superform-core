@@ -45,16 +45,6 @@ interface ISuperformFactory {
         bytes32 salt_
     ) external returns (address beacon);
 
-    /// @dev allows an admin to add Form Beacons to the factory
-    /// @param formImplementations_ are the address of form implementaions
-    /// @param formBeaconIds_ are the to-be ids of the form beacons
-    /// @param salt_ is the salt for create2
-    function addFormBeacons(
-        address[] memory formImplementations_,
-        uint32[] memory formBeaconIds_,
-        bytes32 salt_
-    ) external;
-
     /// @dev To add new vaults to Form implementations, fusing them together into Superforms
     /// @param formBeaconId_ is the form beacon we want to attach the vault to
     /// @param vault_ is the address of the vault

@@ -88,9 +88,9 @@ interface ISuperRegistry {
     /// @param superFormFactory_ the address of the superform factory
     function setSuperformFactory(address superFormFactory_) external;
 
-    /// @dev sets the superform fee collector address.
-    /// @param feeCollector_ the address of the fee collector
-    function setPayMaster(address feeCollector_) external;
+    /// @dev sets the superform paymaster address.
+    /// @param payMaster_ the address of the paymaster contract
+    function setPayMaster(address payMaster_) external;
 
     /// @dev sets the state registry address.
     /// @param coreStateRegistry_ the address of the state registry
@@ -164,8 +164,8 @@ interface ISuperRegistry {
     /// @dev returns the id of the superform factory module
     function SUPERFORM_FACTORY() external view returns (bytes32);
 
-    /// @dev returns the id of the superform fee collector
-    function FEE_COLLECTOR() external view returns (bytes32);
+    /// @dev returns the id of the superform paymaster contract
+    function PAYMASTER() external view returns (bytes32);
 
     /// @dev returns the id of the core state registry module
     function CORE_STATE_REGISTRY() external view returns (bytes32);
@@ -252,6 +252,12 @@ interface ISuperRegistry {
     /// @return registryAddress_ is the address of the state registry
     function getStateRegistry(uint8 registryId_) external view returns (address registryAddress_);
 
+    /// @dev gets the id of the registry
+    /// @notice reverts if the id is not found
+    /// @param registryAddress_ is the address of the state registry
+    /// @return registryId_ is the id of the state registry
+    function getStateRegistryId(address registryAddress_) external view returns (uint8 registryId_);
+
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry
     /// @return valid_ a flag indicating if its valid.
@@ -272,7 +278,7 @@ interface ISuperRegistry {
     /// @return ambAddress_ is the address of the form
     function getAmbAddress(uint8 ambId_) external view returns (address ambAddress_);
 
-    /// @dev gets the address of fee collector
-    /// @return feeCollector_ is the address of the fee collector
-    function getPayMaster() external view returns (address feeCollector_);
+    /// @dev gets the address of the paymaster
+    /// @return payMaster_ is the address of the paymaster contract
+    function getPayMaster() external view returns (address payMaster_);
 }

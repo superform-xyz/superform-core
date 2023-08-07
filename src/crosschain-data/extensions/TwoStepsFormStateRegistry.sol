@@ -33,7 +33,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     mapping(uint256 timeLockPayloadId => TimeLockPayload) public timeLockPayload;
 
     /// @dev allows only form to write to the receive paylod
-    /// TODO: add only 2 step forms to write - Sujith
     modifier onlyForm(uint256 superFormId) {
         (address superForm, , ) = superFormId.getSuperform();
         if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
@@ -50,7 +49,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_, uint8 registryType_) BaseStateRegistry(superRegistry_, registryType_) {}
+    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) {}
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -122,7 +121,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @inheritdoc BaseStateRegistry
     function processPayload(
         uint256 payloadId_,
-        bytes memory ackExtraData_
+        bytes memory
     )
         external
         payable
@@ -136,7 +135,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         bytes memory _payloadBody = payloadBody[payloadId_];
 
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
-            revert Error.INVALID_PAYLOAD_STATE();
+            revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
 
         (, uint256 callbackType, , , , uint64 srcChainId) = _payloadHeader.decodeTxInfo();
@@ -191,7 +190,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                         uint8(TransactionType.WITHDRAW),
                         uint8(CallbackType.FAIL),
                         0,
-                        STATE_REGISTRY_TYPE,
+                        superRegistry.getStateRegistryId(address(this)),
                         srcSender_,
                         superRegistry.chainId()
                     ),

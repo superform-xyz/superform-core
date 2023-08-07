@@ -23,7 +23,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
     modifier onlyFeeAdmin() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasFeeAdminRole(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_FEE_ADMIN();
         }
         _;
     }

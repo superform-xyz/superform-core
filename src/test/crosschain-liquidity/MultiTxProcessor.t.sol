@@ -38,7 +38,7 @@ contract MultiTxProcessorTest is BaseSetup {
         vm.startPrank(deployer);
 
         uint256 balanceBefore = multiTxProcessor.balance;
-        multiTxProcessor.call{value: transferAmount}("");
+        (bool success, ) = multiTxProcessor.call{value: transferAmount}("");
         uint256 balanceAfter = multiTxProcessor.balance;
         assertEq(balanceBefore + transferAmount, balanceAfter);
 
@@ -56,7 +56,7 @@ contract MultiTxProcessorTest is BaseSetup {
 
         address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-        payable(multiTxProcessor).call{value: 1e18}("");
+        (bool success, ) = payable(multiTxProcessor).call{value: 1e18}("");
         MultiTxProcessor(multiTxProcessor).processTx(
             1,
             _buildTxData(1, native, multiTxProcessor, ETH, 1e18),

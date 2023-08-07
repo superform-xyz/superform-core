@@ -86,17 +86,6 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
-    function addFormBeacons(
-        address[] memory formImplementations_,
-        uint32[] memory formBeaconIds_,
-        bytes32 salt_
-    ) external override onlyProtocolAdmin {
-        for (uint256 i = 0; i < formImplementations_.length; i++) {
-            addFormBeacon(formImplementations_[i], formBeaconIds_[i], salt_);
-        }
-    }
-
-    /// @inheritdoc ISuperformFactory
     function createSuperform(
         uint32 formBeaconId_,
         address vault_

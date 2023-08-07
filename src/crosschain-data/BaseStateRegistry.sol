@@ -17,7 +17,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
-    uint8 public immutable STATE_REGISTRY_TYPE;
     ISuperRegistry public immutable superRegistry;
 
     /*///////////////////////////////////////////////////////////////
@@ -63,11 +62,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                         CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_, uint8 stateRegistryType_) {
+    constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
-
-        /// TODO: move state registry type to superregistry?? - Sujith
-        STATE_REGISTRY_TYPE = stateRegistryType_;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -95,7 +91,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /// @inheritdoc IBaseStateRegistry
     function receivePayload(uint64 srcChainId_, bytes memory message_) external override {
         if (!superRegistry.isValidAmbImpl(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_AMB_IMPLEMENTATION();
         }
 
         AMBMessage memory data = abi.decode(message_, (AMBMessage));

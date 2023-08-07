@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import {IPayloadHelper} from "../../interfaces/IPayloadHelper.sol";
@@ -13,20 +14,24 @@ import {DataLib} from "../../libraries/DataLib.sol";
 contract PayloadHelper is IPayloadHelper {
     using DataLib for uint256;
 
-    IBaseStateRegistry public immutable payloadRegistry;
+    IBaseStateRegistry public immutable dstPayloadRegistry;
+    ISuperPositions public immutable srcPayloadRegistry;
+
     ITwoStepsFormStateRegistry public immutable twoStepRegistry;
 
-    constructor(address payloadRegistry_, address twoStepRegistry_) {
-        payloadRegistry = IBaseStateRegistry(payloadRegistry_);
+    constructor(address dstPayloadRegistry_, address srcPayloadRegistry_, address twoStepRegistry_) {
+        dstPayloadRegistry = IBaseStateRegistry(dstPayloadRegistry_);
+        srcPayloadRegistry = ISuperPositions(srcPayloadRegistry_);
         twoStepRegistry = ITwoStepsFormStateRegistry(twoStepRegistry_);
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodePayload(
+    function decodeDstPayload(
         uint256 dstPayloadId_
     )
         external
         view
+        override
         returns (
             uint8 txType,
             uint8 callbackType,
@@ -38,8 +43,8 @@ contract PayloadHelper is IPayloadHelper {
             uint256 srcPayloadId
         )
     {
-        bytes memory payloadBody = payloadRegistry.payloadBody(dstPayloadId_);
-        uint256 payloadHeader = payloadRegistry.payloadHeader(dstPayloadId_);
+        bytes memory payloadBody = dstPayloadRegistry.payloadBody(dstPayloadId_);
+        uint256 payloadHeader = dstPayloadRegistry.payloadHeader(dstPayloadId_);
 
         (uint8 txType_, uint8 callbackType_, uint8 multi_, , address srcSender_, uint64 srcChainId_) = payloadHeader
             .decodeTxInfo();
@@ -89,11 +94,28 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
+    function decodeSrcPayload(
+        uint256 srcTxId_
+    )
+        external
+        view
+        override
+        returns (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId)
+    {
+        uint256 txInfo = srcPayloadRegistry.txHistory(srcTxId_);
+
+        if (txInfo != 0) {
+            (txType, callbackType, multi, , srcSender, srcChainId) = txInfo.decodeTxInfo();
+        }
+    }
+
+    /// @inheritdoc IPayloadHelper
     function decodeTimeLockPayload(
         uint256 timelockPayloadId_
     )
         external
         view
+        override
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superFormId, uint256 amount)
     {
         TimeLockPayload memory payload = twoStepRegistry.getTimeLockPayload(timelockPayloadId_);
