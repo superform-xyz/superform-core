@@ -43,7 +43,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     modifier onlyCaller() {
         if (!ISuperRBAC(getProtocolAddress(SUPER_RBAC)).hasProtocolAdminRole(msg.sender)) {
-            revert Error.INVALID_CALLER();
+            revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
     }
@@ -304,6 +304,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistry(uint8 registryId_) external view override returns (address registryAddress_) {
         registryAddress_ = registryAddresses[registryId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
+        registryId_ = stateRegistryIds[registryAddress_];
     }
 
     /// @inheritdoc ISuperRegistry

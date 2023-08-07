@@ -254,6 +254,12 @@ interface ISuperRegistry {
     /// @return registryAddress_ is the address of the state registry
     function getStateRegistry(uint8 registryId_) external view returns (address registryAddress_);
 
+    /// @dev gets the id of the registry
+    /// @notice reverts if the id is not found
+    /// @param registryAddress_ is the address of the state registry
+    /// @return registryId_ is the id of the state registry
+    function getStateRegistryId(address registryAddress_) external view returns (uint8 registryId_);
+
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry
     /// @return valid_ a flag indicating if its valid.

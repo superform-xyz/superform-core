@@ -23,6 +23,9 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
     bytes32 public constant override TWOSTEPS_PROCESSOR_ROLE = keccak256("TWOSTEPS_PROCESSOR_ROLE");
     bytes32 public constant override UPDATER_ROLE = keccak256("UPDATER_ROLE");
+    bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant override BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant override MINTER_STATE_REGISTRY = keccak256("MINTER_STATE_REGISTRY");
 
     ISuperRegistry public superRegistry;
 
@@ -37,6 +40,9 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         _setRoleAdmin(PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(TWOSTEPS_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(UPDATER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(BURNER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(MINTER_STATE_REGISTRY, PROTOCOL_ADMIN_ROLE);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -62,10 +68,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(FEE_ADMIN_ROLE, admin_);
 
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE,
-                abi.encode(FEE_ADMIN_ROLE, admin_)
-            );
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(FEE_ADMIN_ROLE, admin_));
 
             _broadcast(abi.encode(rolesPayload), extraData_);
         }
@@ -96,10 +99,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(SWAPPER_ROLE, swapper_);
 
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE,
-                abi.encode(SWAPPER_ROLE, swapper_)
-            );
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(SWAPPER_ROLE, swapper_));
 
             _broadcast(abi.encode(rolesPayload), extraData_);
         }
@@ -175,9 +175,61 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(UPDATER_ROLE, updater_);
 
         if (extraData_.length > 0) {
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(UPDATER_ROLE, updater_));
+
+            _broadcast(abi.encode(rolesPayload), extraData_);
+        }
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function grantMinterRole(address minter_) external override {
+        grantRole(MINTER_ROLE, minter_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function revokeMinterRole(address minter_, bytes memory extraData_) external payable override {
+        revokeRole(MINTER_ROLE, minter_);
+
+        if (extraData_.length > 0) {
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(MINTER_ROLE, minter_));
+
+            _broadcast(abi.encode(rolesPayload), extraData_);
+        }
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function grantBurnerRole(address burner_) external override {
+        grantRole(BURNER_ROLE, burner_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function revokeBurnerRole(address burner_, bytes memory extraData_) external payable override {
+        revokeRole(BURNER_ROLE, burner_);
+
+        if (extraData_.length > 0) {
+            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(BURNER_ROLE, burner_));
+
+            _broadcast(abi.encode(rolesPayload), extraData_);
+        }
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function grantMinterStateRegistryRole(address minterStateRegistry_) external override {
+        if (!superRegistry.isValidStateRegistry(minterStateRegistry_)) revert Error.NOT_VALID_STATE_REGISTRY();
+        grantRole(MINTER_STATE_REGISTRY, minterStateRegistry_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function revokeMinterStateRegistryRole(
+        address minterStateRegistry_,
+        bytes memory extraData_
+    ) external payable override {
+        revokeRole(MINTER_STATE_REGISTRY, minterStateRegistry_);
+
+        if (extraData_.length > 0) {
             AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
                 SYNC_REVOKE,
-                abi.encode(UPDATER_ROLE, updater_)
+                abi.encode(MINTER_STATE_REGISTRY, minterStateRegistry_)
             );
 
             _broadcast(abi.encode(rolesPayload), extraData_);
@@ -240,6 +292,21 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function hasUpdaterRole(address updater_) external view override returns (bool) {
         return hasRole(UPDATER_ROLE, updater_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasMinterRole(address minter_) external view override returns (bool) {
+        return hasRole(MINTER_ROLE, minter_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasBurnerRole(address burner_) external view override returns (bool) {
+        return hasRole(BURNER_ROLE, burner_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasMinterStateRegistryRole(address stateRegistry_) external view override returns (bool) {
+        return hasRole(MINTER_STATE_REGISTRY, stateRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////

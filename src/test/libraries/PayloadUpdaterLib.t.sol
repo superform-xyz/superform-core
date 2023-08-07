@@ -119,7 +119,7 @@ contract PayloadUpdaterLibTest is Test {
             1
         );
 
-        vm.expectRevert(Error.INVALID_PAYLOAD_STATE.selector);
+        vm.expectRevert(Error.PAYLOAD_ALREADY_UPDATED.selector);
         payloadUpdateLib.validatePayloadUpdate(txInfo, PayloadState.UPDATED, 1);
     }
 
@@ -134,7 +134,7 @@ contract PayloadUpdaterLibTest is Test {
             1
         );
 
-        vm.expectRevert(Error.INVALID_PAYLOAD_STATE.selector);
+        vm.expectRevert(Error.PAYLOAD_ALREADY_UPDATED.selector);
         payloadUpdateLib.validatePayloadUpdate(txInfo, PayloadState.PROCESSED, 1);
     }
 

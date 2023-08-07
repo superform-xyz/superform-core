@@ -5,6 +5,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IMultiTxProcessor} from "../interfaces/IMultiTxProcessor.sol";
 import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
+import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
 import {Error} from "../utils/Error.sol";
 
@@ -51,7 +52,20 @@ contract MultiTxProcessor is IMultiTxProcessor {
         bytes calldata txData_,
         address approvalToken_,
         uint256 amount_
-    ) external override onlySwapper {
+    ) public override onlySwapper {
+        uint64 chainId = superRegistry.chainId();
+
+        /// @dev validates the bridge data
+        IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).validateTxData(
+            txData_,
+            chainId,
+            chainId,
+            false, /// to enter the if-else case of the bridge validator loop
+            address(0),
+            superRegistry.coreStateRegistry(),
+            approvalToken_
+        );
+
         address to = superRegistry.getBridgeAddress(bridgeId_);
         if (approvalToken_ != NATIVE) {
             IERC20(approvalToken_).approve(to, amount_);
@@ -65,22 +79,16 @@ contract MultiTxProcessor is IMultiTxProcessor {
 
     /// @inheritdoc IMultiTxProcessor
     function batchProcessTx(
-        uint8[] calldata bridgeId_,
-        bytes[] calldata txDatas_,
+        uint8[] calldata bridgeIds_,
+        bytes[] calldata txData_,
         address[] calldata approvalTokens_,
         uint256[] calldata amounts_
     ) external override onlySwapper {
-        address to;
-        for (uint256 i = 0; i < txDatas_.length; i++) {
-            to = superRegistry.getBridgeAddress(bridgeId_[i]);
+        for (uint256 i; i < txData_.length; ) {
+            processTx(bridgeIds_[i], txData_[i], approvalTokens_[i], amounts_[i]);
 
-            if (approvalTokens_[i] != NATIVE) {
-                IERC20(approvalTokens_[i]).approve(to, amounts_[i]);
-                (bool success, ) = payable(to).call(txDatas_[i]);
-                if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
-            } else {
-                (bool success, ) = payable(to).call{value: amounts_[i]}(txDatas_[i]);
-                if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
+            unchecked {
+                ++i;
             }
         }
     }

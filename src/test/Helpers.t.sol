@@ -90,7 +90,7 @@ contract PayloadHelperTest is ProtocolActions {
             uint256[] memory slippage,
             uint256[] memory superformIds,
             uint256 srcPayloadId
-        ) = helper.decodePayload(1);
+        ) = helper.decodeDstPayload(1);
 
         bytes[] memory extraDataGenerated = new bytes[](2);
         extraDataGenerated[0] = abi.encode("500000");
