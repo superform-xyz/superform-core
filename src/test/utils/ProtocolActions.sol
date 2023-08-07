@@ -366,6 +366,8 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
 
+            console.log("vars.toDst[0]", vars.toDst[0]);
+
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
             vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
