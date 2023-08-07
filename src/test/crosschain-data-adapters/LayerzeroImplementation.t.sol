@@ -230,6 +230,8 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         /// @dev keeping extraDataPerDst empty for now
         bytes[] memory extraDataPerDst = new bytes[](5);
+        
+        ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
 
         vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
         vm.prank(coreStateRegistry);
