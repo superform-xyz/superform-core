@@ -8,7 +8,7 @@ import {Error} from "../utils/Error.sol";
 
 /// @title FormBeacon
 /// @notice The Beacon for any given form.
-/// @dev SuperForms follow the proxy beacon pattern, with each of the same form kind pointing to the same implementation
+/// @dev Superforms follow the proxy beacon pattern, with each of the same form kind pointing to the same implementation
 /// @dev This allows us to pause all superForms of a given form kind or upgrade them in one go
 contract FormBeacon is IFormBeacon {
     /*///////////////////////////////////////////////////////////////
@@ -23,12 +23,12 @@ contract FormBeacon is IFormBeacon {
 
     bool public paused;
 
-    modifier onlySuperFormFactory() {
+    modifier onlySuperformFactory() {
         if (superRegistry.superFormFactory() != msg.sender) revert Error.NOT_SUPERFORM_FACTORY();
         _;
     }
 
-    /// @param superRegistry_        SuperForm registry contract
+    /// @param superRegistry_        Superform registry contract
     /// @param formLogic_            The initial form logic contract
     constructor(address superRegistry_, address formLogic_) {
         superRegistry = ISuperRegistry(superRegistry_);
@@ -37,7 +37,7 @@ contract FormBeacon is IFormBeacon {
     }
 
     /// @inheritdoc IFormBeacon
-    function update(address formLogic_) external override onlySuperFormFactory {
+    function update(address formLogic_) external override onlySuperformFactory {
         beacon.upgradeTo(formLogic_);
         address oldLogic = formLogic;
         formLogic = formLogic_;
@@ -46,7 +46,7 @@ contract FormBeacon is IFormBeacon {
     }
 
     /// @inheritdoc IFormBeacon
-    function changePauseStatus(bool paused_) external override onlySuperFormFactory {
+    function changePauseStatus(bool paused_) external override onlySuperformFactory {
         paused = paused_;
         emit FormBeaconPaused(paused_);
     }

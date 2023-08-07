@@ -172,7 +172,7 @@ contract HyperlaneImplementationTest is BaseSetup {
         address coreStateRegistry = getContract(1, "CoreStateRegistry");
         /// @dev bcoz we're simulating hyperlaneImplementation.broadcastPayload() from CoreStateRegistry (below),
         /// we need sufficient ETH in CoreStateRegistry and HyperlaneImplementation. On mainnet, these funds will
-        /// come from the user via SuperFormRouter
+        /// come from the user via SuperformRouter
         vm.deal(coreStateRegistry, 10 ether);
         vm.deal(address(hyperlaneImplementation), 10 ether);
 

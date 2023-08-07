@@ -33,7 +33,7 @@ contract MultiTxProcessor is IMultiTxProcessor {
         _;
     }
 
-    /// @param superRegistry_        SuperForm registry contract
+    /// @param superRegistry_        Superform registry contract
     constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
     }

@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
 
-import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
+import {ISuperformFactory} from "../../interfaces/ISuperformFactory.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {SuperRegistry} from "../../settings/SuperRegistry.sol";
 import {RolesStateRegistry} from "../../crosschain-data/extensions/RolesStateRegistry.sol";
@@ -62,16 +62,16 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.setSuperRouter.selector, superRegistry.superRouter.selector, address(0x1));
     }
 
-    function test_setSuperFormFactory_and_revert_invalidCaller() public {
+    function test_setSuperformFactory_and_revert_invalidCaller() public {
         _setAndAssert(
-            superRegistry.setSuperFormFactory.selector,
+            superRegistry.setSuperformFactory.selector,
             superRegistry.superFormFactory.selector,
             address(0x1)
         );
     }
 
-    function test_setFeeCollector_and_revert_invalidCaller() public {
-        _setAndAssert(superRegistry.setFeeCollector.selector, superRegistry.getFeeCollector.selector, address(0x1));
+    function test_setPayMaster_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.setPayMaster.selector, superRegistry.getPayMaster.selector, address(0x1));
     }
 
     function test_setCoreStateRegistry_and_revert_invalidCaller() public {

@@ -3,10 +3,10 @@ pragma solidity 0.8.19;
 
 import "../types/DataTypes.sol";
 
-/// @title ISuperFormRouter
+/// @title ISuperformRouter
 /// @author Zeropoint Labs.
 /// @dev interface for Super Router
-interface ISuperFormRouter {
+interface ISuperformRouter {
     /*///////////////////////////////////////////////////////////////
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/

@@ -20,7 +20,7 @@ import {Error} from "../../utils/Error.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
-/// @dev enables communication between SuperForm Core Contracts deployed on all supported networks
+/// @dev enables communication between Superform Core Contracts deployed on all supported networks
 contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateRegistry {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
@@ -271,7 +271,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         v.dstChainId = superRegistry.chainId();
 
         for (uint256 i; i < l1; ) {
-            (v.superForm, , ) = superFormIds[i].getSuperForm();
+            (v.superForm, , ) = superFormIds[i].getSuperform();
 
             IBridgeValidator(superRegistry.getBridgeValidator(liqData_[i].bridgeId)).validateTxData(
                 liqData_[i].txData,
@@ -327,7 +327,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         bool errors;
 
         for (uint256 i; i < multiVaultData.superFormIds.length; ) {
-            DataLib.validateSuperFormChainId(multiVaultData.superFormIds[i], superRegistry.chainId());
+            DataLib.validateSuperformChainId(multiVaultData.superFormIds[i], superRegistry.chainId());
 
             singleVaultData = InitSingleVaultData({
                 payloadId: multiVaultData.payloadId,
@@ -338,7 +338,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 extraFormData: abi.encode(payloadId_, i) /// @dev Store destination payloadId_ & index in extraFormData (tbd: 1-step flow doesnt need this)
             });
 
-            (address superForm_, , ) = singleVaultData.superFormId.getSuperForm();
+            (address superForm_, , ) = singleVaultData.superFormId.getSuperform();
 
             try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
                 /// @dev marks the indexes that don't require a callback re-mint of SuperPositions (successful withdraws)
@@ -381,7 +381,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         InitMultiVaultData memory multiVaultData = abi.decode(payload_, (InitMultiVaultData));
 
-        (address[] memory superForms, , ) = DataLib.getSuperForms(multiVaultData.superFormIds);
+        (address[] memory superForms, , ) = DataLib.getSuperforms(multiVaultData.superFormIds);
 
         IERC20 underlying;
         uint256 numberOfVaults = multiVaultData.superFormIds.length;
@@ -398,7 +398,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 LiqRequest memory emptyRequest;
 
                 /// @dev important to validate the chainId of the superform against the chainId where this is happening
-                DataLib.validateSuperFormChainId(multiVaultData.superFormIds[i], superRegistry.chainId());
+                DataLib.validateSuperformChainId(multiVaultData.superFormIds[i], superRegistry.chainId());
 
                 /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
                 try
@@ -460,9 +460,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     ) internal returns (bytes memory) {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        DataLib.validateSuperFormChainId(singleVaultData.superFormId, superRegistry.chainId());
+        DataLib.validateSuperformChainId(singleVaultData.superFormId, superRegistry.chainId());
 
-        (address superForm_, , ) = singleVaultData.superFormId.getSuperForm();
+        (address superForm_, , ) = singleVaultData.superFormId.getSuperform();
 
         /// @dev Withdraw from superform
         try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
@@ -495,9 +495,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             revert Error.PAYLOAD_NOT_UPDATED();
         }
 
-        DataLib.validateSuperFormChainId(singleVaultData.superFormId, superRegistry.chainId());
+        DataLib.validateSuperformChainId(singleVaultData.superFormId, superRegistry.chainId());
 
-        (address superForm_, , ) = singleVaultData.superFormId.getSuperForm();
+        (address superForm_, , ) = singleVaultData.superFormId.getSuperform();
 
         IERC20 underlying = IERC20(IBaseForm(superForm_).getVaultAsset());
 

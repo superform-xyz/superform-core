@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "../utils/ProtocolActions.sol";
 import {Error} from "../../utils/Error.sol";
 
-contract SuperFormFactoryStateSyncTest is BaseSetup {
+contract SuperformFactoryStateSyncTest is BaseSetup {
     function setUp() public override {
         super.setUp();
     }
@@ -17,7 +17,7 @@ contract SuperFormFactoryStateSyncTest is BaseSetup {
         vm.startPrank(deployer);
 
         vm.recordLogs();
-        SuperFormFactory(getContract(ETH, "SuperFormFactory")).changeFormBeaconPauseStatus{value: 800 ether}(
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 ether}(
             formBeaconId,
             true,
             generateBroadcastParams(5, 2)
@@ -29,11 +29,11 @@ contract SuperFormFactoryStateSyncTest is BaseSetup {
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                bool statusBefore = SuperFormFactory(getContract(chainIds[i], "SuperFormFactory")).isFormBeaconPaused(
+                bool statusBefore = SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(
                     formBeaconId
                 );
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1, "");
-                bool statusAfter = SuperFormFactory(getContract(chainIds[i], "SuperFormFactory")).isFormBeaconPaused(
+                bool statusAfter = SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(
                     formBeaconId
                 );
 

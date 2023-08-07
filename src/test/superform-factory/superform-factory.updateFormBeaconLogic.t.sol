@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {SuperFormFactory} from "../../SuperFormFactory.sol";
+import {SuperformFactory} from "../../SuperformFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {ERC4626FormInterfaceNotSupported} from "../mocks/InterfaceNotSupported/ERC4626InterFaceNotSupported.sol";
 import {ERC4626TimelockForm} from "../../forms/ERC4626TimelockForm.sol";
 import "../utils/BaseSetup.sol";
 import {Error} from "../../utils/Error.sol";
 
-contract SuperFormFactoryUpdateFormTest is BaseSetup {
+contract SuperformFactoryUpdateFormTest is BaseSetup {
     uint64 internal chainId = ETH;
 
     event FormLogicUpdated(address indexed oldLogic, address indexed newLogic);
@@ -29,7 +29,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         uint32 formBeaconId = 0;
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation1,
             formBeaconId,
             salt
@@ -41,7 +41,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         vm.expectEmit();
         emit FormLogicUpdated(formImplementation1, formImplementation2);
 
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).updateFormBeaconLogic(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).updateFormBeaconLogic(
             formBeaconId,
             formImplementation2
         );
@@ -59,7 +59,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         uint32 formBeaconId = 0;
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation1,
             formBeaconId,
             salt
@@ -69,7 +69,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         address formImplementation2 = address(0);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).updateFormBeaconLogic(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).updateFormBeaconLogic(
             formBeaconId,
             formImplementation2
         );
@@ -87,7 +87,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         uint32 formBeaconId = 0;
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation1,
             formBeaconId,
             salt
@@ -97,7 +97,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         address formImplementation2 = address(0x1);
 
         vm.expectRevert(Error.ERC165_UNSUPPORTED.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).updateFormBeaconLogic(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).updateFormBeaconLogic(
             formBeaconId,
             formImplementation2
         );
@@ -115,7 +115,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         uint32 formBeaconId1 = 0;
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation,
             formBeaconId1,
             salt
@@ -125,7 +125,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         uint32 formBeaconId2 = 9999;
 
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).updateFormBeaconLogic(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).updateFormBeaconLogic(
             formBeaconId2,
             formImplementation
         );
@@ -143,7 +143,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         uint32 formBeaconId = 0;
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation,
             formBeaconId,
             salt
@@ -152,7 +152,7 @@ contract SuperFormFactoryUpdateFormTest is BaseSetup {
         address formImplementation_interface_unsupported = address(new ERC4626FormInterfaceNotSupported(superRegistry));
 
         vm.expectRevert(Error.FORM_INTERFACE_UNSUPPORTED.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).updateFormBeaconLogic(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).updateFormBeaconLogic(
             formBeaconId,
             formImplementation_interface_unsupported
         );

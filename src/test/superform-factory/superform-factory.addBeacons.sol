@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {SuperFormFactory} from "../../SuperFormFactory.sol";
+import {SuperformFactory} from "../../SuperformFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import "../utils/BaseSetup.sol";
 import {Error} from "../../utils/Error.sol";
 
-contract SuperFormFactoryAddBeaconsTest is BaseSetup {
+contract SuperformFactoryAddBeaconsTest is BaseSetup {
     uint64 internal chainId = ETH;
 
     /*///////////////////////////////////////////////////////////////
@@ -30,7 +30,7 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
             formBeaconIds[i] = i + 10;
         }
 
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacons(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacons(
             formImplementations,
             formBeaconIds,
             salt
@@ -52,7 +52,7 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
         vm.prank(deployer);
 
         vm.expectRevert(Error.BEACON_ID_ALREADY_EXISTS.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacons(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacons(
             formImplementations,
             formBeaconIds,
             salt
@@ -74,7 +74,7 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
         vm.prank(deployer);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacons(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacons(
             formImplementations,
             formBeaconIds,
             salt
@@ -100,7 +100,7 @@ contract SuperFormFactoryAddBeaconsTest is BaseSetup {
         vm.prank(deployer);
 
         vm.expectRevert(Error.ERC165_UNSUPPORTED.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacons(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacons(
             formImplementations,
             formBeaconIds,
             salt

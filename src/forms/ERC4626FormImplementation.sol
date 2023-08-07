@@ -237,7 +237,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         InitSingleVaultData memory singleVaultData_,
         uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
-        (, , uint64 dstChainId) = singleVaultData_.superFormId.getSuperForm();
+        (, , uint64 dstChainId) = singleVaultData_.superFormId.getSuperform();
         address vaultLoc = vault;
 
         IERC4626 v = IERC4626(vaultLoc);
@@ -267,7 +267,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     ) internal returns (uint256 dstAmount) {
         uint256 len = singleVaultData_.liqData.txData.length;
         xChainWithdrawLocalVars memory vars;
-        (, , vars.dstChainId) = singleVaultData_.superFormId.getSuperForm();
+        (, , vars.dstChainId) = singleVaultData_.superFormId.getSuperform();
 
         /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it is this contract (before swap)
         vars.receiver = len == 0 ? srcSender : address(this);

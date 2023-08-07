@@ -51,13 +51,13 @@ contract SXSVDKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
     function test_scenario() public {
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
-            MultiVaultSFData[] memory multiSuperFormsData;
-            SingleVaultSFData[] memory singleSuperFormsData;
+            MultiVaultSFData[] memory multiSuperformsData;
+            SingleVaultSFData[] memory singleSuperformsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
 
-            _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
+            _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
     }
 }

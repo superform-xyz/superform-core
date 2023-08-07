@@ -5,7 +5,7 @@ import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
 
 import {DataLib} from "../../libraries/DataLib.sol";
-import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
+import {ISuperformFactory} from "../../interfaces/ISuperformFactory.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {SuperPositions} from "../../SuperPositions.sol";
 import {Error} from "../../utils/Error.sol";

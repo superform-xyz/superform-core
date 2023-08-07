@@ -8,7 +8,7 @@ import {Error} from "../utils/Error.sol";
 
 /// @title SuperRegistry
 /// @author Zeropoint Labs.
-/// @dev Keeps information on all protocolAddresses used in the SuperForms ecosystem.
+/// @dev Keeps information on all protocolAddresses used in the Superforms ecosystem.
 contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev chainId represents the superform chain id.
     uint64 public chainId;
@@ -83,19 +83,19 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setSuperFormFactory(address superFormFactory_) external override onlyCaller {
-        address oldSuperFormFactory = protocolAddresses[SUPERFORM_FACTORY];
+    function setSuperformFactory(address superFormFactory_) external override onlyCaller {
+        address oldSuperformFactory = protocolAddresses[SUPERFORM_FACTORY];
         protocolAddresses[SUPERFORM_FACTORY] = superFormFactory_;
 
-        emit SuperFormFactoryUpdated(oldSuperFormFactory, superFormFactory_);
+        emit SuperformFactoryUpdated(oldSuperformFactory, superFormFactory_);
     }
 
     /// @inheritdoc ISuperRegistry
-    function setFeeCollector(address feeCollector_) external override onlyCaller {
-        address oldFeeCollector = protocolAddresses[FEE_COLLECTOR];
+    function setPayMaster(address feeCollector_) external override onlyCaller {
+        address oldPayMaster = protocolAddresses[FEE_COLLECTOR];
         protocolAddresses[FEE_COLLECTOR] = feeCollector_;
 
-        emit FeeCollectorUpdated(oldFeeCollector, feeCollector_);
+        emit PayMasterUpdated(oldPayMaster, feeCollector_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -307,7 +307,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function getFeeCollector() external view returns (address feeCollector_) {
+    function getPayMaster() external view returns (address feeCollector_) {
         feeCollector_ = getProtocolAddress(FEE_COLLECTOR);
     }
 

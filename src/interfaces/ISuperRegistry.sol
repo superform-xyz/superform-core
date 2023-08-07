@@ -23,7 +23,7 @@ interface ISuperRegistry {
     event SuperRouterUpdated(address indexed oldSuperRouter, address indexed superRouter);
 
     /// @dev is emitted when the superform factory address is set.
-    event SuperFormFactoryUpdated(address indexed oldSuperFormFactory, address indexed superFormFactory);
+    event SuperformFactoryUpdated(address indexed oldSuperformFactory, address indexed superFormFactory);
 
     /// @dev is emitted when the state registry address is set.
     event CoreStateRegistryUpdated(address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
@@ -52,7 +52,7 @@ interface ISuperRegistry {
     event TxProcessorUpdated(address indexed oldTxProcessor, address indexed txProcessor);
 
     /// @dev is emitted when a new fee collector is configured.
-    event FeeCollectorUpdated(address indexed oldFeeCollector, address indexed feeCollector);
+    event PayMasterUpdated(address indexed oldPayMaster, address indexed feeCollector);
 
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(uint256 indexed bridgeId, address indexed bridgeAddress);
@@ -86,11 +86,11 @@ interface ISuperRegistry {
 
     /// @dev sets the superform factory address.
     /// @param superFormFactory_ the address of the superform factory
-    function setSuperFormFactory(address superFormFactory_) external;
+    function setSuperformFactory(address superFormFactory_) external;
 
     /// @dev sets the superform fee collector address.
     /// @param feeCollector_ the address of the fee collector
-    function setFeeCollector(address feeCollector_) external;
+    function setPayMaster(address feeCollector_) external;
 
     /// @dev sets the state registry address.
     /// @param coreStateRegistry_ the address of the state registry
@@ -274,5 +274,5 @@ interface ISuperRegistry {
 
     /// @dev gets the address of fee collector
     /// @return feeCollector_ is the address of the fee collector
-    function getFeeCollector() external view returns (address feeCollector_);
+    function getPayMaster() external view returns (address feeCollector_);
 }

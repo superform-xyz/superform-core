@@ -6,7 +6,7 @@ import {BeaconProxy} from "openzeppelin-contracts/contracts/proxy/beacon/BeaconP
 import {BaseForm} from "./BaseForm.sol";
 import {FormBeacon} from "./forms/FormBeacon.sol";
 import {AMBFactoryMessage} from "./types/DataTypes.sol";
-import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
+import {ISuperformFactory} from "./interfaces/ISuperformFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {IBroadcaster} from "./interfaces/IBroadcaster.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
@@ -14,10 +14,10 @@ import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {Error} from "./utils/Error.sol";
 import {DataLib} from "./libraries/DataLib.sol";
 
-/// @title SuperForms Factory
-/// @dev A secure, and easily queryable central point of access for all SuperForms on any given chain,
+/// @title Superforms Factory
+/// @dev A secure, and easily queryable central point of access for all Superforms on any given chain,
 /// @author Zeropoint Labs.
-contract SuperFormFactory is ISuperFormFactory {
+contract SuperformFactory is ISuperformFactory {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
@@ -40,11 +40,11 @@ contract SuperFormFactory is ISuperFormFactory {
     /// @notice If formBeaconId is 0, formBeacon is not part of the protocol
     mapping(uint32 formBeaconId => address formBeaconAddress) public formBeacon;
 
-    mapping(address vault => uint256[] superFormIds) public vaultToSuperForms;
+    mapping(address vault => uint256[] superFormIds) public vaultToSuperforms;
 
     mapping(address vault => uint256[] formBeaconId) public vaultToFormBeaconId;
 
-    mapping(bytes32 vaultBeaconCombination => uint256 superFormIds) public vaultBeaconToSuperForms;
+    mapping(bytes32 vaultBeaconCombination => uint256 superFormIds) public vaultBeaconToSuperforms;
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
@@ -61,7 +61,7 @@ contract SuperFormFactory is ISuperFormFactory {
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc ISuperFormFactory
+    /// @inheritdoc ISuperformFactory
     function addFormBeacon(
         address formImplementation_,
         uint32 formBeaconId_,
@@ -85,7 +85,7 @@ contract SuperFormFactory is ISuperFormFactory {
         emit FormBeaconAdded(formImplementation_, beacon, formBeaconId_);
     }
 
-    /// @inheritdoc ISuperFormFactory
+    /// @inheritdoc ISuperformFactory
     function addFormBeacons(
         address[] memory formImplementations_,
         uint32[] memory formBeaconIds_,
@@ -96,8 +96,8 @@ contract SuperFormFactory is ISuperFormFactory {
         }
     }
 
-    /// @inheritdoc ISuperFormFactory
-    function createSuperForm(
+    /// @inheritdoc ISuperformFactory
+    function createSuperform(
         uint32 formBeaconId_,
         address vault_
     ) public override returns (uint256 superFormId_, address superForm_) {
@@ -108,7 +108,7 @@ contract SuperFormFactory is ISuperFormFactory {
 
         /// @dev Same vault and beacon can be used only once to create superform
         bytes32 vaultBeaconCombination = keccak256(abi.encode(tFormBeacon, vault_));
-        if (vaultBeaconToSuperForms[vaultBeaconCombination] != 0) revert Error.VAULT_BEACON_COMBNATION_EXISTS();
+        if (vaultBeaconToSuperforms[vaultBeaconCombination] != 0) revert Error.VAULT_BEACON_COMBNATION_EXISTS();
 
         /// @dev instantiate the superForm. The initialize function call is encoded in the request
         superForm_ = address(
@@ -119,22 +119,22 @@ contract SuperFormFactory is ISuperFormFactory {
         );
 
         /// @dev this will always be unique because all chainIds are unique
-        superFormId_ = DataLib.packSuperForm(superForm_, formBeaconId_, superRegistry.chainId());
+        superFormId_ = DataLib.packSuperform(superForm_, formBeaconId_, superRegistry.chainId());
 
-        vaultToSuperForms[vault_].push(superFormId_);
+        vaultToSuperforms[vault_].push(superFormId_);
 
         /// @dev Mapping vaults to formBeaconId for use in Backend
         vaultToFormBeaconId[vault_].push(formBeaconId_);
 
-        vaultBeaconToSuperForms[vaultBeaconCombination] = superFormId_;
+        vaultBeaconToSuperforms[vaultBeaconCombination] = superFormId_;
 
         superForms.push(superFormId_);
 
-        emit SuperFormCreated(formBeaconId_, vault_, superFormId_, superForm_);
+        emit SuperformCreated(formBeaconId_, vault_, superFormId_, superForm_);
     }
 
-    /// @inheritdoc ISuperFormFactory
-    function createSuperForms(
+    /// @inheritdoc ISuperformFactory
+    function createSuperforms(
         uint32[] memory formBeaconIds_,
         address[] memory vaults_
     ) external override returns (uint256[] memory superFormIds_, address[] memory superForms_) {
@@ -142,7 +142,7 @@ contract SuperFormFactory is ISuperFormFactory {
         superForms_ = new address[](formBeaconIds_.length);
 
         for (uint256 i = 0; i < formBeaconIds_.length; ) {
-            (superFormIds_[i], superForms_[i]) = createSuperForm(formBeaconIds_[i], vaults_[i]);
+            (superFormIds_[i], superForms_[i]) = createSuperform(formBeaconIds_[i], vaults_[i]);
 
             unchecked {
                 ++i;
@@ -150,7 +150,7 @@ contract SuperFormFactory is ISuperFormFactory {
         }
     }
 
-    /// @inheritdoc ISuperFormFactory
+    /// @inheritdoc ISuperformFactory
     function updateFormBeaconLogic(uint32 formBeaconId_, address newFormLogic_) external override onlyProtocolAdmin {
         if (newFormLogic_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(newFormLogic_)) revert Error.ERC165_UNSUPPORTED();
@@ -162,7 +162,7 @@ contract SuperFormFactory is ISuperFormFactory {
         FormBeacon(formBeacon[formBeaconId_]).update(newFormLogic_);
     }
 
-    /// @inheritdoc ISuperFormFactory
+    /// @inheritdoc ISuperformFactory
     function changeFormBeaconPauseStatus(
         uint32 formBeaconId_,
         bool paused_,
@@ -183,7 +183,7 @@ contract SuperFormFactory is ISuperFormFactory {
         }
     }
 
-    /// @inheritdoc ISuperFormFactory
+    /// @inheritdoc ISuperformFactory
     function stateSync(bytes memory data_) external payable override {
         /// @dev this function is only accessible through factory state registry
         if (msg.sender != superRegistry.factoryStateRegistry()) revert Error.NOT_FACTORY_STATE_REGISTRY();
@@ -199,38 +199,38 @@ contract SuperFormFactory is ISuperFormFactory {
                         External View Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc ISuperFormFactory
+    /// @inheritdoc ISuperformFactory
     function getFormBeacon(uint32 formBeaconId_) external view override returns (address formBeacon_) {
         formBeacon_ = formBeacon[formBeaconId_];
     }
 
-    /// @inheritdoc ISuperFormFactory
+    /// @inheritdoc ISuperformFactory
     function isFormBeaconPaused(uint32 formBeaconId_) external view override returns (bool paused_) {
         paused_ = FormBeacon(formBeacon[formBeaconId_]).paused();
     }
 
-    /// @inheritdoc ISuperFormFactory
-    function getAllSuperFormsFromVault(
+    /// @inheritdoc ISuperformFactory
+    function getAllSuperformsFromVault(
         address vault_
     ) external view override returns (uint256[] memory superFormIds_, address[] memory superForms_) {
-        superFormIds_ = vaultToSuperForms[vault_];
+        superFormIds_ = vaultToSuperforms[vault_];
         uint256 len = superFormIds_.length;
         superForms_ = new address[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], , ) = superFormIds_[i].getSuperForm();
+            (superForms_[i], , ) = superFormIds_[i].getSuperform();
         }
     }
 
-    /// @inheritdoc ISuperFormFactory
-    function getSuperForm(
+    /// @inheritdoc ISuperformFactory
+    function getSuperform(
         uint256 superFormId
     ) external pure override returns (address superForm_, uint32 formBeaconId_, uint64 chainId_) {
-        (superForm_, formBeaconId_, chainId_) = superFormId.getSuperForm();
+        (superForm_, formBeaconId_, chainId_) = superFormId.getSuperform();
     }
 
-    /// @inheritdoc ISuperFormFactory
-    function getAllSuperForms()
+    /// @inheritdoc ISuperformFactory
+    function getAllSuperforms()
         external
         view
         override
@@ -241,17 +241,17 @@ contract SuperFormFactory is ISuperFormFactory {
         superForms_ = new address[](len);
 
         for (uint256 i = 0; i < len; i++) {
-            (superForms_[i], , ) = superFormIds_[i].getSuperForm();
+            (superForms_[i], , ) = superFormIds_[i].getSuperform();
         }
     }
 
-    /// @inheritdoc ISuperFormFactory
+    /// @inheritdoc ISuperformFactory
     function getFormCount() external view override returns (uint256 forms_) {
         forms_ = formBeacons.length;
     }
 
-    /// @inheritdoc ISuperFormFactory
-    function getSuperFormCount() external view override returns (uint256 superForms_) {
+    /// @inheritdoc ISuperformFactory
+    function getSuperformCount() external view override returns (uint256 superForms_) {
         superForms_ = superForms.length;
     }
 

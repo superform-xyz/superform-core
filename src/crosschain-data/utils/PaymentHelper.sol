@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {AggregatorV3Interface} from "../../vendor/chainlink/AggregatorV3Interface.sol";
-import {IFeeHelper} from "../../interfaces/IFeeHelper.sol";
+import {IPaymentHelper} from "../../interfaces/IPaymentHelper.sol";
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IBridgeValidator} from "../../interfaces/IBridgeValidator.sol";
@@ -20,10 +20,10 @@ interface ReadOnlyBaseRegistry is IBaseStateRegistry {
     function payloadsCount() external view returns (uint256);
 }
 
-/// @title IPayloadHelper
+/// @title PaymentHelper
 /// @author ZeroPoint Labs
 /// @dev helps estimating the cost for the entire transaction lifecycle
-contract FeeHelper is IFeeHelper {
+contract PaymentHelper is IPaymentHelper {
     using DataLib for uint256;
     using ArrayCastLib for LiqRequest;
 
@@ -80,7 +80,7 @@ contract FeeHelper is IFeeHelper {
                         PREVILAGES ADMIN ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function setSameChainConfig(uint256 configType_, bytes memory config_) external override onlyProtocolAdmin {
         /// Type 1: GAS PRICE ORACLE
         if (configType_ == 1) {
@@ -108,7 +108,7 @@ contract FeeHelper is IFeeHelper {
         }
     }
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function addChain(
         uint64 chainId_,
         address dstGasPriceOracle_,
@@ -129,7 +129,7 @@ contract FeeHelper is IFeeHelper {
         dstGasPrice[chainId_] = defaultGasPrice_;
     }
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function setDstChainConfig(
         uint64 chainId_,
         uint256 configType_,
@@ -175,7 +175,7 @@ contract FeeHelper is IFeeHelper {
                                 VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function estimateMultiDstMultiVault(
         MultiDstMultiVaultStateReq calldata req_,
         bool isDeposit
@@ -228,7 +228,7 @@ contract FeeHelper is IFeeHelper {
         totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function estimateMultiDstSingleVault(
         MultiDstSingleVaultStateReq calldata req_,
         bool isDeposit
@@ -271,7 +271,7 @@ contract FeeHelper is IFeeHelper {
         totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function estimateSingleXChainMultiVault(
         SingleXChainMultiVaultStateReq calldata req_,
         bool isDeposit
@@ -308,7 +308,7 @@ contract FeeHelper is IFeeHelper {
         totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function estimateSingleXChainSingleVault(
         SingleXChainSingleVaultStateReq calldata req_,
         bool isDeposit
@@ -344,7 +344,7 @@ contract FeeHelper is IFeeHelper {
         totalAmount = srcAmount + dstAmount + liqAmount;
     }
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
         bool isDeposit
@@ -360,7 +360,7 @@ contract FeeHelper is IFeeHelper {
         totalAmount = liqAmount + srcAmount;
     }
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function estimateSingleDirectMultiVault(
         SingleDirectMultiVaultStateReq calldata req_,
         bool isDeposit
@@ -382,7 +382,7 @@ contract FeeHelper is IFeeHelper {
         totalAmount = liqAmount + srcAmount;
     }
 
-    /// @inheritdoc IFeeHelper
+    /// @inheritdoc IPaymentHelper
     function estimateAMBFees(
         uint8[] memory ambIds_,
         uint64 dstChainId_,

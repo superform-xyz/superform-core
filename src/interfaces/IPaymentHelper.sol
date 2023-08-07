@@ -3,10 +3,10 @@ pragma solidity 0.8.19;
 
 import "../types/DataTypes.sol";
 
-/// @title IFeeHelper
+/// @title IPaymentHelper
 /// @author ZeroPoint Labs
 /// @dev helps decoding the bytes payload and returns meaningful information
-interface IFeeHelper {
+interface IPaymentHelper {
     /*///////////////////////////////////////////////////////////////
                         PRIVILEGED ADMIN ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/

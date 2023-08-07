@@ -12,7 +12,6 @@ import {ILayerZeroUserApplicationConfig} from "../../../vendor/layerzero/ILayerZ
 import {ILayerZeroEndpoint} from "../../../vendor/layerzero/ILayerZeroEndpoint.sol";
 import {DataLib} from "../../../libraries/DataLib.sol";
 
-/// @dev FIXME: this contract could use better overrides from interfaces - Joao
 /// @title LayerzeroImplementation
 /// @author Zeropoint Labs
 /// @dev allows state registries to use hyperlane for crosschain communication
@@ -161,11 +160,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _blockingLzReceive(srcChainId_, srcAddress_, nonce_, payload_);
     }
 
-    function nonblockingLzReceive(
-        uint16 srcChainId_,
-        bytes memory srcAddress_,
-        bytes memory payload_
-    ) public {
+    function nonblockingLzReceive(uint16 srcChainId_, bytes memory srcAddress_, bytes memory payload_) public {
         // only internal transaction
         if (msg.sender != address(this)) {
             revert Error.INVALID_CALLER();

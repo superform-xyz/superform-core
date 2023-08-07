@@ -35,7 +35,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @dev allows only form to write to the receive paylod
     /// TODO: add only 2 step forms to write - Sujith
     modifier onlyForm(uint256 superFormId) {
-        (address superForm, , ) = superFormId.getSuperForm();
+        (address superForm, , ) = superFormId.getSuperform();
         if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
         _;
     }
@@ -92,7 +92,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
         /// @dev set status here to prevent re-entrancy
         p.status = TimeLockStatus.PROCESSED;
-        (address superForm, , ) = p.data.superFormId.getSuperForm();
+        (address superForm, , ) = p.data.superFormId.getSuperform();
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
         try form.withdrawAfterCoolDown(p.data.amount, p) {} catch {
