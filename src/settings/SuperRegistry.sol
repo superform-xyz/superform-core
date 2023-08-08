@@ -32,6 +32,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override SUPER_ROUTER = keccak256("SUPER_ROUTER");
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
     bytes32 public constant override PAYMASTER = keccak256("PAYMASTER");
+    bytes32 public constant override PAYMENT_HELPER = keccak256("PAYMENT_HELPER");
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
     bytes32 public constant override TWO_STEPS_FORM_STATE_REGISTRY = keccak256("TWO_STEPS_FORM_STATE_REGISTRY");
     bytes32 public constant override FACTORY_STATE_REGISTRY = keccak256("FACTORY_STATE_REGISTRY");
@@ -108,6 +109,14 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         protocolAddresses[PAYMASTER] = feeCollector_;
 
         emit PayMasterUpdated(oldPayMaster, feeCollector_);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function setPaymentHelper(address paymentHelper_) external override onlyCaller {
+        address oldPaymentHelper = protocolAddresses[PAYMENT_HELPER];
+        protocolAddresses[PAYMENT_HELPER] = paymentHelper_;
+
+        emit PaymentHelperUpdated(oldPaymentHelper, paymentHelper_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -360,6 +369,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getPayMaster() external view returns (address payMaster_) {
         payMaster_ = getProtocolAddress(PAYMASTER);
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getPaymentHelper() external view returns (address paymentHelper_) {
+        paymentHelper_ = getProtocolAddress(PAYMENT_HELPER);
     }
 
     /// @inheritdoc ISuperRegistry

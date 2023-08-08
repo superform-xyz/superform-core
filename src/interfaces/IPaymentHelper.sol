@@ -33,7 +33,8 @@ interface IPaymentHelper {
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
         uint256 withdrawGasUsed_,
-        uint256 defaultGasPrice_
+        uint256 defaultGasPrice_,
+        uint256 dstGasPerKB_
     ) external;
 
     /// @dev admin update remote chain config for estimation
@@ -45,6 +46,16 @@ interface IPaymentHelper {
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev returns the amb overrides & gas to be used
+    /// @param dstChainId_ is the unique dst chain identifier
+    /// @param ambIds_ is the identifiers of arbitrary message bridges to be used
+    /// @param message_ is the encoded cross-chain payload
+    function calculateAMBData(
+        uint64 dstChainId_,
+        uint8[] calldata ambIds_,
+        bytes memory message_
+    ) external view returns (uint256 totalFees, bytes memory extraData);
 
     /// @dev returns the gas fees estimation in native tokens if we send message through a combination of AMBs
     /// @param ambIds_ is the identifier of different AMBs

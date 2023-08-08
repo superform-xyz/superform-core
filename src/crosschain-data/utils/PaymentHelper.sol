@@ -57,7 +57,8 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasForUpdate) public updateGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public depositGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
-    mapping(uint256 chainId => uint256 defaultGasPrice) public dstGasPrice;
+    mapping(uint64 chainId => uint256 defaultGasPrice) public dstGasPrice;
+    mapping(uint64 chainId => uint256 gasPerKB) public dstGasPerKB;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -117,7 +118,8 @@ contract PaymentHelper is IPaymentHelper {
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
         uint256 withdrawGasUsed_,
-        uint256 defaultGasPrice_
+        uint256 defaultGasPrice_,
+        uint256 dstGasPerKB_
     ) external override onlyProtocolAdmin {
         dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
         dstNativeFeedOracle[chainId_] = AggregatorV3Interface(dstNativeFeedOracle_);
@@ -127,6 +129,7 @@ contract PaymentHelper is IPaymentHelper {
         depositGasUsed[chainId_] = depositGasUsed_;
         withdrawGasUsed[chainId_] = withdrawGasUsed_;
         dstGasPrice[chainId_] = defaultGasPrice_;
+        dstGasPerKB[chainId_] = dstGasPerKB_;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -169,11 +172,32 @@ contract PaymentHelper is IPaymentHelper {
         if (configType_ == 6) {
             dstGasPrice[chainId_] = abi.decode(config_, (uint256));
         }
+
+        /// Type 7: GAS PRICE PER KB of Message
+        if (configType_ == 7) {
+            dstGasPerKB[chainId_] = abi.decode(config_, (uint256));
+        }
     }
 
     /*///////////////////////////////////////////////////////////////
                                 VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc IPaymentHelper
+    function calculateAMBData(
+        uint64 dstChainId_,
+        uint8[] calldata ambIds_,
+        bytes memory message_
+    ) external view override returns (uint256 totalFees, bytes memory extraData) {
+        (uint256[] memory gasPerAMB, bytes[] memory extraDataPerAMB, uint256 fees) = _estimateAMBFeesReturnExtraData(
+            dstChainId_,
+            ambIds_,
+            message_
+        );
+
+        extraData = abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB));
+        totalFees = fees;
+    }
 
     /// @inheritdoc IPaymentHelper
     function estimateMultiDstMultiVault(
@@ -184,12 +208,13 @@ contract PaymentHelper is IPaymentHelper {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            srcAmount += _estimateAMBFees(
+            (, uint256 ambFees) = _estimateAMBFees(
                 req_.ambIds[i],
                 req_.dstChainIds[i],
-                _generateMultiVaultMessage(req_.superFormsData[i]),
-                req_.extraDataPerDst[i]
+                _generateMultiVaultMessage(req_.superFormsData[i])
             );
+
+            srcAmount += ambFees;
 
             /// @dev step 2: estimate if swap costs are involved
             totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequests);
@@ -237,12 +262,13 @@ contract PaymentHelper is IPaymentHelper {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
-            srcAmount += _estimateAMBFees(
+            (, uint256 ambFees) = _estimateAMBFees(
                 req_.ambIds[i],
                 req_.dstChainIds[i],
-                _generateSingleVaultMessage(req_.superFormsData[i]),
-                req_.extraDataPerDst[i]
+                _generateSingleVaultMessage(req_.superFormsData[i])
             );
+
+            srcAmount += ambFees;
 
             /// @dev step 2: estimate if swap costs are involved
             totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequest.castToArray());
@@ -279,12 +305,13 @@ contract PaymentHelper is IPaymentHelper {
         uint256 totalDstGas;
 
         /// @dev step 1: estimate amb costs
-        srcAmount += _estimateAMBFees(
+        (, uint256 ambFees) = _estimateAMBFees(
             req_.ambIds,
             req_.dstChainId,
-            _generateMultiVaultMessage(req_.superFormsData),
-            req_.extraData
+            _generateMultiVaultMessage(req_.superFormsData)
         );
+
+        srcAmount += ambFees;
 
         /// @dev step 2: estimate if swap costs are involved
         totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormsData.liqRequests);
@@ -315,12 +342,13 @@ contract PaymentHelper is IPaymentHelper {
     ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         uint256 totalDstGas;
         /// @dev step 1: estimate amb costs
-        srcAmount += _estimateAMBFees(
+        (, uint256 ambFees) = _estimateAMBFees(
             req_.ambIds,
             req_.dstChainId,
-            _generateSingleVaultMessage(req_.superFormData),
-            req_.extraData
+            _generateSingleVaultMessage(req_.superFormData)
         );
+
+        srcAmount += ambFees;
 
         /// @dev step 2: estimate if swap costs are involved
         totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormData.liqRequest.castToArray());
@@ -414,25 +442,83 @@ contract PaymentHelper is IPaymentHelper {
                         INTERNAL/HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev helps generate extra data per amb
+    function _generateExtraData(
+        uint64 dstChainId_,
+        uint8[] calldata ambIds_,
+        bytes memory message_
+    ) public view returns (bytes[] memory extraDataPerAMB) {
+        uint256 len = ambIds_.length;
+        uint256 totalDstGasReqInWei = message_.length * dstGasPerKB[dstChainId_];
+
+        extraDataPerAMB = new bytes[](len);
+
+        for (uint256 i; i < len; ) {
+            if (ambIds_[i] == 1) {
+                extraDataPerAMB[i] = abi.encodePacked(uint16(2), totalDstGasReqInWei, uint(0), address(0));
+            }
+
+            if (ambIds_[i] == 2) {
+                extraDataPerAMB[i] = abi.encode(totalDstGasReqInWei);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
     /// @dev helps estimate the cross-chain message costs
     function _estimateAMBFees(
         uint8[] calldata ambIds_,
         uint64 dstChainId_,
-        bytes memory message_,
-        bytes calldata extraData_
-    ) public view returns (uint256 totalFees) {
+        bytes memory message_
+    ) public view returns (uint256[] memory feeSplitUp, uint256 totalFees) {
         uint256 len = ambIds_.length;
 
-        SingleDstAMBParams memory decodedAmbParams = abi.decode(extraData_, (SingleDstAMBParams));
-        AMBExtraData memory decodedAmbData = abi.decode(decodedAmbParams.encodedAMBExtraData, (AMBExtraData));
+        bytes[] memory extraDataPerAMB = _generateExtraData(dstChainId_, ambIds_, message_);
+
+        feeSplitUp = new uint256[](len);
 
         /// @dev just checks the estimate for sending message from src -> dst
         for (uint256 i; i < len; ) {
-            totalFees += IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+            uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
                 dstChainId_,
                 message_,
-                decodedAmbData.extraDataPerAMB[i]
+                extraDataPerAMB[i]
             );
+
+            totalFees += tempFee;
+            feeSplitUp[i] = tempFee;
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /// @dev helps estimate the cross-chain message costs
+    function _estimateAMBFeesReturnExtraData(
+        uint64 dstChainId_,
+        uint8[] calldata ambIds_,
+        bytes memory message_
+    ) public view returns (uint256[] memory feeSplitUp, bytes[] memory extraDataPerAMB, uint256 totalFees) {
+        uint256 len = ambIds_.length;
+
+        extraDataPerAMB = _generateExtraData(dstChainId_, ambIds_, message_);
+
+        feeSplitUp = new uint256[](len);
+
+        /// @dev just checks the estimate for sending message from src -> dst
+        for (uint256 i; i < len; ) {
+            uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
+                dstChainId_,
+                message_,
+                extraDataPerAMB[i]
+            );
+
+            totalFees += tempFee;
+            feeSplitUp[i] = tempFee;
 
             unchecked {
                 ++i;
