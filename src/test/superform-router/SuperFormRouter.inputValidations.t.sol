@@ -157,7 +157,7 @@ contract SuperformRouterTest is BaseSetup {
 
         MultiVaultSFData memory data = MultiVaultSFData(superFormIds, amounts, maxSlippages, liqReq, "");
 
-        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data, "");
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         address superFormRouter = getContract(ETH, "SuperformRouter");
 
@@ -197,7 +197,7 @@ contract SuperformRouterTest is BaseSetup {
 
         MultiVaultSFData memory data = MultiVaultSFData(superFormIds, amounts, maxSlippages, liqReq, "");
 
-        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data, "");
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         address superFormRouter = getContract(ETH, "SuperformRouter");
 
@@ -232,8 +232,7 @@ contract SuperformRouterTest is BaseSetup {
 
         MultiVaultSFData memory data = MultiVaultSFData(superFormIds, amounts, maxSlippages, liqReq, "");
 
-        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data, "");
-
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
         address superFormRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superFormRouter, 1e18);
@@ -278,7 +277,7 @@ contract SuperformRouterTest is BaseSetup {
 
         MultiVaultSFData memory data = MultiVaultSFData(superFormIds, amounts, maxSlippages, liqReq, "");
 
-        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data, "");
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         address superFormRouter = getContract(ETH, "SuperformRouter");
 
@@ -317,7 +316,7 @@ contract SuperformRouterTest is BaseSetup {
 
         MultiVaultSFData memory data = MultiVaultSFData(superFormIds, amounts, maxSlippages, liqReq, "");
 
-        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data, "");
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         address superFormRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
@@ -365,7 +364,7 @@ contract SuperformRouterTest is BaseSetup {
             ""
         );
 
-        SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data, "");
+        SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
 
         address superFormRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call

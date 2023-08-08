@@ -25,7 +25,6 @@ interface ISuperformRouter {
         TransactionType txType;
         bytes ambData;
         uint256[] superFormIds;
-        bytes extraData;
         address srcSender;
         uint8[] ambIds;
         uint8 multiVaults;

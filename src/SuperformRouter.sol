@@ -5,6 +5,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
 import {IPayMaster} from "./interfaces/IPayMaster.sol";
+import {IPaymentHelper} from "./interfaces/IPaymentHelper.sol";
 import {ISuperformFactory} from "./interfaces/ISuperformFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
 import {ISuperformRouter} from "./interfaces/ISuperformRouter.sol";
@@ -83,12 +84,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
                 _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(req.superFormsData[i]));
             } else {
                 _singleXChainMultiVaultDeposit(
-                    SingleXChainMultiVaultStateReq(
-                        req.ambIds[i],
-                        req.dstChainIds[i],
-                        req.superFormsData[i],
-                        req.extraDataPerDst[i]
-                    )
+                    SingleXChainMultiVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superFormsData[i])
                 );
             }
             unchecked {
@@ -112,12 +108,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
                 _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq(req.superFormsData[i]));
             } else {
                 _singleXChainSingleVaultDeposit(
-                    SingleXChainSingleVaultStateReq(
-                        req.ambIds[i],
-                        dstChainId,
-                        req.superFormsData[i],
-                        req.extraDataPerDst[i]
-                    )
+                    SingleXChainSingleVaultStateReq(req.ambIds[i], dstChainId, req.superFormsData[i])
                 );
             }
         }
@@ -167,12 +158,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
                 _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(req.superFormsData[i]));
             } else {
                 _singleXChainMultiVaultWithdraw(
-                    SingleXChainMultiVaultStateReq(
-                        req.ambIds[i],
-                        req.dstChainIds[i],
-                        req.superFormsData[i],
-                        req.extraDataPerDst[i]
-                    )
+                    SingleXChainMultiVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superFormsData[i])
                 );
             }
 
@@ -195,12 +181,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
                 _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(req.superFormsData[i]));
             } else {
                 _singleXChainSingleVaultWithdraw(
-                    SingleXChainSingleVaultStateReq(
-                        req.ambIds[i],
-                        dstChainId,
-                        req.superFormsData[i],
-                        req.extraDataPerDst[i]
-                    )
+                    SingleXChainSingleVaultStateReq(req.ambIds[i], dstChainId, req.superFormsData[i])
                 );
             }
         }
@@ -295,7 +276,6 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
                 TransactionType.DEPOSIT,
                 abi.encode(ambData),
                 req.superFormsData.superFormIds,
-                req.extraData,
                 msg.sender,
                 req.ambIds,
                 1,
@@ -345,7 +325,6 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
                 TransactionType.DEPOSIT,
                 abi.encode(ambData),
                 superFormIds,
-                req.extraData,
                 msg.sender,
                 req.ambIds,
                 0,
@@ -432,7 +411,6 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
                 TransactionType.WITHDRAW,
                 abi.encode(ambData),
                 req.superFormsData.superFormIds,
-                req.extraData,
                 msg.sender,
                 req.ambIds,
                 1,
@@ -466,7 +444,6 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
                 TransactionType.WITHDRAW,
                 abi.encode(ambData),
                 superFormIds,
-                req.extraData,
                 msg.sender,
                 req.ambIds,
                 0,
@@ -621,15 +598,20 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             ),
             vars.ambData
         );
-        SingleDstAMBParams memory ambParams = abi.decode(vars.extraData, (SingleDstAMBParams));
+
+        (uint256 fees, bytes memory extraData) = IPaymentHelper(superRegistry.getPaymentHelper()).calculateAMBData(
+            vars.dstChainId,
+            vars.ambIds,
+            abi.encode(ambMessage)
+        );
 
         /// @dev this call dispatches the message to the AMB bridge through dispatchPayload
-        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{value: ambParams.gasToPay}(
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{value: fees}(
             vars.srcSender,
             vars.ambIds,
             vars.dstChainId,
             abi.encode(ambMessage),
-            ambParams.encodedAMBExtraData
+            extraData
         );
 
         ISuperPositions(superRegistry.superPositions()).updateTxHistory(vars.currentPayloadId, ambMessage.txInfo);

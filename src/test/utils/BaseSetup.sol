@@ -391,6 +391,8 @@ abstract contract BaseSetup is DSTest, Test {
             vars.feeHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.feeHelper;
 
+            SuperRegistry(vars.superRegistry).setPaymentHelper(vars.feeHelper);
+
             address[] memory registryAddresses = new address[](4);
             registryAddresses[0] = vars.coreStateRegistry;
             registryAddresses[1] = vars.factoryStateRegistry;
@@ -645,7 +647,8 @@ abstract contract BaseSetup is DSTest, Test {
                         40000,
                         70000,
                         80000,
-                        50 * 10 ** 9 wei
+                        50 * 10 ** 9 wei,
+                        10 wei
                     );
                 } else {
                     /// ack gas cost: 40000
@@ -655,9 +658,9 @@ abstract contract BaseSetup is DSTest, Test {
                         2,
                         abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                     );
-                    PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(40000));
+                    PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(2, abi.encode(40000));
                     PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50000));
-                    PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50 * 10 ** 9 wei));
+                    PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(5, abi.encode(50 * 10 ** 9 wei));
                 }
             }
         }

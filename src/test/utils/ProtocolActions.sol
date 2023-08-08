@@ -36,8 +36,6 @@ abstract contract ProtocolActions is BaseSetup {
     uint256 public msgValue;
     uint256 public dstValue;
 
-    bytes[] public ambParams;
-
     uint256[][] public revertingDepositSFs;
     uint256[][] public revertingWithdrawSFs;
     uint256[][] public revertingWithdrawTimelockedSFs;
@@ -444,14 +442,6 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         vm.selectFork(FORKS[CHAIN_0]);
-
-        ambParams = _getAmbParamsAndFees(
-            DST_CHAINS,
-            AMBs,
-            users[action.user],
-            multiSuperformsData,
-            singleSuperformsData
-        );
     }
 
     /// @dev STEP 2: Run Source Chain Action
@@ -494,8 +484,7 @@ abstract contract ProtocolActions is BaseSetup {
                 vars.singleDstMultiVaultStateReq = SingleXChainMultiVaultStateReq(
                     AMBs,
                     DST_CHAINS[0],
-                    multiSuperformsData[0],
-                    ambParams[0]
+                    multiSuperformsData[0]
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
@@ -541,8 +530,7 @@ abstract contract ProtocolActions is BaseSetup {
                 vars.multiDstMultiVaultStateReq = MultiDstMultiVaultStateReq(
                     MultiDstAMBs,
                     DST_CHAINS,
-                    multiSuperformsData,
-                    ambParams
+                    multiSuperformsData
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
@@ -577,8 +565,7 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.singleXChainSingleVaultStateReq = SingleXChainSingleVaultStateReq(
                         AMBs,
                         DST_CHAINS[0],
-                        singleSuperformsData[0],
-                        ambParams[0]
+                        singleSuperformsData[0]
                     );
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
@@ -647,8 +634,7 @@ abstract contract ProtocolActions is BaseSetup {
                 vars.multiDstSingleVaultStateReq = MultiDstSingleVaultStateReq(
                     MultiDstAMBs,
                     DST_CHAINS,
-                    singleSuperformsData,
-                    ambParams
+                    singleSuperformsData
                 );
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                     (, , dstValue, msgValue) = feeHelper.estimateMultiDstSingleVault(

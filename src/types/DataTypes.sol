@@ -49,7 +49,6 @@ struct MultiDstMultiVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
     MultiVaultSFData[] superFormsData;
-    bytes[] extraDataPerDst; /// encoded array of SingleDstAMBParams; length == no of dstChainIds
 }
 
 /// @dev overarching struct for single cross chain requests with multi vaults
@@ -57,7 +56,6 @@ struct SingleXChainMultiVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
     MultiVaultSFData superFormsData;
-    bytes extraData;
 }
 
 /// @dev overarching struct for multiDst requests with single vaults
@@ -65,7 +63,6 @@ struct MultiDstSingleVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
     SingleVaultSFData[] superFormsData;
-    bytes[] extraDataPerDst;
 }
 
 /// @dev overarching struct for single cross chain requests with single vaults
@@ -73,7 +70,6 @@ struct SingleXChainSingleVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
     SingleVaultSFData superFormData;
-    bytes extraData;
 }
 
 /// @dev overarching struct for single direct chain requests with single vaults

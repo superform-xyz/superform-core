@@ -566,7 +566,8 @@ abstract contract AbstractDeploySingle is Script {
                     40000,
                     70000,
                     80000,
-                    50 * 10 ** 9 wei
+                    50 * 10 ** 9 wei,
+                    10 wei
                 );
             } else {
                 /// ack gas cost: 40000

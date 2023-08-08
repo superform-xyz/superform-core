@@ -76,6 +76,9 @@ interface ISuperRegistry {
     /// @dev is emitted when a new fee collector is configured.
     event PayMasterUpdated(address indexed oldPayMaster, address indexed feeCollector);
 
+    /// @dev is emitted when a new payment helper is configured.
+    event PaymentHelperUpdated(address indexed oldPaymentHelper, address indexed paymentHelper);
+
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(uint256 indexed bridgeId, address indexed bridgeAddress);
 
@@ -119,6 +122,10 @@ interface ISuperRegistry {
     /// @dev sets the superform paymaster address.
     /// @param payMaster_ the address of the paymaster contract
     function setPayMaster(address payMaster_) external;
+
+    /// @dev sets the superform payment helper address.
+    /// @param paymentHelper_ the address of the payment helper contract
+    function setPaymentHelper(address paymentHelper_) external;
 
     /// @dev sets the core state registry address.
     /// @param coreStateRegistry_ the address of the core state registry
@@ -205,6 +212,9 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the superform paymaster contract
     function PAYMASTER() external view returns (bytes32);
+
+    /// @dev returns the id of the superform payload helper contract
+    function PAYMENT_HELPER() external view returns (bytes32);
 
     /// @dev returns the id of the core state registry module
     function CORE_STATE_REGISTRY() external view returns (bytes32);
@@ -335,4 +345,8 @@ interface ISuperRegistry {
     /// @dev gets the address of the paymaster
     /// @return payMaster_ is the address of the paymaster contract
     function getPayMaster() external view returns (address payMaster_);
+
+    /// @dev gets the address of the payment helper
+    /// @return paymentHelper_ is the address of the payment helper contract
+    function getPaymentHelper() external view returns (address paymentHelper_);
 }
