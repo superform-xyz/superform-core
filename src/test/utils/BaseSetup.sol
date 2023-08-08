@@ -1070,7 +1070,6 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev Estimates the gas fees and gas params
     function _getAmbParamsAndFees(
-        uint64 srcChainId,
         uint64[] memory dstChainIds,
         uint8[] memory selectedAmbIds,
         address user,
@@ -1116,7 +1115,6 @@ abstract contract BaseSetup is DSTest, Test {
 
         for (uint256 i; i < dstCount; i++) {
             (uint256 tempFees, bytes memory tempParams) = _generateAmbParamsAndFeesPerDst(
-                srcChainId,
                 dstChainIds[i],
                 selectedAmbIds,
                 messages[i]
@@ -1149,7 +1147,6 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev Generates the amb params for the entire action
     function _generateAmbParamsAndFeesPerDst(
-        uint64 srcChainId,
         uint64 dstChainId,
         uint8[] memory selectedAmbIds,
         bytes memory message
