@@ -7,12 +7,12 @@ import {Error} from "../../utils/Error.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 
 contract DataLibUser {
-    function validateSuperFormChainId(uint256 a, uint64 b) external pure {
-        DataLib.validateSuperFormChainId(a, b);
+    function validateSuperformChainId(uint256 a, uint64 b) external pure {
+        DataLib.validateSuperformChainId(a, b);
     }
 
-    function packSuperForm(address a, uint32 b, uint64 c) external pure returns (uint256) {
-        return DataLib.packSuperForm(a, b, c);
+    function packSuperform(address a, uint32 b, uint64 c) external pure returns (uint256) {
+        return DataLib.packSuperform(a, b, c);
     }
 }
 
@@ -23,25 +23,25 @@ contract DataLibTest is Test {
         dataLib = new DataLibUser();
     }
 
-    function test_validateSuperFormChainId() external {
+    function test_validateSuperformChainId() external {
         /// generate a superform id of chain id 1
-        uint256 superformId = _legacySuperFormPackWithShift();
+        uint256 superformId = _legacySuperformPackWithShift();
 
         /// check if superform id with chain id 1 is valid on bsc (chain id: 56)
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        dataLib.validateSuperFormChainId(superformId, uint64(56));
+        dataLib.validateSuperformChainId(superformId, uint64(56));
     }
 
-    function test_packSuperForm() external {
+    function test_packSuperform() external {
         /// generates the exp superform id with shift
-        uint256 superformId = _legacySuperFormPackWithShift();
+        uint256 superformId = _legacySuperformPackWithShift();
 
         /// check if the assembly based superform generation is good
-        uint256 newSuperformId = dataLib.packSuperForm(address(111), 1, 1);
+        uint256 newSuperformId = dataLib.packSuperform(address(111), 1, 1);
         assertEq(superformId, newSuperformId);
     }
 
-    function _legacySuperFormPackWithShift() internal pure returns (uint256 superformId_) {
+    function _legacySuperformPackWithShift() internal pure returns (uint256 superformId_) {
         address superForm_ = address(111);
         uint32 formBeaconId_ = 1;
         uint64 chainId_ = 1;

@@ -11,14 +11,14 @@ import {IBaseStateRegistry} from "../../src/interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../src/crosschain-data/extensions/CoreStateRegistry.sol";
 import {RolesStateRegistry} from "../../src/crosschain-data/extensions/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import {ISuperFormRouter} from "../../src/interfaces/ISuperFormRouter.sol";
-import {ISuperFormFactory} from "../../src/interfaces/ISuperFormFactory.sol";
+import {ISuperformRouter} from "../../src/interfaces/ISuperformRouter.sol";
+import {ISuperformFactory} from "../../src/interfaces/ISuperformFactory.sol";
 import {IBaseForm} from "../../src/interfaces/IBaseForm.sol";
-import {SuperFormRouter} from "../../src/SuperFormRouter.sol";
+import {SuperformRouter} from "../../src/SuperformRouter.sol";
 import {SuperRegistry} from "../../src/settings/SuperRegistry.sol";
 import {SuperRBAC} from "../../src/settings/SuperRBAC.sol";
 import {SuperPositions} from "../../src/SuperPositions.sol";
-import {SuperFormFactory} from "../../src/SuperFormFactory.sol";
+import {SuperformFactory} from "../../src/SuperformFactory.sol";
 import {ERC4626Form} from "../../src/forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../../src/forms/ERC4626TimelockForm.sol";
 import {ERC4626KYCDaoForm} from "../../src/forms/ERC4626KYCDaoForm.sol";
@@ -88,11 +88,11 @@ abstract contract AbstractDeploy is Script {
         "CelerImplementation",
         "SocketValidator",
         "LiFiValidator",
-        "SuperFormFactory",
+        "SuperformFactory",
         "ERC4626Form",
         "ERC4626TimelockForm",
         "ERC4626KYCDaoForm",
-        "SuperFormRouter",
+        "SuperformRouter",
         "SuperPositions",
         "MultiTxProcessor",
         "SuperRegistry",
@@ -415,12 +415,12 @@ abstract contract AbstractDeploy is Script {
         }
         bridgeValidators[3] = vars.lifiValidator;
 
-        /// @dev 6 - Deploy SuperFormFactory
-        vars.factory = address(new SuperFormFactory{salt: salt}(vars.superRegistry));
+        /// @dev 6 - Deploy SuperformFactory
+        vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
 
-        contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars.factory;
+        contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
-        SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
+        SuperRegistry(vars.superRegistry).setSuperformFactory(vars.factory);
 
         /// @dev 7 - Deploy 4626Form implementations
         // Standard ERC4626 Form
@@ -432,20 +432,20 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
 
         /// @dev 8 - Add newly deployed form  implementation to Factory, formBeaconId 1
-        ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
+        ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
 
-        ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
+        ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
 
         /// @dev 9 KYCDao ERC4626 Form (only for Polygon)
         vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
-        ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
+        ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
-        /// @dev 10 - Deploy SuperFormRouter
+        /// @dev 10 - Deploy SuperformRouter
 
-        vars.superRouter = address(new SuperFormRouter{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("SuperFormRouter"))] = vars.superRouter;
+        vars.superRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superRouter;
 
         SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
 
@@ -508,7 +508,7 @@ abstract contract AbstractDeploy is Script {
         vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
         // 0x24D1cF9E531d1636A83880c2aA9d60B0f613E2Ce
 
-        vars.factory = getContract(vars.chainId, "SuperFormFactory");
+        vars.factory = getContract(vars.chainId, "SuperformFactory");
         // 0x211825BdD7D563d3E8d22260F51469C9bA3d6c9B
 
         /// @dev Set all trusted remotes for each chain & configure amb chains ids

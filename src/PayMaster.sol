@@ -2,19 +2,16 @@
 pragma solidity 0.8.19;
 
 import {Error} from "./utils/Error.sol";
-
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
-import {IFeeCollector} from "./interfaces/IFeeCollector.sol";
+import {IPayMaster} from "./interfaces/IPayMaster.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {IBridgeValidator} from "./interfaces/IBridgeValidator.sol";
-
 import {LiquidityHandler} from "./crosschain-liquidity/LiquidityHandler.sol";
-
 import "./types/LiquidityTypes.sol";
 
-/// @title FeeCollector
+/// @title PayMaster
 /// @author ZeroPoint Labs
-contract FeeCollector is IFeeCollector, LiquidityHandler {
+contract PayMaster is IPayMaster, LiquidityHandler {
     /*///////////////////////////////////////////////////////////////
                        STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -39,10 +36,10 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
     }
 
     /*///////////////////////////////////////////////////////////////
-                    PREVILAGED ADMIN FUNCTIONS
+                    PRIVILEGED ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc IFeeCollector
+    /// @inheritdoc IPayMaster
     function withdrawToMultiTxProcessor(uint256 nativeAmount_) external onlyFeeAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
@@ -56,7 +53,7 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
         _withdrawNative(receiver, nativeAmount_);
     }
 
-    /// @inheritdoc IFeeCollector
+    /// @inheritdoc IPayMaster
     function withdrawToTxProcessor(uint256 nativeAmount_) external onlyFeeAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
@@ -70,7 +67,7 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
         _withdrawNative(receiver, nativeAmount_);
     }
 
-    /// @inheritdoc IFeeCollector
+    /// @inheritdoc IPayMaster
     function withdrawToTxUpdater(uint256 nativeAmount_) external onlyFeeAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
@@ -84,7 +81,7 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
         _withdrawNative(receiver, nativeAmount_);
     }
 
-    /// @inheritdoc IFeeCollector
+    /// @inheritdoc IPayMaster
     function rebalanceToMultiTxProcessor(LiqRequest memory req_) external onlyFeeAdmin {
         /// assuming all multi-tx processor across chains should be same; CREATE2
         address receiver = superRegistry.multiTxProcessor();
@@ -96,7 +93,7 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
         _validateAndDispatchTokens(req_, receiver);
     }
 
-    /// @inheritdoc IFeeCollector
+    /// @inheritdoc IPayMaster
     function rebalanceToTxProcessor(LiqRequest memory req_) external onlyFeeAdmin {
         /// assuming all tx processor across chains should be same; CREATE2
         address receiver = superRegistry.txProcessor();
@@ -108,7 +105,7 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
         _validateAndDispatchTokens(req_, receiver);
     }
 
-    /// @inheritdoc IFeeCollector
+    /// @inheritdoc IPayMaster
     function rebalanceToTxUpdater(LiqRequest memory req_) external onlyFeeAdmin {
         /// assuming all tx updater across chains should be same; CREATE2
         address receiver = superRegistry.txUpdater();
@@ -124,7 +121,7 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
                     EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc IFeeCollector
+    /// @inheritdoc IPayMaster
     function makePayment(address user_) external payable {
         if (msg.value == 0) {
             revert Error.ZERO_MSG_VALUE();
@@ -156,10 +153,12 @@ contract FeeCollector is IFeeCollector, LiquidityHandler {
 
     /// @dev helper to move native tokens cross-chain
     function _validateAndDispatchTokens(LiqRequest memory liqRequest_, address receiver_) internal {
-        address receiverFromTxData = IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId))
-            .decodeReceiver(liqRequest_.txData);
+        bool valid = IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateReceiver(
+            liqRequest_.txData,
+            receiver_
+        );
 
-        if (receiverFromTxData != receiver_) {
+        if (!valid) {
             revert Error.INVALID_TXDATA_RECEIVER();
         }
 

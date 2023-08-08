@@ -3,15 +3,15 @@ pragma solidity 0.8.19;
 
 /// Interfaces
 import {IPayloadHelper} from "../interfaces/IPayloadHelper.sol";
-import {IFeeHelper} from "../interfaces/IFeeHelper.sol";
-import {ISuperFormRouter} from "../interfaces/ISuperFormRouter.sol";
+import {IPaymentHelper} from "../interfaces/IPaymentHelper.sol";
+import {ISuperformRouter} from "../interfaces/ISuperformRouter.sol";
 
 // Test Utils
 import "./utils/ProtocolActions.sol";
 
 contract PayloadHelperTest is ProtocolActions {
-    /// @dev Access SuperFormRouter interface
-    ISuperFormRouter superRouter;
+    /// @dev Access SuperformRouter interface
+    ISuperformRouter superRouter;
 
     function setUp() public override {
         super.setUp();
@@ -59,18 +59,18 @@ contract PayloadHelperTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_helper() public {
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperFormRouter"))];
-        superRouter = ISuperFormRouter(_superRouter);
+        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
+        superRouter = ISuperformRouter(_superRouter);
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
-            MultiVaultSFData[] memory multiSuperFormsData;
-            SingleVaultSFData[] memory singleSuperFormsData;
+            MultiVaultSFData[] memory multiSuperformsData;
+            SingleVaultSFData[] memory singleSuperformsData;
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
 
-            _runMainStages(action, act, multiSuperFormsData, singleSuperFormsData, aV, vars, success);
+            _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
         vm.selectFork(FORKS[DST_CHAINS[0]]);
@@ -78,8 +78,8 @@ contract PayloadHelperTest is ProtocolActions {
         address _PayloadHelper = contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))];
         IPayloadHelper helper = IPayloadHelper(_PayloadHelper);
 
-        address _FeeHelper = contracts[DST_CHAINS[0]][bytes32(bytes("FeeHelper"))];
-        IFeeHelper feeHelper = IFeeHelper(_FeeHelper);
+        address _PaymentHelper = contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))];
+        IPaymentHelper feeHelper = IPaymentHelper(_PaymentHelper);
 
         (
             uint8 txType,

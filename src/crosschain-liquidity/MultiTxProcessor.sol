@@ -34,7 +34,7 @@ contract MultiTxProcessor is IMultiTxProcessor {
         _;
     }
 
-    /// @param superRegistry_        SuperForm registry contract
+    /// @param superRegistry_        Superform registry contract
     constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
     }
@@ -43,7 +43,7 @@ contract MultiTxProcessor is IMultiTxProcessor {
                             External Functions
     //////////////////////////////////////////////////////////////*/
     /// @notice receive enables processing native token transfers into the smart contract.
-    /// @dev socket.tech fails without a native receive function.
+    /// @dev liquidity bridge fails without a native receive function.
     receive() external payable {}
 
     /// @inheritdoc IMultiTxProcessor
@@ -66,12 +66,17 @@ contract MultiTxProcessor is IMultiTxProcessor {
             approvalToken_
         );
 
+        /// @dev get the address of the bridge to send the txData to.
+
         address to = superRegistry.getBridgeAddress(bridgeId_);
         if (approvalToken_ != NATIVE) {
+            /// @dev approve the bridge to spend the approvalToken_.
             IERC20(approvalToken_).approve(to, amount_);
+            /// @dev execute the txData_.
             (bool success, ) = payable(to).call(txData_);
             if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
         } else {
+            /// @dev execute the txData_.
             (bool success, ) = payable(to).call{value: amount_}(txData_);
             if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
         }

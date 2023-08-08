@@ -303,7 +303,7 @@ contract CelerImplementationTest is BaseSetup {
         address coreStateRegistry = getContract(1, "CoreStateRegistry");
         /// @dev bcoz we're simulating celerImplementation.broadcastPayload() from CoreStateRegistry (below),
         /// we need sufficient ETH in CoreStateRegistry and CelerImplementation. On mainnet, these funds will
-        /// come from the user via SuperFormRouter
+        /// come from the user via SuperformRouter
         vm.deal(coreStateRegistry, 10 ether);
         vm.deal(address(celerImplementation), 10 ether);
 

@@ -51,9 +51,7 @@ contract SocketValidator is BridgeValidator {
                 ) revert Error.INVALID_TXDATA_RECEIVER();
             }
         } else {
-            /// @dev if withdraws, then receiver address must be the srcSender
-            /// @dev what if SrcSender is a contract? can it be used to re-enter somewhere?
-            /// https://linear.app/superform/issue/SUP-2024/reentrancy-vulnerability-prevent-crafting-arbitrary-txdata-to-reenter
+            /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry or MultiTxProcessor
             if (userRequest.receiverAddress != srcSender_) revert Error.INVALID_TXDATA_RECEIVER();
         }
 
@@ -65,10 +63,10 @@ contract SocketValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeReceiver(bytes calldata txData_) external pure override returns (address receiver_) {
+    function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
         ISocketRegistry.UserRequest memory userRequest = _decodeCallData(txData_);
 
-        return userRequest.receiverAddress;
+        return userRequest.receiverAddress == receiver_;
     }
 
     /// @notice Decode the socket v2 calldata

@@ -12,7 +12,6 @@ import {Error} from "./utils/Error.sol";
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
-/// @notice WIP: deposit and withdraw functions' arguments should be made uniform across direct and xchain
 abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
@@ -22,15 +21,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     uint256 internal constant PRECISION = 10 ** PRECISION_DECIMALS;
 
-    bytes32 public constant SUPER_ROUTER_ROLE = keccak256("SUPER_ROUTER_ROLE");
-
-    bytes32 public constant TOKEN_BANK_ROLE = keccak256("TOKEN_BANK_ROLE");
-
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice state variable are all declared public to avoid creating functions to expose.
 
     /// @dev The superRegistry address is used to access relevant protocol addresses
     ISuperRegistry public immutable superRegistry;
@@ -119,16 +112,14 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
                     PURE/VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice get Superform name of the ERC20 vault representation
-    /// @return The ERC20 name
-    function superformYieldTokenName() external view virtual returns (string memory);
+    /// @inheritdoc IBaseForm
+    function superformYieldTokenName() external view virtual override returns (string memory);
 
-    /// @notice get Superform symbol of the ERC20 vault representation
-    /// @return The ERC20 symbol
-    function superformYieldTokenSymbol() external view virtual returns (string memory);
+    /// @inheritdoc IBaseForm
+    function superformYieldTokenSymbol() external view virtual override returns (string memory);
 
-    /// @notice get Supershare decimals of the ERC20 vault representation
-    function superformYieldTokenDecimals() external view virtual returns (uint256);
+    /// @inheritdoc IBaseForm
+    function superformYieldTokenDecimals() external view virtual override returns (uint256);
 
     /// @inheritdoc IBaseForm
     function getVaultAsset() public view virtual override returns (address);
@@ -143,35 +134,30 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function getVaultDecimals() public view virtual override returns (uint256);
 
     // @inheritdoc IBaseForm
-    function getVaultAddress() external view returns (address) {
+    function getVaultAddress() external view override returns (address) {
         return vault;
     }
 
-    /// @notice Returns the amount of underlying tokens each share of a vault is worth.
-    /// @return The pricePerVaultShare value
-    function getPricePerVaultShare() public view virtual returns (uint256);
+    // @inheritdoc IBaseForm
+    function getPricePerVaultShare() public view virtual override returns (uint256);
 
-    /// @notice Returns the amount of vault shares owned by the form.
-    /// @return The form's vault share balance
-    function getVaultShareBalance() public view virtual returns (uint256);
+    // @inheritdoc IBaseForm
+    function getVaultShareBalance() public view virtual override returns (uint256);
 
-    /// @notice get the total amount of underlying managed in the ERC4626 vault
-    /// NOTE: does not exist in timeless implementation
-    function getTotalAssets() public view virtual returns (uint256);
+    // @inheritdoc IBaseForm
+    function getTotalAssets() public view virtual override returns (uint256);
 
-    /// @notice get the total amount of assets received if shares are converted
-    function getConvertPricePerVaultShare() public view virtual returns (uint256);
+    // @inheritdoc IBaseForm
+    function getConvertPricePerVaultShare() public view virtual override returns (uint256);
 
-    /// @notice get the total amount of assets received if shares are actually redeemed
-    /// @notice https://eips.ethereum.org/EIPS/eip-4626
-    function getPreviewPricePerVaultShare() public view virtual returns (uint256);
+    // @inheritdoc IBaseForm
+    function getPreviewPricePerVaultShare() public view virtual override returns (uint256);
 
     /// @inheritdoc IBaseForm
     function previewDepositTo(uint256 assets_) public view virtual override returns (uint256);
 
-    /// @notice positionBalance() -> .vaultIds&destAmounts
-    /// @return how much of an asset + interest (accrued) is to withdraw from the Vault
-    function previewWithdrawFrom(uint256 assets_) public view virtual returns (uint256);
+    /// @inheritdoc IBaseForm
+    function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256);
 
     /*///////////////////////////////////////////////////////////////
                 INTERNAL STATE CHANGING VIRTUAL FUNCTIONS

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {SuperFormFactory} from "../../SuperFormFactory.sol";
+import {SuperformFactory} from "../../SuperformFactory.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import {FormBeacon} from "../../forms/FormBeacon.sol";
 import "../utils/BaseSetup.sol";
 import {Error} from "../../utils/Error.sol";
 
-contract SuperFormFactoryAddBeaconTest is BaseSetup {
+contract SuperformFactoryAddBeaconTest is BaseSetup {
     /// @dev emitted when Beacon Is Added
     /// @param formImplementation is the address of the formImplementation
     /// @param beacon is the beacon address using create2
@@ -35,9 +35,9 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
 
         /// @dev create2 address calculation
         bytes memory byteCode = getBytecodeFormBeacon(getContract(chainId, "SuperRegistry"), formImplementation);
-        address superFormMockBeacon = getAddress(byteCode, salt, getContract(chainId, "SuperFormFactory"));
+        address superFormMockBeacon = getAddress(byteCode, salt, getContract(chainId, "SuperformFactory"));
 
-        bytes memory byteCodeSuperformFactory = SuperFormFactory(getContract(chainId, "SuperFormFactory"))
+        bytes memory byteCodeSuperformFactory = SuperformFactory(getContract(chainId, "SuperformFactory"))
             .getBytecodeFormBeacon(getContract(chainId, "SuperRegistry"), formImplementation);
         assertEq(byteCode, byteCodeSuperformFactory);
 
@@ -47,7 +47,7 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
                 type(FormBeacon).creationCode,
                 abi.encode(getContract(chainId, "SuperRegistry"), formImplementation)
             ),
-            getContract(chainId, "SuperFormFactory")
+            getContract(chainId, "SuperformFactory")
         );
 
         vm.startPrank(deployer);
@@ -55,7 +55,7 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
         vm.expectEmit(true, true, true, true);
         emit FormBeaconAdded(formImplementation, superFormMockBeacon, formBeaconId);
 
-        address beacon_returned = SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        address beacon_returned = SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation,
             formBeaconId,
             salt
@@ -72,14 +72,14 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
         uint32 formBeaconId = 0;
 
         vm.startPrank(deployer);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation1,
             formBeaconId,
             salt
         );
 
         vm.expectRevert(Error.BEACON_ID_ALREADY_EXISTS.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation2,
             formBeaconId,
             salt
@@ -96,7 +96,7 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(form, formId, salt);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(form, formId, salt);
     }
 
     /// @dev Testing adding becon with wrong form
@@ -109,6 +109,6 @@ contract SuperFormFactoryAddBeaconTest is BaseSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Error.ERC165_UNSUPPORTED.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(form, formId, salt);
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(form, formId, salt);
     }
 }

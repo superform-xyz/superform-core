@@ -4,24 +4,27 @@ import "./LiquidityTypes.sol";
 
 /// @dev contains all the common struct and enums used for data communication between chains.
 
+/// @dev There are two transaction types in Superform Protocol
 enum TransactionType {
     DEPOSIT,
     WITHDRAW
 }
 
+/// @dev Message types can be INIT, RETURN (for successful Deposits) and FAIL (for failed withdraws)
 enum CallbackType {
     INIT,
     RETURN,
     FAIL /// @dev Used only in withdraw flow now
 }
 
+/// @dev Payloads are stored, updated (deposits) or processed (finalized)
 enum PayloadState {
     STORED,
     UPDATED,
     PROCESSED
 }
 
-//; Liq Data: 0 (chainId 1) => [LiqData (SfData1)] | 1 (chainId 2) => [LiqData (SfData3 + SfData4)] | 2 (chainId 3) => [LiqData (SfData5) | 3 (chainId 3) => [LiqData (SfData6)]
+/// @dev main struct that holds required multi vault data for an action
 struct MultiVaultSFData {
     // superFormids must have same destination. Can have different different underlyings
     uint256[] superFormIds;
@@ -30,6 +33,8 @@ struct MultiVaultSFData {
     LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
     bytes extraFormData; // extraFormData
 }
+
+/// @dev main struct that holds required single vault data for an action
 struct SingleVaultSFData {
     // superFormids must have same destination. Can have different different underlyings
     uint256 superFormId;
@@ -39,42 +44,45 @@ struct SingleVaultSFData {
     bytes extraFormData; // extraFormData
 }
 
+/// @dev overarching struct for multiDst requests with multi vaults
 struct MultiDstMultiVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
     MultiVaultSFData[] superFormsData;
-    bytes[] extraDataPerDst; /// encoded array of SingleDstAMBParams; length == no of dstChainIds
 }
 
+/// @dev overarching struct for single cross chain requests with multi vaults
 struct SingleXChainMultiVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
     MultiVaultSFData superFormsData;
-    bytes extraData;
 }
 
+/// @dev overarching struct for multiDst requests with single vaults
 struct MultiDstSingleVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
     SingleVaultSFData[] superFormsData;
-    bytes[] extraDataPerDst;
 }
 
+/// @dev overarching struct for single cross chain requests with single vaults
 struct SingleXChainSingleVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
     SingleVaultSFData superFormData;
-    bytes extraData;
 }
 
+/// @dev overarching struct for single direct chain requests with single vaults
 struct SingleDirectSingleVaultStateReq {
     SingleVaultSFData superFormData;
 }
 
+/// @dev overarching struct for single direct chain requests with multi vaults
 struct SingleDirectMultiVaultStateReq {
     MultiVaultSFData superFormData;
 }
 
+/// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitMultiVaultData {
     uint256 payloadId;
     uint256[] superFormIds;
@@ -84,6 +92,7 @@ struct InitMultiVaultData {
     bytes extraFormData;
 }
 
+/// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitSingleVaultData {
     uint256 payloadId;
     uint256 superFormId;
@@ -93,12 +102,14 @@ struct InitSingleVaultData {
     bytes extraFormData;
 }
 
+/// @dev all statuses of the timeloc
 enum TimeLockStatus {
     UNAVAILABLE,
     PENDING,
     PROCESSED
 }
 
+/// @dev holds information about the timelock payload
 struct TimeLockPayload {
     uint8 isXChain;
     address srcSender;
@@ -108,54 +119,50 @@ struct TimeLockPayload {
     TimeLockStatus status;
 }
 
+/// @dev struct that contains the type of transaction, callback flags and other identification, as well as the vaults data in params
 struct AMBMessage {
     uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag  if multi/single vault, registry id, srcSender and srcChainId
     bytes params; // decoding txInfo will point to the right datatype of params. Refer PayloadHelper.sol
 }
 
+/// @dev contains the message for factory payloads (pause updates)
 struct AMBFactoryMessage {
     bytes32 messageType; /// keccak("ADD_FORM"), keccak("PAUSE_FORM")
     bytes message;
 }
 
+/// @dev struct that contains info on returned data from destination
 struct ReturnMultiData {
     uint256 payloadId;
     uint256[] superFormIds;
     uint256[] amounts;
 }
 
+/// @dev struct that contains info on returned data from destination
 struct ReturnSingleData {
     uint256 payloadId;
     uint256 superFormId;
     uint256 amount;
 }
-
-/**
- * if let's say its multi-dst / broadcasting
- * broadcasting is an extension of multi-dst
- *
- * splitting of the data types will reduce gas??
- * what would be an ideal data type??
- *
- * linear waterflow model??
- * where the top data type is encoded and the bottom level decodes it
- */
+/// @dev struct that contains the data on the fees to pay
 struct SingleDstAMBParams {
     uint256 gasToPay;
     bytes encodedAMBExtraData;
 }
 
+/// @dev struct that contains the data on the fees to pay to the AMBs
 struct AMBExtraData {
     uint256[] gasPerAMB;
     bytes[] extraDataPerAMB;
 }
 
+/// @dev struct that contains the data on the fees to pay to the AMBs on broadcasts
 struct BroadCastAMBExtraData {
     uint256[] gasPerDst;
     bytes[] extraDataPerDst;
 }
 
-/// acknowledgement extra data
+/// @dev acknowledgement extra data (contains gas information from dst to src callbacks)
 struct AckAMBData {
     uint8[] ambIds;
     bytes extraData;

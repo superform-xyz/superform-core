@@ -9,6 +9,7 @@ interface ISuperRegistry {
                                 Events
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev is emmitable when pseudo immutable chainId and permit2 address are set
     event SetImmutables(uint256 indexed chainId, address indexed permit2);
 
     /// @dev is emitted when an address is set.
@@ -30,15 +31,19 @@ interface ISuperRegistry {
     event SuperRouterUpdated(address indexed oldSuperRouter, address indexed superRouter);
 
     /// @dev is emitted when the superform factory address is set.
-    event SuperFormFactoryUpdated(address indexed oldSuperFormFactory, address indexed superFormFactory);
+    event SuperformFactoryUpdated(address indexed oldSuperformFactory, address indexed superFormFactory);
 
     /// @dev is emitted when the core state registry address is set for src chain.
     event CoreStateRegistryUpdated(address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
 
     /// @dev is emitted when the core state registry address is set for a specific chain
-    event CoreStateRegistryCrossChainUpdated(uint64 indexed chainId, address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
+    event CoreStateRegistryCrossChainUpdated(
+        uint64 indexed chainId,
+        address indexed oldCoreStateRegistry,
+        address indexed coreStateRegistry
+    );
 
-    /// @dev is emitted when the state registry address is set.
+    /// @dev is emitted when the two steps form state registry address is set.
     event TwoStepsFormStateRegistryUpdated(
         address indexed oldTwoStepsFormStateRegistry,
         address indexed twoStepsFormStateRegistry
@@ -59,16 +64,20 @@ interface ISuperRegistry {
     event MultiTxProcessorUpdated(address indexed oldMultiTxProcessor, address indexed multiTxProcessor);
 
     /// @dev is emitted when a new multi tx processor is configured for a specific chain
-    event MultiTxProcessorCrossChainUpdated(uint64 indexed chainId, address indexed oldMultiTxProcessor, address indexed multiTxProcessor);
+    event MultiTxProcessorCrossChainUpdated(
+        uint64 indexed chainId,
+        address indexed oldMultiTxProcessor,
+        address indexed multiTxProcessor
+    );
 
     /// @dev is emitted when a new tx processor is configured.
     event TxProcessorUpdated(address indexed oldTxProcessor, address indexed txProcessor);
 
-    /// @dev is emitted when a new tx updater is configured.
-    event TxUpdaterUpdated(address indexed oldTxUpdater, address indexed txUpdater);
-
     /// @dev is emitted when a new fee collector is configured.
-    event FeeCollectorUpdated(address indexed oldFeeCollector, address indexed feeCollector);
+    event PayMasterUpdated(address indexed oldPayMaster, address indexed feeCollector);
+
+    /// @dev is emitted when a new payment helper is configured.
+    event PaymentHelperUpdated(address indexed oldPaymentHelper, address indexed paymentHelper);
 
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(uint256 indexed bridgeId, address indexed bridgeAddress);
@@ -108,16 +117,21 @@ interface ISuperRegistry {
 
     /// @dev sets the superform factory address.
     /// @param superFormFactory_ the address of the superform factory
-    function setSuperFormFactory(address superFormFactory_) external;
+    function setSuperformFactory(address superFormFactory_) external;
 
-    /// @dev sets the superform fee collector address.
-    /// @param feeCollector_ the address of the fee collector
-    function setFeeCollector(address feeCollector_) external;
+    /// @dev sets the superform paymaster address.
+    /// @param payMaster_ the address of the paymaster contract
+    function setPayMaster(address payMaster_) external;
+
+    /// @dev sets the superform payment helper address.
+    /// @param paymentHelper_ the address of the payment helper contract
+    function setPaymentHelper(address paymentHelper_) external;
 
     /// @dev sets the core state registry address.
     /// @param coreStateRegistry_ the address of the core state registry
     function setCoreStateRegistry(address coreStateRegistry_) external;
 
+    /// @dev sets the core state registry address in a cross chain fashion
     /// @dev allows admin to set the core state registry address for a specific chain
     /// @param coreStateRegistry_ the address of the core state registry for that chain
     /// @param chainId_ the chain id of that chain
@@ -196,8 +210,11 @@ interface ISuperRegistry {
     /// @dev returns the id of the superform factory module
     function SUPERFORM_FACTORY() external view returns (bytes32);
 
-    /// @dev returns the id of the superform fee collector
-    function FEE_COLLECTOR() external view returns (bytes32);
+    /// @dev returns the id of the superform paymaster contract
+    function PAYMASTER() external view returns (bytes32);
+
+    /// @dev returns the id of the superform payload helper contract
+    function PAYMENT_HELPER() external view returns (bytes32);
 
     /// @dev returns the id of the core state registry module
     function CORE_STATE_REGISTRY() external view returns (bytes32);
@@ -252,7 +269,7 @@ interface ISuperRegistry {
     /// @param chainId_ chain id of that chain
     function coreStateRegistryCrossChain(uint64 chainId_) external view returns (address coreStateRegistry_);
 
-    /// @dev gets the form state registry address.
+    /// @dev gets the two steps form state registry address.
     /// @return twoStepsFormStateRegistry_ the address of the state registry
     function twoStepsFormStateRegistry() external view returns (address twoStepsFormStateRegistry_);
 
@@ -325,7 +342,11 @@ interface ISuperRegistry {
     /// @return ambAddress_ is the address of the form
     function getAmbAddress(uint8 ambId_) external view returns (address ambAddress_);
 
-    /// @dev gets the address of fee collector
-    /// @return feeCollector_ is the address of the fee collector
-    function getFeeCollector() external view returns (address feeCollector_);
+    /// @dev gets the address of the paymaster
+    /// @return payMaster_ is the address of the paymaster contract
+    function getPayMaster() external view returns (address payMaster_);
+
+    /// @dev gets the address of the payment helper
+    /// @return paymentHelper_ is the address of the payment helper contract
+    function getPaymentHelper() external view returns (address paymentHelper_);
 }

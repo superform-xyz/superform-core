@@ -12,7 +12,6 @@ import {ILayerZeroUserApplicationConfig} from "../../../vendor/layerzero/ILayerZ
 import {ILayerZeroEndpoint} from "../../../vendor/layerzero/ILayerZeroEndpoint.sol";
 import {DataLib} from "../../../libraries/DataLib.sol";
 
-/// @dev FIXME: this contract could use better overrides from interfaces - Joao
 /// @title LayerzeroImplementation
 /// @author Zeropoint Labs
 /// @dev allows state registries to use hyperlane for crosschain communication

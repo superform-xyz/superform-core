@@ -10,9 +10,9 @@ import {PayloadState, AMBMessage, AMBExtraData} from "../types/DataTypes.sol";
 
 /// @title BaseStateRegistry
 /// @author Zeropoint Labs
-/// @dev contract module that allows children to implement crosschain messaging
-/// & processing mechanisms. This is a lightweight version that allows only dispatching and receiving crosschain
-/// payloads (messages). Inheriting children contracts has the flexibility to define their own processing mechanisms.
+/// @dev contract module that allows inheriting contracts to implement crosschain messaging
+/// @dev & processing mechanisms. This is a lightweight version that allows only dispatching and receiving crosschain
+/// @dev payloads (messages). Inheriting children contracts have the flexibility to define their own processing mechanisms.
 abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
@@ -54,7 +54,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     }
 
     /// @dev sender varies based on functionality
-    /// NOTE: children contracts should override this function (else not safe)
+    /// @notice inheriting contracts should override this function (else not safe)
     modifier onlySender() virtual {
         _;
     }
@@ -104,6 +104,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
             emit ProofReceived(data.params);
         } else {
+            /// @dev if message, store header and body of it
             ++payloadsCount;
 
             payloadBody[payloadsCount] = data.params;
@@ -154,7 +155,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
         data.params = abi.encode(keccak256(message_));
 
-        /// @dev i starts from 1 since 0 is primary amb id
+        /// @dev i starts from 1 since 0 is primary amb id which dispatches the message itself
         for (uint8 i = 1; i < ambIds_.length; ) {
             uint8 tempAmbId = ambIds_[i];
 
@@ -168,6 +169,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                 revert Error.INVALID_BRIDGE_ID();
             }
 
+            /// @dev proof is dispatched in the form of a payload
             tempImpl.dispatchPayload{value: gasToPay_[i]}(srcSender_, dstChainId_, abi.encode(data), overrideData_[i]);
 
             unchecked {

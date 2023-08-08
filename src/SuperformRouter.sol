@@ -4,10 +4,11 @@ pragma solidity 0.8.19;
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IBaseStateRegistry} from "./interfaces/IBaseStateRegistry.sol";
-import {IFeeCollector} from "./interfaces/IFeeCollector.sol";
-import {ISuperFormFactory} from "./interfaces/ISuperFormFactory.sol";
+import {IPayMaster} from "./interfaces/IPayMaster.sol";
+import {IPaymentHelper} from "./interfaces/IPaymentHelper.sol";
+import {ISuperformFactory} from "./interfaces/ISuperformFactory.sol";
 import {IBaseForm} from "./interfaces/IBaseForm.sol";
-import {ISuperFormRouter} from "./interfaces/ISuperFormRouter.sol";
+import {ISuperformRouter} from "./interfaces/ISuperformRouter.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
 import {IFormBeacon} from "./interfaces/IFormBeacon.sol";
@@ -18,11 +19,11 @@ import {DataLib} from "./libraries/DataLib.sol";
 import {Error} from "./utils/Error.sol";
 import "./types/DataTypes.sol";
 
-/// @title SuperFormRouter
+/// @title SuperformRouter
 /// @author Zeropoint Labs.
 /// @dev Routes users funds and action information to a remote execution chain.
 /// @dev extends Liquidity Handler.
-contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
+contract SuperformRouter is ISuperformRouter, LiquidityHandler {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
 
@@ -30,6 +31,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                              CONSTANTS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev SuperformRouter connects to CORE_STATE_REGISTRY (type 1)
     uint8 public constant STATE_REGISTRY_TYPE = 1;
     ISuperRegistry public immutable superRegistry;
 
@@ -69,10 +71,10 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice receive enables processing native token transfers into the smart contract.
-    /// @notice liquidity bridge tech fails without a native receive function.
+    /// @notice liquidity bridge fails without a native receive function.
     receive() external payable {}
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function multiDstMultiVaultDeposit(MultiDstMultiVaultStateReq calldata req) external payable override {
         uint256 chainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
@@ -82,12 +84,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(req.superFormsData[i]));
             } else {
                 _singleXChainMultiVaultDeposit(
-                    SingleXChainMultiVaultStateReq(
-                        req.ambIds[i],
-                        req.dstChainIds[i],
-                        req.superFormsData[i],
-                        req.extraDataPerDst[i]
-                    )
+                    SingleXChainMultiVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superFormsData[i])
                 );
             }
             unchecked {
@@ -98,7 +95,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function multiDstSingleVaultDeposit(MultiDstSingleVaultStateReq calldata req) external payable override {
         uint64 srcChainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
@@ -111,12 +108,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq(req.superFormsData[i]));
             } else {
                 _singleXChainSingleVaultDeposit(
-                    SingleXChainSingleVaultStateReq(
-                        req.ambIds[i],
-                        dstChainId,
-                        req.superFormsData[i],
-                        req.extraDataPerDst[i]
-                    )
+                    SingleXChainSingleVaultStateReq(req.ambIds[i], dstChainId, req.superFormsData[i])
                 );
             }
         }
@@ -124,7 +116,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req) external payable override {
         uint256 balanceBefore = address(this).balance - msg.value;
 
@@ -132,7 +124,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req) external payable override {
         uint256 balanceBefore = address(this).balance - msg.value;
 
@@ -140,7 +132,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req) external payable override {
         uint256 balanceBefore = address(this).balance - msg.value;
 
@@ -148,7 +140,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req) external payable override {
         uint256 balanceBefore = address(this).balance - msg.value;
 
@@ -156,7 +148,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function multiDstMultiVaultWithdraw(MultiDstMultiVaultStateReq calldata req) external payable override {
         uint256 chainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
@@ -166,12 +158,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(req.superFormsData[i]));
             } else {
                 _singleXChainMultiVaultWithdraw(
-                    SingleXChainMultiVaultStateReq(
-                        req.ambIds[i],
-                        req.dstChainIds[i],
-                        req.superFormsData[i],
-                        req.extraDataPerDst[i]
-                    )
+                    SingleXChainMultiVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superFormsData[i])
                 );
             }
 
@@ -183,7 +170,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function multiDstSingleVaultWithdraw(MultiDstSingleVaultStateReq calldata req) external payable override {
         uint64 dstChainId;
         uint256 balanceBefore = address(this).balance - msg.value;
@@ -194,12 +181,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(req.superFormsData[i]));
             } else {
                 _singleXChainSingleVaultWithdraw(
-                    SingleXChainSingleVaultStateReq(
-                        req.ambIds[i],
-                        dstChainId,
-                        req.superFormsData[i],
-                        req.extraDataPerDst[i]
-                    )
+                    SingleXChainSingleVaultStateReq(req.ambIds[i], dstChainId, req.superFormsData[i])
                 );
             }
         }
@@ -207,7 +189,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req) external payable override {
         uint256 balanceBefore = address(this).balance - msg.value;
 
@@ -215,7 +197,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req) external payable override {
         uint256 balanceBefore = address(this).balance - msg.value;
 
@@ -223,7 +205,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req) external payable override {
         uint256 balanceBefore = address(this).balance - msg.value;
 
@@ -231,7 +213,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         _forwardFee(balanceBefore);
     }
 
-    /// @inheritdoc ISuperFormRouter
+    /// @inheritdoc ISuperformRouter
     function singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req) external payable override {
         uint256 balanceBefore = address(this).balance - msg.value;
 
@@ -246,7 +228,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     /// @dev handles cross-chain multi vault deposit
     function _singleXChainMultiVaultDeposit(SingleXChainMultiVaultStateReq memory req) internal {
         /// @dev validate superFormsData
-        if (!_validateSuperFormsDepositData(req.superFormsData, req.dstChainId)) revert Error.INVALID_SUPERFORMS_DATA();
+        if (!_validateSuperformsDepositData(req.superFormsData, req.dstChainId)) revert Error.INVALID_SUPERFORMS_DATA();
 
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
@@ -254,7 +236,6 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         vars.srcChainId = superRegistry.chainId();
         vars.currentPayloadId = ++payloadIds;
 
-        /// @dev write packed txData
         ambData = InitMultiVaultData(
             vars.currentPayloadId,
             req.superFormsData.superFormIds,
@@ -269,11 +250,12 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
-        for (uint256 j = 0; j < req.superFormsData.liqRequests.length; j++) {
+        for (uint256 j = 0; j < req.superFormsData.liqRequests.length; ) {
             vars.liqRequest = req.superFormsData.liqRequests[j];
-            /// @dev dispatch liquidity data
-            (superForm, , ) = req.superFormsData.superFormIds[j].getSuperForm();
 
+            (superForm, , ) = req.superFormsData.superFormIds[j].getSuperform();
+
+            /// @dev dispatch liquidity data
             _validateAndDispatchTokens(
                 vars.liqRequest,
                 permit2,
@@ -283,14 +265,17 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                 msg.sender,
                 true
             );
+            unchecked {
+                ++j;
+            }
         }
 
+        /// @dev dispatch message information, notice multiVaults is set to 1
         _dispatchAmbMessage(
             DispatchAMBMessageVars(
                 TransactionType.DEPOSIT,
                 abi.encode(ambData),
                 req.superFormsData.superFormIds,
-                req.extraData,
                 msg.sender,
                 req.ambIds,
                 1,
@@ -308,14 +293,19 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         ActionLocalVars memory vars;
 
         vars.srcChainId = superRegistry.chainId();
+
+        /// @dev disallow direct chain actions
         if (vars.srcChainId == req.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
+
+        /// @dev this step validates and returns ambData from the state request
         (ambData, vars.currentPayloadId) = _buildDepositAmbData(req.dstChainId, req.superFormData);
 
         vars.liqRequest = req.superFormData.liqRequest;
-        (address superForm, , ) = req.superFormData.superFormId.getSuperForm();
+        (address superForm, , ) = req.superFormData.superFormId.getSuperform();
 
+        /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
             vars.liqRequest,
             superRegistry.PERMIT2(),
@@ -329,12 +319,12 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         uint256[] memory superFormIds = new uint256[](1);
         superFormIds[0] = req.superFormData.superFormId;
 
+        /// @dev dispatch message information, notice multiVaults is set to 0
         _dispatchAmbMessage(
             DispatchAMBMessageVars(
                 TransactionType.DEPOSIT,
                 abi.encode(ambData),
                 superFormIds,
-                req.extraData,
                 msg.sender,
                 req.ambIds,
                 0,
@@ -390,7 +380,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     /// @dev handles cross-chain multi vault withdraw
     function _singleXChainMultiVaultWithdraw(SingleXChainMultiVaultStateReq memory req) internal {
         /// @dev validate superFormsData
-        if (!_validateSuperFormsWithdrawData(req.superFormsData, req.dstChainId))
+        if (!_validateSuperformsWithdrawData(req.superFormsData, req.dstChainId))
             revert Error.INVALID_SUPERFORMS_DATA();
 
         ISuperPositions(superRegistry.superPositions()).burnBatchSP(
@@ -415,12 +405,12 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             req.superFormsData.extraFormData
         );
 
+        /// @dev dispatch message information, notice multiVaults is set to 1
         _dispatchAmbMessage(
             DispatchAMBMessageVars(
                 TransactionType.WITHDRAW,
                 abi.encode(ambData),
                 req.superFormsData.superFormIds,
-                req.extraData,
                 msg.sender,
                 req.ambIds,
                 1,
@@ -441,17 +431,19 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         if (vars.srcChainId == req.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
+
+        /// @dev this step validates and returns ambData from the state request
         (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(msg.sender, req.dstChainId, req.superFormData);
 
         uint256[] memory superFormIds = new uint256[](1);
         superFormIds[0] = req.superFormData.superFormId;
 
+        /// @dev dispatch message information, notice multiVaults is set to 0
         _dispatchAmbMessage(
             DispatchAMBMessageVars(
                 TransactionType.WITHDRAW,
                 abi.encode(ambData),
                 superFormIds,
-                req.extraData,
                 msg.sender,
                 req.ambIds,
                 0,
@@ -484,6 +476,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         vars.srcChainId = superRegistry.chainId();
         vars.currentPayloadId = ++payloadIds;
 
+        /// @dev SuperPositions are burnt optimistically here
         ISuperPositions(superRegistry.superPositions()).burnBatchSP(
             msg.sender,
             req.superFormData.superFormIds,
@@ -505,15 +498,16 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     }
 
     /*///////////////////////////////////////////////////////////////
-                        MESSAGE BRIDGE HELPER FUNCTIONS
+                         HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev internal function used for validation and ambData building across different entry points
     function _buildDepositAmbData(
         uint64 dstChainId_,
         SingleVaultSFData memory superFormData_
     ) internal returns (InitSingleVaultData memory ambData, uint256 currentPayloadId) {
         /// @dev validate superFormsData
-        if (!_validateSuperFormData(dstChainId_, superFormData_)) revert Error.INVALID_SUPERFORMS_DATA();
+        if (!_validateSuperformData(dstChainId_, superFormData_)) revert Error.INVALID_SUPERFORMS_DATA();
 
         if (
             !IBridgeValidator(superRegistry.getBridgeValidator(superFormData_.liqRequest.bridgeId))
@@ -539,7 +533,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         SingleVaultSFData memory superFormData_
     ) internal returns (InitSingleVaultData memory ambData, uint256 currentPayloadId) {
         /// @dev validate superFormsData
-        if (!_validateSuperFormData(dstChainId_, superFormData_)) revert Error.INVALID_SUPERFORMS_DATA();
+        if (!_validateSuperformData(dstChainId_, superFormData_)) revert Error.INVALID_SUPERFORMS_DATA();
 
         ISuperPositions(superRegistry.superPositions()).burnSingleSP(
             srcSender_,
@@ -568,6 +562,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         address srcSender_,
         bool deposit_
     ) internal {
+        /// @dev validates remaining params of txData
         IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateTxData(
             liqRequest_.txData,
             srcChainId_,
@@ -577,6 +572,8 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             srcSender_,
             liqRequest_.token
         );
+
+        /// @dev dispatches tokens through the selected liquidity bridge to the destnation contract (CoreStateRegistry or MultiTxProcessor)
         dispatchTokens(
             superRegistry.getBridgeAddress(liqRequest_.bridgeId),
             liqRequest_.txData,
@@ -587,19 +584,6 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             liqRequest_.permit2data,
             permit2_
         );
-    }
-
-    struct DispatchAMBMessageVars {
-        TransactionType txType;
-        bytes ambData;
-        uint256[] superFormIds;
-        bytes extraData;
-        address srcSender;
-        uint8[] ambIds;
-        uint8 multiVaults;
-        uint64 srcChainId;
-        uint64 dstChainId;
-        uint256 currentPayloadId;
     }
 
     function _dispatchAmbMessage(DispatchAMBMessageVars memory vars) internal {
@@ -614,18 +598,20 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             ),
             vars.ambData
         );
-        SingleDstAMBParams memory ambParams = abi.decode(vars.extraData, (SingleDstAMBParams));
 
-        /// @dev _liqReq should have path encoded for withdraw to SuperFormRouter on chain different than chainId
-        /// @dev construct txData in this fashion: from FTM SOURCE send message to BSC DESTINATION
-        /// @dev so that BSC DISPATCHTOKENS sends tokens to AVAX receiver (EOA/contract/user-specified)
-        /// @dev sync could be a problem, how long Socket path stays vaild vs. how fast we bridge/receive on Dst
-        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{value: ambParams.gasToPay}(
+        (uint256 fees, bytes memory extraData) = IPaymentHelper(superRegistry.getPaymentHelper()).calculateAMBData(
+            vars.dstChainId,
+            vars.ambIds,
+            abi.encode(ambMessage)
+        );
+
+        /// @dev this call dispatches the message to the AMB bridge through dispatchPayload
+        IBaseStateRegistry(superRegistry.coreStateRegistry()).dispatchPayload{value: fees}(
             vars.srcSender,
             vars.ambIds,
             vars.dstChainId,
             abi.encode(ambMessage),
-            ambParams.encodedAMBExtraData
+            extraData
         );
 
         ISuperPositions(superRegistry.superPositions()).updateTxHistory(vars.currentPayloadId, ambMessage.txInfo);
@@ -642,7 +628,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         uint256 dstAmount;
 
         /// @dev decode superforms
-        (superForm, , ) = vaultData_.superFormId.getSuperForm();
+        (superForm, , ) = vaultData_.superFormId.getSuperform();
 
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = _directDeposit(
@@ -657,6 +643,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             srcSender_
         );
 
+        /// @dev mint super positions at the end of the deposit action
         ISuperPositions(superRegistry.superPositions()).mintSingleSP(srcSender_, vaultData_.superFormId, dstAmount);
     }
 
@@ -669,7 +656,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         uint256[] memory dstAmounts = new uint256[](len);
 
         /// @dev decode superforms
-        (superForms, , ) = DataLib.getSuperForms(vaultData_.superFormIds);
+        (superForms, , ) = DataLib.getSuperforms(vaultData_.superFormIds);
 
         for (uint256 i; i < len; ) {
             /// @dev deposits collateral to a given vault and mint vault positions.
@@ -690,7 +677,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             }
         }
 
-        /// @dev TEST-CASE: msg.sender to whom we mint. use passed `admin` arg?
+        /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
         ISuperPositions(superRegistry.superPositions()).mintBatchSP(srcSender_, vaultData_.superFormIds, dstAmounts);
     }
 
@@ -707,13 +694,13 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         address srcSender_
     ) internal returns (uint256 dstAmount) {
         /// @dev validates if superFormId exists on factory
-        (, , uint64 chainId) = ISuperFormFactory(superRegistry.superFormFactory()).getSuperForm(superFormId_);
+        (, , uint64 chainId) = ISuperformFactory(superRegistry.superFormFactory()).getSuperform(superFormId_);
 
         if (chainId != superRegistry.chainId()) {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        /// @dev deposits collateral to a given vault and mint vault positions.
+        /// @dev deposits collateral to a given vault and mint vault positions directly through the form
         dstAmount = IBaseForm(superForm).directDepositIntoVault{value: msgValue_}(
             InitSingleVaultData(payloadId_, superFormId_, amount_, maxSlippage_, liqData_, extraFormData_),
             srcSender_
@@ -728,7 +715,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     /// @dev call `_directWithdraw`
     function _directSingleWithdraw(InitSingleVaultData memory vaultData_, address srcSender_) internal {
         /// @dev decode superforms
-        (address superForm, , ) = vaultData_.superFormId.getSuperForm();
+        (address superForm, , ) = vaultData_.superFormId.getSuperform();
 
         _directWithdraw(
             superForm,
@@ -746,7 +733,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
     /// @dev loops and call `_directWithdraw`
     function _directMultiWithdraw(InitMultiVaultData memory vaultData_, address srcSender_) internal {
         /// @dev decode superforms
-        (address[] memory superForms, , ) = DataLib.getSuperForms(vaultData_.superFormIds);
+        (address[] memory superForms, , ) = DataLib.getSuperforms(vaultData_.superFormIds);
 
         for (uint256 i; i < superForms.length; ) {
             /// @dev deposits collateral to a given vault and mint vault positions.
@@ -779,13 +766,13 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         address srcSender_
     ) internal {
         /// @dev validates if superFormId exists on factory
-        (, , uint64 chainId) = ISuperFormFactory(superRegistry.superFormFactory()).getSuperForm(superFormId_);
+        (, , uint64 chainId) = ISuperformFactory(superRegistry.superFormFactory()).getSuperform(superFormId_);
 
         if (chainId != superRegistry.chainId()) {
             revert Error.INVALID_CHAIN_ID();
         }
 
-        /// @dev to allow bridging somewhere else requires arch change
+        /// @dev in direct withdraws, form is called directly
         IBaseForm(superForm).directWithdrawFromVault(
             InitSingleVaultData(txData_, superFormId_, amount_, maxSlippage_, liqData_, extraFormData_),
             srcSender_
@@ -796,30 +783,33 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
                             VALIDATION HELPERS
     //////////////////////////////////////////////////////////////*/
 
-    function _validateSuperFormData(
+    function _validateSuperformData(
         uint64 dstChainId_,
         SingleVaultSFData memory superFormData_
     ) internal view returns (bool) {
+        /// @dev the dstChainId_ (in the state request) must match the superForms' chainId (superForm must exist on destinatiom)
         if (dstChainId_ != DataLib.getDestinationChain(superFormData_.superFormId)) return false;
 
+        /// @dev 10000 = 100% slippage
         if (superFormData_.maxSlippage > 10000) return false;
 
-        (, uint32 formBeaconId_, ) = superFormData_.superFormId.getSuperForm();
+        (, uint32 formBeaconId_, ) = superFormData_.superFormId.getSuperform();
 
-        return !IFormBeacon(ISuperFormFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused();
+        return !IFormBeacon(ISuperformFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused();
     }
 
-    function _validateSuperFormsDepositData(
+    function _validateSuperformsDepositData(
         MultiVaultSFData memory superFormsData_,
         uint64 dstChainId
     ) internal view returns (bool) {
         uint256 len = superFormsData_.amounts.length;
         uint256 liqRequestsLen = superFormsData_.liqRequests.length;
 
+        /// @dev empty requests are not allowed, as well as requests with length mismatch
         if (len == 0 || liqRequestsLen == 0) return false;
         if (len != liqRequestsLen) return false;
 
-        /// @dev sizes validation
+        /// @dev superformIds/amounts/slippages array sizes validation
         if (
             !(superFormsData_.superFormIds.length == superFormsData_.amounts.length &&
                 superFormsData_.superFormIds.length == superFormsData_.maxSlippages.length)
@@ -827,41 +817,47 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             return false;
         }
 
-        /// @dev slippage and paused validation
+        /// @dev slippage, amounts and paused status validation
         bool txDataAmountValid;
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i = 0; i < len; ) {
+            /// @dev 10000 = 100% slippage
             if (superFormsData_.maxSlippages[i] > 10000) return false;
-            (, uint32 formBeaconId_, uint64 sfDstChainId) = superFormsData_.superFormIds[i].getSuperForm();
+            (, uint32 formBeaconId_, uint64 sfDstChainId) = superFormsData_.superFormIds[i].getSuperform();
             if (dstChainId != sfDstChainId) return false;
 
-            if (IFormBeacon(ISuperFormFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused())
+            if (IFormBeacon(ISuperformFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused())
                 return false;
 
+            /// @dev amounts in liqRequests must match amounts in superFormsData_
             txDataAmountValid = IBridgeValidator(
                 superRegistry.getBridgeValidator(superFormsData_.liqRequests[i].bridgeId)
             ).validateTxDataAmount(superFormsData_.liqRequests[i].txData, superFormsData_.amounts[i]);
 
             if (!txDataAmountValid) return false;
+
+            unchecked {
+                ++i;
+            }
         }
 
         return true;
     }
 
-    function _validateSuperFormsWithdrawData(
+    function _validateSuperformsWithdrawData(
         MultiVaultSFData memory superFormsData_,
         uint64 dstChainId
     ) internal view returns (bool) {
         uint256 len = superFormsData_.amounts.length;
         uint256 liqRequestsLen = superFormsData_.liqRequests.length;
 
+        /// @dev empty requests are not allowed, as well as requests with length mismatch
         if (len == 0 || liqRequestsLen == 0) return false;
 
-        /// @dev sizes validation
-        /// @dev In multiVault withdraws, the number of liq requests must be equal to number of target vaults
         if (liqRequestsLen != len) {
             return false;
         }
 
+        /// @dev superformIds/amounts/slippages array sizes validation
         if (
             !(superFormsData_.superFormIds.length == superFormsData_.amounts.length &&
                 superFormsData_.superFormIds.length == superFormsData_.maxSlippages.length)
@@ -869,13 +865,14 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
             return false;
         }
 
-        /// @dev slippage and paused validation
+        /// @dev slippage and paused status validation
         for (uint256 i; i < len; ) {
+            /// @dev 10000 = 100% slippage
             if (superFormsData_.maxSlippages[i] > 10000) return false;
-            (, uint32 formBeaconId_, uint64 sfDstChainId) = superFormsData_.superFormIds[i].getSuperForm();
+            (, uint32 formBeaconId_, uint64 sfDstChainId) = superFormsData_.superFormIds[i].getSuperform();
             if (dstChainId != sfDstChainId) return false;
 
-            if (IFormBeacon(ISuperFormFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused())
+            if (IFormBeacon(ISuperformFactory(superRegistry.superFormFactory()).getFormBeacon(formBeaconId_)).paused())
                 return false;
 
             unchecked {
@@ -896,7 +893,7 @@ contract SuperFormRouter is ISuperFormRouter, LiquidityHandler {
         uint256 residualFee = address(this).balance - _balanceBefore;
 
         if (residualFee > 0) {
-            IFeeCollector(superRegistry.getFeeCollector()).makePayment{value: residualFee}(msg.sender);
+            IPayMaster(superRegistry.getPayMaster()).makePayment{value: residualFee}(msg.sender);
         }
     }
 

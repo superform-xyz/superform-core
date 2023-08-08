@@ -4,6 +4,9 @@ pragma solidity 0.8.19;
 import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
 import {Error} from "../../utils/Error.sol";
 
+/// @title QuorumManager
+/// @author ZeroPoint Labs
+/// @dev separates quorum management concerns into an abstract contract
 abstract contract QuorumManager is IQuorumManager {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
@@ -15,8 +18,6 @@ abstract contract QuorumManager is IQuorumManager {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IQuorumManager
-    /// @dev ability to batch set quorum
-    /// NOTE: add role-based access controls in inheriting children contract
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external virtual {}
 
     /*///////////////////////////////////////////////////////////////

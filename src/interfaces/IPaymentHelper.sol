@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import "../types/DataTypes.sol";
 
-/// @title IFeeHelper
+/// @title IPaymentHelper
 /// @author ZeroPoint Labs
 /// @dev helps decoding the bytes payload and returns meaningful information
-interface IFeeHelper {
+interface IPaymentHelper {
     /*///////////////////////////////////////////////////////////////
-                        PREVILAGES ADMIN ONLY FUNCTIONS
+                        PRIVILEGED ADMIN ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev admin config/update source chain config for estimation
@@ -33,7 +33,8 @@ interface IFeeHelper {
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
         uint256 withdrawGasUsed_,
-        uint256 defaultGasPrice_
+        uint256 defaultGasPrice_,
+        uint256 dstGasPerKB_
     ) external;
 
     /// @dev admin update remote chain config for estimation
@@ -45,6 +46,16 @@ interface IFeeHelper {
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL VIEW FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev returns the amb overrides & gas to be used
+    /// @param dstChainId_ is the unique dst chain identifier
+    /// @param ambIds_ is the identifiers of arbitrary message bridges to be used
+    /// @param message_ is the encoded cross-chain payload
+    function calculateAMBData(
+        uint64 dstChainId_,
+        uint8[] calldata ambIds_,
+        bytes memory message_
+    ) external view returns (uint256 totalFees, bytes memory extraData);
 
     /// @dev returns the gas fees estimation in native tokens if we send message through a combination of AMBs
     /// @param ambIds_ is the identifier of different AMBs
