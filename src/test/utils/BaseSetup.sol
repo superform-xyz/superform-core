@@ -400,10 +400,10 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
             /// @dev 4.5.2- deploy Fee Helper
-            vars.feeHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.feeHelper;
+            vars.paymentHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.paymentHelper;
 
-            SuperRegistry(vars.superRegistry).setPaymentHelper(vars.feeHelper);
+            SuperRegistry(vars.superRegistry).setPaymentHelper(vars.paymentHelper);
 
             address[] memory registryAddresses = new address[](4);
             registryAddresses[0] = vars.coreStateRegistry;
@@ -625,7 +625,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
-            vars.feeHelper = getContract(vars.chainId, "PaymentHelper");
+            vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
 
             /// @dev Set all trusted remotes for each chain & configure amb chains ids
             /// @dev Set message quorum for all chain ids (as 1)
@@ -636,11 +636,10 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstHypChainId = hyperlane_chainIds[j];
                     vars.dstCelerChainId = celer_chainIds[j];
 
-                    /// @dev this is possible because our contracts are Create2 (same address)
-                    vars.dstLzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
-                    vars.dstHyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
-                    vars.dstCelerImplementation = getContract(vars.chainId, "CelerImplementation");
-                    vars.feeHelper = getContract(vars.chainId, "PaymentHelper");
+                    vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
+                    vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
+                    vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
+                    //vars.dstPaymentHelper = getContract(vars.dstChainId, "PaymentHelper");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId,
@@ -678,7 +677,7 @@ abstract contract BaseSetup is DSTest, Test {
                     /// deposit gas cost: 70000
                     /// withdraw gas cost: 80000
                     /// default gas price: 50 Gwei
-                    PaymentHelper(payable(vars.feeHelper)).addChain(
+                    PaymentHelper(payable(vars.paymentHelper)).addChain(
                         vars.dstChainId,
                         address(0),
                         PRICE_FEEDS[vars.chainId][vars.dstChainId],
@@ -693,13 +692,13 @@ abstract contract BaseSetup is DSTest, Test {
                     /// ack gas cost: 40000
                     /// two step form cost: 50000
                     /// default gas price: 50 Gwei
-                    PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(
+                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(
                         2,
                         abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                     );
-                    PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(2, abi.encode(40000));
-                    PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50000));
-                    PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(5, abi.encode(50 * 10 ** 9 wei));
+                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(2, abi.encode(40000));
+                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(50000));
+                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(5, abi.encode(50 * 10 ** 9 wei));
                 }
             }
         }
@@ -1154,14 +1153,14 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 ambCount = selectedAmbIds.length;
 
         address _PaymentHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
-        PaymentHelper feeHelper = PaymentHelper(_PaymentHelper);
+        PaymentHelper paymentHelper = PaymentHelper(_PaymentHelper);
 
         bytes[] memory paramsPerAMB = new bytes[](ambCount);
         paramsPerAMB = _generateExtraData(selectedAmbIds);
 
         uint256 totalFees;
         uint256[] memory gasPerAMB = new uint256[](ambCount);
-        (totalFees, gasPerAMB) = feeHelper.estimateAMBFees(selectedAmbIds, dstChainId, message, paramsPerAMB);
+        (totalFees, gasPerAMB) = paymentHelper.estimateAMBFees(selectedAmbIds, dstChainId, message, paramsPerAMB);
 
         AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
 
@@ -1171,17 +1170,20 @@ abstract contract BaseSetup is DSTest, Test {
     struct LocalAckVars {
         uint256 totalFees;
         uint256 ambCount;
-        PaymentHelper feeHelper;
+        uint64 srcChainId;
+        uint64 dstChainId;
+        PaymentHelper paymentHelper;
         PayloadHelper payloadHelper;
         bytes message;
     }
 
     /// @dev Generates the acknowledgement amb params for the entire action
     function _generateAckGasFeesAndParams(
+        uint64 srcChainId,
         uint64 dstChainId,
         uint8[] memory selectedAmbIds,
         uint256 payloadId
-    ) internal view returns (uint256 msgValue, bytes memory) {
+    ) internal returns (uint256 msgValue, bytes memory) {
         LocalAckVars memory vars;
 
         vars.ambCount = selectedAmbIds.length;
@@ -1190,9 +1192,6 @@ abstract contract BaseSetup is DSTest, Test {
         paramsPerAMB = _generateExtraData(selectedAmbIds);
 
         uint256[] memory gasPerAMB = new uint256[](vars.ambCount);
-
-        address _feeHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
-        vars.feeHelper = PaymentHelper(_feeHelper);
 
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
@@ -1205,9 +1204,12 @@ abstract contract BaseSetup is DSTest, Test {
             AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, superFormIds, amounts)))
         );
 
-        (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateAMBFees(
+        address _paymentHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
+        vars.paymentHelper = PaymentHelper(_paymentHelper);
+
+        (vars.totalFees, gasPerAMB) = vars.paymentHelper.estimateAMBFees(
             selectedAmbIds,
-            dstChainId,
+            srcChainId,
             abi.encode(vars.message),
             paramsPerAMB
         );
@@ -1219,11 +1221,12 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev Generates the acknowledgement amb params for the entire action
     function _generateAckGasFeesAndParamsForTimeLock(
-        uint64 dstChainId,
+        bytes memory chainIds,
         uint8[] memory selectedAmbIds,
         uint256 timelockPayloadId
     ) internal view returns (uint256 msgValue, bytes memory) {
         LocalAckVars memory vars;
+        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds, (uint64, uint64));
 
         vars.ambCount = selectedAmbIds.length;
 
@@ -1232,10 +1235,10 @@ abstract contract BaseSetup is DSTest, Test {
 
         uint256[] memory gasPerAMB = new uint256[](vars.ambCount);
 
-        address _feeHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
-        vars.feeHelper = PaymentHelper(_feeHelper);
+        address _paymentHelper = contracts[vars.dstChainId][bytes32(bytes("PaymentHelper"))];
+        vars.paymentHelper = PaymentHelper(_paymentHelper);
 
-        address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
+        address _payloadHelper = contracts[vars.dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
         (, , uint256 payloadId, uint256 superFormId, uint256 amount) = vars.payloadHelper.decodeTimeLockPayload(
@@ -1246,9 +1249,9 @@ abstract contract BaseSetup is DSTest, Test {
             AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superFormId, amount)))
         );
 
-        (vars.totalFees, gasPerAMB) = vars.feeHelper.estimateAMBFees(
+        (vars.totalFees, gasPerAMB) = vars.paymentHelper.estimateAMBFees(
             selectedAmbIds,
-            dstChainId,
+            vars.srcChainId,
             abi.encode(vars.message),
             paramsPerAMB
         );

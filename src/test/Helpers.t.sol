@@ -79,7 +79,7 @@ contract PayloadHelperTest is ProtocolActions {
         IPayloadHelper helper = IPayloadHelper(_PayloadHelper);
 
         address _PaymentHelper = contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))];
-        IPaymentHelper feeHelper = IPaymentHelper(_PaymentHelper);
+        IPaymentHelper paymentHelper = IPaymentHelper(_PaymentHelper);
 
         (
             uint8 txType,
@@ -107,7 +107,7 @@ contract PayloadHelperTest is ProtocolActions {
 
         /// @notice: just asserting if fees are greater than 0
         /// no way to write serious tests on forked testnet at this point. should come back to this later on.
-        (uint256 ambFees, ) = feeHelper.estimateAMBFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
+        (uint256 ambFees, ) = paymentHelper.estimateAMBFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
         assertGe(ambFees, 0);
     }
 }

@@ -18,7 +18,7 @@ contract SuperPositionTest is BaseSetup {
 
     function setUp() public override {
         super.setUp();
-
+        vm.selectFork(FORKS[ETH]);
         superPositions = SuperPositions(payable(getContract(ETH, "SuperPositions")));
     }
 

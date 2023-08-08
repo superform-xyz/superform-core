@@ -455,10 +455,10 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperformsData,
         StagesLocalVars memory vars
     ) internal returns (StagesLocalVars memory) {
+        vm.selectFork(FORKS[CHAIN_0]);
         SuperformRouter superRouter = SuperformRouter(vars.fromSrc);
 
-        /// address is the same across all chains cuz of CREATE2
-        PaymentHelper feeHelper = PaymentHelper(getContract(1, "PaymentHelper"));
+        PaymentHelper paymentHelper = PaymentHelper(getContract(CHAIN_0, "PaymentHelper"));
         bool sameChainDstHasRevertingVault;
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (CHAIN_0 == DST_CHAINS[i]) {
@@ -492,8 +492,8 @@ abstract contract ProtocolActions is BaseSetup {
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                     (, , dstValue, msgValue) = CHAIN_0 != DST_CHAINS[0]
-                        ? feeHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, true)
-                        : feeHelper.estimateSingleDirectMultiVault(
+                        ? paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, true)
+                        : paymentHelper.estimateSingleDirectMultiVault(
                             SingleDirectMultiVaultStateReq(multiSuperformsData[0]),
                             true
                         );
@@ -511,8 +511,8 @@ abstract contract ProtocolActions is BaseSetup {
                         );
                 } else if (action.action == Actions.Withdraw) {
                     (, , dstValue, msgValue) = CHAIN_0 != DST_CHAINS[0]
-                        ? feeHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, false)
-                        : feeHelper.estimateSingleDirectMultiVault(
+                        ? paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, false)
+                        : paymentHelper.estimateSingleDirectMultiVault(
                             SingleDirectMultiVaultStateReq(multiSuperformsData[0]),
                             false
                         );
@@ -537,7 +537,7 @@ abstract contract ProtocolActions is BaseSetup {
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                    (, , dstValue, msgValue) = feeHelper.estimateMultiDstMultiVault(
+                    (, , dstValue, msgValue) = paymentHelper.estimateMultiDstMultiVault(
                         vars.multiDstMultiVaultStateReq,
                         true
                     );
@@ -549,7 +549,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     superRouter.multiDstMultiVaultDeposit{value: msgValue}(vars.multiDstMultiVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
-                    (, , dstValue, msgValue) = feeHelper.estimateMultiDstMultiVault(
+                    (, , dstValue, msgValue) = paymentHelper.estimateMultiDstMultiVault(
                         vars.multiDstMultiVaultStateReq,
                         false
                     );
@@ -572,7 +572,7 @@ abstract contract ProtocolActions is BaseSetup {
                     );
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                        (, , dstValue, msgValue) = feeHelper.estimateSingleXChainSingleVault(
+                        (, , dstValue, msgValue) = paymentHelper.estimateSingleXChainSingleVault(
                             vars.singleXChainSingleVaultStateReq,
                             true
                         );
@@ -586,7 +586,7 @@ abstract contract ProtocolActions is BaseSetup {
                             vars.singleXChainSingleVaultStateReq
                         );
                     } else if (action.action == Actions.Withdraw) {
-                        (, , dstValue, msgValue) = feeHelper.estimateSingleXChainSingleVault(
+                        (, , dstValue, msgValue) = paymentHelper.estimateSingleXChainSingleVault(
                             vars.singleXChainSingleVaultStateReq,
                             false
                         );
@@ -604,7 +604,7 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(singleSuperformsData[0]);
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                        (, , dstValue, msgValue) = feeHelper.estimateSingleDirectSingleVault(
+                        (, , dstValue, msgValue) = paymentHelper.estimateSingleDirectSingleVault(
                             vars.singleDirectSingleVaultStateReq,
                             true
                         );
@@ -618,7 +618,7 @@ abstract contract ProtocolActions is BaseSetup {
                             vars.singleDirectSingleVaultStateReq
                         );
                     } else if (action.action == Actions.Withdraw) {
-                        (, , dstValue, msgValue) = feeHelper.estimateSingleDirectSingleVault(
+                        (, , dstValue, msgValue) = paymentHelper.estimateSingleDirectSingleVault(
                             vars.singleDirectSingleVaultStateReq,
                             false
                         );
@@ -640,7 +640,7 @@ abstract contract ProtocolActions is BaseSetup {
                     singleSuperformsData
                 );
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                    (, , dstValue, msgValue) = feeHelper.estimateMultiDstSingleVault(
+                    (, , dstValue, msgValue) = paymentHelper.estimateMultiDstSingleVault(
                         vars.multiDstSingleVaultStateReq,
                         true
                     );
@@ -652,7 +652,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     superRouter.multiDstSingleVaultDeposit{value: msgValue}(vars.multiDstSingleVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
-                    (, , dstValue, msgValue) = feeHelper.estimateMultiDstSingleVault(
+                    (, , dstValue, msgValue) = paymentHelper.estimateMultiDstSingleVault(
                         vars.multiDstSingleVaultStateReq,
                         true
                     );
@@ -855,7 +855,12 @@ abstract contract ProtocolActions is BaseSetup {
 
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, vars.underlyingDstToken, , ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                            (, vars.underlyingSrcToken, vars.underlyingDstToken, , ) = _targetVaults(
+                                CHAIN_0,
+                                DST_CHAINS[i],
+                                actionIndex,
+                                i
+                            );
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -898,7 +903,12 @@ abstract contract ProtocolActions is BaseSetup {
                         _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
                     } else if (action.testType == TestType.RevertProcessPayload) {
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, vars.underlyingDstToken, , ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                            (, vars.underlyingSrcToken, vars.underlyingDstToken, , ) = _targetVaults(
+                                CHAIN_0,
+                                DST_CHAINS[i],
+                                actionIndex,
+                                i
+                            );
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -1081,7 +1091,7 @@ abstract contract ProtocolActions is BaseSetup {
                         /// increase time by 5 days
                         vm.warp(block.timestamp + (86400 * 5));
                         (uint256 nativeFee, bytes memory ackAmbParams) = _generateAckGasFeesAndParamsForTimeLock(
-                            CHAIN_0,
+                            abi.encode(CHAIN_0, DST_CHAINS[i]),
                             AMBs,
                             currentUnlockId - j + 1
                         );
@@ -1195,15 +1205,16 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _buildLiqBridgeTxData(
         uint8 liqBridgeKind_,
-        address externalToken_, // this is underlying for withdraws
-        address underlyingToken_, // this is external token (to receive in the end) for withdraws
-        address underlyingTokenDst_,
+        address externalToken_, // this is underlyingTokenDst for withdraws
+        address underlyingToken_,
+        address underlyingTokenDst_, // this is external token (to receive in the end) for withdraws
         address from_,
         uint64 toChainId_,
         bool multiTx_,
         address toDst_,
         uint256 liqBridgeToChainId_,
-        uint256 amount_
+        uint256 amount_,
+        bool withdraw
     ) internal returns (bytes memory txData) {
         if (liqBridgeKind_ == 1) {
             ISocketRegistry.BridgeRequest memory bridgeRequest;
@@ -1222,14 +1233,14 @@ abstract contract ProtocolActions is BaseSetup {
                 bridgeRequest = ISocketRegistry.BridgeRequest(
                     1, /// request id
                     0,
-                    underlyingToken_,
+                    withdraw ? externalToken_ : underlyingToken_,
                     abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_)
                 );
             } else {
                 bridgeRequest = ISocketRegistry.BridgeRequest(
                     1, /// request id
                     0,
-                    underlyingToken_,
+                    withdraw ? externalToken_ : underlyingToken_,
                     abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_)
                 );
             }
@@ -1251,7 +1262,7 @@ abstract contract ProtocolActions is BaseSetup {
                 address(0), /// callTo (arbitrary)
                 address(0), /// callTo (approveTo)
                 externalToken_,
-                underlyingToken_,
+                withdraw ? externalToken_ : underlyingToken_,
                 amount_,
                 abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_),
                 false // arbitrary
@@ -1263,7 +1274,7 @@ abstract contract ProtocolActions is BaseSetup {
                     "",
                     "",
                     address(0),
-                    underlyingToken_,
+                    withdraw ? externalToken_ : underlyingToken_,
                     multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
                     amount_,
                     liqBridgeToChainId_,
@@ -1276,7 +1287,7 @@ abstract contract ProtocolActions is BaseSetup {
                     "",
                     "",
                     address(0),
-                    underlyingToken_,
+                    withdraw ? externalToken_ : underlyingToken_,
                     multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
                     amount_,
                     liqBridgeToChainId_,
@@ -1323,7 +1334,8 @@ abstract contract ProtocolActions is BaseSetup {
             args.multiTx,
             args.toDst,
             args.liquidityBridgeToChainId,
-            args.amount
+            args.amount,
+            false
         );
 
         address liqRequestToken = args.externalToken != args.underlyingToken
@@ -1396,18 +1408,19 @@ abstract contract ProtocolActions is BaseSetup {
 
         vars.txData = _buildLiqBridgeTxData(
             args.liqBridge,
-            args.underlyingToken,
             args.underlyingTokenDst,
+            args.underlyingToken,
             args.externalToken,
             args.toDst,
             args.srcChainId,
             false,
             users[args.user],
             args.liquidityBridgeSrcChainId,
-            args.amount
+            args.amount,
+            true
         );
 
-        vars.liqReq = LiqRequest(args.liqBridge, vars.txData, args.underlyingToken, args.amount, 0, "");
+        vars.liqReq = LiqRequest(args.liqBridge, vars.txData, args.underlyingTokenDst, args.amount, 0, "");
 
         superFormData = SingleVaultSFData(
             args.superFormId,
@@ -1630,7 +1643,6 @@ abstract contract ProtocolActions is BaseSetup {
         bytes4 revertError
     ) internal returns (bool, bytes memory savedMessage, bytes memory returnMessage) {
         uint256 initialFork = vm.activeFork();
-
         vm.selectFork(FORKS[targetChainId_]);
 
         uint256 nativeFee;
@@ -1638,7 +1650,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         /// @dev only generate if acknowledgement is needed
         if (targetChainId_ != CHAIN_0) {
-            (nativeFee, ackAmbParams) = _generateAckGasFeesAndParams(CHAIN_0, AMBs, payloadId_);
+            (nativeFee, ackAmbParams) = _generateAckGasFeesAndParams(CHAIN_0, targetChainId_, AMBs, payloadId_);
         }
 
         vm.prank(deployer);
@@ -1700,7 +1712,7 @@ abstract contract ProtocolActions is BaseSetup {
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
                 1, /// request id
                 0,
-                underlyingToken_,
+                underlyingTokenDst_,
                 abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_])
             );
 
@@ -1740,7 +1752,7 @@ abstract contract ProtocolActions is BaseSetup {
                 "",
                 "",
                 address(0),
-                underlyingToken_,
+                underlyingTokenDst_,
                 getContract(toChainId_, "CoreStateRegistry"),
                 amount_,
                 uint256(toChainId_),
@@ -1778,7 +1790,7 @@ abstract contract ProtocolActions is BaseSetup {
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).processTx(
             liqBridgeKind_,
             txData,
-            underlyingToken_,
+            underlyingTokenDst_,
             amount_
         );
         vm.selectFork(initialFork);
@@ -1812,7 +1824,7 @@ abstract contract ProtocolActions is BaseSetup {
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).batchProcessTx(
             liqBridgeKinds_,
             txDatas,
-            underlyingTokens_,
+            underlyingTokensDst_,
             amounts_
         );
         vm.selectFork(initialFork);
@@ -2121,10 +2133,11 @@ abstract contract ProtocolActions is BaseSetup {
         AssertBeforeActionVars memory v;
         if (action.multiVaults) {
             v.token = multiSuperformsData[0].liqRequests[0].token;
-            inputBalanceBefore = v.token != NATIVE_TOKEN
-                ? IERC20(v.token).balanceOf(users[action.user])
-                : users[action.user].balance;
-
+            if (action.action != Actions.Withdraw) {
+                inputBalanceBefore = v.token != NATIVE_TOKEN
+                    ? IERC20(v.token).balanceOf(users[action.user])
+                    : users[action.user].balance;
+            }
             uint256[] memory spAmountSummedPerDst;
             spAmountSummed = new uint256[][](vars.nDestinations);
             for (uint256 i = 0; i < vars.nDestinations; i++) {
@@ -2149,10 +2162,11 @@ abstract contract ProtocolActions is BaseSetup {
             console.log("Asserted b4 action multi");
         } else {
             v.token = singleSuperformsData[0].liqRequest.token;
-
-            inputBalanceBefore = v.token != NATIVE_TOKEN
-                ? IERC20(v.token).balanceOf(users[action.user])
-                : users[action.user].balance;
+            if (action.action != Actions.Withdraw) {
+                inputBalanceBefore = v.token != NATIVE_TOKEN
+                    ? IERC20(v.token).balanceOf(users[action.user])
+                    : users[action.user].balance;
+            }
             spAmountBeforeWithdrawPerDestination = new uint256[](vars.nDestinations);
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 (v.superForm, , ) = singleSuperformsData[i].superFormId.getSuperform();

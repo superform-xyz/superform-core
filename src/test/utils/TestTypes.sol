@@ -122,7 +122,7 @@ struct SetupVars {
     address factoryStateRegistry;
     address coreStateRegistry;
     address PayloadHelper;
-    address feeHelper;
+    address paymentHelper;
     address twoStepsFormStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
