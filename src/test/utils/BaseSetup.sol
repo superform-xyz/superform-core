@@ -625,7 +625,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
-            vars.feeHelper = getContract(vars.chainId, "FeeHelper");
+            vars.feeHelper = getContract(vars.chainId, "PaymentHelper");
 
             /// @dev Set all trusted remotes for each chain & configure amb chains ids
             /// @dev Set message quorum for all chain ids (as 1)

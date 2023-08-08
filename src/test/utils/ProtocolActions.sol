@@ -381,7 +381,7 @@ abstract contract ProtocolActions is BaseSetup {
                         vars.toDst,
                         vars.underlyingSrcToken,
                         vars.underlyingDstToken,
-                        vars.targetSuperFormIds,
+                        vars.targetSuperformIds,
                         vars.amounts,
                         vars.liqBridges,
                         MAX_SLIPPAGE,
@@ -420,7 +420,7 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.toDst[0],
                     vars.underlyingSrcToken[0],
                     vars.underlyingDstToken[0],
-                    vars.targetSuperFormIds[0],
+                    vars.targetSuperformIds[0],
                     finalAmount,
                     vars.liqBridges[0],
                     MAX_SLIPPAGE,
@@ -873,7 +873,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     aV[i].toChainId,
                                     vars.underlyingSrcToken[0],
                                     vars.underlyingDstToken[0],
-                                    singleSuperFormsData[i].amount
+                                    singleSuperformsData[i].amount
                                 );
                             }
                         }
@@ -916,7 +916,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     aV[i].toChainId,
                                     vars.underlyingSrcToken[0],
                                     vars.underlyingDstToken[0],
-                                    singleSuperFormsData[i].amount
+                                    singleSuperformsData[i].amount
                                 );
                             }
                         }
@@ -2155,8 +2155,8 @@ abstract contract ProtocolActions is BaseSetup {
                 : users[action.user].balance;
             spAmountBeforeWithdrawPerDestination = new uint256[](vars.nDestinations);
             for (uint256 i = 0; i < vars.nDestinations; i++) {
-                (v.superForm, , ) = singleSuperFormsData[i].superFormId.getSuperForm();
-                v.partialWithdrawVault = abi.decode(singleSuperFormsData[i].extraFormData, (bool));
+                (v.superForm, , ) = singleSuperformsData[i].superFormId.getSuperform();
+                v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
                 spAmountBeforeWithdrawPerDestination[i] = IBaseForm(v.superForm).previewDepositTo(
