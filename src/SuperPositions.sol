@@ -115,30 +115,37 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateMultiSync(
         AMBMessage memory data_
     ) external payable override onlyMinterStateRegistry returns (uint64 srcChainId_) {
+        /// @dev here we decode the txInfo and params from the data brought back from destination
+
         (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
             .txInfo
             .decodeTxInfo();
 
-        /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
             if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
 
+        /// @dev decode remaining info on superPositions to mint from destination
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
 
         uint256 txInfo = txHistory[returnData.payloadId];
-
         address srcSender;
         uint256 txType;
+
+        /// @dev decode initial payload info stored on source chain in this contract
         (txType, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
+        /// @dev verify this is a single vault mint
         if (multi == 0) revert Error.INVALID_PAYLOAD();
+        /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
+        /// @dev compare txType to be the same (dst/src)
         if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
-        if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
-            _batchMint(srcSender, returnData.superFormIds, returnData.amounts, "");
-        } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
-            /// @dev mint back super positions
+        /// @dev mint super positions accordingly
+        if (
+            (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) ||
+            (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
+        ) {
             _batchMint(srcSender, returnData.superFormIds, returnData.amounts, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
@@ -151,29 +158,37 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     function stateSync(
         AMBMessage memory data_
     ) external payable override onlyMinterStateRegistry returns (uint64 srcChainId_) {
+        /// @dev here we decode the txInfo and params from the data brought back from destination
+
         (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
             .txInfo
             .decodeTxInfo();
 
-        /// @dev NOTE: some optimization ideas? suprisingly, you can't use || here!
         if (callbackType != uint256(CallbackType.RETURN))
             if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
 
+        /// @dev decode remaining info on superPositions to mint from destination
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
 
         uint256 txInfo = txHistory[returnData.payloadId];
-
         uint256 txType;
         address srcSender;
+
+        /// @dev decode initial payload info stored on source chain in this contract
         (txType, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
+        /// @dev verify this is a multi vault mint
         if (multi == 1) revert Error.INVALID_PAYLOAD();
+        /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
+        /// @dev compare txType to be the same (dst/src)
         if (returnTxType != txType) revert Error.SRC_TX_TYPE_MISMATCH();
 
-        if (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) {
-            _mint(srcSender, returnData.superFormId, returnData.amount, "");
-        } else if (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL)) {
+        /// @dev mint super positions accordingly
+        if (
+            (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) ||
+            (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
+        ) {
             _mint(srcSender, returnData.superFormId, returnData.amount, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
@@ -183,11 +198,10 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     /*///////////////////////////////////////////////////////////////
-                        PREVILAGED FUNCTIONS
+                        PRIVILEGED FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev PREVILEGED ADMIN ONLY FUNCTION.
-    /// @param dynamicURI_ represents the dynamicURI for the ERC1155 super positions
+    /// @inheritdoc ISuperPositions
     function setDynamicURI(string memory dynamicURI_, bool freeze) external override onlyProtocolAdmin {
         if (dynamicURIFrozen) {
             revert Error.DYNAMIC_URI_FROZEN();

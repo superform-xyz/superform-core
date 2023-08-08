@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {SuperFormFactory} from "../../SuperFormFactory.sol";
+import {SuperformFactory} from "../../SuperformFactory.sol";
 import {FactoryStateRegistry} from "../../crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ERC4626Form} from "../../forms/ERC4626Form.sol";
 import "../utils/BaseSetup.sol";
 import {Error} from "../../utils/Error.sol";
 
-contract SuperFormFactoryChangePauseTest is BaseSetup {
+contract SuperformFactoryChangePauseTest is BaseSetup {
     uint64 internal chainId = ETH;
 
     event FormLogicUpdated(address indexed oldLogic, address indexed newLogic);
@@ -28,19 +28,19 @@ contract SuperFormFactoryChangePauseTest is BaseSetup {
         uint32 formBeaconId = 0;
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation1,
             formBeaconId,
             salt
         );
 
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
             formBeaconId,
             true,
             generateBroadcastParams(5, 2)
         );
 
-        bool status = SuperFormFactory(payable(getContract(chainId, "SuperFormFactory"))).isFormBeaconPaused(
+        bool status = SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormBeaconPaused(
             formBeaconId
         );
 
@@ -55,7 +55,7 @@ contract SuperFormFactoryChangePauseTest is BaseSetup {
 
         vm.recordLogs();
         /// setting the status as false in chain id = ETH & broadcasting it
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
             formBeaconId,
             true,
             generateBroadcastParams(5, 2)
@@ -67,12 +67,12 @@ contract SuperFormFactoryChangePauseTest is BaseSetup {
             if (chainIds[i] != chainId) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                bool statusBefore = SuperFormFactory(payable(getContract(chainIds[i], "SuperFormFactory")))
+                bool statusBefore = SuperformFactory(payable(getContract(chainIds[i], "SuperformFactory")))
                     .isFormBeaconPaused(1);
 
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(31, "");
 
-                bool statusAfter = SuperFormFactory(payable(getContract(chainIds[i], "SuperFormFactory")))
+                bool statusAfter = SuperformFactory(payable(getContract(chainIds[i], "SuperformFactory")))
                     .isFormBeaconPaused(1);
 
                 /// assert status update before and after processing the payload
@@ -95,7 +95,7 @@ contract SuperFormFactoryChangePauseTest is BaseSetup {
         uint32 formBeaconId_invalid = 999;
 
         /// @dev Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation1,
             formBeaconId,
             salt
@@ -103,7 +103,7 @@ contract SuperFormFactoryChangePauseTest is BaseSetup {
 
         /// @dev Invalid Form Beacon For Pausing
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
             formBeaconId_invalid,
             true,
             generateBroadcastParams(5, 2)

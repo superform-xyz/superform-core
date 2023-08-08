@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {SuperFormFactory} from "../../SuperFormFactory.sol";
+import {SuperformFactory} from "../../SuperformFactory.sol";
 import {VaultMock} from "../mocks/VaultMock.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {ERC4626FormExternal} from "../mocks/ERC4626FormExternal.sol";
 import "../utils/BaseSetup.sol";
 
-contract SuperFormERC4626FormTest is BaseSetup {
+contract SuperformERC4626FormTest is BaseSetup {
     uint64 internal chainId = ETH;
 
     function setUp() public override {
@@ -31,14 +31,14 @@ contract SuperFormERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation,
             formBeaconId,
             salt
         );
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superFormCreated) = SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
+        (, address superFormCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
             formBeaconId,
             address(vault)
         );
@@ -69,14 +69,14 @@ contract SuperFormERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation,
             formBeaconId,
             salt
         );
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superFormCreated) = SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
+        (, address superFormCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
             formBeaconId,
             address(vault)
         );
@@ -106,14 +106,14 @@ contract SuperFormERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperFormFactory(getContract(chainId, "SuperFormFactory")).addFormBeacon(
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
             formImplementation,
             formBeaconId,
             salt
         );
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superFormCreated) = SuperFormFactory(getContract(chainId, "SuperFormFactory")).createSuperForm(
+        (, address superFormCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
             formBeaconId,
             address(vault)
         );

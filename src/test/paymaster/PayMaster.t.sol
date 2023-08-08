@@ -14,7 +14,7 @@ contract KeeperMockThatWontAcceptEth {
     }
 }
 
-contract FeeCollectorTest is BaseSetup {
+contract PayMasterTest is BaseSetup {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address multiTxProcessor;
     address txProcessor;
@@ -40,13 +40,13 @@ contract FeeCollectorTest is BaseSetup {
         vm.startPrank(deployer);
 
         /// @dev at this point the contract has 1 ether extra
-        address superRouter = getContract(ETH, "SuperFormRouter");
+        address superRouter = getContract(ETH, "SuperformRouter");
         payable(superRouter).transfer(1 ether);
 
         /// @dev make a deposit and send in 2 ether extra for other off-chain operations
         _successfulDeposit();
         assertEq(address(superRouter).balance, 1 ether);
-        assertEq(getContract(ETH, "FeeCollector").balance, 2 ether);
+        assertEq(getContract(ETH, "PayMaster").balance, 2 ether);
     }
 
     function test_validationsInMakePayment() public {
@@ -55,54 +55,54 @@ contract FeeCollectorTest is BaseSetup {
 
         /// @dev make zero payment
         vm.expectRevert(Error.ZERO_MSG_VALUE.selector);
-        FeeCollector(getContract(ETH, "FeeCollector")).makePayment(deployer);
+        PayMaster(getContract(ETH, "PayMaster")).makePayment(deployer);
 
         /// @dev try to make payment for zero address
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        FeeCollector(getContract(ETH, "FeeCollector")).makePayment{value: 1 wei}(address(0));
+        PayMaster(getContract(ETH, "PayMaster")).makePayment{value: 1 wei}(address(0));
     }
 
     function test_withdrawNativeToMultiTxProcessorFraud() public {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address feeCollector = getContract(ETH, "FeeCollector");
+        address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        FeeCollector(feeCollector).makePayment{value: 1 wei}(deployer);
+        PayMaster(feeCollector).makePayment{value: 1 wei}(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         SuperRegistry(getContract(ETH, "SuperRegistry")).setMultiTxProcessor(multiTxProcessorFraud);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.FAILED_WITHDRAW.selector);
-        FeeCollector(feeCollector).withdrawToMultiTxProcessor(1 wei);
+        PayMaster(feeCollector).withdrawToMultiTxProcessor(1 wei);
     }
 
     function test_withdrawNativeToMultiTxProcessor() public {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address feeCollector = getContract(ETH, "FeeCollector");
+        address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        FeeCollector(feeCollector).makePayment{value: 1 wei}(deployer);
+        PayMaster(feeCollector).makePayment{value: 1 wei}(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
-        FeeCollector(feeCollector).withdrawToMultiTxProcessor(2 wei);
+        PayMaster(feeCollector).withdrawToMultiTxProcessor(2 wei);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         SuperRegistry(getContract(ETH, "SuperRegistry")).setMultiTxProcessor(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        FeeCollector(feeCollector).withdrawToMultiTxProcessor(1 wei);
+        PayMaster(feeCollector).withdrawToMultiTxProcessor(1 wei);
 
         SuperRegistry(getContract(ETH, "SuperRegistry")).setMultiTxProcessor(multiTxProcessor);
 
         /// @dev admin moves the payment from fee collector to multi tx processor
-        FeeCollector(feeCollector).withdrawToMultiTxProcessor(1 wei);
+        PayMaster(feeCollector).withdrawToMultiTxProcessor(1 wei);
         assertEq(feeCollector.balance, 0);
         assertEq(multiTxProcessor.balance, 1 wei);
     }
@@ -111,26 +111,26 @@ contract FeeCollectorTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address feeCollector = getContract(ETH, "FeeCollector");
+        address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        FeeCollector(feeCollector).makePayment{value: 1 wei}(deployer);
+        PayMaster(feeCollector).makePayment{value: 1 wei}(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
-        FeeCollector(feeCollector).withdrawToTxProcessor(2 wei);
+        PayMaster(feeCollector).withdrawToTxProcessor(2 wei);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         SuperRegistry(getContract(ETH, "SuperRegistry")).setTxProcessor(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        FeeCollector(feeCollector).withdrawToTxProcessor(1 wei);
+        PayMaster(feeCollector).withdrawToTxProcessor(1 wei);
 
         SuperRegistry(getContract(ETH, "SuperRegistry")).setTxProcessor(txProcessor);
 
         /// @dev admin moves the payment from fee collector to tx processor
-        FeeCollector(feeCollector).withdrawToTxProcessor(1 wei);
+        PayMaster(feeCollector).withdrawToTxProcessor(1 wei);
         assertEq(feeCollector.balance, 0);
         assertEq(txProcessor.balance, 1 wei);
     }
@@ -139,26 +139,26 @@ contract FeeCollectorTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address feeCollector = getContract(ETH, "FeeCollector");
+        address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        FeeCollector(feeCollector).makePayment{value: 1 wei}(deployer);
+        PayMaster(feeCollector).makePayment{value: 1 wei}(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
-        FeeCollector(feeCollector).withdrawToTxUpdater(2 wei);
+        PayMaster(feeCollector).withdrawToTxUpdater(2 wei);
 
         /// @dev admin tries withdraw if updater address is zero (check if handled gracefully)
         SuperRegistry(getContract(ETH, "SuperRegistry")).setTxUpdater(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        FeeCollector(feeCollector).withdrawToTxUpdater(1 wei);
+        PayMaster(feeCollector).withdrawToTxUpdater(1 wei);
 
         SuperRegistry(getContract(ETH, "SuperRegistry")).setTxUpdater(txUpdater);
 
         /// @dev admin moves the payment from fee collector to tx updater
-        FeeCollector(feeCollector).withdrawToTxUpdater(1 wei);
+        PayMaster(feeCollector).withdrawToTxUpdater(1 wei);
         assertEq(feeCollector.balance, 0);
         assertEq(txUpdater.balance, 1 wei);
     }
@@ -167,17 +167,17 @@ contract FeeCollectorTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address feeCollector = getContract(ETH, "FeeCollector");
+        address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 ether
-        FeeCollector(feeCollector).makePayment{value: 1 ether}(deployer);
+        PayMaster(feeCollector).makePayment{value: 1 ether}(deployer);
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         SuperRegistry(getContract(ETH, "SuperRegistry")).setMultiTxProcessor(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        FeeCollector(feeCollector).rebalanceToMultiTxProcessor(
+        PayMaster(feeCollector).rebalanceToMultiTxProcessor(
             LiqRequest(
                 1,
                 _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollector),
@@ -192,7 +192,7 @@ contract FeeCollectorTest is BaseSetup {
 
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-        FeeCollector(feeCollector).rebalanceToMultiTxProcessor(
+        PayMaster(feeCollector).rebalanceToMultiTxProcessor(
             LiqRequest(
                 1,
                 _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollector),
@@ -204,7 +204,7 @@ contract FeeCollectorTest is BaseSetup {
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
-        FeeCollector(feeCollector).rebalanceToMultiTxProcessor(
+        PayMaster(feeCollector).rebalanceToMultiTxProcessor(
             LiqRequest(
                 1,
                 _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, multiTxProcessor),
@@ -225,17 +225,17 @@ contract FeeCollectorTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address feeCollector = getContract(ETH, "FeeCollector");
+        address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 ether
-        FeeCollector(feeCollector).makePayment{value: 1 ether}(deployer);
+        PayMaster(feeCollector).makePayment{value: 1 ether}(deployer);
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         SuperRegistry(getContract(ETH, "SuperRegistry")).setTxProcessor(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        FeeCollector(feeCollector).rebalanceToTxProcessor(
+        PayMaster(feeCollector).rebalanceToTxProcessor(
             LiqRequest(
                 1,
                 _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollector),
@@ -250,7 +250,7 @@ contract FeeCollectorTest is BaseSetup {
 
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-        FeeCollector(feeCollector).rebalanceToTxProcessor(
+        PayMaster(feeCollector).rebalanceToTxProcessor(
             LiqRequest(
                 1,
                 _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollector),
@@ -262,7 +262,7 @@ contract FeeCollectorTest is BaseSetup {
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
-        FeeCollector(feeCollector).rebalanceToTxProcessor(
+        PayMaster(feeCollector).rebalanceToTxProcessor(
             LiqRequest(
                 1,
                 _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txProcessor),
@@ -283,17 +283,17 @@ contract FeeCollectorTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address feeCollector = getContract(ETH, "FeeCollector");
+        address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 ether
-        FeeCollector(feeCollector).makePayment{value: 1 ether}(deployer);
+        PayMaster(feeCollector).makePayment{value: 1 ether}(deployer);
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         SuperRegistry(getContract(ETH, "SuperRegistry")).setTxUpdater(address(0));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        FeeCollector(feeCollector).rebalanceToTxUpdater(
+        PayMaster(feeCollector).rebalanceToTxUpdater(
             LiqRequest(
                 1,
                 _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollector),
@@ -308,7 +308,7 @@ contract FeeCollectorTest is BaseSetup {
 
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-        FeeCollector(feeCollector).rebalanceToTxUpdater(
+        PayMaster(feeCollector).rebalanceToTxUpdater(
             LiqRequest(
                 1,
                 _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollector),
@@ -320,7 +320,7 @@ contract FeeCollectorTest is BaseSetup {
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
-        FeeCollector(feeCollector).rebalanceToTxUpdater(
+        PayMaster(feeCollector).rebalanceToTxUpdater(
             LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txUpdater), NATIVE, 1 ether, 1 ether, "")
         );
 
@@ -337,10 +337,10 @@ contract FeeCollectorTest is BaseSetup {
 
         address superForm = getContract(
             ETH,
-            string.concat("USDT", "VaultMock", "SuperForm", Strings.toString(FORM_BEACON_IDS[0]))
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
         );
 
-        uint256 superformId = DataLib.packSuperForm(superForm, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId = DataLib.packSuperform(superForm, FORM_BEACON_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
@@ -352,14 +352,17 @@ contract FeeCollectorTest is BaseSetup {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon, , ) = SuperFormFactory(getContract(ETH, "SuperFormFactory")).getSuperForm(superformId);
+        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
-        (, , , uint256 msgFees) = FeeHelper(getContract(ETH, "FeeHelper")).estimateSingleDirectSingleVault(req, true);
+        (, , , uint256 msgFees) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateSingleDirectSingleVault(
+            req,
+            true
+        );
         msgFees = msgFees + 2 ether;
 
-        SuperFormRouter(payable(getContract(ETH, "SuperFormRouter"))).singleDirectSingleVaultDeposit{value: msgFees}(
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit{value: msgFees}(
             req
         );
     }

@@ -48,7 +48,7 @@ struct StagesLocalVars {
     address[] underlyingSrcToken;
     address payable fromSrc;
     address[] toDst;
-    uint256[] targetSuperFormIds;
+    uint256[] targetSuperformIds;
     uint256[] amounts;
     uint8[] liqBridges;
     uint256 chain0Index;
@@ -148,10 +148,10 @@ struct SetupVars {
 //////////////////////////////////////////////////////////////*/
 
 struct CallDataArgs {
-    MultiVaultSFData[] multiSuperFormsData;
-    SingleVaultSFData[] singleSuperFormsData;
-    MultiVaultCallDataArgs[] multiSuperFormsCallData;
-    SingleVaultCallDataArgs[] singleSuperFormsCallData;
+    MultiVaultSFData[] multiSuperformsData;
+    SingleVaultSFData[] singleSuperformsData;
+    MultiVaultCallDataArgs[] multiSuperformsCallData;
+    SingleVaultCallDataArgs[] singleSuperformsCallData;
 }
 
 struct SingleVaultCallDataArgs {
@@ -199,7 +199,7 @@ struct BuildDepositCallDataArgs {
     address fromSrc;
     address toDst;
     address[] underlyingToken;
-    uint256[] targetSuperFormIds;
+    uint256[] targetSuperformIds;
     uint256[] amounts;
     uint8 liqBridges;
     uint256 maxSlippage;
@@ -214,7 +214,7 @@ struct BuildWithdrawCallDataArgs {
     address toDst;
     address[] underlyingToken;
     address[] vaultMock;
-    uint256[] targetSuperFormIds;
+    uint256[] targetSuperformIds;
     uint256[] amounts;
     uint256 maxSlippage;
     LiquidityChange actionKind;

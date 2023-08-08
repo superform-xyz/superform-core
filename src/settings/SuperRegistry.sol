@@ -8,7 +8,7 @@ import {Error} from "../utils/Error.sol";
 
 /// @title SuperRegistry
 /// @author Zeropoint Labs.
-/// @dev Keeps information on all protocolAddresses used in the SuperForms ecosystem.
+/// @dev Keeps information on all protocolAddresses used in the Superforms ecosystem.
 contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev chainId represents the superform chain id.
     uint64 public chainId;
@@ -31,7 +31,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev core protocol addresses identifiers
     bytes32 public constant override SUPER_ROUTER = keccak256("SUPER_ROUTER");
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
-    bytes32 public constant override FEE_COLLECTOR = keccak256("FEE_COLLECTOR");
+    bytes32 public constant override PAYMASTER = keccak256("PAYMASTER");
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");
     bytes32 public constant override TWO_STEPS_FORM_STATE_REGISTRY = keccak256("TWO_STEPS_FORM_STATE_REGISTRY");
     bytes32 public constant override FACTORY_STATE_REGISTRY = keccak256("FACTORY_STATE_REGISTRY");
@@ -76,7 +76,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setNewProtocolAddressCrossChain(bytes32 protocolAddressId_, address newAddress_, uint64 chainId_) external override onlyCaller {
+    function setNewProtocolAddressCrossChain(
+        bytes32 protocolAddressId_,
+        address newAddress_,
+        uint64 chainId_
+    ) external override onlyCaller {
         address oldAddress = protocolAddressesCrossChain[protocolAddressId_][chainId_];
         protocolAddressesCrossChain[protocolAddressId_][chainId_] = newAddress_;
         emit ProtocolAddressCrossChainUpdated(protocolAddressId_, chainId_, oldAddress, newAddress_);
@@ -91,19 +95,19 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setSuperFormFactory(address superFormFactory_) external override onlyCaller {
-        address oldSuperFormFactory = protocolAddresses[SUPERFORM_FACTORY];
+    function setSuperformFactory(address superFormFactory_) external override onlyCaller {
+        address oldSuperformFactory = protocolAddresses[SUPERFORM_FACTORY];
         protocolAddresses[SUPERFORM_FACTORY] = superFormFactory_;
 
-        emit SuperFormFactoryUpdated(oldSuperFormFactory, superFormFactory_);
+        emit SuperformFactoryUpdated(oldSuperformFactory, superFormFactory_);
     }
 
     /// @inheritdoc ISuperRegistry
-    function setFeeCollector(address feeCollector_) external override onlyCaller {
-        address oldFeeCollector = protocolAddresses[FEE_COLLECTOR];
-        protocolAddresses[FEE_COLLECTOR] = feeCollector_;
+    function setPayMaster(address feeCollector_) external override onlyCaller {
+        address oldPayMaster = protocolAddresses[PAYMASTER];
+        protocolAddresses[PAYMASTER] = feeCollector_;
 
-        emit FeeCollectorUpdated(oldFeeCollector, feeCollector_);
+        emit PayMasterUpdated(oldPayMaster, feeCollector_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -201,27 +205,27 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         address[] memory bridgeValidator_
     ) external override onlyCaller {
         for (uint256 i = 0; i < bridgeId_.length; i++) {
-            uint8 x = bridgeId_[i];
-            address y = bridgeAddress_[i];
-            address z = bridgeValidator_[i];
+            uint8 bridgeId = bridgeId_[i];
+            address bridgeAddress = bridgeAddress_[i];
+            address bridgeValidatorT = bridgeValidator_[i];
 
-            bridgeAddresses[x] = y;
-            bridgeValidator[x] = z;
-            emit SetBridgeAddress(x, y);
-            emit SetBridgeValidator(x, z);
+            bridgeAddresses[bridgeId] = bridgeAddress;
+            bridgeValidator[bridgeId] = bridgeValidatorT;
+            emit SetBridgeAddress(bridgeId, bridgeAddress);
+            emit SetBridgeValidator(bridgeId, bridgeValidatorT);
         }
     }
 
     /// @inheritdoc ISuperRegistry
     function setAmbAddress(uint8[] memory ambId_, address[] memory ambAddress_) external override onlyCaller {
         for (uint256 i; i < ambId_.length; i++) {
-            address x = ambAddress_[i];
-            uint8 y = ambId_[i];
-            if (x == address(0)) revert Error.ZERO_ADDRESS();
+            address ambAddress = ambAddress_[i];
+            uint8 ambId = ambId_[i];
+            if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
 
-            ambAddresses[y] = x;
-            ambIds[x] = y;
-            emit SetAmbAddress(y, x);
+            ambAddresses[ambId] = ambAddress;
+            ambIds[ambAddress] = ambId;
+            emit SetAmbAddress(ambId, ambAddress);
         }
     }
 
@@ -231,13 +235,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         address[] memory registryAddress_
     ) external override onlyCaller {
         for (uint256 i; i < registryId_.length; i++) {
-            address x = registryAddress_[i];
-            uint8 y = registryId_[i];
-            if (x == address(0)) revert Error.ZERO_ADDRESS();
+            address registryAddress = registryAddress_[i];
+            uint8 registryId = registryId_[i];
+            if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
 
-            registryAddresses[y] = x;
-            stateRegistryIds[x] = y;
-            emit SetStateRegistryAddress(y, x);
+            registryAddresses[registryId] = registryAddress;
+            stateRegistryIds[registryAddress] = registryId;
+            emit SetStateRegistryAddress(registryId, registryAddress);
         }
     }
 
@@ -256,7 +260,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function getProtocolAddressCrossChain(bytes32 protocolAddressId_, uint64 chainId_) public view override returns (address) {
+    function getProtocolAddressCrossChain(
+        bytes32 protocolAddressId_,
+        uint64 chainId_
+    ) public view override returns (address) {
         return protocolAddressesCrossChain[protocolAddressId_][chainId_];
     }
 
@@ -351,8 +358,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function getFeeCollector() external view returns (address feeCollector_) {
-        feeCollector_ = protocolAddresses[FEE_COLLECTOR];
+    function getPayMaster() external view returns (address payMaster_) {
+        payMaster_ = getProtocolAddress(PAYMASTER);
     }
 
     /// @inheritdoc ISuperRegistry

@@ -35,6 +35,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+    /// @dev this function is called when the timelock deposit is ready to be withdrawn after being unlocked
+    /// @param amount_ the amount of tokens to withdraw
+    /// @param p_ the payload data
     function withdrawAfterCoolDown(
         uint256 amount_,
         TimeLockPayload memory p_
@@ -43,19 +46,19 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
         LiqRequest memory liqData = p_.data.liqData;
         uint256 len1 = liqData.txData.length;
+        /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
         address receiver = len1 == 0 ? p_.srcSender : address(this);
 
-        /// @dev moves all redeemed tokens to the two step state registry
         dstAmount = v.redeem(amount_, receiver, address(this));
 
         /// @dev validate and dispatches the tokens
         if (len1 != 0) {
-            /// @dev this check here might be too much already, but can't hurt
+            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (liqData.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             uint64 chainId = superRegistry.chainId();
 
-            /// @dev NOTE: only allows withdraws to source chain if xchain / samechain in case of
+            /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(superRegistry.getBridgeValidator(liqData.bridgeId)).validateTxData(
                 liqData.txData,
                 chainId,
@@ -92,14 +95,16 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
-    /// @dev this is the step-1 for two step form withdrawal
+    /// @dev this is the step-1 for two step form withdrawal, direct case
     /// @dev will mandatorily process unlock
-    /// @return dstAmount as always 0
+    /// @return dstAmount is always 0
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
     ) internal virtual override returns (uint256 dstAmount) {
         uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
+        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two step
+        /// @dev state registry for re-processing at a later date
         _storePayload(0, srcSender_, superRegistry.chainId(), lockedTill, singleVaultData_);
     }
 
@@ -113,17 +118,22 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     }
 
     /// @inheritdoc BaseForm
+    /// @dev this is the step-1 for two step form withdrawal, xchain case
+    /// @dev will mandatorily process unlock
+    /// @return dstAmount is always 0
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
     ) internal virtual override returns (uint256 dstAmount) {
         uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
+        /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two step
+        /// @dev state registry for re-processing at a later date
         _storePayload(1, srcSender_, srcChainId_, lockedTill, singleVaultData_);
     }
 
     /// @dev calls the vault to request unlock
-    /// @notice shares are successfully burned at this point
+    /// @notice shares are already burned at this point
     function _requestUnlock(uint256 amount_) internal returns (uint256 lockedTill_) {
         IERC4626TimelockVault v = IERC4626TimelockVault(vault);
 

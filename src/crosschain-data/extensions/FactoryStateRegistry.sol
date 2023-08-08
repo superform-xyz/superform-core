@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Broadcaster} from "../utils/Broadcaster.sol";
-import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
+import {ISuperformFactory} from "../../interfaces/ISuperformFactory.sol";
 import {IFactoryStateRegistry} from "../../interfaces/IFactoryStateRegistry.sol";
 import {PayloadState} from "../../types/DataTypes.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
@@ -10,7 +10,7 @@ import {Error} from "../../utils/Error.sol";
 
 /// @title FactoryStateRegistry
 /// @author Zeropoint Labs
-/// @dev enables communication between SuperFormFactory deployed on all supported networks
+/// @dev enables communication between SuperformFactory deployed on all supported networks
 contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -41,6 +41,6 @@ contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperFormFactory(superRegistry.superFormFactory()).stateSync(payloadBody[payloadId_]);
+        ISuperformFactory(superRegistry.superFormFactory()).stateSync(payloadBody[payloadId_]);
     }
 }

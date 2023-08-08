@@ -28,6 +28,8 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev this function calls the kycDAO vault kycCheck function to verify if the beneficiary holds a kycDAO token
+    /// @dev note that this form must also be a holder of a kycDAO NFT
     function _kycCheck(address srcSender_) internal view {
         if (!kycDAO4626(vault).kycCheck(srcSender_)) revert NO_VALID_KYC_TOKEN();
     }

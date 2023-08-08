@@ -8,6 +8,9 @@ import {IPayloadHelper} from "../../interfaces/IPayloadHelper.sol";
 import {CallbackType, ReturnMultiData, ReturnSingleData, InitMultiVaultData, InitSingleVaultData, TimeLockPayload} from "../../types/DataTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 
+/// @title PayloadHelper
+/// @author ZeroPoint Labs
+/// @dev helps decode payload data more easily
 contract PayloadHelper is IPayloadHelper {
     using DataLib for uint256;
 

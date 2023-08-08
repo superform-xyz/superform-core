@@ -9,6 +9,9 @@ import {AMBMessage, AMBExtraData} from "../../types/DataTypes.sol";
 import {IAmbImplementation} from "../../interfaces/IAmbImplementation.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 
+/// @title Broadcaster
+/// @author ZeroPoint Labs
+/// @dev separates brodcasting concerns into an abstract implementation
 abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
@@ -44,6 +47,7 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
         bytes memory message_,
         bytes memory extraData_
     ) internal {
+        /// @dev when broadcasting, txType, callbackType and multi are set to their default values as they are unused
         AMBMessage memory newData = AMBMessage(
             DataLib.packTxInfo(
                 0,
@@ -75,6 +79,8 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
         bytes[] memory extraData_
     ) internal {
         bytes memory proof = abi.encode(keccak256(message_));
+
+        /// @dev when broadcasting, txType, callbackType and multi are set to their default values as they are unused
         AMBMessage memory newData = AMBMessage(
             DataLib.packTxInfo(
                 0,
@@ -90,6 +96,7 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
         for (uint8 i = 1; i < ambIds_.length; ) {
             uint8 tempAmbId = ambIds_[i];
 
+            /// @dev the loaded ambId cannot be the same as the ambId used for messaging
             if (tempAmbId == ambIds_[0]) {
                 revert Error.INVALID_PROOF_BRIDGE_ID();
             }

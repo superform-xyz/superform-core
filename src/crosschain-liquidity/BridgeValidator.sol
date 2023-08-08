@@ -54,5 +54,8 @@ abstract contract BridgeValidator is IBridgeValidator {
     ) external view virtual override;
 
     /// @inheritdoc IBridgeValidator
-    function decodeReceiver(bytes calldata txData_) external pure virtual override returns (address receiver_);
+    function validateReceiver(
+        bytes calldata txData_,
+        address _receiver
+    ) external pure virtual override returns (bool valid_);
 }

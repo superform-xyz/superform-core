@@ -9,12 +9,12 @@ import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 import {CoreStateRegistry} from "../src/crosschain-data/extensions/CoreStateRegistry.sol";
 import {RolesStateRegistry} from "../src/crosschain-data/extensions/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import {ISuperFormFactory} from "../src/interfaces/ISuperFormFactory.sol";
-import {SuperFormRouter} from "../src/SuperFormRouter.sol";
+import {ISuperformFactory} from "../src/interfaces/ISuperformFactory.sol";
+import {SuperformRouter} from "../src/SuperformRouter.sol";
 import {SuperRegistry} from "../src/settings/SuperRegistry.sol";
 import {SuperRBAC} from "../src/settings/SuperRBAC.sol";
 import {SuperPositions} from "../src/SuperPositions.sol";
-import {SuperFormFactory} from "../src/SuperFormFactory.sol";
+import {SuperformFactory} from "../src/SuperformFactory.sol";
 import {ERC4626Form} from "../src/forms/ERC4626Form.sol";
 import {ERC4626TimelockForm} from "../src/forms/ERC4626TimelockForm.sol";
 import {ERC4626KYCDaoForm} from "../src/forms/ERC4626KYCDaoForm.sol";
@@ -28,7 +28,7 @@ import {IMailbox} from "../src/vendor/hyperlane/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import {TwoStepsFormStateRegistry} from "../src/crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
 import {PayloadHelper} from "../src/crosschain-data/utils/PayloadHelper.sol";
-import {FeeHelper} from "../src/crosschain-data/utils/FeeHelper.sol";
+import {PaymentHelper} from "../src/crosschain-data/utils/PaymentHelper.sol";
 import {QuorumManager} from "../src/crosschain-data/utils/QuorumManager.sol";
 
 struct SetupVars {
@@ -88,18 +88,18 @@ abstract contract AbstractDeploySingle is Script {
         "CelerImplementation",
         "SocketValidator",
         "LiFiValidator",
-        "SuperFormFactory",
+        "SuperformFactory",
         "ERC4626Form",
         "ERC4626TimelockForm",
         "ERC4626KYCDaoForm",
-        "SuperFormRouter",
+        "SuperformRouter",
         "SuperPositions",
         "MultiTxProcessor",
         "SuperRegistry",
         "SuperRBAC",
         "PositionsSplitter",
         "PayloadHelper",
-        "FeeHelper"
+        "PaymentHelper"
     ];
 
     bytes32 constant salt = "SUPERFORM_4RD_TEST";
@@ -385,8 +385,8 @@ abstract contract AbstractDeploySingle is Script {
         registryIds[3] = 4;
 
         /// @dev 3.5.2- deploy Fee Helper
-        vars.feeHelper = address(new FeeHelper{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("FeeHelper"))] = vars.feeHelper;
+        vars.feeHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.feeHelper;
 
         SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
         /// @dev 4.1- deploy Layerzero Implementation
@@ -427,12 +427,12 @@ abstract contract AbstractDeploySingle is Script {
         }
         bridgeValidators[3] = vars.lifiValidator;
 
-        /// @dev 6 - Deploy SuperFormFactory
-        vars.factory = address(new SuperFormFactory{salt: salt}(vars.superRegistry));
+        /// @dev 6 - Deploy SuperformFactory
+        vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
 
-        contracts[vars.chainId][bytes32(bytes("SuperFormFactory"))] = vars.factory;
+        contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
-        SuperRegistry(vars.superRegistry).setSuperFormFactory(vars.factory);
+        SuperRegistry(vars.superRegistry).setSuperformFactory(vars.factory);
 
         /// @dev 7 - Deploy 4626Form implementations
         // Standard ERC4626 Form
@@ -444,20 +444,20 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
 
         /// @dev 8 - Add newly deployed form  implementation to Factory, formBeaconId 1
-        ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
+        ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
 
-        ISuperFormFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
+        ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
 
         /// @dev 9 KYCDao ERC4626 Form (only for Polygon)
         vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
-        ISuperFormFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
+        ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
-        /// @dev 10 - Deploy SuperFormRouter
+        /// @dev 10 - Deploy SuperformRouter
 
-        vars.superRouter = address(new SuperFormRouter{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("SuperFormRouter"))] = vars.superRouter;
+        vars.superRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superRouter;
 
         SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
 
@@ -558,7 +558,7 @@ abstract contract AbstractDeploySingle is Script {
                 /// deposit gas cost: 70000
                 /// withdraw gas cost: 80000
                 /// default gas price: 50 Gwei
-                FeeHelper(payable(vars.feeHelper)).addChain(
+                PaymentHelper(payable(vars.feeHelper)).addChain(
                     vars.dstChainId,
                     address(0),
                     PRICE_FEEDS[vars.chainId][vars.dstChainId],
@@ -572,13 +572,13 @@ abstract contract AbstractDeploySingle is Script {
                 /// ack gas cost: 40000
                 /// two step form cost: 50000
                 /// default gas price: 50 Gwei
-                FeeHelper(payable(vars.feeHelper)).setSameChainConfig(
+                PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(
                     2,
                     abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                 );
-                FeeHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(40000));
-                FeeHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50000));
-                FeeHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50 * 10 ** 9 wei));
+                PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(40000));
+                PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50000));
+                PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50 * 10 ** 9 wei));
             }
         }
         vm.stopBroadcast();

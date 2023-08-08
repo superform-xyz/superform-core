@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 interface IQuorumManager {
     /// @dev allows inheriting contracts to set the messaging quorum for a specific sender chain
+    /// @notice quorum is the number of extra ambs a message proof must go through and be validated
     /// @param srcChainId_ is the chain id from which the message (payload) is sent
     /// @param quorum_ the minimum number of message bridges required for processing
     /// NOTE: overriding child contracts should handle the sender validation & setting of message quorum

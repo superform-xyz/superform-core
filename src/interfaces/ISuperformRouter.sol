@@ -3,13 +3,15 @@ pragma solidity 0.8.19;
 
 import "../types/DataTypes.sol";
 
-/// @title ISuperFormRouter
+/// @title ISuperformRouter
 /// @author Zeropoint Labs.
 /// @dev interface for Super Router
-interface ISuperFormRouter {
+interface ISuperformRouter {
     /*///////////////////////////////////////////////////////////////
                                 STRUCTS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev For local memory variable loading and avoiding stack too deep errors
     struct ActionLocalVars {
         AMBMessage ambMessage;
         LiqRequest liqRequest;
@@ -17,6 +19,21 @@ interface ISuperFormRouter {
         uint256 currentPayloadId;
         uint256 liqRequestsLen;
     }
+
+    /// @dev ºacks the necessary data for a cross-chain transaction
+    struct DispatchAMBMessageVars {
+        TransactionType txType;
+        bytes ambData;
+        uint256[] superFormIds;
+        bytes extraData;
+        address srcSender;
+        uint8[] ambIds;
+        uint8 multiVaults;
+        uint64 srcChainId;
+        uint64 dstChainId;
+        uint256 currentPayloadId;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/

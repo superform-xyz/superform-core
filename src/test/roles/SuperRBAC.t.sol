@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
 
-import {ISuperFormFactory} from "../../interfaces/ISuperFormFactory.sol";
+import {ISuperformFactory} from "../../interfaces/ISuperformFactory.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {SuperRBAC} from "../../settings/SuperRBAC.sol";
 import {RolesStateRegistry} from "../../crosschain-data/extensions/RolesStateRegistry.sol";
@@ -100,7 +100,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeCoreContractsRole.selector,
             superRBAC.hasCoreContractsRole.selector,
             deployer,
-            getContract(ETH, "SuperFormFactory"),
+            getContract(ETH, "SuperformFactory"),
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -185,7 +185,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeBurnerRole.selector,
             superRBAC.hasBurnerRole.selector,
             deployer,
-            getContract(ETH, "SuperFormRouter"),
+            getContract(ETH, "SuperformRouter"),
             generateBroadcastParams(5, 2),
             800 ether
         );
