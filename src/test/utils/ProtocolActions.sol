@@ -112,6 +112,7 @@ abstract contract ProtocolActions is BaseSetup {
                     : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
                 coreStateRegistryDst,
                 getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][actionIndex][0]]),
+                getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][actionIndex][0]]),
                 rescueSuperformIds[0], /// @dev initiating with first rescueSuperformId
                 (AMOUNTS[CHAIN_0][actionIndex][0] * (10000 - uint256(action.slippage))) / 10000, /// @dev initiating with slippage adjusted amount of first vault
                 LIQ_BRIDGES[CHAIN_0][actionIndex][0],
@@ -348,6 +349,7 @@ abstract contract ProtocolActions is BaseSetup {
             (
                 vars.targetSuperFormIds,
                 vars.underlyingSrcToken,
+                vars.underlyingDstToken,
                 vars.vaultMock,
                 vars.partialWithdrawVaults
             ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
@@ -366,8 +368,6 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
 
-            console.log("vars.toDst[0]", vars.toDst[0]);
-
             vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
 
             vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
@@ -382,6 +382,7 @@ abstract contract ProtocolActions is BaseSetup {
                             : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                         vars.toDst,
                         vars.underlyingSrcToken,
+                        vars.underlyingDstToken,
                         vars.targetSuperFormIds,
                         vars.amounts,
                         vars.liqBridges,
@@ -420,6 +421,7 @@ abstract contract ProtocolActions is BaseSetup {
                         : getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]),
                     vars.toDst[0],
                     vars.underlyingSrcToken[0],
+                    vars.underlyingDstToken[0],
                     vars.targetSuperFormIds[0],
                     finalAmount,
                     vars.liqBridges[0],
@@ -869,7 +871,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, , ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                            (, vars.underlyingSrcToken, vars.underlyingDstToken, , ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -877,6 +879,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     CHAIN_0,
                                     aV[i].toChainId,
                                     vars.underlyingSrcToken,
+                                    vars.underlyingDstToken,
                                     vars.amounts
                                 );
                             } else {
@@ -885,6 +888,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     CHAIN_0,
                                     aV[i].toChainId,
                                     vars.underlyingSrcToken[0],
+                                    vars.underlyingDstToken[0],
                                     singleSuperFormsData[i].amount
                                 );
                             }
@@ -910,7 +914,7 @@ abstract contract ProtocolActions is BaseSetup {
                         _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
                     } else if (action.testType == TestType.RevertProcessPayload) {
                         if (action.multiTx) {
-                            (, vars.underlyingSrcToken, , ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                            (, vars.underlyingSrcToken, vars.underlyingDstToken, , ) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -918,6 +922,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     CHAIN_0,
                                     aV[i].toChainId,
                                     vars.underlyingSrcToken,
+                                    vars.underlyingDstToken,
                                     vars.amounts
                                 );
                             } else {
@@ -926,6 +931,7 @@ abstract contract ProtocolActions is BaseSetup {
                                     CHAIN_0,
                                     aV[i].toChainId,
                                     vars.underlyingSrcToken[0],
+                                    vars.underlyingDstToken[0],
                                     singleSuperFormsData[i].amount
                                 );
                             }
@@ -1172,6 +1178,7 @@ abstract contract ProtocolActions is BaseSetup {
                 args.externalToken,
                 args.toDst[i],
                 args.underlyingTokens[i],
+                args.underlyingTokensDst[i],
                 args.superFormIds[i],
                 finalAmounts[i],
                 args.liqBridges[i],
@@ -1206,6 +1213,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint8 liqBridgeKind_,
         address externalToken_, // this is underlying for withdraws
         address underlyingToken_, // this is external token (to receive in the end) for withdraws
+        address underlyingTokenDst_,
         address from_,
         uint64 toChainId_,
         bool multiTx_,
@@ -1231,14 +1239,14 @@ abstract contract ProtocolActions is BaseSetup {
                     1, /// request id
                     0,
                     underlyingToken_,
-                    abi.encode(from_, FORKS[toChainId_])
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_)
                 );
             } else {
                 bridgeRequest = ISocketRegistry.BridgeRequest(
                     1, /// request id
                     0,
                     underlyingToken_,
-                    abi.encode(from_, FORKS[toChainId_])
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_)
                 );
             }
 
@@ -1261,7 +1269,7 @@ abstract contract ProtocolActions is BaseSetup {
                 externalToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_]),
+                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_),
                 false // arbitrary
             );
 
@@ -1325,6 +1333,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.liqBridge,
             args.externalToken,
             args.underlyingToken,
+            args.underlyingTokenDst,
             v.from,
             args.toChainId,
             args.multiTx,
@@ -1404,6 +1413,7 @@ abstract contract ProtocolActions is BaseSetup {
         vars.txData = _buildLiqBridgeTxData(
             args.liqBridge,
             args.underlyingToken,
+            args.underlyingTokenDst,
             args.externalToken,
             args.toDst,
             args.srcChainId,
@@ -1448,6 +1458,7 @@ abstract contract ProtocolActions is BaseSetup {
         returns (
             uint256[] memory targetSuperFormsMem,
             address[] memory underlyingSrcTokensMem,
+            address[] memory underlyingDstTokensMem,
             address[] memory vaultMocksMem,
             bool[] memory partialWithdrawVaults
         )
@@ -1467,6 +1478,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         targetSuperFormsMem = new uint256[](vars.len);
         underlyingSrcTokensMem = new address[](vars.len);
+        underlyingDstTokensMem = new address[](vars.len);
         vaultMocksMem = new address[](vars.len);
 
         for (uint256 i = 0; i < vars.len; i++) {
@@ -1476,6 +1488,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             targetSuperFormsMem[i] = vars.superFormIdsTemp[i];
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
+            underlyingDstTokensMem[i] = getContract(chain1, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
             if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
                 revertingDepositSFsPerDst.push(vars.superFormIdsTemp[i]);
@@ -1689,6 +1702,7 @@ abstract contract ProtocolActions is BaseSetup {
     function _buildLiqBridgeTxDataMultiTx(
         uint8 liqBridgeKind_,
         address underlyingToken_,
+        address underlyingTokenDst_,
         address from_,
         uint64 toChainId_,
         uint256 amount_
@@ -1711,7 +1725,7 @@ abstract contract ProtocolActions is BaseSetup {
                 0, /// id
                 0,
                 address(0),
-                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_])
+                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingTokenDst_)
             );
 
             userRequest = ISocketRegistry.UserRequest(
@@ -1733,7 +1747,7 @@ abstract contract ProtocolActions is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_]),
+                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_),
                 false // arbitrary
             );
 
@@ -1760,6 +1774,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint64 srcChainId_,
         uint64 targetChainId_,
         address underlyingToken_,
+        address underlyingTokenDst_,
         uint256 amount_
     ) internal {
         uint256 initialFork = vm.activeFork();
@@ -1768,6 +1783,7 @@ abstract contract ProtocolActions is BaseSetup {
         bytes memory txData = _buildLiqBridgeTxDataMultiTx(
             liqBridgeKind_,
             underlyingToken_,
+            underlyingTokenDst_,
             getContract(targetChainId_, "MultiTxProcessor"),
             targetChainId_,
             amount_
@@ -1789,6 +1805,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint64 srcChainId_,
         uint64 targetChainId_,
         address[] memory underlyingTokens_,
+        address[] memory underlyingTokensDst_,
         uint256[] memory amounts_
     ) internal {
         uint256 initialFork = vm.activeFork();
@@ -1800,6 +1817,7 @@ abstract contract ProtocolActions is BaseSetup {
             txDatas[i] = _buildLiqBridgeTxDataMultiTx(
                 liqBridgeKinds_[i],
                 underlyingTokens_[i],
+                underlyingTokensDst_[i],
                 getContract(targetChainId_, "MultiTxProcessor"),
                 targetChainId_,
                 amounts_[i]

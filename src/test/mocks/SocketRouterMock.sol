@@ -67,7 +67,7 @@ contract SocketRouterMock is ISocketRegistry, Test {
         bool prevSwap
     ) internal {
         /// @dev encapsulating from
-        (address from, uint256 toForkId) = abi.decode(data_, (address, uint256));
+        (address from, uint256 toForkId, address outputToken) = abi.decode(data_, (address, uint256, address));
 
         if (inputToken_ != NATIVE) {
             if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
@@ -79,8 +79,8 @@ contract SocketRouterMock is ISocketRegistry, Test {
         uint256 prevForkId = vm.activeFork();
         vm.selectFork(toForkId);
 
-        if (inputToken_ != NATIVE) {
-            MockERC20(inputToken_).mint(receiver_, amount_);
+        if (outputToken != NATIVE) {
+            MockERC20(outputToken).mint(receiver_, amount_);
         } else {
             if (prevForkId != toForkId) vm.deal(address(this), amount_);
             (bool success, ) = payable(receiver_).call{value: amount_}("");
