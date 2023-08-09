@@ -233,43 +233,44 @@ contract SuperRBACTest is BaseSetup {
         address memberAddress;
         if (bytes(member_).length == 0) {
             memberAddress = deployer;
+        } else {
+            memberAddress = getContract(ETH, member_);
         }
 
-        /// TODO / NOTE: `memberAddress` is set to null (when not a deployer), which should ideally be an array of
-        /// addresses which we need to revoke the role from, on all chains => This requires
-        /// significant changes in SuperRegistry hence currently on hold
-        /// @dev setting the status as false in chain id = ETH & broadcasting it
+        /// @dev setting the status as false in chain id = ETH
         (bool success, ) = address(superRBAC).call{value: value_}(
             abi.encodeWithSelector(revokeRole_, memberAddress, extraData_)
         );
 
-        vm.startPrank(deployer);
-        _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
+        vm.prank(deployer);
+        /// @dev broadcasting on hold
+        // _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         /// @dev role revoked on ETH
         (, bytes memory isRevoked) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, memberAddress));
         assertEq(abi.decode(isRevoked, (bool)), false);
 
-        SuperRBAC superRBAC_;
-        /// @dev process the payload across all other chains
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            if (bytes(member_).length > 0) {
-                memberAddress = getContract(chainIds[i], member_);
-            }
-            if (chainIds[i] != ETH) {
-                vm.selectFork(FORKS[chainIds[i]]);                
-                superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
+        /// @dev broadcasting revokes to other chains on hold
+        // SuperRBAC superRBAC_;
+        // /// @dev process the payload across all other chains
+        // for (uint256 i = 0; i < chainIds.length; i++) {
+        //     if (bytes(member_).length > 0) {
+        //         memberAddress = getContract(chainIds[i], member_);
+        //     }
+        //     if (chainIds[i] != ETH) {
+        //         vm.selectFork(FORKS[chainIds[i]]);                
+        //         superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
 
-                (, bytes memory statusBefore) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
-                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
-                (, bytes memory statusAfter) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
+        //         (, bytes memory statusBefore) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
+        //         RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
+        //         (, bytes memory statusAfter) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
 
-                /// @dev assert status update before and after processing the payload
-                assertEq(abi.decode(statusBefore, (bool)), true);
-                assertEq(abi.decode(statusAfter, (bool)), false);
+        //         /// @dev assert status update before and after processing the payload
+        //         assertEq(abi.decode(statusBefore, (bool)), true);
+        //         assertEq(abi.decode(statusAfter, (bool)), false);
 
-                vm.selectFork(FORKS[ETH]);
-            }
-        }
+        //         vm.selectFork(FORKS[ETH]);
+        //     }
+        // }
     }
 }
