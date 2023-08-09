@@ -7,6 +7,7 @@ import "../utils/ProtocolActions.sol";
 contract BridgeValidatorInvalidReceiverTest is BaseSetup {
     function setUp() public override {
         super.setUp();
+        vm.selectFork(FORKS[ETH]);
     }
 
     function test_lifi_invalid_receiver() public {

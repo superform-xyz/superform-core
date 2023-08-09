@@ -385,7 +385,7 @@ contract PayMasterTest is BaseSetup {
                 1, /// request id
                 0,
                 underlyingToken_,
-                abi.encode(from_, FORKS[toChainId_])
+                abi.encode(from_, FORKS[toChainId_], underlyingToken_)
             );
 
             /// @dev empty bridge request
@@ -393,7 +393,7 @@ contract PayMasterTest is BaseSetup {
                 0, /// id
                 0,
                 address(0),
-                abi.encode(receiver_, FORKS[toChainId_])
+                abi.encode(receiver_, FORKS[toChainId_], underlyingToken_)
             );
 
             userRequest = ISocketRegistry.UserRequest(
@@ -415,7 +415,7 @@ contract PayMasterTest is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_]),
+                abi.encode(from_, FORKS[toChainId_], underlyingToken_),
                 false // arbitrary
             );
 
