@@ -53,6 +53,8 @@ abstract contract ProtocolActions is BaseSetup {
 
     uint256 MAX_SLIPPAGE;
 
+    bool GENERATE_WITHDRAW_TX_DATA_ON_DST;
+
     mapping(uint64 chainId => UniqueDSTInfo info) public usedDSTs;
 
     mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYINGS;
@@ -64,6 +66,8 @@ abstract contract ProtocolActions is BaseSetup {
     mapping(uint64 chainId => mapping(uint256 index => uint256[] action)) public AMOUNTS;
 
     mapping(uint64 chainId => mapping(uint256 index => bool[] action)) public PARTIAL;
+
+    mapping(uint64 chainId => bytes[] generatedTxData) public TX_DATA_TO_UPDATE_ON_DST;
 
     /// @dev 1 for socket, 2 for lifi
     mapping(uint64 chainId => mapping(uint256 index => uint8[] liqBridgeId)) public LIQ_BRIDGES;
@@ -833,7 +837,7 @@ abstract contract ProtocolActions is BaseSetup {
                         PAYLOAD_ID[aV[i].toChainId]++;
                     }
 
-                    vars.multiVaultsPayloadArg = UpdateMultiVaultPayloadArgs(
+                    vars.multiVaultsPayloadArg = updateMultiVaultDepositPayloadArgs(
                         PAYLOAD_ID[aV[i].toChainId],
                         aV[i].receivedMultiVaultData.amounts,
                         action.slippage,
@@ -843,7 +847,7 @@ abstract contract ProtocolActions is BaseSetup {
                         action.revertRole
                     );
 
-                    vars.singleVaultsPayloadArg = UpdateSingleVaultPayloadArgs(
+                    vars.singleVaultsPayloadArg = updateSingleVaultDepositPayloadArgs(
                         PAYLOAD_ID[aV[i].toChainId],
                         aV[i].receivedSingleVaultData.amount,
                         action.slippage,
@@ -884,9 +888,9 @@ abstract contract ProtocolActions is BaseSetup {
                         }
 
                         if (action.multiVaults) {
-                            _updateMultiVaultPayload(vars.multiVaultsPayloadArg);
+                            _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
                         } else if (singleSuperformsData.length > 0) {
-                            _updateSingleVaultPayload(vars.singleVaultsPayloadArg);
+                            _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
                         }
                         console.log("grabbing logs");
 
@@ -931,9 +935,9 @@ abstract contract ProtocolActions is BaseSetup {
                             }
                         }
                         if (action.multiVaults) {
-                            _updateMultiVaultPayload(vars.multiVaultsPayloadArg);
+                            _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
                         } else if (singleSuperformsData.length > 0) {
-                            _updateSingleVaultPayload(vars.singleVaultsPayloadArg);
+                            _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
                         }
                         (success, , ) = _processPayload(
                             PAYLOAD_ID[aV[i].toChainId],
@@ -949,9 +953,9 @@ abstract contract ProtocolActions is BaseSetup {
                         action.testType == TestType.RevertUpdateStateRBAC
                     ) {
                         if (action.multiVaults) {
-                            success = _updateMultiVaultPayload(vars.multiVaultsPayloadArg);
+                            success = _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
                         } else {
-                            success = _updateSingleVaultPayload(vars.singleVaultsPayloadArg);
+                            success = _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
                         }
 
                         if (!success) {
@@ -966,6 +970,11 @@ abstract contract ProtocolActions is BaseSetup {
                         PAYLOAD_ID[aV[i].toChainId]++;
                     }
                     console.log("grabbing logs");
+
+                    if (GENERATE_WITHDRAW_TX_DATA_ON_DST)
+                        action.multiVaults
+                            ? _updateMultiVaultWithdrawPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId)
+                            : _updateSingleVaultWithdrawPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId);
 
                     vm.recordLogs();
                     /// note: this is high-lvl processPayload function, even if this happens outside of the user view
@@ -1425,7 +1434,18 @@ abstract contract ProtocolActions is BaseSetup {
             true
         );
 
-        vars.liqReq = LiqRequest(args.liqBridge, vars.txData, args.underlyingTokenDst, args.amount, 0, "");
+        if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
+            TX_DATA_TO_UPDATE_ON_DST[args.toChainId].push(vars.txData);
+        }
+
+        vars.liqReq = LiqRequest(
+            args.liqBridge,
+            GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
+            args.underlyingTokenDst,
+            args.amount,
+            0,
+            ""
+        );
 
         superFormData = SingleVaultSFData(
             args.superFormId,
@@ -1544,7 +1564,7 @@ abstract contract ProtocolActions is BaseSetup {
         return superFormIds_;
     }
 
-    function _updateMultiVaultPayload(UpdateMultiVaultPayloadArgs memory args) internal returns (bool) {
+    function _updateMultiVaultDepositPayload(updateMultiVaultDepositPayloadArgs memory args) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[args.targetChainId]);
@@ -1561,19 +1581,15 @@ abstract contract ProtocolActions is BaseSetup {
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateMultiVaultPayload(
-                args.payloadId,
-                finalAmounts
-            );
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
+                .updateMultiVaultDepositPayload(args.payloadId, finalAmounts);
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
             vm.expectRevert(args.revertError); /// @dev removed string here: come to this later
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateMultiVaultPayload(
-                args.payloadId,
-                finalAmounts
-            );
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
+                .updateMultiVaultDepositPayload(args.payloadId, finalAmounts);
 
             return false;
         } else if (args.testType == TestType.RevertUpdateStateRBAC) {
@@ -1581,10 +1597,8 @@ abstract contract ProtocolActions is BaseSetup {
             bytes memory errorMsg = getAccessControlErrorMsg(users[2], args.revertRole);
             vm.expectRevert(errorMsg);
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateMultiVaultPayload(
-                args.payloadId,
-                finalAmounts
-            );
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
+                .updateMultiVaultDepositPayload(args.payloadId, finalAmounts);
 
             return false;
         }
@@ -1594,7 +1608,7 @@ abstract contract ProtocolActions is BaseSetup {
         return true;
     }
 
-    function _updateSingleVaultPayload(UpdateSingleVaultPayloadArgs memory args) internal returns (bool) {
+    function _updateSingleVaultDepositPayload(updateSingleVaultDepositPayloadArgs memory args) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[args.targetChainId]);
@@ -1608,19 +1622,15 @@ abstract contract ProtocolActions is BaseSetup {
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateSingleVaultPayload(
-                args.payloadId,
-                finalAmount
-            );
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
+                .updateSingleVaultDepositPayload(args.payloadId, finalAmount);
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
             vm.expectRevert(args.revertError); /// @dev removed string here: come to this later
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateSingleVaultPayload(
-                args.payloadId,
-                finalAmount
-            );
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
+                .updateSingleVaultDepositPayload(args.payloadId, finalAmount);
 
             return false;
         } else if (args.testType == TestType.RevertUpdateStateRBAC) {
@@ -1628,16 +1638,45 @@ abstract contract ProtocolActions is BaseSetup {
             bytes memory errorMsg = getAccessControlErrorMsg(users[2], args.revertRole);
             vm.expectRevert(errorMsg);
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateSingleVaultPayload(
-                args.payloadId,
-                finalAmount
-            );
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
+                .updateSingleVaultDepositPayload(args.payloadId, finalAmount);
 
             return false;
         }
 
         vm.selectFork(initialFork);
 
+        return true;
+    }
+
+    function _updateMultiVaultWithdrawPayload(uint256 payloadId, uint64 chainId) internal returns (bool) {
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[chainId]);
+        vm.prank(deployer);
+
+        CoreStateRegistry(payable(getContract(chainId, "CoreStateRegistry"))).updateMultiVaultWithdrawPayload(
+            payloadId,
+            TX_DATA_TO_UPDATE_ON_DST[chainId]
+        );
+
+        vm.selectFork(initialFork);
+
+        return true;
+    }
+
+    function _updateSingleVaultWithdrawPayload(uint256 payloadId, uint64 chainId) internal returns (bool) {
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[chainId]);
+        vm.prank(deployer);
+
+        CoreStateRegistry(payable(getContract(chainId, "CoreStateRegistry"))).updateSingleVaultWithdrawPayload(
+            payloadId,
+            TX_DATA_TO_UPDATE_ON_DST[chainId][0]
+        );
+
+        vm.selectFork(initialFork);
         return true;
     }
 
