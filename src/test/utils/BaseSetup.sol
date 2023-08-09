@@ -1221,12 +1221,12 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev Generates the acknowledgement amb params for the entire action
     function _generateAckGasFeesAndParamsForTimeLock(
-        bytes memory chainIds,
+        bytes memory chainIds_,
         uint8[] memory selectedAmbIds,
         uint256 timelockPayloadId
     ) internal view returns (uint256 msgValue, bytes memory) {
         LocalAckVars memory vars;
-        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds, (uint64, uint64));
+        (vars.srcChainId, vars.dstChainId) = abi.decode(chainIds_, (uint64, uint64));
 
         vars.ambCount = selectedAmbIds.length;
 

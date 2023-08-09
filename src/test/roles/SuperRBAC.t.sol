@@ -51,7 +51,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeFeeAdminRole.selector,
             superRBAC.hasFeeAdminRole.selector,
             deployer,
-            deployer,
+            "",
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -80,7 +80,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeSwapperRole.selector,
             superRBAC.hasSwapperRole.selector,
             deployer,
-            deployer,
+            "",
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -100,7 +100,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeCoreContractsRole.selector,
             superRBAC.hasCoreContractsRole.selector,
             deployer,
-            getContract(ETH, "SuperformFactory"),
+            "SuperformFactory",
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -117,7 +117,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeProcessorRole.selector,
             superRBAC.hasProcessorRole.selector,
             deployer,
-            deployer,
+            "",
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -134,7 +134,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeTwoStepsProcessorRole.selector,
             superRBAC.hasTwoStepsProcessorRole.selector,
             deployer,
-            deployer,
+            "",
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -151,7 +151,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeUpdaterRole.selector,
             superRBAC.hasUpdaterRole.selector,
             deployer,
-            deployer,
+            "",
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -168,7 +168,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeMinterRole.selector,
             superRBAC.hasMinterRole.selector,
             deployer,
-            getContract(ETH, "TwoStepsFormStateRegistry"),
+            "TwoStepsFormStateRegistry",
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -185,7 +185,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeBurnerRole.selector,
             superRBAC.hasBurnerRole.selector,
             deployer,
-            getContract(ETH, "SuperformRouter"),
+            "SuperformRouter",
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -211,7 +211,7 @@ contract SuperRBACTest is BaseSetup {
             superRBAC.revokeMinterStateRegistryRole.selector,
             superRBAC.hasMinterStateRegistryRole.selector,
             deployer,
-            getContract(ETH, "CoreStateRegistry"),
+            "CoreStateRegistry",
             generateBroadcastParams(5, 2),
             800 ether
         );
@@ -221,7 +221,7 @@ contract SuperRBACTest is BaseSetup {
         bytes4 revokeRole_,
         bytes4 checkRole_,
         address actor_,
-        address member_,
+        string memory member_,
         bytes memory extraData_,
         uint256 value_
     ) internal {
@@ -229,28 +229,41 @@ contract SuperRBACTest is BaseSetup {
         vm.prank(actor_);
 
         vm.recordLogs();
+
+        address memberAddress;
+        if (bytes(member_).length == 0) {
+            memberAddress = deployer;
+        }
+
+        /// TODO / NOTE: `memberAddress` is set to null (when not a deployer), which should ideally be an array of
+        /// addresses which we need to revoke the role from, on all chains => This requires
+        /// significant changes in SuperRegistry hence currently on hold
         /// @dev setting the status as false in chain id = ETH & broadcasting it
         (bool success, ) = address(superRBAC).call{value: value_}(
-            abi.encodeWithSelector(revokeRole_, member_, extraData_)
+            abi.encodeWithSelector(revokeRole_, memberAddress, extraData_)
         );
+
         vm.startPrank(deployer);
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         /// @dev role revoked on ETH
-        (, bytes memory isRevoked) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
+        (, bytes memory isRevoked) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, memberAddress));
         assertEq(abi.decode(isRevoked, (bool)), false);
 
         SuperRBAC superRBAC_;
         /// @dev process the payload across all other chains
         for (uint256 i = 0; i < chainIds.length; i++) {
+            if (bytes(member_).length > 0) {
+                memberAddress = getContract(chainIds[i], member_);
+            }
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);                
                 superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
 
-                (, bytes memory statusBefore) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, member_));
+                (, bytes memory statusBefore) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
                 RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
-                (, bytes memory statusAfter) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, member_));
-                
+                (, bytes memory statusAfter) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
+
                 /// @dev assert status update before and after processing the payload
                 assertEq(abi.decode(statusBefore, (bool)), true);
                 assertEq(abi.decode(statusAfter, (bool)), false);
