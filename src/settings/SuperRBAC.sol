@@ -238,18 +238,18 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
-    function stateSync(bytes memory data_) external override {
-        if (msg.sender != superRegistry.rolesStateRegistry()) revert Error.NOT_ROLES_STATE_REGISTRY();
+    // function stateSync(bytes memory data_) external override {
+    //     if (msg.sender != superRegistry.rolesStateRegistry()) revert Error.NOT_ROLES_STATE_REGISTRY();
 
-        AMBFactoryMessage memory rolesPayload = abi.decode(data_, (AMBFactoryMessage));
+    //     AMBFactoryMessage memory rolesPayload = abi.decode(data_, (AMBFactoryMessage));
 
-        if (rolesPayload.messageType == SYNC_REVOKE) {
-            (bytes32 role, address affectedAddress) = abi.decode(rolesPayload.message, (bytes32, address));
+    //     if (rolesPayload.messageType == SYNC_REVOKE) {
+    //         (bytes32 role, address affectedAddress) = abi.decode(rolesPayload.message, (bytes32, address));
 
-            /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE and EMERGENCY_ADMIN_ROLE
-            if (role != PROTOCOL_ADMIN_ROLE || role != EMERGENCY_ADMIN_ROLE) revokeRole(role, affectedAddress);
-        }
-    }
+    //         /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE and EMERGENCY_ADMIN_ROLE
+    //         if (role != PROTOCOL_ADMIN_ROLE || role != EMERGENCY_ADMIN_ROLE) revokeRole(role, affectedAddress);
+    //     }
+    // }
 
     /*///////////////////////////////////////////////////////////////
                             VIEW FUNCTIONS

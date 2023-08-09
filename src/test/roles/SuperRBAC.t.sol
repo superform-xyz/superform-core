@@ -7,7 +7,6 @@ import "../utils/Utilities.sol";
 import {ISuperformFactory} from "../../interfaces/ISuperformFactory.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {SuperRBAC} from "../../settings/SuperRBAC.sol";
-import {RolesStateRegistry} from "../../crosschain-data/extensions/RolesStateRegistry.sol";
 import {Error} from "../../utils/Error.sol";
 
 contract SuperRBACTest is BaseSetup {
