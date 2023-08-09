@@ -17,6 +17,7 @@ contract SocketRouterMock is ISocketRegistry, Test {
         ISocketRegistry.BridgeRequest memory bridgeRequest = userRequest_.bridgeRequest;
 
         ISocketRegistry.MiddlewareRequest memory middlewareRequest = userRequest_.middlewareRequest;
+
         if (middlewareRequest.id == 0 && bridgeRequest.id != 0) {
             /// @dev just mock bridge
             _bridge(
