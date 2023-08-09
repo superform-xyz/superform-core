@@ -1713,7 +1713,7 @@ abstract contract ProtocolActions is BaseSetup {
                 1, /// request id
                 0,
                 underlyingTokenDst_,
-                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_])
+                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingTokenDst_)
             );
 
             /// @dev empty bridge request
