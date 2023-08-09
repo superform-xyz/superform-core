@@ -240,18 +240,22 @@ contract SuperRBACTest is BaseSetup {
         (, bytes memory isRevoked) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
         assertEq(abi.decode(isRevoked, (bool)), false);
 
+        SuperRBAC superRBAC_;
         /// @dev process the payload across all other chains
         for (uint256 i = 0; i < chainIds.length; i++) {
             if (chainIds[i] != ETH) {
-                vm.selectFork(FORKS[chainIds[i]]);
+                vm.selectFork(FORKS[chainIds[i]]);                
+                superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
 
-                (, bytes memory statusBefore) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
+                (, bytes memory statusBefore) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, member_));
                 RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
-                (, bytes memory statusAfter) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, member_));
-
+                (, bytes memory statusAfter) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, member_));
+                
                 /// @dev assert status update before and after processing the payload
                 assertEq(abi.decode(statusBefore, (bool)), true);
                 assertEq(abi.decode(statusAfter, (bool)), false);
+
+                vm.selectFork(FORKS[ETH]);
             }
         }
     }
