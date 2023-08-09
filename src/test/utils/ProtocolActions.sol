@@ -105,12 +105,12 @@ abstract contract ProtocolActions is BaseSetup {
             SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
                 action.user,
                 coreStateRegistryDst,
-                action.externalToken == 3
+                getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][1][0]]), /// @dev needs to correspond to `underlyingTokenDst_` in _buildLiqBridgeTxData()
+                coreStateRegistryDst,
+                action.externalToken == 3 /// @dev needs to correspond to `underlyingToken` in _buildLiqBridgeTxData()
                     ? NATIVE_TOKEN
                     : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
-                coreStateRegistryDst,
-                getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][actionIndex][0]]),
-                getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][actionIndex][0]]),
+                getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]),
                 rescueSuperformIds[0], /// @dev initiating with first rescueSuperformId
                 (AMOUNTS[CHAIN_0][actionIndex][0] * (10000 - uint256(action.slippage))) / 10000, /// @dev initiating with slippage adjusted amount of first vault
                 LIQ_BRIDGES[CHAIN_0][actionIndex][0],
@@ -1399,12 +1399,17 @@ abstract contract ProtocolActions is BaseSetup {
     ) internal returns (SingleVaultSFData memory superFormData) {
         SingleVaultWithdrawLocalVars memory vars;
 
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[CHAIN_0]);
+
         vars.superRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
         vars.superPositions = IERC1155s(ISuperRegistry(vars.stateRegistry).superPositions());
         vm.prank(users[args.user]);
 
         vars.superPositions.setApprovalForOne(vars.superRouter, args.superFormId, args.amount);
+
+        vm.selectFork(initialFork);
 
         vars.txData = _buildLiqBridgeTxData(
             args.liqBridge,
