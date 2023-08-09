@@ -575,10 +575,10 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setMultiTxProcessor(vars.multiTxProcessor);
 
             /// @dev 15 - Deploy PayMaster
-            vars.feeCollector = address(new PayMaster{salt: salt}(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.feeCollector;
+            vars.payMaster = address(new PayMaster{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
 
-            SuperRegistry(vars.superRegistry).setPayMaster(vars.feeCollector);
+            SuperRegistry(vars.superRegistry).setPayMaster(vars.payMaster);
 
             /// @dev 16 - Super Registry extra setters
             SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
@@ -621,7 +621,6 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
                     vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
-                    //vars.dstPaymentHelper = getContract(vars.dstChainId, "PaymentHelper");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId,

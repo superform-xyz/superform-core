@@ -30,6 +30,7 @@ import {TwoStepsFormStateRegistry} from "../src/crosschain-data/extensions/TwoSt
 import {PayloadHelper} from "../src/crosschain-data/utils/PayloadHelper.sol";
 import {PaymentHelper} from "../src/crosschain-data/utils/PaymentHelper.sol";
 import {QuorumManager} from "../src/crosschain-data/utils/QuorumManager.sol";
+import {PayMaster} from "../src/PayMaster.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -68,6 +69,7 @@ struct SetupVars {
     address kycDao4626Form;
     address PayloadHelper;
     address paymentHelper;
+    address payMaster;
 }
 
 abstract contract AbstractDeploySingle is Script {
@@ -78,7 +80,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[21] public contractNames = [
+    string[22] public contractNames = [
         "CoreStateRegistry",
         "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
@@ -99,7 +101,8 @@ abstract contract AbstractDeploySingle is Script {
         "SuperRBAC",
         "PositionsSplitter",
         "PayloadHelper",
-        "PaymentHelper"
+        "PaymentHelper",
+        "PayMaster"
     ];
 
     bytes32 constant salt = "SUPERFORM_4RD_TEST";
@@ -485,7 +488,13 @@ abstract contract AbstractDeploySingle is Script {
 
         SuperRegistry(vars.superRegistry).setMultiTxProcessor(vars.multiTxProcessor);
 
-        /// @dev 13 - Super Registry extra setters
+        /// @dev 13 - Deploy PayMaster
+        vars.payMaster = address(new PayMaster{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
+
+        SuperRegistry(vars.superRegistry).setPayMaster(vars.payMaster);
+
+        /// @dev 14 - Super Registry extra setters
 
         SuperRegistry(vars.superRegistry).setBridgeAddresses(
             bridgeIds,
@@ -496,7 +505,7 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev configures lzImplementation and hyperlane to super registry
         SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
-        /// @dev 14 Setup extra RBAC
+        /// @dev 15 Setup extra RBAC
 
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);

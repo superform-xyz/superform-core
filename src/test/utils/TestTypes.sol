@@ -133,7 +133,7 @@ struct SetupVars {
     address dstCelerImplementation;
     address dstStateRegistry;
     address multiTxProcessor;
-    address feeCollector;
+    address payMaster;
     address superRegistry;
     address superRBAC;
     address canonicalPermit2;
