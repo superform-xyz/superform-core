@@ -314,19 +314,19 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
                         Internal Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev interacts with role state registry to broadcasting state changes to all connected remote chains
-    /// @param message_ is the crosschain message to be sent.
-    /// @param extraData_ is the amb override information.
-    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
-        (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData_, (uint8[], bytes));
+    // / @dev interacts with role state registry to broadcasting state changes to all connected remote chains
+    // / @param message_ is the crosschain message to be sent.
+    // / @param extraData_ is the amb override information.
+    // function _broadcast(bytes memory message_, bytes memory extraData_) internal {
+    //     (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData_, (uint8[], bytes));
 
-        /// @dev ambIds are validated inside the factory state registry
-        /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-        IBroadcaster(superRegistry.rolesStateRegistry()).broadcastPayload{value: msg.value}(
-            msg.sender,
-            ambIds,
-            message_,
-            broadcastParams
-        );
-    }
+    //     /// @dev ambIds are validated inside the factory state registry
+    //     /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
+    //     IBroadcaster(superRegistry.rolesStateRegistry()).broadcastPayload{value: msg.value}(
+    //         msg.sender,
+    //         ambIds,
+    //         message_,
+    //         broadcastParams
+    //     );
+    // }
 }

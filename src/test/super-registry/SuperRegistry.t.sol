@@ -77,6 +77,10 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.setPayMaster.selector, superRegistry.getPayMaster.selector, address(0x1));
     }
 
+    function test_setPaymentHelper_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.setPaymentHelper.selector, superRegistry.getPaymentHelper.selector, address(0x1));
+    }
+
     function test_setCoreStateRegistry_and_revert_invalidCaller() public {
         _setAndAssert(
             superRegistry.setCoreStateRegistry.selector,
