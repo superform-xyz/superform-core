@@ -72,9 +72,6 @@ interface IBaseForm is IERC165Upgradeable {
     /// @return The ERC20 symbol
     function superformYieldTokenSymbol() external view returns (string memory);
 
-    /// @notice get Supershare decimals of the ERC20 vault representation
-    function superformYieldTokenDecimals() external view returns (uint256);
-
     /// @notice Returns the underlying token of a vault.
     /// @return The asset being deposited into the vault used for accounting, depositing, and withdrawing
     function getVaultAsset() external view returns (address);
@@ -104,9 +101,6 @@ interface IBaseForm is IERC165Upgradeable {
 
     /// @notice get the total amount of underlying managed in the ERC4626 vault
     function getTotalAssets() external view returns (uint256);
-
-    /// @notice get the total amount of assets received if shares are converted
-    function getConvertPricePerVaultShare() external view returns (uint256);
 
     /// @notice get the total amount of assets received if shares are actually redeemed
     /// @notice https://eips.ethereum.org/EIPS/eip-4626

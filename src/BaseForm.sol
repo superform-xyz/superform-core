@@ -119,9 +119,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function superformYieldTokenSymbol() external view virtual override returns (string memory);
 
     /// @inheritdoc IBaseForm
-    function superformYieldTokenDecimals() external view virtual override returns (uint256);
-
-    /// @inheritdoc IBaseForm
     function getVaultAsset() public view virtual override returns (address);
 
     /// @inheritdoc IBaseForm
@@ -146,9 +143,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     // @inheritdoc IBaseForm
     function getTotalAssets() public view virtual override returns (uint256);
-
-    // @inheritdoc IBaseForm
-    function getConvertPricePerVaultShare() public view virtual override returns (uint256);
 
     // @inheritdoc IBaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256);

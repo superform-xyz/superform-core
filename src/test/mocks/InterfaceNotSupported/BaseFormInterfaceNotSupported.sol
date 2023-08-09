@@ -116,9 +116,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @return The ERC20 symbol
     function superformYieldTokenSymbol() external view virtual returns (string memory);
 
-    /// @notice get Supershare decimals of the ERC20 vault representation
-    function superformYieldTokenDecimals() external view virtual returns (uint256);
-
     /// @inheritdoc IBaseForm
     function getVaultAsset() public view virtual override returns (address);
 
@@ -133,9 +130,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @notice get the total amount of underlying managed in the ERC4626 vault
     /// NOTE: does not exist in timeless implementation
     function getTotalAssets() public view virtual returns (uint256);
-
-    /// @notice get the total amount of assets received if shares are converted
-    function getConvertPricePerVaultShare() public view virtual returns (uint256);
 
     /// @notice get the total amount of assets received if shares are actually redeemed
     /// @notice https://eips.ethereum.org/EIPS/eip-4626

@@ -148,7 +148,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         _depositfromETHtoOP(0);
 
         vm.selectFork(FORKS[OP]);
-
+        LayerzeroImplementation lzImplOP = LayerzeroImplementation(payable(getContract(OP, "LayerzeroImplementation")));
         /// @dev verify the msg to be present in LZ_ENDPOINT_OP.storedPayload[][]
         /// @dev 101 is lz_chainId for ETH
         assertEq(ILzEndpoint(LZ_ENDPOINT_OP).hasStoredPayload(101, srcAddressOP), true);
@@ -156,11 +156,11 @@ contract LayerzeroImplementationTest is BaseSetup {
         /// @dev first testing revert on invalid caller
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
-        layerzeroImplementation.forceResumeReceive(101, srcAddressOP);
+        lzImplOP.forceResumeReceive(101, srcAddressOP);
 
         /// @dev remove the unexecuted blocked msg from LZ_ENDPOINT_OP, using forceResumeReceive()
         vm.prank(deployer);
-        layerzeroImplementation.forceResumeReceive(101, srcAddressOP);
+        lzImplOP.forceResumeReceive(101, srcAddressOP);
 
         /// @dev verify the msg to be removed from LZ_ENDPOINT_OP
         assertEq(ILzEndpoint(LZ_ENDPOINT_OP).hasStoredPayload(101, srcAddressOP), false);
@@ -186,17 +186,19 @@ contract LayerzeroImplementationTest is BaseSetup {
             }
         }
 
+        LayerzeroImplementation lzImplOP = LayerzeroImplementation(payable(getContract(OP, "LayerzeroImplementation")));
+
         vm.expectRevert(Error.ZERO_PAYLOAD_HASH.selector);
         /// @dev NOTE nonce = 1, instead of 2
-        layerzeroImplementation.retryMessage(101, srcAddressOP, 1, payload);
+        lzImplOP.retryMessage(101, srcAddressOP, 1, payload);
 
         bytes memory invalidPayload = hex"0007";
         vm.expectRevert(Error.INVALID_PAYLOAD_HASH.selector);
-        layerzeroImplementation.retryMessage(101, srcAddressOP, 2, invalidPayload);
+        lzImplOP.retryMessage(101, srcAddressOP, 2, invalidPayload);
 
-        vm.expectEmit(false, false, false, true, getContract(ETH, "CoreStateRegistry"));
+        vm.expectEmit(false, false, false, true, getContract(OP, "CoreStateRegistry"));
         emit PayloadReceived(ETH, OP, 1);
-        layerzeroImplementation.retryMessage(101, srcAddressOP, 2, payload);
+        lzImplOP.retryMessage(101, srcAddressOP, 2, payload);
     }
 
     function test_revert_broadcastPayload_invalidCaller() public {
@@ -288,19 +290,20 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.selectFork(FORKS[OP]);
 
-        vm.expectRevert(Error.CALLER_NOT_ENDPOINT.selector);
+        LayerzeroImplementation lzImplOP = LayerzeroImplementation(payable(getContract(OP, "LayerzeroImplementation")));
 
+        vm.expectRevert(Error.CALLER_NOT_ENDPOINT.selector);
         vm.prank(bond);
-        layerzeroImplementation.lzReceive(101, srcAddressOP, 2, payload);
+        lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
 
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
         vm.prank(LZ_ENDPOINT_OP);
-        layerzeroImplementation.lzReceive(101, srcAddressOP, 2, payload);
+        lzImplOP.lzReceive(101, srcAddressOP, 2, payload);
 
         vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
         vm.prank(LZ_ENDPOINT_OP);
         /// @dev NOTE the use of 111 (OP's lz_chainId as srcChainId on OP) instead of 101 (ETH's)
-        layerzeroImplementation.lzReceive(111, srcAddressOP, 2, payload);
+        lzImplOP.lzReceive(111, srcAddressOP, 2, payload);
     }
 
     function test_revert_nonblockingLzReceive_invalidCaller() public {
@@ -334,6 +337,9 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function _resetCoreStateRegistry(uint256 forkId, bool isReset) internal {
         vm.selectFork(forkId);
+
+        SuperRegistry superRegistryOP = SuperRegistry(getContract(OP, "SuperRegistry"));
+
         vm.prank(deployer);
 
         uint8[] memory registryId_ = new uint8[](1);
@@ -341,7 +347,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         address[] memory registryAddress_ = new address[](1);
         registryAddress_[0] = isReset ? getContract(OP, "CoreStateRegistry") : address(1);
-        superRegistry.setStateRegistryAddress(registryId_, registryAddress_);
+        superRegistryOP.setStateRegistryAddress(registryId_, registryAddress_);
     }
 
     function _setupBroadcastPayloadAMBData(

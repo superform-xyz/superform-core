@@ -67,7 +67,7 @@ struct SetupVars {
     address lifiValidator;
     address kycDao4626Form;
     address PayloadHelper;
-    address feeHelper;
+    address paymentHelper;
 }
 
 abstract contract AbstractDeploySingle is Script {
@@ -385,8 +385,8 @@ abstract contract AbstractDeploySingle is Script {
         registryIds[3] = 4;
 
         /// @dev 3.5.2- deploy Fee Helper
-        vars.feeHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.feeHelper;
+        vars.paymentHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.paymentHelper;
 
         SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
         /// @dev 4.1- deploy Layerzero Implementation
@@ -558,7 +558,7 @@ abstract contract AbstractDeploySingle is Script {
                 /// deposit gas cost: 70000
                 /// withdraw gas cost: 80000
                 /// default gas price: 50 Gwei
-                PaymentHelper(payable(vars.feeHelper)).addChain(
+                PaymentHelper(payable(vars.paymentHelper)).addChain(
                     vars.dstChainId,
                     address(0),
                     PRICE_FEEDS[vars.chainId][vars.dstChainId],
@@ -573,13 +573,13 @@ abstract contract AbstractDeploySingle is Script {
                 /// ack gas cost: 40000
                 /// two step form cost: 50000
                 /// default gas price: 50 Gwei
-                PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(
+                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(
                     2,
                     abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                 );
-                PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(40000));
-                PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50000));
-                PaymentHelper(payable(vars.feeHelper)).setSameChainConfig(3, abi.encode(50 * 10 ** 9 wei));
+                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(40000));
+                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(50000));
+                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(50 * 10 ** 9 wei));
             }
         }
         vm.stopBroadcast();

@@ -116,10 +116,6 @@ interface ISuperRBAC {
     /// @notice send extraData_ as bytes(0) if no broadcasting is required
     function revokeMinterStateRegistryRole(address minterStateRegistry_, bytes memory extraData_) external payable;
 
-    /// @dev allows sync of global roles from different chains
-    /// @notice will not work for all roles
-    function stateSync(bytes memory data_) external;
-
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/

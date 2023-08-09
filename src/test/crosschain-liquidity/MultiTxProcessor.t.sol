@@ -125,7 +125,7 @@ contract MultiTxProcessorTest is BaseSetup {
                 1, /// request id
                 0,
                 underlyingToken_,
-                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_])
+                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingToken_)
             );
 
             /// @dev empty bridge request
@@ -133,7 +133,7 @@ contract MultiTxProcessorTest is BaseSetup {
                 0, /// id
                 0,
                 underlyingToken_,
-                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_])
+                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingToken_)
             );
 
             userRequest = ISocketRegistry.UserRequest(
@@ -155,7 +155,7 @@ contract MultiTxProcessorTest is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_]),
+                abi.encode(from_, FORKS[toChainId_], underlyingToken_),
                 false // arbitrary
             );
 

@@ -46,6 +46,7 @@ struct StagesLocalVars {
     address lzEndpoint_0;
     address[] lzEndpoints_1;
     address[] underlyingSrcToken;
+    address[] underlyingDstToken;
     address payable fromSrc;
     address[] toDst;
     uint256[] targetSuperformIds;
@@ -121,7 +122,7 @@ struct SetupVars {
     address factoryStateRegistry;
     address coreStateRegistry;
     address PayloadHelper;
-    address feeHelper;
+    address paymentHelper;
     address twoStepsFormStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
@@ -160,6 +161,7 @@ struct SingleVaultCallDataArgs {
     address externalToken;
     address toDst;
     address underlyingToken;
+    address underlyingTokenDst;
     uint256 superFormId;
     uint256 amount;
     uint8 liqBridge;
@@ -179,6 +181,7 @@ struct MultiVaultCallDataArgs {
     address externalToken;
     address[] toDst;
     address[] underlyingTokens;
+    address[] underlyingTokensDst;
     uint256[] superFormIds;
     uint256[] amounts;
     uint8[] liqBridges;
