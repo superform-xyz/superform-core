@@ -79,40 +79,6 @@ contract SuperformERC4626FormTest is BaseSetup {
         assertEq(symbol, "SUP-Mock");
     }
 
-    /// @dev Test Yield Token Decimals
-    function test_superformYieldTokenDecimals() public {
-        vm.startPrank(deployer);
-
-        vm.selectFork(FORKS[chainId]);
-
-        address superRegistry = getContract(chainId, "SuperRegistry");
-
-        /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
-        uint32 formBeaconId = 0;
-
-        /// @dev Vaults For The Superforms
-        MockERC20 asset = new MockERC20("Mock ERC20 Token", "Mock", address(this), uint256(1000));
-        VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
-
-        // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
-
-        /// @dev Creating superform using formBeaconId and vault
-        (, address superFormCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
-
-        uint256 decimals = ERC4626Form(payable(superFormCreated)).superformYieldTokenDecimals();
-
-        assertEq(decimals, 18);
-    }
-
     function test_superformVaultSharesAmountToUnderlyingAmount() public {
         vm.startPrank(deployer);
 
@@ -178,39 +144,6 @@ contract SuperformERC4626FormTest is BaseSetup {
         uint256 withdrawableAssets = ERC4626Form(payable(superFormCreated)).getPreviewPricePerVaultShare();
 
         assertEq(withdrawableAssets, 1000000000000000000);
-    }
-
-    function test_superformVaultConvertPricePerVaultShare() public {
-        vm.startPrank(deployer);
-
-        vm.selectFork(FORKS[chainId]);
-
-        address superRegistry = getContract(chainId, "SuperRegistry");
-
-        /// @dev Deploying Forms
-        address formImplementation = address(new ERC4626Form(superRegistry));
-        uint32 formBeaconId = 0;
-
-        /// @dev Vaults For The Superforms
-        MockERC20 asset = new MockERC20("Mock ERC20 Token", "Mock", address(this), uint256(1000));
-        VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
-
-        // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
-
-        /// @dev Creating superform using formBeaconId and vault
-        (, address superFormCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
-
-        uint256 priceVaultShare = ERC4626Form(payable(superFormCreated)).getConvertPricePerVaultShare();
-
-        assertEq(priceVaultShare, 1000000000000000000);
     }
 
     function test_superformVaultTotalAssets() public {

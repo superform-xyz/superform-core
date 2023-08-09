@@ -54,12 +54,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
-    function getConvertPricePerVaultShare() public view virtual override returns (uint256) {
-        uint256 vaultDecimals = IERC4626(vault).decimals();
-        return IERC4626(vault).convertToAssets(10 ** vaultDecimals);
-    }
-
-    /// @inheritdoc BaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256) {
         uint256 vaultDecimals = IERC4626(vault).decimals();
         return IERC4626(vault).previewRedeem(10 ** vaultDecimals);
@@ -297,11 +291,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     /// @inheritdoc BaseForm
     function superformYieldTokenSymbol() external view virtual override returns (string memory) {
         return string(abi.encodePacked("SUP-", IERC20Metadata(vault).symbol()));
-    }
-
-    /// @inheritdoc BaseForm
-    function superformYieldTokenDecimals() external view virtual override returns (uint256 underlyingDecimals) {
-        return IERC20Metadata(vault).decimals();
     }
 
     /*///////////////////////////////////////////////////////////////
