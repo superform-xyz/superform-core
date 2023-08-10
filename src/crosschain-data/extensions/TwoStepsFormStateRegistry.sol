@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
+import {IBridgeValidator} from "../../interfaces/IBridgeValidator.sol";
 import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {IERC4626TimelockForm} from "../../forms/interfaces/IERC4626TimelockForm.sol";
@@ -10,6 +11,7 @@ import {Error} from "../../utils/Error.sol";
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState, TimeLockStatus, TimeLockPayload} from "../../types/DataTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
+import {PayloadUpdaterLib} from "../../libraries/PayloadUpdaterLib.sol";
 
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
@@ -78,9 +80,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @inheritdoc ITwoStepsFormStateRegistry
     function finalizePayload(
         uint256 timeLockPayloadId_,
+        bytes memory txData_,
         bytes memory ambOverride_
     ) external payable override onlyProcessor returns (bytes memory returnMessage) {
         TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
+
         if (p.status != TimeLockStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -91,9 +95,26 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
         /// @dev set status here to prevent re-entrancy
         p.status = TimeLockStatus.PROCESSED;
-        (address superForm, , ) = p.data.superFormId.getSuperform();
+        (address superform, , ) = p.data.superFormId.getSuperform();
 
-        IERC4626TimelockForm form = IERC4626TimelockForm(superForm);
+        if (txData_.length > 0) {
+            PayloadUpdaterLib.validateLiqReq(p.data.liqData);
+
+            /// @dev validate the incoming tx data
+            IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId)).validateTxData(
+                txData_,
+                superRegistry.chainId(),
+                p.srcChainId,
+                false,
+                superform,
+                p.srcSender,
+                p.data.liqData.token
+            );
+
+            p.data.liqData.txData = txData_;
+        }
+
+        IERC4626TimelockForm form = IERC4626TimelockForm(superform);
         try form.withdrawAfterCoolDown(p.data.amount, p) {} catch {
             /// @dev dispatch acknowledgement to mint shares back || mint shares back
             if (p.isXChain == 1) {

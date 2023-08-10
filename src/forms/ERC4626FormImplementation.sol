@@ -260,6 +260,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
         uint256 len = singleVaultData_.liqData.txData.length;
+
+        /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
+        if (singleVaultData_.liqData.token != address(0) && len == 0) {
+            revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
+        }
+
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = singleVaultData_.superFormId.getSuperform();
 

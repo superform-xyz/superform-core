@@ -17,10 +17,12 @@ interface ITwoStepsFormStateRegistry {
     ) external;
 
     /// @notice Form Keeper finalizes payload to process Timelock withdraw fully
-    /// @param payloadId is the id of the payload to finalize
+    /// @param payloadId_ is the id of the payload to finalize
+    /// @param txData_ is the off-chain generated transaction data
     /// @param ackExtraData_ is the AMBMessage data to send back to the source stateSync with request to re-mint SuperPositions
     function finalizePayload(
-        uint256 payloadId,
+        uint256 payloadId_,
+        bytes memory txData_,
         bytes memory ackExtraData_
     ) external payable returns (bytes memory returnMessage);
 

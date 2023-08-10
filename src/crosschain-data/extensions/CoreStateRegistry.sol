@@ -479,11 +479,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
             (address superForm_, , ) = singleVaultData.superFormId.getSuperform();
 
-            /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
-            if (singleVaultData.liqData.token != address(0) && singleVaultData.liqData.txData.length == 0) {
-                revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
-            }
-
             try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
                 /// @dev marks the indexes that don't require a callback re-mint of SuperPositions (successful withdraws)
                 multiVaultData.amounts[i] = 0;
@@ -605,11 +600,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
         DataLib.validateSuperformChainId(singleVaultData.superFormId, superRegistry.chainId());
-
-        /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
-        if (singleVaultData.liqData.token != address(0) && singleVaultData.liqData.txData.length == 0) {
-            revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
-        }
 
         (address superForm_, , ) = singleVaultData.superFormId.getSuperform();
 
