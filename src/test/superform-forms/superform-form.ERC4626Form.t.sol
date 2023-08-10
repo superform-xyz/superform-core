@@ -478,6 +478,31 @@ contract SuperformERC4626FormTest is BaseSetup {
         IBaseForm(superForm).xChainWithdrawFromVault(data, deployer, ARBI);
     }
 
+    function test_revert_baseForm_notSuperRegistry() public {
+        vm.startPrank(deployer);
+
+        vm.selectFork(FORKS[chainId]);
+
+        address superRegistry = getContract(chainId, "SuperRegistry");
+        SuperformFactory superformFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
+
+        /// @dev Deploying Form with incorrect SuperRegistry
+        address formImplementation = address(new ERC4626Form(address(0x1)));
+        uint32 formBeaconId = 0;
+
+        /// @dev Vaults For The Superforms
+        MockERC20 asset = new MockERC20("Mock ERC20 Token", "Mock", address(this), uint256(1000));
+        VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
+
+        /// @dev Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
+        superformFactory.addFormBeacon(formImplementation, formBeaconId, salt);
+
+        /// @dev should revert as superRegistry coming from SuperformFactory does not
+        /// match the one set in the ERC4626Form
+        vm.expectRevert(Error.NOT_SUPER_REGISTRY.selector);
+        superformFactory.createSuperform(formBeaconId, address(vault));
+    }
+
     /*///////////////////////////////////////////////////////////////
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
