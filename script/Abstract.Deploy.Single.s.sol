@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-import {Transmuter} from "ERC1155A/transmuter/Transmuter.sol";
 import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
 
 /// @dev Protocol imports
@@ -29,8 +28,8 @@ import {IInterchainGasPaymaster} from "../src/vendor/hyperlane/IInterchainGasPay
 import {TwoStepsFormStateRegistry} from "../src/crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
 import {PayloadHelper} from "../src/crosschain-data/utils/PayloadHelper.sol";
 import {PaymentHelper} from "../src/crosschain-data/utils/PaymentHelper.sol";
-import {QuorumManager} from "../src/crosschain-data/utils/QuorumManager.sol";
 import {PayMaster} from "../src/PayMaster.sol";
+import {SuperTransmuter} from "../src/SuperTransmuter.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -99,7 +98,7 @@ abstract contract AbstractDeploySingle is Script {
         "MultiTxProcessor",
         "SuperRegistry",
         "SuperRBAC",
-        "Transmuter",
+        "SuperTransmuter",
         "PayloadHelper",
         "PaymentHelper",
         "PayMaster"
@@ -474,8 +473,8 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
-        contracts[vars.chainId][bytes32(bytes("Transmuter"))] = address(
-            new Transmuter{salt: salt}(IERC1155A(vars.superPositions))
+        contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] = address(
+            new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry)
         );
 
         /// @dev 12 - Deploy Payload Helper

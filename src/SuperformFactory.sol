@@ -51,7 +51,6 @@ contract SuperformFactory is ISuperformFactory {
         _;
     }
 
-    /// @dev sets caller as the admin of the contract.
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);

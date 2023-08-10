@@ -8,7 +8,6 @@ import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {Transmuter} from "ERC1155A/transmuter/Transmuter.sol";
 import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
 
 /// @dev test utils & mocks
@@ -55,7 +54,7 @@ import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
 import {TwoStepsFormStateRegistry} from "../../crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
 import {PayloadHelper} from "../../crosschain-data/utils/PayloadHelper.sol";
 import {PaymentHelper} from "../../crosschain-data/utils/PaymentHelper.sol";
-import {QuorumManager} from "../../crosschain-data/utils/QuorumManager.sol";
+import {SuperTransmuter} from "../../SuperTransmuter.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 import "../../types/DataTypes.sol";
 import "./TestTypes.sol";
@@ -561,8 +560,8 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
-            contracts[vars.chainId][bytes32(bytes("Transmuter"))] = address(
-                new Transmuter{salt: salt}(IERC1155A(vars.superPositions))
+            contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] = address(
+                new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry)
             );
 
             /// @dev 13- deploy Payload Helper
