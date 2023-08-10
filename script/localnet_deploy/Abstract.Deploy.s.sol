@@ -2,18 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {PositionsSplitter} from "ERC1155s/splitter/PositionsSplitter.sol";
 import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
 
 /// @dev Protocol imports
-import {IBaseStateRegistry} from "../../src/interfaces/IBaseStateRegistry.sol";
 import {CoreStateRegistry} from "../../src/crosschain-data/extensions/CoreStateRegistry.sol";
 import {RolesStateRegistry} from "../../src/crosschain-data/extensions/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "../../src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import {ISuperformRouter} from "../../src/interfaces/ISuperformRouter.sol";
 import {ISuperformFactory} from "../../src/interfaces/ISuperformFactory.sol";
-import {IBaseForm} from "../../src/interfaces/IBaseForm.sol";
 import {SuperformRouter} from "../../src/SuperformRouter.sol";
 import {SuperRegistry} from "../../src/settings/SuperRegistry.sol";
 import {SuperRBAC} from "../../src/settings/SuperRBAC.sol";
@@ -30,8 +26,11 @@ import {HyperlaneImplementation} from "../../src/crosschain-data/adapters/hyperl
 import {CelerImplementation} from "../../src/crosschain-data/adapters/celer/CelerImplementation.sol";
 import {IMailbox} from "../../src/vendor/hyperlane/IMailbox.sol";
 import {IInterchainGasPaymaster} from "../../src/vendor/hyperlane/IInterchainGasPaymaster.sol";
-import {IMessageBus} from "../../src/vendor/celer/IMessageBus.sol";
 import {TwoStepsFormStateRegistry} from "../../src/crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
+import {PayloadHelper} from "../../src/crosschain-data/utils/PayloadHelper.sol";
+import {PaymentHelper} from "../../src/crosschain-data/utils/PaymentHelper.sol";
+import {QuorumManager} from "../../src/crosschain-data/utils/QuorumManager.sol";
+import {PayMaster} from "../../src/PayMaster.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -68,6 +67,9 @@ struct SetupVars {
     address socketValidator;
     address lifiValidator;
     address kycDao4626Form;
+    address PayloadHelper;
+    address paymentHelper;
+    address payMaster;
 }
 
 abstract contract AbstractDeploy is Script {
@@ -78,7 +80,7 @@ abstract contract AbstractDeploy is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[19] public contractNames = [
+    string[22] public contractNames = [
         "CoreStateRegistry",
         "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
@@ -97,10 +99,13 @@ abstract contract AbstractDeploy is Script {
         "MultiTxProcessor",
         "SuperRegistry",
         "SuperRBAC",
-        "PositionsSplitter"
+        "PositionsSplitter",
+        "PayloadHelper",
+        "PaymentHelper",
+        "PayMaster"
     ];
 
-    bytes32 constant salt = "SUPERFORM69";
+    bytes32 constant salt = "SUPERFORM_4RD_TEST";
 
     enum Chains {
         Ethereum,
