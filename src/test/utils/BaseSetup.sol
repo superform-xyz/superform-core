@@ -298,15 +298,18 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev salt unique to each chain
             salt = keccak256(abi.encodePacked("SUPERFORM_ON_CHAIN", vars.chainId));
 
+            /// @dev first 4 chains have the same salt. This allows us to test a create2 deployment both with chains with same addresses and others without
             if (i < 4) {
                 salt = keccak256(abi.encodePacked("SUPERFORM_ON_CHAIN"));
             }
 
             vm.selectFork(vars.fork);
 
+            /// @dev preference for a local deployment of Permit2 over mainnet version. Has same bytcode
             vars.canonicalPermit2 = address(new Permit2Clone{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("CanonicalPermit2"))] = vars.canonicalPermit2;
 
+            /// @dev 1 - Pigeon helpers allow us to fullfill cross-chain messages in a manner as close to mainnet as possible
             /// @dev 1.1- deploy LZ Helper from Pigeon
             vars.lzHelper = address(new LayerZeroHelper{salt: salt}());
             vm.allowCheatcodes(vars.lzHelper);
@@ -388,7 +391,7 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
             SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
 
-            /// @dev 4.4- deploy Roles State Registry
+            /// @dev 4.4- deploy Roles State Registry. NOTE: RolesStateRegistry has no use for the time being (usage is disabled)
             vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
 
             contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
@@ -443,7 +446,8 @@ abstract contract BaseSetup is DSTest, Test {
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
             vars.ambAddresses[2] = vars.celerImplementation;
 
-            /// @dev 7.1 deploy SocketRouterMock and LiFiRouterMock
+            /// @dev 7.1 deploy SocketRouterMock and LiFiRouterMock. These mocks are very minimal versions to allow liquidity bridge testing
+            /// @dev they do not resemble near mainnet conditions
             vars.socketRouter = address(new SocketRouterMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("SocketRouterMock"))] = vars.socketRouter;
             vm.allowCheatcodes(vars.socketRouter);
@@ -459,6 +463,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
+            /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
             vars.kycDAOMock = address(new KYCDaoNFTMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
 
@@ -468,7 +473,6 @@ abstract contract BaseSetup is DSTest, Test {
             bridgeValidators.push(vars.lifiValidator);
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
-            /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
                     new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, milionTokensE18)
@@ -478,6 +482,7 @@ abstract contract BaseSetup is DSTest, Test {
             uint256 vaultId = 0;
             bytes memory bytecodeWithArgs;
 
+            /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
             for (uint32 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 IERC4626[][] memory doubleVaults = new IERC4626[][](UNDERLYING_TOKENS.length);
 
@@ -537,7 +542,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
-            /// @dev 10 - Add newly deployed form  implementation to Factory, formBeaconId 1
+            /// @dev 10 - Add newly deployed form implementations to Factory
             ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
 
             ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
@@ -545,14 +550,16 @@ abstract contract BaseSetup is DSTest, Test {
             ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
             /// @dev 11 - Deploy SuperformRouter
-            vars.superRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superRouter;
+            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
-            SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
-            SuperRBAC(vars.superRBAC).grantMinterRole(vars.superRouter);
-            SuperRBAC(vars.superRBAC).grantBurnerRole(vars.superRouter);
+            SuperRegistry(vars.superRegistry).setSuperRouter(vars.superformRouter);
 
-            /// @dev 12 - Deploy SuperPositions
+            /// @dev grant extra roles to superformRouter
+            SuperRBAC(vars.superRBAC).grantMinterRole(vars.superformRouter);
+            SuperRBAC(vars.superRBAC).grantBurnerRole(vars.superformRouter);
+
+            /// @dev 12 - Deploy SuperPositions and SuperTransmuter
             vars.superPositions = address(
                 new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry)
             );
@@ -593,7 +600,7 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
             /// @dev 17 Setup extra RBAC
-            SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
+            SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superformRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
             /// FIXME: check if this is safe in all aspects
@@ -615,8 +622,8 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
 
-            /// @dev Set all trusted remotes for each chain & configure amb chains ids
-            /// @dev Set message quorum for all chain ids (as 1)
+            /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1 and setup PaymentHelper
+            /// @dev has to be performed after all main contracts have been deployed on all chains
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (vars.chainId != chainIds[j]) {
                     vars.dstChainId = chainIds[j];
@@ -690,7 +697,6 @@ abstract contract BaseSetup is DSTest, Test {
             }
         }
 
-        /// @dev 18 - create superforms when the whole state registry is configured
         for (uint256 i = 0; i < chainIds.length; i++) {
             vm.selectFork(FORKS[chainIds[i]]);
 
@@ -707,6 +713,7 @@ abstract contract BaseSetup is DSTest, Test {
                     );
                 }
             }
+            /// @dev 18 - create test superforms when the whole state registry is configured
 
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
@@ -715,14 +722,14 @@ abstract contract BaseSetup is DSTest, Test {
                     for (uint256 l = 0; l < lenBytecodes; l++) {
                         address vault = address(vaults[chainIds[i]][FORM_BEACON_IDS[j]][k][l]);
 
-                        uint256 superFormId;
-                        (superFormId, vars.superForm) = ISuperformFactory(
+                        uint256 superformId;
+                        (superformId, vars.superform) = ISuperformFactory(
                             contracts[chainIds[i]][bytes32(bytes("SuperformFactory"))]
                         ).createSuperform(FORM_BEACON_IDS[j], vault);
 
                         if (FORM_BEACON_IDS[j] == 3) {
-                            /// mint a kycDAO Nft to superForm on polygon
-                            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(vars.superForm);
+                            /// mint a kycDAO Nft to the newly kycDAO superform
+                            KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(vars.superform);
                         }
 
                         contracts[chainIds[i]][
@@ -736,12 +743,12 @@ abstract contract BaseSetup is DSTest, Test {
                                     )
                                 )
                             )
-                        ] = vars.superForm;
+                        ] = vars.superform;
                     }
                 }
             }
 
-            /// mint a kycDAO Nft to a few users
+            /// mint a kycDAO Nft to the test users in all chains
             KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[0]);
             KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[1]);
             KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
@@ -755,6 +762,7 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     function _preDeploymentSetup() private {
+        /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 16742187);
         forks[BSC] = vm.createFork(BSC_RPC_URL, 26121321);
@@ -796,7 +804,7 @@ abstract contract BaseSetup is DSTest, Test {
             celerChainIdsStorage[chainIds[i]] = celer_chainIds[i];
         }
 
-        /// price feeds on all chains
+        /// price feeds on all chains, for paymentHelper
         mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;
 
         /// ETH
@@ -887,6 +895,7 @@ abstract contract BaseSetup is DSTest, Test {
         vaultBytecodes2[3].vaultBytecode.push(type(kycDAO4626RevertWithdraw).creationCode);
         vaultBytecodes2[3].vaultKinds.push("kycDAO4626RevertWithdraw");
 
+        /// @dev populate VAULT_NAMES state arg with tokenNames + vaultKinds names
         string[] memory underlyingTokens = UNDERLYING_TOKENS;
         for (uint256 i = 0; i < VAULT_KINDS.length; i++) {
             for (uint256 j = 0; j < underlyingTokens.length; j++) {
@@ -971,10 +980,10 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev will sync the broadcasted factory payloads
-    function _processFactoryPayloads(uint256 superFormsToProcess_) private {
+    function _processFactoryPayloads(uint256 superformsToProcess_) private {
         for (uint256 j = 0; j < chainIds.length; j++) {
             vm.selectFork(FORKS[chainIds[j]]);
-            for (uint256 k = 1; k < superFormsToProcess_; k++) {
+            for (uint256 k = 1; k < superformsToProcess_; k++) {
                 FactoryStateRegistry(payable(getContract(chainIds[j], "FactoryStateRegistry"))).processPayload(k, "");
             }
         }
@@ -1055,6 +1064,7 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev Estimates the gas fees and gas params
+    /// @dev TODO - Sujith to comment further
     function _getAmbParamsAndFees(
         uint64[] memory dstChainIds,
         uint8[] memory selectedAmbIds,
@@ -1074,7 +1084,7 @@ abstract contract BaseSetup is DSTest, Test {
             bytes memory ambData = abi.encode(
                 InitSingleVaultData(
                     2 ** 256 - 1, /// @dev uses max payload id
-                    singleSuperformsData[i].superFormId,
+                    singleSuperformsData[i].superformId,
                     singleSuperformsData[i].amount,
                     singleSuperformsData[i].maxSlippage,
                     singleSuperformsData[i].liqRequest,
@@ -1088,7 +1098,7 @@ abstract contract BaseSetup is DSTest, Test {
             bytes memory ambData = abi.encode(
                 InitMultiVaultData(
                     2 ** 256 - 1, /// @dev uses max payload id
-                    multiSuperformsData[i].superFormIds,
+                    multiSuperformsData[i].superformIds,
                     multiSuperformsData[i].amounts,
                     multiSuperformsData[i].maxSlippages,
                     multiSuperformsData[i].liqRequests,
@@ -1113,6 +1123,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev Generates the extraData for each amb
+    /// @dev TODO - Sujith to comment further
     function _generateExtraData(uint8[] memory selectedAmbIds) internal pure returns (bytes[] memory) {
         bytes[] memory ambParams = new bytes[](selectedAmbIds.length);
 
@@ -1132,6 +1143,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev Generates the amb params for the entire action
+    /// @dev TODO - Sujith to comment further
     function _generateAmbParamsAndFeesPerDst(
         uint64 dstChainId,
         uint8[] memory selectedAmbIds,
@@ -1165,6 +1177,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev Generates the acknowledgement amb params for the entire action
+    /// @dev TODO - Sujith to comment further
     function _generateAckGasFeesAndParams(
         uint64 srcChainId,
         uint64 dstChainId,
@@ -1183,12 +1196,12 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (, , , , uint256[] memory amounts, , uint256[] memory superFormIds, ) = vars.payloadHelper.decodeDstPayload(
+        (, , , , uint256[] memory amounts, , uint256[] memory superformIds, ) = vars.payloadHelper.decodeDstPayload(
             payloadId
         );
 
         vars.message = abi.encode(
-            AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, superFormIds, amounts)))
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, superformIds, amounts)))
         );
 
         address _paymentHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
@@ -1207,6 +1220,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev Generates the acknowledgement amb params for the entire action
+    /// @dev TODO - Sujith to comment further
     function _generateAckGasFeesAndParamsForTimeLock(
         bytes memory chainIds_,
         uint8[] memory selectedAmbIds,
@@ -1228,12 +1242,12 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[vars.dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (, , uint256 payloadId, uint256 superFormId, uint256 amount) = vars.payloadHelper.decodeTimeLockPayload(
+        (, , uint256 payloadId, uint256 superformId, uint256 amount) = vars.payloadHelper.decodeTimeLockPayload(
             timelockPayloadId
         );
 
         vars.message = abi.encode(
-            AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superFormId, amount)))
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount)))
         );
 
         (vars.totalFees, gasPerAMB) = vars.paymentHelper.estimateAMBFees(

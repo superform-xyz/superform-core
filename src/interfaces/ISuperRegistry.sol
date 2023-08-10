@@ -28,10 +28,10 @@ interface ISuperRegistry {
     );
 
     /// @dev is emitted when the super router address is set.
-    event SuperRouterUpdated(address indexed oldSuperRouter, address indexed superRouter);
+    event SuperRouterUpdated(address indexed oldSuperRouter, address indexed superformRouter);
 
     /// @dev is emitted when the superform factory address is set.
-    event SuperformFactoryUpdated(address indexed oldSuperformFactory, address indexed superFormFactory);
+    event SuperformFactoryUpdated(address indexed oldSuperformFactory, address indexed superformFactory);
 
     /// @dev is emitted when the core state registry address is set for src chain.
     event CoreStateRegistryUpdated(address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
@@ -112,12 +112,12 @@ interface ISuperRegistry {
     function setNewProtocolAddressCrossChain(bytes32 protocolAddressId_, address newAddress_, uint64 chainId_) external;
 
     /// @dev sets the super router address.
-    /// @param superRouter_ the address of the super router
-    function setSuperRouter(address superRouter_) external;
+    /// @param superformRouter_ the address of the super router
+    function setSuperRouter(address superformRouter_) external;
 
     /// @dev sets the superform factory address.
-    /// @param superFormFactory_ the address of the superform factory
-    function setSuperformFactory(address superFormFactory_) external;
+    /// @param superformFactory_ the address of the superform factory
+    function setSuperformFactory(address superformFactory_) external;
 
     /// @dev sets the superform paymaster address.
     /// @param payMaster_ the address of the paymaster contract
@@ -253,12 +253,12 @@ interface ISuperRegistry {
     function getProtocolAddressCrossChain(bytes32 protocolAddressId_, uint64 chainId_) external view returns (address);
 
     /// @dev gets the super router address.
-    /// @return superRouter_ the address of the super router
-    function superRouter() external view returns (address superRouter_);
+    /// @return superformRouter_ the address of the super router
+    function superformRouter() external view returns (address superformRouter_);
 
     /// @dev gets the superform factory address.
-    /// @return superFormFactory_ the address of the superform factory
-    function superFormFactory() external view returns (address superFormFactory_);
+    /// @return superformFactory_ the address of the superform factory
+    function superformFactory() external view returns (address superformFactory_);
 
     /// @dev gets the core state registry address.
     /// @return coreStateRegistry_ the address of the core state registry

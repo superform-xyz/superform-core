@@ -38,14 +38,14 @@ contract SuperformERC4626FormTest is BaseSetup {
         );
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superFormCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
+        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
             formBeaconId,
             address(vault)
         );
 
         uint256 vaultShareAmount = 100;
 
-        uint256 shareAmount = ERC4626FormExternal(payable(superFormCreated)).vaultSharesAmountToUnderlyingAmount(
+        uint256 shareAmount = ERC4626FormExternal(payable(superformCreated)).vaultSharesAmountToUnderlyingAmount(
             vaultShareAmount
         );
 
@@ -76,14 +76,14 @@ contract SuperformERC4626FormTest is BaseSetup {
         );
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superFormCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
+        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
             formBeaconId,
             address(vault)
         );
 
         uint256 vaultShareAmount = 100;
 
-        uint256 shareAmount = ERC4626FormExternal(payable(superFormCreated))
+        uint256 shareAmount = ERC4626FormExternal(payable(superformCreated))
             .vaultSharesAmountToUnderlyingAmountRoundingUp(vaultShareAmount);
 
         assertEq(vaultShareAmount, shareAmount);
@@ -113,14 +113,14 @@ contract SuperformERC4626FormTest is BaseSetup {
         );
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superFormCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
+        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
             formBeaconId,
             address(vault)
         );
 
         uint256 vaultShareAmount = 100;
 
-        uint256 shareAmount = ERC4626FormExternal(payable(superFormCreated)).underlyingAmountToVaultSharesAmount(
+        uint256 shareAmount = ERC4626FormExternal(payable(superformCreated)).underlyingAmountToVaultSharesAmount(
             vaultShareAmount
         );
 

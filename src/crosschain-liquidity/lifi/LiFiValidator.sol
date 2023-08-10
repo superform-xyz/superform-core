@@ -32,7 +32,7 @@ contract LiFiValidator is BridgeValidator {
         uint64 srcChainId_,
         uint64 dstChainId_,
         bool deposit_,
-        address superForm_,
+        address superform_,
         address srcSender_,
         address liqDataToken_
     ) external view override {
@@ -54,7 +54,7 @@ contract LiFiValidator is BridgeValidator {
             if (srcChainId_ == dstChainId_) {
                 /// @dev If same chain deposits then receiver address must be the superform
 
-                if (bridgeData.receiver != superForm_) revert Error.INVALID_TXDATA_RECEIVER();
+                if (bridgeData.receiver != superform_) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
                 /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry or MultiTxProcessor
                 if (

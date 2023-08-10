@@ -88,19 +88,19 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setSuperRouter(address superRouter_) external override onlyCaller {
+    function setSuperRouter(address superformRouter_) external override onlyCaller {
         address oldSuperRouter = protocolAddresses[SUPER_ROUTER];
-        protocolAddresses[SUPER_ROUTER] = superRouter_;
+        protocolAddresses[SUPER_ROUTER] = superformRouter_;
 
-        emit SuperRouterUpdated(oldSuperRouter, superRouter_);
+        emit SuperRouterUpdated(oldSuperRouter, superformRouter_);
     }
 
     /// @inheritdoc ISuperRegistry
-    function setSuperformFactory(address superFormFactory_) external override onlyCaller {
+    function setSuperformFactory(address superformFactory_) external override onlyCaller {
         address oldSuperformFactory = protocolAddresses[SUPERFORM_FACTORY];
-        protocolAddresses[SUPERFORM_FACTORY] = superFormFactory_;
+        protocolAddresses[SUPERFORM_FACTORY] = superformFactory_;
 
-        emit SuperformFactoryUpdated(oldSuperformFactory, superFormFactory_);
+        emit SuperformFactoryUpdated(oldSuperformFactory, superformFactory_);
     }
 
     /// @inheritdoc ISuperRegistry
@@ -277,13 +277,13 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function superRouter() external view override returns (address superRouter_) {
-        superRouter_ = protocolAddresses[SUPER_ROUTER];
+    function superformRouter() external view override returns (address superformRouter_) {
+        superformRouter_ = protocolAddresses[SUPER_ROUTER];
     }
 
     /// @inheritdoc ISuperRegistry
-    function superFormFactory() external view override returns (address superFormFactory_) {
-        superFormFactory_ = protocolAddresses[SUPERFORM_FACTORY];
+    function superformFactory() external view override returns (address superformFactory_) {
+        superformFactory_ = protocolAddresses[SUPERFORM_FACTORY];
     }
 
     /// @inheritdoc ISuperRegistry

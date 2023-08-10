@@ -12,6 +12,7 @@ import {Error} from "./utils/Error.sol";
 
 /// @title SuperTransmuter
 /// @author Zeropoint Labs.
+/// @notice This contract inherits from ERC1155A transmuter, changing the way transmuters are registered to only require a superformId. Metadata is fetched from underlying vault
 contract SuperTransmuter is ISuperTransmuter, Transmuter {
     using DataLib for uint256;
 
@@ -27,23 +28,22 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter {
     }
 
     /// @inheritdoc ISuperTransmuter
-    function registerTransmuter(uint256 superFormId) external override returns (address) {
-        (address superForm, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superFormId);
+    function registerTransmuter(uint256 superformId) external override returns (address) {
+        (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId);
 
-        if (superForm == address(0)) revert Error.NOT_SUPERFORM();
+        if (superform == address(0)) revert Error.NOT_SUPERFORM();
         if (formBeaconId == 0) revert Error.FORM_DOES_NOT_EXIST();
-        if (chainId != superRegistry.chainId()) revert Error.INVALID_CHAIN_ID();
-        if (synthethicTokenId[superFormId] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
+        if (synthethicTokenId[superformId] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
 
         address syntheticToken = address(
             new sERC20(
-                string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superForm).superformYieldTokenName())),
-                string(abi.encodePacked("sERC20-", IBaseForm(superForm).superformYieldTokenSymbol())),
-                uint8(IBaseForm(superForm).getVaultDecimals())
+                string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName())),
+                string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol())),
+                uint8(IBaseForm(superform).getVaultDecimals())
             )
         );
-        synthethicTokenId[superFormId] = syntheticToken;
+        synthethicTokenId[superformId] = syntheticToken;
 
-        return synthethicTokenId[superFormId];
+        return synthethicTokenId[superformId];
     }
 }

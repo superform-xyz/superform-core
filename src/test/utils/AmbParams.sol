@@ -4,6 +4,7 @@ import {AMBExtraData, BroadCastAMBExtraData} from "../../types/DataTypes.sol";
 pragma solidity 0.8.19;
 
 function generateBroadcastParams(uint256 dstCount, uint256 ambCount) pure returns (bytes memory) {
+    /// @dev TODO - Sujith to comment
     uint8[] memory ambIds = new uint8[](ambCount);
     ambIds[0] = 1;
     ambIds[1] = 2;

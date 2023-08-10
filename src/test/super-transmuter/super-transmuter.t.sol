@@ -30,11 +30,11 @@ contract SuperTransmuterTest is BaseSetup {
     }
 
     function test_registerTransmuter() public {
-        (uint256 superFormId, ) = SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(
+        (uint256 superformId, ) = SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(
             formBeaconId,
             vault
         );
-        superTransmuter.registerTransmuter(superFormId);
+        superTransmuter.registerTransmuter(superformId);
     }
 
     function test_InvalidSuperFormAddress() public {
@@ -49,20 +49,14 @@ contract SuperTransmuterTest is BaseSetup {
         superTransmuter.registerTransmuter(invalidSuperFormId);
     }
 
-    function test_InvalidChainId() public {
-        uint256 invalidSuperFormId = DataLib.packSuperform(address(0x777), 4, OP);
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        superTransmuter.registerTransmuter(invalidSuperFormId);
-    }
-
     function test_alreadyRegistered() public {
-        (uint256 superFormId, ) = SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(
+        (uint256 superformId, ) = SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(
             formBeaconId,
             vault
         );
-        superTransmuter.registerTransmuter(superFormId);
+        superTransmuter.registerTransmuter(superformId);
         vm.expectRevert(Transmuter.TRANSMUTER_ALREADY_REGISTERED.selector);
 
-        superTransmuter.registerTransmuter(superFormId);
+        superTransmuter.registerTransmuter(superformId);
     }
 }

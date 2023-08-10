@@ -29,7 +29,7 @@ contract SocketValidator is BridgeValidator {
         uint64 srcChainId_,
         uint64 dstChainId_,
         bool deposit_,
-        address superForm_,
+        address superform_,
         address srcSender_,
         address liqDataToken_
     ) external view override {
@@ -42,7 +42,7 @@ contract SocketValidator is BridgeValidator {
         if (deposit_) {
             if (srcChainId_ == dstChainId_) {
                 /// @dev If same chain deposits then receiver address must be the superform
-                if (userRequest.receiverAddress != superForm_) revert Error.INVALID_TXDATA_RECEIVER();
+                if (userRequest.receiverAddress != superform_) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
                 /// @dev if cross chain deposits, then receiver address must be the token bank
                 if (
