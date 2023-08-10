@@ -13,8 +13,8 @@ contract PayloadUpdaterLibUser {
         PayloadUpdaterLib.validateSlippage(a, b, c);
     }
 
-    function validatePayloadUpdate(uint256 a, PayloadState b, uint8 c) external pure {
-        PayloadUpdaterLib.validatePayloadUpdate(a, b, c);
+    function validateDepositPayloadUpdate(uint256 a, PayloadState b, uint8 c) external pure {
+        PayloadUpdaterLib.validateDepositPayloadUpdate(a, b, c);
     }
 }
 
@@ -41,7 +41,7 @@ contract PayloadUpdaterLibTest is Test {
         payloadUpdateLib.validateSlippage(newAmountBeyondSlippage, maxAmount, slippage);
     }
 
-    function test_validatePayloadUpdate() public {
+    function test_validateDepositPayloadUpdate() public {
         /// @dev payload updater goes rogue and tries to update amounts for withdraw transaction
         uint256 txInfo = DataLib.packTxInfo(
             uint8(TransactionType.WITHDRAW),
@@ -53,7 +53,7 @@ contract PayloadUpdaterLibTest is Test {
         );
 
         vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
-        payloadUpdateLib.validatePayloadUpdate(txInfo, PayloadState.STORED, 1);
+        payloadUpdateLib.validateDepositPayloadUpdate(txInfo, PayloadState.STORED, 1);
 
         /// @dev payload updater goes rogue and tries to update amounts for deposit return transaction
         uint256 txInfo2 = DataLib.packTxInfo(
@@ -66,7 +66,7 @@ contract PayloadUpdaterLibTest is Test {
         );
 
         vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
-        payloadUpdateLib.validatePayloadUpdate(txInfo2, PayloadState.STORED, 1);
+        payloadUpdateLib.validateDepositPayloadUpdate(txInfo2, PayloadState.STORED, 1);
 
         /// @dev payload updater goes rogue and tries to update amounts for failed withdraw transaction
         uint256 txInfo3 = DataLib.packTxInfo(
@@ -79,7 +79,7 @@ contract PayloadUpdaterLibTest is Test {
         );
 
         vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
-        payloadUpdateLib.validatePayloadUpdate(txInfo3, PayloadState.STORED, 1);
+        payloadUpdateLib.validateDepositPayloadUpdate(txInfo3, PayloadState.STORED, 1);
 
         /// @dev payload updater goes rogue and tries to update amounts for crafted type
         uint256 txInfo4 = DataLib.packTxInfo(
@@ -92,7 +92,7 @@ contract PayloadUpdaterLibTest is Test {
         );
 
         vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
-        payloadUpdateLib.validatePayloadUpdate(txInfo4, PayloadState.STORED, 1);
+        payloadUpdateLib.validateDepositPayloadUpdate(txInfo4, PayloadState.STORED, 1);
 
         /// @dev payload updater goes rogue and tries to update amounts for crafted type
         uint256 txInfo5 = DataLib.packTxInfo(
@@ -105,10 +105,10 @@ contract PayloadUpdaterLibTest is Test {
         );
 
         vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
-        payloadUpdateLib.validatePayloadUpdate(txInfo5, PayloadState.STORED, 1);
+        payloadUpdateLib.validateDepositPayloadUpdate(txInfo5, PayloadState.STORED, 1);
     }
 
-    function test_validatePayloadUpdateForAlreadyUpdatedPayload() public {
+    function test_validateDepositPayloadUpdateForAlreadyUpdatedPayload() public {
         /// @dev payload updater goes rogue and tries to update already updated payload
         uint256 txInfo = DataLib.packTxInfo(
             uint8(TransactionType.DEPOSIT),
@@ -120,10 +120,10 @@ contract PayloadUpdaterLibTest is Test {
         );
 
         vm.expectRevert(Error.PAYLOAD_ALREADY_UPDATED.selector);
-        payloadUpdateLib.validatePayloadUpdate(txInfo, PayloadState.UPDATED, 1);
+        payloadUpdateLib.validateDepositPayloadUpdate(txInfo, PayloadState.UPDATED, 1);
     }
 
-    function test_validatePayloadUpdateForAlreadyProcessedPayload() public {
+    function test_validateDepositPayloadUpdateForAlreadyProcessedPayload() public {
         /// @dev payload updater goes rogue and tries to update already updated payload
         uint256 txInfo = DataLib.packTxInfo(
             uint8(TransactionType.DEPOSIT),
@@ -135,10 +135,10 @@ contract PayloadUpdaterLibTest is Test {
         );
 
         vm.expectRevert(Error.PAYLOAD_ALREADY_UPDATED.selector);
-        payloadUpdateLib.validatePayloadUpdate(txInfo, PayloadState.PROCESSED, 1);
+        payloadUpdateLib.validateDepositPayloadUpdate(txInfo, PayloadState.PROCESSED, 1);
     }
 
-    function test_validatePayloadUpdateForIsMultiMismatch() public {
+    function test_validateDepositPayloadUpdateForIsMultiMismatch() public {
         /// @dev payload updater goes rogue and tries to update already updated payload
         uint256 txInfo = DataLib.packTxInfo(
             uint8(TransactionType.DEPOSIT),
@@ -150,6 +150,6 @@ contract PayloadUpdaterLibTest is Test {
         );
 
         vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
-        payloadUpdateLib.validatePayloadUpdate(txInfo, PayloadState.STORED, 1);
+        payloadUpdateLib.validateDepositPayloadUpdate(txInfo, PayloadState.STORED, 1);
     }
 }

@@ -131,6 +131,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// NOTE: does not exist in timeless implementation
     function getTotalAssets() public view virtual returns (uint256);
 
+    /// @notice returns the state registry id
+    function getStateRegistryId() external view virtual returns (uint256);
+
     /// @notice get the total amount of assets received if shares are actually redeemed
     /// @notice https://eips.ethereum.org/EIPS/eip-4626
     function getPreviewPricePerVaultShare() public view virtual returns (uint256);

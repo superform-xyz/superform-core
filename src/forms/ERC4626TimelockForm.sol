@@ -30,7 +30,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_) {}
+    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 4) {}
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
@@ -46,6 +46,12 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
         LiqRequest memory liqData = p_.data.liqData;
         uint256 len1 = liqData.txData.length;
+
+        /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
+        if (liqData.token != address(0) && len1 == 0) {
+            revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
+        }
+
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
         address receiver = len1 == 0 ? p_.srcSender : address(this);
 

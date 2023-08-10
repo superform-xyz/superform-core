@@ -38,6 +38,8 @@ contract SXSVWNormal4626NativeSlippageL1AMB23 is ProtocolActions {
         LIQ_BRIDGES[OP][0] = [1];
         LIQ_BRIDGES[OP][1] = [1];
 
+        GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

@@ -135,14 +135,17 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         return vault;
     }
 
-    // @inheritdoc IBaseForm
+    /// @inheritdoc IBaseForm
     function getPricePerVaultShare() public view virtual override returns (uint256);
 
-    // @inheritdoc IBaseForm
+    /// @inheritdoc IBaseForm
     function getVaultShareBalance() public view virtual override returns (uint256);
 
-    // @inheritdoc IBaseForm
+    /// @inheritdoc IBaseForm
     function getTotalAssets() public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function getStateRegistryId() external view virtual override returns (uint256);
 
     // @inheritdoc IBaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256);

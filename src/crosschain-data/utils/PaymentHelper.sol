@@ -217,7 +217,7 @@ contract PaymentHelper is IPaymentHelper {
             srcAmount += ambFees;
 
             /// @dev step 2: estimate if swap costs are involved
-            totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequests);
+            if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequests);
 
             /// @dev step 3: estimate update cost (only for deposit)
             if (isDeposit)
@@ -271,7 +271,8 @@ contract PaymentHelper is IPaymentHelper {
             srcAmount += ambFees;
 
             /// @dev step 2: estimate if swap costs are involved
-            totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequest.castToArray());
+            if (isDeposit)
+                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superFormsData[i].liqRequest.castToArray());
 
             /// @dev step 3: estimate update cost (only for deposit)
             if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
@@ -314,7 +315,7 @@ contract PaymentHelper is IPaymentHelper {
         srcAmount += ambFees;
 
         /// @dev step 2: estimate if swap costs are involved
-        totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormsData.liqRequests);
+        if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormsData.liqRequests);
 
         /// @dev step 3: estimate update cost (only for deposit)
         if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, req_.superFormsData.superFormIds.length);
@@ -351,7 +352,7 @@ contract PaymentHelper is IPaymentHelper {
         srcAmount += ambFees;
 
         /// @dev step 2: estimate if swap costs are involved
-        totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormData.liqRequest.castToArray());
+        if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superFormData.liqRequest.castToArray());
 
         /// @dev step 3: estimate update cost (only for deposit)
         if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
