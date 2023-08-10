@@ -46,6 +46,7 @@ contract PaymentHelper is IPaymentHelper {
     AggregatorV3Interface public srcNativeFeedOracle;
     AggregatorV3Interface public srcGasPriceOracle;
 
+    uint256 public srcNativePrice;
     uint256 public srcGasPrice;
     uint256 public ackNativeGasCost;
     uint256 public twoStepFeeCost;
@@ -57,6 +58,7 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasForUpdate) public updateGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public depositGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
+    mapping(uint64 chainId => uint256 defaultNativePrice) public dstNativePrice;
     mapping(uint64 chainId => uint256 defaultGasPrice) public dstGasPrice;
     mapping(uint64 chainId => uint256 gasPerKB) public dstGasPerKB;
 
@@ -83,14 +85,14 @@ contract PaymentHelper is IPaymentHelper {
 
     /// @inheritdoc IPaymentHelper
     function setSameChainConfig(uint256 configType_, bytes memory config_) external override onlyProtocolAdmin {
-        /// Type 1: GAS PRICE ORACLE
+        /// Type 1: NATIVE TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
-            srcGasPriceOracle = AggregatorV3Interface(abi.decode(config_, (address)));
+            srcNativeFeedOracle = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
-        /// Type 2: NATIVE TOKEN PRICE FEED ORACLE
+        /// Type 2: GAS PRICE ORACLE
         if (configType_ == 2) {
-            srcNativeFeedOracle = AggregatorV3Interface(abi.decode(config_, (address)));
+            srcGasPriceOracle = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
         /// Type 3: ACKNOWLEDGEMENT GAS COST PER VAULT
@@ -103,8 +105,13 @@ contract PaymentHelper is IPaymentHelper {
             twoStepFeeCost = abi.decode(config_, (uint256));
         }
 
-        /// Type 5: GAS PRICE
+        /// Type 5: NATIVE PRICE
         if (configType_ == 5) {
+            srcNativePrice = abi.decode(config_, (uint256));
+        }
+
+        /// Type 6: GAS PRICE
+        if (configType_ == 6) {
             srcGasPrice = abi.decode(config_, (uint256));
         }
     }
@@ -112,22 +119,24 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function addChain(
         uint64 chainId_,
-        address dstGasPriceOracle_,
         address dstNativeFeedOracle_,
+        address dstGasPriceOracle_,
         uint256 swapGasUsed_,
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
         uint256 withdrawGasUsed_,
+        uint256 defaultNativePrice_,
         uint256 defaultGasPrice_,
         uint256 dstGasPerKB_
     ) external override onlyProtocolAdmin {
-        dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
         dstNativeFeedOracle[chainId_] = AggregatorV3Interface(dstNativeFeedOracle_);
+        dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
 
         swapGasUsed[chainId_] = swapGasUsed_;
         updateGasUsed[chainId_] = updateGasUsed_;
         depositGasUsed[chainId_] = depositGasUsed_;
         withdrawGasUsed[chainId_] = withdrawGasUsed_;
+        dstNativePrice[chainId_] = defaultNativePrice_;
         dstGasPrice[chainId_] = defaultGasPrice_;
         dstGasPerKB[chainId_] = dstGasPerKB_;
     }
@@ -138,14 +147,14 @@ contract PaymentHelper is IPaymentHelper {
         uint256 configType_,
         bytes memory config_
     ) external override onlyProtocolAdmin {
-        /// Type 1: DST GAS PRICE ORACLE
+        /// Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
-            dstGasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            dstNativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
-        /// Type 2: DST TOKEN PRICE FEED ORACLE
+        /// Type 2: DST GAS PRICE ORACLE
         if (configType_ == 2) {
-            dstNativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            dstGasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
         /// Type 3: SWAP GAS COST PER TX FOR MULTI-TX
@@ -168,13 +177,18 @@ contract PaymentHelper is IPaymentHelper {
             withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 6: GAS PRICE
-        if (configType_ == 6) {
+        /// Type 7: NATIVE PRICE
+        if (configType_ == 7) {
+            dstNativePrice[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// Type 8: GAS PRICE
+        if (configType_ == 8) {
             dstGasPrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 7: GAS PRICE PER KB of Message
-        if (configType_ == 7) {
+        /// Type 9: GAS PRICE PER KB of Message
+        if (configType_ == 9) {
             dstGasPerKB[chainId_] = abi.decode(config_, (uint256));
         }
     }
@@ -687,7 +701,7 @@ contract PaymentHelper is IPaymentHelper {
                 return uint256(srcTokenPrice);
             }
 
-            return 0;
+            return srcNativePrice;
         }
 
         if (address(dstGasPriceOracle[chainId_]) != address(0)) {
@@ -695,6 +709,6 @@ contract PaymentHelper is IPaymentHelper {
             return uint256(dstTokenPrice);
         }
 
-        return 0;
+        return dstNativePrice[chainId_];
     }
 }
