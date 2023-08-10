@@ -21,6 +21,9 @@ library Error {
     /// @dev thrown when msg.sender is not form
     error NOT_SUPERFORM();
 
+    /// @dev thrown when msg.sender is not two step form
+    error NOT_TWO_STEP_SUPERFORM();
+
     /// @dev thrown when msg.sender is not factory state registry
     error NOT_VALID_STATE_REGISTRY();
 

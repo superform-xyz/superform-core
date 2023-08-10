@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import {IBaseform} from "../../interfaces/IBaseform.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IBridgeValidator} from "../../interfaces/IBridgeValidator.sol";
 import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
@@ -38,6 +39,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     modifier onlyForm(uint256 superFormId) {
         (address superForm, , ) = superFormId.getSuperform();
         if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
+        if (IBaseform(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this)))
+            revert Error.NOT_TWO_STEP_SUPERFORM();
         _;
     }
 
