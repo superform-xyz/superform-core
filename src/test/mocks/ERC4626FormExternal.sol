@@ -11,7 +11,7 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_) {}
+    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 1) {}
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
@@ -52,22 +52,15 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
     }
 
     /// @dev Wrapping Internal Functions
-
-    function vaultSharesAmountToUnderlyingAmount(
-        uint256 vaultSharesAmount_
-    ) view public returns (uint256) {
+    function vaultSharesAmountToUnderlyingAmount(uint256 vaultSharesAmount_) public view returns (uint256) {
         return _vaultSharesAmountToUnderlyingAmount(vaultSharesAmount_, 0);
     }
 
-    function vaultSharesAmountToUnderlyingAmountRoundingUp(
-        uint256 vaultSharesAmount_
-    ) public view returns (uint256) {
+    function vaultSharesAmountToUnderlyingAmountRoundingUp(uint256 vaultSharesAmount_) public view returns (uint256) {
         return _vaultSharesAmountToUnderlyingAmountRoundingUp(vaultSharesAmount_, 0);
     }
 
-    function underlyingAmountToVaultSharesAmount(
-        uint256 underlyingAmount_
-    ) public view returns (uint256) {
+    function underlyingAmountToVaultSharesAmount(uint256 underlyingAmount_) public view returns (uint256) {
         return _underlyingAmountToVaultSharesAmount(underlyingAmount_, 0);
     }
 }

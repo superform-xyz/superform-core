@@ -19,10 +19,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
 
+    uint256 internal immutable STATE_REGISTRY_ID;
+
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) BaseForm(superRegistry_) {}
+    constructor(address superRegistry_, uint256 stateRegistryId_) BaseForm(superRegistry_) {
+        STATE_REGISTRY_ID = stateRegistryId_;
+    }
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
@@ -324,6 +328,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     /// @inheritdoc BaseForm
     function superformYieldTokenSymbol() external view virtual override returns (string memory) {
         return string(abi.encodePacked("SUP-", IERC20Metadata(vault).symbol()));
+    }
+
+    /// @inheritdoc BaseForm
+    function getStateRegistryId() external view override returns (uint256) {
+        return STATE_REGISTRY_ID;
     }
 
     /*///////////////////////////////////////////////////////////////

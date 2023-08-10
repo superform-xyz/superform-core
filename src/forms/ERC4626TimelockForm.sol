@@ -30,7 +30,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_) {}
+    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 4) {}
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS

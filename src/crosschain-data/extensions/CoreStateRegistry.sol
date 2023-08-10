@@ -209,18 +209,21 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             if (txData_[i].length != 0 && multiVaultData.liqData[i].txData.length == 0) {
                 (address superform, , ) = multiVaultData.superFormIds[i].getSuperform();
 
-                PayloadUpdaterLib.validateLiqReq(multiVaultData.liqData[i]);
-                IBridgeValidator(superRegistry.getBridgeValidator(multiVaultData.liqData[i].bridgeId)).validateTxData(
-                    txData_[i],
-                    v_.dstChainId,
-                    v_.srcChainId,
-                    false,
-                    superform,
-                    v_.srcSender,
-                    multiVaultData.liqData[i].token
-                );
+                if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
+                    PayloadUpdaterLib.validateLiqReq(multiVaultData.liqData[i]);
+                    IBridgeValidator(superRegistry.getBridgeValidator(multiVaultData.liqData[i].bridgeId))
+                        .validateTxData(
+                            txData_[i],
+                            v_.dstChainId,
+                            v_.srcChainId,
+                            false,
+                            superform,
+                            v_.srcSender,
+                            multiVaultData.liqData[i].token
+                        );
 
-                multiVaultData.liqData[i].txData = txData_[i];
+                    multiVaultData.liqData[i].txData = txData_[i];
+                }
             }
 
             unchecked {

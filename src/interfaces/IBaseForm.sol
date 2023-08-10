@@ -106,6 +106,9 @@ interface IBaseForm is IERC165Upgradeable {
     /// @notice https://eips.ethereum.org/EIPS/eip-4626
     function getPreviewPricePerVaultShare() external view returns (uint256);
 
+    /// @notice get the state registry id
+    function getStateRegistryId() external view returns (uint256);
+
     /// @dev API may need to know state of funds deployed
     function previewDepositTo(uint256 assets_) external view returns (uint256);
 
