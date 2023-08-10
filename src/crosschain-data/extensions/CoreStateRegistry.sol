@@ -259,6 +259,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         v_.previousPayloadHeader_ = payloadHeader[payloadId_];
         InitSingleVaultData memory singleVaultData = abi.decode(v_.previousPayloadBody_, (InitSingleVaultData));
 
+        (address superform, , ) = singleVaultData.superFormId.getSuperform();
+
+        if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
+            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
         v_.previousPayloadProof_ = keccak256(
             abi.encode(AMBMessage(v_.previousPayloadHeader_, v_.previousPayloadBody_))
         );
@@ -272,8 +278,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         PayloadUpdaterLib.validateWithdrawPayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 0);
         PayloadUpdaterLib.validateLiqReq(singleVaultData.liqData);
 
-        (address superform, , ) = singleVaultData.superFormId.getSuperform();
-
         IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData.liqData.bridgeId)).validateTxData(
             txData_,
             superRegistry.chainId(),
@@ -284,9 +288,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             singleVaultData.liqData.token
         );
 
-        delete messageQuorum[v_.previousPayloadProof_];
-
         singleVaultData.liqData.txData = txData_;
+
+        delete messageQuorum[v_.previousPayloadProof_];
 
         payloadBody[payloadId_] = abi.encode(singleVaultData);
 

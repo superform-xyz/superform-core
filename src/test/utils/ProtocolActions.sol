@@ -971,10 +971,15 @@ abstract contract ProtocolActions is BaseSetup {
                     }
                     console.log("grabbing logs");
 
-                    if (GENERATE_WITHDRAW_TX_DATA_ON_DST)
-                        action.multiVaults
-                            ? _updateMultiVaultWithdrawPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId)
-                            : _updateSingleVaultWithdrawPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId);
+                    if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
+                        if (action.multiVaults) {
+                            _updateMultiVaultWithdrawPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId);
+                        } else {
+                            if (countTimelocked[i] == 0) {
+                                _updateSingleVaultWithdrawPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId);
+                            }
+                        }
+                    }
 
                     vm.recordLogs();
                     /// note: this is high-lvl processPayload function, even if this happens outside of the user view
@@ -1109,7 +1114,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                         returnMessages[i] = twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
                             currentUnlockId - j + 1,
-                            bytes(""),
+                            GENERATE_WITHDRAW_TX_DATA_ON_DST ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][0] : bytes(""),
                             ackAmbParams
                         );
                     }

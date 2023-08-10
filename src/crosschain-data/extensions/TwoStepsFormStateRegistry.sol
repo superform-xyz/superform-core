@@ -39,7 +39,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     modifier onlyForm(uint256 superFormId) {
         (address superForm, , ) = superFormId.getSuperform();
         if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
-        if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this)))
+        if (IBaseForm(superForm).getStateRegistryId() != superRegistry.getStateRegistryId(address(this)))
             revert Error.NOT_TWO_STEP_SUPERFORM();
         _;
     }
