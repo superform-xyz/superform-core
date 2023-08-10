@@ -8,8 +8,8 @@ import {LayerZeroHelper} from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import {HyperlaneHelper} from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import {CelerHelper} from "pigeon/src/celer/CelerHelper.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {PositionsSplitter} from "ERC1155s/splitter/PositionsSplitter.sol";
-import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
+import {Transmuter} from "ERC1155A/transmuter/Transmuter.sol";
+import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
 
 /// @dev test utils & mocks
 import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
@@ -561,8 +561,8 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
-            contracts[vars.chainId][bytes32(bytes("PositionsSplitter"))] = address(
-                new PositionsSplitter{salt: salt}(IERC1155s(vars.superPositions))
+            contracts[vars.chainId][bytes32(bytes("Transmuter"))] = address(
+                new Transmuter{salt: salt}(IERC1155A(vars.superPositions))
             );
 
             /// @dev 13- deploy Payload Helper

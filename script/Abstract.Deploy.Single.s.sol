@@ -2,8 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-import {PositionsSplitter} from "ERC1155s/splitter/PositionsSplitter.sol";
-import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
+import {Transmuter} from "ERC1155A/transmuter/Transmuter.sol";
+import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
 
 /// @dev Protocol imports
 import {CoreStateRegistry} from "../src/crosschain-data/extensions/CoreStateRegistry.sol";
@@ -99,7 +99,7 @@ abstract contract AbstractDeploySingle is Script {
         "MultiTxProcessor",
         "SuperRegistry",
         "SuperRBAC",
-        "PositionsSplitter",
+        "Transmuter",
         "PayloadHelper",
         "PaymentHelper",
         "PayMaster"
@@ -474,8 +474,8 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
-        contracts[vars.chainId][bytes32(bytes("PositionsSplitter"))] = address(
-            new PositionsSplitter{salt: salt}(IERC1155s(vars.superPositions))
+        contracts[vars.chainId][bytes32(bytes("Transmuter"))] = address(
+            new Transmuter{salt: salt}(IERC1155A(vars.superPositions))
         );
 
         /// @dev 12 - Deploy Payload Helper
