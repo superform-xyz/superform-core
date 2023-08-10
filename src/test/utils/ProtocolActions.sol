@@ -57,6 +57,8 @@ abstract contract ProtocolActions is BaseSetup {
 
     mapping(uint64 chainId => UniqueDSTInfo info) public usedDSTs;
 
+    mapping(uint64 chainId => mapping(uint256 timelockId => uint256 index)) public timeLockedIndexes;
+
     mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYINGS;
 
     mapping(uint64 chainId => mapping(uint256 action => uint256[] vaultIds)) public TARGET_VAULTS;
@@ -287,6 +289,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             delete countTimelocked[i];
+            delete TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]];
         }
     }
 
@@ -1114,7 +1117,9 @@ abstract contract ProtocolActions is BaseSetup {
 
                         returnMessages[i] = twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
                             currentUnlockId - j + 1,
-                            GENERATE_WITHDRAW_TX_DATA_ON_DST ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][0] : bytes(""),
+                            GENERATE_WITHDRAW_TX_DATA_ON_DST
+                                ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
+                                : bytes(""),
                             ackAmbParams
                         );
                     }
@@ -1540,6 +1545,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         for (uint256 j; j < vars.formKinds.length; j++) {
             if (vars.formKinds[j] == 1) ++countTimelocked[dst];
+            timeLockedIndexes[chain1][countTimelocked[dst]] = j;
         }
     }
 

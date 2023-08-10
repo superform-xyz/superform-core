@@ -71,6 +71,8 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [2, 2, 2, 2];
         LIQ_BRIDGES[AVAX][1] = [2, 2, 2, 2];
 
+        GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
