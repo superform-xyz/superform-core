@@ -179,6 +179,8 @@ abstract contract AbstractDeploy is Script {
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant FTM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
 
+    address public constant CHAINLINK_lzOracle = 0x150A58e9E6BF69ccEb1DBA5ae97C166DC8792539;
+
     IMailbox public constant HyperlaneMailbox = IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
     IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
         IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
@@ -245,6 +247,13 @@ abstract contract AbstractDeploy is Script {
     uint256 public constant milionTokensE18 = 1 ether;
 
     /*//////////////////////////////////////////////////////////////
+
+                        CHAINLINK VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    mapping(uint64 => mapping(uint64 => address)) public PRICE_FEEDS;
+
+    /*//////////////////////////////////////////////////////////////
                         KYC DAO VALIDITY VARIABLES
     //////////////////////////////////////////////////////////////*/
 
@@ -296,13 +305,7 @@ abstract contract AbstractDeploy is Script {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
-    function _setupStage1(
-        uint256 i,
-        Cycle cycle,
-        uint64[] memory s_superFormChainIds,
-        uint256[] memory s_llBridgeChainIds,
-        uint256 forkId
-    ) internal setEnvDeploy(cycle) {
+    function _setupStage1(uint256 i, Cycle cycle, uint256 forkId) internal setEnvDeploy(cycle) {
         SetupVars memory vars;
         /// @dev liquidity validator addresses
         address[] memory bridgeValidators = new address[](bridgeIds.length);
@@ -367,8 +370,6 @@ abstract contract AbstractDeploy is Script {
 
         SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
-        SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
-
         address[] memory registryAddresses = new address[](4);
         registryAddresses[0] = vars.coreStateRegistry;
         registryAddresses[1] = vars.factoryStateRegistry;
@@ -382,13 +383,22 @@ abstract contract AbstractDeploy is Script {
         registryIds[3] = 4;
 
         SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
-        /// @dev 4.1- deploy Layerzero Implementation
+        SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.coreStateRegistry);
+        SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.twoStepsFormStateRegistry);
+
+        /// @dev 4- deploy Payment Helper
+        vars.paymentHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.paymentHelper;
+
+        SuperRegistry(vars.superRegistry).setPaymentHelper(vars.paymentHelper);
+
+        /// @dev 5.1- deploy Layerzero Implementation
         vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
         contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
         LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
-        /// @dev 4.2- deploy Hyperlane Implementation
+        /// @dev 5.2- deploy Hyperlane Implementation
         vars.hyperlaneImplementation = address(
             new HyperlaneImplementation{salt: salt}(
                 HyperlaneMailbox,
@@ -398,7 +408,7 @@ abstract contract AbstractDeploy is Script {
         );
         contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
-        /// @dev 4.3 - deploy Celer Implementation
+        /// @dev 5.3 - deploy Celer Implementation
         vars.celerImplementation = address(new CelerImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
         contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
 
@@ -408,7 +418,7 @@ abstract contract AbstractDeploy is Script {
         vars.ambAddresses[1] = vars.hyperlaneImplementation;
         vars.ambAddresses[2] = vars.celerImplementation;
 
-        /// @dev 5- deploy socket validator
+        /// @dev 6- deploy socket validator
         vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
 
@@ -436,26 +446,28 @@ abstract contract AbstractDeploy is Script {
         vars.erc4626TimelockForm = address(new ERC4626TimelockForm{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
 
+        ///  KYCDao ERC4626 Form
+        vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
+
         /// @dev 8 - Add newly deployed form  implementation to Factory, formBeaconId 1
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
 
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
 
-        /// @dev 9 KYCDao ERC4626 Form (only for Polygon)
-        vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
-
         ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
-        /// @dev 10 - Deploy SuperformRouter
+        /// @dev 9 - Deploy SuperformRouter
 
         vars.superRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superRouter;
 
         SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
 
-        /// @dev 11 - Deploy SuperPositions & Positions Splitter
-        vars.superPositions = address(new SuperPositions{salt: salt}("test.com/", vars.superRegistry));
+        /// @dev 11 - Deploy SuperPositions
+        vars.superPositions = address(
+            new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry)
+        );
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
@@ -464,14 +476,25 @@ abstract contract AbstractDeploy is Script {
             new Transmuter{salt: salt}(IERC1155A(vars.superPositions))
         );
 
-        /// @dev 12 - Deploy MultiTx Processor
+        /// @dev 12 - Deploy Payload Helper
+        vars.PayloadHelper = address(
+            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superPositions, vars.twoStepsFormStateRegistry)
+        );
+        contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
+
+        /// @dev 13 - Deploy MultiTx Processor
         vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars.multiTxProcessor;
 
         SuperRegistry(vars.superRegistry).setMultiTxProcessor(vars.multiTxProcessor);
 
-        /// @dev 13 - Super Registry extra setters
+        /// @dev 14 - Deploy PayMaster
+        vars.payMaster = address(new PayMaster{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
 
+        SuperRegistry(vars.superRegistry).setPayMaster(vars.payMaster);
+
+        /// @dev 15 - Super Registry extra setters
         SuperRegistry(vars.superRegistry).setBridgeAddresses(
             bridgeIds,
             BRIDGE_ADDRESSES[vars.chainId],
@@ -481,8 +504,7 @@ abstract contract AbstractDeploy is Script {
         /// @dev configures lzImplementation and hyperlane to super registry
         SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
-        /// @dev 14 Setup extra RBAC
-
+        /// @dev 16 Setup extra RBAC
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
@@ -505,16 +527,14 @@ abstract contract AbstractDeploy is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
-        // 0x90a9D112fd9337C60C8404234dF1FeBa570f2a1E
 
         vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
-        // 0xff07dE9eb321Aa70CB41363fC47Fad6092F0eB43
 
         vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
-        // 0x24D1cF9E531d1636A83880c2aA9d60B0f613E2Ce
 
-        vars.factory = getContract(vars.chainId, "SuperformFactory");
-        // 0x211825BdD7D563d3E8d22260F51469C9bA3d6c9B
+        vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
+
+        vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
 
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < s_superFormChainIds.length; j++) {
@@ -525,18 +545,20 @@ abstract contract AbstractDeploy is Script {
                 vars.dstCelerChainId = celer_chainIds[j];
 
                 vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
-                // 0x90a9D112fd9337C60C8404234dF1FeBa570f2a1E
                 vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
-                // 0xff07dE9eb321Aa70CB41363fC47Fad6092F0eB43
-
                 vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
-                // 0x24D1cF9E531d1636A83880c2aA9d60B0f613E2Ce
 
                 LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                     vars.dstLzChainId,
                     abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                 );
                 LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
+                LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
+                    0, /// Defaults To Zero
+                    vars.dstLzChainId,
+                    6, /// For Oracle Config
+                    abi.encode(CHAINLINK_lzOracle)
+                );
 
                 HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
                     vars.dstHypChainId,
@@ -557,6 +579,35 @@ abstract contract AbstractDeploy is Script {
                     vars.dstChainId,
                     vars.dstCelerChainId
                 );
+                SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
+
+                /// swap gas cost: 50000
+                /// update gas cost: 40000
+                /// deposit gas cost: 70000
+                /// withdraw gas cost: 80000
+                /// default gas price: 50 Gwei
+                PaymentHelper(payable(vars.paymentHelper)).addChain(
+                    vars.dstChainId,
+                    address(0),
+                    PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                    50000,
+                    40000,
+                    70000,
+                    80000,
+                    50 * 10 ** 9 wei,
+                    10 wei
+                );
+            } else {
+                /// ack gas cost: 40000
+                /// two step form cost: 50000
+                /// default gas price: 50 Gwei
+                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(
+                    2,
+                    abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
+                );
+                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(40000));
+                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(50000));
+                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(50 * 10 ** 9 wei));
             }
         }
         vm.stopBroadcast();
@@ -648,6 +699,57 @@ abstract contract AbstractDeploy is Script {
             0xA7649aa944b7Dce781859C18913c2Dc8A97f03e4,
             0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
         ];
+
+        /// price feeds on all chains
+        mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;
+
+        /// ETH
+        priceFeeds[ETH][ETH] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][BSC] = 0x14e613AC84a31f709eadbdF89C6CC390fDc9540A;
+        priceFeeds[ETH][AVAX] = 0xFF3EEb22B5E3dE6e705b44749C2559d704923FD7;
+        priceFeeds[ETH][POLY] = 0x7bAC85A8a13A4BcD8abb3eB7d6b4d632c5a57676;
+        priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+
+        /// BSC
+        priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
+        priceFeeds[BSC][ETH] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        priceFeeds[BSC][AVAX] = address(0);
+        priceFeeds[BSC][POLY] = 0x7CA57b0cA6367191c94C8914d7Df09A57655905f;
+        priceFeeds[BSC][OP] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+
+        /// AVAX
+        priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
+        priceFeeds[AVAX][BSC] = address(0);
+        priceFeeds[AVAX][ETH] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        priceFeeds[AVAX][POLY] = address(0);
+        priceFeeds[AVAX][OP] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+
+        /// POLYGON
+        priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
+        priceFeeds[POLY][AVAX] = address(0);
+        priceFeeds[POLY][BSC] = 0x82a6c4AF830caa6c97bb504425f6A66165C2c26e;
+        priceFeeds[POLY][ETH] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        priceFeeds[POLY][OP] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+
+        /// OPTIMISM
+        priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][POLY] = address(0);
+        priceFeeds[OP][AVAX] = address(0);
+        priceFeeds[OP][BSC] = address(0);
+        priceFeeds[OP][ETH] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+
+        /// ARBITRUM
+        priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][OP] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        priceFeeds[ARBI][POLY] = 0x52099D4523531f678Dfc568a7B1e5038aadcE1d6;
+        priceFeeds[ARBI][AVAX] = address(0);
+        priceFeeds[ARBI][BSC] = address(0);
+        priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
     }
 
     function exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {

@@ -452,7 +452,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
-        /// @dev 8 - Add newly deployed form  implementation to Factory, formBeaconId 1
+        /// @dev 9 - Add newly deployed form  implementation to Factory, formBeaconId 1
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
 
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
@@ -497,7 +497,6 @@ abstract contract AbstractDeploySingle is Script {
         SuperRegistry(vars.superRegistry).setPayMaster(vars.payMaster);
 
         /// @dev 15 - Super Registry extra setters
-
         SuperRegistry(vars.superRegistry).setBridgeAddresses(
             bridgeIds,
             BRIDGE_ADDRESSES[vars.chainId],
@@ -508,7 +507,6 @@ abstract contract AbstractDeploySingle is Script {
         SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
         /// @dev 16 Setup extra RBAC
-
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
@@ -558,7 +556,7 @@ abstract contract AbstractDeploySingle is Script {
                     vars.dstCelerChainId
                 );
 
-                QuorumManager(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
+                SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
                 /// swap gas cost: 50000
                 /// update gas cost: 40000

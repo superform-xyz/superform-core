@@ -658,7 +658,7 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstCelerChainId
                     );
 
-                    QuorumManager(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
+                    SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
                     /// swap gas cost: 50000
                     /// update gas cost: 40000

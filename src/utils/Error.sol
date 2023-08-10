@@ -21,6 +21,9 @@ library Error {
     /// @dev thrown when msg.sender is not form
     error NOT_SUPERFORM();
 
+    /// @dev thrown when msg.sender is not two step form
+    error NOT_TWO_STEP_SUPERFORM();
+
     /// @dev thrown when msg.sender is not factory state registry
     error NOT_VALID_STATE_REGISTRY();
 
@@ -152,6 +155,9 @@ library Error {
     /// @dev thrown if payload is being updated with final amounts length different than amounts length
     error DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
 
+    /// @dev thrown if payload is being updated with tx data length different than liq data length
+    error DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
+
     /// @dev thrown if the amounts being sent in update payload mean a negative slippage
     error NEGATIVE_SLIPPAGE();
 
@@ -160,6 +166,12 @@ library Error {
 
     /// @dev thrown if payload is not in UPDATED state
     error PAYLOAD_NOT_UPDATED();
+
+    /// @dev thrown if withdrawal TX_DATA cannot be updated
+    error CANNOT_UPDATE_WITHDRAW_TX_DATA();
+
+    /// @dev thrown if withdrawal TX_DATA is not updated
+    error WITHDRAW_TX_DATA_NOT_UPDATED();
 
     /// @dev thrown if message hasn't reached the specified level of quorum needed
     error QUORUM_NOT_REACHED();

@@ -38,6 +38,8 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [2];
         LIQ_BRIDGES[ARBI][1] = [2];
 
+        GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

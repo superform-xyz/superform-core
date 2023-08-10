@@ -19,10 +19,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
     using DataLib for uint256;
 
+    uint256 internal immutable STATE_REGISTRY_ID;
+
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) BaseForm(superRegistry_) {}
+    constructor(address superRegistry_, uint256 stateRegistryId_) BaseForm(superRegistry_) {
+        STATE_REGISTRY_ID = stateRegistryId_;
+    }
 
     /*///////////////////////////////////////////////////////////////
                             VIEW/PURE OVERRIDES
@@ -260,6 +264,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
         uint256 len = singleVaultData_.liqData.txData.length;
+
+        /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
+        if (singleVaultData_.liqData.token != address(0) && len == 0) {
+            revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
+        }
+
         xChainWithdrawLocalVars memory vars;
         (, , vars.dstChainId) = singleVaultData_.superFormId.getSuperform();
 
@@ -318,6 +328,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     /// @inheritdoc BaseForm
     function superformYieldTokenSymbol() external view virtual override returns (string memory) {
         return string(abi.encodePacked("SUP-", IERC20Metadata(vault).symbol()));
+    }
+
+    /// @inheritdoc BaseForm
+    function getStateRegistryId() external view override returns (uint256) {
+        return STATE_REGISTRY_ID;
     }
 
     /*///////////////////////////////////////////////////////////////

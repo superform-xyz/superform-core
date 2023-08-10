@@ -57,7 +57,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    struct UpdatePayloadVars {
+    struct UpdateDepositPayloadVars {
         bytes32 previousPayloadProof_;
         bytes previousPayloadBody_;
         uint256 previousPayloadHeader_;
@@ -68,11 +68,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function updateMultiVaultPayload(
+    function updateMultiVaultDepositPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
-        UpdatePayloadVars memory v_;
+        UpdateDepositPayloadVars memory v_;
+
         /// @dev load header and body of payload
         v_.previousPayloadHeader_ = payloadHeader[payloadId_];
         v_.previousPayloadBody_ = payloadBody[payloadId_];
@@ -98,7 +99,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         }
 
         /// @dev validate payload update
-        PayloadUpdaterLib.validatePayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 1);
+        PayloadUpdaterLib.validateDepositPayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 1);
         PayloadUpdaterLib.validateSlippageArray(finalAmounts_, multiVaultData.amounts, multiVaultData.maxSlippage);
 
         multiVaultData.amounts = finalAmounts_;
@@ -120,12 +121,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function updateSingleVaultPayload(
+    function updateSingleVaultDepositPayload(
         uint256 payloadId_,
         uint256 finalAmount_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
         /// @dev load header and body of payload
-
         bytes memory previousPayloadBody_ = payloadBody[payloadId_];
         uint256 previousPayloadHeader_ = payloadHeader[payloadId_];
         InitSingleVaultData memory singleVaultData = abi.decode(previousPayloadBody_, (InitSingleVaultData));
@@ -138,7 +138,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         }
 
         /// @dev validate payload update
-        PayloadUpdaterLib.validatePayloadUpdate(previousPayloadHeader_, payloadTracking[payloadId_], 0);
+        PayloadUpdaterLib.validateDepositPayloadUpdate(previousPayloadHeader_, payloadTracking[payloadId_], 0);
         PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage);
 
         delete messageQuorum[previousPayloadProof_];
@@ -154,6 +154,152 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         payloadTracking[payloadId_] = PayloadState.UPDATED;
 
+        emit PayloadUpdated(payloadId_);
+    }
+
+    struct UpdateWithdrawPayloadVars {
+        bytes32 previousPayloadProof_;
+        bytes previousPayloadBody_;
+        uint256 previousPayloadHeader_;
+        InitSingleVaultData singleVaultData;
+        uint64 srcChainId;
+        uint64 dstChainId;
+        uint256 l1;
+        uint256 l2;
+        address srcSender;
+    }
+
+    /// @inheritdoc ICoreStateRegistry
+    function updateMultiVaultWithdrawPayload(
+        uint256 payloadId_,
+        bytes[] calldata txData_
+    ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
+        UpdateWithdrawPayloadVars memory v_;
+
+        /// @dev load header and body of payload
+        v_.previousPayloadHeader_ = payloadHeader[payloadId_];
+        v_.previousPayloadBody_ = payloadBody[payloadId_];
+
+        v_.previousPayloadProof_ = keccak256(
+            abi.encode(AMBMessage(v_.previousPayloadHeader_, v_.previousPayloadBody_))
+        );
+
+        InitMultiVaultData memory multiVaultData = abi.decode(v_.previousPayloadBody_, (InitMultiVaultData));
+
+        (, , , , v_.srcSender, v_.srcChainId) = v_.previousPayloadHeader_.decodeTxInfo();
+
+        if (messageQuorum[v_.previousPayloadProof_] < getRequiredMessagingQuorum(v_.srcChainId)) {
+            revert Error.QUORUM_NOT_REACHED();
+        }
+
+        v_.l1 = multiVaultData.liqData.length;
+        v_.l2 = txData_.length;
+
+        if (v_.l1 != v_.l2) {
+            revert Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
+        }
+
+        /// @dev validate payload update
+        PayloadUpdaterLib.validateWithdrawPayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 1);
+
+        v_.dstChainId = superRegistry.chainId();
+
+        /// @dev validates if the incoming update is valid
+        for (uint256 i; i < v_.l1; ) {
+            if (txData_[i].length != 0 && multiVaultData.liqData[i].txData.length == 0) {
+                (address superform, , ) = multiVaultData.superFormIds[i].getSuperform();
+
+                if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
+                    PayloadUpdaterLib.validateLiqReq(multiVaultData.liqData[i]);
+                    IBridgeValidator(superRegistry.getBridgeValidator(multiVaultData.liqData[i].bridgeId))
+                        .validateTxData(
+                            txData_[i],
+                            v_.dstChainId,
+                            v_.srcChainId,
+                            false,
+                            superform,
+                            v_.srcSender,
+                            multiVaultData.liqData[i].token
+                        );
+
+                    multiVaultData.liqData[i].txData = txData_[i];
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        /// @dev re-set previous message quorum to 0
+        delete messageQuorum[v_.previousPayloadProof_];
+
+        payloadBody[payloadId_] = abi.encode(multiVaultData);
+
+        /// @dev set new message quorum
+        messageQuorum[
+            keccak256(abi.encode(AMBMessage(v_.previousPayloadHeader_, payloadBody[payloadId_])))
+        ] = getRequiredMessagingQuorum(v_.srcChainId);
+
+        /// @dev define the payload status as updated
+        payloadTracking[payloadId_] = PayloadState.UPDATED;
+
+        emit PayloadUpdated(payloadId_);
+    }
+
+    /// @inheritdoc ICoreStateRegistry
+    function updateSingleVaultWithdrawPayload(
+        uint256 payloadId_,
+        bytes calldata txData_
+    ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
+        UpdateWithdrawPayloadVars memory v_;
+
+        /// @dev load header and body of the payload
+        v_.previousPayloadBody_ = payloadBody[payloadId_];
+        v_.previousPayloadHeader_ = payloadHeader[payloadId_];
+        InitSingleVaultData memory singleVaultData = abi.decode(v_.previousPayloadBody_, (InitSingleVaultData));
+
+        (address superform, , ) = singleVaultData.superFormId.getSuperform();
+
+        if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
+            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
+        v_.previousPayloadProof_ = keccak256(
+            abi.encode(AMBMessage(v_.previousPayloadHeader_, v_.previousPayloadBody_))
+        );
+
+        (, , , , v_.srcSender, v_.srcChainId) = v_.previousPayloadHeader_.decodeTxInfo();
+        if (messageQuorum[v_.previousPayloadProof_] < getRequiredMessagingQuorum(v_.srcChainId)) {
+            revert Error.QUORUM_NOT_REACHED();
+        }
+
+        /// @dev validate payload update
+        PayloadUpdaterLib.validateWithdrawPayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 0);
+        PayloadUpdaterLib.validateLiqReq(singleVaultData.liqData);
+
+        IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData.liqData.bridgeId)).validateTxData(
+            txData_,
+            superRegistry.chainId(),
+            v_.srcChainId,
+            false,
+            superform,
+            v_.srcSender,
+            singleVaultData.liqData.token
+        );
+
+        singleVaultData.liqData.txData = txData_;
+
+        delete messageQuorum[v_.previousPayloadProof_];
+
+        payloadBody[payloadId_] = abi.encode(singleVaultData);
+
+        /// @dev set new message quorum
+        messageQuorum[
+            keccak256(abi.encode(AMBMessage(v_.previousPayloadHeader_, payloadBody[payloadId_])))
+        ] = getRequiredMessagingQuorum(v_.srcChainId);
+
+        payloadTracking[payloadId_] = PayloadState.UPDATED;
         emit PayloadUpdated(payloadId_);
     }
 

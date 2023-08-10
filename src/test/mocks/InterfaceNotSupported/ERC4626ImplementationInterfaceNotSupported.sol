@@ -54,6 +54,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
+    function getStateRegistryId() external view virtual override returns (uint256) {}
+
+    /// @inheritdoc BaseForm
     function getPreviewPricePerVaultShare() public view virtual override returns (uint256) {
         uint256 vaultDecimals = IERC4626(vault).decimals();
         return IERC4626(vault).previewRedeem(10 ** vaultDecimals);

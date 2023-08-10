@@ -38,8 +38,8 @@ struct StagesLocalVars {
     SingleXChainMultiVaultStateReq singleDstMultiVaultStateReq;
     SingleXChainSingleVaultStateReq singleXChainSingleVaultStateReq;
     SingleDirectSingleVaultStateReq singleDirectSingleVaultStateReq;
-    UpdateMultiVaultPayloadArgs multiVaultsPayloadArg;
-    UpdateSingleVaultPayloadArgs singleVaultsPayloadArg;
+    updateMultiVaultDepositPayloadArgs multiVaultsPayloadArg;
+    updateSingleVaultDepositPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;
     address superFormT;
     address[] vaultMock;
@@ -225,7 +225,7 @@ struct BuildWithdrawCallDataArgs {
     uint64 toChainId;
 }
 
-struct UpdateMultiVaultPayloadArgs {
+struct updateMultiVaultDepositPayloadArgs {
     uint256 payloadId;
     uint256[] amounts;
     int256 slippage;
@@ -235,7 +235,7 @@ struct UpdateMultiVaultPayloadArgs {
     bytes32 revertRole;
 }
 
-struct UpdateSingleVaultPayloadArgs {
+struct updateSingleVaultDepositPayloadArgs {
     uint256 payloadId;
     uint256 amount;
     int256 slippage;
