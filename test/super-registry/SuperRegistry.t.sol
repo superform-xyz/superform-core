@@ -30,15 +30,27 @@ contract SuperRegistryTest is BaseSetup {
         vm.store(address(superRegistry), bytes32(uint256(0)), bytes32(uint256(0)));
         vm.store(address(superRegistry), bytes32(uint256(1)), bytes32(uint256(0)));
 
+        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.prank(bond);
+        superRegistry.setImmutables(ETH, getContract(ETH, "CanonicalPermit2"));
+
+        vm.expectRevert(Error.INVALID_INPUT_CHAIN_ID.selector);
+        vm.prank(deployer);
+        superRegistry.setImmutables(0, getContract(ETH, "CanonicalPermit2"));
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        vm.prank(deployer);
+        superRegistry.setImmutables(ETH, address(0));
+
         vm.prank(deployer);
         superRegistry.setImmutables(OP, getContract(OP, "CanonicalPermit2"));
 
         assertEq(superRegistry.chainId(), OP);
         assertEq(address(superRegistry.PERMIT2()), getContract(OP, "CanonicalPermit2"));
 
-        vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-        vm.prank(bond);
-        superRegistry.setImmutables(ETH, getContract(ETH, "CanonicalPermit2"));
+        vm.expectRevert(Error.DISABLED.selector);
+        vm.prank(deployer);
+        superRegistry.setImmutables(ETH, getContract(OP, "CanonicalPermit2"));
     }
 
     function test_setNewProtocolAddress() public {
@@ -224,6 +236,12 @@ contract SuperRegistryTest is BaseSetup {
         vm.startPrank(deployer);
         superRegistry.setStateRegistryAddress(registryId, registryAddress);
         assertEq(superRegistry.getStateRegistry(3), address(0x3));
+
+        registryAddress[1] = address(0);
+
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        vm.startPrank(deployer);
+        superRegistry.setStateRegistryAddress(registryId, registryAddress);
 
         registryAddress[1] = address(0);
 

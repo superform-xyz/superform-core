@@ -62,9 +62,9 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc ISuperRegistry
     function setImmutables(uint64 chainId_, address permit2_) external override onlyCaller {
-        if (chainId != 0) revert Error.DISABLED();
+        if (chainId != 0 || PERMIT2 != address(0)) revert Error.DISABLED();
         if (chainId_ == 0) revert Error.INVALID_INPUT_CHAIN_ID();
-        if (PERMIT2 != address(0)) revert Error.DISABLED();
+        if (permit2_ == address(0)) revert Error.ZERO_ADDRESS();
         chainId = chainId_;
         PERMIT2 = permit2_;
 
