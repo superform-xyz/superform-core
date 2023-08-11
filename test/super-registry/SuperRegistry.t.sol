@@ -7,7 +7,6 @@ import "../utils/Utilities.sol";
 import {ISuperformFactory} from "src/interfaces/ISuperformFactory.sol";
 import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
 import {SuperRegistry} from "src/settings/SuperRegistry.sol";
-import {RolesStateRegistry} from "src/crosschain-data/extensions/RolesStateRegistry.sol";
 import {Error} from "src/utils/Error.sol";
 
 contract SuperRegistryTest is BaseSetup {
@@ -116,6 +115,7 @@ contract SuperRegistryTest is BaseSetup {
         );
     }
 
+    /*
     function test_setRolesStateRegistry_and_revert_invalidCaller() public {
         _setAndAssert(
             superRegistry.setRolesStateRegistry.selector,
@@ -123,6 +123,7 @@ contract SuperRegistryTest is BaseSetup {
             address(0x1)
         );
     }
+    */
 
     function test_setSuperPositions_and_revert_invalidCaller() public {
         _setAndAssert(superRegistry.setSuperPositions.selector, superRegistry.superPositions.selector, address(0x1));

@@ -28,7 +28,6 @@ import {KYCDaoNFTMock} from "../mocks/KYCDaoNFTMock.sol";
 
 /// @dev Protocol imports
 import {CoreStateRegistry} from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import {RolesStateRegistry} from "src/crosschain-data/extensions/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ISuperformFactory} from "src/interfaces/ISuperformFactory.sol";
 import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
@@ -391,24 +390,19 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
             SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
 
-            /// @dev 4.4- deploy Roles State Registry. NOTE: RolesStateRegistry has no use for the time being (usage is disabled)
-            vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
+            //SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
-            contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
-
-            SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
-
-            address[] memory registryAddresses = new address[](4);
+            address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;
             registryAddresses[1] = vars.factoryStateRegistry;
-            registryAddresses[2] = vars.rolesStateRegistry;
-            registryAddresses[3] = vars.twoStepsFormStateRegistry;
+            //registryAddresses[2] = vars.rolesStateRegistry; /// @dev removed for now (will be address 0)
+            registryAddresses[2] = vars.twoStepsFormStateRegistry;
 
-            uint8[] memory registryIds = new uint8[](4);
+            uint8[] memory registryIds = new uint8[](3);
             registryIds[0] = 1;
             registryIds[1] = 2;
-            registryIds[2] = 3;
-            registryIds[3] = 4;
+            //registryIds[2] = 3;
+            registryIds[2] = 4;
 
             SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
             SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.coreStateRegistry);
@@ -604,7 +598,8 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
             /// FIXME: check if this is safe in all aspects
-            SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
+            /// @dev disabled as we are not using rolesStateRegistry for now
+            // SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
 
             delete bridgeAddresses;
             delete bridgeValidators;

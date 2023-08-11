@@ -14,7 +14,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            _buildTxData(2, address(0), deployer, BSC, uint256(100), "RolesStateRegistry"),
+            _buildTxData(2, address(0), deployer, BSC, uint256(100), "PayMaster"),
             ETH,
             BSC,
             true,
@@ -28,7 +28,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            _buildTxData(1, address(0), deployer, BSC, uint256(100), "RolesStateRegistry"),
+            _buildTxData(1, address(0), deployer, BSC, uint256(100), "PayMaster"),
             ETH,
             BSC,
             true,

@@ -6,7 +6,6 @@ import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
 
 /// @dev Protocol imports
 import {CoreStateRegistry} from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import {RolesStateRegistry} from "src/crosschain-data/extensions/RolesStateRegistry.sol";
 import {FactoryStateRegistry} from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
 import {ISuperformFactory} from "src/interfaces/ISuperformFactory.sol";
 import {SuperformRouter} from "src/SuperformRouter.sol";
@@ -79,11 +78,10 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[22] public contractNames = [
+    string[21] public contractNames = [
         "CoreStateRegistry",
         "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
-        "RolesStateRegistry",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
         "CelerImplementation",
@@ -364,24 +362,19 @@ abstract contract AbstractDeploySingle is Script {
 
         SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
 
-        /// @dev 3.4- deploy Roles State Registry
-        vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
+        // SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
-        contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
-
-        SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
-
-        address[] memory registryAddresses = new address[](4);
+        address[] memory registryAddresses = new address[](3);
         registryAddresses[0] = vars.coreStateRegistry;
         registryAddresses[1] = vars.factoryStateRegistry;
-        registryAddresses[2] = vars.rolesStateRegistry;
-        registryAddresses[3] = vars.twoStepsFormStateRegistry;
+        //registryAddresses[2] = vars.rolesStateRegistry; /// @dev unused for now (will be address 0)
+        registryAddresses[2] = vars.twoStepsFormStateRegistry;
 
-        uint8[] memory registryIds = new uint8[](4);
+        uint8[] memory registryIds = new uint8[](3);
         registryIds[0] = 1;
         registryIds[1] = 2;
-        registryIds[2] = 3;
-        registryIds[3] = 4;
+        //registryIds[2] = 3;
+        registryIds[2] = 4;
 
         SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
         SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.coreStateRegistry);
@@ -510,7 +503,8 @@ abstract contract AbstractDeploySingle is Script {
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
         /// FIXME: check if this is safe in all aspects
-        SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
+        /// @dev disabled as we are not using rolesStateRegistry for now
+        /// SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
 
         for (uint256 j = 0; j < s_superFormChainIds.length; j++) {
             if (j != i) {

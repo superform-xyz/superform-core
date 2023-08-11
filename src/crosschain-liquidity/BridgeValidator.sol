@@ -6,7 +6,7 @@ import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {Error} from "../utils/Error.sol";
 
-/// @title Bridge Handler abstract contract
+/// @title BridgeValidator
 /// @author Zeropoint Labs
 /// @dev To be inherited by specific bridge handlers to verify the calldata being sent
 abstract contract BridgeValidator is IBridgeValidator {

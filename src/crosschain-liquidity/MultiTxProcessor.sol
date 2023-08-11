@@ -104,6 +104,8 @@ contract MultiTxProcessor is IMultiTxProcessor {
 
     /// @dev EMERGENCY_ADMIN ONLY FUNCTION.
     /// @dev allows admin to withdraw lost tokens in the smart contract.
+    /// @param tokenContract_        address of the token contract
+    /// @param amount_               amount of tokens to withdraw
     function emergencyWithdrawToken(address tokenContract_, uint256 amount_) external onlyEmergencyAdmin {
         IERC20 tokenContract = IERC20(tokenContract_);
 
@@ -114,6 +116,7 @@ contract MultiTxProcessor is IMultiTxProcessor {
 
     /// @dev EMERGENCY_ADMIN ONLY FUNCTION.
     /// @dev allows admin to withdraw lost native tokens in the smart contract.
+    /// @param amount_               amount of tokens to withdraw
     function emergencyWithdrawNativeToken(uint256 amount_) external onlyEmergencyAdmin {
         (bool success, ) = payable(msg.sender).call{value: amount_}("");
         if (!success) revert Error.NATIVE_TOKEN_TRANSFER_FAILURE();

@@ -152,12 +152,14 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
+    /*
     function setRolesStateRegistry(address rolesStateRegistry_) external override onlyCaller {
         address oldRolesStateRegistry = protocolAddresses[ROLES_STATE_REGISTRY];
         protocolAddresses[ROLES_STATE_REGISTRY] = rolesStateRegistry_;
 
         emit RolesStateRegistryUpdated(oldRolesStateRegistry, rolesStateRegistry_);
     }
+    */
 
     /// @inheritdoc ISuperRegistry
     function setSuperPositions(address superPositions_) external override onlyCaller {
@@ -307,9 +309,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
+    /*
     function rolesStateRegistry() external view override returns (address rolesStateRegistry_) {
         rolesStateRegistry_ = protocolAddresses[ROLES_STATE_REGISTRY];
     }
+    */
 
     /// @inheritdoc ISuperRegistry
     function superPositions() external view override returns (address superPositions_) {
