@@ -11,7 +11,7 @@ import "./utils/ProtocolActions.sol";
 
 contract PayloadHelperTest is ProtocolActions {
     /// @dev Access SuperformRouter interface
-    ISuperformRouter superRouter;
+    ISuperformRouter superformRouter;
 
     function setUp() public override {
         super.setUp();
@@ -59,8 +59,8 @@ contract PayloadHelperTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_helper() public {
-        address _superRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
-        superRouter = ISuperformRouter(_superRouter);
+        address _superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
+        superformRouter = ISuperformRouter(_superformRouter);
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];

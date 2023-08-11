@@ -41,7 +41,7 @@ struct StagesLocalVars {
     updateMultiVaultDepositPayloadArgs multiVaultsPayloadArg;
     updateSingleVaultDepositPayloadArgs singleVaultsPayloadArg;
     uint256 nDestinations;
-    address superFormT;
+    address superformT;
     address[] vaultMock;
     address lzEndpoint_0;
     address[] lzEndpoints_1;
@@ -105,7 +105,7 @@ struct SetupVars {
     uint64 dstCelerChainId;
     uint256 fork;
     address[] ambAddresses;
-    address superForm;
+    address superform;
     address factory;
     address lzHelper;
     address lzImplementation;
@@ -127,13 +127,13 @@ struct SetupVars {
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
-    address superRouter;
+    address superformRouter;
     address dstLzImplementation;
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
     address dstStateRegistry;
     address multiTxProcessor;
-    address feeCollector;
+    address payMaster;
     address superRegistry;
     address superRBAC;
     address canonicalPermit2;
@@ -162,7 +162,7 @@ struct SingleVaultCallDataArgs {
     address toDst;
     address underlyingToken;
     address underlyingTokenDst;
-    uint256 superFormId;
+    uint256 superformId;
     uint256 amount;
     uint8 liqBridge;
     uint256 maxSlippage;
@@ -182,7 +182,7 @@ struct MultiVaultCallDataArgs {
     address[] toDst;
     address[] underlyingTokens;
     address[] underlyingTokensDst;
-    uint256[] superFormIds;
+    uint256[] superformIds;
     uint256[] amounts;
     uint8[] liqBridges;
     uint256 maxSlippage;

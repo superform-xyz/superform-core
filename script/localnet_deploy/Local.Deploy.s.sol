@@ -29,13 +29,12 @@ contract LocalDeploy is AbstractDeploy {
     //////////////////////////////////////////////////////////////*/
 
     uint64[] SELECTED_CHAIN_IDS = [56, 42161, 43114]; /// @dev BSC, ARBI & AVAX
-    uint256[] EVM_CHAIN_IDS = [56, 42161, 43114]; /// @dev BSC, ARBI & AVAX
     Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc_Fork, Chains.Arbitrum_Fork, Chains.Avalanche_Fork];
     /*//////////////////////////////////////////////////////////////
                         CHAINLINK VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    mapping(uint64 => address) public PRICE_FEEDS;
+    mapping(uint64 => address) public TOKEN_PRICE_FEEDS;
 
     address public constant ETHEREUM_ETH_USD_FEED = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address public constant BSC_BNB_USD_FEED = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
@@ -47,7 +46,7 @@ contract LocalDeploy is AbstractDeploy {
     function run() external {
         uint256[] memory forkIds = _preDeploymentSetup(SELECTED_CHAIN_NAMES, Cycle.Dev);
 
-        mapping(uint64 => address) storage priceFeeds = PRICE_FEEDS;
+        mapping(uint64 => address) storage priceFeeds = TOKEN_PRICE_FEEDS;
         priceFeeds[ETH] = ETHEREUM_ETH_USD_FEED;
         priceFeeds[BSC] = BSC_BNB_USD_FEED;
         priceFeeds[AVAX] = AVALANCHE_AVAX_USD_FEED;
@@ -84,7 +83,7 @@ contract LocalDeploy is AbstractDeploy {
                     break;
                 }
             }
-            _setupStage1(chainIdIndex, Cycle.Dev, SELECTED_CHAIN_IDS, EVM_CHAIN_IDS, forkIds[i]);
+            _setupStage1(chainIdIndex, Cycle.Dev, forkIds[i]);
 
             /// @dev 5 - Deploy UNDERLYING_TOKENS and VAULTS
             /// @dev FIXME grab testnet tokens
@@ -113,8 +112,7 @@ contract LocalDeploy is AbstractDeploy {
 
                         vault = _deployWithCreate2(bytecodeWithArgs, 1);
                     } else {
-                        /// deploy the kycDAOVault wrapper with different args only in Polygon
-
+                        /// deploy the kycDAOVault wrapper with different args
                         bytecodeWithArgs = abi.encodePacked(
                             vaultBytecodes[j],
                             abi.encode(
@@ -162,13 +160,13 @@ contract LocalDeploy is AbstractDeploy {
             vm.selectFork(ethForkId_);
             vm.startBroadcast(deployerPrivateKey);
 
-            int256 ethUsdPrice = _getLatestPrice(PRICE_FEEDS[ETH]);
+            int256 ethUsdPrice = _getLatestPrice(TOKEN_PRICE_FEEDS[ETH]);
 
             vm.stopBroadcast();
             vm.selectFork(targetForkId_);
             vm.startBroadcast(deployerPrivateKey);
 
-            address targetChainPriceFeed = PRICE_FEEDS[targetChainId_];
+            address targetChainPriceFeed = TOKEN_PRICE_FEEDS[targetChainId_];
             if (targetChainPriceFeed != address(0)) {
                 int256 price = _getLatestPrice(targetChainPriceFeed);
                 vm.stopBroadcast();

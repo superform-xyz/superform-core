@@ -36,10 +36,10 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     mapping(uint256 timeLockPayloadId => TimeLockPayload) public timeLockPayload;
 
     /// @dev allows only form to write to the receive paylod
-    modifier onlyForm(uint256 superFormId) {
-        (address superForm, , ) = superFormId.getSuperform();
-        if (msg.sender != superForm) revert Error.NOT_SUPERFORM();
-        if (IBaseForm(superForm).getStateRegistryId() != superRegistry.getStateRegistryId(address(this)))
+    modifier onlyForm(uint256 superformId) {
+        (address superform, , ) = superformId.getSuperform();
+        if (msg.sender != superform) revert Error.NOT_SUPERFORM();
+        if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this)))
             revert Error.NOT_TWO_STEP_SUPERFORM();
         _;
     }
@@ -67,7 +67,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         uint64 srcChainId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
-    ) external override onlyForm(data_.superFormId) {
+    ) external override onlyForm(data_.superformId) {
         ++timeLockPayloadCounter;
 
         timeLockPayload[timeLockPayloadCounter] = TimeLockPayload(
@@ -98,7 +98,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
         /// @dev set status here to prevent re-entrancy
         p.status = TimeLockStatus.PROCESSED;
-        (address superform, , ) = p.data.superFormId.getSuperform();
+        (address superform, , ) = p.data.superformId.getSuperform();
 
         if (txData_.length > 0) {
             PayloadUpdaterLib.validateLiqReq(p.data.liqData);
@@ -132,7 +132,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
                 ISuperPositions(superRegistry.superPositions()).mintSingleSP(
                     p.srcSender,
-                    p.data.superFormId,
+                    p.data.superformId,
                     p.data.amount
                 );
             }
@@ -221,7 +221,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                     abi.encode(
                         ReturnSingleData(
                             singleVaultData_.payloadId,
-                            singleVaultData_.superFormId,
+                            singleVaultData_.superformId,
                             singleVaultData_.amount
                         )
                     )

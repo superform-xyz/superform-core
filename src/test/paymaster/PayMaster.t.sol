@@ -40,12 +40,12 @@ contract PayMasterTest is BaseSetup {
         vm.startPrank(deployer);
 
         /// @dev at this point the contract has 1 ether extra
-        address superRouter = getContract(ETH, "SuperformRouter");
-        payable(superRouter).transfer(1 ether);
+        address superformRouter = getContract(ETH, "SuperformRouter");
+        payable(superformRouter).transfer(1 ether);
 
         /// @dev make a deposit and send in 2 ether extra for other off-chain operations
         _successfulDeposit();
-        assertEq(address(superRouter).balance, 1 ether);
+        assertEq(address(superformRouter).balance, 1 ether);
         assertEq(getContract(ETH, "PayMaster").balance, 2 ether);
     }
 
@@ -335,12 +335,12 @@ contract PayMasterTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superForm = getContract(
+        address superform = getContract(
             ETH,
             string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superForm, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,

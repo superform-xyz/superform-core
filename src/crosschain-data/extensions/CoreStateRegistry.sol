@@ -29,8 +29,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev just stores the superFormIds that failed in a specific payload id
-    mapping(uint256 payloadId => uint256[] superFormIds) internal failedDeposits;
+    /// @dev just stores the superformIds that failed in a specific payload id
+    mapping(uint256 payloadId => uint256[] superformIds) internal failedDeposits;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -207,7 +207,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         /// @dev validates if the incoming update is valid
         for (uint256 i; i < v_.l1; ) {
             if (txData_[i].length != 0 && multiVaultData.liqData[i].txData.length == 0) {
-                (address superform, , ) = multiVaultData.superFormIds[i].getSuperform();
+                (address superform, , ) = multiVaultData.superformIds[i].getSuperform();
 
                 if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(multiVaultData.liqData[i]);
@@ -259,7 +259,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         v_.previousPayloadHeader_ = payloadHeader[payloadId_];
         InitSingleVaultData memory singleVaultData = abi.decode(v_.previousPayloadBody_, (InitSingleVaultData));
 
-        (address superform, , ) = singleVaultData.superFormId.getSuperform();
+        (address superform, , ) = singleVaultData.superformId.getSuperform();
 
         if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
             revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
@@ -390,7 +390,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint64 dstChainId;
         uint64 srcChainId;
         address srcSender;
-        address superForm;
+        address superform;
     }
 
     /// @inheritdoc ICoreStateRegistry
@@ -400,9 +400,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     ) external payable override onlyProcessor {
         RescueFailedDepositsLocalVars memory v;
 
-        uint256[] memory superFormIds = failedDeposits[payloadId_];
+        uint256[] memory superformIds = failedDeposits[payloadId_];
 
-        uint256 l1 = superFormIds.length;
+        uint256 l1 = superformIds.length;
         uint256 l2 = liqData_.length;
 
         if (l1 == 0 || l2 == 0 || l1 != l2) {
@@ -417,14 +417,14 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         v.dstChainId = superRegistry.chainId();
 
         for (uint256 i; i < l1; ) {
-            (v.superForm, , ) = superFormIds[i].getSuperform();
+            (v.superform, , ) = superformIds[i].getSuperform();
 
             IBridgeValidator(superRegistry.getBridgeValidator(liqData_[i].bridgeId)).validateTxData(
                 liqData_[i].txData,
                 v.dstChainId,
                 v.srcChainId,
                 false, /// @dev - this acts like a withdraw where funds are bridged back to user
-                v.superForm,
+                v.superform,
                 v.srcSender,
                 liqData_[i].token
             );
@@ -472,21 +472,21 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         InitSingleVaultData memory singleVaultData;
         bool errors;
 
-        for (uint256 i; i < multiVaultData.superFormIds.length; ) {
-            DataLib.validateSuperformChainId(multiVaultData.superFormIds[i], superRegistry.chainId());
+        for (uint256 i; i < multiVaultData.superformIds.length; ) {
+            DataLib.validateSuperformChainId(multiVaultData.superformIds[i], superRegistry.chainId());
 
             singleVaultData = InitSingleVaultData({
                 payloadId: multiVaultData.payloadId,
-                superFormId: multiVaultData.superFormIds[i],
+                superformId: multiVaultData.superformIds[i],
                 amount: multiVaultData.amounts[i],
                 maxSlippage: multiVaultData.maxSlippage[i],
                 liqData: multiVaultData.liqData[i],
                 extraFormData: abi.encode(payloadId_, i) /// @dev Store destination payloadId_ & index in extraFormData (tbd: 1-step flow doesnt need this)
             });
 
-            (address superForm_, , ) = singleVaultData.superFormId.getSuperform();
+            (address superform_, , ) = singleVaultData.superformId.getSuperform();
 
-            try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
+            try IBaseForm(superform_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
                 /// @dev marks the indexes that don't require a callback re-mint of SuperPositions (successful withdraws)
                 multiVaultData.amounts[i] = 0;
             } catch {
@@ -499,7 +499,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             }
         }
 
-        /// @dev if at least one error happens, the shares will be re-minted for the affected superFormIds
+        /// @dev if at least one error happens, the shares will be re-minted for the affected superformIds
         if (errors) {
             return
                 _constructMultiReturnData(
@@ -507,7 +507,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     multiVaultData.payloadId,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
-                    multiVaultData.superFormIds,
+                    multiVaultData.superformIds,
                     multiVaultData.amounts
                 );
         }
@@ -527,31 +527,31 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         InitMultiVaultData memory multiVaultData = abi.decode(payload_, (InitMultiVaultData));
 
-        (address[] memory superForms, , ) = DataLib.getSuperforms(multiVaultData.superFormIds);
+        (address[] memory superforms, , ) = DataLib.getSuperforms(multiVaultData.superformIds);
 
         IERC20 underlying;
-        uint256 numberOfVaults = multiVaultData.superFormIds.length;
+        uint256 numberOfVaults = multiVaultData.superformIds.length;
         uint256[] memory dstAmounts = new uint256[](numberOfVaults);
 
         bool fulfilment;
         bool errors;
 
         for (uint256 i; i < numberOfVaults; ) {
-            underlying = IERC20(IBaseForm(superForms[i]).getVaultAsset());
+            underlying = IERC20(IBaseForm(superforms[i]).getVaultAsset());
 
             if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
-                underlying.transfer(superForms[i], multiVaultData.amounts[i]);
+                underlying.transfer(superforms[i], multiVaultData.amounts[i]);
                 LiqRequest memory emptyRequest;
 
                 /// @dev important to validate the chainId of the superform against the chainId where this is happening
-                DataLib.validateSuperformChainId(multiVaultData.superFormIds[i], superRegistry.chainId());
+                DataLib.validateSuperformChainId(multiVaultData.superformIds[i], superRegistry.chainId());
 
                 /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
                 try
-                    IBaseForm(superForms[i]).xChainDepositIntoVault(
+                    IBaseForm(superforms[i]).xChainDepositIntoVault(
                         InitSingleVaultData({
                             payloadId: multiVaultData.payloadId,
-                            superFormId: multiVaultData.superFormIds[i],
+                            superformId: multiVaultData.superformIds[i],
                             amount: multiVaultData.amounts[i],
                             maxSlippage: multiVaultData.maxSlippage[i],
                             liqData: emptyRequest,
@@ -568,7 +568,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     /// @dev if any deposit fails, we mark errors as true and add it to failedDeposits mapping for future rescuing
                     if (!errors) errors = true;
 
-                    failedDeposits[payloadId_].push(multiVaultData.superFormIds[i]);
+                    failedDeposits[payloadId_].push(multiVaultData.superformIds[i]);
                 }
             } else {
                 revert Error.BRIDGE_TOKENS_PENDING();
@@ -586,7 +586,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     multiVaultData.payloadId,
                     TransactionType.DEPOSIT,
                     CallbackType.RETURN,
-                    multiVaultData.superFormIds,
+                    multiVaultData.superformIds,
                     dstAmounts
                 );
         }
@@ -606,12 +606,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     ) internal returns (bytes memory) {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        DataLib.validateSuperformChainId(singleVaultData.superFormId, superRegistry.chainId());
+        DataLib.validateSuperformChainId(singleVaultData.superformId, superRegistry.chainId());
 
-        (address superForm_, , ) = singleVaultData.superFormId.getSuperform();
+        (address superform_, , ) = singleVaultData.superformId.getSuperform();
 
         /// @dev Withdraw from superform
-        try IBaseForm(superForm_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
+        try IBaseForm(superform_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
             // Handle the case when the external call succeeds
         } catch {
             // Handle the case when the external call reverts for whatever reason
@@ -622,7 +622,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     singleVaultData.payloadId,
                     TransactionType.WITHDRAW,
                     CallbackType.FAIL,
-                    singleVaultData.superFormId,
+                    singleVaultData.superformId,
                     singleVaultData.amount
                 );
         }
@@ -641,17 +641,17 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             revert Error.PAYLOAD_NOT_UPDATED();
         }
 
-        DataLib.validateSuperformChainId(singleVaultData.superFormId, superRegistry.chainId());
+        DataLib.validateSuperformChainId(singleVaultData.superformId, superRegistry.chainId());
 
-        (address superForm_, , ) = singleVaultData.superFormId.getSuperform();
+        (address superform_, , ) = singleVaultData.superformId.getSuperform();
 
-        IERC20 underlying = IERC20(IBaseForm(superForm_).getVaultAsset());
+        IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
 
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
-            underlying.transfer(superForm_, singleVaultData.amount);
+            underlying.transfer(superform_, singleVaultData.amount);
 
             /// @dev deposit to superform
-            try IBaseForm(superForm_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
+            try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
                 uint256 dstAmount
             ) {
                 return
@@ -660,12 +660,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         singleVaultData.payloadId,
                         TransactionType.DEPOSIT,
                         CallbackType.RETURN,
-                        singleVaultData.superFormId,
+                        singleVaultData.superformId,
                         dstAmount
                     );
             } catch {
                 /// @dev if any deposit fails, add it to failedDeposits mapping for future rescuing
-                failedDeposits[payloadId_].push(singleVaultData.superFormId);
+                failedDeposits[payloadId_].push(singleVaultData.superformId);
 
                 emit FailedXChainDeposits(payloadId_);
             }
@@ -682,7 +682,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 payloadId_,
         TransactionType txType,
         CallbackType returnType,
-        uint256[] memory superFormIds_,
+        uint256[] memory superformIds_,
         uint256[] memory amounts
     ) internal view returns (bytes memory) {
         /// @dev Send Data to Source to issue superform positions (failed withdraws and successful deposits)
@@ -697,7 +697,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         srcSender_,
                         superRegistry.chainId()
                     ),
-                    abi.encode(ReturnMultiData(payloadId_, superFormIds_, amounts))
+                    abi.encode(ReturnMultiData(payloadId_, superformIds_, amounts))
                 )
             );
     }
@@ -708,7 +708,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 payloadId_,
         TransactionType txType,
         CallbackType returnType,
-        uint256 superFormId_,
+        uint256 superformId_,
         uint256 amount
     ) internal view returns (bytes memory) {
         /// @dev Send Data to Source to issue superform positions (failed withdraws and successful deposits)
@@ -723,7 +723,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         srcSender_,
                         superRegistry.chainId()
                     ),
-                    abi.encode(ReturnSingleData(payloadId_, superFormId_, amount))
+                    abi.encode(ReturnSingleData(payloadId_, superformId_, amount))
                 )
             );
     }

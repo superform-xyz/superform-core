@@ -26,8 +26,8 @@ enum PayloadState {
 
 /// @dev main struct that holds required multi vault data for an action
 struct MultiVaultSFData {
-    // superFormids must have same destination. Can have different different underlyings
-    uint256[] superFormIds;
+    // superformids must have same destination. Can have different different underlyings
+    uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippages;
     LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
@@ -36,8 +36,8 @@ struct MultiVaultSFData {
 
 /// @dev main struct that holds required single vault data for an action
 struct SingleVaultSFData {
-    // superFormids must have same destination. Can have different different underlyings
-    uint256 superFormId;
+    // superformids must have same destination. Can have different different underlyings
+    uint256 superformId;
     uint256 amount;
     uint256 maxSlippage;
     LiqRequest liqRequest; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
@@ -48,44 +48,44 @@ struct SingleVaultSFData {
 struct MultiDstMultiVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
-    MultiVaultSFData[] superFormsData;
+    MultiVaultSFData[] superformsData;
 }
 
 /// @dev overarching struct for single cross chain requests with multi vaults
 struct SingleXChainMultiVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
-    MultiVaultSFData superFormsData;
+    MultiVaultSFData superformsData;
 }
 
 /// @dev overarching struct for multiDst requests with single vaults
 struct MultiDstSingleVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
-    SingleVaultSFData[] superFormsData;
+    SingleVaultSFData[] superformsData;
 }
 
 /// @dev overarching struct for single cross chain requests with single vaults
 struct SingleXChainSingleVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
-    SingleVaultSFData superFormData;
+    SingleVaultSFData superformData;
 }
 
 /// @dev overarching struct for single direct chain requests with single vaults
 struct SingleDirectSingleVaultStateReq {
-    SingleVaultSFData superFormData;
+    SingleVaultSFData superformData;
 }
 
 /// @dev overarching struct for single direct chain requests with multi vaults
 struct SingleDirectMultiVaultStateReq {
-    MultiVaultSFData superFormData;
+    MultiVaultSFData superformData;
 }
 
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitMultiVaultData {
     uint256 payloadId;
-    uint256[] superFormIds;
+    uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippage;
     LiqRequest[] liqData;
@@ -95,7 +95,7 @@ struct InitMultiVaultData {
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitSingleVaultData {
     uint256 payloadId;
-    uint256 superFormId;
+    uint256 superformId;
     uint256 amount;
     uint256 maxSlippage;
     LiqRequest liqData;
@@ -134,14 +134,14 @@ struct AMBFactoryMessage {
 /// @dev struct that contains info on returned data from destination
 struct ReturnMultiData {
     uint256 payloadId;
-    uint256[] superFormIds;
+    uint256[] superformIds;
     uint256[] amounts;
 }
 
 /// @dev struct that contains info on returned data from destination
 struct ReturnSingleData {
     uint256 payloadId;
-    uint256 superFormId;
+    uint256 superformId;
     uint256 amount;
 }
 /// @dev struct that contains the data on the fees to pay

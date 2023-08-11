@@ -18,7 +18,7 @@ interface IBridgeValidator {
     /// @param srcChainId_ the chainId of the source chain
     /// @param dstChainId_ the chainId of the destination chain
     /// @param deposit_ true if the action is a deposit, false if it is a withdraw
-    /// @param superForm_ the address of the superForm
+    /// @param superform_ the address of the superform
     /// @param srcSender_ the address of the sender on the source chain
     /// @param liqDataToken_ the address of the liqDataToken
     function validateTxData(
@@ -26,7 +26,7 @@ interface IBridgeValidator {
         uint64 srcChainId_,
         uint64 dstChainId_,
         bool deposit_,
-        address superForm_,
+        address superform_,
         address srcSender_,
         address liqDataToken_
     ) external view;

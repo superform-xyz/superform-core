@@ -10,7 +10,7 @@ import {AMBFactoryMessage} from "../types/DataTypes.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.
-/// @dev Contract to manage roles in the entire superForm protocol
+/// @dev Contract to manage roles in the entire superform protocol
 contract SuperRBAC is ISuperRBAC, AccessControl {
     uint8 public constant STATE_REGISTRY_TYPE = 2;
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
