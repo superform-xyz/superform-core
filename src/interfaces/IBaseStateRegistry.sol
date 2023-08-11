@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 /// @title IBaseStateRegistry
 /// @author ZeroPoint Labs
-/// @dev is the crosschain interaction point. send, store & process Crosschain messages
+/// @dev Is the crosschain interaction point. Send, store & process crosschain messages
 interface IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                                 Events

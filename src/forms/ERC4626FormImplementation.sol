@@ -115,8 +115,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC20 token = IERC20(singleVaultData_.liqData.token);
         uint256 amount = singleVaultData_.liqData.amount;
 
-        /// note: handle the collateral token transfers.
         if (!isSwap) {
+            /// @dev handles the collateral token transfers.
             if (!isPermit) {
                 if (token.allowance(srcSender_, address(this)) < amount)
                     revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
@@ -246,7 +246,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
 
-        /// @dev FIXME: check subgraph if this should emit amount or dstAmount - Subhasish
         emit Processed(srcChainId, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
@@ -282,7 +281,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as the vault asset
         if (vars.collateral != singleVaultData_.liqData.token) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
-        /// Note Redeem vault positions (we operate only on positions, not assets)
+        /// @dev redeem vault positions (we operate only on positions, not assets)
         dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
 
         if (len != 0) {
@@ -312,7 +311,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             );
         }
 
-        /// @dev FIXME: check subgraph if this should emit amount or dstAmount - Subhasish
         emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 

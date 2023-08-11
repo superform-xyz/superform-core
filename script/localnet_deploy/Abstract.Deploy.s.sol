@@ -366,7 +366,7 @@ abstract contract AbstractDeploy is Script {
         registryAddresses[0] = vars.coreStateRegistry;
         registryAddresses[1] = vars.factoryStateRegistry;
         //registryAddresses[2] = vars.rolesStateRegistry; /// @dev unused for now (will be address 0)
-        registryAddresses[3] = vars.twoStepsFormStateRegistry;
+        registryAddresses[2] = vars.twoStepsFormStateRegistry;
 
         uint8[] memory registryIds = new uint8[](3);
         registryIds[0] = 1;

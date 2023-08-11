@@ -52,6 +52,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     constructor(address superRBAC_) {
         protocolAddresses[SUPER_RBAC] = superRBAC_;
+
+        emit SuperRBACUpdated(address(0), superRBAC_);
     }
 
     /*///////////////////////////////////////////////////////////////

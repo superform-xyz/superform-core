@@ -42,7 +42,7 @@ contract PaymentHelper is IPaymentHelper {
 
     /// @dev is the configuration for each individual chain
 
-    /// same chain params
+    /// @dev same chain params
     AggregatorV3Interface public srcNativeFeedOracle;
     AggregatorV3Interface public srcGasPriceOracle;
 
@@ -51,7 +51,7 @@ contract PaymentHelper is IPaymentHelper {
     uint256 public ackNativeGasCost;
     uint256 public twoStepFeeCost;
 
-    /// xchain params
+    /// @dev xchain params
     mapping(uint64 chainId => AggregatorV3Interface) public dstNativeFeedOracle;
     mapping(uint64 chainId => AggregatorV3Interface) public dstGasPriceOracle;
     mapping(uint64 chainId => uint256 gasForSwap) public swapGasUsed;
@@ -152,47 +152,47 @@ contract PaymentHelper is IPaymentHelper {
         uint256 configType_,
         bytes memory config_
     ) external override onlyProtocolAdmin {
-        /// Type 1: DST TOKEN PRICE FEED ORACLE
+        /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
             dstNativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
-        /// Type 2: DST GAS PRICE ORACLE
+        /// @dev Type 2: DST GAS PRICE ORACLE
         if (configType_ == 2) {
             dstGasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
-        /// Type 3: SWAP GAS COST PER TX FOR MULTI-TX
+        /// @dev Type 3: SWAP GAS COST PER TX FOR MULTI-TX
         if (configType_ == 3) {
             swapGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 4: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
+        /// @dev Type 4: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
         if (configType_ == 4) {
             updateGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 5: DEPOSIT GAS COST PER TX
+        /// @dev Type 5: DEPOSIT GAS COST PER TX
         if (configType_ == 5) {
             depositGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 6: WITHDRAW GAS COST PER TX
+        /// @dev Type 6: WITHDRAW GAS COST PER TX
         if (configType_ == 6) {
             withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 7: NATIVE PRICE
+        /// @dev Type 7: NATIVE PRICE
         if (configType_ == 7) {
             dstNativePrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 8: GAS PRICE
+        /// @dev Type 8: GAS PRICE
         if (configType_ == 8) {
             dstGasPrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 9: GAS PRICE PER KB of Message
+        /// @dev Type 9: GAS PRICE PER KB of Message
         if (configType_ == 9) {
             dstGasPerKB[chainId_] = abi.decode(config_, (uint256));
         }
@@ -404,7 +404,7 @@ contract PaymentHelper is IPaymentHelper {
 
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
 
-        /// note: not adding dstAmount to save some GAS
+        /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
     }
 
@@ -426,7 +426,7 @@ contract PaymentHelper is IPaymentHelper {
 
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformData.liqRequests);
 
-        /// note: not adding dstAmount to save some GAS
+        /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
     }
 
@@ -649,13 +649,13 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps convert the dst gas fee into src chain native fee
-    /// note: check decimals (not validated yet)
-    /// note: https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
-    /// all native tokens should be 18 decimals across all EVMs
+    /// @dev FIXME - Sujith check decimals (not validated yet)
+    /// @dev https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
+    /// @dev all native tokens should be 18 decimals across all EVMs
     function _convertToNativeFee(uint64 dstChainId_, uint256 dstGas) internal view returns (uint256 nativeFee) {
         /// @dev gas fee * gas price (to get the gas amounts in dst chain's native token)
-        /// @notice gas price is 9 decimal (in gwei)
-        /// @notice assumption: all evm native tokens are 18 decimals
+        /// @dev gas price is 9 decimal (in gwei)
+        /// @dev assumption: all evm native tokens are 18 decimals
         uint256 dstNativeFee = dstGas * _getGasPrice(dstChainId_);
 
         if (dstNativeFee == 0) {
@@ -663,7 +663,7 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         /// @dev converts the gas to pay in terms of native token to usd value
-        /// @notice native token price is 8 decimal
+        /// @dev native token price is 8 decimal
         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
 
         if (dstUsdValue == 0) {
@@ -671,19 +671,19 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         /// @dev converts the usd value to source chain's native token
-        /// @notice natie token price is 8 decimal which cancels the 8 decimal multiplied in previous step
+        /// @dev native token price is 8 decimal which cancels the 8 decimal multiplied in previous step
         nativeFee = (dstUsdValue) / _getNativeTokenPrice(0);
     }
 
     /// @dev helps generate the new payload id
-    /// note: next payload id = current payload id + 1
+    /// @dev next payload id = current payload id + 1
     function _getNextPayloadId() internal view returns (uint256 nextPayloadId) {
         nextPayloadId = ReadOnlyBaseRegistry(superRegistry.coreStateRegistry()).payloadsCount();
         ++nextPayloadId;
     }
 
     /// @dev helps return the current gas price of different networks
-    /// note: returns default set values if an oracle is not configured for the network
+    /// @dev returns default set values if an oracle is not configured for the network
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
         if (chainId_ == 0) {
             if (address(srcGasPriceOracle) != address(0)) {
@@ -703,7 +703,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps return the dst chain token price of different networks
-    /// note: returns `0` - if no oracle is set
+    /// @dev returns `0` - if no oracle is set
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
         if (chainId_ == 0) {
             if (address(srcNativeFeedOracle) != address(0)) {

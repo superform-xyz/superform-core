@@ -597,7 +597,7 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superformRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
-            /// FIXME: check if this is safe in all aspects
+            /// note: check if this is safe in all aspects
             /// @dev disabled as we are not using rolesStateRegistry for now
             // SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
 
