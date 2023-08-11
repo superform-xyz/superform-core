@@ -129,8 +129,13 @@ contract PaymentHelper is IPaymentHelper {
         uint256 defaultGasPrice_,
         uint256 dstGasPerKB_
     ) external override onlyProtocolAdmin {
-        dstNativeFeedOracle[chainId_] = AggregatorV3Interface(dstNativeFeedOracle_);
-        dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
+        if (dstNativeFeedOracle_ != address(0)) {
+            dstNativeFeedOracle[chainId_] = AggregatorV3Interface(dstNativeFeedOracle_);
+        }
+
+        if (dstGasPriceOracle_ != address(0)) {
+            dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
+        }
 
         swapGasUsed[chainId_] = swapGasUsed_;
         updateGasUsed[chainId_] = updateGasUsed_;
@@ -647,22 +652,26 @@ contract PaymentHelper is IPaymentHelper {
     /// note: https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
     /// all native tokens should be 18 decimals across all EVMs
     function _convertToNativeFee(uint64 dstChainId_, uint256 dstGas) internal view returns (uint256 nativeFee) {
-        /// @dev is the native dst chain gas used
+        /// @dev gas fee * gas price (to get the gas amounts in dst chain's native token)
+        /// @notice gas price is 9 decimal (in gwei)
+        /// @notice assumption: all evm native tokens are 18 decimals
         uint256 dstNativeFee = dstGas * _getGasPrice(dstChainId_);
 
         if (dstNativeFee == 0) {
             return 0;
         }
 
-        /// @dev is the conversion of dst native tokens to usd equivalent (26 decimal)
-        uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_);
+        /// @dev converts the gas to pay in terms of native token to usd value
+        /// @notice native token price is 8 decimal
+        uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
 
         if (dstUsdValue == 0) {
             return 0;
         }
 
-        /// 10 ** 36 is raw decimal correction; multiply before divide
-        nativeFee = ((dstUsdValue * 10 ** 36) / _getNativeTokenPrice(0));
+        /// @dev converts the usd value to source chain's native token
+        /// @notice natie token price is 8 decimal which cancels the 8 decimal multiplied in previous step
+        nativeFee = (dstUsdValue) / _getNativeTokenPrice(0);
     }
 
     /// @dev helps generate the new payload id

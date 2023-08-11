@@ -661,13 +661,14 @@ abstract contract BaseSetup is DSTest, Test {
                     /// default gas price: 50 Gwei
                     PaymentHelper(payable(vars.paymentHelper)).addChain(
                         vars.dstChainId,
-                        address(0),
                         PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                        address(0),
                         50000,
                         40000,
                         70000,
                         80000,
-                        50 * 10 ** 9 wei,
+                        12e8, /// 12 usd
+                        28 gwei,
                         10 wei
                     );
                 } else {
@@ -675,12 +676,12 @@ abstract contract BaseSetup is DSTest, Test {
                     /// two step form cost: 50000
                     /// default gas price: 50 Gwei
                     PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(
-                        2,
+                        1,
                         abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                     );
-                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(2, abi.encode(40000));
-                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(50000));
-                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(5, abi.encode(50 * 10 ** 9 wei));
+                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(40000));
+                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(4, abi.encode(50000));
+                    PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(6, abi.encode(50 * 10 ** 9 wei));
                 }
             }
         }
