@@ -46,6 +46,7 @@ contract PaymentHelper is IPaymentHelper {
     AggregatorV3Interface public srcNativeFeedOracle;
     AggregatorV3Interface public srcGasPriceOracle;
 
+    uint256 public srcNativePrice;
     uint256 public srcGasPrice;
     uint256 public ackNativeGasCost;
     uint256 public twoStepFeeCost;
@@ -57,6 +58,7 @@ contract PaymentHelper is IPaymentHelper {
     mapping(uint64 chainId => uint256 gasForUpdate) public updateGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public depositGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
+    mapping(uint64 chainId => uint256 defaultNativePrice) public dstNativePrice;
     mapping(uint64 chainId => uint256 defaultGasPrice) public dstGasPrice;
     mapping(uint64 chainId => uint256 gasPerKB) public dstGasPerKB;
 
@@ -83,14 +85,14 @@ contract PaymentHelper is IPaymentHelper {
 
     /// @inheritdoc IPaymentHelper
     function setSameChainConfig(uint256 configType_, bytes memory config_) external override onlyProtocolAdmin {
-        /// Type 1: GAS PRICE ORACLE
+        /// Type 1: NATIVE TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
-            srcGasPriceOracle = AggregatorV3Interface(abi.decode(config_, (address)));
+            srcNativeFeedOracle = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
-        /// Type 2: NATIVE TOKEN PRICE FEED ORACLE
+        /// Type 2: GAS PRICE ORACLE
         if (configType_ == 2) {
-            srcNativeFeedOracle = AggregatorV3Interface(abi.decode(config_, (address)));
+            srcGasPriceOracle = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
         /// Type 3: ACKNOWLEDGEMENT GAS COST PER VAULT
@@ -103,8 +105,13 @@ contract PaymentHelper is IPaymentHelper {
             twoStepFeeCost = abi.decode(config_, (uint256));
         }
 
-        /// Type 5: GAS PRICE
+        /// Type 5: NATIVE PRICE
         if (configType_ == 5) {
+            srcNativePrice = abi.decode(config_, (uint256));
+        }
+
+        /// Type 6: GAS PRICE
+        if (configType_ == 6) {
             srcGasPrice = abi.decode(config_, (uint256));
         }
     }
@@ -112,22 +119,29 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function addChain(
         uint64 chainId_,
-        address dstGasPriceOracle_,
         address dstNativeFeedOracle_,
+        address dstGasPriceOracle_,
         uint256 swapGasUsed_,
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
         uint256 withdrawGasUsed_,
+        uint256 defaultNativePrice_,
         uint256 defaultGasPrice_,
         uint256 dstGasPerKB_
     ) external override onlyProtocolAdmin {
-        dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
-        dstNativeFeedOracle[chainId_] = AggregatorV3Interface(dstNativeFeedOracle_);
+        if (dstNativeFeedOracle_ != address(0)) {
+            dstNativeFeedOracle[chainId_] = AggregatorV3Interface(dstNativeFeedOracle_);
+        }
+
+        if (dstGasPriceOracle_ != address(0)) {
+            dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
+        }
 
         swapGasUsed[chainId_] = swapGasUsed_;
         updateGasUsed[chainId_] = updateGasUsed_;
         depositGasUsed[chainId_] = depositGasUsed_;
         withdrawGasUsed[chainId_] = withdrawGasUsed_;
+        dstNativePrice[chainId_] = defaultNativePrice_;
         dstGasPrice[chainId_] = defaultGasPrice_;
         dstGasPerKB[chainId_] = dstGasPerKB_;
     }
@@ -138,14 +152,14 @@ contract PaymentHelper is IPaymentHelper {
         uint256 configType_,
         bytes memory config_
     ) external override onlyProtocolAdmin {
-        /// Type 1: DST GAS PRICE ORACLE
+        /// Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
-            dstGasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            dstNativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
-        /// Type 2: DST TOKEN PRICE FEED ORACLE
+        /// Type 2: DST GAS PRICE ORACLE
         if (configType_ == 2) {
-            dstNativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            dstGasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
         /// Type 3: SWAP GAS COST PER TX FOR MULTI-TX
@@ -168,13 +182,18 @@ contract PaymentHelper is IPaymentHelper {
             withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 6: GAS PRICE
-        if (configType_ == 6) {
+        /// Type 7: NATIVE PRICE
+        if (configType_ == 7) {
+            dstNativePrice[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// Type 8: GAS PRICE
+        if (configType_ == 8) {
             dstGasPrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// Type 7: GAS PRICE PER KB of Message
-        if (configType_ == 7) {
+        /// Type 9: GAS PRICE PER KB of Message
+        if (configType_ == 9) {
             dstGasPerKB[chainId_] = abi.decode(config_, (uint256));
         }
     }
@@ -634,22 +653,26 @@ contract PaymentHelper is IPaymentHelper {
     /// note: https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
     /// all native tokens should be 18 decimals across all EVMs
     function _convertToNativeFee(uint64 dstChainId_, uint256 dstGas) internal view returns (uint256 nativeFee) {
-        /// @dev is the native dst chain gas used
+        /// @dev gas fee * gas price (to get the gas amounts in dst chain's native token)
+        /// @notice gas price is 9 decimal (in gwei)
+        /// @notice assumption: all evm native tokens are 18 decimals
         uint256 dstNativeFee = dstGas * _getGasPrice(dstChainId_);
 
         if (dstNativeFee == 0) {
             return 0;
         }
 
-        /// @dev is the conversion of dst native tokens to usd equivalent (26 decimal)
-        uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_);
+        /// @dev converts the gas to pay in terms of native token to usd value
+        /// @notice native token price is 8 decimal
+        uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
 
         if (dstUsdValue == 0) {
             return 0;
         }
 
-        /// 10 ** 36 is raw decimal correction; multiply before divide
-        nativeFee = ((dstUsdValue * 10 ** 36) / _getNativeTokenPrice(0));
+        /// @dev converts the usd value to source chain's native token
+        /// @notice natie token price is 8 decimal which cancels the 8 decimal multiplied in previous step
+        nativeFee = (dstUsdValue) / _getNativeTokenPrice(0);
     }
 
     /// @dev helps generate the new payload id
@@ -688,7 +711,7 @@ contract PaymentHelper is IPaymentHelper {
                 return uint256(srcTokenPrice);
             }
 
-            return 0;
+            return srcNativePrice;
         }
 
         if (address(dstGasPriceOracle[chainId_]) != address(0)) {
@@ -696,6 +719,6 @@ contract PaymentHelper is IPaymentHelper {
             return uint256(dstTokenPrice);
         }
 
-        return 0;
+        return dstNativePrice[chainId_];
     }
 }

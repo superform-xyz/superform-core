@@ -564,6 +564,7 @@ abstract contract AbstractDeploySingle is Script {
                     40000,
                     70000,
                     80000,
+                    10 wei,
                     50 * 10 ** 9 wei,
                     10 wei
                 );
