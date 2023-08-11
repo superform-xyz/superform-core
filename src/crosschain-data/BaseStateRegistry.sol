@@ -10,8 +10,8 @@ import {PayloadState, AMBMessage, AMBExtraData} from "../types/DataTypes.sol";
 
 /// @title BaseStateRegistry
 /// @author Zeropoint Labs
-/// @dev contract module that allows inheriting contracts to implement crosschain messaging
-/// @dev & processing mechanisms. This is a lightweight version that allows only dispatching and receiving crosschain
+/// @dev contract module that allows inheriting contracts to implement crosschain messaging & processing mechanisms.
+/// @dev This is a lightweight version that allows only dispatching and receiving crosschain
 /// @dev payloads (messages). Inheriting children contracts have the flexibility to define their own processing mechanisms.
 abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
@@ -96,9 +96,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
 
+        /// @dev proofHash will always be 32 bytes length due to keccak256
         if (data.params.length == 32) {
-            /// NOTE: assuming 32 bytes length is always proof
-            /// NOTE: should validate this assumption
             bytes32 proofHash = abi.decode(data.params, (bytes32));
             ++messageQuorum[proofHash];
 

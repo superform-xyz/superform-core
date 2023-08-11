@@ -145,9 +145,11 @@ interface ISuperRegistry {
     /// @param factoryStateRegistry_ the address of the factory state registry
     function setFactoryStateRegistry(address factoryStateRegistry_) external;
 
+    /*
     /// @dev sets the roles state registry address.
     /// @param rolesStateRegistry_ the address of the roles state registry
     function setRolesStateRegistry(address rolesStateRegistry_) external;
+    */
 
     /// @dev allows admin to set the super rbac address
     /// @param superRBAC_ the address of the super rbac
@@ -277,9 +279,11 @@ interface ISuperRegistry {
     /// @return factoryStateRegistry_ the address of the factory state registry
     function factoryStateRegistry() external view returns (address factoryStateRegistry_);
 
+    /*
     /// @dev gets the roles state registry address.
     /// @return rolesStateRegistry_ the address of the state registry
     function rolesStateRegistry() external view returns (address rolesStateRegistry_);
+    */
 
     /// @dev gets the super positions
     /// @return superPositions_ the address of the super positions

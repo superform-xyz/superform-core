@@ -10,7 +10,7 @@ import {DataLib} from "../../libraries/DataLib.sol";
 
 /// @title PayloadHelper
 /// @author ZeroPoint Labs
-/// @dev helps decode payload data more easily
+/// @dev helps decode payload data more easily. Used for off-chain purposes
 contract PayloadHelper is IPayloadHelper {
     using DataLib for uint256;
 
