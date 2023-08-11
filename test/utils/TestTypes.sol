@@ -81,7 +81,7 @@ struct TestAction {
     bytes32 revertRole; // temporary until errors are added to RBAC libraries
     int256 slippage;
     bool multiTx;
-    uint256 externalToken;
+    uint256 externalToken; /// @dev must be 3 if external token is native (for deposits). For withdrawals, externalToken is the output token and should not be set to 3 (no native for output in our tests)
 }
 
 struct TestAssertionVars {

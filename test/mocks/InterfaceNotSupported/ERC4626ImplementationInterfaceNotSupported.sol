@@ -144,7 +144,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         if (address(v.asset()) != vars.collateral) revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
-        /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
         vars.collateralToken.approve(vars.vaultLoc, singleVaultData_.amount);
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
@@ -203,14 +202,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         IERC4626 v = IERC4626(vaultLoc);
 
-        /// @dev FIXME - should approve be reset after deposit? maybe use increase/decrease
         /// DEVNOTE: allowance is modified inside of the IERC20.transferFrom() call
         IERC20(v.asset()).approve(vaultLoc, singleVaultData_.amount);
 
         /// DEVNOTE: This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
 
-        /// @dev FIXME: check subgraph if this should emit amount or dstAmount
         emit Processed(srcChainId, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
@@ -253,7 +250,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// Note Send Tokens to Source Chain
             /// FEAT Note: We could also allow to pass additional chainId arg here
             /// FEAT Note: Requires multiple ILayerZeroEndpoints to be mapped
-            /// FIXME: bridge address should be validated at router level
             dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
@@ -275,7 +271,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             vars.dstAmount = v.redeem(singleVaultData_.amount, srcSender, address(this));
         }
 
-        /// @dev FIXME: check subgraph if this should emit amount or dstAmount
         emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vars.vaultLoc);
 
         /// Here we either fully succeed of Callback.FAIL.

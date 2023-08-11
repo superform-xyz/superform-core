@@ -23,7 +23,6 @@ interface IBaseForm is IERC165Upgradeable {
                         EXTERNAL WRITE FUNCTONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev PRIVILEGED router ONLY FUNCTION.
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
     /// @param srcSender_ The address of the sender of the transaction

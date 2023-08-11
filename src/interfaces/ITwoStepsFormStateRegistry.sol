@@ -5,9 +5,9 @@ import {InitSingleVaultData, TimeLockPayload} from "../types/DataTypes.sol";
 
 /// @title ITwoStepsFormStateRegistry
 /// @author ZeroPoint Labs
-/// @notice Interface for Form State Registry
+/// @notice Interface for Two Steps Form State Registry
 interface ITwoStepsFormStateRegistry {
-    /// @notice Receives request (payload) from TimelockForm to process later
+    /// @notice Receives request (payload) from two steps form to process later
     function receivePayload(
         uint8 type_,
         address srcSender_,
@@ -16,7 +16,7 @@ interface ITwoStepsFormStateRegistry {
         InitSingleVaultData memory data_
     ) external;
 
-    /// @notice Form Keeper finalizes payload to process Timelock withdraw fully
+    /// @notice Form Keeper finalizes payload to process two steps withdraw fully
     /// @param payloadId_ is the id of the payload to finalize
     /// @param txData_ is the off-chain generated transaction data
     /// @param ackExtraData_ is the AMBMessage data to send back to the source stateSync with request to re-mint SuperPositions

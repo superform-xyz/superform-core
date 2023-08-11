@@ -139,7 +139,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     }
 
     /// @dev calls the vault to request unlock
-    /// @notice shares are already burned at this point
+    /// @notice superPositions are already burned at this point
     function _requestUnlock(uint256 amount_) internal returns (uint256 lockedTill_) {
         IERC4626TimelockVault v = IERC4626TimelockVault(vault);
 

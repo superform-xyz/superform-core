@@ -20,7 +20,6 @@ interface ISuperformRouter {
         uint256 liqRequestsLen;
     }
 
-    /// @dev ºacks the necessary data for a cross-chain transaction
     struct DispatchAMBMessageVars {
         TransactionType txType;
         bytes ambData;
