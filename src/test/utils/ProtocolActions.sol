@@ -488,7 +488,6 @@ abstract contract ProtocolActions is BaseSetup {
         }
         /// @dev see @pigeon for this implementation
         vm.recordLogs();
-
         if (action.multiVaults) {
             if (vars.nDestinations == 1) {
                 vars.singleDstMultiVaultStateReq = SingleXChainMultiVaultStateReq(
@@ -553,7 +552,6 @@ abstract contract ProtocolActions is BaseSetup {
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
                     }
-
                     superRouter.multiDstMultiVaultDeposit{value: msgValue}(vars.multiDstMultiVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
                     (, , dstValue, msgValue) = paymentHelper.estimateMultiDstMultiVault(
