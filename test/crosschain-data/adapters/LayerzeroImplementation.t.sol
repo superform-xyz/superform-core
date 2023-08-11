@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "../utils/BaseSetup.sol";
+import "../../utils/BaseSetup.sol";
 import "pigeon/src/layerzero/lib/LZPacket.sol";
 
 import {TransactionType, CallbackType, AMBMessage} from "src/types/DataTypes.sol";

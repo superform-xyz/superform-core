@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "../utils/BaseSetup.sol";
+import "../../utils/BaseSetup.sol";
 import {TransactionType, CallbackType, AMBMessage} from "src/types/DataTypes.sol";
 import {DataLib} from "src/libraries/DataLib.sol";
 import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
