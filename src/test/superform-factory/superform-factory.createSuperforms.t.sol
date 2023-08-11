@@ -27,33 +27,33 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         address vault2;
         uint256 expectedSuperformId1;
         uint256 expectedSuperformId2;
-        uint256 superFormId;
-        address superForm;
+        uint256 superformId;
+        address superform;
         address resSuperform;
         uint256 resFormid;
         uint64 resChainId;
-        uint256[] superFormIds_;
+        uint256[] superformIds_;
         uint64[] chainIds_;
         uint32[] formIds_;
         uint256[] transformedChainIds_;
         uint256[] expectedSuperformIds;
         uint32[] expectedFormBeaconIds;
         uint256[] expectedChainIds;
-        address[] superForms_;
+        address[] superforms_;
         address[] expectedVaults;
     }
 
-    function test_utility_superForms() public {
+    function test_utility_superforms() public {
         UtilityArgs memory vars;
         vm.startPrank(deployer);
 
         vm.selectFork(FORKS[chainId]);
 
         /// @dev testing the getAllSuperforms function
-        (vars.superFormIds_, vars.superForms_) = SuperformFactory(getContract(chainId, "SuperformFactory"))
+        (vars.superformIds_, vars.superforms_) = SuperformFactory(getContract(chainId, "SuperformFactory"))
             .getAllSuperforms();
 
-        assertEq(vars.superFormIds_.length, vars.superForms_.length);
+        assertEq(vars.superformIds_.length, vars.superforms_.length);
 
         /// @dev Testing Coss Chain Superform Deployments
         vars.transformedChainIds_ = new uint256[](vars.chainIds_.length);
@@ -73,7 +73,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         );
     }
 
-    function test_base_setup_superForms() public {
+    function test_base_setup_superforms() public {
         vm.startPrank(deployer);
 
         vm.selectFork(FORKS[chainId]);
@@ -94,17 +94,17 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         uint256 totalSuperformsBefore = SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount();
 
         /// @dev Creating superform using beacon
-        (uint256 superFormIdCreated, address superFormCreated) = SuperformFactory(
+        (uint256 superformIdCreated, address superformCreated) = SuperformFactory(
             getContract(chainId, "SuperformFactory")
         ).createSuperform(formBeaconId, vault);
 
-        (uint256[] memory superFormIds_, address[] memory superForms_) = SuperformFactory(
+        (uint256[] memory superformIds_, address[] memory superforms_) = SuperformFactory(
             getContract(chainId, "SuperformFactory")
         ).getAllSuperformsFromVault(vault);
 
-        assertEq(superFormIdCreated, superFormIds_[superFormIds_.length - 1]);
+        assertEq(superformIdCreated, superformIds_[superformIds_.length - 1]);
 
-        assertEq(superFormCreated, superForms_[superForms_.length - 1]);
+        assertEq(superformCreated, superforms_[superforms_.length - 1]);
 
         uint256 totalSuperformsAfter = SuperformFactory(getContract(chainId, "SuperformFactory")).getSuperformCount();
         assertEq(totalSuperformsAfter, totalSuperformsBefore + 1);

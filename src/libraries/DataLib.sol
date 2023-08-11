@@ -39,50 +39,50 @@ library DataLib {
     }
 
     /// @dev returns the vault-form-chain pair of a superform
-    /// @param superFormId_ is the id of the superform
-    /// @return superForm_ is the address of the superform
+    /// @param superformId_ is the id of the superform
+    /// @return superform_ is the address of the superform
     /// @return formBeaconId_ is the form id
     /// @return chainId_ is the chain id
     function getSuperform(
-        uint256 superFormId_
-    ) internal pure returns (address superForm_, uint32 formBeaconId_, uint64 chainId_) {
-        superForm_ = address(uint160(superFormId_));
-        formBeaconId_ = uint32(superFormId_ >> 160);
-        chainId_ = uint64(superFormId_ >> 192);
+        uint256 superformId_
+    ) internal pure returns (address superform_, uint32 formBeaconId_, uint64 chainId_) {
+        superform_ = address(uint160(superformId_));
+        formBeaconId_ = uint32(superformId_ >> 160);
+        chainId_ = uint64(superformId_ >> 192);
     }
 
     /// @dev returns the vault-form-chain pair of an array of superforms
-    /// @param superFormIds_  array of superforms
-    /// @return superForms_ are the address of the vaults
+    /// @param superformIds_  array of superforms
+    /// @return superforms_ are the address of the vaults
     /// @return formIds_ are the form ids
     /// @return chainIds_ are the chain ids
     function getSuperforms(
-        uint256[] memory superFormIds_
-    ) internal pure returns (address[] memory superForms_, uint32[] memory formIds_, uint64[] memory chainIds_) {
-        superForms_ = new address[](superFormIds_.length);
-        formIds_ = new uint32[](superFormIds_.length);
-        chainIds_ = new uint64[](superFormIds_.length);
+        uint256[] memory superformIds_
+    ) internal pure returns (address[] memory superforms_, uint32[] memory formIds_, uint64[] memory chainIds_) {
+        superforms_ = new address[](superformIds_.length);
+        formIds_ = new uint32[](superformIds_.length);
+        chainIds_ = new uint64[](superformIds_.length);
 
         assembly ("memory-safe") {
-            /// @dev pointer to the end of the superFormIds_ array (shl(5, mload(superFormIds_)) == mul(32, mload(superFormIds_))
-            let end := add(add(superFormIds_, 0x20), shl(5, mload(superFormIds_)))
+            /// @dev pointer to the end of the superformIds_ array (shl(5, mload(superformIds_)) == mul(32, mload(superformIds_))
+            let end := add(add(superformIds_, 0x20), shl(5, mload(superformIds_)))
             /// @dev initialize pointers for all the 4 arrays
-            let i := add(superFormIds_, 0x20)
-            let j := add(superForms_, 0x20)
+            let i := add(superformIds_, 0x20)
+            let j := add(superforms_, 0x20)
             let k := add(formIds_, 0x20)
             let l := add(chainIds_, 0x20)
 
-            let superFormId := 0
+            let superformId := 0
             for {
 
             } 1 {
 
             } {
-                superFormId := mload(i)
-                /// @dev execute what getSuperform() does on a single superFormId and store the results in the respective arrays
-                mstore(j, superFormId)
-                mstore(k, shr(160, superFormId))
-                mstore(l, shr(192, superFormId))
+                superformId := mload(i)
+                /// @dev execute what getSuperform() does on a single superformId and store the results in the respective arrays
+                mstore(j, superformId)
+                mstore(k, shr(160, superformId))
+                mstore(l, shr(192, superformId))
                 /// @dev increment pointers
                 i := add(i, 0x20)
                 j := add(j, 0x20)
@@ -96,38 +96,38 @@ library DataLib {
         }
     }
 
-    /// @dev validates if the superFormId_ belongs to the chainId_
-    /// @param superFormId_ to validate
+    /// @dev validates if the superformId_ belongs to the chainId_
+    /// @param superformId_ to validate
     /// @param chainId_ is the chainId to check if the superform id belongs to
-    function validateSuperformChainId(uint256 superFormId_, uint64 chainId_) internal pure {
-        /// @dev validates if superFormId exists on factory
-        (, , uint64 chainId) = getSuperform(superFormId_);
+    function validateSuperformChainId(uint256 superformId_, uint64 chainId_) internal pure {
+        /// @dev validates if superformId exists on factory
+        (, , uint64 chainId) = getSuperform(superformId_);
 
         if (chainId != chainId_) {
             revert Error.INVALID_CHAIN_ID();
         }
     }
 
-    /// @dev returns the destination chain of a given superForm
-    /// @param superFormId_ is the id of the superform
+    /// @dev returns the destination chain of a given superform
+    /// @param superformId_ is the id of the superform
     /// @return chainId_ is the chain id
-    function getDestinationChain(uint256 superFormId_) internal pure returns (uint64 chainId_) {
-        chainId_ = uint64(superFormId_ >> 192);
+    function getDestinationChain(uint256 superformId_) internal pure returns (uint64 chainId_) {
+        chainId_ = uint64(superformId_ >> 192);
     }
 
-    /// @dev generates the superFormId
-    /// @param superForm_ is the address of the superForm
+    /// @dev generates the superformId
+    /// @param superform_ is the address of the superform
     /// @param formBeaconId_ is the type of the form
-    /// @param chainId_ is the chain id on which the superForm is deployed
+    /// @param chainId_ is the chain id on which the superform is deployed
     function packSuperform(
-        address superForm_,
+        address superform_,
         uint32 formBeaconId_,
         uint64 chainId_
-    ) internal pure returns (uint256 superFormId_) {
+    ) internal pure returns (uint256 superformId_) {
         assembly ("memory-safe") {
-            superFormId_ := superForm_
-            superFormId_ := or(superFormId_, shl(160, formBeaconId_))
-            superFormId_ := or(superFormId_, shl(192, chainId_))
+            superformId_ := superform_
+            superformId_ := or(superformId_, shl(160, formBeaconId_))
+            superformId_ := or(superformId_, shl(192, chainId_))
         }
     }
 }

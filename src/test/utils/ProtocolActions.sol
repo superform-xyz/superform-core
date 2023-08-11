@@ -1,7 +1,6 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-/// @dev lib imports
 import "./BaseSetup.sol";
 import {IPermit2} from "../../vendor/dragonfly-xyz/IPermit2.sol";
 import {ISocketRegistry} from "../../vendor/socket/ISocketRegistry.sol";
@@ -11,8 +10,7 @@ import {SocketRouterMock} from "../mocks/SocketRouterMock.sol";
 import {LiFiMock} from "../mocks/LiFiMock.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
-import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
-
+import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 
@@ -21,54 +19,72 @@ abstract contract ProtocolActions is BaseSetup {
 
     event FailedXChainDeposits(uint256 indexed payloadId);
 
+    /// @dev counts for each chain in each testAction the number of timelocked superforms
     mapping(uint256 chainIdIndex => uint256) countTimelocked;
 
+    /// @dev array of ambIds
     uint8[] public AMBs;
 
+    /// @dev TODO - sujith to comment
     uint8[][] public MultiDstAMBs;
 
+    /// @dev this is always the originating chain of the action
     uint64 public CHAIN_0;
 
+    /// @dev array of destination chains
     uint64[] public DST_CHAINS;
 
+    /// @dev for multiDst scenarios, sometimes its important to consider the number of uniqueDSTs because pigeon aggregates deliveries per destination
     uint64[] public uniqueDSTs;
 
     uint256 public msgValue;
     uint256 public dstValue;
 
+    /// @dev to hold reverting superForms per action kind and for timelocked
     uint256[][] public revertingDepositSFs;
     uint256[][] public revertingWithdrawSFs;
     uint256[][] public revertingWithdrawTimelockedSFs;
 
-    /// @dev temp dynamic arrays to insert in the double array above
+    /// @dev dynamic arrays to insert in the double array above
     uint256[] public revertingDepositSFsPerDst;
     uint256[] public revertingWithdrawSFsPerDst;
     uint256[] public revertingWithdrawTimelockedSFsPerDst;
+
+    /// @dev for multiDst tests with repeating destinations
     struct UniqueDSTInfo {
         uint256 payloadNumber;
-        uint256 nRepetitions;
+        uint256 nRepetitions; /// @dev used for assertions to calculate proper amounts per dst
     }
 
+    /// @dev test slippage and max slippage are global params
     uint256 SLIPPAGE;
-
     uint256 MAX_SLIPPAGE;
 
+    /// @dev bool to flag if scenario should have txData fullfiled on destination for a withdraw (used to test cases where txData expires in mainnet)
     bool GENERATE_WITHDRAW_TX_DATA_ON_DST;
 
+    /// @dev to be aware which destinations have been 'used' already
     mapping(uint64 chainId => UniqueDSTInfo info) public usedDSTs;
 
+    /// @dev used to detect which forms are timelocked
     mapping(uint64 chainId => mapping(uint256 timelockId => uint256 index)) public timeLockedIndexes;
 
+    /// @dev all target underlyings used to build superforms
     mapping(uint64 chainId => mapping(uint256 action => uint256[] underlyingTokenIds)) public TARGET_UNDERLYINGS;
 
+    /// @dev all target vaults used to build superforms
     mapping(uint64 chainId => mapping(uint256 action => uint256[] vaultIds)) public TARGET_VAULTS;
 
+    /// @dev all target forms used to build superforms
     mapping(uint64 chainId => mapping(uint256 action => uint32[] formKinds)) public TARGET_FORM_KINDS;
 
+    /// @dev all amounts for the action
     mapping(uint64 chainId => mapping(uint256 index => uint256[] action)) public AMOUNTS;
 
+    /// @dev if the action is a partial withdraw (has no effect for deposits) - important for assertions
     mapping(uint64 chainId => mapping(uint256 index => bool[] action)) public PARTIAL;
 
+    /// @dev holds txData for destination updates
     mapping(uint64 chainId => bytes[] generatedTxData) public TX_DATA_TO_UPDATE_ON_DST;
 
     /// @dev 1 for socket, 2 for lifi
@@ -76,7 +92,6 @@ abstract contract ProtocolActions is BaseSetup {
 
     mapping(uint64 chainId => mapping(uint256 index => TestType testType)) public TEST_TYPE_PER_DST;
 
-    /// NOTE: Now that we can pass individual actions, this array is only useful for more extended simulations
     TestAction[] public actions;
 
     function setUp() public virtual override {
@@ -86,70 +101,6 @@ abstract contract ProtocolActions is BaseSetup {
     /*///////////////////////////////////////////////////////////////
                             MAIN INTERNAL
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev 'n' deposits rescued per payloadId per destination chain
-    function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
-        if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
-            vm.selectFork(FORKS[CHAIN_0]);
-            uint256 userWethBalanceBefore = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
-
-            vm.selectFork(FORKS[DST_CHAINS[0]]);
-
-            address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
-            uint256[] memory rescueSuperformIds;
-
-            rescueSuperformIds = CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
-
-            LiqRequest[] memory liqRequests = new LiqRequest[](rescueSuperformIds.length);
-
-            uint256 finalAmount;
-            /// @dev simulating slippage from bridges
-            for (uint256 i; i < AMOUNTS[CHAIN_0][actionIndex].length; ++i) {
-                finalAmount += (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) / 10000;
-            }
-
-            SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
-                action.user,
-                coreStateRegistryDst,
-                getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][1][0]]), /// @dev needs to correspond to `underlyingTokenDst_` in _buildLiqBridgeTxData()
-                coreStateRegistryDst,
-                action.externalToken == 3 /// @dev needs to correspond to `underlyingToken` in _buildLiqBridgeTxData()
-                    ? NATIVE_TOKEN
-                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
-                getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]),
-                rescueSuperformIds[0], /// @dev initiating with first rescueSuperformId
-                (AMOUNTS[CHAIN_0][actionIndex][0] * (10000 - uint256(action.slippage))) / 10000, /// @dev initiating with slippage adjusted amount of first vault
-                LIQ_BRIDGES[CHAIN_0][actionIndex][0],
-                MAX_SLIPPAGE,
-                action.externalToken == 3
-                    ? NATIVE_TOKEN
-                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
-                CHAIN_0,
-                DST_CHAINS[0], /// unsure about its usage
-                CHAIN_0,
-                DST_CHAINS[0],
-                action.multiTx,
-                false
-            );
-
-            for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
-                singleVaultCallDataArgs.superFormId = rescueSuperformIds[i];
-                /// @dev slippage adjusted amount that'll be withdrawn
-                singleVaultCallDataArgs.amount =
-                    (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) /
-                    10000;
-                liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
-            }
-
-            vm.prank(deployer);
-            CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
-
-            vm.selectFork(FORKS[CHAIN_0]);
-            uint256 userWethBalanceAfter = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
-
-            assertEq(userWethBalanceAfter, userWethBalanceBefore + finalAmount);
-        }
-    }
 
     function _runMainStages(
         TestAction memory action,
@@ -161,12 +112,14 @@ abstract contract ProtocolActions is BaseSetup {
         bool success
     ) internal {
         console.log("new-action");
+        /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
 
         uint256[][] memory spAmountSummed = new uint256[][](vars.nDestinations);
         uint256[] memory spAmountBeforeWithdrawPerDst;
         uint256 inputBalanceBefore;
 
+        /// @dev asserts superPosition balances before calling superFormRouter
         (, spAmountSummed, spAmountBeforeWithdrawPerDst, inputBalanceBefore) = _assertBeforeAction(
             action,
             multiSuperformsData,
@@ -174,12 +127,15 @@ abstract contract ProtocolActions is BaseSetup {
             vars
         );
 
+        /// @dev passes request data and performs initial call
         vars = _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
         console.log("Stage 2 complete");
 
+        /// @dev simulation of cross-chain message delivery (for x-chain actions)
         aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
         console.log("Stage 3 complete");
 
+        /// @dev processing of message delivery on destination   (for x-chain actions)
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act);
 
         if (!success) {
@@ -188,7 +144,7 @@ abstract contract ProtocolActions is BaseSetup {
         } else if (action.action == Actions.Withdraw && action.testType == TestType.Pass) {
             console.log("Stage 4 complete");
 
-            /// @dev fully successful withdraws finish here
+            /// @dev fully successful withdraws finish here and are asserted
             _assertAfterStage4Withdraw(
                 action,
                 multiSuperformsData,
@@ -203,6 +159,8 @@ abstract contract ProtocolActions is BaseSetup {
             (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) &&
             !(action.testType == TestType.RevertXChainDeposit)
         ) {
+            /// @dev processing of superPositions mint from destination callback on source (for successful deposits)
+
             success = _stage5_process_superPositions_mint(action, vars, multiSuperformsData);
             if (!success) {
                 console.log("Stage 5 failed");
@@ -212,6 +170,7 @@ abstract contract ProtocolActions is BaseSetup {
                 console.log("Stage 5 complete");
 
                 /// @dev if we don't even process main action there is nothing to assert
+                /// @dev assert superpositions mint
                 _assertAfterDeposit(action, multiSuperformsData, singleSuperformsData, vars, inputBalanceBefore);
             }
         }
@@ -220,6 +179,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev for all form kinds including timelocked (first stage)
         /// @dev if there is a failure we immediately re-mint superShares
         /// @dev stage 6 is only required if there is any failed cross chain withdraws
+        /// @dev this is only for x-chain actions
         if (action.action == Actions.Withdraw) {
             bool toAssert;
             (success, returnMessagesNormalWithdraw, toAssert) = _stage6_process_superPositions_withdraw(
@@ -232,7 +192,7 @@ abstract contract ProtocolActions is BaseSetup {
                 return;
             } else if (toAssert) {
                 console.log("Stage 6 complete - asserting");
-
+                /// @dev assert superpositions re-mint
                 _assertAfterFailedWithdraw(
                     action,
                     multiSuperformsData,
@@ -246,14 +206,14 @@ abstract contract ProtocolActions is BaseSetup {
         }
         bytes[] memory returnMessagesTimelockedWithdraw;
 
-        /// @dev stage 7 and 8 are only required for timelocked forms
+        /// @dev stage 7 and 8 are only required for timelocked forms, but also including direct chain actions
         if (action.action == Actions.Withdraw) {
-            /// @dev Keeper needs to know this value to be able to process unlock
             returnMessagesTimelockedWithdraw = _stage7_finalize_timelocked_payload(action, vars);
 
             console.log("Stage 7 complete");
 
             if (action.testType == TestType.Pass) {
+                /// @dev assert superpositions were burned
                 _assertAfterStage7Withdraw(
                     action,
                     multiSuperformsData,
@@ -270,7 +230,7 @@ abstract contract ProtocolActions is BaseSetup {
             _stage8_process_failed_timelocked_xchain_remint(action, vars);
 
             console.log("Stage 8 complete");
-            /// @dev should assert here but issue is the current assert failure function isn't adaptible
+            /// @dev assert superpositions were re-minted
             _assertAfterTimelockFailedWithdraw(
                 action,
                 multiSuperformsData,
@@ -300,10 +260,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 finalAmount;
     }
 
-    /// @dev STEP 1: Build Request Data
-    /// NOTE: This whole step should be looked upon as PROTOCOL action, not USER action
-    /// Request is built for user, but all of operations here would be performed by protocol and not even it's smart contracts
-    /// It's worth checking out if we are not making to many of the assumptions here too.
+    /// @dev STEP 1: Build Request Data for SuperformRouter
     function _stage1_buildReqData(
         TestAction memory action,
         uint256 actionIndex
@@ -315,13 +272,14 @@ abstract contract ProtocolActions is BaseSetup {
             StagesLocalVars memory vars
         )
     {
+        /// @dev just some common sanity checks on test actions
         if (action.revertError != bytes4(0) && action.testType == TestType.Pass) revert MISMATCH_TEST_TYPE();
-
         if (
             (action.testType != TestType.RevertUpdateStateRBAC && action.revertRole != bytes32(0)) ||
             (action.testType == TestType.RevertUpdateStateRBAC && action.revertRole == bytes32(0))
         ) revert MISMATCH_RBAC_TEST();
 
+        /// @dev detects the index of originating chain
         for (uint256 i = 0; i < chainIds.length; i++) {
             if (CHAIN_0 == chainIds[i]) {
                 vars.chain0Index = i;
@@ -337,12 +295,14 @@ abstract contract ProtocolActions is BaseSetup {
         vars.lzEndpoints_1 = new address[](vars.nDestinations);
         vars.toDst = new address[](vars.nDestinations);
 
+        /// @dev the data we want to construct to output to stage 2
         if (action.multiVaults) {
             multiSuperformsData = new MultiVaultSFData[](vars.nDestinations);
         } else {
             singleSuperformsData = new SingleVaultSFData[](vars.nDestinations);
         }
 
+        /// @dev in each destination we want to build our request data
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (DST_CHAINS[i] == chainIds[j]) {
@@ -351,6 +311,7 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
             vars.lzEndpoints_1[i] = LZ_ENDPOINTS[DST_CHAINS[i]];
+            /// @dev first the superformIds are obtained, together with token addresses for src and dst, vault addresses and information about vaults with partial withdraws (for assertions)
             (
                 vars.targetSuperformIds,
                 vars.underlyingSrcToken,
@@ -361,13 +322,12 @@ abstract contract ProtocolActions is BaseSetup {
 
             vars.toDst = new address[](vars.targetSuperformIds.length);
 
-            /// @dev action is sameChain, if there is a liquidity swap it should go to the same form
-            /// @dev if action is cross chain withdraw, user can select to receive a different kind of underlying from source
-
+            /// @dev action is sameChain, if there is a liquidity swap it should go to the same form. In adition, in this case, if action is cross chain withdraw, user can select to receive a different kind of underlying from source
+            /// @dev if action is cross-chain deposit, destination for liquidity is coreStateRegistry
             for (uint256 k = 0; k < vars.targetSuperformIds.length; k++) {
                 if (CHAIN_0 == DST_CHAINS[i] || (action.action == Actions.Withdraw && CHAIN_0 != DST_CHAINS[i])) {
-                    (vars.superFormT, , ) = vars.targetSuperformIds[k].getSuperform();
-                    vars.toDst[k] = payable(vars.superFormT);
+                    (vars.superformT, , ) = vars.targetSuperformIds[k].getSuperform();
+                    vars.toDst[k] = payable(vars.superformT);
                 } else {
                     vars.toDst[k] = payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
                 }
@@ -406,9 +366,9 @@ abstract contract ProtocolActions is BaseSetup {
             } else {
                 uint256 finalAmount = vars.amounts[0];
 
-                /// @dev in sameChain deposit actions, slippage is encoded in the request (extracted from bridge api)
-                /// @dev for all withdraw actions we also encode slippage to simulate a maxWithdraw case (if we input same amount in scenario)
-                /// @note for partial withdraws its negligible the effect of this extra slippage param as it is just for testing
+                /// @dev FOR TESTING AND MAINNET: in sameChain deposit actions, slippage is encoded in the request (extracted from bridge api)
+                /// @dev JUST FOR TESTING: for all withdraw actions we also encode slippage to simulate a maxWithdraw case (if we input same amount in scenario)
+                /// @dev JUST FOR TESTING: for partial withdraws its negligible the effect of this extra slippage param as it is just for testing
                 if (
                     action.slippage != 0 &&
                     ((CHAIN_0 == DST_CHAINS[i] &&
@@ -434,8 +394,8 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.vaultMock[0],
                     CHAIN_0,
                     DST_CHAINS[i],
-                    uint256(chainIds[vars.chain0Index]),
-                    uint256(chainIds[vars.chainDstIndex]),
+                    uint256(chainIds[vars.chain0Index]), /// @dev these are just the originating and dst chain ids casted to uint256 (the liquidity bridge chain ids)
+                    uint256(chainIds[vars.chainDstIndex]), /// @dev these are just the originating and dst chain ids casted to uint256 (the liquidity bridge chain ids)
                     action.multiTx,
                     vars.partialWithdrawVaults.length > 0 ? vars.partialWithdrawVaults[0] : false
                 );
@@ -463,9 +423,12 @@ abstract contract ProtocolActions is BaseSetup {
         StagesLocalVars memory vars
     ) internal returns (StagesLocalVars memory) {
         vm.selectFork(FORKS[CHAIN_0]);
-        SuperformRouter superRouter = SuperformRouter(vars.fromSrc);
+        SuperformRouter superformRouter = SuperformRouter(vars.fromSrc);
 
         PaymentHelper paymentHelper = PaymentHelper(getContract(CHAIN_0, "PaymentHelper"));
+
+        /// @dev this step atempts to detect if there are reverting vaults on direct chain calls, for either deposits or withdraws
+
         bool sameChainDstHasRevertingVault;
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             if (CHAIN_0 == DST_CHAINS[i]) {
@@ -486,10 +449,11 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
         }
-        /// @dev see @pigeon for this implementation
+        /// @dev pigeon requires event logs to be recorded so that it can properly capture the variables it needs to fullfil messages. Check pigeon library docs for more info
         vm.recordLogs();
         if (action.multiVaults) {
             if (vars.nDestinations == 1) {
+                /// @dev data built in step 1 is aggregated with AMBS and dstChains info
                 vars.singleDstMultiVaultStateReq = SingleXChainMultiVaultStateReq(
                     AMBs,
                     DST_CHAINS[0],
@@ -497,6 +461,7 @@ abstract contract ProtocolActions is BaseSetup {
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                    /// @dev payment estimation, differs according to the type of entry point used
                     (, , dstValue, msgValue) = CHAIN_0 != DST_CHAINS[0]
                         ? paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, true)
                         : paymentHelper.estimateSingleDirectMultiVault(
@@ -509,13 +474,17 @@ abstract contract ProtocolActions is BaseSetup {
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
                     }
+                    /// @dev the actual call to the entry point
 
                     CHAIN_0 != DST_CHAINS[0]
-                        ? superRouter.singleXChainMultiVaultDeposit{value: msgValue}(vars.singleDstMultiVaultStateReq)
-                        : superRouter.singleDirectMultiVaultDeposit{value: msgValue}(
+                        ? superformRouter.singleXChainMultiVaultDeposit{value: msgValue}(
+                            vars.singleDstMultiVaultStateReq
+                        )
+                        : superformRouter.singleDirectMultiVaultDeposit{value: msgValue}(
                             SingleDirectMultiVaultStateReq(multiSuperformsData[0])
                         );
                 } else if (action.action == Actions.Withdraw) {
+                    /// @dev payment estimation, differs according to the type of entry point used
                     (, , dstValue, msgValue) = CHAIN_0 != DST_CHAINS[0]
                         ? paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, false)
                         : paymentHelper.estimateSingleDirectMultiVault(
@@ -528,14 +497,19 @@ abstract contract ProtocolActions is BaseSetup {
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
                     }
+                    /// @dev the actual call to the entry point
 
                     CHAIN_0 != DST_CHAINS[0]
-                        ? superRouter.singleXChainMultiVaultWithdraw{value: msgValue}(vars.singleDstMultiVaultStateReq)
-                        : superRouter.singleDirectMultiVaultWithdraw{value: msgValue}(
+                        ? superformRouter.singleXChainMultiVaultWithdraw{value: msgValue}(
+                            vars.singleDstMultiVaultStateReq
+                        )
+                        : superformRouter.singleDirectMultiVaultWithdraw{value: msgValue}(
                             SingleDirectMultiVaultStateReq(multiSuperformsData[0])
                         );
                 }
             } else if (vars.nDestinations > 1) {
+                /// @dev data built in step 1 is aggregated with AMBS and dstChains info
+
                 vars.multiDstMultiVaultStateReq = MultiDstMultiVaultStateReq(
                     MultiDstAMBs,
                     DST_CHAINS,
@@ -543,6 +517,8 @@ abstract contract ProtocolActions is BaseSetup {
                 );
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                    /// @dev payment estimation, differs according to the type of entry point used
+
                     (, , dstValue, msgValue) = paymentHelper.estimateMultiDstMultiVault(
                         vars.multiDstMultiVaultStateReq,
                         true
@@ -552,8 +528,12 @@ abstract contract ProtocolActions is BaseSetup {
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
                     }
-                    superRouter.multiDstMultiVaultDeposit{value: msgValue}(vars.multiDstMultiVaultStateReq);
+
+                    /// @dev the actual call to the entry point
+                    superformRouter.multiDstMultiVaultDeposit{value: msgValue}(vars.multiDstMultiVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
+                    /// @dev payment estimation, differs according to the type of entry point used
+
                     (, , dstValue, msgValue) = paymentHelper.estimateMultiDstMultiVault(
                         vars.multiDstMultiVaultStateReq,
                         false
@@ -563,8 +543,9 @@ abstract contract ProtocolActions is BaseSetup {
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
                     }
+                    /// @dev the actual call to the entry point
 
-                    superRouter.multiDstMultiVaultWithdraw{value: msgValue}(vars.multiDstMultiVaultStateReq);
+                    superformRouter.multiDstMultiVaultWithdraw{value: msgValue}(vars.multiDstMultiVaultStateReq);
                 }
             }
         } else {
@@ -577,6 +558,8 @@ abstract contract ProtocolActions is BaseSetup {
                     );
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                        /// @dev payment estimation, differs according to the type of entry point used
+
                         (, , dstValue, msgValue) = paymentHelper.estimateSingleXChainSingleVault(
                             vars.singleXChainSingleVaultStateReq,
                             true
@@ -586,11 +569,14 @@ abstract contract ProtocolActions is BaseSetup {
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
                         }
+                        /// @dev the actual call to the entry point
 
-                        superRouter.singleXChainSingleVaultDeposit{value: msgValue}(
+                        superformRouter.singleXChainSingleVaultDeposit{value: msgValue}(
                             vars.singleXChainSingleVaultStateReq
                         );
                     } else if (action.action == Actions.Withdraw) {
+                        /// @dev payment estimation, differs according to the type of entry point used
+
                         (, , dstValue, msgValue) = paymentHelper.estimateSingleXChainSingleVault(
                             vars.singleXChainSingleVaultStateReq,
                             false
@@ -600,8 +586,9 @@ abstract contract ProtocolActions is BaseSetup {
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
                         }
+                        /// @dev the actual call to the entry point
 
-                        superRouter.singleXChainSingleVaultWithdraw{value: msgValue}(
+                        superformRouter.singleXChainSingleVaultWithdraw{value: msgValue}(
                             vars.singleXChainSingleVaultStateReq
                         );
                     }
@@ -609,6 +596,8 @@ abstract contract ProtocolActions is BaseSetup {
                     vars.singleDirectSingleVaultStateReq = SingleDirectSingleVaultStateReq(singleSuperformsData[0]);
 
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                        /// @dev payment estimation, differs according to the type of entry point used
+
                         (, , dstValue, msgValue) = paymentHelper.estimateSingleDirectSingleVault(
                             vars.singleDirectSingleVaultStateReq,
                             true
@@ -618,11 +607,14 @@ abstract contract ProtocolActions is BaseSetup {
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
                         }
+                        /// @dev the actual call to the entry point
 
-                        superRouter.singleDirectSingleVaultDeposit{value: msgValue}(
+                        superformRouter.singleDirectSingleVaultDeposit{value: msgValue}(
                             vars.singleDirectSingleVaultStateReq
                         );
                     } else if (action.action == Actions.Withdraw) {
+                        /// @dev payment estimation, differs according to the type of entry point used
+
                         (, , dstValue, msgValue) = paymentHelper.estimateSingleDirectSingleVault(
                             vars.singleDirectSingleVaultStateReq,
                             false
@@ -632,8 +624,9 @@ abstract contract ProtocolActions is BaseSetup {
                         if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                             vm.expectRevert();
                         }
+                        /// @dev the actual call to the entry point
 
-                        superRouter.singleDirectSingleVaultWithdraw{value: msgValue}(
+                        superformRouter.singleDirectSingleVaultWithdraw{value: msgValue}(
                             vars.singleDirectSingleVaultStateReq
                         );
                     }
@@ -645,6 +638,7 @@ abstract contract ProtocolActions is BaseSetup {
                     singleSuperformsData
                 );
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
+                    /// @dev payment estimation, differs according to the type of entry point used
                     (, , dstValue, msgValue) = paymentHelper.estimateMultiDstSingleVault(
                         vars.multiDstSingleVaultStateReq,
                         true
@@ -654,9 +648,12 @@ abstract contract ProtocolActions is BaseSetup {
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
                     }
+                    /// @dev the actual call to the entry point
 
-                    superRouter.multiDstSingleVaultDeposit{value: msgValue}(vars.multiDstSingleVaultStateReq);
+                    superformRouter.multiDstSingleVaultDeposit{value: msgValue}(vars.multiDstSingleVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
+                    /// @dev payment estimation, differs according to the type of entry point used
+
                     (, , dstValue, msgValue) = paymentHelper.estimateMultiDstSingleVault(
                         vars.multiDstSingleVaultStateReq,
                         true
@@ -666,8 +663,9 @@ abstract contract ProtocolActions is BaseSetup {
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
                     }
+                    /// @dev the actual call to the entry point
 
-                    superRouter.multiDstSingleVaultWithdraw{value: msgValue}(vars.multiDstSingleVaultStateReq);
+                    superformRouter.multiDstSingleVaultWithdraw{value: msgValue}(vars.multiDstSingleVaultStateReq);
                 }
             }
         }
@@ -686,7 +684,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 k;
     }
 
-    /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
+    /// @dev STEP 3 X-CHAIN: Use corresponding AMB helper to get the message data and assert
     function _stage3_src_to_dst_amb_delivery(
         TestAction memory action,
         StagesLocalVars memory vars,
@@ -696,20 +694,20 @@ abstract contract ProtocolActions is BaseSetup {
         Stage3InternalVars memory internalVars;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
+            /// @dev if payloadNumber is = 0 still it means uniqueDst has not been found yet (1 repetition)
             if (usedDSTs[DST_CHAINS[i]].payloadNumber == 0) {
-                /// @dev NOTE: re-set struct to 0 to reset repetitions for multi action
+                /// @dev NOTE: re-set struct to null to reset repetitions for multi action
                 delete usedDSTs[DST_CHAINS[i]];
 
                 ++usedDSTs[DST_CHAINS[i]].payloadNumber;
                 uniqueDSTs.push(DST_CHAINS[i]);
             } else {
-                // add repetitions
+                /// @dev add repetitions (for non unique destinations)
                 ++usedDSTs[DST_CHAINS[i]].payloadNumber;
             }
         }
         vars.nUniqueDsts = uniqueDSTs.length;
 
-        /// @dev STEP 3 (FOR XCHAIN) Use corresponding AMB helper to get the message data and assert
         internalVars.toMailboxes = new address[](vars.nUniqueDsts);
         internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);
 
@@ -780,6 +778,7 @@ abstract contract ProtocolActions is BaseSetup {
         MessagingAssertVars[] memory aV = new MessagingAssertVars[](vars.nDestinations);
 
         CoreStateRegistry stateRegistry;
+        /// @dev assert good delivery of message on destination by analyzing superformIds and mounts
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].toChainId = DST_CHAINS[i];
             if (usedDSTs[aV[i].toChainId].nRepetitions == 0) {
@@ -790,17 +789,15 @@ abstract contract ProtocolActions is BaseSetup {
             if (CHAIN_0 != aV[i].toChainId) {
                 stateRegistry = CoreStateRegistry(payable(getContract(aV[i].toChainId, "CoreStateRegistry")));
 
-                /// @dev NOTE: it's better to assert here inside the loop
+                /// @dev increase payloadIds and decode info
                 aV[i].receivedPayloadId = stateRegistry.payloadsCount() - usedDSTs[aV[i].toChainId].payloadNumber + 1;
                 aV[i].data = abi.decode(stateRegistry.payload(aV[i].receivedPayloadId), (AMBMessage));
 
-                /// @dev to assert LzMessage hasn't been tampered with (later we can assert tampers of this message)
-                /// @dev - assert the payload reached destination state registry
                 if (action.multiVaults) {
                     aV[i].expectedMultiVaultsData = multiSuperformsData[i];
                     aV[i].receivedMultiVaultData = abi.decode(aV[i].data.params, (InitMultiVaultData));
 
-                    assertEq(aV[i].expectedMultiVaultsData.superFormIds, aV[i].receivedMultiVaultData.superFormIds);
+                    assertEq(aV[i].expectedMultiVaultsData.superformIds, aV[i].receivedMultiVaultData.superformIds);
 
                     assertEq(aV[i].expectedMultiVaultsData.amounts, aV[i].receivedMultiVaultData.amounts);
                 } else {
@@ -808,7 +805,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     aV[i].receivedSingleVaultData = abi.decode(aV[i].data.params, (InitSingleVaultData));
 
-                    assertEq(aV[i].expectedSingleVaultData.superFormId, aV[i].receivedSingleVaultData.superFormId);
+                    assertEq(aV[i].expectedSingleVaultData.superformId, aV[i].receivedSingleVaultData.superformId);
 
                     assertEq(aV[i].expectedSingleVaultData.amount, aV[i].receivedSingleVaultData.amount);
                 }
@@ -819,7 +816,7 @@ abstract contract ProtocolActions is BaseSetup {
         return aV;
     }
 
-    /// @dev STEP 4 Update state and process src to dst payload
+    /// @dev STEP 4 X-CHAIN: Update state (for deposits), perform multiTxCall (when enabled) and process src to dst payload (for deposits/withdraws)
     function _stage4_process_src_dst_payload(
         TestAction memory action,
         StagesLocalVars memory vars,
@@ -860,12 +857,14 @@ abstract contract ProtocolActions is BaseSetup {
 
                     if (action.testType == TestType.Pass) {
                         if (action.multiTx) {
+                            /// @dev this calls targetVaults again only to obtain underlyingSrcToken and underlyingDstToken. Call could be avoided if file is more optimized
                             (, vars.underlyingSrcToken, vars.underlyingDstToken, , ) = _targetVaults(
                                 CHAIN_0,
                                 DST_CHAINS[i],
                                 actionIndex,
                                 i
                             );
+                            /// @dev first mulitTxCall is performed to ensure tokens reach CoreStateRegistry on deposits
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -888,6 +887,7 @@ abstract contract ProtocolActions is BaseSetup {
                             }
                         }
 
+                        /// @dev this is the step where the amounts are updated taking into account the final slippage
                         if (action.multiVaults) {
                             _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
                         } else if (singleSuperformsData.length > 0) {
@@ -897,6 +897,8 @@ abstract contract ProtocolActions is BaseSetup {
 
                         vm.recordLogs();
 
+                        /// @dev payload processing. This performs the action down to the form level and builds any acknowledgement data needed to bring it back to source
+                        /// @dev hence the record logs before and after and payload delivery to source
                         (success, , ) = _processPayload(
                             PAYLOAD_ID[aV[i].toChainId],
                             aV[i].toChainId,
@@ -908,12 +910,14 @@ abstract contract ProtocolActions is BaseSetup {
                         _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
                     } else if (action.testType == TestType.RevertProcessPayload) {
                         if (action.multiTx) {
+                            /// @dev this calls targetVaults again only to obtain underlyingSrcToken and underlyingDstToken. Call could be avoided if file is more optimized
                             (, vars.underlyingSrcToken, vars.underlyingDstToken, , ) = _targetVaults(
                                 CHAIN_0,
                                 DST_CHAINS[i],
                                 actionIndex,
                                 i
                             );
+                            /// @dev this logic is essentially repeated from above
                             if (action.multiVaults) {
                                 vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                 _batchProcessMultiTx(
@@ -935,11 +939,13 @@ abstract contract ProtocolActions is BaseSetup {
                                 );
                             }
                         }
+                        /// @dev this logic is essentially repeated from above
                         if (action.multiVaults) {
                             _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
                         } else if (singleSuperformsData.length > 0) {
                             _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
                         }
+                        /// @dev process payload will revert in here
                         (success, , ) = _processPayload(
                             PAYLOAD_ID[aV[i].toChainId],
                             aV[i].toChainId,
@@ -953,6 +959,7 @@ abstract contract ProtocolActions is BaseSetup {
                         action.testType == TestType.RevertUpdateStateSlippage ||
                         action.testType == TestType.RevertUpdateStateRBAC
                     ) {
+                        /// @dev branch used just for reverts of updatePayload (process payload is not even called)
                         if (action.multiVaults) {
                             success = _updateMultiVaultDepositPayload(vars.multiVaultsPayloadArg);
                         } else {
@@ -972,6 +979,7 @@ abstract contract ProtocolActions is BaseSetup {
                     }
                     console.log("grabbing logs");
 
+                    /// @dev for scenarios with GENERATE_WITHDRAW_TX_DATA_ON_DST update txData on destination
                     if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
                         if (action.multiVaults) {
                             _updateMultiVaultWithdrawPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId);
@@ -983,8 +991,9 @@ abstract contract ProtocolActions is BaseSetup {
                     }
 
                     vm.recordLogs();
-                    /// note: this is high-lvl processPayload function, even if this happens outside of the user view
-                    /// we need to manually process payloads by invoking sending actual messages
+
+                    /// @dev payload processing. This performs the action down to the form level and builds any acknowledgement data needed to bring it back to source
+                    /// @dev hence the record logs before and after and payload delivery to source
                     (success, , ) = _processPayload(
                         PAYLOAD_ID[aV[i].toChainId],
                         aV[i].toChainId,
@@ -1000,13 +1009,13 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
-    /// @dev STEP 5 Process dst to src payload (mint of SuperPositions for deposits)
+    /// @dev STEP 5 X-CHAIN: Process dst to src payload (mint of SuperPositions for deposits)
     function _stage5_process_superPositions_mint(
         TestAction memory action,
         StagesLocalVars memory vars,
         MultiVaultSFData[] memory multiSuperformsData
     ) internal returns (bool success) {
-        /// assume it will pass by default
+        ///@dev assume it will pass by default
         success = true;
 
         console.log("stage5");
@@ -1018,8 +1027,10 @@ abstract contract ProtocolActions is BaseSetup {
 
             if (CHAIN_0 != toChainId) {
                 if (action.testType == TestType.Pass) {
+                    /// @dev only perform payload processing for successful deposits
+                    /// @dev message is not delivered if ALL deposit vaults fail in a multi vault or single vault
                     if (action.multiVaults) {
-                        if (revertingDepositSFs[i].length == multiSuperformsData[i].superFormIds.length) {
+                        if (revertingDepositSFs[i].length == multiSuperformsData[i].superformIds.length) {
                             continue;
                         }
                     } else {
@@ -1037,13 +1048,13 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
-    /// @dev STEP 6 Process dst to src payload (re-mint of SuperPositions for failed withdraws (inc. 1st stage timelock failures - unlock request))
+    /// @dev STEP 6 X-CHAIN: Process payload back on source (re-mint of SuperPositions for failed withdraws (inc. 1st stage timelock failures - unlock request))
     function _stage6_process_superPositions_withdraw(
         TestAction memory action,
         StagesLocalVars memory vars,
         MultiVaultSFData[] memory multiSuperformsData
     ) internal returns (bool success, bytes[] memory returnMessages, bool toAssert) {
-        /// assume it will pass by default
+        /// @dev assume it will pass by default
         success = true;
         toAssert = false;
         vm.selectFork(FORKS[CHAIN_0]);
@@ -1054,9 +1065,9 @@ abstract contract ProtocolActions is BaseSetup {
             toChainId = DST_CHAINS[i];
 
             if (CHAIN_0 != toChainId) {
-                /// @dev this must not be called if all vaults are reverting timelocked in a given destination
+                /// @dev this must not be called if all vaults are reverting timelocked in a given destination (it is done in a later stage)
                 if (action.multiVaults) {
-                    if (revertingWithdrawTimelockedSFs[i].length == multiSuperformsData[i].superFormIds.length) {
+                    if (revertingWithdrawTimelockedSFs[i].length == multiSuperformsData[i].superformIds.length) {
                         continue;
                     }
                 } else {
@@ -1064,6 +1075,7 @@ abstract contract ProtocolActions is BaseSetup {
                         continue;
                     }
                 }
+                /// @dev if there is any reverting withdraw normal vault, process payload on src
                 if (revertingWithdrawSFs[i].length > 0) {
                     toAssert = true;
                     unchecked {
@@ -1081,6 +1093,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
+    /// @dev STEP 7 DIRECT AND X-CHAIN: Finalize timelocked payload after time has passed
     function _stage7_finalize_timelocked_payload(
         TestAction memory action,
         StagesLocalVars memory vars
@@ -1102,8 +1115,9 @@ abstract contract ProtocolActions is BaseSetup {
                 if (currentUnlockId > 0) {
                     vm.recordLogs();
 
+                    /// @dev perform the calls from beginning to last because of easiness in passing unlock id
                     for (uint256 j = countTimelocked[i]; j > 0; j--) {
-                        /// increase time by 5 days
+                        /// @dev increase time by 5 days
                         vm.warp(block.timestamp + (86400 * 5));
                         (uint256 nativeFee, bytes memory ackAmbParams) = _generateAckGasFeesAndParamsForTimeLock(
                             abi.encode(CHAIN_0, DST_CHAINS[i]),
@@ -1113,6 +1127,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                         vm.prank(deployer);
 
+                        /// @dev if needed in certain test scenarios, re-feed txData for timelocked here
                         returnMessages[i] = twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
@@ -1121,7 +1136,7 @@ abstract contract ProtocolActions is BaseSetup {
                             ackAmbParams
                         );
                     }
-
+                    /// @dev deliver the message for the given destination
                     Vm.Log[] memory logs = vm.getRecordedLogs();
                     _payloadDeliveryHelper(CHAIN_0, DST_CHAINS[i], logs);
                 }
@@ -1130,12 +1145,12 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(initialFork);
     }
 
-    /// NOTE: to process failed messages from 2 step forms registry on xchain withdraws
+    /// @dev STEP 8 X-CHAIN: to process failed messages from 2 step forms registry
     function _stage8_process_failed_timelocked_xchain_remint(
         TestAction memory action,
         StagesLocalVars memory vars
     ) internal returns (bool success) {
-        /// assume it will pass by default
+        /// @dev assume it will pass by default
         success = true;
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -1145,6 +1160,7 @@ abstract contract ProtocolActions is BaseSetup {
                     contracts[CHAIN_0][bytes32(bytes("TwoStepsFormStateRegistry"))]
                 );
 
+                /// @dev if a payload exists to be processed, process it
                 if (twoStepsFormStateRegistry.payload(TWO_STEP_PAYLOAD_ID[CHAIN_0] + 1).length > 0) {
                     unchecked {
                         TWO_STEP_PAYLOAD_ID[CHAIN_0]++;
@@ -1161,11 +1177,77 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
+    /// @dev 'n' deposits rescued per payloadId per destination chain
+    /// @dev TODO - Smit to add better comments
+    function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
+        if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
+            vm.selectFork(FORKS[CHAIN_0]);
+            uint256 userWethBalanceBefore = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+
+            vm.selectFork(FORKS[DST_CHAINS[0]]);
+
+            address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
+            uint256[] memory rescueSuperformIds;
+
+            rescueSuperformIds = CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
+
+            LiqRequest[] memory liqRequests = new LiqRequest[](rescueSuperformIds.length);
+
+            uint256 finalAmount;
+            /// @dev simulating slippage from bridges
+            for (uint256 i; i < AMOUNTS[CHAIN_0][actionIndex].length; ++i) {
+                finalAmount += (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) / 10000;
+            }
+
+            SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
+                action.user,
+                coreStateRegistryDst,
+                getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][1][0]]), /// @dev needs to correspond to `underlyingTokenDst_` in _buildLiqBridgeTxData()
+                coreStateRegistryDst,
+                action.externalToken == 3 /// @dev needs to correspond to `underlyingToken` in _buildLiqBridgeTxData()
+                    ? NATIVE_TOKEN
+                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
+                getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]),
+                rescueSuperformIds[0], /// @dev initiating with first rescueSuperformId
+                (AMOUNTS[CHAIN_0][actionIndex][0] * (10000 - uint256(action.slippage))) / 10000, /// @dev initiating with slippage adjusted amount of first vault
+                LIQ_BRIDGES[CHAIN_0][actionIndex][0],
+                MAX_SLIPPAGE,
+                action.externalToken == 3
+                    ? NATIVE_TOKEN
+                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
+                CHAIN_0,
+                DST_CHAINS[0], /// unsure about its usage
+                CHAIN_0,
+                DST_CHAINS[0],
+                action.multiTx,
+                false
+            );
+
+            for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
+                singleVaultCallDataArgs.superformId = rescueSuperformIds[i];
+                /// @dev slippage adjusted amount that'll be withdrawn
+                singleVaultCallDataArgs.amount =
+                    (AMOUNTS[CHAIN_0][actionIndex][i] * (10000 - uint256(action.slippage))) /
+                    10000;
+                liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
+            }
+
+            vm.prank(deployer);
+            CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
+
+            vm.selectFork(FORKS[CHAIN_0]);
+            uint256 userWethBalanceAfter = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+
+            assertEq(userWethBalanceAfter, userWethBalanceBefore + finalAmount);
+        }
+    }
+
+    /// @dev this internal function just loops over _buildSingleVaultDepositCallData or _buildSingleVaultWithdrawCallData to build MultiVaultSFData
     function _buildMultiVaultCallData(
         MultiVaultCallDataArgs memory args
-    ) internal returns (MultiVaultSFData memory superFormsData) {
-        SingleVaultSFData memory superFormData;
-        uint256 len = args.superFormIds.length;
+    ) internal returns (MultiVaultSFData memory superformsData) {
+        SingleVaultSFData memory superformData;
+        uint256 len = args.superformIds.length;
         LiqRequest[] memory liqRequests = new LiqRequest[](len);
         SingleVaultCallDataArgs memory callDataArgs;
 
@@ -1174,8 +1256,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256[] memory maxSlippageTemp = new uint256[](len);
         for (uint i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
-            /// @dev in sameChain actions, slippage is encoded in the request (extracted from bridge api)
-
+            /// @dev FOR TESTING AND MAINNET:: in sameChain actions, slippage is encoded in the request with the amount (extracted from bridge api)
             if (
                 args.slippage != 0 &&
                 ((args.srcChainId == args.toChainId &&
@@ -1191,7 +1272,7 @@ abstract contract ProtocolActions is BaseSetup {
                 args.toDst[i],
                 args.underlyingTokens[i],
                 args.underlyingTokensDst[i],
-                args.superFormIds[i],
+                args.superformIds[i],
                 finalAmounts[i],
                 args.liqBridges[i],
                 args.maxSlippage,
@@ -1204,16 +1285,16 @@ abstract contract ProtocolActions is BaseSetup {
                 args.partialWithdrawVaults.length > 0 ? args.partialWithdrawVaults[i] : false
             );
             if (args.action == Actions.Deposit || args.action == Actions.DepositPermit2) {
-                superFormData = _buildSingleVaultDepositCallData(callDataArgs, args.action);
+                superformData = _buildSingleVaultDepositCallData(callDataArgs, args.action);
             } else if (args.action == Actions.Withdraw) {
-                superFormData = _buildSingleVaultWithdrawCallData(callDataArgs);
+                superformData = _buildSingleVaultWithdrawCallData(callDataArgs);
             }
-            liqRequests[i] = superFormData.liqRequest;
+            liqRequests[i] = superformData.liqRequest;
             maxSlippageTemp[i] = args.maxSlippage;
         }
 
-        superFormsData = MultiVaultSFData(
-            args.superFormIds,
+        superformsData = MultiVaultSFData(
+            args.superformIds,
             finalAmounts,
             maxSlippageTemp,
             liqRequests,
@@ -1234,37 +1315,38 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 amount_,
         bool withdraw
     ) internal returns (bytes memory txData) {
+        /// @dev for socket
         if (liqBridgeKind_ == 1) {
             ISocketRegistry.BridgeRequest memory bridgeRequest;
             ISocketRegistry.MiddlewareRequest memory middlewareRequest;
             ISocketRegistry.UserRequest memory userRequest;
-            /// @dev middlware request is used if there is a swap involved before the bridging action
+            /// @dev middlware request is used if there is a swap involved before the bridging action (external != underlying)
             /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
             if (externalToken_ != underlyingToken_) {
                 middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                    1, /// request id
-                    0,
+                    1, /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                    0, /// @dev unused in tests
                     externalToken_,
-                    abi.encode(from_)
+                    abi.encode(from_) /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble mainnet
                 );
 
                 bridgeRequest = ISocketRegistry.BridgeRequest(
-                    1, /// request id
-                    0,
-                    withdraw ? externalToken_ : underlyingToken_,
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_)
+                    1, /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                    0, /// @dev unused in tests
+                    withdraw ? externalToken_ : underlyingToken_, /// @dev initial token to extract will be externalToken in args, which is the actual underlyingTokenDst for withdraws (check how the call is made in _buildSingleVaultWithdrawCallData )
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_) /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble mainnet
                 );
             } else {
                 bridgeRequest = ISocketRegistry.BridgeRequest(
-                    1, /// request id
+                    1, /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                     0,
-                    withdraw ? externalToken_ : underlyingToken_,
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_)
+                    withdraw ? externalToken_ : underlyingToken_, /// @dev initial token to extract will be externalToken in args, which is the actual underlyingTokenDst for withdraws (check how the call is made in _buildSingleVaultWithdrawCallData )
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_) /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble mainnet
                 );
             }
 
             userRequest = ISocketRegistry.UserRequest(
-                multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_, /// @dev for cross-chain multiTx actions, 1st liquidity dst is MultiTxProcessor
                 liqBridgeToChainId_,
                 amount_,
                 middlewareRequest,
@@ -1272,45 +1354,46 @@ abstract contract ProtocolActions is BaseSetup {
             );
 
             txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
+            /// @dev for lifi
         } else if (liqBridgeKind_ == 2) {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
             swapData[0] = ILiFi.SwapData(
-                address(0), /// callTo (arbitrary)
-                address(0), /// callTo (approveTo)
+                address(0), /// @dev  callTo (arbitrary)
+                address(0), /// @dev  callTo (approveTo)
                 externalToken_,
-                withdraw ? externalToken_ : underlyingToken_,
+                withdraw ? externalToken_ : underlyingToken_, /// @dev initial token to extract will be externalToken in args, which is the actual underlyingTokenDst for withdraws (check how the call is made in _buildSingleVaultWithdrawCallData )
                 amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_),
-                false // arbitrary
+                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_), /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble mainnet
+                false /// @dev  arbitrary
             );
 
             if (externalToken_ != underlyingToken_) {
                 bridgeData = ILiFi.BridgeData(
-                    bytes32("1"), /// request id
-                    "",
-                    "",
-                    address(0),
-                    withdraw ? externalToken_ : underlyingToken_,
-                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                    bytes32("1"), /// @dev request id, arbitrary number
+                    "", /// @dev unused in tests
+                    "", /// @dev unused in tests
+                    address(0), /// @dev unused in tests
+                    withdraw ? externalToken_ : underlyingToken_, /// @dev initial token to extract will be externalToken in args, which is the actual underlyingTokenDst for withdraws (check how the call is made in _buildSingleVaultWithdrawCallData )
+                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_, /// @dev for cross-chain multiTx actions, 1st liquidity dst is MultiTxProcessor
                     amount_,
                     liqBridgeToChainId_,
-                    true,
-                    false
+                    true, /// @dev if external != underlying, this is true
+                    false /// @dev always false for mocking purposes
                 );
             } else {
                 bridgeData = ILiFi.BridgeData(
-                    bytes32("1"), /// request id
-                    "",
-                    "",
+                    bytes32("1"), /// @dev request id, arbitrary number
+                    "", /// @dev unused in tests
+                    "", /// @dev unused in tests
                     address(0),
-                    withdraw ? externalToken_ : underlyingToken_,
-                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                    withdraw ? externalToken_ : underlyingToken_, /// @dev initial token to extract will be externalToken in args, which is the actual underlyingTokenDst for withdraws (check how the call is made in _buildSingleVaultWithdrawCallData )
+                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_, /// @dev for cross-chain multiTx actions, 1st liquidity dst is MultiTxProcessor
                     amount_,
                     liqBridgeToChainId_,
                     false,
-                    false
+                    false /// @dev always false for mocking purposes
                 );
             }
 
@@ -1331,14 +1414,14 @@ abstract contract ProtocolActions is BaseSetup {
     function _buildSingleVaultDepositCallData(
         SingleVaultCallDataArgs memory args,
         Actions action
-    ) internal returns (SingleVaultSFData memory superFormData) {
+    ) internal returns (SingleVaultSFData memory superformData) {
         SingleVaultDepositLocalVars memory v;
         v.initialFork = vm.activeFork();
 
         v.from = args.fromSrc;
 
         if (args.srcChainId == args.toChainId) {
-            /// @dev same chain deposit, from is Form
+            /// @dev same chain deposit, from is superform (which is inscribed in toDst in the beginning of stage 1)
             v.from = args.toDst;
         }
 
@@ -1356,12 +1439,12 @@ abstract contract ProtocolActions is BaseSetup {
             false
         );
 
+        /// @dev to also inscribe the token address in the Struct
         address liqRequestToken = args.externalToken != args.underlyingToken
             ? args.externalToken
             : args.underlyingToken;
 
-        /// DOMAIN SEPARATOR 0x7f58c5e4853ee1044a9464ec09890a6a21093dfc1fe4952ad7a8723718e3717e
-        /// @dev permit2 calldata
+        /// @dev build permit2 calldata
 
         vm.selectFork(FORKS[args.srcChainId]);
 
@@ -1376,13 +1459,14 @@ abstract contract ProtocolActions is BaseSetup {
             v.permit2Calldata = abi.encode(v.permit.nonce, v.permit.deadline, v.sig);
         }
 
+        /// @dev the actual liq request struct inscription
         v.liqReq = LiqRequest(
             args.liqBridge,
             v.txData,
             liqRequestToken,
             args.amount,
-            liqRequestToken == NATIVE_TOKEN ? args.amount : 0,
-            v.permit2Calldata /// @dev will be empty if action == Actions.Deposit
+            liqRequestToken == NATIVE_TOKEN ? args.amount : 0, /// @dev for native actions amount is also here
+            v.permit2Calldata
         );
 
         if (liqRequestToken != NATIVE_TOKEN) {
@@ -1399,65 +1483,69 @@ abstract contract ProtocolActions is BaseSetup {
         }
         vm.selectFork(v.initialFork);
 
-        superFormData = SingleVaultSFData(args.superFormId, args.amount, args.maxSlippage, v.liqReq, abi.encode(false));
+        /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw vaults without resorting to extra args, just for withdraws)
+        superformData = SingleVaultSFData(args.superformId, args.amount, args.maxSlippage, v.liqReq, abi.encode(false));
     }
 
     struct SingleVaultWithdrawLocalVars {
         ISocketRegistry.MiddlewareRequest middlewareRequest;
         ISocketRegistry.BridgeRequest bridgeRequest;
-        address superRouter;
+        address superformRouter;
         address stateRegistry;
-        IERC1155s superPositions;
+        IERC1155A superPositions;
         bytes txData;
         LiqRequest liqReq;
     }
 
     function _buildSingleVaultWithdrawCallData(
         SingleVaultCallDataArgs memory args
-    ) internal returns (SingleVaultSFData memory superFormData) {
+    ) internal returns (SingleVaultSFData memory superformData) {
         SingleVaultWithdrawLocalVars memory vars;
 
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
 
-        vars.superRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
+        vars.superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
-        vars.superPositions = IERC1155s(ISuperRegistry(vars.stateRegistry).superPositions());
+        vars.superPositions = IERC1155A(ISuperRegistry(vars.stateRegistry).superPositions());
         vm.prank(users[args.user]);
 
-        vars.superPositions.setApprovalForOne(vars.superRouter, args.superFormId, args.amount);
+        /// @dev singleId approvals from ERC1155A are used here https://github.com/superform-xyz/ERC1155A, avoiding approving all superPositions at once
+        vars.superPositions.setApprovalForOne(vars.superformRouter, args.superformId, args.amount);
 
         vm.selectFork(initialFork);
 
         vars.txData = _buildLiqBridgeTxData(
             args.liqBridge,
-            args.underlyingTokenDst,
+            args.underlyingTokenDst, /// @dev notice the switch of underlyingTokenDst with external token, because external token is meant to be received in the end after a withdraw
             args.underlyingToken,
-            args.externalToken,
+            args.externalToken, /// @dev notice the switch of underlyingTokenDst with external token, because external token is meant to be received in the end after a withdraw
             args.toDst,
             args.srcChainId,
-            false,
+            false, /// @dev withdraws are never multiTx
             users[args.user],
             args.liquidityBridgeSrcChainId,
             args.amount,
             true
         );
 
+        /// @dev push all txData to this state var to re-feed in certain test cases
         if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
             TX_DATA_TO_UPDATE_ON_DST[args.toChainId].push(vars.txData);
         }
 
         vars.liqReq = LiqRequest(
             args.liqBridge,
-            GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
+            GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData, /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
             args.amount,
             0,
             ""
         );
 
-        superFormData = SingleVaultSFData(
-            args.superFormId,
+        /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just for withdraws
+        superformData = SingleVaultSFData(
+            args.superformId,
             args.amount,
             args.maxSlippage,
             vars.liqReq,
@@ -1473,12 +1561,11 @@ abstract contract ProtocolActions is BaseSetup {
         uint256[] underlyingTokens;
         uint256[] vaultIds;
         uint32[] formKinds;
-        uint256[] superFormIdsTemp;
+        uint256[] superformIdsTemp;
         uint256 len;
         string underlyingToken;
     }
 
-    /// @dev this function is used to build the 2D arrays in the best way possible
     function _targetVaults(
         uint64 chain0,
         uint64 chain1,
@@ -1501,9 +1588,10 @@ abstract contract ProtocolActions is BaseSetup {
 
         partialWithdrawVaults = PARTIAL[chain1][action];
 
-        vars.superFormIdsTemp = _superFormIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
+        /// @dev constructs superFormIds from provided input info
+        vars.superformIdsTemp = _superformIds(vars.underlyingTokens, vars.vaultIds, vars.formKinds, chain1);
 
-        vars.len = vars.superFormIdsTemp.length;
+        vars.len = vars.superformIdsTemp.length;
 
         if (vars.len == 0) revert LEN_VAULTS_ZERO();
 
@@ -1512,27 +1600,28 @@ abstract contract ProtocolActions is BaseSetup {
         underlyingDstTokensMem = new address[](vars.len);
         vaultMocksMem = new address[](vars.len);
 
+        /// @dev this loop assigns the information in the correct output arrays the best way possible
         for (uint256 i = 0; i < vars.len; i++) {
             vars.underlyingToken = UNDERLYING_TOKENS[
                 vars.underlyingTokens[i] // 1
             ];
 
-            targetSuperformsMem[i] = vars.superFormIdsTemp[i];
+            targetSuperformsMem[i] = vars.superformIdsTemp[i];
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             underlyingDstTokensMem[i] = getContract(chain1, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
             if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
-                revertingDepositSFsPerDst.push(vars.superFormIdsTemp[i]);
+                revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
             }
             if (vars.vaultIds[i] == 4) {
-                revertingWithdrawTimelockedSFsPerDst.push(vars.superFormIdsTemp[i]);
+                revertingWithdrawTimelockedSFsPerDst.push(vars.superformIdsTemp[i]);
             }
             if (vars.vaultIds[i] == 7 || vars.vaultIds[i] == 8) {
-                revertingWithdrawSFsPerDst.push(vars.superFormIdsTemp[i]);
+                revertingWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
             }
-            /// @dev need more if else conditions for other kinds of vaults
         }
 
+        /// @dev this is used to have info on all reverting superforms in all destinations. Storage access is used for easiness of pushing
         revertingDepositSFs.push(revertingDepositSFsPerDst);
         revertingWithdrawSFs.push(revertingWithdrawSFsPerDst);
         revertingWithdrawTimelockedSFs.push(revertingWithdrawTimelockedSFsPerDst);
@@ -1541,24 +1630,27 @@ abstract contract ProtocolActions is BaseSetup {
         delete revertingWithdrawSFsPerDst;
         delete revertingWithdrawTimelockedSFsPerDst;
 
+        /// @dev detects timelocked forms in scenario and counts them
         for (uint256 j; j < vars.formKinds.length; j++) {
             if (vars.formKinds[j] == 1) ++countTimelocked[dst];
             timeLockedIndexes[chain1][countTimelocked[dst]] = j;
         }
     }
 
-    function _superFormIds(
+    function _superformIds(
         uint256[] memory underlyingTokens_,
         uint256[] memory vaultIds_,
         uint32[] memory formKinds_,
         uint64 chainId_
     ) internal view returns (uint256[] memory) {
-        uint256[] memory superFormIds_ = new uint256[](vaultIds_.length);
+        uint256[] memory superformIds_ = new uint256[](vaultIds_.length);
+        /// @dev test sanity checks
         if (vaultIds_.length != formKinds_.length) revert INVALID_TARGETS();
         if (vaultIds_.length != underlyingTokens_.length) revert INVALID_TARGETS();
 
+        /// @dev obtains superform addresses through string concatenation, notice what is done in BaseSetup to save these in contracts mapping
         for (uint256 i = 0; i < vaultIds_.length; i++) {
-            address superForm = getContract(
+            address superform = getContract(
                 chainId_,
                 string.concat(
                     UNDERLYING_TOKENS[underlyingTokens_[i]],
@@ -1568,10 +1660,11 @@ abstract contract ProtocolActions is BaseSetup {
                 )
             );
 
-            superFormIds_[i] = DataLib.packSuperform(superForm, FORM_BEACON_IDS[formKinds_[i]], chainId_);
+            /// @dev superformids are built here
+            superformIds_[i] = DataLib.packSuperform(superform, FORM_BEACON_IDS[formKinds_[i]], chainId_);
         }
 
-        return superFormIds_;
+        return superformIds_;
     }
 
     function _updateMultiVaultDepositPayload(updateMultiVaultDepositPayloadArgs memory args) internal returns (bool) {
@@ -1581,6 +1674,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 len = args.amounts.length;
         uint256[] memory finalAmounts = new uint256[](len);
 
+        /// @dev slippage calculation
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
@@ -1588,11 +1682,14 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
 
+        /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
                 .updateMultiVaultDepositPayload(args.payloadId, finalAmounts);
+
+            /// @dev if scenario is meant to revert here (e.g invalid slippage)
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
@@ -1602,6 +1699,7 @@ abstract contract ProtocolActions is BaseSetup {
                 .updateMultiVaultDepositPayload(args.payloadId, finalAmounts);
 
             return false;
+            /// @dev if scenario is meant to revert here (e.g invalid role)
         } else if (args.testType == TestType.RevertUpdateStateRBAC) {
             vm.prank(users[2]);
             bytes memory errorMsg = getAccessControlErrorMsg(users[2], args.revertRole);
@@ -1628,12 +1726,14 @@ abstract contract ProtocolActions is BaseSetup {
         if (args.slippage > 0) {
             finalAmount = (args.amount * (10000 - uint256(args.slippage))) / 10000;
         }
+        /// @dev if test type is RevertProcessPayload, revert is further down the call chain
 
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
                 .updateSingleVaultDepositPayload(args.payloadId, finalAmount);
+            /// @dev if scenario is meant to revert here (e.g invalid slippage)
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
@@ -1643,6 +1743,8 @@ abstract contract ProtocolActions is BaseSetup {
                 .updateSingleVaultDepositPayload(args.payloadId, finalAmount);
 
             return false;
+
+            /// @dev if scenario is meant to revert here (e.g invalid role)
         } else if (args.testType == TestType.RevertUpdateStateRBAC) {
             vm.prank(users[2]);
             bytes memory errorMsg = getAccessControlErrorMsg(users[2], args.revertRole);
@@ -1758,28 +1860,28 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 amount_
     ) internal returns (bytes memory txData) {
         if (liqBridgeKind_ == 1) {
+            /// @dev for socket
             ISocketRegistry.BridgeRequest memory bridgeRequest;
             ISocketRegistry.MiddlewareRequest memory middlewareRequest;
             ISocketRegistry.UserRequest memory userRequest;
-            /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
+
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// request id
-                0,
+                1, /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                0, /// @dev unused in tests
                 underlyingTokenDst_,
                 abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingTokenDst_)
             );
 
             /// @dev empty bridge request
             bridgeRequest = ISocketRegistry.BridgeRequest(
-                0, /// id
-                0,
+                0, /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
+                0, /// @dev unused in tests
                 address(0),
                 abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingTokenDst_)
             );
 
             userRequest = ISocketRegistry.UserRequest(
-                getContract(toChainId_, "CoreStateRegistry"),
+                getContract(toChainId_, "CoreStateRegistry"), /// @dev next token destination is coreStateRegistry
                 uint256(toChainId_),
                 amount_,
                 middlewareRequest,
@@ -1788,12 +1890,13 @@ abstract contract ProtocolActions is BaseSetup {
 
             txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
         } else if (liqBridgeKind_ == 2) {
+            /// @dev for lifi
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
             swapData[0] = ILiFi.SwapData(
-                address(0), /// callTo (arbitrary)
-                address(0), /// callTo (approveTo)
+                address(0), ///  @dev  callTo (arbitrary)
+                address(0), ///  @dev  callTo (approveTo)
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
@@ -1802,16 +1905,16 @@ abstract contract ProtocolActions is BaseSetup {
             );
 
             bridgeData = ILiFi.BridgeData(
-                bytes32("1"), /// request id
-                "",
-                "",
+                bytes32("1"), /// @dev request id, arbitrary number
+                "", /// @dev unused in tests
+                "", /// @dev unused in tests
                 address(0),
                 underlyingTokenDst_,
-                getContract(toChainId_, "CoreStateRegistry"),
+                getContract(toChainId_, "CoreStateRegistry"), /// @dev next destination
                 amount_,
                 uint256(toChainId_),
-                false,
-                true
+                false, /// @dev false in the case of multiTxProcessor to only perform _bridge call (assumes tokens are already swapped)
+                true /// @dev true in the case of multiTxProcessor to only perform _bridge call (assumes tokens are already swapped)
             );
 
             txData = abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
@@ -1830,6 +1933,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
 
+        /// @dev liqData is rebuilt here to perform to send the tokens from MultiTxProcessor to CoreStateRegistry
         bytes memory txData = _buildLiqBridgeTxDataMultiTx(
             liqBridgeKind_,
             underlyingToken_,
@@ -1863,6 +1967,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         bytes[] memory txDatas = new bytes[](underlyingTokens_.length);
 
+        /// @dev liqData is rebuilt here to perform to send the tokens from MultiTxProcessor to CoreStateRegistry
         for (uint256 i = 0; i < underlyingTokens_.length; i++) {
             txDatas[i] = _buildLiqBridgeTxDataMultiTx(
                 liqBridgeKinds_[i],
@@ -1920,9 +2025,10 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
+    /// @dev generalized internal function to assert multiVault superPosition balances. if partial withdraws only asserts current balance is greater than amount to assert
     function _assertMultiVaultBalance(
         uint256 user,
-        uint256[] memory superFormIds,
+        uint256[] memory superformIds,
         uint256[] memory amountsToAssert,
         bool[] memory partialWithdrawVaults
     ) internal {
@@ -1931,13 +2037,13 @@ abstract contract ProtocolActions is BaseSetup {
 
         address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
 
-        IERC1155s superPositions = IERC1155s(superPositionsAddress);
+        IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
         uint256 currentBalanceOfSp;
 
         bool partialWithdraw = partialWithdrawVaults.length > 0;
-        for (uint256 i = 0; i < superFormIds.length; i++) {
-            currentBalanceOfSp = superPositions.balanceOf(users[user], superFormIds[i]);
+        for (uint256 i = 0; i < superformIds.length; i++) {
+            currentBalanceOfSp = superPositions.balanceOf(users[user], superformIds[i]);
             if (partialWithdrawVaults.length > 0) partialWithdraw = partialWithdrawVaults[i];
 
             if (!partialWithdraw) {
@@ -1948,22 +2054,24 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
-    function _assertSingleVaultBalance(uint256 user, uint256 superFormId, uint256 amountToAssert) internal {
+    /// @dev generalized internal function to assert single superPosition balances.
+    function _assertSingleVaultBalance(uint256 user, uint256 superformId, uint256 amountToAssert) internal {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
         address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
 
-        IERC1155s superPositions = IERC1155s(superPositionsAddress);
+        IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
-        uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
+        uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superformId);
 
         assertEq(currentBalanceOfSp, amountToAssert);
     }
 
+    /// @dev generalized internal function to assert single superPosition balances of partial withdraws
     function _assertSingleVaultPartialWithdrawBalance(
         uint256 user,
-        uint256 superFormId,
+        uint256 superformId,
         uint256 amountToAssert
     ) internal {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
@@ -1971,15 +2079,15 @@ abstract contract ProtocolActions is BaseSetup {
 
         address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
 
-        IERC1155s superPositions = IERC1155s(superPositionsAddress);
+        IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
-        uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superFormId);
+        uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superformId);
         assertGt(currentBalanceOfSp, amountToAssert);
     }
 
     struct DepositMultiSPCalculationVars {
         uint256 lenSuperforms;
-        address[] superForms;
+        address[] superforms;
         uint256 finalAmount;
         bool foundRevertingDeposit;
         uint256 i;
@@ -1987,6 +2095,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 k;
     }
 
+    /// @dev function to calculate summed amounts per superForms (repeats the amount for the same superForm if repeated)
     function _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
         MultiVaultSFData memory multiSuperformsData,
         bool assertWithSlippage,
@@ -1997,33 +2106,36 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 dstIndex
     ) internal returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 totalSpAmount) {
         DepositMultiSPCalculationVars memory v;
-        v.lenSuperforms = multiSuperformsData.superFormIds.length;
+        v.lenSuperforms = multiSuperformsData.superformIds.length;
         emptyAmount = new uint256[](v.lenSuperforms);
         spAmountSummed = new uint256[](v.lenSuperforms);
 
-        // create an array of amounts summing the amounts of the same superform ids
-        (v.superForms, , ) = DataLib.getSuperforms(multiSuperformsData.superFormIds);
+        /// @dev create an array of amounts summing the amounts of the same superform ids
+        (v.superforms, , ) = DataLib.getSuperforms(multiSuperformsData.superformIds);
 
         for (v.i = 0; v.i < v.lenSuperforms; v.i++) {
             totalSpAmount += multiSuperformsData.amounts[v.i];
             for (v.j = 0; v.j < v.lenSuperforms; v.j++) {
                 v.foundRevertingDeposit = false;
-
+                /// @dev find if a superform is a reverting
                 if (lenRevertDeposit > 0) {
                     for (v.k = 0; v.k < lenRevertDeposit; v.k++) {
                         v.foundRevertingDeposit =
-                            revertingDepositSFs[dstIndex][v.k] == multiSuperformsData.superFormIds[v.i];
+                            revertingDepositSFs[dstIndex][v.k] == multiSuperformsData.superformIds[v.i];
                         if (v.foundRevertingDeposit) break;
                     }
                 }
+                /// @dev if a superform is repeated but not reverting
                 if (
-                    multiSuperformsData.superFormIds[v.i] == multiSuperformsData.superFormIds[v.j] &&
+                    multiSuperformsData.superformIds[v.i] == multiSuperformsData.superformIds[v.j] &&
                     !v.foundRevertingDeposit
                 ) {
+                    /// @dev calculate amounts with slippage if needed for assertions
                     v.finalAmount = multiSuperformsData.amounts[v.j];
                     if (assertWithSlippage && slippage != 0 && !sameChain) {
                         v.finalAmount = (multiSuperformsData.amounts[v.j] * (10000 - uint256(slippage))) / 10000;
                     }
+                    /// @dev add number of repetitions to properly assert
                     v.finalAmount = v.finalAmount * repetitions;
 
                     spAmountSummed[v.i] += v.finalAmount;
@@ -2031,10 +2143,12 @@ abstract contract ProtocolActions is BaseSetup {
             }
             vm.selectFork(FORKS[DST_CHAINS[dstIndex]]);
 
-            spAmountSummed[v.i] = IBaseForm(v.superForms[v.i]).previewDepositTo(spAmountSummed[v.i]);
+            /// @dev calculate the final amount summed on the basis of previewDeposit
+            spAmountSummed[v.i] = IBaseForm(v.superforms[v.i]).previewDepositTo(spAmountSummed[v.i]);
         }
     }
 
+    /// @dev function to calculate amounts per superForms (repeats the amount for the same superForm if repeated) after a normal withdraw
     function _spAmountsMultiAfterWithdraw(
         MultiVaultSFData memory multiSuperformsData,
         uint256 user,
@@ -2044,14 +2158,14 @@ abstract contract ProtocolActions is BaseSetup {
         bool sameDst,
         uint256 dstIndex
     ) internal returns (uint256[] memory spAmountFinal) {
-        uint256 lenSuperforms = multiSuperformsData.superFormIds.length;
+        uint256 lenSuperforms = multiSuperformsData.superformIds.length;
         spAmountFinal = new uint256[](lenSuperforms);
 
         if (sameDst && lenRevertWithdraw > 0) {
             spAmountFinal = multiSuperformsData.amounts;
         } else {
-            // create an array of amounts summing the amounts of the same superform ids
-            (address[] memory superForms, , ) = DataLib.getSuperforms(multiSuperformsData.superFormIds);
+            /// @dev create an array of amounts summing the amounts of the same superform ids
+            (address[] memory superforms, , ) = DataLib.getSuperforms(multiSuperformsData.superformIds);
             bool foundRevertingWithdraw;
             bool foundRevertingWithdrawTimelocked;
             for (uint256 i = 0; i < lenSuperforms; i++) {
@@ -2064,20 +2178,22 @@ abstract contract ProtocolActions is BaseSetup {
                     if (lenRevertWithdraw > 0) {
                         for (uint k = 0; k < lenRevertWithdraw; k++) {
                             foundRevertingWithdraw =
-                                revertingWithdrawSFs[dstIndex][k] == multiSuperformsData.superFormIds[i];
+                                revertingWithdrawSFs[dstIndex][k] == multiSuperformsData.superformIds[i];
                             if (foundRevertingWithdraw) break;
                         }
                     }
                     if (lenRevertWithdrawTimelocked > 0) {
                         for (uint k = 0; k < lenRevertWithdrawTimelocked; k++) {
                             foundRevertingWithdrawTimelocked =
-                                revertingWithdrawTimelockedSFs[dstIndex][k] == multiSuperformsData.superFormIds[i];
+                                revertingWithdrawTimelockedSFs[dstIndex][k] == multiSuperformsData.superformIds[i];
                             if (foundRevertingWithdrawTimelocked) break;
                         }
                     }
-
+                    /// @dev if superForm is repeated and NOT (reverting and same destination) amount is decreated
+                    /// @dev if it was reverting we should not decrease (amount is reminted)
+                    /// @dev if same destination it should not be asserted here
                     if (
-                        multiSuperformsData.superFormIds[i] == multiSuperformsData.superFormIds[j] &&
+                        multiSuperformsData.superformIds[i] == multiSuperformsData.superformIds[j] &&
                         !(sameDst && foundRevertingWithdraw)
                     ) {
                         spAmountFinal[i] -= multiSuperformsData.amounts[j];
@@ -2087,6 +2203,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
+    /// @dev function to calculate amounts per superForms (repeats the amount for the same superForm if repeated) after a timelocked withdraw
     function _spAmountsMultiAfterStage7Withdraw(
         MultiVaultSFData memory multiSuperformsData,
         uint256 user,
@@ -2096,11 +2213,11 @@ abstract contract ProtocolActions is BaseSetup {
         bool sameDst,
         uint256 dstIndex
     ) internal returns (uint256[] memory spAmountFinal) {
-        uint256 lenSuperforms = multiSuperformsData.superFormIds.length;
+        uint256 lenSuperforms = multiSuperformsData.superformIds.length;
         spAmountFinal = new uint256[](lenSuperforms);
 
-        // create an array of amounts summing the amounts of the same superform ids
-        (address[] memory superForms, , ) = DataLib.getSuperforms(multiSuperformsData.superFormIds);
+        /// @dev create an array of amounts summing the amounts of the same superform ids
+        (address[] memory superforms, , ) = DataLib.getSuperforms(multiSuperformsData.superformIds);
         bool foundRevertingWithdraw;
         bool foundRevertingWithdrawTimelocked;
 
@@ -2113,20 +2230,24 @@ abstract contract ProtocolActions is BaseSetup {
                 if (lenRevertWithdraw > 0) {
                     for (uint k = 0; k < lenRevertWithdraw; k++) {
                         foundRevertingWithdraw =
-                            revertingWithdrawSFs[dstIndex][k] == multiSuperformsData.superFormIds[i];
+                            revertingWithdrawSFs[dstIndex][k] == multiSuperformsData.superformIds[i];
                         if (foundRevertingWithdraw) break;
                     }
                 }
                 if (lenRevertWithdrawTimelocked > 0) {
                     for (uint k = 0; k < lenRevertWithdrawTimelocked; k++) {
                         foundRevertingWithdrawTimelocked =
-                            revertingWithdrawTimelockedSFs[dstIndex][k] == multiSuperformsData.superFormIds[i];
+                            revertingWithdrawTimelockedSFs[dstIndex][k] == multiSuperformsData.superformIds[i];
                         if (foundRevertingWithdrawTimelocked) break;
                     }
                 }
 
+                /// @dev if superForm is repeated and NOT ((same destination and reverting) OR (xchain and reverting)) amount is decreated
+                /// @dev if it was reverting we should not decrease (amount is reminted)
+                /// @dev if same destination it should not be asserted here
+                /// @dev TODO likely needs some optimization of operands
                 if (
-                    multiSuperformsData.superFormIds[i] == multiSuperformsData.superFormIds[j] &&
+                    multiSuperformsData.superformIds[i] == multiSuperformsData.superformIds[j] &&
                     !((sameDst && (foundRevertingWithdraw || foundRevertingWithdrawTimelocked)) ||
                         (!sameDst && foundRevertingWithdraw))
                 ) {
@@ -2136,24 +2257,26 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
+    /// @dev function to calculate amounts per superForms (repeats the amount for the same superForm if repeated) after a failed normal withdraw
     function _spAmountsMultiAfterFailedWithdraw(
         MultiVaultSFData memory multiSuperformsData,
         uint256 user,
         uint256[] memory currentSPBeforeWithdaw,
         uint256[] memory failedSPAmounts
     ) internal returns (uint256[] memory spAmountFinal) {
-        uint256 lenSuperforms = multiSuperformsData.superFormIds.length;
+        uint256 lenSuperforms = multiSuperformsData.superformIds.length;
         spAmountFinal = new uint256[](lenSuperforms);
 
-        // create an array of amounts summing the amounts of the same superform ids
-        (address[] memory superForms, , ) = DataLib.getSuperforms(multiSuperformsData.superFormIds);
+        /// @dev create an array of amounts summing the amounts of the same superform ids
+        (address[] memory superforms, , ) = DataLib.getSuperforms(multiSuperformsData.superformIds);
 
         for (uint256 i = 0; i < lenSuperforms; i++) {
             spAmountFinal[i] = currentSPBeforeWithdaw[i];
 
             for (uint256 j = 0; j < lenSuperforms; j++) {
+                /// @dev if repeated and number of failed is 0, decrease
                 if (
-                    multiSuperformsData.superFormIds[i] == multiSuperformsData.superFormIds[j] &&
+                    multiSuperformsData.superformIds[i] == multiSuperformsData.superformIds[j] &&
                     failedSPAmounts[i] == 0
                 ) {
                     spAmountFinal[i] -= multiSuperformsData.amounts[j];
@@ -2166,7 +2289,7 @@ abstract contract ProtocolActions is BaseSetup {
         address token;
         bool partialWithdrawVault;
         bool[] partialWithdrawVaults;
-        address superForm;
+        address superform;
     }
 
     function _assertBeforeAction(
@@ -2183,7 +2306,6 @@ abstract contract ProtocolActions is BaseSetup {
             uint256 inputBalanceBefore
         )
     {
-        /// @dev spAmountSummed likely needs to be a double array
         AssertBeforeActionVars memory v;
         if (action.multiVaults) {
             v.token = multiSuperformsData[0].liqRequests[0].token;
@@ -2194,8 +2316,10 @@ abstract contract ProtocolActions is BaseSetup {
             }
             uint256[] memory spAmountSummedPerDst;
             spAmountSummed = new uint256[][](vars.nDestinations);
+
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
+                /// @dev obtain amounts to assert
                 (emptyAmount, spAmountSummedPerDst, ) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     multiSuperformsData[i],
                     false,
@@ -2205,9 +2329,11 @@ abstract contract ProtocolActions is BaseSetup {
                     0,
                     i
                 );
+
+                /// @dev assert
                 _assertMultiVaultBalance(
                     action.user,
-                    multiSuperformsData[i].superFormIds,
+                    multiSuperformsData[i].superformIds,
                     action.action == Actions.Withdraw ? spAmountSummedPerDst : emptyAmount,
                     v.partialWithdrawVaults
                 );
@@ -2223,24 +2349,24 @@ abstract contract ProtocolActions is BaseSetup {
             }
             spAmountBeforeWithdrawPerDestination = new uint256[](vars.nDestinations);
             for (uint256 i = 0; i < vars.nDestinations; i++) {
-                (v.superForm, , ) = singleSuperformsData[i].superFormId.getSuperform();
+                (v.superform, , ) = singleSuperformsData[i].superformId.getSuperform();
                 v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
-                spAmountBeforeWithdrawPerDestination[i] = IBaseForm(v.superForm).previewDepositTo(
+                spAmountBeforeWithdrawPerDestination[i] = IBaseForm(v.superform).previewDepositTo(
                     singleSuperformsData[i].amount
                 );
 
                 if (!v.partialWithdrawVault) {
                     _assertSingleVaultBalance(
                         action.user,
-                        singleSuperformsData[i].superFormId,
+                        singleSuperformsData[i].superformId,
                         action.action == Actions.Withdraw ? spAmountBeforeWithdrawPerDestination[i] : 0
                     );
                 } else {
                     _assertSingleVaultPartialWithdrawBalance(
                         action.user,
-                        singleSuperformsData[i].superFormId,
+                        singleSuperformsData[i].superformId,
                         spAmountBeforeWithdrawPerDestination[i]
                     );
                 }
@@ -2271,6 +2397,7 @@ abstract contract ProtocolActions is BaseSetup {
             if (revertingDepositSFs.length > 0) lenRevertDeposit = revertingDepositSFs[i].length;
 
             if (action.multiVaults) {
+                /// @dev obtain amounts to assert. Count with destination repetitions
                 (, spAmountSummed, totalSpAmount) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     multiSuperformsData[i],
                     true,
@@ -2285,27 +2412,27 @@ abstract contract ProtocolActions is BaseSetup {
                 token = multiSuperformsData[0].liqRequests[0].token;
 
                 if (CHAIN_0 == DST_CHAINS[i] && lenRevertDeposit > 0) {
-                    /// assert spToken Balance to zero if one of the multi vaults is reverting in same chain
+                    /// @dev assert spToken Balance to zero if one of the multi vaults is reverting in same chain (entire call is reverted)
                     _assertMultiVaultBalance(
                         action.user,
-                        multiSuperformsData[i].superFormIds,
-                        new uint256[](multiSuperformsData[i].superFormIds.length),
-                        new bool[](multiSuperformsData[i].superFormIds.length)
+                        multiSuperformsData[i].superformIds,
+                        new uint256[](multiSuperformsData[i].superformIds.length),
+                        new bool[](multiSuperformsData[i].superformIds.length)
                     );
                 } else {
-                    /// assert spToken Balance
+                    /// @dev assert spToken Balance
                     _assertMultiVaultBalance(
                         action.user,
-                        multiSuperformsData[i].superFormIds,
+                        multiSuperformsData[i].superformIds,
                         spAmountSummed,
-                        new bool[](multiSuperformsData[i].superFormIds.length)
+                        new bool[](multiSuperformsData[i].superformIds.length)
                     );
                 }
             } else {
                 foundRevertingDeposit = false;
 
                 if (lenRevertDeposit > 0) {
-                    foundRevertingDeposit = revertingDepositSFs[i][0] == singleSuperformsData[i].superFormId;
+                    foundRevertingDeposit = revertingDepositSFs[i][0] == singleSuperformsData[i].superformId;
                 }
 
                 totalSpAmountAllDestinations += singleSuperformsData[i].amount;
@@ -2319,15 +2446,15 @@ abstract contract ProtocolActions is BaseSetup {
                 }
 
                 finalAmount = repetitions * finalAmount;
-                /// assert spToken Balance
+                /// @dev assert spToken Balance. If reverting amount of sp should be 0 (assuming no action before this one)
                 _assertSingleVaultBalance(
                     action.user,
-                    singleSuperformsData[i].superFormId,
+                    singleSuperformsData[i].superformId,
                     foundRevertingDeposit ? 0 : finalAmount
                 );
             }
         }
-
+        /// @dev TODO
         if (token == NATIVE_TOKEN) {
             console.log("balance now", users[action.user].balance);
             console.log("balance Before action", inputBalanceBefore);
@@ -2370,15 +2497,14 @@ abstract contract ProtocolActions is BaseSetup {
             v.sameDst = CHAIN_0 == DST_CHAINS[i];
             v.lenRevertWithdraw = 0;
             v.lenRevertWithdrawTimelocked = 0;
-            if (revertingWithdrawSFs.length > 0)
-                /// @ev if doubleArray exists
-                v.lenRevertWithdraw = revertingWithdrawSFs[i].length;
+            if (revertingWithdrawSFs.length > 0) v.lenRevertWithdraw = revertingWithdrawSFs[i].length;
 
             if (revertingWithdrawTimelockedSFs.length > 0)
                 v.lenRevertWithdrawTimelocked = revertingWithdrawTimelockedSFs[i].length;
 
             if (action.multiVaults) {
                 v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
+                /// @dev obtain amounts to assert
 
                 v.spAmountFinal = _spAmountsMultiAfterWithdraw(
                     multiSuperformsData[i],
@@ -2390,9 +2516,11 @@ abstract contract ProtocolActions is BaseSetup {
                     i
                 );
 
+                /// @dev assert
+
                 _assertMultiVaultBalance(
                     action.user,
-                    multiSuperformsData[i].superFormIds,
+                    multiSuperformsData[i].superformIds,
                     v.spAmountFinal,
                     v.partialWithdrawVaults
                 );
@@ -2402,25 +2530,27 @@ abstract contract ProtocolActions is BaseSetup {
                 v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
 
                 if (v.lenRevertWithdraw > 0) {
-                    v.foundRevertingWithdraw = revertingWithdrawSFs[i][0] == singleSuperformsData[i].superFormId;
+                    v.foundRevertingWithdraw = revertingWithdrawSFs[i][0] == singleSuperformsData[i].superformId;
                 } else if (v.lenRevertWithdrawTimelocked > 0) {
                     v.foundRevertingWithdrawTimelocked =
-                        revertingWithdrawTimelockedSFs[i][0] == singleSuperformsData[i].superFormId;
+                        revertingWithdrawTimelockedSFs[i][0] == singleSuperformsData[i].superformId;
                 }
 
                 if (!v.partialWithdrawVault) {
                     /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
+                    /// @dev notice the amount sent for non (same DSt and reverting) is amount after burn
                     _assertSingleVaultBalance(
                         action.user,
-                        singleSuperformsData[i].superFormId,
+                        singleSuperformsData[i].superformId,
                         v.sameDst && v.foundRevertingWithdraw
                             ? spAmountBeforeWithdrawPerDst[i]
                             : spAmountBeforeWithdrawPerDst[i] - singleSuperformsData[i].amount
                     );
                 } else {
+                    /// @dev notice the amount sent for non (same DSt and reverting) is amount after burn
                     _assertSingleVaultPartialWithdrawBalance(
                         action.user,
-                        singleSuperformsData[i].superFormId,
+                        singleSuperformsData[i].superformId,
                         v.sameDst && v.foundRevertingWithdraw
                             ? spAmountBeforeWithdrawPerDst[i]
                             : spAmountBeforeWithdrawPerDst[i] - singleSuperformsData[i].amount
@@ -2447,9 +2577,7 @@ abstract contract ProtocolActions is BaseSetup {
             v.sameDst = CHAIN_0 == DST_CHAINS[i];
             v.lenRevertWithdraw = 0;
             v.lenRevertWithdrawTimelocked = 0;
-            if (revertingWithdrawSFs.length > 0)
-                /// @ev if doubleArray exists
-                v.lenRevertWithdraw = revertingWithdrawSFs[i].length;
+            if (revertingWithdrawSFs.length > 0) v.lenRevertWithdraw = revertingWithdrawSFs[i].length;
 
             if (revertingWithdrawTimelockedSFs.length > 0)
                 v.lenRevertWithdrawTimelocked = revertingWithdrawTimelockedSFs[i].length;
@@ -2457,6 +2585,8 @@ abstract contract ProtocolActions is BaseSetup {
             if (action.multiVaults) {
                 if (!(v.sameDst && v.lenRevertWithdraw > 0)) {
                     v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
+                    /// @dev obtain amounts to assert
+
                     v.spAmountFinal = _spAmountsMultiAfterStage7Withdraw(
                         multiSuperformsData[i],
                         action.user,
@@ -2466,9 +2596,10 @@ abstract contract ProtocolActions is BaseSetup {
                         v.sameDst,
                         i
                     );
+                    /// @dev assert
                     _assertMultiVaultBalance(
                         action.user,
-                        multiSuperformsData[i].superFormIds,
+                        multiSuperformsData[i].superformIds,
                         v.spAmountFinal,
                         v.partialWithdrawVaults
                     );
@@ -2479,27 +2610,29 @@ abstract contract ProtocolActions is BaseSetup {
                 v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
 
                 if (v.lenRevertWithdraw > 0) {
-                    v.foundRevertingWithdraw = revertingWithdrawSFs[i][0] == singleSuperformsData[i].superFormId;
+                    v.foundRevertingWithdraw = revertingWithdrawSFs[i][0] == singleSuperformsData[i].superformId;
                 }
                 if (v.lenRevertWithdrawTimelocked > 0) {
                     v.foundRevertingWithdrawTimelocked =
-                        revertingWithdrawTimelockedSFs[i][0] == singleSuperformsData[i].superFormId;
+                        revertingWithdrawTimelockedSFs[i][0] == singleSuperformsData[i].superformId;
                 }
 
                 if (!v.partialWithdrawVault) {
                     /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
+                    /// @dev notice the amount asserted if: sameDst + reverting OR xChain + reverting is the amount before withdraw: initial amount before action
                     _assertSingleVaultBalance(
                         action.user,
-                        singleSuperformsData[i].superFormId,
+                        singleSuperformsData[i].superformId,
                         ((v.sameDst && (v.foundRevertingWithdraw || v.foundRevertingWithdrawTimelocked)) ||
                             (!v.sameDst && v.foundRevertingWithdraw))
                             ? spAmountBeforeWithdrawPerDst[i]
                             : spAmountBeforeWithdrawPerDst[i] - singleSuperformsData[i].amount
                     );
                 } else {
+                    /// @dev notice the amount asserted if: sameDst + reverting OR xChain + reverting is the amount before withdraw: initial amount before action
                     _assertSingleVaultPartialWithdrawBalance(
                         action.user,
-                        singleSuperformsData[i].superFormId,
+                        singleSuperformsData[i].superformId,
                         ((v.sameDst && (v.foundRevertingWithdraw || v.foundRevertingWithdrawTimelocked)) ||
                             (!v.sameDst && v.foundRevertingWithdraw))
                             ? spAmountBeforeWithdrawPerDst[i]
@@ -2532,8 +2665,10 @@ abstract contract ProtocolActions is BaseSetup {
             if (action.multiVaults && returnMessages[i].length > 0) {
                 partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
 
+                /// @dev this obtains amounts that failed from returned data obtained as a return from process payload
                 returnMultiData = abi.decode(abi.decode(returnMessages[i], (AMBMessage)).params, (ReturnMultiData));
 
+                /// @dev obtain amounts to assert
                 spAmountFinal = _spAmountsMultiAfterFailedWithdraw(
                     multiSuperformsData[i],
                     action.user,
@@ -2541,9 +2676,10 @@ abstract contract ProtocolActions is BaseSetup {
                     returnMultiData.amounts
                 );
 
+                /// @dev assert
                 _assertMultiVaultBalance(
                     action.user,
-                    multiSuperformsData[i].superFormIds,
+                    multiSuperformsData[i].superformIds,
                     spAmountFinal,
                     partialWithdrawVaults
                 );
@@ -2554,13 +2690,13 @@ abstract contract ProtocolActions is BaseSetup {
                         /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
                         _assertSingleVaultBalance(
                             action.user,
-                            singleSuperformsData[i].superFormId,
+                            singleSuperformsData[i].superformId,
                             spAmountBeforeWithdrawPerDst[i]
                         );
                     } else {
                         _assertSingleVaultPartialWithdrawBalance(
                             action.user,
-                            singleSuperformsData[i].superFormId,
+                            singleSuperformsData[i].superformId,
                             spAmountBeforeWithdrawPerDst[i]
                         );
                     }
@@ -2598,7 +2734,7 @@ abstract contract ProtocolActions is BaseSetup {
                 if (revertingWithdrawTimelockedSFs[i].length > 0) {
                     if (action.multiVaults) {
                         v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
-
+                        /// @dev this obtains amounts that failed from returned data obtained as a return from process payload
                         if (returnMessagesNormal.length > 0 && returnMessagesNormal[i].length > 0) {
                             v.returnMultiData = abi.decode(
                                 abi.decode(returnMessagesNormal[i], (AMBMessage)).params,
@@ -2613,8 +2749,8 @@ abstract contract ProtocolActions is BaseSetup {
                             );
                         }
 
-                        v.amountsThatFailed = new uint256[](multiSuperformsData[i].superFormIds.length);
-                        for (uint256 j = 0; j < multiSuperformsData[i].superFormIds.length; j++) {
+                        v.amountsThatFailed = new uint256[](multiSuperformsData[i].superformIds.length);
+                        for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; j++) {
                             v.amountsThatFailed[j] = returnMessagesNormal.length > 0 &&
                                 returnMessagesNormal[i].length > 0 &&
                                 returnMessagesTimelocked.length > 0 &&
@@ -2623,12 +2759,13 @@ abstract contract ProtocolActions is BaseSetup {
                                 : 0;
 
                             for (uint256 k = 0; k < revertingWithdrawTimelockedSFs[i].length; k++) {
-                                if (multiSuperformsData[i].superFormIds[j] == revertingWithdrawTimelockedSFs[i][k]) {
+                                if (multiSuperformsData[i].superformIds[j] == revertingWithdrawTimelockedSFs[i][k]) {
                                     v.amountsThatFailed[j] = v.returnSingleData.amount;
                                 }
                             }
                         }
 
+                        /// @dev obtains final amounts to assert considering the amounts that failed to be withdrawn
                         v.spAmountFinal = _spAmountsMultiAfterFailedWithdraw(
                             multiSuperformsData[i],
                             action.user,
@@ -2636,9 +2773,10 @@ abstract contract ProtocolActions is BaseSetup {
                             v.amountsThatFailed
                         );
 
+                        /// @dev asserts
                         _assertMultiVaultBalance(
                             action.user,
-                            multiSuperformsData[i].superFormIds,
+                            multiSuperformsData[i].superformIds,
                             v.spAmountFinal,
                             v.partialWithdrawVaults
                         );
@@ -2648,13 +2786,13 @@ abstract contract ProtocolActions is BaseSetup {
                             /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
                             _assertSingleVaultBalance(
                                 action.user,
-                                singleSuperformsData[i].superFormId,
+                                singleSuperformsData[i].superformId,
                                 spAmountBeforeWithdrawPerDst[i]
                             );
                         } else {
                             _assertSingleVaultPartialWithdrawBalance(
                                 action.user,
-                                singleSuperformsData[i].superFormId,
+                                singleSuperformsData[i].superformId,
                                 spAmountBeforeWithdrawPerDst[i]
                             );
                         }
@@ -2663,18 +2801,5 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
         console.log("Asserted after failed timelock withdraw");
-    }
-
-    /// @dev Returns the sum of token amounts
-    function _sumOfAmounts() internal view returns (uint256 totalAmounts) {
-        for (uint256 i; i < DST_CHAINS.length; i++) {
-            for (uint256 j; j < actions.length; j++) {
-                uint256[] memory amounts = AMOUNTS[DST_CHAINS[i]][j];
-
-                for (uint256 k; k < amounts.length; k++) {
-                    totalAmounts += amounts[k];
-                }
-            }
-        }
     }
 }

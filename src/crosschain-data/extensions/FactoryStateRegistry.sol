@@ -16,7 +16,7 @@ contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlySender() override {
-        if (msg.sender != superRegistry.superFormFactory()) revert Error.NOT_CORE_CONTRACTS();
+        if (msg.sender != superRegistry.superformFactory()) revert Error.NOT_CORE_CONTRACTS();
         _;
     }
 
@@ -41,6 +41,6 @@ contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperformFactory(superRegistry.superFormFactory()).stateSync(payloadBody[payloadId_]);
+        ISuperformFactory(superRegistry.superformFactory()).stateSync(payloadBody[payloadId_]);
     }
 }

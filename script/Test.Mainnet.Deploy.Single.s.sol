@@ -15,7 +15,6 @@ contract TestMainnetDeploySingle is AbstractDeploySingle {
     //////////////////////////////////////////////////////////////*/
 
     uint64[] SELECTED_CHAIN_IDS = [56, 42161, 43114]; /// @dev BSC, ARBI & AVAX
-    uint256[] EVM_CHAIN_IDS = [56, 42161, 43114]; /// @dev BSC, ARBI & AVAX
 
     //Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc, Chains.Arbitrum, Chains.Avalanche];
 
@@ -30,6 +29,6 @@ contract TestMainnetDeploySingle is AbstractDeploySingle {
             }
         }
 
-        _deploy(selectedChainIndex, trueIndex, Cycle.Prod, SELECTED_CHAIN_IDS, EVM_CHAIN_IDS);
+        _deploy(selectedChainIndex, trueIndex, Cycle.Prod, SELECTED_CHAIN_IDS);
     }
 }

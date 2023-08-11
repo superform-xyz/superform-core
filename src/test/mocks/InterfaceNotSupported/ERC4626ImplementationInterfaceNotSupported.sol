@@ -198,7 +198,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         InitSingleVaultData memory singleVaultData_,
         uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
-        (, , uint64 dstChainId) = singleVaultData_.superFormId.getSuperform();
+        (, , uint64 dstChainId) = singleVaultData_.superformId.getSuperform();
         address vaultLoc = vault;
 
         IERC4626 v = IERC4626(vaultLoc);
@@ -228,7 +228,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint64 srcChainId
     ) internal returns (uint256 dstAmount) {
         xChainWithdrawLocalVars memory vars;
-        (, , vars.dstChainId) = singleVaultData_.superFormId.getSuperform();
+        (, , vars.dstChainId) = singleVaultData_.superformId.getSuperform();
         vars.vaultLoc = vault;
 
         IERC4626 v = IERC4626(vars.vaultLoc);

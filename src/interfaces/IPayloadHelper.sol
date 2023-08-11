@@ -13,7 +13,7 @@ interface IPayloadHelper {
     /// @return srcChainId is the unique identifier of the srcChain
     /// @return amounts is the amount to deposit/withdraw
     /// @return slippage is the max slippage configured by the user (only for deposits)
-    /// @return superFormIds is the unique identifiers of the superForms
+    /// @return superformIds is the unique identifiers of the superforms
     /// @return srcPayloadId is the identifier of the corresponding payload on srcChain
     function decodeDstPayload(
         uint256 dstPayloadId_
@@ -27,7 +27,7 @@ interface IPayloadHelper {
             uint64 srcChainId,
             uint256[] memory amounts,
             uint256[] memory slippage,
-            uint256[] memory superFormIds,
+            uint256[] memory superformIds,
             uint256 srcPayloadId
         );
 
@@ -49,5 +49,5 @@ interface IPayloadHelper {
     )
         external
         view
-        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superFormId, uint256 amount);
+        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 }

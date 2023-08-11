@@ -2,8 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
-import {PositionsSplitter} from "ERC1155s/splitter/PositionsSplitter.sol";
-import {IERC1155s} from "ERC1155s/interfaces/IERC1155s.sol";
+import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
 
 /// @dev Protocol imports
 import {CoreStateRegistry} from "../src/crosschain-data/extensions/CoreStateRegistry.sol";
@@ -29,7 +28,8 @@ import {IInterchainGasPaymaster} from "../src/vendor/hyperlane/IInterchainGasPay
 import {TwoStepsFormStateRegistry} from "../src/crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
 import {PayloadHelper} from "../src/crosschain-data/utils/PayloadHelper.sol";
 import {PaymentHelper} from "../src/crosschain-data/utils/PaymentHelper.sol";
-import {QuorumManager} from "../src/crosschain-data/utils/QuorumManager.sol";
+import {PayMaster} from "../src/PayMaster.sol";
+import {SuperTransmuter} from "../src/SuperTransmuter.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -68,6 +68,7 @@ struct SetupVars {
     address kycDao4626Form;
     address PayloadHelper;
     address paymentHelper;
+    address payMaster;
 }
 
 abstract contract AbstractDeploySingle is Script {
@@ -78,7 +79,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[21] public contractNames = [
+    string[22] public contractNames = [
         "CoreStateRegistry",
         "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
@@ -97,9 +98,10 @@ abstract contract AbstractDeploySingle is Script {
         "MultiTxProcessor",
         "SuperRegistry",
         "SuperRBAC",
-        "PositionsSplitter",
+        "SuperTransmuter",
         "PayloadHelper",
-        "PaymentHelper"
+        "PaymentHelper",
+        "PayMaster"
     ];
 
     bytes32 constant salt = "SUPERFORM_4RD_TEST";
@@ -305,8 +307,7 @@ abstract contract AbstractDeploySingle is Script {
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
-        uint64[] memory s_superFormChainIds,
-        uint256[] memory s_llBridgeChainIds
+        uint64[] memory s_superFormChainIds
     ) internal setEnvDeploy(cycle) {
         SetupVars memory vars;
         /// @dev liquidity validator addresses
@@ -370,8 +371,6 @@ abstract contract AbstractDeploySingle is Script {
 
         SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
-        SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
-
         address[] memory registryAddresses = new address[](4);
         registryAddresses[0] = vars.coreStateRegistry;
         registryAddresses[1] = vars.factoryStateRegistry;
@@ -384,18 +383,23 @@ abstract contract AbstractDeploySingle is Script {
         registryIds[2] = 3;
         registryIds[3] = 4;
 
-        /// @dev 3.5.2- deploy Fee Helper
+        SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
+        SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.coreStateRegistry);
+        SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.twoStepsFormStateRegistry);
+
+        /// @dev 4- deploy Payment Helper
         vars.paymentHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.paymentHelper;
 
-        SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
-        /// @dev 4.1- deploy Layerzero Implementation
+        SuperRegistry(vars.superRegistry).setPaymentHelper(vars.paymentHelper);
+
+        /// @dev 5.1- deploy Layerzero Implementation
         vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
         contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
         LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[trueIndex]);
 
-        /// @dev 4.2- deploy Hyperlane Implementation
+        /// @dev 5.2- deploy Hyperlane Implementation
         vars.hyperlaneImplementation = address(
             new HyperlaneImplementation{salt: salt}(
                 HyperlaneMailbox,
@@ -405,7 +409,7 @@ abstract contract AbstractDeploySingle is Script {
         );
         contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
-        /// @dev 4.3 - deploy Celer Implementation
+        /// @dev 5.3 - deploy Celer Implementation
         vars.celerImplementation = address(new CelerImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
         contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
 
@@ -415,7 +419,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.ambAddresses[1] = vars.hyperlaneImplementation;
         vars.ambAddresses[2] = vars.celerImplementation;
 
-        /// @dev 5- deploy socket validator
+        /// @dev 6- deploy socket validator
         vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
 
@@ -427,14 +431,14 @@ abstract contract AbstractDeploySingle is Script {
         }
         bridgeValidators[3] = vars.lifiValidator;
 
-        /// @dev 6 - Deploy SuperformFactory
+        /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
 
         contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
         SuperRegistry(vars.superRegistry).setSuperformFactory(vars.factory);
 
-        /// @dev 7 - Deploy 4626Form implementations
+        /// @dev 8 - Deploy 4626Form implementations
         // Standard ERC4626 Form
         vars.erc4626Form = address(new ERC4626Form{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
@@ -443,14 +447,14 @@ abstract contract AbstractDeploySingle is Script {
         vars.erc4626TimelockForm = address(new ERC4626TimelockForm{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626TimelockForm"))] = vars.erc4626TimelockForm;
 
-        /// @dev 8 - Add newly deployed form  implementation to Factory, formBeaconId 1
+        /// 9 KYCDao ERC4626 Form
+        vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
+
+        /// @dev 9 - Add newly deployed form  implementation to Factory, formBeaconId 1
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
 
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
-
-        /// @dev 9 KYCDao ERC4626 Form (only for Polygon)
-        vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
         ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
@@ -469,24 +473,29 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
 
-        contracts[vars.chainId][bytes32(bytes("PositionsSplitter"))] = address(
-            new PositionsSplitter{salt: salt}(IERC1155s(vars.superPositions))
+        contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] = address(
+            new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry)
         );
 
-        /// @dev 16.1 - Deploy Payload Helper
+        /// @dev 12 - Deploy Payload Helper
         vars.PayloadHelper = address(
             new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superPositions, vars.twoStepsFormStateRegistry)
         );
         contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
 
-        /// @dev 12 - Deploy MultiTx Processor
+        /// @dev 13 - Deploy MultiTx Processor
         vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars.multiTxProcessor;
 
         SuperRegistry(vars.superRegistry).setMultiTxProcessor(vars.multiTxProcessor);
 
-        /// @dev 13 - Super Registry extra setters
+        /// @dev 14 - Deploy PayMaster
+        vars.payMaster = address(new PayMaster{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
 
+        SuperRegistry(vars.superRegistry).setPayMaster(vars.payMaster);
+
+        /// @dev 15 - Super Registry extra setters
         SuperRegistry(vars.superRegistry).setBridgeAddresses(
             bridgeIds,
             BRIDGE_ADDRESSES[vars.chainId],
@@ -496,8 +505,7 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev configures lzImplementation and hyperlane to super registry
         SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
-        /// @dev 14 Setup extra RBAC
-
+        /// @dev 16 Setup extra RBAC
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
@@ -511,13 +519,9 @@ abstract contract AbstractDeploySingle is Script {
                 vars.dstHypChainId = hyperlane_chainIds[j];
                 vars.dstCelerChainId = celer_chainIds[j];
 
-                vars.dstLzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
-                // 0x90a9D112fd9337C60C8404234dF1FeBa570f2a1E
-                vars.dstHyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
-                // 0xff07dE9eb321Aa70CB41363fC47Fad6092F0eB43
-
-                vars.dstCelerImplementation = getContract(vars.chainId, "CelerImplementation");
-                // 0x24D1cF9E531d1636A83880c2aA9d60B0f613E2Ce
+                vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
+                vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
+                vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
 
                 LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                     vars.dstLzChainId,
@@ -551,7 +555,7 @@ abstract contract AbstractDeploySingle is Script {
                     vars.dstCelerChainId
                 );
 
-                QuorumManager(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
+                SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
                 /// swap gas cost: 50000
                 /// update gas cost: 40000

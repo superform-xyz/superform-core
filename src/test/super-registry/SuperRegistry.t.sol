@@ -62,13 +62,13 @@ contract SuperRegistryTest is BaseSetup {
     }
 
     function test_setSuperRouter_and_revert_invalidCaller() public {
-        _setAndAssert(superRegistry.setSuperRouter.selector, superRegistry.superRouter.selector, address(0x1));
+        _setAndAssert(superRegistry.setSuperRouter.selector, superRegistry.superformRouter.selector, address(0x1));
     }
 
     function test_setSuperformFactory_and_revert_invalidCaller() public {
         _setAndAssert(
             superRegistry.setSuperformFactory.selector,
-            superRegistry.superFormFactory.selector,
+            superRegistry.superformFactory.selector,
             address(0x1)
         );
     }
