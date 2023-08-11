@@ -10,7 +10,6 @@ gas_reports = [
 libraries = []
 optimizer = true
 optimizer_runs = 200
-test = 'src/test'
 verbosity = 0
 ffi = true
 libs = ["lib"]
