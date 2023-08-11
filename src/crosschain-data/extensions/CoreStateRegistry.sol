@@ -73,6 +73,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256[] calldata finalAmounts_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
         UpdateDepositPayloadVars memory v_;
+        /// @dev FIXME - Sujith make internal helper to perform common parts
 
         /// @dev load header and body of payload
         v_.previousPayloadHeader_ = payloadHeader[payloadId_];
@@ -125,6 +126,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 payloadId_,
         uint256 finalAmount_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
+        /// @dev FIXME - Sujith make internal helper to perform common parts
+
         /// @dev load header and body of payload
         bytes memory previousPayloadBody_ = payloadBody[payloadId_];
         uint256 previousPayloadHeader_ = payloadHeader[payloadId_];
@@ -174,6 +177,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 payloadId_,
         bytes[] calldata txData_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
+        /// @dev FIXME - Sujith make internal helper to perform common parts
+
         UpdateWithdrawPayloadVars memory v_;
 
         /// @dev load header and body of payload
@@ -252,6 +257,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 payloadId_,
         bytes calldata txData_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
+        /// @dev FIXME - Sujith make internal helper to perform common parts
+
         UpdateWithdrawPayloadVars memory v_;
 
         /// @dev load header and body of the payload
@@ -365,7 +372,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             if (v.txType == uint8(TransactionType.WITHDRAW)) {
                 returnMessage = v.multi == 1
                     ? _processMultiWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId)
-                    : _processSingleWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId);
+                    : _processSingleWithdrawal(v._payloadBody, v.srcSender, v.srcChainId);
             }
 
             if (v.txType == uint8(TransactionType.DEPOSIT)) {
@@ -434,7 +441,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 liqData_[i].txData,
                 liqData_[i].token,
                 liqData_[i].amount,
-                address(this), /// @dev - FIX: to send tokens from this contract when rescuing deposits, not from v.srcSender
+                address(this),
                 liqData_[i].nativeAmount,
                 liqData_[i].permit2data,
                 superRegistry.PERMIT2()
@@ -473,6 +480,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         bool errors;
 
         for (uint256 i; i < multiVaultData.superformIds.length; ) {
+            /// @dev it is critical to validate that the action is being performed to the correct chainId coming from the superform
             DataLib.validateSuperformChainId(multiVaultData.superformIds[i], superRegistry.chainId());
 
             singleVaultData = InitSingleVaultData({
@@ -543,7 +551,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 underlying.transfer(superforms[i], multiVaultData.amounts[i]);
                 LiqRequest memory emptyRequest;
 
-                /// @dev important to validate the chainId of the superform against the chainId where this is happening
+                /// @dev it is critical to validate that the action is being performed to the correct chainId coming from the superform
                 DataLib.validateSuperformChainId(multiVaultData.superformIds[i], superRegistry.chainId());
 
                 /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0 SPs back on source (slight gas waste)
@@ -599,7 +607,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     }
 
     function _processSingleWithdrawal(
-        uint256 payloadId_,
         bytes memory payload_,
         address srcSender_,
         uint64 srcChainId_

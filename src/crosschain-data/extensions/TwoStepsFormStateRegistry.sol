@@ -100,6 +100,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         p.status = TimeLockStatus.PROCESSED;
         (address superform, , ) = p.data.superformId.getSuperform();
 
+        /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
         if (txData_.length > 0) {
             PayloadUpdaterLib.validateLiqReq(p.data.liqData);
 
@@ -119,14 +120,14 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
         IERC4626TimelockForm form = IERC4626TimelockForm(superform);
         try form.withdrawAfterCoolDown(p.data.amount, p) {} catch {
-            /// @dev dispatch acknowledgement to mint shares back || mint shares back
+            /// @dev dispatch acknowledgement to mint superPositions back because of failure
             if (p.isXChain == 1) {
                 (uint256 payloadId_, ) = abi.decode(p.data.extraFormData, (uint256, uint256));
                 returnMessage = _constructSingleReturnData(p.srcSender, p.srcChainId, payloadId_, p.data);
 
                 _dispatchAcknowledgement(p.srcChainId, returnMessage, ambOverride_);
             }
-
+            /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
                 returnMessage = _constructSingleReturnData(p.srcSender, p.srcChainId, timeLockPayloadId_, p.data);
 

@@ -5,7 +5,7 @@ import {BridgeValidator} from "../BridgeValidator.sol";
 import {ILiFi} from "../../vendor/lifi/ILiFi.sol";
 import {Error} from "../../utils/Error.sol";
 
-/// @title lifi verification contract
+/// @title LiFiValidator
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
 contract LiFiValidator is BridgeValidator {

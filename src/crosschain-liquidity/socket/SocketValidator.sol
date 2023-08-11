@@ -4,7 +4,7 @@ import {BridgeValidator} from "../BridgeValidator.sol";
 import {ISocketRegistry} from "../../vendor/socket/ISocketRegistry.sol";
 import {Error} from "../../utils/Error.sol";
 
-/// @title Socket verification contract
+/// @title SocketValidator
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
 contract SocketValidator is BridgeValidator {

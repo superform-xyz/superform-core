@@ -7,9 +7,9 @@ import {IPermit2} from "../vendor/dragonfly-xyz/IPermit2.sol";
 import {Error} from "../utils/Error.sol";
 
 /**
- * @title Liquidity Handler.
+ * @title LiquidityHandler
  * @author Zeropoint Labs.
- * @dev bridges tokens from Chain A -> Chain B
+ * @dev bridges tokens from Chain A -> Chain B. To be inherited by contracts that move liquidity
  */
 abstract contract LiquidityHandler {
     using SafeERC20 for IERC20;

@@ -1,16 +1,15 @@
 [profile.default]
 solc-version = "0.8.19"
 gas_reports = [
-    "SuperFormRouter",
+    "SuperformRouter",
     "BaseForm",
-    "SuperFormFactory",
+    "SuperformFactory",
     "SuperPositions",
     "MultiTxProcessor",
 ]
 libraries = []
 optimizer = true
 optimizer_runs = 200
-test = 'src/test'
 verbosity = 0
 ffi = true
 libs = ["lib"]
