@@ -32,6 +32,11 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 bool statusBefore = SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(
                     formBeaconId
                 );
+
+                vm.expectRevert(Error.NOT_FACTORY_STATE_REGISTRY.selector);
+                bytes memory data_ = hex"ffff";
+                SuperformFactory(getContract(chainIds[i], "SuperformFactory")).stateSync(data_);
+
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1, "");
                 bool statusAfter = SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(
                     formBeaconId
@@ -62,5 +67,25 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(2, "");
             }
         }
+    }
+
+    function test_revert_stateSync_invalidFormId() public {
+        /// pausing random form beacon id
+        uint32 formBeaconId = 4_000_000_000;
+        vm.selectFork(FORKS[ETH]);
+
+        bytes32 SYNC_BEACON_STATUS = keccak256("SYNC_BEACON_STATUS");
+        bytes memory extraData = hex"ffff";
+
+        AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
+            SYNC_BEACON_STATUS,
+            abi.encode(formBeaconId, false)
+        );
+
+        vm.expectRevert(Error.INVALID_FORM_ID.selector);
+        vm.prank(getContract(ETH, "FactoryStateRegistry"));
+        SuperformFactory(getContract(ETH, "SuperformFactory")).stateSync(
+            abi.encode(factoryPayload, extraData)
+        );
     }
 }

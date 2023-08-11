@@ -23,7 +23,6 @@ contract SuperformFactory is ISuperformFactory {
     /*///////////////////////////////////////////////////////////////
                             Constants
     //////////////////////////////////////////////////////////////*/
-    uint256 constant MAX_FORM_ID = 2 ** 32 - 1;
     bytes32 constant SYNC_BEACON_STATUS = keccak256("SYNC_BEACON_STATUS");
 
     /*///////////////////////////////////////////////////////////////
@@ -71,7 +70,6 @@ contract SuperformFactory is ISuperformFactory {
         if (formBeacon[formBeaconId_] != address(0)) revert Error.BEACON_ID_ALREADY_EXISTS();
         if (!ERC165Checker.supportsInterface(formImplementation_, type(IBaseForm).interfaceId))
             revert Error.FORM_INTERFACE_UNSUPPORTED();
-        if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
         /// @dev instantiate a new formBeacon using a given formImplementation
         beacon = address(new FormBeacon{salt: salt_}(address(superRegistry), formImplementation_));
@@ -92,7 +90,6 @@ contract SuperformFactory is ISuperformFactory {
         address tFormBeacon = formBeacon[formBeaconId_];
         if (vault_ == address(0)) revert Error.ZERO_ADDRESS();
         if (tFormBeacon == address(0)) revert Error.FORM_DOES_NOT_EXIST();
-        if (formBeaconId_ > MAX_FORM_ID) revert Error.INVALID_FORM_ID();
 
         /// @dev Same vault and beacon can be used only once to create superform
         bytes32 vaultBeaconCombination = keccak256(abi.encode(tFormBeacon, vault_));

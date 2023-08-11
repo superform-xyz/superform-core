@@ -451,7 +451,6 @@ abstract contract ProtocolActions is BaseSetup {
         }
         /// @dev pigeon requires event logs to be recorded so that it can properly capture the variables it needs to fullfil messages. Check pigeon library docs for more info
         vm.recordLogs();
-
         if (action.multiVaults) {
             if (vars.nDestinations == 1) {
                 /// @dev data built in step 1 is aggregated with AMBS and dstChains info
@@ -529,8 +528,8 @@ abstract contract ProtocolActions is BaseSetup {
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
                         vm.expectRevert();
                     }
-                    /// @dev the actual call to the entry point
 
+                    /// @dev the actual call to the entry point
                     superformRouter.multiDstMultiVaultDeposit{value: msgValue}(vars.multiDstMultiVaultStateReq);
                 } else if (action.action == Actions.Withdraw) {
                     /// @dev payment estimation, differs according to the type of entry point used
