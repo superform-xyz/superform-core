@@ -580,6 +580,7 @@ abstract contract AbstractDeploy is Script {
                 );
                 SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
+                /// @dev these values are mocks and has to be replaced
                 /// swap gas cost: 50000
                 /// update gas cost: 40000
                 /// deposit gas cost: 70000
@@ -593,6 +594,7 @@ abstract contract AbstractDeploy is Script {
                     40000,
                     70000,
                     80000,
+                    1 wei,
                     50 * 10 ** 9 wei,
                     10 wei
                 );
