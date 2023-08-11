@@ -9,7 +9,7 @@ import {Error} from "../utils/Error.sol";
 /// @title FormBeacon
 /// @notice The Beacon for any given form.
 /// @dev Superforms follow the proxy beacon pattern, with each of the same form kind pointing to the same implementation
-/// @dev This allows us to pause all superForms of a given form kind or upgrade them in one go
+/// @dev This allows us to pause all superforms of a given form kind or upgrade them in one go
 contract FormBeacon is IFormBeacon {
     /*///////////////////////////////////////////////////////////////
                     State Variables
@@ -24,7 +24,7 @@ contract FormBeacon is IFormBeacon {
     bool public paused;
 
     modifier onlySuperformFactory() {
-        if (superRegistry.superFormFactory() != msg.sender) revert Error.NOT_SUPERFORM_FACTORY();
+        if (superRegistry.superformFactory() != msg.sender) revert Error.NOT_SUPERFORM_FACTORY();
         _;
     }
 

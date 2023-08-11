@@ -69,7 +69,7 @@ contract PayloadHelper is IPayloadHelper {
                 InitMultiVaultData memory imvd = abi.decode(payloadBody, (InitMultiVaultData));
                 amounts = imvd.amounts;
                 slippage = imvd.maxSlippage;
-                superformIds = imvd.superFormIds;
+                superformIds = imvd.superformIds;
                 srcPayloadId = imvd.payloadId;
             } else {
                 InitSingleVaultData memory isvd = abi.decode(payloadBody, (InitSingleVaultData));
@@ -83,7 +83,7 @@ contract PayloadHelper is IPayloadHelper {
                 slippage = slippage_;
 
                 uint256[] memory superformIds_ = new uint256[](1);
-                superformIds_[0] = isvd.superFormId;
+                superformIds_[0] = isvd.superformId;
                 superformIds = superformIds_;
 
                 srcPayloadId = isvd.payloadId;
@@ -116,7 +116,7 @@ contract PayloadHelper is IPayloadHelper {
         external
         view
         override
-        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superFormId, uint256 amount)
+        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
         TimeLockPayload memory payload = twoStepRegistry.getTimeLockPayload(timelockPayloadId_);
 
@@ -124,7 +124,7 @@ contract PayloadHelper is IPayloadHelper {
             payload.srcSender,
             payload.srcChainId,
             payload.data.payloadId,
-            payload.data.superFormId,
+            payload.data.superformId,
             payload.data.amount
         );
     }

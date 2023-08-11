@@ -1,7 +1,7 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC1155s} from "ERC1155s/ERC1155s.sol";
+import {ERC1155A} from "ERC1155A/ERC1155A.sol";
 import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMessage} from "./types/DataTypes.sol";
 import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
 import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
@@ -11,7 +11,7 @@ import {DataLib} from "./libraries/DataLib.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
-contract SuperPositions is ISuperPositions, ERC1155s {
+contract SuperPositions is ISuperPositions, ERC1155A {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     }
 
     modifier onlyRouter() {
-        if (superRegistry.superRouter() != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.superformRouter() != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
@@ -79,31 +79,31 @@ contract SuperPositions is ISuperPositions, ERC1155s {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperPositions
-    function mintSingleSP(address owner_, uint256 superFormId_, uint256 amount_) external override onlyMinter {
-        _mint(owner_, superFormId_, amount_, "");
+    function mintSingleSP(address owner_, uint256 superformId_, uint256 amount_) external override onlyMinter {
+        _mint(owner_, superformId_, amount_, "");
     }
 
     /// @inheritdoc ISuperPositions
     function mintBatchSP(
         address owner_,
-        uint256[] memory superFormIds_,
+        uint256[] memory superformIds_,
         uint256[] memory amounts_
     ) external override onlyMinter {
-        _batchMint(owner_, superFormIds_, amounts_, "");
+        _batchMint(owner_, superformIds_, amounts_, "");
     }
 
     /// @inheritdoc ISuperPositions
-    function burnSingleSP(address srcSender_, uint256 superFormId_, uint256 amount_) external override onlyBurner {
-        _burn(srcSender_, superFormId_, amount_);
+    function burnSingleSP(address srcSender_, uint256 superformId_, uint256 amount_) external override onlyBurner {
+        _burn(srcSender_, superformId_, amount_);
     }
 
     /// @inheritdoc ISuperPositions
     function burnBatchSP(
         address srcSender_,
-        uint256[] memory superFormIds_,
+        uint256[] memory superformIds_,
         uint256[] memory amounts_
     ) external override onlyBurner {
-        _batchBurn(srcSender_, superFormIds_, amounts_);
+        _batchBurn(srcSender_, superformIds_, amounts_);
     }
 
     /// @inheritdoc ISuperPositions
@@ -146,7 +146,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
             (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) ||
             (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
-            _batchMint(srcSender, returnData.superFormIds, returnData.amounts, "");
+            _batchMint(srcSender, returnData.superformIds, returnData.amounts, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -189,7 +189,7 @@ contract SuperPositions is ISuperPositions, ERC1155s {
             (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) ||
             (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
-            _mint(srcSender, returnData.superFormId, returnData.amount, "");
+            _mint(srcSender, returnData.superformId, returnData.amount, "");
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
@@ -218,8 +218,8 @@ contract SuperPositions is ISuperPositions, ERC1155s {
                         READ-ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc ERC1155s
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155s) returns (bool) {
+    /// @inheritdoc ERC1155A
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155A) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

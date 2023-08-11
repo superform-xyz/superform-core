@@ -24,7 +24,7 @@ interface ISuperformRouter {
     struct DispatchAMBMessageVars {
         TransactionType txType;
         bytes ambData;
-        uint256[] superFormIds;
+        uint256[] superformIds;
         address srcSender;
         uint8[] ambIds;
         uint8 multiVaults;
