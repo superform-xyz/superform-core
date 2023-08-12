@@ -9,7 +9,7 @@ import {ISuperformRouter} from "src/interfaces/ISuperformRouter.sol";
 // Test Utils
 import "../../utils/ProtocolActions.sol";
 
-contract PayloadHelperTest is ProtocolActions {
+contract PayloadHelperMultiTest is ProtocolActions {
     /// @dev Access SuperformRouter interface
     ISuperformRouter superformRouter;
 
@@ -26,23 +26,23 @@ contract PayloadHelperTest is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
 
-        TARGET_UNDERLYINGS[POLY][0] = [0];
+        TARGET_UNDERLYINGS[POLY][0] = [0, 0];
 
-        TARGET_VAULTS[POLY][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[POLY][0] = [0, 0]; /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[POLY][0] = [0];
+        TARGET_FORM_KINDS[POLY][0] = [0, 0];
 
-        AMOUNTS[POLY][0] = [23183];
+        AMOUNTS[POLY][0] = [23183, 213];
 
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for SOCKET, 2 for LI.FI
-        LIQ_BRIDGES[POLY][0] = [1];
+        LIQ_BRIDGES[POLY][0] = [1, 1];
 
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: false,
+                multiVaults: true,
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
@@ -58,7 +58,7 @@ contract PayloadHelperTest is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_helper() public {
+    function test_payloadHelperMulti() public {
         address _superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
         superformRouter = ISuperformRouter(_superformRouter);
 
@@ -95,7 +95,7 @@ contract PayloadHelperTest is ProtocolActions {
         assertEq(txType, 0); /// 0 for deposit
         assertEq(callbackType, 0); /// 0 for init
         assertEq(srcChainId, 10); /// chain id of optimism is 10
-        assertEq(multi, 0); /// 0 for not multi vault
+        assertEq(multi, 1); /// 0 for not multi vault
         assertEq(srcSender, users[0]);
     }
 

@@ -436,6 +436,41 @@ contract SuperformERC4626FormTest is BaseSetup {
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
     }
 
+    function test_superformXChainWithdrawalWithoutUpdatingTxData() public {
+        /// @dev prank deposits (just mint super-shares)
+        _successfulDeposit();
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        address vault = IBaseForm(superform).getVaultAddress();
+
+        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        vm.stopPrank();
+
+        /// @dev simulating withdrawals with malicious tx data
+        vm.startPrank(getContract(ETH, "CoreStateRegistry"));
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            100,
+            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), 3e18, 0, ""),
+            ""
+        );
+
+        vm.expectRevert(Error.WITHDRAW_TX_DATA_NOT_UPDATED.selector);
+        IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
+    }
+
     function test_superformXChainWithdrawalWithMaliciousTxData() public {
         /// @dev prank deposits (just mint super-shares)
         _successfulDeposit();

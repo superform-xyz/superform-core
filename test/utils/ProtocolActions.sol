@@ -13,6 +13,7 @@ import {ITwoStepsFormStateRegistry} from "src/interfaces/ITwoStepsFormStateRegis
 import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
 import {IBaseForm} from "src/interfaces/IBaseForm.sol";
 import {IBaseStateRegistry} from "src/interfaces/IBaseStateRegistry.sol";
+import {Error} from "src/utils/Error.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     using DataLib for uint256;
@@ -1115,10 +1116,8 @@ abstract contract ProtocolActions is BaseSetup {
                 if (currentUnlockId > 0) {
                     vm.recordLogs();
 
-                    /// @dev perform the calls from beginning to last because of easiness in passing unlock id
+                    /// @dev performs unlock before the time ends
                     for (uint256 j = countTimelocked[i]; j > 0; j--) {
-                        /// @dev increase time by 5 days
-                        vm.warp(block.timestamp + (86400 * 5));
                         (uint256 nativeFee, bytes memory ackAmbParams) = _generateAckGasFeesAndParamsForTimeLock(
                             abi.encode(CHAIN_0, DST_CHAINS[i]),
                             AMBs,
@@ -1126,9 +1125,42 @@ abstract contract ProtocolActions is BaseSetup {
                         );
 
                         vm.prank(deployer);
+                        /// @dev tries to process the payload during lock-in period
+                        vm.expectRevert(Error.LOCKED.selector);
+                        twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
+                            currentUnlockId - j + 1,
+                            GENERATE_WITHDRAW_TX_DATA_ON_DST
+                                ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
+                                : bytes(""),
+                            ackAmbParams
+                        );
+                    }
+
+                    /// @dev perform the calls from beginning to last because of easiness in passing unlock id
+                    for (uint256 j = countTimelocked[i]; j > 0; j--) {
+                        (uint256 nativeFee, bytes memory ackAmbParams) = _generateAckGasFeesAndParamsForTimeLock(
+                            abi.encode(CHAIN_0, DST_CHAINS[i]),
+                            AMBs,
+                            currentUnlockId - j + 1
+                        );
+
+                        /// @dev increase time by 5 days
+                        vm.warp(block.timestamp + (86400 * 5));
+                        vm.prank(deployer);
 
                         /// @dev if needed in certain test scenarios, re-feed txData for timelocked here
                         returnMessages[i] = twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
+                            currentUnlockId - j + 1,
+                            GENERATE_WITHDRAW_TX_DATA_ON_DST
+                                ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
+                                : bytes(""),
+                            ackAmbParams
+                        );
+
+                        /// @dev tries to process already finalized payload
+                        vm.prank(deployer);
+                        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+                        twoStepsFormStateRegistry.finalizePayload{value: nativeFee}(
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
@@ -1168,6 +1200,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     success = _processTwoStepPayload(
                         TWO_STEP_PAYLOAD_ID[CHAIN_0],
+                        DST_CHAINS[i],
                         CHAIN_0,
                         action.testType,
                         action.revertError
@@ -1685,14 +1718,12 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
-
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
                 .updateMultiVaultDepositPayload(args.payloadId, finalAmounts);
 
             /// @dev if scenario is meant to revert here (e.g invalid slippage)
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
-
             vm.expectRevert(args.revertError); /// @dev removed string here: come to this later
 
             CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
@@ -1830,6 +1861,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _processTwoStepPayload(
         uint256 payloadId_,
+        uint64 srcChainId_,
         uint64 targetChainId_,
         TestType testType,
         bytes4
@@ -1841,8 +1873,31 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev no acknowledgement is needed;
         bytes memory ackParams;
 
+        /// @dev tries to increase quorum and check if quorum validations are good
         vm.prank(deployer);
+        SuperRegistry(getContract(targetChainId_, "SuperRegistry")).setRequiredMessagingQuorum(
+            srcChainId_,
+            type(uint256).max
+        );
 
+        vm.prank(deployer);
+        vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
+        TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
+            value: msgValue
+        }(payloadId_, ackParams);
+
+        /// @dev resets quorum and process payload
+        vm.prank(deployer);
+        SuperRegistry(getContract(targetChainId_, "SuperRegistry")).setRequiredMessagingQuorum(srcChainId_, 1);
+
+        vm.prank(deployer);
+        TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
+            value: msgValue
+        }(payloadId_, ackParams);
+
+        /// @dev maliciously tries to process the payload again
+        vm.prank(deployer);
+        vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
         TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_, ackParams);
