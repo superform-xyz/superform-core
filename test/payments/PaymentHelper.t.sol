@@ -4,8 +4,20 @@ pragma solidity 0.8.19;
 import {Error} from "src/utils/Error.sol";
 import "../utils/ProtocolActions.sol";
 
+contract MockGasPriceOracle {
+    function latestRoundData()
+        external
+        view
+        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
+    {
+        return (0, 28 gwei, block.timestamp, block.timestamp, 28 gwei);
+    }
+}
+
 contract PaymentHelperTest is BaseSetup {
     PaymentHelper public paymentHelper;
+    MockGasPriceOracle public mockGasPriceOracle;
+
     address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     function setUp() public override {
@@ -13,6 +25,7 @@ contract PaymentHelperTest is BaseSetup {
 
         vm.selectFork(FORKS[ETH]);
         paymentHelper = PaymentHelper(getContract(ETH, "PaymentHelper"));
+        mockGasPriceOracle = new MockGasPriceOracle();
     }
 
     function test_estimateSingleDirectSingleVault() public {
@@ -65,15 +78,14 @@ contract PaymentHelperTest is BaseSetup {
     }
 
     function test_ifZeroIsReturnedWhenDstValueIsZero() public {
-        /// @dev scenario: single vault withdrawal involving timelock
-        /// expected fees to be greater than zero
+        /// @dev scenario: when the dst native fee is returned as zero by oracle
 
-        /// step 1: setSrcNativePriceOracle to address(0)
         vm.prank(deployer);
-        vm.selectFork(FORKS[ETH]);
-        paymentHelper.setSameChainConfig(1, abi.encode(address(0)));
+        paymentHelper.setDstChainConfig(137, 1, abi.encode(address(0)));
 
-        /// step 2: estimate fees
+        vm.prank(deployer);
+        paymentHelper.setDstChainConfig(137, 7, abi.encode(0));
+
         bytes memory emptyBytes;
         bytes memory txData = _buildTxData(1, native, getContract(ETH, "CoreStateRegistry"), ETH, 1e18);
 
@@ -96,6 +108,70 @@ contract PaymentHelperTest is BaseSetup {
         );
 
         assertEq(fees, 0);
+    }
+
+    function test_usageOfSrcNativePrice() public {
+        /// @dev scenario: when the source native fee oracle is zero address
+        vm.prank(deployer);
+        paymentHelper.setSameChainConfig(1, abi.encode(address(0)));
+
+        vm.prank(deployer);
+        paymentHelper.setSameChainConfig(5, abi.encode(1e8));
+
+        bytes memory emptyBytes;
+        bytes memory txData = _buildTxData(1, native, getContract(ETH, "CoreStateRegistry"), ETH, 1e18);
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        (, , , uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
+            SingleXChainSingleVaultStateReq(
+                ambIds,
+                137,
+                SingleVaultSFData(
+                    _generateSuperformPackWithShift(), /// timelock
+                    420,
+                    420,
+                    LiqRequest(1, txData, address(0), 420, 420, emptyBytes),
+                    emptyBytes
+                )
+            ),
+            true
+        );
+
+        assertGt(fees, 0);
+    }
+
+    function test_usageOfGasPriceOracle() public {
+        /// @dev scenario: using mock gas price oracle
+        vm.prank(deployer);
+        paymentHelper.setSameChainConfig(2, abi.encode(address(mockGasPriceOracle)));
+
+        vm.prank(deployer);
+        paymentHelper.setDstChainConfig(137, 2, abi.encode(address(mockGasPriceOracle)));
+
+        bytes memory emptyBytes;
+        bytes memory txData = _buildTxData(1, native, getContract(ETH, "CoreStateRegistry"), ETH, 1e18);
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        (, , , uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
+            SingleXChainSingleVaultStateReq(
+                ambIds,
+                137,
+                SingleVaultSFData(
+                    _generateSuperformPackWithShift(), /// timelock
+                    420,
+                    420,
+                    LiqRequest(1, txData, address(0), 420, 420, emptyBytes),
+                    emptyBytes
+                )
+            ),
+            true
+        );
+
+        assertGt(fees, 0);
     }
 
     function test_setSameChainConfig() public {

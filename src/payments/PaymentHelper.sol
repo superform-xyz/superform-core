@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console.sol";
+
 import {AggregatorV3Interface} from "../vendor/chainlink/AggregatorV3Interface.sol";
 import {IPaymentHelper} from "../interfaces/IPaymentHelper.sol";
 import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
@@ -668,6 +670,7 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev native token price is 8 decimal
         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
 
+        console.log(dstUsdValue);
         if (dstUsdValue == 0) {
             return 0;
         }
