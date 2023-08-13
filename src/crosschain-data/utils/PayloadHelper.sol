@@ -95,7 +95,7 @@ contract PayloadHelper is IPayloadHelper {
 
     /// @inheritdoc IPayloadHelper
     function decodeSrcPayload(
-        uint256 srcTxId_
+        uint256 srcPayloadId_
     )
         external
         view
