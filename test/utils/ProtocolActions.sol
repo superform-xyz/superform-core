@@ -1266,6 +1266,13 @@ abstract contract ProtocolActions is BaseSetup {
             }
 
             vm.prank(deployer);
+            vm.expectRevert(Error.INVALID_RESCUE_DATA.selector);
+            CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(
+                PAYLOAD_ID[DST_CHAINS[0]],
+                new LiqRequest[](0)
+            );
+
+            vm.prank(deployer);
             CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
 
             vm.selectFork(FORKS[CHAIN_0]);
