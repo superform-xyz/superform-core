@@ -92,7 +92,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             }
         }
 
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -113,7 +113,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             }
         }
 
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -121,7 +121,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 balanceBefore = address(this).balance - msg.value;
 
         _singleXChainMultiVaultDeposit(req);
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -129,7 +129,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 balanceBefore = address(this).balance - msg.value;
 
         _singleXChainSingleVaultDeposit(req);
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -137,7 +137,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 balanceBefore = address(this).balance - msg.value;
 
         _singleDirectSingleVaultDeposit(req);
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -145,7 +145,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 balanceBefore = address(this).balance - msg.value;
 
         _singleDirectMultiVaultDeposit(req);
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -167,7 +167,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             }
         }
 
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -186,7 +186,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             }
         }
 
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -194,7 +194,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 balanceBefore = address(this).balance - msg.value;
 
         _singleXChainMultiVaultWithdraw(req);
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -202,7 +202,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 balanceBefore = address(this).balance - msg.value;
 
         _singleXChainSingleVaultWithdraw(req);
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -210,7 +210,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 balanceBefore = address(this).balance - msg.value;
 
         _singleDirectSingleVaultWithdraw(req);
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /// @inheritdoc ISuperformRouter
@@ -218,7 +218,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 balanceBefore = address(this).balance - msg.value;
 
         _singleDirectMultiVaultWithdraw(req);
-        _forwardFee(balanceBefore);
+        _forwardPayment(balanceBefore);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -352,7 +352,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             req.superformData.extraFormData
         );
 
-        /// @dev same chain action & forward residual fee to fee collector
+        /// @dev same chain action & forward residual payment to payment collector
         _directSingleDeposit(msg.sender, vaultData);
         emit Completed(vars.currentPayloadId);
     }
@@ -372,7 +372,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             req.superformData.extraFormData
         );
 
-        /// @dev same chain action & forward residual fee to fee collector
+        /// @dev same chain action & forward residual payment to payment collector
         _directMultiDeposit(msg.sender, vaultData);
         emit Completed(vars.currentPayloadId);
     }
@@ -492,7 +492,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             req.superformData.extraFormData
         );
 
-        /// @dev same chain action & forward residual fee to fee collector
+        /// @dev same chain action & forward residual payment to payment collector
         _directMultiWithdraw(vaultData, msg.sender);
         emit Completed(vars.currentPayloadId);
     }
@@ -887,13 +887,13 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
                         FEE FORWARDING HELPERS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev forwards the residual fees to fee collector
-    function _forwardFee(uint256 _balanceBefore) internal {
-        /// @dev deducts what's already available sends what's left in msg.value to fee collector
-        uint256 residualFee = address(this).balance - _balanceBefore;
+    /// @dev forwards the residual payment to payment collector
+    function _forwardPayment(uint256 _balanceBefore) internal {
+        /// @dev deducts what's already available sends what's left in msg.value to payment collector
+        uint256 residualPayment = address(this).balance - _balanceBefore;
 
-        if (residualFee > 0) {
-            IPayMaster(superRegistry.getPayMaster()).makePayment{value: residualFee}(msg.sender);
+        if (residualPayment > 0) {
+            IPayMaster(superRegistry.getPayMaster()).makePayment{value: residualPayment}(msg.sender);
         }
     }
 
