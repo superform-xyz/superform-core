@@ -11,7 +11,7 @@ libraries = []
 optimizer = false
 optimizer_runs = 200
 verbosity = 0
-ffi = true
+ffi = false
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
 

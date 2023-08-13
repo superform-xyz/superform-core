@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console.sol";
+
 import {BridgeValidator} from "../BridgeValidator.sol";
 import {ILiFi} from "../../vendor/lifi/ILiFi.sol";
 import {Error} from "../../utils/Error.sol";
@@ -38,12 +40,7 @@ contract LiFiValidator is BridgeValidator {
     ) external view override {
         (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData) = _decodeCallData(txData_);
 
-        address sendingAssetId;
-        if (bridgeData.hasSourceSwaps) {
-            sendingAssetId = swapData[0].sendingAssetId;
-        } else {
-            sendingAssetId = bridgeData.sendingAssetId;
-        }
+        address sendingAssetId = bridgeData.hasSourceSwaps ? swapData[0].sendingAssetId : bridgeData.sendingAssetId;
 
         /// @dev 1. chainId validation
         if (uint256(dstChainId_) != bridgeData.destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();

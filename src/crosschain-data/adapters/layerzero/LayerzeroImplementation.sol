@@ -306,8 +306,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         bytes memory message_,
         bytes memory extraData_
     ) external view override returns (uint256 fees) {
-        if (ambChainId[dstChainId_] != 0) {
-            (fees, ) = lzEndpoint.estimateFees(ambChainId[dstChainId_], address(this), message_, false, extraData_);
+        uint16 chainId = ambChainId[dstChainId_];
+
+        if (chainId != 0) {
+            (fees, ) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
         }
     }
 }

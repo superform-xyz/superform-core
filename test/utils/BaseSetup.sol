@@ -72,7 +72,7 @@ abstract contract BaseSetup is DSTest, Test {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3; /// @dev for mainnet deployment
     address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    address public deployer = address(777);
+    address public deployer = vm.addr(777);
     address[] public users;
     uint256[] public userKeys;
 
