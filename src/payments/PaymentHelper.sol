@@ -668,7 +668,6 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev native token price is 8 decimal
         uint256 dstUsdValue = dstNativeFee * _getNativeTokenPrice(dstChainId_); // native token price - 8 decimal
 
-        console.log(dstUsdValue);
         if (dstUsdValue == 0) {
             return 0;
         }
