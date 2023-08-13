@@ -70,10 +70,11 @@ contract LayerzeroImplementationTest is BaseSetup {
     }
 
     function test_estimateFees() public {
-        vm.startPrank(deployer);
-        uint256 fees = layerzeroImplementation.estimateFees(420, abi.encode(420), bytes(""));
+        uint256 fees1 = layerzeroImplementation.estimateFees(420, abi.encode(420), bytes(""));
+        assertEq(fees1, 0);
 
-        assertEq(fees, 0);
+        uint256 fees2 = layerzeroImplementation.estimateFees(137, abi.encode(420), bytes(""));
+        assertGt(fees2, 0);
     }
 
     function test_revert_setChainId_invalidChainId_invalidCaller() public {
