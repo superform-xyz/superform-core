@@ -283,15 +283,15 @@ library Error {
     error LOCKED();
 
     /*///////////////////////////////////////////////////////////////
-                        FEE COLLECTOR ERRORS
+                        PAYMASTER ERRORS
     //////////////////////////////////////////////////////////////*/
-    /// @dev - when msg.sender is not fee admin
-    error NOT_FEE_ADMIN();
+    /// @dev - when msg.sender is not payment admin
+    error NOT_PAYMENT_ADMIN();
 
-    /// @dev thrown when user pays zero fees
+    /// @dev thrown when user pays zero
     error ZERO_MSG_VALUE();
 
-    /// @dev thrown when fees withdrawal fails
+    /// @dev thrown when payment withdrawal fails
     error FAILED_WITHDRAW();
 
     /*///////////////////////////////////////////////////////////////
