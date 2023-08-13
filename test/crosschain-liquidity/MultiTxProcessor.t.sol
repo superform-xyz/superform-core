@@ -48,6 +48,30 @@ contract MultiTxProcessorTest is BaseSetup {
         assertEq(balanceBefore - transferAmount, balanceAfter);
     }
 
+    function test_native_token_emergency_withdrawFailure() public {
+        uint256 transferAmount = 1e18; // 1 token
+        address payable multiTxProcessor = payable(getContract(ETH, "MultiTxProcessor"));
+
+        /// @dev admin transfers some ETH and DAI tokens to multi tx processor
+        vm.selectFork(FORKS[ETH]);
+
+        uint256 balanceBefore = multiTxProcessor.balance;
+
+        vm.prank(deployer);
+        (bool success, ) = multiTxProcessor.call{value: transferAmount}("");
+        uint256 balanceAfter = multiTxProcessor.balance;
+        assertEq(balanceBefore + transferAmount, balanceAfter);
+
+        vm.prank(deployer);
+        SuperRBAC(getContract(ETH, "SuperRBAC")).grantEmergencyAdminRole(address(this));
+
+        balanceBefore = multiTxProcessor.balance;
+        vm.expectRevert(Error.NATIVE_TOKEN_TRANSFER_FAILURE.selector);
+        MultiTxProcessor(multiTxProcessor).emergencyWithdrawNativeToken(transferAmount);
+        balanceAfter = multiTxProcessor.balance;
+        assertEq(balanceBefore, balanceAfter);
+    }
+
     function test_failed_native_process_tx() public {
         address payable multiTxProcessor = payable(getContract(ETH, "MultiTxProcessor"));
 
@@ -70,6 +94,22 @@ contract MultiTxProcessorTest is BaseSetup {
             1,
             _buildTxData(1, native, multiTxProcessor, ETH, 1e18),
             native,
+            1e18
+        );
+    }
+
+    function test_failed_non_native_process_tx() public {
+        address payable multiTxProcessor = payable(getContract(ETH, "MultiTxProcessor"));
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        /// @dev no funds in multi-tx processor at this point; should revert
+        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
+        MultiTxProcessor(multiTxProcessor).processTx(
+            1,
+            _buildTxData(1, getContract(ETH, "USDT"), multiTxProcessor, ETH, 1e18),
+            getContract(ETH, "USDT"),
             1e18
         );
     }
