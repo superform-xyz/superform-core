@@ -21,9 +21,9 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     /*///////////////////////////////////////////////////////////////
                         MODIFIER
     //////////////////////////////////////////////////////////////*/
-    modifier onlyFeeAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasFeeAdminRole(msg.sender)) {
-            revert Error.NOT_FEE_ADMIN();
+    modifier onlyPaymentAdmin() {
+        if (!ISuperRBAC(superRegistry.superRBAC()).hasPaymentAdminRole(msg.sender)) {
+            revert Error.NOT_PAYMENT_ADMIN();
         }
         _;
     }
@@ -40,7 +40,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPayMaster
-    function withdrawToMultiTxProcessor(uint256 nativeAmount_) external onlyFeeAdmin {
+    function withdrawToMultiTxProcessor(uint256 nativeAmount_) external onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
@@ -54,7 +54,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function withdrawToTxProcessor(uint256 nativeAmount_) external onlyFeeAdmin {
+    function withdrawToTxProcessor(uint256 nativeAmount_) external onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
@@ -68,7 +68,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function withdrawToTxUpdater(uint256 nativeAmount_) external onlyFeeAdmin {
+    function withdrawToTxUpdater(uint256 nativeAmount_) external onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
@@ -82,7 +82,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function rebalanceToMultiTxProcessor(LiqRequest memory req_) external onlyFeeAdmin {
+    function rebalanceToMultiTxProcessor(LiqRequest memory req_) external onlyPaymentAdmin {
         /// assuming all multi-tx processor across chains should be same; CREATE2
         address receiver = superRegistry.multiTxProcessor();
 
@@ -94,7 +94,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function rebalanceToTxProcessor(LiqRequest memory req_) external onlyFeeAdmin {
+    function rebalanceToTxProcessor(LiqRequest memory req_) external onlyPaymentAdmin {
         /// assuming all tx processor across chains should be same; CREATE2
         address receiver = superRegistry.txProcessor();
 
@@ -106,7 +106,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function rebalanceToTxUpdater(LiqRequest memory req_) external onlyFeeAdmin {
+    function rebalanceToTxUpdater(LiqRequest memory req_) external onlyPaymentAdmin {
         /// assuming all tx updater across chains should be same; CREATE2
         address receiver = superRegistry.txUpdater();
 
@@ -133,7 +133,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
         totalFeesPaid[user_] += msg.value;
 
-        emit FeesPaid(user_, msg.value);
+        emit Payment(user_, msg.value);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -148,7 +148,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             revert Error.FAILED_WITHDRAW();
         }
 
-        emit FeesWithdrawn(receiver_, amount_);
+        emit PaymentWithdrawn(receiver_, amount_);
     }
 
     /// @dev helper to move native tokens cross-chain

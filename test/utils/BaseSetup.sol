@@ -344,8 +344,8 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRBAC(vars.superRBAC).grantEmergencyAdminRole(deployer);
             assert(SuperRBAC(vars.superRBAC).hasEmergencyAdminRole(deployer));
 
-            /// @dev FIXME: in reality who should have the FEE_ADMIN_ROLE?
-            SuperRBAC(vars.superRBAC).grantFeeAdminRole(deployer);
+            /// @dev FIXME: in reality who should have the PAYMENT_ADMIN_ROLE?
+            SuperRBAC(vars.superRBAC).grantPaymentAdminRole(deployer);
             assert(SuperRBAC(vars.superRBAC).hasEmergencyAdminRole(deployer));
 
             /// @dev FIXME: in reality who should have the SWAPPER_ROLE for multiTxProcessor?

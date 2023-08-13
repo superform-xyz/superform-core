@@ -12,10 +12,10 @@ interface IPayMaster {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev is emitted when a new payment is made
-    event FeesPaid(address indexed user, uint256 amount);
+    event Payment(address indexed user, uint256 amount);
 
-    /// @dev is emitted when fees are moved out of collector
-    event FeesWithdrawn(address indexed receiver, uint256 amount);
+    /// @dev is emitted when payments are moved out of collector
+    event PaymentWithdrawn(address indexed receiver, uint256 amount);
 
     /*///////////////////////////////////////////////////////////////
                     PRIVILEGED ADMIN FUNCTIONS
@@ -49,7 +49,7 @@ interface IPayMaster {
                     EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev accepts fee payment from user
+    /// @dev accepts payment from user
     /// @param user_ is the wallet address of the paying user
     function makePayment(address user_) external payable;
 }

@@ -17,7 +17,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     bytes32 public immutable PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
-    bytes32 public constant override FEE_ADMIN_ROLE = keccak256("FEE_ADMIN_ROLE");
+    bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE");
     bytes32 public constant override SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
     bytes32 public constant override CORE_CONTRACTS_ROLE = keccak256("CORE_CONTRACTS_ROLE");
     bytes32 public constant override PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
@@ -33,7 +33,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         _setupRole(PROTOCOL_ADMIN_ROLE, admin_);
 
         /// @dev manually set role admin to PROTOCOL_ADMIN_ROLE on all roles
-        _setRoleAdmin(FEE_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(PAYMENT_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -60,16 +60,16 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
-    function grantFeeAdminRole(address admin_) external override {
-        grantRole(FEE_ADMIN_ROLE, admin_);
+    function grantPaymentAdminRole(address admin_) external override {
+        grantRole(PAYMENT_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
-    function revokeFeeAdminRole(address admin_, bytes memory extraData_) external payable override {
-        revokeRole(FEE_ADMIN_ROLE, admin_);
+    function revokePaymentAdminRole(address admin_, bytes memory extraData_) external payable override {
+        revokeRole(PAYMENT_ADMIN_ROLE, admin_);
 
         // if (extraData_.length > 0) {
-        //     AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(FEE_ADMIN_ROLE, admin_));
+        //     AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(SYNC_REVOKE, abi.encode(PAYMENT_ADMIN_ROLE, admin_));
 
         //     _broadcast(abi.encode(rolesPayload), extraData_);
         // }
@@ -261,8 +261,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
-    function hasFeeAdminRole(address admin_) external view override returns (bool) {
-        return hasRole(FEE_ADMIN_ROLE, admin_);
+    function hasPaymentAdminRole(address admin_) external view override returns (bool) {
+        return hasRole(PAYMENT_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC

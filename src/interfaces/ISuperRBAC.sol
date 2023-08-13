@@ -16,13 +16,13 @@ interface ISuperRBAC {
     /// @param admin_ the address to grant the role to
     function grantProtocolAdminRole(address admin_) external;
 
-    /// @dev grants the FEE_ADMIN_ROLE to the given address
+    /// @dev grants the PAYMENT_ADMIN_ROLE to the given address
     /// @param admin_ the address to grant the role to
-    function grantFeeAdminRole(address admin_) external;
+    function grantPaymentAdminRole(address admin_) external;
 
-    /// @dev revokes the FEE_ADMIN_ROLE from given address
+    /// @dev revokes the PAYMENT_ADMIN_ROLE from given address
     /// @param admin_ the address to revoke the role from
-    function revokeFeeAdminRole(address admin_, bytes memory extraData_) external payable;
+    function revokePaymentAdminRole(address admin_, bytes memory extraData_) external payable;
 
     /// @dev revokes the DEFAULT_ADMIN_ROLE from given address
     /// @param admin_ the address to revoke the role from
@@ -123,8 +123,8 @@ interface ISuperRBAC {
     /// @dev returns the id of the protocol admin role
     function PROTOCOL_ADMIN_ROLE() external view returns (bytes32);
 
-    /// @dev returns the id of the fee admin role
-    function FEE_ADMIN_ROLE() external view returns (bytes32);
+    /// @dev returns the id of the payment admin role
+    function PAYMENT_ADMIN_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the emergency admin role
     function EMERGENCY_ADMIN_ROLE() external view returns (bytes32);
@@ -157,9 +157,9 @@ interface ISuperRBAC {
     /// @param admin_ the address to check
     function hasProtocolAdminRole(address admin_) external view returns (bool);
 
-    /// @dev returns whether the given address has the fee admin role
+    /// @dev returns whether the given address has the payment admin role
     /// @param admin_ the address to check
-    function hasFeeAdminRole(address admin_) external view returns (bool);
+    function hasPaymentAdminRole(address admin_) external view returns (bool);
 
     /// @dev returns whether the given address has the emergency admin role
     /// @param admin_ the address to check
