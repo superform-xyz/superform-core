@@ -39,16 +39,16 @@ contract SuperRBACTest is BaseSetup {
         assertEq(superRBAC.hasProtocolAdminRole(deployer), false);
     }
 
-    function test_grantFeeAdminRole() public {
+    function test_grantPaymentAdminRole() public {
         vm.prank(deployer);
-        superRBAC.grantFeeAdminRole(address(0x1));
-        assertEq(superRBAC.hasFeeAdminRole(address(0x1)), true);
+        superRBAC.grantPaymentAdminRole(address(0x1));
+        assertEq(superRBAC.hasPaymentAdminRole(address(0x1)), true);
     }
 
-    function test_revokeFeeAdminRole() public {
+    function test_revokePaymentAdminRole() public {
         _revokeAndCheck(
-            superRBAC.revokeFeeAdminRole.selector,
-            superRBAC.hasFeeAdminRole.selector,
+            superRBAC.revokePaymentAdminRole.selector,
+            superRBAC.hasPaymentAdminRole.selector,
             deployer,
             "",
             generateBroadcastParams(5, 2),
