@@ -105,12 +105,9 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
             string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
         );
 
-        console.log("superForm", superform);
-
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
         (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
         address vault = IBaseForm(superform).getVaultAddress();
-        console.log("vault test", vault);
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
         vm.stopPrank();
@@ -146,12 +143,9 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
             string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
         );
 
-        console.log("superForm", superform);
-
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
         (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
         address vault = IBaseForm(superform).getVaultAddress();
-        console.log("vault test", vault);
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
         vm.stopPrank();

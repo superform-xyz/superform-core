@@ -12,8 +12,6 @@ import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {ITwoStepsFormStateRegistry} from "../interfaces/ITwoStepsFormStateRegistry.sol";
 import {Error} from "../utils/Error.sol";
 
-import "forge-std/console.sol";
-
 /// @title ERC4626TimelockForm
 /// @notice Form implementation to handle timelock extension for ERC4626 vaults
 contract ERC4626TimelockForm is ERC4626FormImplementation {
