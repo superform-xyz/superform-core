@@ -97,6 +97,23 @@ contract PayloadHelperSingleTest is ProtocolActions {
         assertEq(srcChainId, 10); /// chain id of optimism is 10
         assertEq(multi, 0); /// 0 for not multi vault
         assertEq(srcSender, users[0]);
+
+        (
+            uint8 txType2,
+            uint8 callbackType2,
+            address srcSender2,
+            uint64 srcChainId2,
+            ,
+            ,
+            ,
+            uint256 srcPayloadId
+        ) = helper.decodeDstPayload(1);
+
+        assertEq(txType2, 0); /// 0 for deposit
+        assertEq(callbackType2, 1); /// 1 for RETURN
+        assertEq(srcChainId2, POLY); /// chain id of optimism is 10
+        assertEq(srcSender2, users[0]);
+        assertEq(srcPayloadId, 1);
     }
 
     function _checkDstPayloadInit() internal {

@@ -35,7 +35,7 @@ contract PaymentHelperTest is BaseSetup {
         (, , , uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
-                    _generateSuperformPackWithShift(), /// timelock
+                    _generateTimelockSuperformPackWithShift(), /// timelock
                     420,
                     420,
                     LiqRequest(1, emptyBytes, address(0), 420, 420, emptyBytes),
@@ -46,6 +46,36 @@ contract PaymentHelperTest is BaseSetup {
         );
 
         assertGt(fees, 0);
+
+        (, , , uint256 fees2) = paymentHelper.estimateSingleDirectSingleVault(
+            SingleDirectSingleVaultStateReq(
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(), /// timelock
+                    420,
+                    420,
+                    LiqRequest(1, emptyBytes, address(0), 420, 420, emptyBytes),
+                    emptyBytes
+                )
+            ),
+            true
+        );
+
+        assertEq(fees2, 0);
+
+        (, , , uint256 fees3) = paymentHelper.estimateSingleDirectSingleVault(
+            SingleDirectSingleVaultStateReq(
+                SingleVaultSFData(
+                    _generateSuperformPackWithShift(), /// timelock
+                    420,
+                    420,
+                    LiqRequest(1, emptyBytes, address(0), 420, 420, emptyBytes),
+                    emptyBytes
+                )
+            ),
+            false
+        );
+
+        assertEq(fees3, 0);
     }
 
     function test_estimateSingleDirectMultiVault() public {
@@ -53,7 +83,7 @@ contract PaymentHelperTest is BaseSetup {
         /// expected fees to be greater than zero
         bytes memory emptyBytes;
         uint256[] memory superFormIds = new uint256[](1);
-        superFormIds[0] = _generateSuperformPackWithShift();
+        superFormIds[0] = _generateTimelockSuperformPackWithShift();
 
         uint256[] memory uint256MemoryArray = new uint256[](1);
         uint256MemoryArray[0] = 420;
@@ -75,6 +105,21 @@ contract PaymentHelperTest is BaseSetup {
         );
 
         assertGt(fees, 0);
+
+        (, , , uint256 fees2) = paymentHelper.estimateSingleDirectMultiVault(
+            SingleDirectMultiVaultStateReq(
+                MultiVaultSFData(
+                    superFormIds, /// timelock
+                    uint256MemoryArray,
+                    uint256MemoryArray,
+                    liqRequestMemoryArray,
+                    emptyBytes
+                )
+            ),
+            true
+        );
+
+        assertEq(fees2, 0);
     }
 
     function test_ifZeroIsReturnedWhenDstValueIsZero() public {
@@ -97,7 +142,7 @@ contract PaymentHelperTest is BaseSetup {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateSuperformPackWithShift(), /// timelock
+                    _generateTimelockSuperformPackWithShift(), /// timelock
                     420,
                     420,
                     LiqRequest(1, txData, address(0), 420, 420, emptyBytes),
@@ -129,7 +174,7 @@ contract PaymentHelperTest is BaseSetup {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateSuperformPackWithShift(), /// timelock
+                    _generateTimelockSuperformPackWithShift(), /// timelock
                     420,
                     420,
                     LiqRequest(1, txData, address(0), 420, 420, emptyBytes),
@@ -161,7 +206,7 @@ contract PaymentHelperTest is BaseSetup {
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateSuperformPackWithShift(), /// timelock
+                    _generateTimelockSuperformPackWithShift(), /// timelock
                     420,
                     420,
                     LiqRequest(1, txData, address(0), 420, 420, emptyBytes),
@@ -290,6 +335,16 @@ contract PaymentHelperTest is BaseSetup {
 
         uint256 result9 = paymentHelper.gasPerKB(420);
         assertEq(result9, 428);
+    }
+
+    function _generateTimelockSuperformPackWithShift() internal pure returns (uint256 superformId_) {
+        address superform_ = address(111);
+        uint32 formBeaconId_ = 2;
+        uint64 chainId_ = 1;
+
+        superformId_ = uint256(uint160(superform_));
+        superformId_ |= uint256(formBeaconId_) << 160;
+        superformId_ |= uint256(chainId_) << 192;
     }
 
     function _generateSuperformPackWithShift() internal pure returns (uint256 superformId_) {

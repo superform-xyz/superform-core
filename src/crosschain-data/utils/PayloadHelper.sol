@@ -49,7 +49,7 @@ contract PayloadHelper is IPayloadHelper {
         (uint8 txType_, uint8 callbackType_, uint8 multi_, , address srcSender_, uint64 srcChainId_) = payloadHeader
             .decodeTxInfo();
 
-        if (callbackType_ == uint256(CallbackType.RETURN)) {
+        if (callbackType_ == uint256(CallbackType.RETURN) || callbackType == uint256(CallbackType.FAIL)) {
             if (multi_ == 1) {
                 ReturnMultiData memory rd = abi.decode(payloadBody, (ReturnMultiData));
                 amounts = rd.amounts;
