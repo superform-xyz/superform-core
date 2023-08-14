@@ -8,6 +8,10 @@ import {InitSingleVaultData, TimeLockPayload} from "../types/DataTypes.sol";
 /// @notice Interface for Two Steps Form State Registry
 interface ITwoStepsFormStateRegistry {
     /// @notice Receives request (payload) from two steps form to process later
+    /// @param type_ is the nature of transaction (xChain: 1 or same chain: 0)
+    /// @param srcSender_ is the address of the source chain caller
+    /// @param lockedTill_ is the deadline for timelock (after which we can call `finalizePayload`)
+    /// @param data_ is the basic information of superformId, amount to withdraw of type InitSingleVaultData
     function receivePayload(
         uint8 type_,
         address srcSender_,

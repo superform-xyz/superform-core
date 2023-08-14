@@ -619,7 +619,6 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps convert the dst gas fee into src chain native fee
-    /// @dev FIXME - Sujith check decimals (not validated yet)
     /// @dev https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
     /// @dev all native tokens should be 18 decimals across all EVMs
     function _convertToNativeFee(uint64 dstChainId_, uint256 dstGas) internal view returns (uint256 nativeFee) {
