@@ -8,7 +8,7 @@ on:
 
 jobs:
   contract-sizes:
-    name: Contract Sizes
+    name: Contract Sizes and Coverage
     runs-on: "SuperformCore"
     steps:
       - uses: actions/checkout@v3
@@ -37,7 +37,7 @@ jobs:
 
   test:
     name: Contract Tests
-    runs-on: 'SuperformCore'
+    runs-on: "SuperformCore"
     steps:
       - uses: actions/checkout@v3
         with:
@@ -48,9 +48,9 @@ jobs:
       - name: install dependencies
         run: forge install
       - name: run tests
-        run: forge test
+        run: forge coverage
         env:
-        # make fuzzing semi-deterministic to avoid noisy gas cost estimation
+          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
           FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
           BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
@@ -60,7 +60,6 @@ jobs:
           POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
           AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
-
 
   #slither:
   #  runs-on: ubuntu-latest
