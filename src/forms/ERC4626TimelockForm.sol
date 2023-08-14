@@ -12,6 +12,8 @@ import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {ITwoStepsFormStateRegistry} from "../interfaces/ITwoStepsFormStateRegistry.sol";
 import {Error} from "../utils/Error.sol";
 
+import "forge-std/console.sol";
+
 /// @title ERC4626TimelockForm
 /// @notice Form implementation to handle timelock extension for ERC4626 vaults
 contract ERC4626TimelockForm is ERC4626FormImplementation {
@@ -50,6 +52,8 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
         if (liqData.token != address(0) && len1 == 0) {
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
+        } else if (liqData.token == address(0) && len1 != 0) {
+            revert Error.EMPTY_TOKEN_NON_EMPTY_TXDATA();
         }
 
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form

@@ -513,6 +513,77 @@ contract SuperformERC4626FormTest is BaseSetup {
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
     }
 
+    function test_superformDirectWithtrawWithInvalidLiqDataToken() public {
+        /// @dev prank deposits (just mint super-shares)
+        _successfulDeposit();
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        address vault = IBaseForm(superform).getVaultAddress();
+
+        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            100,
+            LiqRequest(1, "", getContract(ETH, "WETH"), 3e18, 0, ""),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_COLLATERAL.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
+
+        vm.stopPrank();
+    }
+
+    function test_superformXChainWithInvalidLiqDataToken() public {
+        /// @dev prank deposits (just mint super-shares)
+        _successfulDeposit();
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        address vault = IBaseForm(superform).getVaultAddress();
+
+        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        vm.stopPrank();
+        bytes memory invalidTxData = abi.encode(1);
+
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1,
+            superformId,
+            1e18,
+            100,
+            LiqRequest(1, invalidTxData, getContract(ETH, "WETH"), 3e18, 0, ""),
+            ""
+        );
+
+        vm.startPrank(getContract(ETH, "CoreStateRegistry"));
+
+        vm.expectRevert(Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST.selector);
+        IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
+
+        vm.stopPrank();
+    }
+
     function test_revert_baseForm_notSuperRegistry() public {
         vm.startPrank(deployer);
 
