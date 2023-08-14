@@ -40,27 +40,18 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev is the address of the superRegistry on the chain
     ISuperRegistry public immutable superRegistry;
 
-    /// @dev is the configuration for each individual chain
-
-    /// @dev same chain params
-    AggregatorV3Interface public srcNativeFeedOracle;
-    AggregatorV3Interface public srcGasPriceOracle;
-
-    uint256 public srcNativePrice;
-    uint256 public srcGasPrice;
-    uint256 public ackNativeGasCost;
-    uint256 public twoStepFeeCost;
-
     /// @dev xchain params
-    mapping(uint64 chainId => AggregatorV3Interface) public dstNativeFeedOracle;
-    mapping(uint64 chainId => AggregatorV3Interface) public dstGasPriceOracle;
+    mapping(uint64 chainId => AggregatorV3Interface) public nativeFeedOracle;
+    mapping(uint64 chainId => AggregatorV3Interface) public gasPriceOracle;
     mapping(uint64 chainId => uint256 gasForSwap) public swapGasUsed;
     mapping(uint64 chainId => uint256 gasForUpdate) public updateGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public depositGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
-    mapping(uint64 chainId => uint256 defaultNativePrice) public dstNativePrice;
-    mapping(uint64 chainId => uint256 defaultGasPrice) public dstGasPrice;
-    mapping(uint64 chainId => uint256 gasPerKB) public dstGasPerKB;
+    mapping(uint64 chainId => uint256 defaultNativePrice) public nativePrice;
+    mapping(uint64 chainId => uint256 defaultGasPrice) public gasPrice;
+    mapping(uint64 chainId => uint256 gasPerKB) public gasPerKB;
+    mapping(uint64 chainId => uint256 gasForOps) public ackGasCost;
+    mapping(uint64 chainId => uint256 gasForOps) public twoStepCost;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -84,82 +75,49 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPaymentHelper
-    function setSameChainConfig(uint256 configType_, bytes memory config_) external override onlyProtocolAdmin {
-        /// Type 1: NATIVE TOKEN PRICE FEED ORACLE
-        if (configType_ == 1) {
-            srcNativeFeedOracle = AggregatorV3Interface(abi.decode(config_, (address)));
-        }
-
-        /// Type 2: GAS PRICE ORACLE
-        if (configType_ == 2) {
-            srcGasPriceOracle = AggregatorV3Interface(abi.decode(config_, (address)));
-        }
-
-        /// Type 3: ACKNOWLEDGEMENT GAS COST PER VAULT
-        if (configType_ == 3) {
-            ackNativeGasCost = abi.decode(config_, (uint256));
-        }
-
-        /// Type 4: TWO STEP FORM COST
-        if (configType_ == 4) {
-            twoStepFeeCost = abi.decode(config_, (uint256));
-        }
-
-        /// Type 5: NATIVE PRICE
-        if (configType_ == 5) {
-            srcNativePrice = abi.decode(config_, (uint256));
-        }
-
-        /// Type 6: GAS PRICE
-        if (configType_ == 6) {
-            srcGasPrice = abi.decode(config_, (uint256));
-        }
-    }
-
-    /// @inheritdoc IPaymentHelper
     function addChain(
         uint64 chainId_,
-        address dstNativeFeedOracle_,
-        address dstGasPriceOracle_,
+        address nativeFeedOracle_,
+        address gasPriceOracle_,
         uint256 swapGasUsed_,
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
         uint256 withdrawGasUsed_,
         uint256 defaultNativePrice_,
         uint256 defaultGasPrice_,
-        uint256 dstGasPerKB_
+        uint256 gasPerKB_
     ) external override onlyProtocolAdmin {
-        if (dstNativeFeedOracle_ != address(0)) {
-            dstNativeFeedOracle[chainId_] = AggregatorV3Interface(dstNativeFeedOracle_);
+        if (nativeFeedOracle_ != address(0)) {
+            nativeFeedOracle[chainId_] = AggregatorV3Interface(nativeFeedOracle_);
         }
 
-        if (dstGasPriceOracle_ != address(0)) {
-            dstGasPriceOracle[chainId_] = AggregatorV3Interface(dstGasPriceOracle_);
+        if (gasPriceOracle_ != address(0)) {
+            gasPriceOracle[chainId_] = AggregatorV3Interface(gasPriceOracle_);
         }
 
         swapGasUsed[chainId_] = swapGasUsed_;
         updateGasUsed[chainId_] = updateGasUsed_;
         depositGasUsed[chainId_] = depositGasUsed_;
         withdrawGasUsed[chainId_] = withdrawGasUsed_;
-        dstNativePrice[chainId_] = defaultNativePrice_;
-        dstGasPrice[chainId_] = defaultGasPrice_;
-        dstGasPerKB[chainId_] = dstGasPerKB_;
+        nativePrice[chainId_] = defaultNativePrice_;
+        gasPrice[chainId_] = defaultGasPrice_;
+        gasPerKB[chainId_] = gasPerKB_;
     }
 
     /// @inheritdoc IPaymentHelper
-    function setDstChainConfig(
+    function updateChainConfig(
         uint64 chainId_,
         uint256 configType_,
         bytes memory config_
     ) external override onlyProtocolAdmin {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
-            dstNativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            nativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
         /// @dev Type 2: DST GAS PRICE ORACLE
         if (configType_ == 2) {
-            dstGasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
+            gasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
         /// @dev Type 3: SWAP GAS COST PER TX FOR MULTI-TX
@@ -184,17 +142,27 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev Type 7: NATIVE PRICE
         if (configType_ == 7) {
-            dstNativePrice[chainId_] = abi.decode(config_, (uint256));
+            nativePrice[chainId_] = abi.decode(config_, (uint256));
         }
 
         /// @dev Type 8: GAS PRICE
         if (configType_ == 8) {
-            dstGasPrice[chainId_] = abi.decode(config_, (uint256));
+            gasPrice[chainId_] = abi.decode(config_, (uint256));
         }
 
         /// @dev Type 9: GAS PRICE PER KB of Message
         if (configType_ == 9) {
-            dstGasPerKB[chainId_] = abi.decode(config_, (uint256));
+            gasPerKB[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 10: ACK GAS COST
+        if (configType_ == 10) {
+            ackGasCost[chainId_] = abi.decode(config_, (uint256));
+        }
+
+        /// @dev Type 11: TWO STEP PROCESSING COST
+        if (configType_ == 11) {
+            twoStepCost[chainId_] = abi.decode(config_, (uint256));
         }
     }
 
@@ -400,7 +368,7 @@ contract PaymentHelper is IPaymentHelper {
         (, uint32 formId, ) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
         if (!isDeposit && formId == TIMELOCK_FORM_ID) {
-            srcAmount += twoStepFeeCost * _getGasPrice(0);
+            srcAmount += twoStepCost[superRegistry.chainId()] * _getGasPrice(superRegistry.chainId());
         }
 
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
@@ -418,7 +386,7 @@ contract PaymentHelper is IPaymentHelper {
             (, uint32 formId, ) = req_.superformData.superformIds[i].getSuperform();
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit && formId == TIMELOCK_FORM_ID) {
-                srcAmount += twoStepFeeCost * _getGasPrice(0);
+                srcAmount += twoStepCost[superRegistry.chainId()] * _getGasPrice(superRegistry.chainId());
             }
 
             unchecked {
@@ -471,7 +439,7 @@ contract PaymentHelper is IPaymentHelper {
         bytes memory message_
     ) public view returns (bytes[] memory extraDataPerAMB) {
         uint256 len = ambIds_.length;
-        uint256 totalDstGasReqInWei = message_.length * dstGasPerKB[dstChainId_];
+        uint256 totalDstGasReqInWei = message_.length * gasPerKB[dstChainId_];
 
         extraDataPerAMB = new bytes[](len);
 
@@ -613,9 +581,9 @@ contract PaymentHelper is IPaymentHelper {
         uint256 dstChainCount_,
         uint256 vaultsCount_
     ) internal view returns (uint256 nativeFee) {
-        uint256 gasCost = dstChainCount_ * vaultsCount_ * ackNativeGasCost;
+        uint256 gasCost = dstChainCount_ * vaultsCount_ * ackGasCost[superRegistry.chainId()];
 
-        return gasCost * _getGasPrice(0);
+        return gasCost * _getGasPrice(superRegistry.chainId());
     }
 
     /// @dev generates the amb message for single vault data
@@ -674,7 +642,7 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev converts the usd value to source chain's native token
         /// @dev native token price is 8 decimal which cancels the 8 decimal multiplied in previous step
-        nativeFee = (dstUsdValue) / _getNativeTokenPrice(0);
+        nativeFee = (dstUsdValue) / _getNativeTokenPrice(superRegistry.chainId());
     }
 
     /// @dev helps generate the new payload id
@@ -687,40 +655,22 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps return the current gas price of different networks
     /// @dev returns default set values if an oracle is not configured for the network
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
-        if (chainId_ == 0) {
-            if (address(srcGasPriceOracle) != address(0)) {
-                (, int256 gasPrice, , , ) = srcGasPriceOracle.latestRoundData();
-                return uint256(gasPrice);
-            }
-
-            return srcGasPrice;
+        if (address(gasPriceOracle[chainId_]) != address(0)) {
+            (, int256 value, , , ) = gasPriceOracle[chainId_].latestRoundData();
+            return uint256(value);
         }
 
-        if (address(dstGasPriceOracle[chainId_]) != address(0)) {
-            (, int256 gasPrice, , , ) = dstGasPriceOracle[chainId_].latestRoundData();
-            return uint256(gasPrice);
-        }
-
-        return dstGasPrice[chainId_];
+        return gasPrice[chainId_];
     }
 
     /// @dev helps return the dst chain token price of different networks
     /// @dev returns `0` - if no oracle is set
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
-        if (chainId_ == 0) {
-            if (address(srcNativeFeedOracle) != address(0)) {
-                (, int256 srcTokenPrice, , , ) = srcNativeFeedOracle.latestRoundData();
-                return uint256(srcTokenPrice);
-            }
-
-            return srcNativePrice;
-        }
-
-        if (address(dstNativeFeedOracle[chainId_]) != address(0)) {
-            (, int256 dstTokenPrice, , , ) = dstNativeFeedOracle[chainId_].latestRoundData();
+        if (address(nativeFeedOracle[chainId_]) != address(0)) {
+            (, int256 dstTokenPrice, , , ) = nativeFeedOracle[chainId_].latestRoundData();
             return uint256(dstTokenPrice);
         }
 
-        return dstNativePrice[chainId_];
+        return nativePrice[chainId_];
     }
 }

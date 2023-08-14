@@ -11,11 +11,6 @@ interface IPaymentHelper {
                         PRIVILEGED ADMIN ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev admin config/update source chain config for estimation
-    /// @param configType_ is the type of config from 1 -> 6
-    /// @param config_ is the encoded new configuration
-    function setSameChainConfig(uint256 configType_, bytes memory config_) external;
-
     /// @dev admin config destination chain config for estimation
     /// @param chainId_ is the identifier of new chain id
     /// @param dstNativeFeedOracle_ is the native price feed oracle
@@ -44,7 +39,7 @@ interface IPaymentHelper {
     /// @param chainId_ is the remote chain's identifier
     /// @param configType_ is the type of config from 1 -> 6
     /// @param config_ is the encoded new configuration
-    function setDstChainConfig(uint64 chainId_, uint256 configType_, bytes memory config_) external;
+    function updateChainConfig(uint64 chainId_, uint256 configType_, bytes memory config_) external;
 
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL VIEW FUNCTIONS

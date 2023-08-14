@@ -596,13 +596,18 @@ abstract contract AbstractDeploy is Script {
                 /// ack gas cost: 40000
                 /// two step form cost: 50000
                 /// default gas price: 50 Gwei
-                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(
-                    2,
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
+                    vars.chainId,
+                    1,
                     abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                 );
-                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(40000));
-                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(50000));
-                PaymentHelper(payable(vars.paymentHelper)).setSameChainConfig(3, abi.encode(50 * 10 ** 9 wei));
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(40000));
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 11, abi.encode(50000));
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
+                    vars.chainId,
+                    8,
+                    abi.encode(50 * 10 ** 9 wei)
+                );
             }
         }
         vm.stopBroadcast();
