@@ -122,14 +122,13 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         try form.withdrawAfterCoolDown(p.data.amount, p) {} catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
             if (p.isXChain == 1) {
-                (uint256 payloadId_, ) = abi.decode(p.data.extraFormData, (uint256, uint256));
-                returnMessage = _constructSingleReturnData(p.srcSender, p.srcChainId, payloadId_, p.data);
+                returnMessage = _constructSingleReturnData(p.srcSender, p.srcChainId, p.data);
 
                 _dispatchAcknowledgement(p.srcChainId, returnMessage, ambOverride_);
             }
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
-                returnMessage = _constructSingleReturnData(p.srcSender, p.srcChainId, timeLockPayloadId_, p.data);
+                returnMessage = _constructSingleReturnData(p.srcSender, p.srcChainId, p.data);
 
                 ISuperPositions(superRegistry.superPositions()).mintSingleSP(
                     p.srcSender,
@@ -204,7 +203,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     function _constructSingleReturnData(
         address srcSender_,
         uint64 srcChainId_,
-        uint256 payloadId_,
         InitSingleVaultData memory singleVaultData_
     ) internal view returns (bytes memory returnMessage) {
         /// @notice Send Data to Source to issue superform positions.
