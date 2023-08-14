@@ -28,6 +28,7 @@ contract SuperformFactory is ISuperformFactory {
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
+    uint256 public xChainPayloadCounter;
     ISuperRegistry public immutable superRegistry;
 
     /// @dev all form beacon addresses
@@ -161,7 +162,7 @@ contract SuperformFactory is ISuperformFactory {
         if (extraData_.length > 0) {
             AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
                 SYNC_BEACON_STATUS,
-                abi.encode(formBeaconId_, paused_)
+                abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, formBeaconId_, paused_)
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
@@ -264,7 +265,7 @@ contract SuperformFactory is ISuperformFactory {
     /// @notice is a part of broadcasting / dispatching through factory state registry
     /// @param message_ is the crosschain message received.
     function _syncBeaconStatus(bytes memory message_) internal {
-        (uint32 formBeaconId, bool status) = abi.decode(message_, (uint32, bool));
+        (, , uint32 formBeaconId, bool status) = abi.decode(message_, (uint64, uint256, uint32, bool));
 
         if (formBeacon[formBeaconId] == address(0)) revert Error.INVALID_FORM_ID();
 
