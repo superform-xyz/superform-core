@@ -1725,16 +1725,20 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
-                .updateMultiVaultDepositPayload(args.payloadId, finalAmounts);
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
+                args.payloadId,
+                finalAmounts
+            );
 
             /// @dev if scenario is meant to revert here (e.g invalid slippage)
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
             vm.expectRevert(args.revertError); /// @dev removed string here: come to this later
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
-                .updateMultiVaultDepositPayload(args.payloadId, finalAmounts);
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
+                args.payloadId,
+                finalAmounts
+            );
 
             return false;
             /// @dev if scenario is meant to revert here (e.g invalid role)
@@ -1743,8 +1747,10 @@ abstract contract ProtocolActions is BaseSetup {
             bytes memory errorMsg = getAccessControlErrorMsg(users[2], args.revertRole);
             vm.expectRevert(errorMsg);
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
-                .updateMultiVaultDepositPayload(args.payloadId, finalAmounts);
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
+                args.payloadId,
+                finalAmounts
+            );
 
             return false;
         }
@@ -1769,16 +1775,26 @@ abstract contract ProtocolActions is BaseSetup {
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
-                .updateSingleVaultDepositPayload(args.payloadId, finalAmount);
+            uint256[] memory finalAmounts = new uint256[](1);
+            finalAmounts[0] = finalAmount;
+
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
+                args.payloadId,
+                finalAmounts
+            );
             /// @dev if scenario is meant to revert here (e.g invalid slippage)
         } else if (args.testType == TestType.RevertUpdateStateSlippage) {
             vm.prank(deployer);
 
             vm.expectRevert(args.revertError); /// @dev removed string here: come to this later
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
-                .updateSingleVaultDepositPayload(args.payloadId, finalAmount);
+            uint256[] memory finalAmounts = new uint256[](1);
+            finalAmounts[0] = finalAmount;
+
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
+                args.payloadId,
+                finalAmounts
+            );
 
             return false;
 
@@ -1788,8 +1804,13 @@ abstract contract ProtocolActions is BaseSetup {
             bytes memory errorMsg = getAccessControlErrorMsg(users[2], args.revertRole);
             vm.expectRevert(errorMsg);
 
-            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry")))
-                .updateSingleVaultDepositPayload(args.payloadId, finalAmount);
+            uint256[] memory finalAmounts = new uint256[](1);
+            finalAmounts[0] = finalAmount;
+
+            CoreStateRegistry(payable(getContract(args.targetChainId, "CoreStateRegistry"))).updateDepositPayload(
+                args.payloadId,
+                finalAmounts
+            );
 
             return false;
         }
@@ -1805,7 +1826,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[chainId]);
         vm.prank(deployer);
 
-        CoreStateRegistry(payable(getContract(chainId, "CoreStateRegistry"))).updateMultiVaultWithdrawPayload(
+        CoreStateRegistry(payable(getContract(chainId, "CoreStateRegistry"))).updateWithdrawPayload(
             payloadId,
             TX_DATA_TO_UPDATE_ON_DST[chainId]
         );
@@ -1821,9 +1842,11 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[chainId]);
         vm.prank(deployer);
 
-        CoreStateRegistry(payable(getContract(chainId, "CoreStateRegistry"))).updateSingleVaultWithdrawPayload(
+        bytes[] memory txData = new bytes[](1);
+        txData[0] = TX_DATA_TO_UPDATE_ON_DST[chainId][0];
+        CoreStateRegistry(payable(getContract(chainId, "CoreStateRegistry"))).updateWithdrawPayload(
             payloadId,
-            TX_DATA_TO_UPDATE_ON_DST[chainId][0]
+            txData
         );
 
         vm.selectFork(initialFork);

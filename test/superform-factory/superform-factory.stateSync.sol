@@ -67,6 +67,19 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(2, "");
             }
         }
+
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        /// @dev checks if proof for this next one is diff
+        vm.recordLogs();
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 ether}(
+            formBeaconId,
+            true,
+            generateBroadcastParams(5, 2)
+        );
+
+        _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
     }
 
     function test_revert_stateSync_invalidFormId() public {
@@ -79,7 +92,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
             SYNC_BEACON_STATUS,
-            abi.encode(formBeaconId, false)
+            abi.encode(ETH, 1, formBeaconId, false)
         );
 
         vm.expectRevert(Error.INVALID_FORM_ID.selector);

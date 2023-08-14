@@ -11,12 +11,12 @@ import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {IBridgeValidator} from "../../interfaces/IBridgeValidator.sol";
-import {PayloadState, TransactionType, CallbackType, AMBMessage, InitSingleVaultData, InitMultiVaultData, AckAMBData, AMBExtraData, ReturnMultiData, ReturnSingleData} from "../../types/DataTypes.sol";
 import {LiqRequest} from "../../types/DataTypes.sol";
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 import {PayloadUpdaterLib} from "../../libraries/PayloadUpdaterLib.sol";
 import {Error} from "../../utils/Error.sol";
+import "../../types/DataTypes.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -57,63 +57,43 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    struct UpdateDepositPayloadVars {
-        bytes32 previousPayloadProof_;
-        bytes previousPayloadBody_;
-        uint256 previousPayloadHeader_;
-        InitSingleVaultData singleVaultData;
-        uint64 srcChainId;
-        uint256 l1;
-        uint256 l2;
-    }
-
     /// @inheritdoc ICoreStateRegistry
-    function updateMultiVaultDepositPayload(
+    function updateDepositPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
-        UpdateDepositPayloadVars memory v_;
-        /// @dev FIXME - Sujith make internal helper to perform common parts
+        UpdateDepositPayloadVars memory v;
 
-        /// @dev load header and body of payload
-        v_.previousPayloadHeader_ = payloadHeader[payloadId_];
-        v_.previousPayloadBody_ = payloadBody[payloadId_];
+        v.prevPayloadHeader = payloadHeader[payloadId_];
+        v.prevPayloadBody = payloadBody[payloadId_];
 
-        v_.previousPayloadProof_ = keccak256(
-            abi.encode(AMBMessage(v_.previousPayloadHeader_, v_.previousPayloadBody_))
-        );
+        v.prevPayloadProof = keccak256(abi.encode(AMBMessage(v.prevPayloadHeader, v.prevPayloadBody)));
 
-        InitMultiVaultData memory multiVaultData = abi.decode(v_.previousPayloadBody_, (InitMultiVaultData));
+        (, , v.isMulti, , , v.srcChainId) = v.prevPayloadHeader.decodeTxInfo();
 
-        (, , , , , v_.srcChainId) = v_.previousPayloadHeader_.decodeTxInfo();
-
-        if (messageQuorum[v_.previousPayloadProof_] < getRequiredMessagingQuorum(v_.srcChainId)) {
+        if (messageQuorum[v.prevPayloadProof] < getRequiredMessagingQuorum(v.srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
-        v_.l1 = multiVaultData.amounts.length;
-        v_.l2 = finalAmounts_.length;
+        PayloadUpdaterLib.validateDepositPayloadUpdate(v.prevPayloadHeader, payloadTracking[payloadId_], v.isMulti);
 
-        /// @dev compare number of vaults to update with provided finalAmounts length
-        if (v_.l1 != v_.l2) {
-            revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
+        bytes memory newPayloadBody;
+        if (v.isMulti != 0) {
+            newPayloadBody = _updateMultiVaultDepositPayload(v.prevPayloadBody, finalAmounts_);
+        } else {
+            newPayloadBody = _updateSingleVaultDepositPayload(v.prevPayloadBody, finalAmounts_[0]);
         }
 
-        /// @dev validate payload update
-        PayloadUpdaterLib.validateDepositPayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 1);
-        PayloadUpdaterLib.validateSlippageArray(finalAmounts_, multiVaultData.amounts, multiVaultData.maxSlippage);
-
-        multiVaultData.amounts = finalAmounts_;
+        /// @dev set the new payload body
+        payloadBody[payloadId_] = newPayloadBody;
 
         /// @dev re-set previous message quorum to 0
-        delete messageQuorum[v_.previousPayloadProof_];
-
-        payloadBody[payloadId_] = abi.encode(multiVaultData);
+        delete messageQuorum[v.prevPayloadProof];
 
         /// @dev set new message quorum
         messageQuorum[
-            keccak256(abi.encode(AMBMessage(v_.previousPayloadHeader_, payloadBody[payloadId_])))
-        ] = getRequiredMessagingQuorum(v_.srcChainId);
+            keccak256(abi.encode(AMBMessage(v.prevPayloadHeader, newPayloadBody)))
+        ] = getRequiredMessagingQuorum(v.srcChainId);
 
         /// @dev define the payload status as updated
         payloadTracking[payloadId_] = PayloadState.UPDATED;
@@ -122,206 +102,49 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function updateSingleVaultDepositPayload(
-        uint256 payloadId_,
-        uint256 finalAmount_
-    ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
-        /// @dev FIXME - Sujith make internal helper to perform common parts
-
-        /// @dev load header and body of payload
-        bytes memory previousPayloadBody_ = payloadBody[payloadId_];
-        uint256 previousPayloadHeader_ = payloadHeader[payloadId_];
-        InitSingleVaultData memory singleVaultData = abi.decode(previousPayloadBody_, (InitSingleVaultData));
-
-        bytes32 previousPayloadProof_ = keccak256(abi.encode(AMBMessage(previousPayloadHeader_, previousPayloadBody_)));
-
-        (, , , , , uint64 srcChainId) = previousPayloadHeader_.decodeTxInfo();
-        if (messageQuorum[previousPayloadProof_] < getRequiredMessagingQuorum(srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
-        }
-
-        /// @dev validate payload update
-        PayloadUpdaterLib.validateDepositPayloadUpdate(previousPayloadHeader_, payloadTracking[payloadId_], 0);
-        PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage);
-
-        delete messageQuorum[previousPayloadProof_];
-
-        singleVaultData.amount = finalAmount_;
-
-        payloadBody[payloadId_] = abi.encode(singleVaultData);
-
-        /// @dev set new message quorum
-        messageQuorum[
-            keccak256(abi.encode(AMBMessage(previousPayloadHeader_, payloadBody[payloadId_])))
-        ] = getRequiredMessagingQuorum(srcChainId);
-
-        payloadTracking[payloadId_] = PayloadState.UPDATED;
-
-        emit PayloadUpdated(payloadId_);
-    }
-
-    struct UpdateWithdrawPayloadVars {
-        bytes32 previousPayloadProof_;
-        bytes previousPayloadBody_;
-        uint256 previousPayloadHeader_;
-        InitSingleVaultData singleVaultData;
-        uint64 srcChainId;
-        uint64 dstChainId;
-        uint256 l1;
-        uint256 l2;
-        address srcSender;
-    }
-
-    /// @inheritdoc ICoreStateRegistry
-    function updateMultiVaultWithdrawPayload(
+    function updateWithdrawPayload(
         uint256 payloadId_,
         bytes[] calldata txData_
     ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
-        /// @dev FIXME - Sujith make internal helper to perform common parts
-
-        UpdateWithdrawPayloadVars memory v_;
+        UpdateWithdrawPayloadVars memory v;
 
         /// @dev load header and body of payload
-        v_.previousPayloadHeader_ = payloadHeader[payloadId_];
-        v_.previousPayloadBody_ = payloadBody[payloadId_];
+        v.prevPayloadHeader = payloadHeader[payloadId_];
+        v.prevPayloadBody = payloadBody[payloadId_];
 
-        v_.previousPayloadProof_ = keccak256(
-            abi.encode(AMBMessage(v_.previousPayloadHeader_, v_.previousPayloadBody_))
-        );
+        v.prevPayloadProof = keccak256(abi.encode(AMBMessage(v.prevPayloadHeader, v.prevPayloadBody)));
+        (, , v.isMulti, , v.srcSender, v.srcChainId) = v.prevPayloadHeader.decodeTxInfo();
 
-        InitMultiVaultData memory multiVaultData = abi.decode(v_.previousPayloadBody_, (InitMultiVaultData));
-
-        (, , , , v_.srcSender, v_.srcChainId) = v_.previousPayloadHeader_.decodeTxInfo();
-
-        if (messageQuorum[v_.previousPayloadProof_] < getRequiredMessagingQuorum(v_.srcChainId)) {
+        if (messageQuorum[v.prevPayloadProof] < getRequiredMessagingQuorum(v.srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
-        v_.l1 = multiVaultData.liqData.length;
-        v_.l2 = txData_.length;
-
-        if (v_.l1 != v_.l2) {
-            revert Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
-        }
-
         /// @dev validate payload update
-        PayloadUpdaterLib.validateWithdrawPayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 1);
+        PayloadUpdaterLib.validateWithdrawPayloadUpdate(v.prevPayloadHeader, payloadTracking[payloadId_], v.isMulti);
+        v.dstChainId = superRegistry.chainId();
 
-        v_.dstChainId = superRegistry.chainId();
-
-        /// @dev validates if the incoming update is valid
-        for (uint256 i; i < v_.l1; ) {
-            if (txData_[i].length != 0 && multiVaultData.liqData[i].txData.length == 0) {
-                (address superform, , ) = multiVaultData.superformIds[i].getSuperform();
-
-                if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
-                    PayloadUpdaterLib.validateLiqReq(multiVaultData.liqData[i]);
-                    IBridgeValidator(superRegistry.getBridgeValidator(multiVaultData.liqData[i].bridgeId))
-                        .validateTxData(
-                            txData_[i],
-                            v_.dstChainId,
-                            v_.srcChainId,
-                            false,
-                            superform,
-                            v_.srcSender,
-                            multiVaultData.liqData[i].token
-                        );
-
-                    multiVaultData.liqData[i].txData = txData_[i];
-                }
-            }
-
-            unchecked {
-                ++i;
-            }
+        bytes memory newPayloadBody;
+        if (v.isMulti != 0) {
+            newPayloadBody = _updateMultiVaultWithdrawPayload(v, txData_);
+        } else {
+            newPayloadBody = _updateSingleVaultWithdrawPayload(v, txData_[0]);
         }
+
+        /// @dev set the new payload body
+        payloadBody[payloadId_] = newPayloadBody;
 
         /// @dev re-set previous message quorum to 0
-        delete messageQuorum[v_.previousPayloadProof_];
-
-        payloadBody[payloadId_] = abi.encode(multiVaultData);
+        delete messageQuorum[v.prevPayloadProof];
 
         /// @dev set new message quorum
         messageQuorum[
-            keccak256(abi.encode(AMBMessage(v_.previousPayloadHeader_, payloadBody[payloadId_])))
-        ] = getRequiredMessagingQuorum(v_.srcChainId);
+            keccak256(abi.encode(AMBMessage(v.prevPayloadHeader, newPayloadBody)))
+        ] = getRequiredMessagingQuorum(v.srcChainId);
 
         /// @dev define the payload status as updated
         payloadTracking[payloadId_] = PayloadState.UPDATED;
 
         emit PayloadUpdated(payloadId_);
-    }
-
-    /// @inheritdoc ICoreStateRegistry
-    function updateSingleVaultWithdrawPayload(
-        uint256 payloadId_,
-        bytes calldata txData_
-    ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
-        /// @dev FIXME - Sujith make internal helper to perform common parts
-
-        UpdateWithdrawPayloadVars memory v_;
-
-        /// @dev load header and body of the payload
-        v_.previousPayloadBody_ = payloadBody[payloadId_];
-        v_.previousPayloadHeader_ = payloadHeader[payloadId_];
-        InitSingleVaultData memory singleVaultData = abi.decode(v_.previousPayloadBody_, (InitSingleVaultData));
-
-        (address superform, , ) = singleVaultData.superformId.getSuperform();
-
-        if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
-            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
-        }
-
-        v_.previousPayloadProof_ = keccak256(
-            abi.encode(AMBMessage(v_.previousPayloadHeader_, v_.previousPayloadBody_))
-        );
-
-        (, , , , v_.srcSender, v_.srcChainId) = v_.previousPayloadHeader_.decodeTxInfo();
-        if (messageQuorum[v_.previousPayloadProof_] < getRequiredMessagingQuorum(v_.srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
-        }
-
-        /// @dev validate payload update
-        PayloadUpdaterLib.validateWithdrawPayloadUpdate(v_.previousPayloadHeader_, payloadTracking[payloadId_], 0);
-        PayloadUpdaterLib.validateLiqReq(singleVaultData.liqData);
-
-        IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData.liqData.bridgeId)).validateTxData(
-            txData_,
-            superRegistry.chainId(),
-            v_.srcChainId,
-            false,
-            superform,
-            v_.srcSender,
-            singleVaultData.liqData.token
-        );
-
-        singleVaultData.liqData.txData = txData_;
-
-        delete messageQuorum[v_.previousPayloadProof_];
-
-        payloadBody[payloadId_] = abi.encode(singleVaultData);
-
-        /// @dev set new message quorum
-        messageQuorum[
-            keccak256(abi.encode(AMBMessage(v_.previousPayloadHeader_, payloadBody[payloadId_])))
-        ] = getRequiredMessagingQuorum(v_.srcChainId);
-
-        payloadTracking[payloadId_] = PayloadState.UPDATED;
-        emit PayloadUpdated(payloadId_);
-    }
-
-    /// @dev local struct to avoid stack too deep errors
-    struct CoreProcessPayloadLocalVars {
-        bytes _payloadBody;
-        uint256 _payloadHeader;
-        uint8 txType;
-        uint8 callbackType;
-        uint8 multi;
-        address srcSender;
-        uint64 srcChainId;
-        AMBMessage _message;
-        bytes returnMessage;
-        bytes32 _proof;
     }
 
     /// @inheritdoc BaseStateRegistry
@@ -468,6 +291,115 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev helper function to update multi vault deposit payload
+    function _updateMultiVaultDepositPayload(
+        bytes memory prevPayloadBody_,
+        uint256[] calldata finalAmounts_
+    ) internal returns (bytes memory newPayloadBody_) {
+        InitMultiVaultData memory multiVaultData = abi.decode(prevPayloadBody_, (InitMultiVaultData));
+
+        /// @dev compare number of vaults to update with provided finalAmounts length
+        if (multiVaultData.amounts.length != finalAmounts_.length) {
+            revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
+        }
+
+        /// @dev validate payload update
+        PayloadUpdaterLib.validateSlippageArray(finalAmounts_, multiVaultData.amounts, multiVaultData.maxSlippage);
+        multiVaultData.amounts = finalAmounts_;
+
+        newPayloadBody_ = abi.encode(multiVaultData);
+    }
+
+    /// @dev helper function to update single vault deposit payload
+    function _updateSingleVaultDepositPayload(
+        bytes memory prevPayloadBody_,
+        uint256 finalAmount_
+    ) internal returns (bytes memory newPayloadBody_) {
+        InitSingleVaultData memory singleVaultData = abi.decode(prevPayloadBody_, (InitSingleVaultData));
+
+        /// @dev validate payload update
+        PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage);
+        singleVaultData.amount = finalAmount_;
+
+        newPayloadBody_ = abi.encode(singleVaultData);
+    }
+
+    /// @dev helper function to update multi vault withdraw payload
+    function _updateMultiVaultWithdrawPayload(
+        UpdateWithdrawPayloadVars memory v_,
+        bytes[] calldata txData_
+    ) internal returns (bytes memory) {
+        InitMultiVaultData memory multiVaultData = abi.decode(v_.prevPayloadBody, (InitMultiVaultData));
+
+        uint256 len = multiVaultData.liqData.length;
+
+        if (len != txData_.length) {
+            revert Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
+        }
+
+        /// @dev validates if the incoming update is valid
+        for (uint256 i; i < len; ) {
+            if (txData_[i].length != 0 && multiVaultData.liqData[i].txData.length == 0) {
+                (address superform, , ) = multiVaultData.superformIds[i].getSuperform();
+
+                if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
+                    PayloadUpdaterLib.validateLiqReq(multiVaultData.liqData[i]);
+
+                    IBridgeValidator(superRegistry.getBridgeValidator(multiVaultData.liqData[i].bridgeId))
+                        .validateTxData(
+                            txData_[i],
+                            v_.dstChainId,
+                            v_.srcChainId,
+                            false,
+                            superform,
+                            v_.srcSender,
+                            multiVaultData.liqData[i].token
+                        );
+
+                    multiVaultData.liqData[i].txData = txData_[i];
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return abi.encode(multiVaultData);
+    }
+
+    /// @dev helper function to update single vault withdraw payload
+    function _updateSingleVaultWithdrawPayload(
+        UpdateWithdrawPayloadVars memory v_,
+        bytes calldata txData_
+    ) internal returns (bytes memory newPayloadBody_) {
+        InitSingleVaultData memory singleVaultData = abi.decode(v_.prevPayloadBody, (InitSingleVaultData));
+
+        (address superform, , ) = singleVaultData.superformId.getSuperform();
+
+        if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
+            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
+        }
+
+        /// @dev validate payload update
+        PayloadUpdaterLib.validateLiqReq(singleVaultData.liqData);
+
+        IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData.liqData.bridgeId)).validateTxData(
+            txData_,
+            v_.dstChainId,
+            v_.srcChainId,
+            false,
+            superform,
+            v_.srcSender,
+            singleVaultData.liqData.token
+        );
+
+        singleVaultData.liqData.txData = txData_;
+
+        newPayloadBody_ = abi.encode(singleVaultData);
+    }
+
     function _processMultiWithdrawal(
         uint256 payloadId_,
         bytes memory payload_,
