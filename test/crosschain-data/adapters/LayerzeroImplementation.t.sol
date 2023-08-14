@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "../utils/BaseSetup.sol";
+import "../../utils/BaseSetup.sol";
 import "pigeon/src/layerzero/lib/LZPacket.sol";
 
 import {TransactionType, CallbackType, AMBMessage} from "src/types/DataTypes.sol";
@@ -67,6 +67,16 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         assertEq(layerzeroImplementation.ambChainId(10), 10);
         assertEq(layerzeroImplementation.superChainId(137), 137);
+    }
+
+    function test_estimateFeesWithInvalidChainId() public {
+        uint256 fees = layerzeroImplementation.estimateFees(420, abi.encode(420), bytes(""));
+        assertEq(fees, 0);
+    }
+
+    function test_estimateFeesWithValidChainId() public {
+        uint256 fees = layerzeroImplementation.estimateFees(137, abi.encode(420), bytes(""));
+        assertGt(fees, 0);
     }
 
     function test_revert_setChainId_invalidChainId_invalidCaller() public {

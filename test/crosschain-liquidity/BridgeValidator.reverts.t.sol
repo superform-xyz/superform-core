@@ -10,6 +10,18 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
     }
 
+    function test_lifi_validator() public {
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            _buildTxData(2, address(0), deployer, BSC, uint256(100), "CoreStateRegistry"),
+            ETH,
+            BSC,
+            true,
+            address(0),
+            deployer,
+            address(0)
+        );
+    }
+
     function test_lifi_invalid_receiver() public {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
@@ -21,6 +33,62 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             address(0),
             deployer,
             address(0)
+        );
+    }
+
+    function test_lifi_invalid_dstchain() public {
+        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
+
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            _buildTxData(2, address(0), deployer, BSC, uint256(100), "CoreStateRegistry"),
+            ETH,
+            ARBI,
+            true,
+            address(0),
+            deployer,
+            address(0)
+        );
+    }
+
+    function test_lifi_invalid_receiver_samechain() public {
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            _buildTxData(2, address(0), deployer, ETH, uint256(100), "PayMaster"),
+            ETH,
+            ETH,
+            true,
+            address(0),
+            deployer,
+            address(0)
+        );
+    }
+
+    function test_lifi_invalid_receiver_xchain_withdraw() public {
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            _buildTxData(2, address(0), deployer, ARBI, uint256(100), "PayMaster"),
+            ETH,
+            ARBI,
+            false,
+            address(0),
+            deployer,
+            address(0)
+        );
+    }
+
+    function test_lifi_invalid_token() public {
+        vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
+
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            _buildTxData(2, address(0), deployer, ARBI, uint256(100), "CoreStateRegistry"),
+            ETH,
+            ARBI,
+            true,
+            address(0),
+            deployer,
+            address(420)
         );
     }
 
@@ -38,6 +106,20 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         );
     }
 
+    function test_socket_invalid_tx_data_chain() public {
+        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
+
+        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
+            _buildTxData(1, address(0), deployer, BSC, uint256(100), "PayMaster"),
+            ETH,
+            ARBI,
+            true,
+            address(0),
+            deployer,
+            address(0)
+        );
+    }
+
     function test_socket_invalid_token() public {
         vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
 
@@ -46,6 +128,34 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             ETH,
             BSC,
             true,
+            address(0),
+            deployer,
+            address(0)
+        );
+    }
+
+    function test_socket_invalid_receiver_same_chain() public {
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+
+        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
+            _buildTxData(1, address(1), deployer, ETH, uint256(100), "CoreStateRegistry"),
+            ETH,
+            ETH,
+            true,
+            address(0),
+            deployer,
+            address(0)
+        );
+    }
+
+    function test_socket_invalid_receiver_xchain_withdraw() public {
+        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
+
+        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
+            _buildTxData(1, address(1), deployer, BSC, uint256(100), "CoreStateRegistry"),
+            ETH,
+            BSC,
+            false,
             address(0),
             deployer,
             address(0)
@@ -113,7 +223,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
                 getContract(toChainId_, receiver_),
                 amount_,
                 uint256(toChainId_),
-                false,
+                true,
                 true
             );
 

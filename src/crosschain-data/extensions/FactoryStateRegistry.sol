@@ -16,7 +16,7 @@ contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlySender() override {
-        if (msg.sender != superRegistry.superformFactory()) revert Error.NOT_CORE_CONTRACTS();
+        if (msg.sender != superRegistry.superformFactory()) revert Error.NOT_SUPERFORM_FACTORY();
         _;
     }
 

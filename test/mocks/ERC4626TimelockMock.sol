@@ -11,7 +11,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 /// @dev Allows canceling unlock request
 /// @dev Designed to mimick behavior of timelock vaults covering most of the use cases abstracted
 contract ERC4626TimelockMock is ERC4626 {
-    uint256 public lockPeriod = 100;
+    uint256 public lockPeriod = 1 hours;
     uint256 public requestId;
 
     struct UnlockRequest {

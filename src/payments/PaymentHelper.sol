@@ -31,7 +31,7 @@ contract PaymentHelper is IPaymentHelper {
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    uint256 public constant TIMELOCK_FORM_ID = 1;
+    uint32 public constant TIMELOCK_FORM_ID = 1;
 
     /*///////////////////////////////////////////////////////////////
                                 STATE VARIABLES
@@ -397,8 +397,9 @@ contract PaymentHelper is IPaymentHelper {
         SingleDirectSingleVaultStateReq calldata req_,
         bool isDeposit
     ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
+        (, uint32 formId, ) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
-        if (!isDeposit && req_.superformData.superformId == TIMELOCK_FORM_ID) {
+        if (!isDeposit && formId == TIMELOCK_FORM_ID) {
             srcAmount += twoStepFeeCost * _getGasPrice(0);
         }
 
@@ -414,8 +415,9 @@ contract PaymentHelper is IPaymentHelper {
         bool isDeposit
     ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
         for (uint256 i; i < req_.superformData.superformIds.length; ) {
+            (, uint32 formId, ) = req_.superformData.superformIds[i].getSuperform();
             /// @dev only if timelock form withdrawal is involved
-            if (!isDeposit && req_.superformData.superformIds[i] == TIMELOCK_FORM_ID) {
+            if (!isDeposit && formId == TIMELOCK_FORM_ID) {
                 srcAmount += twoStepFeeCost * _getGasPrice(0);
             }
 
@@ -714,7 +716,7 @@ contract PaymentHelper is IPaymentHelper {
             return srcNativePrice;
         }
 
-        if (address(dstGasPriceOracle[chainId_]) != address(0)) {
+        if (address(dstNativeFeedOracle[chainId_]) != address(0)) {
             (, int256 dstTokenPrice, , , ) = dstNativeFeedOracle[chainId_].latestRoundData();
             return uint256(dstTokenPrice);
         }

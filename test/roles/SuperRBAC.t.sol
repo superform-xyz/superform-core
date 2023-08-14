@@ -205,6 +205,21 @@ contract SuperRBACTest is BaseSetup {
         assertEq(superRBAC.hasMinterStateRegistryRole(address(0x1)), true);
     }
 
+    function test_grantStateRegistryMinterRoleToWrongAddress() public {
+        vm.startPrank(deployer);
+
+        uint8[] memory registryIds = new uint8[](1);
+        registryIds[0] = 1;
+
+        address[] memory registryAddress = new address[](1);
+        registryAddress[0] = address(0x1);
+
+        superRegistry.setStateRegistryAddress(registryIds, registryAddress);
+
+        vm.expectRevert(Error.NOT_VALID_STATE_REGISTRY.selector);
+        superRBAC.grantMinterStateRegistryRole(address(0x2));
+    }
+
     function test_revokeStateRegistryMinterRole() public {
         _revokeAndCheck(
             superRBAC.revokeMinterStateRegistryRole.selector,
