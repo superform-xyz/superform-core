@@ -203,14 +203,25 @@ contract PaymentHelper is IPaymentHelper {
 
             srcAmount += ambFees;
 
-            /// @dev step 2: estimate if swap costs are involved
-            if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequests);
+            if (isDeposit) {
+                /// @dev step 2: estimate if swap costs are involved
+                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequests);
 
-            /// @dev step 3: estimate update cost (only for deposit)
-            if (isDeposit)
+                /// @dev step 3: estimate update cost (only for deposit)
                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], req_.superformsData[i].superformIds.length);
 
-            /// @dev step 4: estimate execution costs in dst
+                /// @dev step 4: estimation processing cost of acknowledgement
+                /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
+                srcAmount += _estimateAckProcessingCost(
+                    req_.dstChainIds.length,
+                    req_.superformsData[i].superformIds.length
+                );
+
+                /// @dev step 5: estimate liq amount
+                liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
+            }
+
+            /// @dev step 6: estimate execution costs in dst (withdraw / deposit)
             /// note: only execution cost (not acknowledgement messaging cost)
             totalDstGas += _estimateDstExecutionCost(
                 isDeposit,
@@ -218,18 +229,7 @@ contract PaymentHelper is IPaymentHelper {
                 req_.superformsData[i].superformIds.length
             );
 
-            /// @dev step 5: estimation processing cost of acknowledgement
-            /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-            if (isDeposit)
-                srcAmount += _estimateAckProcessingCost(
-                    req_.dstChainIds.length,
-                    req_.superformsData[i].superformIds.length
-                );
-
-            /// @dev step 6: estimate liq amount
-            if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
-
-            /// @dev step 7: convert all dst gas estimates to src chain estimate
+            /// @dev step 7: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
             unchecked {
@@ -257,22 +257,23 @@ contract PaymentHelper is IPaymentHelper {
 
             srcAmount += ambFees;
 
-            /// @dev step 2: estimate if swap costs are involved
-            if (isDeposit)
+            if (isDeposit) {
+                /// @dev step 2: estimate if swap costs are involved
                 totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequest.castToArray());
 
-            /// @dev step 3: estimate update cost (only for deposit)
-            if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
+                /// @dev step 3: estimate update cost (only for deposit)
+                totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
-            /// @dev step 4: estimate execution costs in dst
+                /// @dev step 4: estimation execution cost of acknowledgement
+                srcAmount += _estimateAckProcessingCost(req_.dstChainIds.length, 1);
+
+                /// @dev step 5: estimate the liqAmount
+                liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castToArray());
+            }
+
+            /// @dev step 6: estimate execution costs in dst
             /// note: only execution cost (not acknowledgement messaging cost)
             totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], 1);
-
-            /// @dev step 5: estimation execution cost of acknowledgement
-            if (isDeposit) srcAmount += _estimateAckProcessingCost(req_.dstChainIds.length, 1);
-
-            /// @dev step 6: estimate the liqAmount
-            if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castToArray());
 
             /// @dev step 7: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -364,7 +365,7 @@ contract PaymentHelper is IPaymentHelper {
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
+    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount) {
         (, uint32 formId, ) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
         if (!isDeposit && formId == TIMELOCK_FORM_ID) {
@@ -381,7 +382,7 @@ contract PaymentHelper is IPaymentHelper {
     function estimateSingleDirectMultiVault(
         SingleDirectMultiVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
+    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount) {
         for (uint256 i; i < req_.superformData.superformIds.length; ) {
             (, uint32 formId, ) = req_.superformData.superformIds[i].getSuperform();
             /// @dev only if timelock form withdrawal is involved
@@ -619,7 +620,6 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps convert the dst gas fee into src chain native fee
-    /// @dev FIXME - Sujith check decimals (not validated yet)
     /// @dev https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
     /// @dev all native tokens should be 18 decimals across all EVMs
     function _convertToNativeFee(uint64 dstChainId_, uint256 dstGas) internal view returns (uint256 nativeFee) {
