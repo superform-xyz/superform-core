@@ -95,14 +95,14 @@ contract PayloadHelper is IPayloadHelper {
 
     /// @inheritdoc IPayloadHelper
     function decodeSrcPayload(
-        uint256 srcTxId_
+        uint256 srcPayloadId_
     )
         external
         view
         override
         returns (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId)
     {
-        uint256 txInfo = srcPayloadRegistry.txHistory(srcTxId_);
+        uint256 txInfo = srcPayloadRegistry.txHistory(srcPayloadId_);
 
         if (txInfo != 0) {
             (txType, callbackType, multi, , srcSender, srcChainId) = txInfo.decodeTxInfo();
