@@ -32,14 +32,14 @@ interface IPayloadHelper {
         );
 
     /// @dev reads the payload from the core state registry and decodes it in a more detailed manner.
-    /// @param srcTxId_ is the unique identifier of the payload allocated by super router
+    /// @param srcPayloadId_ is the unique identifier of the payload allocated by super router
     /// @return txType is the type of transaction. check {TransactionType} enum in DataTypes.sol
     /// @return callbackType is the type of payload. check {CallbackType} enum in DataTypes.sol
     /// @return isMulti indicates if the transaction involves operations to multiple vaults
     /// @return srcSender is the user who initiated the transaction on the srcChain
     /// @return srcChainId is the unique identifier of the srcChain
     function decodeSrcPayload(
-        uint256 srcTxId_
+        uint256 srcPayloadId_
     ) external view returns (uint8 txType, uint8 callbackType, uint8 isMulti, address srcSender, uint64 srcChainId);
 
     /// @dev returns decoded two step form payloads
