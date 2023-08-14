@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console.sol";
+
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
@@ -127,5 +129,34 @@ contract PayloadHelper is IPayloadHelper {
             payload.data.superformId,
             payload.data.amount
         );
+    }
+
+    function decodeTimeLockFailedPayload(
+        uint256 timelockPayloadId_
+    )
+        external
+        view
+        override
+        returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
+    {
+        IBaseStateRegistry timelockPayloadRegistry = IBaseStateRegistry(address(twoStepRegistry));
+        bytes memory payloadBody = timelockPayloadRegistry.payloadBody(timelockPayloadId_);
+        uint256 payloadHeader = timelockPayloadRegistry.payloadHeader(timelockPayloadId_);
+
+        (, uint8 callbackType_, , , address srcSender_, uint64 srcChainId_) = payloadHeader.decodeTxInfo();
+        console.log(callbackType_);
+        console.log(srcSender_);
+        console.log(srcChainId_);
+
+        /// @dev callback type can never be INIT / RETURN
+        if (callbackType_ == uint256(CallbackType.FAIL)) {
+            ReturnSingleData memory rsd = abi.decode(payloadBody, (ReturnSingleData));
+            amount = rsd.amount;
+            superformId = rsd.superformId;
+            srcPayloadId = rsd.payloadId;
+        }
+
+        srcSender = srcSender_;
+        srcChainId = srcChainId_;
     }
 }

@@ -1198,6 +1198,12 @@ abstract contract ProtocolActions is BaseSetup {
                         TWO_STEP_PAYLOAD_ID[CHAIN_0]++;
                     }
 
+                    (address srcSender, uint64 srcChainId, , , ) = PayloadHelper(getContract(CHAIN_0, "PayloadHelper"))
+                        .decodeTimeLockFailedPayload(TWO_STEP_PAYLOAD_ID[CHAIN_0]);
+
+                    assertEq(srcChainId, DST_CHAINS[i]);
+                    assertEq(srcSender, users[action.user]);
+
                     success = _processTwoStepPayload(
                         TWO_STEP_PAYLOAD_ID[CHAIN_0],
                         DST_CHAINS[i],
@@ -1844,10 +1850,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         bytes[] memory txData = new bytes[](1);
         txData[0] = TX_DATA_TO_UPDATE_ON_DST[chainId][0];
-        CoreStateRegistry(payable(getContract(chainId, "CoreStateRegistry"))).updateWithdrawPayload(
-            payloadId,
-            txData
-        );
+        CoreStateRegistry(payable(getContract(chainId, "CoreStateRegistry"))).updateWithdrawPayload(payloadId, txData);
 
         vm.selectFork(initialFork);
         return true;
