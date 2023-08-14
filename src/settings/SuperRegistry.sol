@@ -172,7 +172,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setSuperRBAC(address superRBAC_) external override onlyCaller {
+    function setSuperRBAC(address superRBAC_) public override onlyCaller {
         address oldSuperRBAC = protocolAddresses[SUPER_RBAC];
         protocolAddresses[SUPER_RBAC] = superRBAC_;
 

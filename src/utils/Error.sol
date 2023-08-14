@@ -282,6 +282,9 @@ library Error {
     /// @dev thrown when trying to finalize the payload but the withdraw is still locked
     error LOCKED();
 
+    /// @dev thrown when liqData token is empty but txData is not
+    error EMPTY_TOKEN_NON_EMPTY_TXDATA();
+
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
     //////////////////////////////////////////////////////////////*/

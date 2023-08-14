@@ -177,8 +177,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         if (vars.balanceAfter - vars.balanceBefore < singleVaultData_.amount)
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
 
-        if (address(v.asset()) != vars.collateral) revert Error.DIRECT_DEPOSIT_INVALID_COLLATERAL();
-
         /// @dev the vault asset (collateral) is approved and deposited to the vault
         IERC20(vars.collateral).approve(vault, singleVaultData_.amount);
         dstAmount = v.deposit(singleVaultData_.amount, address(this));

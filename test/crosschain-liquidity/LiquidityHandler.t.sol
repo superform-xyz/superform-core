@@ -30,6 +30,26 @@ contract LiquidityHandlerTest is BaseSetup {
         liquidityHandler = new LiquidityHandlerUser();
     }
 
+    function test_dispatchTokensAlreadyInContract() public {
+        uint256 transferAmount = 1e18; /// 1 token
+        address payable token = payable(getContract(ETH, "DAI"));
+
+        vm.startPrank(deployer);
+        MockERC20(token).transfer(address(liquidityHandler), transferAmount);
+
+        liquidityHandler.dispatchTokensTest(
+            SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1),
+            _buildTxData(1, address(token), address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
+            token,
+            transferAmount,
+            address(liquidityHandler),
+            0,
+            bytes(""),
+            address(0)
+        );
+        vm.stopPrank();
+    }
+
     function test_dispatchTokensUsingApprovals() public {
         uint256 transferAmount = 1e18; /// 1 token
         address payable token = payable(getContract(ETH, "DAI"));
