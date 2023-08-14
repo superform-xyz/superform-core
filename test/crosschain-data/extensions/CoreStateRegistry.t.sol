@@ -23,7 +23,9 @@ contract CoreStateRegistryTest is ProtocolActions {
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateSingleVaultDepositPayload(1, 1e18 - 1);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e18 - 1;
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
 
         uint256[] memory gasPerAMB = new uint256[](1);
         gasPerAMB[0] = 5 ether;
@@ -54,10 +56,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         finalAmounts[1] = 419;
 
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateMultiVaultDepositPayload(
-            1,
-            finalAmounts
-        );
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
 
         uint256[] memory gasPerAMB = new uint256[](1);
         gasPerAMB[0] = 5 ether;
@@ -113,7 +112,9 @@ contract CoreStateRegistryTest is ProtocolActions {
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateSingleVaultDepositPayload(1, 1e18 - 1);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e18 - 1;
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
 
         uint256[] memory gasPerAMB = new uint256[](1);
         gasPerAMB[0] = 5 ether;
@@ -151,10 +152,13 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         _successfulSingleDeposit(ambIds);
 
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 1e18 - 1;
+
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
         vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateSingleVaultDepositPayload(1, 1e18 - 1);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
     }
 
     /// @dev test all revert cases with single vault withdraw payload update
@@ -166,11 +170,11 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
+
+        bytes[] memory txData = new bytes[](1);
+        txData[0] = bytes("");
         vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateSingleVaultWithdrawPayload(
-            1,
-            bytes("")
-        );
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
     }
 
     function test_updatePayloadSingleVaultWithdrawUpdateValidator() public {
@@ -182,11 +186,13 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
+        SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+        vm.prank(deployer);
+        bytes[] memory txData = new bytes[](1);
+        txData[0] = bytes("");
         vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateSingleVaultWithdrawPayload(
-            1,
-            bytes("")
-        );
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
     }
 
     /// @dev test all revert cases with multi vault withdraw payload update
@@ -201,14 +207,14 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
         vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateMultiVaultWithdrawPayload(1, txData);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
 
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         vm.prank(deployer);
         vm.expectRevert(Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateMultiVaultWithdrawPayload(1, txData);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
     }
 
     /// @dev test all revert cases with multi vault deposit payload update
@@ -223,20 +229,14 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
         vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateMultiVaultDepositPayload(
-            1,
-            finalAmounts
-        );
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
 
         vm.prank(deployer);
         SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         vm.prank(deployer);
         vm.expectRevert(Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateMultiVaultDepositPayload(
-            1,
-            finalAmounts
-        );
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
     }
 
     /*///////////////////////////////////////////////////////////////
