@@ -18,7 +18,7 @@ abstract contract QuorumManager is IQuorumManager {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IQuorumManager
-    function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external virtual {}
+    function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external virtual;
 
     /*///////////////////////////////////////////////////////////////
                             PUBLIC FUNCTIONS

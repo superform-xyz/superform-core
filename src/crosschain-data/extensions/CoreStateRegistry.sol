@@ -296,7 +296,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     function _updateMultiVaultDepositPayload(
         bytes memory prevPayloadBody_,
         uint256[] calldata finalAmounts_
-    ) internal returns (bytes memory newPayloadBody_) {
+    ) internal pure returns (bytes memory newPayloadBody_) {
         InitMultiVaultData memory multiVaultData = abi.decode(prevPayloadBody_, (InitMultiVaultData));
 
         /// @dev compare number of vaults to update with provided finalAmounts length
@@ -315,7 +315,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     function _updateSingleVaultDepositPayload(
         bytes memory prevPayloadBody_,
         uint256 finalAmount_
-    ) internal returns (bytes memory newPayloadBody_) {
+    ) internal pure returns (bytes memory newPayloadBody_) {
         InitSingleVaultData memory singleVaultData = abi.decode(prevPayloadBody_, (InitSingleVaultData));
 
         /// @dev validate payload update
@@ -329,7 +329,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     function _updateMultiVaultWithdrawPayload(
         UpdateWithdrawPayloadVars memory v_,
         bytes[] calldata txData_
-    ) internal returns (bytes memory) {
+    ) internal view returns (bytes memory) {
         InitMultiVaultData memory multiVaultData = abi.decode(v_.prevPayloadBody, (InitMultiVaultData));
 
         uint256 len = multiVaultData.liqData.length;
@@ -373,7 +373,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     function _updateSingleVaultWithdrawPayload(
         UpdateWithdrawPayloadVars memory v_,
         bytes calldata txData_
-    ) internal returns (bytes memory newPayloadBody_) {
+    ) internal view returns (bytes memory newPayloadBody_) {
         InitSingleVaultData memory singleVaultData = abi.decode(v_.prevPayloadBody, (InitSingleVaultData));
 
         (address superform, , ) = singleVaultData.superformId.getSuperform();

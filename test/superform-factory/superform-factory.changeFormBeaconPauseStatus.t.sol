@@ -47,39 +47,35 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         assertEq(status, true);
     }
 
-    function xtest_changeFormBeaconPauseStatus() public {
+    function test_changeFormBeaconPauseStatusNoBroadcast() public {
         vm.startPrank(deployer);
+
         vm.selectFork(FORKS[chainId]);
 
-        uint32 formBeaconId = 1;
+        address superRegistry = getContract(chainId, "SuperRegistry");
 
-        vm.recordLogs();
-        /// setting the status as false in chain id = ETH & broadcasting it
+        /// @dev Deploying Forms
+        address formImplementation1 = address(new ERC4626Form(superRegistry));
+        uint32 formBeaconId = 0;
+
+        // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
+            formImplementation1,
+            formBeaconId,
+            salt
+        );
+
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
             formBeaconId,
             true,
-            generateBroadcastParams(5, 2)
+            ""
         );
-        _broadcastPayloadHelper(chainId, vm.getRecordedLogs());
 
-        /// process the payload across all other chains
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            if (chainIds[i] != chainId) {
-                vm.selectFork(FORKS[chainIds[i]]);
+        bool status = SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormBeaconPaused(
+            formBeaconId
+        );
 
-                bool statusBefore = SuperformFactory(payable(getContract(chainIds[i], "SuperformFactory")))
-                    .isFormBeaconPaused(1);
-
-                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(31, "");
-
-                bool statusAfter = SuperformFactory(payable(getContract(chainIds[i], "SuperformFactory")))
-                    .isFormBeaconPaused(1);
-
-                /// assert status update before and after processing the payload
-                assertEq(statusBefore, false);
-                assertEq(statusAfter, true);
-            }
-        }
+        assertEq(status, true);
     }
 
     function test_revert_changeFormBeaconPauseStatus_INVALID_FORM_ID() public {
