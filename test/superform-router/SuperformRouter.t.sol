@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {Error} from "src/utils/Error.sol";
 import "../utils/ProtocolActions.sol";
 
-contract SuperformRouterTest is BaseSetup {
+contract SuperformRouterTest is ProtocolActions {
     function setUp() public override {
         super.setUp();
     }
@@ -38,7 +38,7 @@ contract SuperformRouterTest is BaseSetup {
         vm.startPrank(deployer);
 
         uint256 balanceBefore = superformRouter.balance;
-        superformRouter.call{value: transferAmount}("");
+        (bool success, ) = superformRouter.call{value: transferAmount}("");
         uint256 balanceAfter = superformRouter.balance;
         assertEq(balanceBefore + transferAmount, balanceAfter);
 
@@ -46,6 +46,30 @@ contract SuperformRouterTest is BaseSetup {
         SuperformRouter(superformRouter).emergencyWithdrawNativeToken(transferAmount);
         balanceAfter = superformRouter.balance;
         assertEq(balanceBefore - transferAmount, balanceAfter);
+    }
+
+    function test_native_token_emergency_withdrawFailure() public {
+        uint256 transferAmount = 1e18; // 1 token
+        address payable superformRouter = payable(getContract(ETH, "SuperformRouter"));
+
+        /// @dev admin transfers some ETH and DAI tokens to multi tx processor
+        vm.selectFork(FORKS[ETH]);
+
+        uint256 balanceBefore = superformRouter.balance;
+
+        vm.prank(deployer);
+        (bool success, ) = superformRouter.call{value: transferAmount}("");
+        uint256 balanceAfter = superformRouter.balance;
+        assertEq(balanceBefore + transferAmount, balanceAfter);
+
+        vm.prank(deployer);
+        SuperRBAC(getContract(ETH, "SuperRBAC")).grantEmergencyAdminRole(address(this));
+
+        balanceBefore = superformRouter.balance;
+        vm.expectRevert(Error.NATIVE_TOKEN_TRANSFER_FAILURE.selector);
+        SuperformRouter(superformRouter).emergencyWithdrawNativeToken(transferAmount);
+        balanceAfter = superformRouter.balance;
+        assertEq(balanceBefore, balanceAfter);
     }
 
     function test_depositToInvalidFormId() public {
@@ -120,6 +144,38 @@ contract SuperformRouterTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectMultiVaultWithdraw(req);
+    }
+
+    function test_withdrawInvalidSuperformData() public {
+        vm.selectFork(FORKS[ETH]);
+
+        address superform = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+
+        vm.startPrank(getContract(ETH, "SuperformRouter"));
+        SuperPositions(getContract(ETH, "SuperPositions")).mintSingleSP(deployer, superformId, 1e18);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            10001,
+            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
     }
 
     function test_withdrawWithWrongLiqDataLength() public {
@@ -355,8 +411,8 @@ contract SuperformRouterTest is BaseSetup {
                 getContract(ARBI, "CoreStateRegistry")
             ),
             getContract(ARBI, "USDT"),
-            1e18, 
-            0, 
+            1e18,
+            0,
             ""
         );
 
@@ -481,6 +537,189 @@ contract SuperformRouterTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit(req);
+    }
+
+    function test_withdrawWithMismatchingChainIdsInStateReqAndSuperformsDataMulti() public {
+        _successfulMultiVaultDeposit();
+
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        address superform1 = getContract(
+            ARBI,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        address superform2 = getContract(
+            ARBI,
+            string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], POLY);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 1000;
+        maxSlippages[1] = 1000;
+
+        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, "");
+        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), 1e18, 0, "");
+
+        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
+
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{value: 2 ether}(req);
+    }
+
+    function test_withdrawWithWrongAmountsLength() public {
+        _successfulMultiVaultDeposit();
+
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        address superform1 = getContract(
+            ARBI,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        address superform2 = getContract(
+            ARBI,
+            string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
+        uint256[] memory amounts = new uint256[](0);
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 1000;
+        maxSlippages[1] = 1000;
+
+        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, "");
+        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), 1e18, 0, "");
+
+        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
+
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{value: 2 ether}(req);
+    }
+
+    function test_withdrawWithInvalidMaxSlippage() public {
+        _successfulMultiVaultDeposit();
+
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        address superform1 = getContract(
+            ARBI,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        address superform2 = getContract(
+            ARBI,
+            string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 10001;
+        maxSlippages[1] = 99999;
+
+        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, "");
+        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), 1e18, 0, "");
+
+        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
+
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{value: 2 ether}(req);
+    }
+
+    function test_depositWithInvalidFeeForward() public {
+        /// scenario: deposit to an invalid super form id (which doesn't exist on the chain)
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        /// try depositing without approval
+        address superform = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            100,
+            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
     function test_withdrawWithPausedBeacon() public {
@@ -759,6 +998,102 @@ contract SuperformRouterTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit(req);
+    }
+
+    function _successfulMultiVaultDeposit() internal {
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        address superform1 = getContract(
+            ARBI,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        address superform2 = getContract(
+            ARBI,
+            string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 1000;
+        maxSlippages[1] = 1000;
+
+        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+        liqReqs[0] = LiqRequest(
+            1,
+            _buildLiqBridgeTxData(
+                1,
+                getContract(ETH, "USDT"),
+                getContract(ETH, "USDT"),
+                getContract(ARBI, "USDT"),
+                superformRouter,
+                ARBI,
+                false,
+                getContract(ARBI, "CoreStateRegistry"),
+                uint256(ARBI),
+                1e18,
+                false
+            ),
+            getContract(ETH, "USDT"),
+            1e18,
+            0,
+            ""
+        );
+        liqReqs[1] = LiqRequest(
+            1,
+            _buildLiqBridgeTxData(
+                1,
+                getContract(ETH, "WETH"),
+                getContract(ETH, "WETH"),
+                getContract(ARBI, "WETH"),
+                superformRouter,
+                ARBI,
+                false,
+                getContract(ARBI, "CoreStateRegistry"),
+                uint256(ARBI),
+                1e18,
+                false
+            ),
+            getContract(ETH, "WETH"),
+            1e18,
+            0,
+            ""
+        );
+
+        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
+        vm.recordLogs();
+
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit{value: 2 ether}(req);
+        vm.stopPrank();
+
+        /// @dev mocks the cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ARBI],
+            500000, /// note: using some max limit
+            FORKS[ARBI],
+            vm.getRecordedLogs()
+        );
     }
 
     function _buildMaliciousTxData(
