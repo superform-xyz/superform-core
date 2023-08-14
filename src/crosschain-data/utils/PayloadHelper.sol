@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
@@ -144,9 +142,6 @@ contract PayloadHelper is IPayloadHelper {
         uint256 payloadHeader = timelockPayloadRegistry.payloadHeader(timelockPayloadId_);
 
         (, uint8 callbackType_, , , address srcSender_, uint64 srcChainId_) = payloadHeader.decodeTxInfo();
-        console.log(callbackType_);
-        console.log(srcSender_);
-        console.log(srcChainId_);
 
         /// @dev callback type can never be INIT / RETURN
         if (callbackType_ == uint256(CallbackType.FAIL)) {
