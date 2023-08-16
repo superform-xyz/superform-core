@@ -149,8 +149,8 @@ abstract contract AbstractDeploy is Script {
     uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
-    /// @dev liquidity bridge ids. 1 is socket, 2 is lifi
-    uint8[] public bridgeIds = [uint8(1), 2];
+    /// @dev liquidity bridge ids. 1,2,3 belong to socket. 4 is lifi
+    uint8[] public bridgeIds = [uint8(1), 2, 3, 4];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
@@ -418,8 +418,10 @@ abstract contract AbstractDeploy is Script {
         vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
-        bridgeValidators[0] = vars.socketValidator;
-        bridgeValidators[1] = vars.lifiValidator;
+        for (uint256 j = 0; j < 3; j++) {
+            bridgeValidators[j] = vars.socketValidator;
+        }
+        bridgeValidators[3] = vars.lifiValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
@@ -508,6 +510,11 @@ abstract contract AbstractDeploy is Script {
         // SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
 
         vm.stopBroadcast();
+
+        /// @dev Exports
+        for (uint256 j = 0; j < contractNames.length; j++) {
+            _exportContract(chainNames[i], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId);
+        }
     }
 
     function _setupStage2(
@@ -581,14 +588,14 @@ abstract contract AbstractDeploy is Script {
                 /// default gas price: 50 Gwei
                 PaymentHelper(payable(vars.paymentHelper)).addChain(
                     vars.dstChainId,
-                    address(0),
                     PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                    address(0),
                     50000,
                     40000,
                     70000,
                     80000,
-                    1 wei,
-                    50 * 10 ** 9 wei,
+                    12e8, /// 12 usd
+                    28 gwei,
                     10 wei
                 );
             } else {
@@ -610,10 +617,6 @@ abstract contract AbstractDeploy is Script {
             }
         }
         vm.stopBroadcast();
-        /// @dev Exports
-        for (uint256 j = 0; j < contractNames.length; j++) {
-            exportContract(chainNames[i], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId);
-        }
     }
 
     function _preDeploymentSetup(Chains[] memory chains, Cycle cycle) internal returns (uint256[] memory forkIds) {
@@ -751,7 +754,7 @@ abstract contract AbstractDeploy is Script {
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
     }
 
-    function exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {
+    function _exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {
         string memory json = vm.serializeAddress("EXPORTS", label, addr);
         string memory root = vm.projectRoot();
 
