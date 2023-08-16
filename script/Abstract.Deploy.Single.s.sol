@@ -53,7 +53,7 @@ struct SetupVars {
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
-    address superRouter;
+    address superformRouter;
     address dstLzImplementation;
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
@@ -149,8 +149,8 @@ abstract contract AbstractDeploySingle is Script {
     uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
-    /// @dev liquidity bridge ids. 1,2,3 belong to socket. 4 is lifi
-    uint8[] public bridgeIds = [uint8(1), 2, 3, 4];
+    /// @dev liquidity bridge ids. 1 is socket, 2 is lifi
+    uint8[] public bridgeIds = [uint8(1), 2];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
@@ -361,6 +361,7 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
         SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
+        SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
 
         // SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
@@ -419,10 +420,8 @@ abstract contract AbstractDeploySingle is Script {
         vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
-        for (uint256 j = 0; j < 3; j++) {
-            bridgeValidators[j] = vars.socketValidator;
-        }
-        bridgeValidators[3] = vars.lifiValidator;
+        bridgeValidators[0] = vars.socketValidator;
+        bridgeValidators[1] = vars.lifiValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
@@ -453,10 +452,14 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev 10 - Deploy SuperformRouter
 
-        vars.superRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superRouter;
+        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
-        SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
+        SuperRegistry(vars.superRegistry).setSuperRouter(vars.superformRouter);
+
+        /// @dev grant extra roles to superformRouter
+        SuperRBAC(vars.superRBAC).grantMinterRole(vars.superformRouter);
+        SuperRBAC(vars.superRBAC).grantBurnerRole(vars.superformRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions = address(
@@ -499,7 +502,7 @@ abstract contract AbstractDeploySingle is Script {
         SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
         /// @dev 16 Setup extra RBAC
-        SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
+        SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superformRouter);
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
         /// FIXME: check if this is safe in all aspects
