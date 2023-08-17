@@ -332,11 +332,12 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
 
             /// @dev 3 - Deploy SuperRegistry and assign roles
-            vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
+            vars.superRegistry = address(new SuperRegistry{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
+            vars.superRegistryC = SuperRegistry(vars.superRegistry);
 
             SuperRBAC(vars.superRBAC).setSuperRegistry(vars.superRegistry);
-            SuperRegistry(vars.superRegistry).setImmutables(vars.chainId, vars.canonicalPermit2);
+            vars.superRegistryC.setImmutables(vars.chainId, vars.canonicalPermit2, vars.superRBAC);
 
             assert(SuperRBAC(vars.superRBAC).hasProtocolAdminRole(deployer));
 
@@ -369,25 +370,33 @@ abstract contract BaseSetup is DSTest, Test {
             vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
-            SuperRegistry(vars.superRegistry).setCoreStateRegistry(vars.coreStateRegistry);
+            vars.superRegistryC.setAddress(
+                vars.superRegistryC.CORE_STATE_REGISTRY(),
+                vars.coreStateRegistry,
+                vars.chainId
+            );
 
             /// @dev 4.2- deploy Factory State Registry
-            vars.factoryStateRegistry = address(
-                new FactoryStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry))
-            );
+            vars.factoryStateRegistry = address(new FactoryStateRegistry{salt: salt}(vars.superRegistryC));
 
             contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
 
-            SuperRegistry(vars.superRegistry).setFactoryStateRegistry(vars.factoryStateRegistry);
+            vars.superRegistryC.setAddress(
+                vars.superRegistryC.FACTORY_STATE_REGISTRY(),
+                vars.factoryStateRegistry,
+                vars.chainId
+            );
 
             /// @dev 4.3 - deploy Form State Registry
-            vars.twoStepsFormStateRegistry = address(
-                new TwoStepsFormStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry))
-            );
+            vars.twoStepsFormStateRegistry = address(new TwoStepsFormStateRegistry{salt: salt}(vars.superRegistryC));
 
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
-            SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
+            vars.superRegistryC.setAddress(
+                vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(),
+                vars.twoStepsFormStateRegistry,
+                vars.chainId
+            );
             SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
 
             //SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
@@ -404,7 +413,7 @@ abstract contract BaseSetup is DSTest, Test {
             //registryIds[2] = 3;
             registryIds[2] = 4;
 
-            SuperRegistry(vars.superRegistry).setStateRegistryAddress(registryIds, registryAddresses);
+            vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
             SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.coreStateRegistry);
             SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.twoStepsFormStateRegistry);
 
@@ -412,10 +421,10 @@ abstract contract BaseSetup is DSTest, Test {
             vars.paymentHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("PaymentHelper"))] = vars.paymentHelper;
 
-            SuperRegistry(vars.superRegistry).setPaymentHelper(vars.paymentHelper);
+            vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_HELPER(), vars.paymentHelper, vars.chainId);
 
             /// @dev 6.1 - deploy Layerzero Implementation
-            vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
+            vars.lzImplementation = address(new LayerzeroImplementation{salt: salt}(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("LayerzeroImplementation"))] = vars.lzImplementation;
 
             LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
@@ -431,7 +440,7 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
             /// @dev 6.3 - deploy Celer Implementation
-            vars.celerImplementation = address(new CelerImplementation{salt: salt}(SuperRegistry(vars.superRegistry)));
+            vars.celerImplementation = address(new CelerImplementation{salt: salt}(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
 
             CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[i]);
@@ -521,7 +530,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
-            SuperRegistry(vars.superRegistry).setSuperformFactory(vars.factory);
+            vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_FACTORY(), vars.factory, vars.chainId);
 
             /// @dev 9 - Deploy 4626Form implementations
             // Standard ERC4626 Form
@@ -547,7 +556,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
-            SuperRegistry(vars.superRegistry).setSuperRouter(vars.superformRouter);
+            vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_ROUTER(), vars.superformRouter, vars.chainId);
 
             /// @dev grant extra roles to superformRouter
             SuperRBAC(vars.superRBAC).grantMinterRole(vars.superformRouter);
@@ -559,7 +568,7 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
-            SuperRegistry(vars.superRegistry).setSuperPositions(vars.superPositions);
+            vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
 
             contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] = address(
                 new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry)
@@ -579,23 +588,31 @@ abstract contract BaseSetup is DSTest, Test {
             vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars.multiTxProcessor;
 
-            SuperRegistry(vars.superRegistry).setMultiTxProcessor(vars.multiTxProcessor);
+            vars.superRegistryC.setAddress(
+                vars.superRegistryC.MULTI_TX_PROCESSOR(),
+                vars.multiTxProcessor,
+                vars.chainId
+            );
 
             /// @dev 15 - Deploy PayMaster
             vars.payMaster = address(new PayMaster{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
 
-            SuperRegistry(vars.superRegistry).setPayMaster(vars.payMaster);
+            vars.superRegistryC.setAddress(vars.superRegistryC.PAYMASTER(), vars.payMaster, vars.chainId);
 
             /// @dev 16 - Super Registry extra setters
             SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
 
             /// @dev configures lzImplementation and hyperlane to super registry
-            SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
+            vars.superRegistryC.setAmbAddress(ambIds, vars.ambAddresses);
 
             /// @dev 17 Setup extra RBAC
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superformRouter);
             SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
+
+            /// @dev 18 setup setup srcChain keepers
+            vars.superRegistryC.setAddress(vars.superRegistryC.TX_PROCESSOR(), deployer, vars.chainId);
+            vars.superRegistryC.setAddress(vars.superRegistryC.TX_UPDATER(), deployer, vars.chainId);
 
             /// note: check if this is safe in all aspects
             /// @dev disabled as we are not using rolesStateRegistry for now
@@ -616,89 +633,13 @@ abstract contract BaseSetup is DSTest, Test {
             vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
-            vars.superRegistrySrcContract = SuperRegistry(payable(vars.superRegistry));
+            vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
             /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1 and setup PaymentHelper
             /// @dev has to be performed after all main contracts have been deployed on all chains
             for (uint256 j = 0; j < chainIds.length; j++) {
-                vars.dstChainId = chainIds[j];
-
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.SUPER_ROUTER(),
-                    getContract(vars.dstChainId, "SuperformRouters"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.SUPERFORM_FACTORY(),
-                    getContract(vars.dstChainId, "SuperformFactory"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.PAYMASTER(),
-                    getContract(vars.dstChainId, "PayMaster"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.PAYMENT_HELPER(),
-                    getContract(vars.dstChainId, "PaymentHelper"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.CORE_STATE_REGISTRY(),
-                    getContract(vars.dstChainId, "CoreStateRegistry"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.TWO_STEPS_FORM_STATE_REGISTRY(),
-                    getContract(vars.dstChainId, "TwoStepsFormStateRegistry"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.FACTORY_STATE_REGISTRY(),
-                    getContract(vars.dstChainId, "FactoryStateRegistry"),
-                    vars.dstChainId
-                );
-
-                /*
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.ROLES_STATE_REGISTRY(),
-                    getContract(vars.dstChainId, "RolesStateRegistry"),
-                    vars.dstChainId
-                );
-                */
-
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.SUPER_RBAC(),
-                    getContract(vars.dstChainId, "SuperRBAC"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.MULTI_TX_PROCESSOR(),
-                    getContract(vars.dstChainId, "MultiTxProcessor"),
-                    vars.dstChainId
-                );
-
-                /// @dev FIXME - in mainnet who is this?
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.TX_PROCESSOR(),
-                    deployer,
-                    vars.dstChainId
-                );
-
-                /// @dev FIXME - in mainnet who is this?
-                vars.superRegistrySrcContract.setAddress(
-                    vars.superRegistrySrcContract.TX_UPDATER(),
-                    deployer,
-                    vars.dstChainId
-                );
-
                 if (vars.chainId != chainIds[j]) {
+                    vars.dstChainId = chainIds[j];
+
                     vars.dstLzChainId = lz_chainIds[j];
                     vars.dstHypChainId = hyperlane_chainIds[j];
                     vars.dstCelerChainId = celer_chainIds[j];
@@ -736,7 +677,7 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstCelerChainId
                     );
 
-                    vars.superRegistrySrcContract.setRequiredMessagingQuorum(vars.dstChainId, 1);
+                    vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
 
                     /// swap gas cost: 50000
                     /// update gas cost: 40000
@@ -755,6 +696,80 @@ abstract contract BaseSetup is DSTest, Test {
                         28 gwei,
                         10 wei
                     );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.SUPER_ROUTER(),
+                        getContract(vars.dstChainId, "SuperformRouter"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.SUPERFORM_FACTORY(),
+                        getContract(vars.dstChainId, "SuperformFactory"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.PAYMASTER(),
+                        getContract(vars.dstChainId, "PayMaster"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.PAYMENT_HELPER(),
+                        getContract(vars.dstChainId, "PaymentHelper"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.CORE_STATE_REGISTRY(),
+                        getContract(vars.dstChainId, "CoreStateRegistry"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(),
+                        getContract(vars.dstChainId, "TwoStepsFormStateRegistry"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.FACTORY_STATE_REGISTRY(),
+                        getContract(vars.dstChainId, "FactoryStateRegistry"),
+                        vars.dstChainId
+                    );
+
+                    /*
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.ROLES_STATE_REGISTRY(),
+                    getContract(vars.dstChainId, "RolesStateRegistry"),
+                    vars.dstChainId
+                );
+                */
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.SUPER_POSITIONS(),
+                        getContract(vars.dstChainId, "SuperPositions"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.SUPER_RBAC(),
+                        getContract(vars.dstChainId, "SuperRBAC"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.MULTI_TX_PROCESSOR(),
+                        getContract(vars.dstChainId, "MultiTxProcessor"),
+                        vars.dstChainId
+                    );
+
+                    /// @dev FIXME - in mainnet who is this?
+                    vars.superRegistryC.setAddress(vars.superRegistryC.TX_PROCESSOR(), deployer, vars.dstChainId);
+
+                    /// @dev FIXME - in mainnet who is this?
+                    vars.superRegistryC.setAddress(vars.superRegistryC.TX_UPDATER(), deployer, vars.dstChainId);
                 } else {
                     /// ack gas cost: 40000
                     /// two step form cost: 50000

@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
-
+import {SuperRegistry} from "src/settings/SuperRegistry.sol";
 import "src/types/LiquidityTypes.sol";
 import "src/types/DataTypes.sol";
 
@@ -141,7 +141,7 @@ struct SetupVars {
     Vm.Log[] logs;
     address superPositions;
     address kycDAOMock;
-    SuperRegistry superRegistrySrcContract;
+    SuperRegistry superRegistryC;
 }
 
 /*//////////////////////////////////////////////////////////////

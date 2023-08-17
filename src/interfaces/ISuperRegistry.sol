@@ -13,71 +13,12 @@ interface ISuperRegistry {
     event SetImmutables(uint256 indexed chainId, address indexed permit2);
 
     /// @dev is emitted when an address is set.
-    event ProtocolAddressUpdated(
-        bytes32 indexed protocolAddressId,
-        address indexed oldAddress,
-        address indexed newAddress
-    );
-
-    /// @dev is emitted when an address is set.
     event AddressUpdated(
         bytes32 indexed protocolAddressId,
         uint64 indexed chainId,
         address indexed oldAddress,
         address newAddress
     );
-
-    /// @dev is emitted when the super router address is set.
-    event SuperRouterUpdated(address indexed oldSuperRouter, address indexed superformRouter);
-
-    /// @dev is emitted when the superform factory address is set.
-    event SuperformFactoryUpdated(address indexed oldSuperformFactory, address indexed superformFactory);
-
-    /// @dev is emitted when the core state registry address is set for src chain.
-    event CoreStateRegistryUpdated(address indexed oldCoreStateRegistry, address indexed coreStateRegistry);
-
-    /// @dev is emitted when the core state registry address is set for a specific chain
-    event CoreStateRegistryCrossChainUpdated(
-        uint64 indexed chainId,
-        address indexed oldCoreStateRegistry,
-        address indexed coreStateRegistry
-    );
-
-    /// @dev is emitted when the two steps form state registry address is set.
-    event TwoStepsFormStateRegistryUpdated(
-        address indexed oldTwoStepsFormStateRegistry,
-        address indexed twoStepsFormStateRegistry
-    );
-    /// @dev is emitted when the state registry address is set.
-    event FactoryStateRegistryUpdated(address indexed oldFactoryStateRegistry, address indexed factoryStateRegistry);
-
-    /// @dev is emitted when the roles state registry address is set.
-    event RolesStateRegistryUpdated(address indexed oldRolesStateRegistry, address indexed rolesStateRegistry);
-
-    /// @dev is emitted when a new super positions is configured.
-    event SuperPositionsUpdated(address indexed oldSuperPositions, address indexed superPositions);
-
-    /// @dev is emitted when a new super rbac is configured.
-    event SuperRBACUpdated(address indexed oldSuperRBAC, address indexed superRBAC);
-
-    /// @dev is emitted when a new multi tx processor is configured.
-    event MultiTxProcessorUpdated(address indexed oldMultiTxProcessor, address indexed multiTxProcessor);
-
-    /// @dev is emitted when a new multi tx processor is configured for a specific chain
-    event MultiTxProcessorCrossChainUpdated(
-        uint64 indexed chainId,
-        address indexed oldMultiTxProcessor,
-        address indexed multiTxProcessor
-    );
-
-    /// @dev is emitted when a new tx processor is configured.
-    event TxProcessorUpdated(address indexed oldTxProcessor, address indexed txProcessor);
-
-    /// @dev is emitted when a new fee collector is configured.
-    event PayMasterUpdated(address indexed oldPayMaster, address indexed feeCollector);
-
-    /// @dev is emitted when a new payment helper is configured.
-    event PaymentHelperUpdated(address indexed oldPaymentHelper, address indexed paymentHelper);
 
     /// @dev is emitted when a new token bridge is configured.
     event SetBridgeAddress(uint256 indexed bridgeId, address indexed bridgeAddress);
@@ -98,74 +39,14 @@ interface ISuperRegistry {
     /// @dev sets the chain id.
     /// @param chainId_ the superform chain id this registry is deployed on
     /// @param permit2_ the address of the permit2 contract
-    function setImmutables(uint64 chainId_, address permit2_) external;
+    /// @param superRBAC_ the address of the superRBAC contract
+    function setImmutables(uint64 chainId_, address permit2_, address superRBAC_) external;
 
     /// @dev sets a new address on a specific chain.
     /// @param id_ the identifier of the address on that chain
     /// @param newAddress_ the new address on that chain
     /// @param chainId_ the chain id of that chain
     function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) external;
-
-    /// @dev sets the super router address.
-    /// @param superformRouter_ the address of the super router
-    function setSuperRouter(address superformRouter_) external;
-
-    /// @dev sets the superform factory address.
-    /// @param superformFactory_ the address of the superform factory
-    function setSuperformFactory(address superformFactory_) external;
-
-    /// @dev sets the superform paymaster address.
-    /// @param payMaster_ the address of the paymaster contract
-    function setPayMaster(address payMaster_) external;
-
-    /// @dev sets the superform payment helper address.
-    /// @param paymentHelper_ the address of the payment helper contract
-    function setPaymentHelper(address paymentHelper_) external;
-
-    /// @dev sets the core state registry address.
-    /// @param coreStateRegistry_ the address of the core state registry
-    function setCoreStateRegistry(address coreStateRegistry_) external;
-
-    /// @dev sets the core state registry address in a cross chain fashion
-    /// @dev allows admin to set the core state registry address for a specific chain
-    /// @param coreStateRegistry_ the address of the core state registry for that chain
-    /// @param chainId_ the chain id of that chain
-    function setCoreStateRegistryCrossChain(address coreStateRegistry_, uint64 chainId_) external;
-
-    /// @dev sets the two steps form state registry address.
-    /// @param twoStepsFormStateRegistry_ the address of the two steps form state registry
-    function setTwoStepsFormStateRegistry(address twoStepsFormStateRegistry_) external;
-
-    /// @dev sets the factory state registry address.
-    /// @param factoryStateRegistry_ the address of the factory state registry
-    function setFactoryStateRegistry(address factoryStateRegistry_) external;
-
-    /*
-    /// @dev sets the roles state registry address.
-    /// @param rolesStateRegistry_ the address of the roles state registry
-    function setRolesStateRegistry(address rolesStateRegistry_) external;
-    */
-
-    /// @dev allows admin to set the super rbac address
-    /// @param superRBAC_ the address of the super rbac
-    function setSuperRBAC(address superRBAC_) external;
-
-    /// @dev allows admin to set the multi tx processor address
-    /// @param multiTxProcessor_ the address of the multi tx processor
-    function setMultiTxProcessor(address multiTxProcessor_) external;
-
-    /// @dev allows admin to set the multi tx processor address for a specific chain
-    /// @param multiTxProcessor_ the address of the multi tx processor for that chain
-    /// @param chainId_ the chain id of that chain
-    function setMultiTxProcessorCrossChain(address multiTxProcessor_, uint64 chainId_) external;
-
-    /// @dev allows admin to set the tx processor address
-    /// @param txProcessor_ the address of the tx processor
-    function setTxProcessor(address txProcessor_) external;
-
-    /// @dev allows admin to set the tx processor address
-    /// @param txUpdater_ the address of the tx updater
-    function setTxUpdater(address txUpdater_) external;
 
     /// @dev allows admin to set the bridge address for an bridge id.
     /// @param bridgeId_         represents the bridge unqiue identifier.
@@ -186,10 +67,6 @@ interface ISuperRegistry {
     /// @param registryId_    represents the state registry's unqiue identifier.
     /// @param registryAddress_    represents the state registry's address.
     function setStateRegistryAddress(uint8[] memory registryId_, address[] memory registryAddress_) external;
-
-    /// @dev allows admin to set the super positions address
-    /// @param superPositions_ the address of the super positions
-    function setSuperPositions(address superPositions_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -239,10 +116,6 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the tx updater module
     function TX_UPDATER() external view returns (bytes32);
-
-    /// @dev gets the address of a contract.
-    /// @param protocolAddressId_ is the id of the contract
-    function getProtocolAddress(bytes32 protocolAddressId_) external view returns (address);
 
     /// @dev gets the address of a contract on current chain
     /// @param id_ is the id of the contract

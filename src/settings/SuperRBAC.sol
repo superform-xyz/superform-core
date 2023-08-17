@@ -322,7 +322,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     //     /// @dev ambIds are validated inside the factory state registry
     //     /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-    //     IBroadcaster(superRegistry.getAddress(superRegistry.ROLES_STATE_REGISTRY())).broadcastPayload{value: msg.value}(
+    //     IBroadcaster(superRegistry.rolesStateRegistry()).broadcastPayload{value: msg.value}(
     //         msg.sender,
     //         ambIds,
     //         message_,

@@ -22,6 +22,8 @@ contract PayMasterTest is BaseSetup {
 
     address multiTxProcessorFraud;
 
+    SuperRegistry superRegistry;
+
     function setUp() public override {
         super.setUp();
 
@@ -33,6 +35,8 @@ contract PayMasterTest is BaseSetup {
             txProcessor = address(new KeeperMock());
             txUpdater = address(new KeeperMock());
         }
+
+        superRegistry = SuperRegistry(getContract(ETH, "SuperRegistry"));
     }
 
     function test_manipuationsBySendingFeesIntoRouter() public {
@@ -72,7 +76,7 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).makePayment{value: 1 wei}(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setMultiTxProcessor(multiTxProcessorFraud);
+        superRegistry.setAddress(superRegistry.MULTI_TX_PROCESSOR(), multiTxProcessorFraud, ETH);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
         vm.expectRevert(Error.FAILED_WITHDRAW.selector);
@@ -94,12 +98,12 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).withdrawToMultiTxProcessor(2 wei);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setMultiTxProcessor(address(0));
+        superRegistry.setAddress(superRegistry.MULTI_TX_PROCESSOR(), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).withdrawToMultiTxProcessor(1 wei);
 
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setMultiTxProcessor(multiTxProcessor);
+        superRegistry.setAddress(superRegistry.MULTI_TX_PROCESSOR(), multiTxProcessor, ETH);
 
         /// @dev admin moves the payment from fee collector to multi tx processor
         PayMaster(feeCollector).withdrawToMultiTxProcessor(1 wei);
@@ -122,12 +126,12 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).withdrawToTxProcessor(2 wei);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setTxProcessor(address(0));
+        superRegistry.setAddress(superRegistry.TX_PROCESSOR(), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).withdrawToTxProcessor(1 wei);
 
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setTxProcessor(txProcessor);
+        superRegistry.setAddress(superRegistry.TX_PROCESSOR(), txProcessor, ETH);
 
         /// @dev admin moves the payment from fee collector to tx processor
         PayMaster(feeCollector).withdrawToTxProcessor(1 wei);
@@ -150,12 +154,12 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).withdrawToTxUpdater(2 wei);
 
         /// @dev admin tries withdraw if updater address is zero (check if handled gracefully)
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setTxUpdater(address(0));
+        superRegistry.setAddress(superRegistry.TX_UPDATER(), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).withdrawToTxUpdater(1 wei);
 
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setTxUpdater(txUpdater);
+        superRegistry.setAddress(superRegistry.TX_UPDATER(), txUpdater, ETH);
 
         /// @dev admin moves the payment from fee collector to tx updater
         PayMaster(feeCollector).withdrawToTxUpdater(1 wei);
@@ -174,7 +178,7 @@ contract PayMasterTest is BaseSetup {
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setMultiTxProcessor(address(0));
+        superRegistry.setAddress(superRegistry.MULTI_TX_PROCESSOR(), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceToMultiTxProcessor(
@@ -188,7 +192,7 @@ contract PayMasterTest is BaseSetup {
             )
         );
 
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setMultiTxProcessor(multiTxProcessor);
+        superRegistry.setAddress(superRegistry.MULTI_TX_PROCESSOR(), multiTxProcessor, ETH);
 
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
@@ -232,7 +236,7 @@ contract PayMasterTest is BaseSetup {
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setTxProcessor(address(0));
+        superRegistry.setAddress(superRegistry.TX_PROCESSOR(), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceToTxProcessor(
@@ -246,7 +250,7 @@ contract PayMasterTest is BaseSetup {
             )
         );
 
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setTxProcessor(txProcessor);
+        superRegistry.setAddress(superRegistry.TX_PROCESSOR(), txProcessor, ETH);
 
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
@@ -290,7 +294,7 @@ contract PayMasterTest is BaseSetup {
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setTxUpdater(address(0));
+        superRegistry.setAddress(superRegistry.TX_UPDATER(), address(0), ETH);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceToTxUpdater(
@@ -304,7 +308,7 @@ contract PayMasterTest is BaseSetup {
             )
         );
 
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setTxUpdater(txUpdater);
+        superRegistry.setAddress(superRegistry.TX_UPDATER(), txUpdater, ETH);
 
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);

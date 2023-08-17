@@ -920,7 +920,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 residualPayment = address(this).balance - _balanceBefore;
 
         if (residualPayment > 0) {
-            IPayMaster(superRegistry.superRegistry(superRegistry.PAYMASTER())).makePayment{value: residualPayment}(
+            IPayMaster(superRegistry.getAddress(superRegistry.PAYMASTER())).makePayment{value: residualPayment}(
                 msg.sender
             );
         }
