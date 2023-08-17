@@ -22,7 +22,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
                         MODIFIER
     //////////////////////////////////////////////////////////////*/
     modifier onlyPaymentAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasPaymentAdminRole(msg.sender)) {
+        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasPaymentAdminRole(msg.sender)) {
             revert Error.NOT_PAYMENT_ADMIN();
         }
         _;
@@ -45,7 +45,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
-        address receiver = superRegistry.multiTxProcessor();
+        address receiver = superRegistry.getAddress(superRegistry.MULTI_TX_PROCESSOR());
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -59,7 +59,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
-        address receiver = superRegistry.txProcessor();
+        address receiver = superRegistry.getAddress(superRegistry.TX_PROCESSOR());
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -73,7 +73,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
-        address receiver = superRegistry.txUpdater();
+        address receiver = superRegistry.getAddress(superRegistry.TX_UPDATER());
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -84,7 +84,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     /// @inheritdoc IPayMaster
     function rebalanceToMultiTxProcessor(LiqRequest memory req_) external onlyPaymentAdmin {
         /// assuming all multi-tx processor across chains should be same; CREATE2
-        address receiver = superRegistry.multiTxProcessor();
+        address receiver = superRegistry.getAddress(superRegistry.MULTI_TX_PROCESSOR());
 
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
@@ -96,7 +96,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     /// @inheritdoc IPayMaster
     function rebalanceToTxProcessor(LiqRequest memory req_) external onlyPaymentAdmin {
         /// assuming all tx processor across chains should be same; CREATE2
-        address receiver = superRegistry.txProcessor();
+        address receiver = superRegistry.getAddress(superRegistry.TX_PROCESSOR());
 
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
@@ -108,7 +108,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     /// @inheritdoc IPayMaster
     function rebalanceToTxUpdater(LiqRequest memory req_) external onlyPaymentAdmin {
         /// assuming all tx updater across chains should be same; CREATE2
-        address receiver = superRegistry.txUpdater();
+        address receiver = superRegistry.getAddress(superRegistry.TX_UPDATER());
 
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();

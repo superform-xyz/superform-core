@@ -39,17 +39,20 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasProtocolAdminRole(msg.sender))
+            revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
     modifier onlyProcessor() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasProcessorRole(msg.sender)) revert Error.NOT_PROCESSOR();
+        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasProcessorRole(msg.sender))
+            revert Error.NOT_PROCESSOR();
         _;
     }
 
     modifier onlyUpdater() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasUpdaterRole(msg.sender)) revert Error.NOT_UPDATER();
+        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasUpdaterRole(msg.sender))
+            revert Error.NOT_UPDATER();
         _;
     }
 

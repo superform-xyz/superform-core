@@ -131,7 +131,6 @@ struct SetupVars {
     address dstLzImplementation;
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
-    address dstStateRegistry;
     address multiTxProcessor;
     address payMaster;
     address superRegistry;
@@ -142,6 +141,7 @@ struct SetupVars {
     Vm.Log[] logs;
     address superPositions;
     address kycDAOMock;
+    SuperRegistry superRegistrySrcContract;
 }
 
 /*//////////////////////////////////////////////////////////////

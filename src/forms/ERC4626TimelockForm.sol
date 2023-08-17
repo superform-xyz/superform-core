@@ -21,7 +21,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
     modifier onlyTwoStepStateRegistry() {
-        if (msg.sender != superRegistry.twoStepsFormStateRegistry()) {
+        if (msg.sender != superRegistry.getAddress(superRegistry.TWO_STEPS_FORM_STATE_REGISTRY())) {
             revert Error.NOT_TWO_STEP_STATE_REGISTRY();
         }
         _;
@@ -157,7 +157,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     ) internal {
-        ITwoStepsFormStateRegistry registry = ITwoStepsFormStateRegistry(superRegistry.twoStepsFormStateRegistry());
+        ITwoStepsFormStateRegistry registry = ITwoStepsFormStateRegistry(
+            superRegistry.getAddress(superRegistry.TWO_STEPS_FORM_STATE_REGISTRY())
+        );
         registry.receivePayload(type_, srcSender_, srcChainId_, lockedTill_, data_);
     }
 }

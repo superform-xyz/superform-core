@@ -13,14 +13,6 @@ import {Error} from "../../utils/Error.sol";
 /// @dev enables communication between SuperformFactory deployed on all supported networks
 contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
     /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
-    modifier onlySender() override {
-        if (msg.sender != superRegistry.superformFactory()) revert Error.NOT_SUPERFORM_FACTORY();
-        _;
-    }
-
-    /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     constructor(ISuperRegistry superRegistry_) Broadcaster(superRegistry_) {}
@@ -41,6 +33,8 @@ contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperformFactory(superRegistry.superformFactory()).stateSync(payloadBody[payloadId_]);
+        ISuperformFactory(superRegistry.getAddress(superRegistry.SUPERFORM_FACTORY())).stateSync(
+            payloadBody[payloadId_]
+        );
     }
 }

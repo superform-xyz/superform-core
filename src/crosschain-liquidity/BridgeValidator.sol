@@ -20,7 +20,8 @@ abstract contract BridgeValidator is IBridgeValidator {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasProtocolAdminRole(msg.sender))
+            revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 

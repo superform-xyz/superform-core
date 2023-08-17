@@ -37,7 +37,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     //////////////////////////////////////////////////////////////*/
 
     modifier onlySender() override {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasCoreContractsRole(msg.sender)) revert Error.NOT_CORE_CONTRACTS();
+        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasCoreContractsRole(msg.sender))
+            revert Error.NOT_CORE_CONTRACTS();
         _;
     }
 
@@ -186,8 +187,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             v.multi == 1
-                ? ISuperPositions(superRegistry.superPositions()).stateMultiSync(v._message)
-                : ISuperPositions(superRegistry.superPositions()).stateSync(v._message);
+                ? ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).stateMultiSync(v._message)
+                : ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).stateSync(v._message);
         }
 
         /// @dev for initial payload processing

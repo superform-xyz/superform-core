@@ -130,7 +130,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             if (p.isXChain == 0) {
                 returnMessage = _constructSingleReturnData(p.srcSender, p.data);
 
-                ISuperPositions(superRegistry.superPositions()).mintSingleSP(
+                ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).mintSingleSP(
                     p.srcSender,
                     p.data.superformId,
                     p.data.amount
@@ -167,7 +167,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
 
         if (callbackType == uint256(CallbackType.FAIL)) {
-            ISuperPositions(superRegistry.superPositions()).stateSync(_message);
+            ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).stateSync(_message);
         }
 
         /// @dev validates quorum

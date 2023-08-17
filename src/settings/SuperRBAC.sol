@@ -239,7 +239,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     // function stateSync(bytes memory data_) external override {
-    //     if (msg.sender != superRegistry.rolesStateRegistry()) revert Error.NOT_ROLES_STATE_REGISTRY();
+    //     if (msg.sender != superRegistry.getAddress(superRegistry.ROLES_STATE_REGISTRY())) revert Error.NOT_ROLES_STATE_REGISTRY();
 
     //     AMBFactoryMessage memory rolesPayload = abi.decode(data_, (AMBFactoryMessage));
 
@@ -322,7 +322,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     //     /// @dev ambIds are validated inside the factory state registry
     //     /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-    //     IBroadcaster(superRegistry.rolesStateRegistry()).broadcastPayload{value: msg.value}(
+    //     IBroadcaster(superRegistry.getAddress(superRegistry.ROLES_STATE_REGISTRY())).broadcastPayload{value: msg.value}(
     //         msg.sender,
     //         ambIds,
     //         message_,

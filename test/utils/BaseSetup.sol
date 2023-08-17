@@ -616,12 +616,89 @@ abstract contract BaseSetup is DSTest, Test {
             vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
-
+            vars.superRegistrySrcContract = SuperRegistry(payable(vars.superRegistry));
             /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1 and setup PaymentHelper
             /// @dev has to be performed after all main contracts have been deployed on all chains
             for (uint256 j = 0; j < chainIds.length; j++) {
+                vars.dstChainId = chainIds[j];
+
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.SUPER_ROUTER(),
+                    getContract(vars.dstChainId, "SuperformRouters"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.SUPERFORM_FACTORY(),
+                    getContract(vars.dstChainId, "SuperformFactory"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.PAYMASTER(),
+                    getContract(vars.dstChainId, "PayMaster"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.PAYMENT_HELPER(),
+                    getContract(vars.dstChainId, "PaymentHelper"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.CORE_STATE_REGISTRY(),
+                    getContract(vars.dstChainId, "CoreStateRegistry"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.TWO_STEPS_FORM_STATE_REGISTRY(),
+                    getContract(vars.dstChainId, "TwoStepsFormStateRegistry"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.FACTORY_STATE_REGISTRY(),
+                    getContract(vars.dstChainId, "FactoryStateRegistry"),
+                    vars.dstChainId
+                );
+
+                /*
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.ROLES_STATE_REGISTRY(),
+                    getContract(vars.dstChainId, "RolesStateRegistry"),
+                    vars.dstChainId
+                );
+                */
+
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.SUPER_RBAC(),
+                    getContract(vars.dstChainId, "SuperRBAC"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.MULTI_TX_PROCESSOR(),
+                    getContract(vars.dstChainId, "MultiTxProcessor"),
+                    vars.dstChainId
+                );
+
+                /// @dev FIXME - in mainnet who is this?
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.TX_PROCESSOR(),
+                    deployer,
+                    vars.dstChainId
+                );
+
+                /// @dev FIXME - in mainnet who is this?
+                vars.superRegistrySrcContract.setAddress(
+                    vars.superRegistrySrcContract.TX_UPDATER(),
+                    deployer,
+                    vars.dstChainId
+                );
+
                 if (vars.chainId != chainIds[j]) {
-                    vars.dstChainId = chainIds[j];
                     vars.dstLzChainId = lz_chainIds[j];
                     vars.dstHypChainId = hyperlane_chainIds[j];
                     vars.dstCelerChainId = celer_chainIds[j];
@@ -659,7 +736,7 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstCelerChainId
                     );
 
-                    SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
+                    vars.superRegistrySrcContract.setRequiredMessagingQuorum(vars.dstChainId, 1);
 
                     /// swap gas cost: 50000
                     /// update gas cost: 40000
@@ -701,19 +778,6 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 i = 0; i < chainIds.length; i++) {
             vm.selectFork(FORKS[chainIds[i]]);
 
-            /// @dev for SuperRegistry on a given chainId, set CoreStateRegistry, MultiTxProcessor of all other chainIds
-            for (uint256 m = 0; m < chainIds.length; m++) {
-                if (chainIds[i] != chainIds[m]) {
-                    SuperRegistry(getContract(chainIds[i], "SuperRegistry")).setCoreStateRegistryCrossChain(
-                        getContract(chainIds[m], "CoreStateRegistry"),
-                        chainIds[m]
-                    );
-                    SuperRegistry(getContract(chainIds[i], "SuperRegistry")).setMultiTxProcessorCrossChain(
-                        getContract(chainIds[m], "MultiTxProcessor"),
-                        chainIds[m]
-                    );
-                }
-            }
             /// @dev 18 - create test superforms when the whole state registry is configured
 
             for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {

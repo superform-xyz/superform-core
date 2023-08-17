@@ -20,7 +20,7 @@ interface ISuperRegistry {
     );
 
     /// @dev is emitted when an address is set.
-    event ProtocolAddressCrossChainUpdated(
+    event AddressUpdated(
         bytes32 indexed protocolAddressId,
         uint64 indexed chainId,
         address indexed oldAddress,
@@ -100,16 +100,11 @@ interface ISuperRegistry {
     /// @param permit2_ the address of the permit2 contract
     function setImmutables(uint64 chainId_, address permit2_) external;
 
-    /// @dev sets a new protocol address.
-    /// @param protocolAddressId_ the protocol address identifier
-    /// @param newAddress_ the new address
-    function setNewProtocolAddress(bytes32 protocolAddressId_, address newAddress_) external;
-
-    /// @dev sets a new protocol address on a specific chain.
-    /// @param protocolAddressId_ the protocol address identifier on that chain
+    /// @dev sets a new address on a specific chain.
+    /// @param id_ the identifier of the address on that chain
     /// @param newAddress_ the new address on that chain
     /// @param chainId_ the chain id of that chain
-    function setNewProtocolAddressCrossChain(bytes32 protocolAddressId_, address newAddress_, uint64 chainId_) external;
+    function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) external;
 
     /// @dev sets the super router address.
     /// @param superformRouter_ the address of the super router
@@ -249,66 +244,14 @@ interface ISuperRegistry {
     /// @param protocolAddressId_ is the id of the contract
     function getProtocolAddress(bytes32 protocolAddressId_) external view returns (address);
 
-    /// @dev gets the address of a contract on a specific chain.
-    /// @param protocolAddressId_ is the id of the contract
+    /// @dev gets the address of a contract on current chain
+    /// @param id_ is the id of the contract
+    function getAddress(bytes32 id_) external view returns (address);
+
+    /// @dev gets the address of a contract on a target chain
+    /// @param id_ is the id of the contract
     /// @param chainId_ is the chain id of that chain
-    function getProtocolAddressCrossChain(bytes32 protocolAddressId_, uint64 chainId_) external view returns (address);
-
-    /// @dev gets the super router address.
-    /// @return superformRouter_ the address of the super router
-    function superformRouter() external view returns (address superformRouter_);
-
-    /// @dev gets the superform factory address.
-    /// @return superformFactory_ the address of the superform factory
-    function superformFactory() external view returns (address superformFactory_);
-
-    /// @dev gets the core state registry address.
-    /// @return coreStateRegistry_ the address of the core state registry
-    function coreStateRegistry() external view returns (address coreStateRegistry_);
-
-    /// @dev gets the core state registry address on a specific chain.
-    /// @return coreStateRegistry_ the address of the core state registry on that chain
-    /// @param chainId_ chain id of that chain
-    function coreStateRegistryCrossChain(uint64 chainId_) external view returns (address coreStateRegistry_);
-
-    /// @dev gets the two steps form state registry address.
-    /// @return twoStepsFormStateRegistry_ the address of the state registry
-    function twoStepsFormStateRegistry() external view returns (address twoStepsFormStateRegistry_);
-
-    /// @dev gets the factory state registry address.
-    /// @return factoryStateRegistry_ the address of the factory state registry
-    function factoryStateRegistry() external view returns (address factoryStateRegistry_);
-
-    /*
-    /// @dev gets the roles state registry address.
-    /// @return rolesStateRegistry_ the address of the state registry
-    function rolesStateRegistry() external view returns (address rolesStateRegistry_);
-    */
-
-    /// @dev gets the super positions
-    /// @return superPositions_ the address of the super positions
-    function superPositions() external view returns (address superPositions_);
-
-    /// @dev gets the super rbac
-    /// @return superRBAC_ the address of the super rbac
-    function superRBAC() external view returns (address superRBAC_);
-
-    /// @dev gets the multi tx processor
-    /// @return multiTxProcessor_ the address of the multi tx processor
-    function multiTxProcessor() external view returns (address multiTxProcessor_);
-
-    /// @dev gets the multi tx processor on a specific chain
-    /// @return multiTxProcessor_ the address of the multi tx processor on that chain
-    /// @param chainId_ chain id of that chain
-    function multiTxProcessorCrossChain(uint64 chainId_) external view returns (address multiTxProcessor_);
-
-    /// @dev gets the tx processor
-    /// @return txProcessor_ the address of the tx processor
-    function txProcessor() external view returns (address txProcessor_);
-
-    /// @dev gets the tx updater
-    /// @return txUpdater_ the address of the tx updater
-    function txUpdater() external view returns (address txUpdater_);
+    function getAddressByChainId(bytes32 id_, uint64 chainId_) external view returns (address);
 
     /// @dev gets the address of a bridge
     /// @param bridgeId_ is the id of a bridge
@@ -345,12 +288,4 @@ interface ISuperRegistry {
     /// @param ambId_ is the id of a bridge
     /// @return ambAddress_ is the address of the form
     function getAmbAddress(uint8 ambId_) external view returns (address ambAddress_);
-
-    /// @dev gets the address of the paymaster
-    /// @return payMaster_ is the address of the paymaster contract
-    function getPayMaster() external view returns (address payMaster_);
-
-    /// @dev gets the address of the payment helper
-    /// @return paymentHelper_ is the address of the payment helper contract
-    function getPaymentHelper() external view returns (address paymentHelper_);
 }
