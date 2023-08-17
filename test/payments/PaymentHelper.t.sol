@@ -339,7 +339,7 @@ contract PaymentHelperTest is BaseSetup {
 
     function _generateTimelockSuperformPackWithShift() internal pure returns (uint256 superformId_) {
         address superform_ = address(111);
-        uint32 formBeaconId_ = 2;
+        uint32 formBeaconId_ = 1;
         uint64 chainId_ = 1;
 
         superformId_ = uint256(uint160(superform_));
@@ -349,7 +349,7 @@ contract PaymentHelperTest is BaseSetup {
 
     function _generateSuperformPackWithShift() internal pure returns (uint256 superformId_) {
         address superform_ = address(111);
-        uint32 formBeaconId_ = 1;
+        uint32 formBeaconId_ = 0;
         uint64 chainId_ = 1;
 
         superformId_ = uint256(uint160(superform_));
