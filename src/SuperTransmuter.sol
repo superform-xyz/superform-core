@@ -29,7 +29,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter {
 
     /// @inheritdoc ISuperTransmuter
     function registerTransmuter(uint256 superformId) external override returns (address) {
-        (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId);
+        (address superform, uint32 formBeaconId, ) = DataLib.getSuperform(superformId);
 
         if (superform == address(0)) revert Error.NOT_SUPERFORM();
         if (formBeaconId == 0) revert Error.FORM_DOES_NOT_EXIST();

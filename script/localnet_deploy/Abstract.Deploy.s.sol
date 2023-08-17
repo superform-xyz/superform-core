@@ -53,7 +53,7 @@ struct SetupVars {
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
-    address superRouter;
+    address superformRouter;
     address dstLzImplementation;
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
@@ -359,6 +359,7 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
         SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
+        SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
 
         //SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
@@ -422,14 +423,14 @@ abstract contract AbstractDeploy is Script {
         }
         bridgeValidators[3] = vars.lifiValidator;
 
-        /// @dev 6 - Deploy SuperformFactory
+        /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
 
         contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
         SuperRegistry(vars.superRegistry).setSuperformFactory(vars.factory);
 
-        /// @dev 7 - Deploy 4626Form implementations
+        /// @dev 8 - Deploy 4626Form implementations
         // Standard ERC4626 Form
         vars.erc4626Form = address(new ERC4626Form{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626Form"))] = vars.erc4626Form;
@@ -442,19 +443,23 @@ abstract contract AbstractDeploy is Script {
         vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
-        /// @dev 8 - Add newly deployed form  implementation to Factory, formBeaconId 1
+        /// @dev 9 - Add newly deployed form  implementation to Factory, formBeaconId 1
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
 
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
 
         ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
-        /// @dev 9 - Deploy SuperformRouter
+        /// @dev 10 - Deploy SuperformRouter
 
-        vars.superRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superRouter;
+        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
-        SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
+        SuperRegistry(vars.superRegistry).setSuperRouter(vars.superformRouter);
+
+        /// @dev grant extra roles to superformRouter
+        SuperRBAC(vars.superRBAC).grantMinterRole(vars.superformRouter);
+        SuperRBAC(vars.superRBAC).grantBurnerRole(vars.superformRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions = address(
@@ -497,7 +502,7 @@ abstract contract AbstractDeploy is Script {
         SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
         /// @dev 16 Setup extra RBAC
-        SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
+        SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superformRouter);
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
         /// FIXME: check if this is safe in all aspects
@@ -505,6 +510,11 @@ abstract contract AbstractDeploy is Script {
         // SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
 
         vm.stopBroadcast();
+
+        /// @dev Exports
+        for (uint256 j = 0; j < contractNames.length; j++) {
+            _exportContract(chainNames[i], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId);
+        }
     }
 
     function _setupStage2(
@@ -520,13 +530,9 @@ abstract contract AbstractDeploy is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
-
         vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
-
         vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
-
         vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
-
         vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
 
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
@@ -582,14 +588,14 @@ abstract contract AbstractDeploy is Script {
                 /// default gas price: 50 Gwei
                 PaymentHelper(payable(vars.paymentHelper)).addChain(
                     vars.dstChainId,
-                    address(0),
                     PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                    address(0),
                     50000,
                     40000,
                     70000,
                     80000,
-                    1 wei,
-                    50 * 10 ** 9 wei,
+                    12e8, /// 12 usd
+                    28 gwei,
                     10 wei
                 );
             } else {
@@ -611,10 +617,6 @@ abstract contract AbstractDeploy is Script {
             }
         }
         vm.stopBroadcast();
-        /// @dev Exports
-        for (uint256 j = 0; j < contractNames.length; j++) {
-            exportContract(chainNames[i], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId);
-        }
     }
 
     function _preDeploymentSetup(Chains[] memory chains, Cycle cycle) internal returns (uint256[] memory forkIds) {
@@ -752,7 +754,7 @@ abstract contract AbstractDeploy is Script {
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
     }
 
-    function exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {
+    function _exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {
         string memory json = vm.serializeAddress("EXPORTS", label, addr);
         string memory root = vm.projectRoot();
 
