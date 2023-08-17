@@ -48,9 +48,8 @@ contract CelerImplementationTest is BaseSetup {
     function test_setReceiver(uint256 chainIdSeed_) public {
         /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
         uint64 chainId = chainIds[chainIdSeed_ % chainIds.length];
-        vm.startPrank(deployer);
+        vm.prank(deployer);
         celerImplementation.setReceiver(chainId, getContract(chainId, "CelerImplementation"));
-        vm.stopPrank();
 
         assertEq(celerImplementation.authorizedImpl(chainId), getContract(chainId, "CelerImplementation"));
     }
