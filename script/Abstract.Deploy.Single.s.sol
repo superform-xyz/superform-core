@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
 import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
-import "forge-std/console.sol";
 /// @dev Protocol imports
 import {CoreStateRegistry} from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import {FactoryStateRegistry} from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
