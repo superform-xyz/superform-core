@@ -16,7 +16,6 @@ contract CelerImplementationTest is BaseSetup {
     address public constant CELER_BUS = 0x4066D196A423b2b3B8B054f4F40efB47a74E200C;
     ISuperRegistry public superRegistry;
     CelerImplementation celerImplementation;
-    address public bond;
 
     function setUp() public override {
         super.setUp();
@@ -24,10 +23,6 @@ contract CelerImplementationTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         superRegistry = ISuperRegistry(getContract(ETH, "SuperRegistry"));
         celerImplementation = CelerImplementation(payable(superRegistry.getAmbAddress(3)));
-        /// @dev malicious caller
-        bond = address(7);
-        /// @dev (who's a brokie)
-        vm.deal(bond, 1 ether);
     }
 
     function test_setCelerBus(address celerBus_) public {
