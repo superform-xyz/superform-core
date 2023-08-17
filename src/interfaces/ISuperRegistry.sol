@@ -79,7 +79,7 @@ interface ISuperRegistry {
     function PERMIT2() external view returns (address);
 
     /// @dev returns the id of the super router module
-    function SUPER_ROUTER() external view returns (bytes32);
+    function SUPERFORM_ROUTER() external view returns (bytes32);
 
     /// @dev returns the id of the superform factory module
     function SUPERFORM_FACTORY() external view returns (bytes32);
@@ -111,11 +111,26 @@ interface ISuperRegistry {
     /// @dev returns the id of the multi tx processor module
     function MULTI_TX_PROCESSOR() external view returns (bytes32);
 
-    /// @dev returns the id of the tx processor module
-    function TX_PROCESSOR() external view returns (bytes32);
+    /// @dev returns the id of the payment admin keeper
+    function PAYMENT_ADMIN() external view returns (bytes32);
 
-    /// @dev returns the id of the tx updater module
-    function TX_UPDATER() external view returns (bytes32);
+    /// @dev returns the id of the multi tx swapper keeper
+    function MULTI_TX_SWAPPER() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry updater keeper
+    function CORE_REGISTRY_UPDATER() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry processor keeper
+    function CORE_REGISTRY_PROCESSOR() external view returns (bytes32);
+
+    /// @dev returns the id of the factory state registry processor keeper
+    function FACTORY_REGISTRY_PROCESSOR() external view returns (bytes32);
+
+    /// @dev returns the id of the factory state registry processor keeper
+    function ROLES_REGISTRY_PROCESSOR() external view returns (bytes32);
+
+    /// @dev returns the id of the two steps form state registry processor keeper
+    function TWO_STEPS_REGISTRY_PROCESSOR() external view returns (bytes32);
 
     /// @dev gets the address of a contract on current chain
     /// @param id_ is the id of the contract

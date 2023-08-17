@@ -68,7 +68,6 @@ contract SocketValidator is BridgeValidator {
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
         ISocketRegistry.UserRequest memory userRequest = _decodeCallData(txData_);
-
         return userRequest.receiverAddress == receiver_;
     }
 

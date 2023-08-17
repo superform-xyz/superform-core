@@ -24,8 +24,9 @@ contract MultiTxProcessor is IMultiTxProcessor {
     ISuperRegistry public immutable superRegistry;
 
     modifier onlySwapper() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasSwapperRole(msg.sender))
-            revert Error.NOT_SWAPPER();
+        if (
+            !ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasMultiTxProcessorSwapperRole(msg.sender)
+        ) revert Error.NOT_SWAPPER();
         _;
     }
 

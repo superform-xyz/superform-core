@@ -38,7 +38,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlySuperRouter() {
-        if (superRegistry.getAddress(superRegistry.SUPER_ROUTER()) != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.getAddress(superRegistry.SUPERFORM_ROUTER()) != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 

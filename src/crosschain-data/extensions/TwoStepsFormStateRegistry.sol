@@ -8,6 +8,7 @@ import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
 import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {IERC4626TimelockForm} from "../../forms/interfaces/IERC4626TimelockForm.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
+import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {Error} from "../../utils/Error.sol";
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
 import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState, TimeLockStatus, TimeLockPayload} from "../../types/DataTypes.sol";
@@ -19,6 +20,19 @@ import {PayloadUpdaterLib} from "../../libraries/PayloadUpdaterLib.sol";
 /// @notice handles communication in two stepped forms
 contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegistry {
     using DataLib for uint256;
+
+    /*///////////////////////////////////////////////////////////////
+                                MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyTwoStepsStateRegistryProcessor() {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasTwoStepsStateRegistryProcessorRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROCESSOR();
+        _;
+    }
 
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
@@ -85,7 +99,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         uint256 timeLockPayloadId_,
         bytes memory txData_,
         bytes memory ambOverride_
-    ) external payable override onlyProcessor returns (bytes memory returnMessage) {
+    ) external payable override onlyTwoStepsStateRegistryProcessor returns (bytes memory returnMessage) {
         TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
 
         if (p.status != TimeLockStatus.PENDING) {
@@ -151,7 +165,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         payable
         virtual
         override
-        onlyProcessor
+        onlyTwoStepsStateRegistryProcessor
         isValidPayloadId(payloadId_)
         returns (bytes memory, bytes memory)
     {

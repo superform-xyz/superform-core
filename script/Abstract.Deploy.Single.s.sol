@@ -6,6 +6,7 @@ import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
 /// @dev Protocol imports
 import {CoreStateRegistry} from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import {FactoryStateRegistry} from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
+import {RolesStateRegistry} from "src/crosschain-data/extensions/RolesStateRegistry.sol";
 import {ISuperformFactory} from "src/interfaces/ISuperformFactory.sol";
 import {SuperformRouter} from "src/SuperformRouter.sol";
 import {SuperRegistry} from "src/settings/SuperRegistry.sol";
@@ -68,6 +69,7 @@ struct SetupVars {
     address paymentHelper;
     address payMaster;
     SuperRegistry superRegistryC;
+    SuperRBAC superRBACC;
 }
 
 abstract contract AbstractDeploySingle is Script {
@@ -78,7 +80,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[21] public contractNames = [
+    string[22] public contractNames = [
         "CoreStateRegistry",
         "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
@@ -94,6 +96,7 @@ abstract contract AbstractDeploySingle is Script {
         "SuperformRouter",
         "SuperPositions",
         "MultiTxProcessor",
+        "RolesStateRegistry",
         "SuperRegistry",
         "SuperRBAC",
         "SuperTransmuter",
@@ -135,15 +138,6 @@ abstract contract AbstractDeploySingle is Script {
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
-
-    bytes32 public constant SWAPPER_ROLE = keccak256("SWAPPER_ROLE");
-    bytes32 public constant CORE_CONTRACTS_ROLE = keccak256("CORE_CONTRACTS_ROLE");
-    bytes32 public constant IMPLEMENTATION_CONTRACTS_ROLE = keccak256("IMPLEMENTATION_CONTRACTS_ROLE");
-    bytes32 public constant PROCESSOR_ROLE = keccak256("PROCESSOR_ROLE");
-    bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
-    bytes32 public constant ROUTER_ROLE = keccak256("ROUTER_ROLE");
-    bytes32 public constant SUPER_ROUTER_ROLE = keccak256("SUPER_ROUTER_ROLE");
-    bytes32 public constant STATE_REGISTRY_ROLE = keccak256("STATE_REGISTRY_ROLE");
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
     uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
@@ -320,25 +314,39 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev 1 - Deploy SuperRBAC
         vars.superRBAC = address(new SuperRBAC{salt: salt}(ownerAddress));
         contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
+        vars.superRBACC = SuperRBAC(vars.superRBAC);
 
         /// @dev 2 - Deploy SuperRegistry and assign roles
         vars.superRegistry = address(new SuperRegistry{salt: salt}());
         contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
-        vars.superRegistryC = vars.superRegistryC;
+        vars.superRegistryC = SuperRegistry(vars.superRegistryC);
 
-        SuperRBAC(vars.superRBAC).setSuperRegistry(vars.superRegistry);
+        vars.superRBACC.setSuperRegistry(vars.superRegistry);
         vars.superRegistryC.setImmutables(vars.chainId, CANONICAL_PERMIT2, vars.superRBAC);
 
         /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
-        SuperRBAC(vars.superRBAC).grantEmergencyAdminRole(ownerAddress);
-        /// @dev FIXME: in reality who should have the SWAPPER_ROLE for multiTxProcessor?
-        SuperRBAC(vars.superRBAC).grantSwapperRole(ownerAddress);
-        /// @dev FIXME: in reality who should have the PROCESSOR_ROLE for state registry?
-        SuperRBAC(vars.superRBAC).grantProcessorRole(ownerAddress);
-        /// @dev FIXME: in reality who should have the UPDATER_ROLE for state registry?
-        SuperRBAC(vars.superRBAC).grantUpdaterRole(ownerAddress);
-        /// @dev FIXME: in reality who should have the TWOSTEPS_PROCESSOR_ROLE for state registry?
-        SuperRBAC(vars.superRBAC).grantTwoStepsProcessorRole(ownerAddress);
+        vars.superRBACC.grantRole(vars.superRBACC.EMERGENCY_ADMIN_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the PAYMENT_ADMIN_ROLE?
+        vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the MULTI_TX_SWAPPER_ROLE for multiTxProcessor?
+        vars.superRBACC.grantRole(vars.superRBACC.MULTI_TX_SWAPPER_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the ROLES_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+        vars.superRBACC.grantRole(vars.superRBACC.ROLES_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the FACTORY_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+        vars.superRBACC.grantRole(vars.superRBACC.FACTORY_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+        vars.superRBACC.grantRole(vars.superRBACC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE for state registry?
+        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
 
         /// @dev 3.1 - deploy Core State Registry
 
@@ -366,25 +374,34 @@ abstract contract AbstractDeploySingle is Script {
             vars.twoStepsFormStateRegistry,
             vars.chainId
         );
-        SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
+        vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
-        // vars.superRegistryC.setRolesStateRegistry(vars.rolesStateRegistry);
+        /// @dev 3.4 - deploy Roles State Registry
+        vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(vars.superRegistryC));
 
-        address[] memory registryAddresses = new address[](3);
+        contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
+
+        vars.superRegistryC.setAddress(
+            vars.superRegistryC.ROLES_STATE_REGISTRY(),
+            vars.rolesStateRegistry,
+            vars.chainId
+        );
+
+        address[] memory registryAddresses = new address[](4);
         registryAddresses[0] = vars.coreStateRegistry;
         registryAddresses[1] = vars.factoryStateRegistry;
-        //registryAddresses[2] = vars.rolesStateRegistry; /// @dev unused for now (will be address 0)
-        registryAddresses[2] = vars.twoStepsFormStateRegistry;
+        registryAddresses[2] = vars.rolesStateRegistry; /// @dev unused for now (will be address 0)
+        registryAddresses[3] = vars.twoStepsFormStateRegistry;
 
-        uint8[] memory registryIds = new uint8[](3);
+        uint8[] memory registryIds = new uint8[](4);
         registryIds[0] = 1;
         registryIds[1] = 2;
-        //registryIds[2] = 3;
-        registryIds[2] = 4;
+        registryIds[2] = 3;
+        registryIds[3] = 4;
 
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
-        SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.coreStateRegistry);
-        SuperRBAC(vars.superRBAC).grantMinterStateRegistryRole(vars.twoStepsFormStateRegistry);
+        vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.coreStateRegistry);
+        vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.twoStepsFormStateRegistry);
 
         /// @dev 4- deploy Payment Helper
         vars.paymentHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
@@ -457,10 +474,10 @@ abstract contract AbstractDeploySingle is Script {
         vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
-        vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_ROUTER(), vars.superformRouter, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
         /// @dev grant extra roles to superformRouter
-        SuperRBAC(vars.superRBAC).grantMinterRole(vars.superformRouter);
-        SuperRBAC(vars.superRBAC).grantBurnerRole(vars.superformRouter);
+        vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.superformRouter);
+        vars.superRBACC.grantRole(vars.superRBACC.BURNER_ROLE(), vars.superformRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions = address(
@@ -498,17 +515,21 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev configures lzImplementation and hyperlane to super registry
         SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
-        /// @dev 16 Setup extra RBAC
-        SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superformRouter);
-        SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
+        /// @dev 17 Setup extra RBAC
+        vars.superRBACC.grantRole(vars.superRBACC.CORE_CONTRACTS_ROLE(), vars.superformRouter);
+        vars.superRBACC.grantRole(vars.superRBACC.CORE_CONTRACTS_ROLE(), vars.factory);
 
         /// @dev 17 setup setup srcChain keepers
-        vars.superRegistryC.setAddress(vars.superRegistryC.TX_PROCESSOR(), ownerAddress, vars.chainId);
-        vars.superRegistryC.setAddress(vars.superRegistryC.TX_UPDATER(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
 
         /// FIXME: check if this is safe in all aspects
-        /// @dev disabled as we are not using rolesStateRegistry for now
-        /// SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
+        vars.superRBACC.grantRole(vars.superRBACC.PROTOCOL_ADMIN_ROLE(), vars.rolesStateRegistry);
 
         vm.stopBroadcast();
 
@@ -630,7 +651,7 @@ abstract contract AbstractDeploySingle is Script {
                 );
 
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.SUPER_ROUTER(),
+                    vars.superRegistryC.SUPERFORM_ROUTER(),
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "SuperformRouter"),
                     vars.dstChainId
                 );
@@ -698,10 +719,33 @@ abstract contract AbstractDeploySingle is Script {
                 );
 
                 /// @dev FIXME - in mainnet who is this?
-                vars.superRegistryC.setAddress(vars.superRegistryC.TX_PROCESSOR(), ownerAddress, vars.dstChainId);
-
-                /// @dev FIXME - in mainnet who is this?
-                vars.superRegistryC.setAddress(vars.superRegistryC.TX_UPDATER(), ownerAddress, vars.dstChainId);
+                vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.dstChainId);
+                vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), ownerAddress, vars.dstChainId);
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.CORE_REGISTRY_PROCESSOR(),
+                    ownerAddress,
+                    vars.dstChainId
+                );
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.CORE_REGISTRY_UPDATER(),
+                    ownerAddress,
+                    vars.dstChainId
+                );
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(),
+                    ownerAddress,
+                    vars.dstChainId
+                );
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(),
+                    ownerAddress,
+                    vars.dstChainId
+                );
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(),
+                    ownerAddress,
+                    vars.dstChainId
+                );
             } else {
                 /// ack gas cost: 40000
                 /// two step form cost: 50000

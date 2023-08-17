@@ -26,6 +26,28 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
+                                MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyCoreStateRegistryProcessor() {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasCoreStateRegistryProcessorRole(
+                msg.sender
+            )
+        ) revert Error.NOT_PROCESSOR();
+        _;
+    }
+
+    modifier onlyCoreStateRegistryUpdater() {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasCoreStateRegistryUpdaterRole(
+                msg.sender
+            )
+        ) revert Error.NOT_UPDATER();
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
@@ -62,7 +84,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     function updateDepositPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
-    ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
+    ) external virtual override onlyCoreStateRegistryUpdater isValidPayloadId(payloadId_) {
         UpdateDepositPayloadVars memory v;
 
         v.prevPayloadHeader = payloadHeader[payloadId_];
@@ -106,7 +128,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     function updateWithdrawPayload(
         uint256 payloadId_,
         bytes[] calldata txData_
-    ) external virtual override onlyUpdater isValidPayloadId(payloadId_) {
+    ) external virtual override onlyCoreStateRegistryUpdater isValidPayloadId(payloadId_) {
         UpdateWithdrawPayloadVars memory v;
 
         /// @dev load header and body of payload
@@ -157,7 +179,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         payable
         virtual
         override
-        onlyProcessor
+        onlyCoreStateRegistryProcessor
         isValidPayloadId(payloadId_)
         returns (bytes memory savedMessage, bytes memory returnMessage)
     {
@@ -228,7 +250,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     function rescueFailedDeposits(
         uint256 payloadId_,
         LiqRequest[] memory liqData_
-    ) external payable override onlyProcessor {
+    ) external payable override onlyCoreStateRegistryProcessor {
         RescueFailedDepositsLocalVars memory v;
 
         uint256[] memory superformIds = failedDeposits[payloadId_];

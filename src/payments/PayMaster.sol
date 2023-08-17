@@ -8,6 +8,7 @@ import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import "../types/LiquidityTypes.sol";
+import "forge-std/console.sol";
 
 /// @title PayMaster
 /// @author ZeroPoint Labs
@@ -40,7 +41,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPayMaster
-    function withdrawToMultiTxProcessor(uint256 nativeAmount_) external onlyPaymentAdmin {
+    function withdrawToMultiTxProcessor(uint256 nativeAmount_) external override onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
@@ -54,12 +55,12 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function withdrawToTxProcessor(uint256 nativeAmount_) external onlyPaymentAdmin {
+    function withdrawToCoreStateRegistryTxProcessor(uint256 nativeAmount_) external override onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
-        address receiver = superRegistry.getAddress(superRegistry.TX_PROCESSOR());
+        address receiver = superRegistry.getAddress(superRegistry.CORE_REGISTRY_PROCESSOR());
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -68,12 +69,12 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function withdrawToTxUpdater(uint256 nativeAmount_) external onlyPaymentAdmin {
+    function withdrawToCoreStateRegistryTxUpdater(uint256 nativeAmount_) external override onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
-        address receiver = superRegistry.getAddress(superRegistry.TX_UPDATER());
+        address receiver = superRegistry.getAddress(superRegistry.CORE_REGISTRY_UPDATER());
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -82,9 +83,8 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function rebalanceToMultiTxProcessor(LiqRequest memory req_) external onlyPaymentAdmin {
-        /// assuming all multi-tx processor across chains should be same; CREATE2
-        address receiver = superRegistry.getAddress(superRegistry.MULTI_TX_PROCESSOR());
+    function rebalanceToMultiTxSwapper(LiqRequest memory req_, uint64 dstChainId_) external override onlyPaymentAdmin {
+        address receiver = superRegistry.getAddressByChainId(superRegistry.MULTI_TX_SWAPPER(), dstChainId_);
 
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
@@ -94,9 +94,11 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function rebalanceToTxProcessor(LiqRequest memory req_) external onlyPaymentAdmin {
-        /// assuming all tx processor across chains should be same; CREATE2
-        address receiver = superRegistry.getAddress(superRegistry.TX_PROCESSOR());
+    function rebalanceToCoreStateRegistryTxProcessor(
+        LiqRequest memory req_,
+        uint64 dstChainId_
+    ) external override onlyPaymentAdmin {
+        address receiver = superRegistry.getAddressByChainId(superRegistry.CORE_REGISTRY_PROCESSOR(), dstChainId_);
 
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
@@ -106,9 +108,11 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function rebalanceToTxUpdater(LiqRequest memory req_) external onlyPaymentAdmin {
-        /// assuming all tx updater across chains should be same; CREATE2
-        address receiver = superRegistry.getAddress(superRegistry.TX_UPDATER());
+    function rebalanceToCoreStateRegistryTxUpdater(
+        LiqRequest memory req_,
+        uint64 dstChainId_
+    ) external override onlyPaymentAdmin {
+        address receiver = superRegistry.getAddressByChainId(superRegistry.CORE_REGISTRY_UPDATER(), dstChainId_);
 
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
@@ -122,7 +126,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPayMaster
-    function makePayment(address user_) external payable {
+    function makePayment(address user_) external payable override {
         if (msg.value == 0) {
             revert Error.ZERO_MSG_VALUE();
         }
@@ -153,6 +157,8 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
     /// @dev helper to move native tokens cross-chain
     function _validateAndDispatchTokens(LiqRequest memory liqRequest_, address receiver_) internal {
+        console.log(" receiver_", receiver_);
+
         bool valid = IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateReceiver(
             liqRequest_.txData,
             receiver_

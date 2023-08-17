@@ -27,23 +27,26 @@ interface IPayMaster {
 
     /// @dev withdraws funds from pay master to tx processor on same chain
     /// @param nativeAmount_ is the amount to withdraw from pay master
-    function withdrawToTxProcessor(uint256 nativeAmount_) external;
+    function withdrawToCoreStateRegistryTxProcessor(uint256 nativeAmount_) external;
 
     /// @dev withdraws funds from pay master to tx updater on same chain
     /// @param nativeAmount_ is the amount to withdraw from pay master
-    function withdrawToTxUpdater(uint256 nativeAmount_) external;
+    function withdrawToCoreStateRegistryTxUpdater(uint256 nativeAmount_) external;
 
     /// @dev withdraws fund from pay master to multi-tx processor on different chain
     /// @param req_ is the off-chain generated liquidity request to move funds
-    function rebalanceToMultiTxProcessor(LiqRequest memory req_) external;
+    /// @param dstChainId_ is the destination chain id
+    function rebalanceToMultiTxSwapper(LiqRequest memory req_, uint64 dstChainId_) external;
 
     /// @dev withdraws fund from pay master to tx processor on different chain
     /// @param req_ is the off-chain generated liquidity request to move funds
-    function rebalanceToTxProcessor(LiqRequest memory req_) external;
+    /// @param dstChainId_ is the destination chain id
+    function rebalanceToCoreStateRegistryTxProcessor(LiqRequest memory req_, uint64 dstChainId_) external;
 
     /// @dev withdraws fund from pay master to tx updater on different chain
     /// @param req_ is the off-chain generated liquidity request to move funds
-    function rebalanceToTxUpdater(LiqRequest memory req_) external;
+    /// @param dstChainId_ is the destination chain id
+    function rebalanceToCoreStateRegistryTxUpdater(LiqRequest memory req_, uint64 dstChainId_) external;
 
     /*///////////////////////////////////////////////////////////////
                     EXTERNAL FUNCTIONS

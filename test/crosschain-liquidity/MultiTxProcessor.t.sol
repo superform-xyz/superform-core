@@ -57,14 +57,16 @@ contract MultiTxProcessorTest is BaseSetup {
 
         uint256 balanceBefore = multiTxProcessor.balance;
 
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         (bool success, ) = multiTxProcessor.call{value: transferAmount}("");
         uint256 balanceAfter = multiTxProcessor.balance;
         assertEq(balanceBefore + transferAmount, balanceAfter);
 
-        vm.prank(deployer);
-        SuperRBAC(getContract(ETH, "SuperRBAC")).grantEmergencyAdminRole(address(this));
-
+        SuperRBAC(getContract(ETH, "SuperRBAC")).grantRole(
+            SuperRBAC(getContract(ETH, "SuperRBAC")).EMERGENCY_ADMIN_ROLE(),
+            address(this)
+        );
+        vm.stopPrank();
         balanceBefore = multiTxProcessor.balance;
         vm.expectRevert(Error.NATIVE_TOKEN_TRANSFER_FAILURE.selector);
         MultiTxProcessor(multiTxProcessor).emergencyWithdrawNativeToken(transferAmount);

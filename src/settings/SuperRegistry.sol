@@ -28,8 +28,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev is the reverse mapping of ambAddresses
     mapping(address ambAddress => uint8 bridgeId) public ambIds;
 
-    /// @dev core protocol addresses identifiers
-    bytes32 public constant override SUPER_ROUTER = keccak256("SUPER_ROUTER");
+    /// @dev core protocol - identifiers
+    bytes32 public constant override SUPERFORM_ROUTER = keccak256("SUPERFORM_ROUTER");
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
     bytes32 public constant override PAYMASTER = keccak256("PAYMASTER");
     bytes32 public constant override PAYMENT_HELPER = keccak256("PAYMENT_HELPER");
@@ -40,8 +40,15 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override SUPER_POSITIONS = keccak256("SUPER_POSITIONS");
     bytes32 public constant override SUPER_RBAC = keccak256("SUPER_RBAC");
     bytes32 public constant override MULTI_TX_PROCESSOR = keccak256("MULTI_TX_PROCESSOR");
-    bytes32 public constant override TX_PROCESSOR = keccak256("TX_PROCESSOR");
-    bytes32 public constant override TX_UPDATER = keccak256("TX_UPDATER");
+
+    /// @dev default keepers - identifiers
+    bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");
+    bytes32 public constant override MULTI_TX_SWAPPER = keccak256("MULTI_TX_SWAPPER");
+    bytes32 public constant override CORE_REGISTRY_UPDATER = keccak256("CORE_REGISTRY_UPDATER");
+    bytes32 public constant override CORE_REGISTRY_PROCESSOR = keccak256("CORE_REGISTRY_PROCESSOR");
+    bytes32 public constant override FACTORY_REGISTRY_PROCESSOR = keccak256("FACTORY_REGISTRY_PROCESSOR");
+    bytes32 public constant override ROLES_REGISTRY_PROCESSOR = keccak256("ROLES_REGISTRY_PROCESSOR");
+    bytes32 public constant override TWO_STEPS_REGISTRY_PROCESSOR = keccak256("TWO_STEPS_REGISTRY_PROCESSOR");
 
     modifier onlyCaller() {
         if (!ISuperRBAC(crossChainRegistry[SUPER_RBAC][chainId]).hasProtocolAdminRole(msg.sender)) {

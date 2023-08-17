@@ -70,7 +70,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         /// calculate the exact fee needed
         uint256 feesReq = messageBus.calcFee(message_);
 
-        /// NOTE: works only on EVM-networks & contracts using CREATE2/CREATE3
+        /// FIXME - Sujith, verify if this works without create2 works only on EVM-networks & contracts using CREATE2/CREATE3
         messageBus.sendMessage{value: feesReq}(authorizedImpl[chainId], chainId, message_);
 
         /// Refund unused fees

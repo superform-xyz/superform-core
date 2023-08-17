@@ -53,7 +53,7 @@ interface IBaseStateRegistry {
     /// @dev allows previlaged actors to process cross-chain payloads
     /// @param payloadId_ is the identifier of the cross-chain payload
     /// @param ambOverride_ is the message bridge configuration override when an acknowledgement to source chain is needed
-    /// NOTE: Only {PROCESSOR_ROLE} role can call this function
+    /// NOTE: Only {CORE_STATE_REGISTRY_PROCESSOR_ROLE} role can call this function
     /// NOTE: sending `0x` in ambOverride_ will trigger no acknowledgement
     /// NOTE: this should handle reverting the state on source chain in-case of failure
     /// (or) can implement scenario based reverting like in coreStateRegistry

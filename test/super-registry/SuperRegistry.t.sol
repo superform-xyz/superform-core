@@ -54,7 +54,7 @@ contract SuperRegistryTest is BaseSetup {
     }
 
     function test_setSuperRouter_and_revert_invalidCaller() public {
-        _setAndAssert(superRegistry.SUPER_ROUTER(), address(0x1));
+        _setAndAssert(superRegistry.SUPERFORM_ROUTER(), address(0x1));
     }
 
     function test_setSuperformFactory_and_revert_invalidCaller() public {
@@ -104,11 +104,11 @@ contract SuperRegistryTest is BaseSetup {
     }
 
     function test_setTxProcessor_and_revert_invalidCaller() public {
-        _setAndAssert(superRegistry.TX_PROCESSOR(), address(0x1));
+        _setAndAssert(superRegistry.CORE_REGISTRY_PROCESSOR(), address(0x1));
     }
 
     function test_setTxUpdater_and_revert_invalidCaller() public {
-        _setAndAssert(superRegistry.TX_UPDATER(), address(0x1));
+        _setAndAssert(superRegistry.CORE_REGISTRY_UPDATER(), address(0x1));
     }
 
     function test_setBridgeAddresses_and_revert_invalidCaller() public {

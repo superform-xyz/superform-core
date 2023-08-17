@@ -61,7 +61,7 @@ library Error {
     error NOT_BURNER();
 
     /// @dev thrown when msg.sender is not minter state registry
-    error NOT_MINTER_STATE_REGISTRY();
+    error NOT_MINTER_STATE_REGISTRY_ROLE();
 
     /// @dev if the msg-sender is not super form factory
     error NOT_SUPERFORM_FACTORY();

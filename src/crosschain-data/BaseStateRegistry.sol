@@ -35,27 +35,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /// @dev maps payloads to their current status
     mapping(uint256 => PayloadState) public payloadTracking;
 
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
-    modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasProtocolAdminRole(msg.sender))
-            revert Error.NOT_PROTOCOL_ADMIN();
-        _;
-    }
-
-    modifier onlyProcessor() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasProcessorRole(msg.sender))
-            revert Error.NOT_PROCESSOR();
-        _;
-    }
-
-    modifier onlyUpdater() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasUpdaterRole(msg.sender))
-            revert Error.NOT_UPDATER();
-        _;
-    }
-
     /// @dev sender varies based on functionality
     /// @notice inheriting contracts should override this function (else not safe)
     modifier onlySender() virtual {

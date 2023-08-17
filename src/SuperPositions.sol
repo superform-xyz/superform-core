@@ -48,7 +48,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     modifier onlyRouter() {
-        if (superRegistry.getAddress(superRegistry.SUPER_ROUTER()) != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.getAddress(superRegistry.SUPERFORM_ROUTER()) != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
@@ -60,7 +60,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
     modifier onlyMinterStateRegistry() {
         if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasMinterStateRegistryRole(msg.sender)) {
-            revert Error.NOT_MINTER_STATE_REGISTRY();
+            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
         _;
     }

@@ -57,13 +57,16 @@ contract SuperformRouterTest is ProtocolActions {
 
         uint256 balanceBefore = superformRouter.balance;
 
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         (bool success, ) = superformRouter.call{value: transferAmount}("");
         uint256 balanceAfter = superformRouter.balance;
         assertEq(balanceBefore + transferAmount, balanceAfter);
 
-        vm.prank(deployer);
-        SuperRBAC(getContract(ETH, "SuperRBAC")).grantEmergencyAdminRole(address(this));
+        SuperRBAC(getContract(ETH, "SuperRBAC")).grantRole(
+            SuperRBAC(getContract(ETH, "SuperRBAC")).EMERGENCY_ADMIN_ROLE(),
+            address(this)
+        );
+        vm.stopPrank();
 
         balanceBefore = superformRouter.balance;
         vm.expectRevert(Error.NATIVE_TOKEN_TRANSFER_FAILURE.selector);

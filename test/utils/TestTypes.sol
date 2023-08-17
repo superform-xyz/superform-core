@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 import {SuperRegistry} from "src/settings/SuperRegistry.sol";
+import {SuperRBAC} from "src/settings/SuperRBAC.sol";
+
 import "src/types/LiquidityTypes.sol";
 import "src/types/DataTypes.sol";
 
@@ -142,6 +144,7 @@ struct SetupVars {
     address superPositions;
     address kycDAOMock;
     SuperRegistry superRegistryC;
+    SuperRBAC superRBACC;
 }
 
 /*//////////////////////////////////////////////////////////////
