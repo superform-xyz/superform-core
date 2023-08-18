@@ -34,3 +34,6 @@ fantom_fork = "${FANTOM_LOCAL_URL}"
 [profile.ci]
 solc-version = "0.8.19"
 optimizer = false
+
+[fuzz]
+runs = 256
