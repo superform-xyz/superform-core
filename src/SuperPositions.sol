@@ -36,30 +36,30 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
     /// note replace this to support some new role called minter in super registry
     modifier onlyMinter() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasMinterRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasMinterRole(msg.sender))
             revert Error.NOT_MINTER();
         _;
     }
 
     modifier onlyBurner() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasBurnerRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasBurnerRole(msg.sender))
             revert Error.NOT_BURNER();
         _;
     }
 
     modifier onlyRouter() {
-        if (superRegistry.getAddress(superRegistry.SUPERFORM_ROUTER()) != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.getAddress(keccak256("SUPERFORM_ROUTER")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasProtocolAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender))
             revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
     modifier onlyMinterStateRegistry() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasMinterStateRegistryRole(msg.sender)) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasMinterStateRegistryRole(msg.sender)) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
         _;

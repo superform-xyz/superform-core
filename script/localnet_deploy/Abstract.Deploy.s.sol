@@ -316,12 +316,12 @@ abstract contract AbstractDeploy is Script {
         vars.superRBACC = SuperRBAC(vars.superRBAC);
 
         /// @dev 2 - Deploy SuperRegistry and assign roles
-        vars.superRegistry = address(new SuperRegistry{salt: salt}());
+        vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
         contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
-        vars.superRegistryC = SuperRegistry(vars.superRegistryC);
+        vars.superRegistryC = SuperRegistry(vars.superRegistry);
 
-        SuperRBAC(vars.superRBAC).setSuperRegistry(vars.superRegistry);
-        vars.superRegistryC.setImmutables(vars.chainId, CANONICAL_PERMIT2, vars.superRBAC);
+        vars.superRBACC.setSuperRegistry(vars.superRegistry);
+        vars.superRegistryC.setPermit2(CANONICAL_PERMIT2);
 
         /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
         vars.superRBACC.grantRole(vars.superRBACC.EMERGENCY_ADMIN_ROLE(), ownerAddress);
@@ -496,6 +496,7 @@ abstract contract AbstractDeploy is Script {
             new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superPositions, vars.twoStepsFormStateRegistry)
         );
         contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
+        vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
 
         /// @dev 13 - Deploy MultiTx Processor
         vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
@@ -684,6 +685,12 @@ abstract contract AbstractDeploy is Script {
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.MULTI_TX_PROCESSOR(),
                     getContract(vars.dstChainId, "MultiTxProcessor"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.PAYLOAD_HELPER(),
+                    getContract(vars.dstChainId, "PayloadHelper"),
                     vars.dstChainId
                 );
 

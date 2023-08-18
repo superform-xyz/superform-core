@@ -54,9 +54,9 @@ contract LiFiValidator is BridgeValidator {
                 /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry or MultiTxProcessor
                 if (
                     !(bridgeData.receiver ==
-                        superRegistry.getAddressByChainId(superRegistry.CORE_STATE_REGISTRY(), dstChainId_) ||
+                        superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), dstChainId_) ||
                         bridgeData.receiver ==
-                        superRegistry.getAddressByChainId(superRegistry.MULTI_TX_PROCESSOR(), dstChainId_))
+                        superRegistry.getAddressByChainId(keccak256("MULTI_TX_PROCESSOR"), dstChainId_))
                 ) revert Error.INVALID_TXDATA_RECEIVER();
             }
         } else {

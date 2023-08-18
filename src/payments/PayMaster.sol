@@ -8,7 +8,6 @@ import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
 import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
 import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
 import "../types/LiquidityTypes.sol";
-import "forge-std/console.sol";
 
 /// @title PayMaster
 /// @author ZeroPoint Labs
@@ -23,7 +22,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
                         MODIFIER
     //////////////////////////////////////////////////////////////*/
     modifier onlyPaymentAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasPaymentAdminRole(msg.sender)) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasPaymentAdminRole(msg.sender)) {
             revert Error.NOT_PAYMENT_ADMIN();
         }
         _;
@@ -41,12 +40,12 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPayMaster
-    function withdrawToMultiTxProcessor(uint256 nativeAmount_) external override onlyPaymentAdmin {
+    function withdrawTo(bytes32 superRegistryId_, uint256 nativeAmount_) external override onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
-        address receiver = superRegistry.getAddress(superRegistry.MULTI_TX_PROCESSOR());
+        address receiver = superRegistry.getAddress(superRegistryId_);
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -55,64 +54,12 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function withdrawToCoreStateRegistryTxProcessor(uint256 nativeAmount_) external override onlyPaymentAdmin {
-        if (nativeAmount_ > address(this).balance) {
-            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
-        }
-
-        address receiver = superRegistry.getAddress(superRegistry.CORE_REGISTRY_PROCESSOR());
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        _withdrawNative(receiver, nativeAmount_);
-    }
-
-    /// @inheritdoc IPayMaster
-    function withdrawToCoreStateRegistryTxUpdater(uint256 nativeAmount_) external override onlyPaymentAdmin {
-        if (nativeAmount_ > address(this).balance) {
-            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
-        }
-
-        address receiver = superRegistry.getAddress(superRegistry.CORE_REGISTRY_UPDATER());
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        _withdrawNative(receiver, nativeAmount_);
-    }
-
-    /// @inheritdoc IPayMaster
-    function rebalanceToMultiTxSwapper(LiqRequest memory req_, uint64 dstChainId_) external override onlyPaymentAdmin {
-        address receiver = superRegistry.getAddressByChainId(superRegistry.MULTI_TX_SWAPPER(), dstChainId_);
-
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        _validateAndDispatchTokens(req_, receiver);
-    }
-
-    /// @inheritdoc IPayMaster
-    function rebalanceToCoreStateRegistryTxProcessor(
+    function rebalanceTo(
+        bytes32 superRegistryId_,
         LiqRequest memory req_,
         uint64 dstChainId_
     ) external override onlyPaymentAdmin {
-        address receiver = superRegistry.getAddressByChainId(superRegistry.CORE_REGISTRY_PROCESSOR(), dstChainId_);
-
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        _validateAndDispatchTokens(req_, receiver);
-    }
-
-    /// @inheritdoc IPayMaster
-    function rebalanceToCoreStateRegistryTxUpdater(
-        LiqRequest memory req_,
-        uint64 dstChainId_
-    ) external override onlyPaymentAdmin {
-        address receiver = superRegistry.getAddressByChainId(superRegistry.CORE_REGISTRY_UPDATER(), dstChainId_);
+        address receiver = superRegistry.getAddressByChainId(superRegistryId_, dstChainId_);
 
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
@@ -157,8 +104,6 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
     /// @dev helper to move native tokens cross-chain
     function _validateAndDispatchTokens(LiqRequest memory liqRequest_, address receiver_) internal {
-        console.log(" receiver_", receiver_);
-
         bool valid = IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateReceiver(
             liqRequest_.txData,
             receiver_

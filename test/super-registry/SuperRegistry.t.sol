@@ -11,6 +11,9 @@ import {Error} from "src/utils/Error.sol";
 
 contract SuperRegistryTest is BaseSetup {
     SuperRegistry public superRegistry;
+    SuperRegistry public fakeRegistry;
+    SuperRBAC public fakeRBAC;
+
     address public bond;
 
     function setUp() public override {
@@ -18,6 +21,8 @@ contract SuperRegistryTest is BaseSetup {
 
         vm.selectFork(FORKS[ETH]);
         superRegistry = SuperRegistry(getContract(ETH, "SuperRegistry"));
+        fakeRBAC = new SuperRBAC(address(deployer));
+        fakeRegistry = new SuperRegistry(address(fakeRBAC));
 
         /// @dev malicious caller
         bond = address(7);
@@ -25,32 +30,23 @@ contract SuperRegistryTest is BaseSetup {
         vm.deal(bond, 1 ether);
     }
 
-    function test_setImmutables_and_revert_invalidCaller() public {
-        /// @dev resetting these to 0 as they were already set in BaseSetup
-        vm.store(address(superRegistry), bytes32(uint256(0)), bytes32(uint256(0)));
-        vm.store(address(superRegistry), bytes32(uint256(1)), bytes32(uint256(0)));
-
+    function test_setPermit2_and_revert_invalidCaller() public {
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
-        superRegistry.setImmutables(ETH, getContract(ETH, "CanonicalPermit2"), getContract(ETH, "SuperRBAC"));
-
-        vm.expectRevert(Error.INVALID_INPUT_CHAIN_ID.selector);
-        vm.prank(deployer);
-        superRegistry.setImmutables(0, getContract(ETH, "CanonicalPermit2"), getContract(ETH, "SuperRBAC"));
+        fakeRegistry.setPermit2(getContract(ETH, "CanonicalPermit2"));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(deployer);
-        superRegistry.setImmutables(ETH, address(0), getContract(ETH, "SuperRBAC"));
+        fakeRegistry.setPermit2(address(0));
 
         vm.prank(deployer);
-        superRegistry.setImmutables(OP, getContract(OP, "CanonicalPermit2"), getContract(ETH, "SuperRBAC"));
+        fakeRegistry.setPermit2(getContract(ETH, "CanonicalPermit2"));
 
-        assertEq(superRegistry.chainId(), OP);
-        assertEq(address(superRegistry.PERMIT2()), getContract(OP, "CanonicalPermit2"));
+        assertEq(address(superRegistry.PERMIT2()), getContract(ETH, "CanonicalPermit2"));
 
         vm.expectRevert(Error.DISABLED.selector);
         vm.prank(deployer);
-        superRegistry.setImmutables(ETH, getContract(OP, "CanonicalPermit2"), getContract(ETH, "SuperRBAC"));
+        superRegistry.setPermit2(getContract(ETH, "CanonicalPermit2"));
     }
 
     function test_setSuperRouter_and_revert_invalidCaller() public {

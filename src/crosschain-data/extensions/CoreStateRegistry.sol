@@ -31,19 +31,14 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
     modifier onlyCoreStateRegistryProcessor() {
         if (
-            !ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasCoreStateRegistryProcessorRole(
-                msg.sender
-            )
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasCoreStateRegistryProcessorRole(msg.sender)
         ) revert Error.NOT_PROCESSOR();
         _;
     }
 
     modifier onlyCoreStateRegistryUpdater() {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasCoreStateRegistryUpdaterRole(
-                msg.sender
-            )
-        ) revert Error.NOT_UPDATER();
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasCoreStateRegistryUpdaterRole(msg.sender))
+            revert Error.NOT_UPDATER();
         _;
     }
 
@@ -59,7 +54,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     //////////////////////////////////////////////////////////////*/
 
     modifier onlySender() override {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasCoreContractsRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasCoreContractsRole(msg.sender))
             revert Error.NOT_CORE_CONTRACTS();
         _;
     }
@@ -209,8 +204,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             v.multi == 1
-                ? ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).stateMultiSync(v._message)
-                : ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).stateSync(v._message);
+                ? ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateMultiSync(v._message)
+                : ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(v._message);
         }
 
         /// @dev for initial payload processing

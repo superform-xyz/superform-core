@@ -48,9 +48,9 @@ contract SocketValidator is BridgeValidator {
 
                 if (
                     !(userRequest.receiverAddress ==
-                        superRegistry.getAddressByChainId(superRegistry.CORE_STATE_REGISTRY(), dstChainId_) ||
+                        superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), dstChainId_) ||
                         userRequest.receiverAddress ==
-                        superRegistry.getAddressByChainId(superRegistry.MULTI_TX_PROCESSOR(), dstChainId_))
+                        superRegistry.getAddressByChainId(keccak256("MULTI_TX_PROCESSOR"), dstChainId_))
                 ) revert Error.INVALID_TXDATA_RECEIVER();
             }
         } else {

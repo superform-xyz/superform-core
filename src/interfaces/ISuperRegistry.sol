@@ -9,8 +9,11 @@ interface ISuperRegistry {
                                 Events
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev is emmitable when pseudo immutable chainId and permit2 address are set
-    event SetImmutables(uint256 indexed chainId, address indexed permit2);
+    /// @dev emitted when chainId is set.
+    event SetChainId(uint64 indexed chainId);
+
+    /// @dev emitted when permit2 is set.
+    event SetPermit2(address indexed permit2);
 
     /// @dev is emitted when an address is set.
     event AddressUpdated(
@@ -36,11 +39,9 @@ interface ISuperRegistry {
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev sets the chain id.
-    /// @param chainId_ the superform chain id this registry is deployed on
+    /// @dev sets the permit2 address
     /// @param permit2_ the address of the permit2 contract
-    /// @param superRBAC_ the address of the superRBAC contract
-    function setImmutables(uint64 chainId_, address permit2_, address superRBAC_) external;
+    function setPermit2(address permit2_) external;
 
     /// @dev sets a new address on a specific chain.
     /// @param id_ the identifier of the address on that chain
@@ -110,6 +111,9 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the multi tx processor module
     function MULTI_TX_PROCESSOR() external view returns (bytes32);
+
+    /// @dev returns the id of the payload helper module
+    function PAYLOAD_HELPER() external view returns (bytes32);
 
     /// @dev returns the id of the payment admin keeper
     function PAYMENT_ADMIN() external view returns (bytes32);

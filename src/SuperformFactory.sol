@@ -47,7 +47,7 @@ contract SuperformFactory is ISuperformFactory {
     mapping(bytes32 vaultBeaconCombination => uint256 superformIds) public vaultBeaconToSuperforms;
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasProtocolAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender))
             revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
@@ -173,7 +173,7 @@ contract SuperformFactory is ISuperformFactory {
     /// @inheritdoc ISuperformFactory
     function stateSync(bytes memory data_) external payable override {
         /// @dev this function is only accessible through factory state registry
-        if (msg.sender != superRegistry.getAddress(superRegistry.FACTORY_STATE_REGISTRY()))
+        if (msg.sender != superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY")))
             revert Error.NOT_FACTORY_STATE_REGISTRY();
 
         AMBFactoryMessage memory factoryPayload = abi.decode(data_, (AMBFactoryMessage));
@@ -255,9 +255,12 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBroadcaster(superRegistry.getAddress(superRegistry.FACTORY_STATE_REGISTRY())).broadcastPayload{
-            value: msg.value
-        }(msg.sender, ambIds, message_, broadcastParams);
+        IBroadcaster(superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))).broadcastPayload{value: msg.value}(
+            msg.sender,
+            ambIds,
+            message_,
+            broadcastParams
+        );
     }
 
     /// @dev synchornize beacon status update message from remote chain

@@ -11,7 +11,7 @@ import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateReg
 import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {Error} from "../../utils/Error.sol";
 import {BaseStateRegistry} from "../BaseStateRegistry.sol";
-import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState, TimeLockStatus, TimeLockPayload} from "../../types/DataTypes.sol";
+import {AckAMBData, AMBExtraData, TransactionType, CallbackType, InitSingleVaultData, AMBMessage, ReturnSingleData, PayloadState, TimeLockStatus, TwoStepsPayload} from "../../types/DataTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 import {PayloadUpdaterLib} from "../../libraries/PayloadUpdaterLib.sol";
 
@@ -27,7 +27,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
     modifier onlyTwoStepsStateRegistryProcessor() {
         if (
-            !ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasTwoStepsStateRegistryProcessorRole(
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasTwoStepsStateRegistryProcessorRole(
                 msg.sender
             )
         ) revert Error.NOT_PROCESSOR();
@@ -47,7 +47,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     uint256 public timeLockPayloadCounter;
 
     /// @dev stores the timelock payloads
-    mapping(uint256 timeLockPayloadId => TimeLockPayload) public timeLockPayload;
+    mapping(uint256 timeLockPayloadId => TwoStepsPayload) public twoStepsPayload;
 
     /// @dev allows only form to write to the receive paylod
     modifier onlyForm(uint256 superformId) {
@@ -84,7 +84,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     ) external override onlyForm(data_.superformId) {
         ++timeLockPayloadCounter;
 
-        timeLockPayload[timeLockPayloadCounter] = TimeLockPayload(
+        twoStepsPayload[timeLockPayloadCounter] = TwoStepsPayload(
             type_,
             srcSender_,
             srcChainId_,
@@ -100,7 +100,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         bytes memory txData_,
         bytes memory ambOverride_
     ) external payable override onlyTwoStepsStateRegistryProcessor returns (bytes memory returnMessage) {
-        TimeLockPayload memory p = timeLockPayload[timeLockPayloadId_];
+        TwoStepsPayload memory p = twoStepsPayload[timeLockPayloadId_];
 
         if (p.status != TimeLockStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
@@ -144,7 +144,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             if (p.isXChain == 0) {
                 returnMessage = _constructSingleReturnData(p.srcSender, p.data);
 
-                ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).mintSingleSP(
+                ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingleSP(
                     p.srcSender,
                     p.data.superformId,
                     p.data.amount
@@ -153,7 +153,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         }
 
         /// @dev restoring state for gas saving
-        delete timeLockPayload[timeLockPayloadId_];
+        delete twoStepsPayload[timeLockPayloadId_];
     }
 
     /// @inheritdoc BaseStateRegistry
@@ -181,7 +181,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
 
         if (callbackType == uint256(CallbackType.FAIL)) {
-            ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).stateSync(_message);
+            ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
         }
 
         /// @dev validates quorum
@@ -204,8 +204,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     }
 
     /// @inheritdoc ITwoStepsFormStateRegistry
-    function getTimeLockPayload(uint256 payloadId_) external view returns (TimeLockPayload memory timeLockPayload_) {
-        return timeLockPayload[payloadId_];
+    function getTwoStepsPayload(uint256 payloadId_) external view returns (TwoStepsPayload memory twoStepsPayload_) {
+        return twoStepsPayload[payloadId_];
     }
 
     /*///////////////////////////////////////////////////////////////

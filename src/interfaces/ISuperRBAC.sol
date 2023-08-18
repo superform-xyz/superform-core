@@ -12,6 +12,11 @@ interface ISuperRBAC {
     /// @dev updates the super registry address
     function setSuperRegistry(address superRegistry_) external;
 
+    /// @dev configures a new role in superForm
+    /// @param role_ the role to set
+    /// @param adminRole_ the admin role to set as admin
+    function setRoleAdmin(bytes32 role_, bytes32 adminRole_) external;
+
     /// @dev revokes the role_ from superRegistryAddressId_ on all chains
     /// @param role_ the role to revoke
     /// @param addressToRevoke_ the address to revoke the role from

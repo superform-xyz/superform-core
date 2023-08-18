@@ -8,6 +8,8 @@ import {RolesStateRegistry} from "src/crosschain-data/extensions/RolesStateRegis
 import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
 import {SuperRBAC} from "src/settings/SuperRBAC.sol";
 
+import {Error} from "src/utils/Error.sol";
+
 contract SuperRBACTest is BaseSetup {
     SuperRBAC public superRBAC;
     ISuperRegistry public superRegistry;
@@ -291,6 +293,29 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
+    function test_stateSync_invalidCaller() public {
+        vm.expectRevert(Error.NOT_ROLES_STATE_REGISTRY.selector);
+        superRBAC.stateSync("");
+    }
+
+    function test_stateSync_addressToRevokeIs0() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        vm.prank(getContract(ETH, "RolesStateRegistry"));
+        superRBAC.stateSync(
+            abi.encode(
+                AMBFactoryMessage(
+                    keccak256("SYNC_REVOKE"),
+                    abi.encode(keccak256("MINTER_ROLE"), keccak256("NON_EXISTENT_ID"))
+                )
+            )
+        );
+    }
+
+    function test_setup_new_role() public {
+        vm.prank(deployer);
+        superRBAC.setRoleAdmin(keccak256("NEW_ROLE"), keccak256("PROTOCOL_ADMIN_ROLE"));
+    }
+
     function _revokeAndCheck(
         bytes4 checkRole_,
         bytes32 superRBACRole_,
@@ -349,6 +374,26 @@ contract SuperRBACTest is BaseSetup {
                 /// @dev assert status update before and after processing the payload
                 assertEq(abi.decode(statusBefore, (bool)), true);
                 assertEq(abi.decode(statusAfter, (bool)), false);
+            }
+        }
+
+        /// try processing the same payload again
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (chainIds[i] != ETH) {
+                vm.selectFork(FORKS[chainIds[i]]);
+
+                vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
+                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
+            }
+        }
+
+        /// try processing not available payload id
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (chainIds[i] != ETH) {
+                vm.selectFork(FORKS[chainIds[i]]);
+
+                vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(2, "");
             }
         }
     }

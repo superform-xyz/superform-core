@@ -47,13 +47,13 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasProtocolAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender))
             revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
     modifier onlyEmergencyAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasEmergencyAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender))
             revert Error.NOT_EMERGENCY_ADMIN();
         _;
     }
@@ -384,7 +384,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         if (!_validateSuperformsWithdrawData(req.superformsData, req.dstChainId))
             revert Error.INVALID_SUPERFORMS_DATA();
 
-        ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).burnBatchSP(
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatchSP(
             msg.sender,
             req.superformsData.superformIds,
             req.superformsData.amounts
@@ -478,7 +478,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev SuperPositions are burnt optimistically here
-        ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).burnBatchSP(
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatchSP(
             msg.sender,
             req.superformData.superformIds,
             req.superformData.amounts
@@ -536,7 +536,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         /// @dev validate superformsData
         if (!_validateSuperformData(dstChainId_, superformData_)) revert Error.INVALID_SUPERFORMS_DATA();
 
-        ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).burnSingleSP(
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnSingleSP(
             srcSender_,
             superformData_.superformId,
             superformData_.amount
@@ -600,12 +600,11 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             vars.ambData
         );
 
-        (uint256 fees, bytes memory extraData) = IPaymentHelper(
-            superRegistry.getAddress(superRegistry.PAYMENT_HELPER())
-        ).calculateAMBData(vars.dstChainId, vars.ambIds, abi.encode(ambMessage));
+        (uint256 fees, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
+            .calculateAMBData(vars.dstChainId, vars.ambIds, abi.encode(ambMessage));
 
         /// @dev this call dispatches the message to the AMB bridge through dispatchPayload
-        IBaseStateRegistry(superRegistry.getAddress(superRegistry.CORE_STATE_REGISTRY())).dispatchPayload{value: fees}(
+        IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"))).dispatchPayload{value: fees}(
             vars.srcSender,
             vars.ambIds,
             vars.dstChainId,
@@ -613,7 +612,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             extraData
         );
 
-        ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).updateTxHistory(
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
             vars.currentPayloadId,
             ambMessage.txInfo
         );
@@ -646,7 +645,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         );
 
         /// @dev mint super positions at the end of the deposit action
-        ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).mintSingleSP(
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingleSP(
             srcSender_,
             vaultData_.superformId,
             dstAmount
@@ -684,7 +683,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         }
 
         /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
-        ISuperPositions(superRegistry.getAddress(superRegistry.SUPER_POSITIONS())).mintBatchSP(
+        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatchSP(
             srcSender_,
             vaultData_.superformIds,
             dstAmounts
@@ -704,8 +703,9 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         address srcSender_
     ) internal returns (uint256 dstAmount) {
         /// @dev validates if superformId exists on factory
-        (, , uint64 chainId) = ISuperformFactory(superRegistry.getAddress(superRegistry.SUPERFORM_FACTORY()))
-            .getSuperform(superformId_);
+        (, , uint64 chainId) = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(
+            superformId_
+        );
 
         if (chainId != superRegistry.chainId()) {
             revert Error.INVALID_CHAIN_ID();
@@ -777,8 +777,9 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         address srcSender_
     ) internal {
         /// @dev validates if superformId exists on factory
-        (, , uint64 chainId) = ISuperformFactory(superRegistry.getAddress(superRegistry.SUPERFORM_FACTORY()))
-            .getSuperform(superformId_);
+        (, , uint64 chainId) = ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(
+            superformId_
+        );
 
         if (chainId != superRegistry.chainId()) {
             revert Error.INVALID_CHAIN_ID();
@@ -809,9 +810,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
 
         return
             !IFormBeacon(
-                ISuperformFactory(superRegistry.getAddress(superRegistry.SUPERFORM_FACTORY())).getFormBeacon(
-                    formBeaconId_
-                )
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
             ).paused();
     }
 
@@ -844,7 +843,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
 
             if (
                 IFormBeacon(
-                    ISuperformFactory(superRegistry.getAddress(superRegistry.SUPERFORM_FACTORY())).getFormBeacon(
+                    ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
                         formBeaconId_
                     )
                 ).paused()
@@ -896,7 +895,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
 
             if (
                 IFormBeacon(
-                    ISuperformFactory(superRegistry.getAddress(superRegistry.SUPERFORM_FACTORY())).getFormBeacon(
+                    ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
                         formBeaconId_
                     )
                 ).paused()
@@ -920,7 +919,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         uint256 residualPayment = address(this).balance - _balanceBefore;
 
         if (residualPayment > 0) {
-            IPayMaster(superRegistry.getAddress(superRegistry.PAYMASTER())).makePayment{value: residualPayment}(
+            IPayMaster(superRegistry.getAddress(keccak256("PAYMASTER"))).makePayment{value: residualPayment}(
                 msg.sender
             );
         }

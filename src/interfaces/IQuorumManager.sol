@@ -2,6 +2,15 @@
 pragma solidity 0.8.19;
 
 interface IQuorumManager {
+    /*///////////////////////////////////////////////////////////////
+                            EVENTS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev emitted when a new quorum is set for a specific chain
+    /// @param srcChainId the chain id from which the message (payload) is sent
+    /// @param quorum the minimum number of message bridges required for processing
+    event QuorumSet(uint64 indexed srcChainId, uint256 quorum);
+
     /// @dev allows inheriting contracts to set the messaging quorum for a specific sender chain
     /// @notice quorum is the number of extra ambs a message proof must go through and be validated
     /// @param srcChainId_ is the chain id from which the message (payload) is sent

@@ -58,8 +58,14 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
 
+    /// @inheritdoc ISuperRBAC
     function setSuperRegistry(address superRegistry_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
         superRegistry = ISuperRegistry(superRegistry_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function setRoleAdmin(bytes32 role_, bytes32 adminRole_) external override onlyRole(PROTOCOL_ADMIN_ROLE) {
+        _setRoleAdmin(role_, adminRole_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -83,7 +89,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     function stateSync(bytes memory data_) external override {
-        if (msg.sender != superRegistry.getAddress(superRegistry.ROLES_STATE_REGISTRY()))
+        if (msg.sender != superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY")))
             revert Error.NOT_ROLES_STATE_REGISTRY();
 
         AMBFactoryMessage memory rolesPayload = abi.decode(data_, (AMBFactoryMessage));
@@ -180,7 +186,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-        IBroadcaster(superRegistry.getAddress(superRegistry.ROLES_STATE_REGISTRY())).broadcastPayload{value: msg.value}(
+        IBroadcaster(superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))).broadcastPayload{value: msg.value}(
             msg.sender,
             ambIds,
             message_,

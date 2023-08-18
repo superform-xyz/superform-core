@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import {Broadcaster} from "../utils/Broadcaster.sol";
 import {ISuperformFactory} from "../../interfaces/ISuperformFactory.sol";
-import {IFactoryStateRegistry} from "../../interfaces/IFactoryStateRegistry.sol";
 import {PayloadState} from "../../types/DataTypes.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {Error} from "../../utils/Error.sol";
@@ -12,14 +11,14 @@ import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 /// @title FactoryStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between SuperformFactory deployed on all supported networks
-contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
+contract FactoryStateRegistry is Broadcaster {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyFactoryStateRegistryProcessor() {
         if (
-            !ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasFactoryStateRegistryProcessorRole(
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasFactoryStateRegistryProcessorRole(
                 msg.sender
             )
         ) revert Error.NOT_PROCESSOR();
@@ -47,8 +46,6 @@ contract FactoryStateRegistry is Broadcaster, IFactoryStateRegistry {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperformFactory(superRegistry.getAddress(superRegistry.SUPERFORM_FACTORY())).stateSync(
-            payloadBody[payloadId_]
-        );
+        ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).stateSync(payloadBody[payloadId_]);
     }
 }

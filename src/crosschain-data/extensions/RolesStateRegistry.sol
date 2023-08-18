@@ -17,7 +17,7 @@ contract RolesStateRegistry is Broadcaster {
 
     modifier onlyRolesStateRegistryProcessor() {
         if (
-            !ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).hasRolesStateRegistryProcessorRole(
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRolesStateRegistryProcessorRole(
                 msg.sender
             )
         ) revert Error.NOT_PROCESSOR();
@@ -46,6 +46,6 @@ contract RolesStateRegistry is Broadcaster {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperRBAC(superRegistry.getAddress(superRegistry.SUPER_RBAC())).stateSync(payloadBody[payloadId_]);
+        ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).stateSync(payloadBody[payloadId_]);
     }
 }

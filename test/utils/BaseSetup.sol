@@ -325,12 +325,12 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.superRBACC = SuperRBAC(vars.superRBAC);
             /// @dev 3 - Deploy SuperRegistry and assign roles
-            vars.superRegistry = address(new SuperRegistry{salt: salt}());
+            vars.superRegistry = address(new SuperRegistry{salt: salt}(vars.superRBAC));
             contracts[vars.chainId][bytes32(bytes("SuperRegistry"))] = vars.superRegistry;
             vars.superRegistryC = SuperRegistry(vars.superRegistry);
 
             vars.superRBACC.setSuperRegistry(vars.superRegistry);
-            vars.superRegistryC.setImmutables(vars.chainId, vars.canonicalPermit2, vars.superRBAC);
+            vars.superRegistryC.setPermit2(vars.canonicalPermit2);
 
             assert(vars.superRBACC.hasProtocolAdminRole(deployer));
 
@@ -593,6 +593,7 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
             contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
+            vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
 
             /// @dev 14 - Deploy MultiTx Processor
             vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
@@ -774,6 +775,12 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.MULTI_TX_PROCESSOR(),
                         getContract(vars.dstChainId, "MultiTxProcessor"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.PAYLOAD_HELPER(),
+                        getContract(vars.dstChainId, "PayloadHelper"),
                         vars.dstChainId
                     );
 
