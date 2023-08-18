@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import {Script} from "forge-std/Script.sol";
 import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
-
 /// @dev Protocol imports
 import {CoreStateRegistry} from "src/crosschain-data/extensions/CoreStateRegistry.sol";
 import {FactoryStateRegistry} from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
@@ -53,7 +52,7 @@ struct SetupVars {
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
-    address superRouter;
+    address superformRouter;
     address dstLzImplementation;
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
@@ -102,7 +101,7 @@ abstract contract AbstractDeploySingle is Script {
         "PayMaster"
     ];
 
-    bytes32 constant salt = "SUPERFORM_4RD_TEST";
+    bytes32 constant salt = "SUPERFORM_1ST_AUDIT_FREEZE_1";
 
     enum Chains {
         Ethereum,
@@ -301,7 +300,7 @@ abstract contract AbstractDeploySingle is Script {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
-    function _deploy(
+    function _deployStage1(
         uint256 i,
         uint256 trueIndex,
         Cycle cycle,
@@ -361,6 +360,7 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
         SuperRegistry(vars.superRegistry).setTwoStepsFormStateRegistry(vars.twoStepsFormStateRegistry);
+        SuperRBAC(vars.superRBAC).grantMinterRole(vars.twoStepsFormStateRegistry);
 
         // SuperRegistry(vars.superRegistry).setRolesStateRegistry(vars.rolesStateRegistry);
 
@@ -453,10 +453,14 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev 10 - Deploy SuperformRouter
 
-        vars.superRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superRouter;
+        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
-        SuperRegistry(vars.superRegistry).setSuperRouter(vars.superRouter);
+        SuperRegistry(vars.superRegistry).setSuperRouter(vars.superformRouter);
+
+        /// @dev grant extra roles to superformRouter
+        SuperRBAC(vars.superRBAC).grantMinterRole(vars.superformRouter);
+        SuperRBAC(vars.superRBAC).grantBurnerRole(vars.superformRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions = address(
@@ -499,28 +503,81 @@ abstract contract AbstractDeploySingle is Script {
         SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
 
         /// @dev 16 Setup extra RBAC
-        SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superRouter);
+        SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.superformRouter);
         SuperRBAC(vars.superRBAC).grantCoreContractsRole(vars.factory);
 
         /// FIXME: check if this is safe in all aspects
         /// @dev disabled as we are not using rolesStateRegistry for now
         /// SuperRBAC(vars.superRBAC).grantProtocolAdminRole(vars.rolesStateRegistry);
 
+        vm.stopBroadcast();
+
+        /// @dev Exports
+        for (uint256 j = 0; j < contractNames.length; j++) {
+            _exportContract(
+                chainNames[trueIndex],
+                contractNames[trueIndex],
+                getContract(vars.chainId, contractNames[j]),
+                vars.chainId
+            );
+        }
+    }
+
+    /// @dev stage 2 must be called only after stage 1 is complete for all chains!
+    function _deployStage2(
+        uint256 i, /// 0, 1, 2
+        uint256 trueIndex, /// 0, 1, 2, 3, 4, 5
+        Cycle cycle,
+        uint64[] memory s_superFormChainIds
+    ) internal setEnvDeploy(cycle) {
+        SetupVars memory vars;
+
+        vars.chainId = s_superFormChainIds[i];
+        vm.startBroadcast(deployerPrivateKey);
+
+        vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
+        vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
+        vars.celerImplementation = _readContract(chainNames[trueIndex], vars.chainId, "CelerImplementation");
+        vars.superRegistry = _readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry");
+        vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
+
+        /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < s_superFormChainIds.length; j++) {
             if (j != i) {
-                vars.dstChainId = s_superFormChainIds[j];
-                vars.dstLzChainId = lz_chainIds[j];
-                vars.dstHypChainId = hyperlane_chainIds[j];
-                vars.dstCelerChainId = celer_chainIds[j];
+                uint256 dstTrueIndex;
+                for (uint256 k = 0; i < chainIds.length; k++) {
+                    if (s_superFormChainIds[j] == chainIds[k]) {
+                        dstTrueIndex = k;
 
-                vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
-                vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
-                vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
+                        break;
+                    }
+                }
+                vars.dstChainId = s_superFormChainIds[j];
+                vars.dstLzChainId = lz_chainIds[dstTrueIndex];
+                vars.dstHypChainId = hyperlane_chainIds[dstTrueIndex];
+                vars.dstCelerChainId = celer_chainIds[dstTrueIndex];
+
+                vars.dstLzImplementation = _readContract(
+                    chainNames[dstTrueIndex],
+                    vars.dstChainId,
+                    "LayerzeroImplementation"
+                );
+                vars.dstHyperlaneImplementation = _readContract(
+                    chainNames[dstTrueIndex],
+                    vars.dstChainId,
+                    "HyperlaneImplementation"
+                );
+                vars.dstCelerImplementation = _readContract(
+                    chainNames[dstTrueIndex],
+                    vars.dstChainId,
+                    "CelerImplementation"
+                );
 
                 LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                     vars.dstLzChainId,
                     abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                 );
+
                 LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
                 LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
                     0, /// Defaults To Zero
@@ -548,9 +605,9 @@ abstract contract AbstractDeploySingle is Script {
                     vars.dstChainId,
                     vars.dstCelerChainId
                 );
-
                 SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
+                /// @dev these values are mocks and has to be replaced
                 /// swap gas cost: 50000
                 /// update gas cost: 40000
                 /// deposit gas cost: 70000
@@ -558,14 +615,14 @@ abstract contract AbstractDeploySingle is Script {
                 /// default gas price: 50 Gwei
                 PaymentHelper(payable(vars.paymentHelper)).addChain(
                     vars.dstChainId,
-                    address(0),
                     PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                    address(0),
                     50000,
                     40000,
                     70000,
                     80000,
-                    10 wei,
-                    50 * 10 ** 9 wei,
+                    12e8, /// 12 usd
+                    28 gwei,
                     10 wei
                 );
             } else {
@@ -587,16 +644,6 @@ abstract contract AbstractDeploySingle is Script {
             }
         }
         vm.stopBroadcast();
-
-        /// @dev Exports
-        for (uint256 j = 0; j < contractNames.length; j++) {
-            exportContract(
-                chainNames[trueIndex],
-                contractNames[j],
-                getContract(vars.chainId, contractNames[j]),
-                vars.chainId
-            );
-        }
     }
 
     function _preDeploymentSetup() internal {
@@ -721,7 +768,7 @@ abstract contract AbstractDeploySingle is Script {
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
     }
 
-    function exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {
+    function _exportContract(string memory name, string memory label, address addr, uint64 chainId) internal {
         string memory json = vm.serializeAddress("EXPORTS", label, addr);
         string memory root = vm.projectRoot();
 
@@ -737,6 +784,16 @@ abstract contract AbstractDeploySingle is Script {
                 string(abi.encodePacked(root, chainOutputFolder, name, "-", vm.toString(block.timestamp), ".json"))
             );
         }
+    }
+
+    function _readContract(string memory name, uint64 chainId, string memory contractName) internal returns (address) {
+        string memory json;
+        string memory root = vm.projectRoot();
+        json = string(
+            abi.encodePacked(root, "/script/output/", vm.toString(uint256(chainId)), "/", name, "-latest.json")
+        );
+        string memory file = vm.readFile(json);
+        return vm.parseJsonAddress(file, string(abi.encodePacked(".", contractName)));
     }
 
     function _deployWithCreate2(bytes memory bytecode_, uint256 salt_) internal returns (address addr) {

@@ -250,6 +250,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /// @dev allows protocol admin to configure layerzero endpoint
     /// @param endpoint_ is the layerzero endpoint on the deployed network
     function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
+        if (endpoint_ == address(0)) revert Error.ZERO_ADDRESS();
         if (address(lzEndpoint) == address(0)) {
             lzEndpoint = ILayerZeroEndpoint(endpoint_);
         }

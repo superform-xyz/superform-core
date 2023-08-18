@@ -109,7 +109,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
-    ) internal virtual override returns (uint256 dstAmount) {
+    ) internal virtual override returns (uint256) {
         uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two step
         /// @dev state registry for re-processing at a later date
@@ -133,7 +133,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
-    ) internal virtual override returns (uint256 dstAmount) {
+    ) internal virtual override returns (uint256) {
         uint256 lockedTill = _requestUnlock(singleVaultData_.amount);
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two step
         /// @dev state registry for re-processing at a later date
