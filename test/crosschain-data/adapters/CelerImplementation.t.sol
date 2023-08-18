@@ -38,7 +38,7 @@ contract CelerImplementationTest is BaseSetup {
 
     function test_revert_setCelerBus_invalidMessageBus_invalidCaller() public {
         vm.startPrank(deployer);
-        vm.expectRevert();
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
         celerImplementation.setCelerBus(address(0));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
