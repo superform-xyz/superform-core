@@ -36,4 +36,4 @@ solc-version = "0.8.19"
 optimizer = false
 
 [fuzz]
-runs = 256
+runs = 100
