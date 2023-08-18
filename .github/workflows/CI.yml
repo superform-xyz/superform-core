@@ -53,13 +53,13 @@ jobs:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
           FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
-          BSC_RPC_URL: ${{ secrets.BSC_WSS_RPC_URL }}
-          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_WSS_RPC_URL }}
-          OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_WSS_RPC_URL }}
-          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_WSS_RPC_URL }}
-          POLYGON_RPC_URL: ${{ secrets.POLYGON_WSS_RPC_URL }}
-          AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_WSS_RPC_URL }}
-          FANTOM_RPC_URL: ${{ secrets.FANTOM_WSS_RPC_URL }}
+          BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+          ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
+          OPTIMISM_RPC_URL: ${{ secrets.OPTIMISM_RPC_URL }}
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          POLYGON_RPC_URL: ${{ secrets.POLYGON_RPC_URL }}
+          AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
+          FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
 
   #slither:
   #  runs-on: ubuntu-latest
