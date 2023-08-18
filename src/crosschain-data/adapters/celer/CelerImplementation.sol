@@ -200,7 +200,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     /// @dev allows protocol admin to configure the celer message bus
     /// @param messageBus_ is the celer message bus on the deployed network
     function setCelerBus(address messageBus_) external onlyProtocolAdmin {
-        if (messageBus_ == address(0)) revert();
+        if (messageBus_ == address(0)) revert Error.ZERO_ADDRESS();
         messageBus = IMessageBus(messageBus_);
     }
 

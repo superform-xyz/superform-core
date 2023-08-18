@@ -13,7 +13,6 @@ contract HyperlaneImplementationTest is BaseSetup {
     address public constant MAILBOX = 0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70;
     ISuperRegistry public superRegistry;
     HyperlaneImplementation hyperlaneImplementation;
-    address public bond;
 
     function setUp() public override {
         super.setUp();
@@ -21,129 +20,147 @@ contract HyperlaneImplementationTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         superRegistry = ISuperRegistry(getContract(ETH, "SuperRegistry"));
         hyperlaneImplementation = HyperlaneImplementation(payable(superRegistry.getAmbAddress(2)));
-        /// @dev malicious caller
-        bond = address(7);
-        /// @dev (who's a brokie)
-        vm.deal(bond, 1 ether);
     }
 
-    function test_setReceiver() public {
-        vm.startPrank(deployer);
-        hyperlaneImplementation.setReceiver(10, getContract(10, "HyperlaneImplementation")); /// optimism
-        hyperlaneImplementation.setReceiver(137, getContract(137, "HyperlaneImplementation")); /// polygon
+    function test_setReceiver(uint256 chainIdSeed_) public {
+        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
+        uint64 chainId = chainIds[chainIdSeed_ % chainIds.length];
+        vm.prank(deployer);
+        hyperlaneImplementation.setReceiver(uint32(chainId), getContract(chainId, "HyperlaneImplementation"));
 
-        assertEq(hyperlaneImplementation.authorizedImpl(10), getContract(10, "HyperlaneImplementation"));
-        assertEq(hyperlaneImplementation.authorizedImpl(137), getContract(137, "HyperlaneImplementation"));
+        assertEq(hyperlaneImplementation.authorizedImpl(uint32(chainId)), getContract(chainId, "HyperlaneImplementation"));
     }
 
-    function test_revert_setReceiver_invalidChainId_invalidAuthorizedImpl_invalidCaller() public {
+    function test_revert_setReceiver_invalidChainId_invalidAuthorizedImpl_invalidCaller(uint256 chainIdSeed_, address malice_) public {
+        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
+        uint64 chainId = chainIds[chainIdSeed_ % chainIds.length];
         vm.startPrank(deployer);
+
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        hyperlaneImplementation.setReceiver(0, getContract(10, "HyperlaneImplementation"));
+        hyperlaneImplementation.setReceiver(0, getContract(chainId, "HyperlaneImplementation"));
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        hyperlaneImplementation.setReceiver(10, address(0));
+        hyperlaneImplementation.setReceiver(uint32(chainId), address(0));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
 
         vm.stopPrank();
-        vm.prank(bond);
-        hyperlaneImplementation.setReceiver(10, getContract(10, "HyperlaneImplementation"));
+        vm.prank(malice_);
+        hyperlaneImplementation.setReceiver(uint32(chainId), getContract(chainId, "HyperlaneImplementation"));
     }
 
-    function test_setChainId() public {
-        vm.startPrank(deployer);
-        hyperlaneImplementation.setChainId(10, 10); /// optimism
-        hyperlaneImplementation.setChainId(137, 137); /// polygon
+    function test_setChainId(uint256 superChainIdSeed_, uint256 ambChainIdSeed_) public {
+        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
+        /// @dev hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
+        uint64 superChainId = chainIds[superChainIdSeed_ % chainIds.length];
+        uint64 ambChainId = hyperlane_chainIds[ambChainIdSeed_ % hyperlane_chainIds.length];
 
-        assertEq(hyperlaneImplementation.ambChainId(10), 10);
-        assertEq(hyperlaneImplementation.superChainId(137), 137);
+        vm.prank(deployer);
+        hyperlaneImplementation.setChainId(superChainId, uint32(ambChainId));
+
+        assertEq(hyperlaneImplementation.ambChainId(superChainId), ambChainId);
+        assertEq(hyperlaneImplementation.superChainId(uint32(ambChainId)), superChainId);
     }
 
-    function test_revert_setChainId_invalidChainId_invalidCaller() public {
+    function test_revert_setChainId_invalidChainId_invalidCaller(uint256 superChainIdSeed_, uint256 ambChainIdSeed_, address malice_) public {
         vm.startPrank(deployer);
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        hyperlaneImplementation.setChainId(10, 0); /// optimism
 
+        uint64 superChainId = chainIds[superChainIdSeed_ % chainIds.length];
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        hyperlaneImplementation.setChainId(0, 10); /// optimism
+        hyperlaneImplementation.setChainId(superChainId, 0);
+
+        uint64 ambChainId = celer_chainIds[ambChainIdSeed_ % hyperlane_chainIds.length];
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        hyperlaneImplementation.setChainId(0, uint32(ambChainId));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
 
         vm.stopPrank();
-        vm.prank(bond);
-        hyperlaneImplementation.setChainId(137, 137); /// polygon
+        vm.assume(malice_ != deployer);
+        vm.prank(malice_);
+        hyperlaneImplementation.setChainId(superChainId, uint32(ambChainId));
     }
 
-    function test_revert_broadcastPayload_invalidCaller() public {
+    function test_revert_broadcastPayload_invalidCaller(uint256 userSeed, address malice_) public {
+        uint256 userIndex = userSeed % users.length;
         vm.startPrank(deployer);
+
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
 
-        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
+        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-        vm.prank(bond);
+        vm.deal(malice_, 100 ether);
+        vm.prank(malice_);
         hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(
-            users[0],
+            users[userIndex],
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_broadcastPayload_invalidGasDstLength() public {
+    function test_revert_broadcastPayload_invalidGasDstLength(uint256 userSeed_, uint256 gasPerDstLenSeed, uint256 extraDataPerDstLenSeed) public {
         vm.startPrank(deployer);
+        uint256 userIndex = userSeed_ % users.length;
+        uint256 gasPerDstLen = bound(gasPerDstLenSeed, 1, chainIds.length);
+        uint256 extraDataPerDstLen = bound(extraDataPerDstLenSeed, 1, chainIds.length);
+        vm.assume(gasPerDstLen != extraDataPerDstLen);
+
         AMBMessage memory ambMessage;
         address coreStateRegistry;
 
-        (ambMessage, , coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
+        (ambMessage, , coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
 
-        uint256[] memory gasPerDst = new uint256[](5);
+        uint256[] memory gasPerDst = new uint256[](gasPerDstLen);
         for (uint i = 0; i < gasPerDst.length; i++) {
             gasPerDst[i] = 0.1 ether;
         }
 
         /// @dev keeping extraDataPerDst empty for now
-        bytes[] memory extraDataPerDst = new bytes[](1);
+        bytes[] memory extraDataPerDst = new bytes[](extraDataPerDstLen);
 
         BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
 
         vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
         vm.prank(coreStateRegistry);
         hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(
-            users[0],
+            users[userIndex],
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_dispatchPayload_invalidCaller() public {
+    function test_revert_dispatchPayload_invalidCaller(uint256 userSeed_, address malice_) public {
         vm.startPrank(deployer);
+        uint256 userIndex = userSeed_ % users.length;
+
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
 
-        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[0]);
+        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-        vm.prank(bond);
+        vm.deal(malice_, 100 ether);
+        vm.prank(malice_);
         hyperlaneImplementation.dispatchPayload{value: 0.1 ether}(
-            users[0],
+            users[userIndex],
             chainIds[5],
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_handle_duplicatePayload_invalidSrcChainSender_invalidCaller() public {
+    function test_revert_handle_duplicatePayload_invalidSrcChainSender_invalidCaller(address malice_) public {
         vm.startPrank(deployer);
         AMBMessage memory ambMessage;
 
         /// @dev setting authorizedImpl[ETH] to HyperlaneImplementation on ETH, as it was smh reset to 0 (after setting in BaseSetup)
-        hyperlaneImplementation.setReceiver(1, getContract(1, "HyperlaneImplementation"));
+        hyperlaneImplementation.setReceiver(uint32(ETH), getContract(ETH, "HyperlaneImplementation"));
 
-        (ambMessage, , ) = setupBroadcastPayloadAMBData(users[0]);
+        (ambMessage, , ) = setupBroadcastPayloadAMBData(address(hyperlaneImplementation));
 
         vm.prank(MAILBOX);
         hyperlaneImplementation.handle(
@@ -162,10 +179,10 @@ contract HyperlaneImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
         vm.prank(MAILBOX);
-        hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(bond))), abi.encode(ambMessage));
+        hyperlaneImplementation.handle(uint32(ETH), bytes32(uint256(uint160(malice_))), abi.encode(ambMessage));
 
         vm.expectRevert(Error.CALLER_NOT_MAILBOX.selector);
-        vm.prank(bond);
+        vm.prank(malice_);
         hyperlaneImplementation.handle(
             uint32(ETH),
             bytes32(uint256(uint160(address(hyperlaneImplementation)))),

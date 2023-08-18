@@ -11,7 +11,7 @@ libraries = []
 optimizer = true
 optimizer_runs = 200
 verbosity = 0
-ffi = true
+ffi = false
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
 
@@ -34,3 +34,6 @@ fantom_fork = "${FANTOM_LOCAL_URL}"
 [profile.ci]
 solc-version = "0.8.19"
 optimizer = false
+
+[fuzz]
+runs = 100
