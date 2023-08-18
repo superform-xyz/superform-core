@@ -15,6 +15,11 @@ contract RolesStateRegistry is Broadcaster {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
+    modifier onlySender() override {
+        if (superRegistry.getAddress(keccak256("SUPER_RBAC")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        _;
+    }
+
     modifier onlyRolesStateRegistryProcessor() {
         if (
             !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRolesStateRegistryProcessorRole(

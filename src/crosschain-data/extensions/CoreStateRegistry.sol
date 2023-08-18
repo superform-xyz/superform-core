@@ -54,8 +54,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     //////////////////////////////////////////////////////////////*/
 
     modifier onlySender() override {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasCoreContractsRole(msg.sender))
-            revert Error.NOT_CORE_CONTRACTS();
+        if (superRegistry.getAddress(keccak256("SUPERFORM_ROUTER")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 

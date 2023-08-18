@@ -376,13 +376,19 @@ contract SuperRBACTest is BaseSetup {
                 assertEq(abi.decode(statusAfter, (bool)), false);
             }
         }
+        vm.startPrank(deployer);
 
         /// try processing the same payload again
         for (uint256 i = 0; i < chainIds.length; i++) {
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
+                /// @dev re-grant roles state registry role in case it was revoked to test remaining of cases
+                if (superRBACRole_ == keccak256("ROLES_STATE_REGISTRY_PROCESSOR_ROLE")) {
+                    SuperRBAC(getContract(chainIds[i], "SuperRBAC")).grantRole(superRBACRole_, deployer);
+                }
 
                 vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
+
                 RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
             }
         }
@@ -393,6 +399,7 @@ contract SuperRBACTest is BaseSetup {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+
                 RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(2, "");
             }
         }
