@@ -22,7 +22,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
                         MODIFIER
     //////////////////////////////////////////////////////////////*/
     modifier onlyPaymentAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasPaymentAdminRole(msg.sender)) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasPaymentAdminRole(msg.sender)) {
             revert Error.NOT_PAYMENT_ADMIN();
         }
         _;
@@ -40,12 +40,12 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPayMaster
-    function withdrawToMultiTxProcessor(uint256 nativeAmount_) external onlyPaymentAdmin {
+    function withdrawTo(bytes32 superRegistryId_, uint256 nativeAmount_) external override onlyPaymentAdmin {
         if (nativeAmount_ > address(this).balance) {
             revert Error.INSUFFICIENT_NATIVE_AMOUNT();
         }
 
-        address receiver = superRegistry.multiTxProcessor();
+        address receiver = superRegistry.getAddress(superRegistryId_);
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
         }
@@ -54,61 +54,12 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     }
 
     /// @inheritdoc IPayMaster
-    function withdrawToTxProcessor(uint256 nativeAmount_) external onlyPaymentAdmin {
-        if (nativeAmount_ > address(this).balance) {
-            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
-        }
-
-        address receiver = superRegistry.txProcessor();
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        _withdrawNative(receiver, nativeAmount_);
-    }
-
-    /// @inheritdoc IPayMaster
-    function withdrawToTxUpdater(uint256 nativeAmount_) external onlyPaymentAdmin {
-        if (nativeAmount_ > address(this).balance) {
-            revert Error.INSUFFICIENT_NATIVE_AMOUNT();
-        }
-
-        address receiver = superRegistry.txUpdater();
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        _withdrawNative(receiver, nativeAmount_);
-    }
-
-    /// @inheritdoc IPayMaster
-    function rebalanceToMultiTxProcessor(LiqRequest memory req_) external onlyPaymentAdmin {
-        /// assuming all multi-tx processor across chains should be same; CREATE2
-        address receiver = superRegistry.multiTxProcessor();
-
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        _validateAndDispatchTokens(req_, receiver);
-    }
-
-    /// @inheritdoc IPayMaster
-    function rebalanceToTxProcessor(LiqRequest memory req_) external onlyPaymentAdmin {
-        /// assuming all tx processor across chains should be same; CREATE2
-        address receiver = superRegistry.txProcessor();
-
-        if (receiver == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        _validateAndDispatchTokens(req_, receiver);
-    }
-
-    /// @inheritdoc IPayMaster
-    function rebalanceToTxUpdater(LiqRequest memory req_) external onlyPaymentAdmin {
-        /// assuming all tx updater across chains should be same; CREATE2
-        address receiver = superRegistry.txUpdater();
+    function rebalanceTo(
+        bytes32 superRegistryId_,
+        LiqRequest memory req_,
+        uint64 dstChainId_
+    ) external override onlyPaymentAdmin {
+        address receiver = superRegistry.getAddressByChainId(superRegistryId_, dstChainId_);
 
         if (receiver == address(0)) {
             revert Error.ZERO_ADDRESS();
@@ -122,7 +73,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPayMaster
-    function makePayment(address user_) external payable {
+    function makePayment(address user_) external payable override {
         if (msg.value == 0) {
             revert Error.ZERO_MSG_VALUE();
         }

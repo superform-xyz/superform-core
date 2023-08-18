@@ -45,9 +45,12 @@ contract SocketValidator is BridgeValidator {
                 if (userRequest.receiverAddress != superform_) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
                 /// @dev if cross chain deposits, then receiver address must be the token bank
+
                 if (
-                    !(userRequest.receiverAddress == superRegistry.coreStateRegistryCrossChain(dstChainId_) ||
-                        userRequest.receiverAddress == superRegistry.multiTxProcessorCrossChain(dstChainId_))
+                    !(userRequest.receiverAddress ==
+                        superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), dstChainId_) ||
+                        userRequest.receiverAddress ==
+                        superRegistry.getAddressByChainId(keccak256("MULTI_TX_PROCESSOR"), dstChainId_))
                 ) revert Error.INVALID_TXDATA_RECEIVER();
             }
         } else {
@@ -65,7 +68,6 @@ contract SocketValidator is BridgeValidator {
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
         ISocketRegistry.UserRequest memory userRequest = _decodeCallData(txData_);
-
         return userRequest.receiverAddress == receiver_;
     }
 

@@ -57,7 +57,7 @@ contract PaymentHelper is IPaymentHelper {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
@@ -530,7 +530,7 @@ contract PaymentHelper is IPaymentHelper {
                 liqReq_[i].bridgeId != 0 &&
                 IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).validateReceiver(
                     liqReq_[i].txData,
-                    superRegistry.multiTxProcessor()
+                    superRegistry.getAddress(keccak256("MULTI_TX_PROCESSOR"))
                 )
             ) {
                 ++totalSwaps;
@@ -648,7 +648,8 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps generate the new payload id
     /// @dev next payload id = current payload id + 1
     function _getNextPayloadId() internal view returns (uint256 nextPayloadId) {
-        nextPayloadId = ReadOnlyBaseRegistry(superRegistry.coreStateRegistry()).payloadsCount();
+        nextPayloadId = ReadOnlyBaseRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")))
+            .payloadsCount();
         ++nextPayloadId;
     }
 

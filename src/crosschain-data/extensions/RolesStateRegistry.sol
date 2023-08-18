@@ -2,27 +2,27 @@
 pragma solidity 0.8.19;
 
 import {Broadcaster} from "../utils/Broadcaster.sol";
-import {ISuperformFactory} from "../../interfaces/ISuperformFactory.sol";
+import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 import {PayloadState} from "../../types/DataTypes.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {Error} from "../../utils/Error.sol";
-import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
 
-/// @title FactoryStateRegistry
+/// @title RolesStateRegistry
 /// @author Zeropoint Labs
-/// @dev enables communication between SuperformFactory deployed on all supported networks
-contract FactoryStateRegistry is Broadcaster {
+/// @dev enables communication between SuperRBAC deployed on all supported networks
+contract RolesStateRegistry is Broadcaster {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
+
     modifier onlySender() override {
-        if (superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.getAddress(keccak256("SUPER_RBAC")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
-    modifier onlyFactoryStateRegistryProcessor() {
+    modifier onlyRolesStateRegistryProcessor() {
         if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasFactoryStateRegistryProcessorRole(
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRolesStateRegistryProcessorRole(
                 msg.sender
             )
         ) revert Error.NOT_PROCESSOR();
@@ -37,10 +37,11 @@ contract FactoryStateRegistry is Broadcaster {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
     function processPayload(
         uint256 payloadId_,
         bytes memory /// not useful here
-    ) external payable virtual override onlyFactoryStateRegistryProcessor returns (bytes memory, bytes memory) {
+    ) external payable virtual override onlyRolesStateRegistryProcessor returns (bytes memory, bytes memory) {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }
@@ -50,6 +51,6 @@ contract FactoryStateRegistry is Broadcaster {
         }
 
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-        ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).stateSync(payloadBody[payloadId_]);
+        ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).stateSync(payloadBody[payloadId_]);
     }
 }

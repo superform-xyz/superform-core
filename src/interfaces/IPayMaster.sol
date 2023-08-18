@@ -21,29 +21,16 @@ interface IPayMaster {
                     PRIVILEGED ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev withdraws funds from pay master to multi tx processor on same chain
+    /// @dev withdraws funds from pay master to target id from superRegistry
+    /// @param superRegistryId_ is the id of the target address in superRegistry
     /// @param nativeAmount_ is the amount to withdraw from pay master
-    function withdrawToMultiTxProcessor(uint256 nativeAmount_) external;
+    function withdrawTo(bytes32 superRegistryId_, uint256 nativeAmount_) external;
 
-    /// @dev withdraws funds from pay master to tx processor on same chain
-    /// @param nativeAmount_ is the amount to withdraw from pay master
-    function withdrawToTxProcessor(uint256 nativeAmount_) external;
-
-    /// @dev withdraws funds from pay master to tx updater on same chain
-    /// @param nativeAmount_ is the amount to withdraw from pay master
-    function withdrawToTxUpdater(uint256 nativeAmount_) external;
-
-    /// @dev withdraws fund from pay master to multi-tx processor on different chain
+    /// @dev withdraws fund from pay master to target id from superRegistry
+    /// @param superRegistryId_ is the id of the target address in superRegistry
     /// @param req_ is the off-chain generated liquidity request to move funds
-    function rebalanceToMultiTxProcessor(LiqRequest memory req_) external;
-
-    /// @dev withdraws fund from pay master to tx processor on different chain
-    /// @param req_ is the off-chain generated liquidity request to move funds
-    function rebalanceToTxProcessor(LiqRequest memory req_) external;
-
-    /// @dev withdraws fund from pay master to tx updater on different chain
-    /// @param req_ is the off-chain generated liquidity request to move funds
-    function rebalanceToTxUpdater(LiqRequest memory req_) external;
+    /// @param dstChainId_ is the destination chain id
+    function rebalanceTo(bytes32 superRegistryId_, LiqRequest memory req_, uint64 dstChainId_) external;
 
     /*///////////////////////////////////////////////////////////////
                     EXTERNAL FUNCTIONS

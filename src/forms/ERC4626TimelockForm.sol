@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC4626TimelockVault} from "super-vaults/interfaces/IERC4626TimelockVault.sol";
-import {InitSingleVaultData, TimeLockPayload} from "../types/DataTypes.sol";
+import {InitSingleVaultData, TwoStepsPayload} from "../types/DataTypes.sol";
 import {LiqRequest} from "../types/LiquidityTypes.sol";
 import {ERC4626FormImplementation} from "./ERC4626FormImplementation.sol";
 import {BaseForm} from "../BaseForm.sol";
@@ -21,7 +21,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
     modifier onlyTwoStepStateRegistry() {
-        if (msg.sender != superRegistry.twoStepsFormStateRegistry()) {
+        if (msg.sender != superRegistry.getAddress(keccak256("TWO_STEPS_FORM_STATE_REGISTRY"))) {
             revert Error.NOT_TWO_STEP_STATE_REGISTRY();
         }
         _;
@@ -40,7 +40,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @param p_ the payload data
     function withdrawAfterCoolDown(
         uint256 amount_,
-        TimeLockPayload memory p_
+        TwoStepsPayload memory p_
     ) external onlyTwoStepStateRegistry returns (uint256 dstAmount) {
         IERC4626TimelockVault v = IERC4626TimelockVault(vault);
 
@@ -157,7 +157,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     ) internal {
-        ITwoStepsFormStateRegistry registry = ITwoStepsFormStateRegistry(superRegistry.twoStepsFormStateRegistry());
+        ITwoStepsFormStateRegistry registry = ITwoStepsFormStateRegistry(
+            superRegistry.getAddress(keccak256("TWO_STEPS_FORM_STATE_REGISTRY"))
+        );
         registry.receivePayload(type_, srcSender_, srcChainId_, lockedTill_, data_);
     }
 }

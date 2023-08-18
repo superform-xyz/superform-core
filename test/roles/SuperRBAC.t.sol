@@ -4,9 +4,10 @@ pragma solidity 0.8.19;
 import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
 
-import {ISuperformFactory} from "src/interfaces/ISuperformFactory.sol";
+import {RolesStateRegistry} from "src/crosschain-data/extensions/RolesStateRegistry.sol";
 import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
 import {SuperRBAC} from "src/settings/SuperRBAC.sol";
+
 import {Error} from "src/utils/Error.sol";
 
 contract SuperRBACTest is BaseSetup {
@@ -28,27 +29,33 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantProtocolAdminRole() public {
-        vm.prank(deployer);
-        superRBAC.grantProtocolAdminRole(address(0x1));
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.PROTOCOL_ADMIN_ROLE(), address(0x1));
+        vm.stopPrank();
         assertEq(superRBAC.hasProtocolAdminRole(address(0x1)), true);
     }
 
     function test_revokeProtocolAdminRole() public {
-        vm.prank(deployer);
-        superRBAC.revokeProtocolAdminRole(deployer);
+        vm.startPrank(deployer);
+        superRBAC.revokeRole(superRBAC.PROTOCOL_ADMIN_ROLE(), deployer);
+        vm.stopPrank();
+
         assertEq(superRBAC.hasProtocolAdminRole(deployer), false);
     }
 
     function test_grantPaymentAdminRole() public {
-        vm.prank(deployer);
-        superRBAC.grantPaymentAdminRole(address(0x1));
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.PAYMENT_ADMIN_ROLE(), address(0x1));
+        vm.stopPrank();
+
         assertEq(superRBAC.hasPaymentAdminRole(address(0x1)), true);
     }
 
     function test_revokePaymentAdminRole() public {
         _revokeAndCheck(
-            superRBAC.revokePaymentAdminRole.selector,
             superRBAC.hasPaymentAdminRole.selector,
+            superRBAC.PAYMENT_ADMIN_ROLE(),
+            superRegistry.PAYMENT_ADMIN(),
             deployer,
             "",
             generateBroadcastParams(5, 2),
@@ -57,27 +64,34 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantEmergencyAdminRole() public {
-        vm.prank(deployer);
-        superRBAC.grantEmergencyAdminRole(address(0x1));
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.EMERGENCY_ADMIN_ROLE(), address(0x1));
+        vm.stopPrank();
+
         assertEq(superRBAC.hasEmergencyAdminRole(address(0x1)), true);
     }
 
     function test_revokeEmergencyAdminRole() public {
-        vm.prank(deployer);
-        superRBAC.revokeEmergencyAdminRole(deployer);
+        vm.startPrank(deployer);
+        superRBAC.revokeRole(superRBAC.EMERGENCY_ADMIN_ROLE(), deployer);
+        vm.stopPrank();
+
         assertEq(superRBAC.hasEmergencyAdminRole(deployer), false);
     }
 
     function test_grantSwapperRole() public {
-        vm.prank(deployer);
-        superRBAC.grantSwapperRole(address(0x1));
-        assertEq(superRBAC.hasSwapperRole(address(0x1)), true);
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.MULTI_TX_SWAPPER_ROLE(), address(0x1));
+        vm.stopPrank();
+
+        assertEq(superRBAC.hasMultiTxProcessorSwapperRole(address(0x1)), true);
     }
 
-    function test_revokeSwapperRole() public {
+    function test_revokeMultiTxSwapperRole() public {
         _revokeAndCheck(
-            superRBAC.revokeSwapperRole.selector,
-            superRBAC.hasSwapperRole.selector,
+            superRBAC.hasMultiTxProcessorSwapperRole.selector,
+            superRBAC.MULTI_TX_SWAPPER_ROLE(),
+            superRegistry.MULTI_TX_SWAPPER(),
             deployer,
             "",
             generateBroadcastParams(5, 2),
@@ -86,18 +100,23 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantCoreContractsRole() public {
-        vm.prank(deployer);
-        superRBAC.grantCoreContractsRole(address(0x1));
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.CORE_CONTRACTS_ROLE(), address(0x1));
+        vm.stopPrank();
+
         assertEq(superRBAC.hasCoreContractsRole(address(0x1)), true);
     }
 
+    /// SuperformRouter and Factory
     function test_revokeCoreContractsRole() public {
-        vm.prank(deployer);
-        superRBAC.grantCoreContractsRole(deployer);
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.CORE_CONTRACTS_ROLE(), deployer);
+        vm.stopPrank();
 
         _revokeAndCheck(
-            superRBAC.revokeCoreContractsRole.selector,
             superRBAC.hasCoreContractsRole.selector,
+            superRBAC.CORE_CONTRACTS_ROLE(),
+            superRegistry.SUPERFORM_FACTORY(),
             deployer,
             "SuperformFactory",
             generateBroadcastParams(5, 2),
@@ -105,16 +124,19 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
-    function test_grantProcessorRole() public {
-        vm.prank(deployer);
-        superRBAC.grantProcessorRole(address(0x1));
-        assertEq(superRBAC.hasProcessorRole(address(0x1)), true);
+    function test_grantCoreStateRegistryProcessorRole() public {
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
+        vm.stopPrank();
+
+        assertEq(superRBAC.hasCoreStateRegistryProcessorRole(address(0x1)), true);
     }
 
-    function test_revokeProcessorRole() public {
+    function test_revokeCoreStateRegistryProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.revokeProcessorRole.selector,
-            superRBAC.hasProcessorRole.selector,
+            superRBAC.hasCoreStateRegistryProcessorRole.selector,
+            superRBAC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(),
+            superRegistry.CORE_REGISTRY_PROCESSOR(),
             deployer,
             "",
             generateBroadcastParams(5, 2),
@@ -122,16 +144,19 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
-    function test_grantTwoStepsProcessorRole() public {
-        vm.prank(deployer);
-        superRBAC.grantTwoStepsProcessorRole(address(0x1));
-        assertEq(superRBAC.hasTwoStepsProcessorRole(address(0x1)), true);
+    function test_grantRolesStateRegistryProcessorRole() public {
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.ROLES_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
+        vm.stopPrank();
+
+        assertEq(superRBAC.hasRolesStateRegistryProcessorRole(address(0x1)), true);
     }
 
-    function test_revokeTwoStepsProcessorRole() public {
+    function test_revokeRolesStateRegistryProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.revokeTwoStepsProcessorRole.selector,
-            superRBAC.hasTwoStepsProcessorRole.selector,
+            superRBAC.hasRolesStateRegistryProcessorRole.selector,
+            superRBAC.ROLES_STATE_REGISTRY_PROCESSOR_ROLE(),
+            superRegistry.ROLES_REGISTRY_PROCESSOR(),
             deployer,
             "",
             generateBroadcastParams(5, 2),
@@ -139,16 +164,59 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
-    function test_grantUpdaterRole() public {
-        vm.prank(deployer);
-        superRBAC.grantUpdaterRole(address(0x1));
-        assertEq(superRBAC.hasUpdaterRole(address(0x1)), true);
+    function test_grantFactoryStateRegistryProcessorRole() public {
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.FACTORY_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
+        vm.stopPrank();
+
+        assertEq(superRBAC.hasFactoryStateRegistryProcessorRole(address(0x1)), true);
     }
 
-    function test_revokeUpdaterRole() public {
+    function test_revokeFactoryStateRegistryProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.revokeUpdaterRole.selector,
-            superRBAC.hasUpdaterRole.selector,
+            superRBAC.hasFactoryStateRegistryProcessorRole.selector,
+            superRBAC.FACTORY_STATE_REGISTRY_PROCESSOR_ROLE(),
+            superRegistry.FACTORY_REGISTRY_PROCESSOR(),
+            deployer,
+            "",
+            generateBroadcastParams(5, 2),
+            800 ether
+        );
+    }
+
+    function test_grantTwoStepsStateRegistryProcessorRole() public {
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
+        vm.stopPrank();
+
+        assertEq(superRBAC.hasTwoStepsStateRegistryProcessorRole(address(0x1)), true);
+    }
+
+    function test_revokeTwoStepsStateRegistrvyProcessorRole() public {
+        _revokeAndCheck(
+            superRBAC.hasTwoStepsStateRegistryProcessorRole.selector,
+            superRBAC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(),
+            superRegistry.TWO_STEPS_REGISTRY_PROCESSOR(),
+            deployer,
+            "",
+            generateBroadcastParams(5, 2),
+            800 ether
+        );
+    }
+
+    function test_grantCoreStateRegistryUpdaterRole() public {
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.CORE_STATE_REGISTRY_UPDATER_ROLE(), address(0x1));
+        vm.stopPrank();
+
+        assertEq(superRBAC.hasCoreStateRegistryUpdaterRole(address(0x1)), true);
+    }
+
+    function test_revokeCoreStateRegistryUpdaterRole() public {
+        _revokeAndCheck(
+            superRBAC.hasCoreStateRegistryUpdaterRole.selector,
+            superRBAC.CORE_STATE_REGISTRY_UPDATER_ROLE(),
+            superRegistry.CORE_REGISTRY_UPDATER(),
             deployer,
             "",
             generateBroadcastParams(5, 2),
@@ -157,15 +225,18 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantMinterRole() public {
-        vm.prank(deployer);
-        superRBAC.grantMinterRole(address(0x1));
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.MINTER_ROLE(), address(0x1));
+        vm.stopPrank();
+
         assertEq(superRBAC.hasMinterRole(address(0x1)), true);
     }
 
     function test_revokeMinterRole() public {
         _revokeAndCheck(
-            superRBAC.revokeMinterRole.selector,
             superRBAC.hasMinterRole.selector,
+            superRBAC.MINTER_ROLE(),
+            superRegistry.TWO_STEPS_FORM_STATE_REGISTRY(),
             deployer,
             "TwoStepsFormStateRegistry",
             generateBroadcastParams(5, 2),
@@ -174,15 +245,18 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_grantBurnerRole() public {
-        vm.prank(deployer);
-        superRBAC.grantBurnerRole(address(0x1));
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.BURNER_ROLE(), address(0x1));
+        vm.stopPrank();
+
         assertEq(superRBAC.hasBurnerRole(address(0x1)), true);
     }
 
     function test_revokeBurnerRole() public {
         _revokeAndCheck(
-            superRBAC.revokeBurnerRole.selector,
             superRBAC.hasBurnerRole.selector,
+            superRBAC.BURNER_ROLE(),
+            superRegistry.SUPERFORM_ROUTER(),
             deployer,
             "SuperformRouter",
             generateBroadcastParams(5, 2),
@@ -201,29 +275,17 @@ contract SuperRBACTest is BaseSetup {
 
         superRegistry.setStateRegistryAddress(registryIds, registryAddress);
 
-        superRBAC.grantMinterStateRegistryRole(address(0x1));
+        superRBAC.grantRole(superRBAC.MINTER_STATE_REGISTRY_ROLE(), address(0x1));
+        vm.stopPrank();
+
         assertEq(superRBAC.hasMinterStateRegistryRole(address(0x1)), true);
-    }
-
-    function test_grantStateRegistryMinterRoleToWrongAddress() public {
-        vm.startPrank(deployer);
-
-        uint8[] memory registryIds = new uint8[](1);
-        registryIds[0] = 1;
-
-        address[] memory registryAddress = new address[](1);
-        registryAddress[0] = address(0x1);
-
-        superRegistry.setStateRegistryAddress(registryIds, registryAddress);
-
-        vm.expectRevert(Error.NOT_VALID_STATE_REGISTRY.selector);
-        superRBAC.grantMinterStateRegistryRole(address(0x2));
     }
 
     function test_revokeStateRegistryMinterRole() public {
         _revokeAndCheck(
-            superRBAC.revokeMinterStateRegistryRole.selector,
             superRBAC.hasMinterStateRegistryRole.selector,
+            superRBAC.MINTER_STATE_REGISTRY_ROLE(),
+            superRegistry.CORE_STATE_REGISTRY(),
             deployer,
             "CoreStateRegistry",
             generateBroadcastParams(5, 2),
@@ -231,9 +293,33 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
+    function test_stateSync_invalidCaller() public {
+        vm.expectRevert(Error.NOT_ROLES_STATE_REGISTRY.selector);
+        superRBAC.stateSync("");
+    }
+
+    function test_stateSync_addressToRevokeIs0() public {
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        vm.prank(getContract(ETH, "RolesStateRegistry"));
+        superRBAC.stateSync(
+            abi.encode(
+                AMBFactoryMessage(
+                    keccak256("SYNC_REVOKE"),
+                    abi.encode(keccak256("MINTER_ROLE"), keccak256("NON_EXISTENT_ID"))
+                )
+            )
+        );
+    }
+
+    function test_setup_new_role() public {
+        vm.prank(deployer);
+        superRBAC.setRoleAdmin(keccak256("NEW_ROLE"), keccak256("PROTOCOL_ADMIN_ROLE"));
+    }
+
     function _revokeAndCheck(
-        bytes4 revokeRole_,
         bytes4 checkRole_,
+        bytes32 superRBACRole_,
+        bytes32 superRegistryAddressId_,
         address actor_,
         string memory member_,
         bytes memory extraData_,
@@ -252,39 +338,70 @@ contract SuperRBACTest is BaseSetup {
         }
 
         /// @dev setting the status as false in chain id = ETH
-        (bool success, ) = address(superRBAC).call{value: value_}(
-            abi.encodeWithSelector(revokeRole_, memberAddress, extraData_)
+        superRBAC.revokeRoleSuperBroadcast{value: value_}(
+            superRBACRole_,
+            memberAddress,
+            extraData_,
+            superRegistryAddressId_
         );
 
         vm.prank(deployer);
-        /// @dev broadcasting on hold
-        // _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
+        _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
 
         /// @dev role revoked on ETH
         (, bytes memory isRevoked) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, memberAddress));
         assertEq(abi.decode(isRevoked, (bool)), false);
 
         /// @dev broadcasting revokes to other chains on hold
-        // SuperRBAC superRBAC_;
+        SuperRBAC superRBAC_;
         // /// @dev process the payload across all other chains
-        // for (uint256 i = 0; i < chainIds.length; i++) {
-        //     if (bytes(member_).length > 0) {
-        //         memberAddress = getContract(chainIds[i], member_);
-        //     }
-        //     if (chainIds[i] != ETH) {
-        //         vm.selectFork(FORKS[chainIds[i]]);
-        //         superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (bytes(member_).length > 0) {
+                memberAddress = getContract(chainIds[i], member_);
+            }
+            if (chainIds[i] != ETH) {
+                vm.selectFork(FORKS[chainIds[i]]);
+                superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
 
-        //         (, bytes memory statusBefore) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
-        //         RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
-        //         (, bytes memory statusAfter) = address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
+                (, bytes memory statusBefore) = address(superRBAC_).call(
+                    abi.encodeWithSelector(checkRole_, memberAddress)
+                );
+                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
+                (, bytes memory statusAfter) = address(superRBAC_).call(
+                    abi.encodeWithSelector(checkRole_, memberAddress)
+                );
 
-        //         /// @dev assert status update before and after processing the payload
-        //         assertEq(abi.decode(statusBefore, (bool)), true);
-        //         assertEq(abi.decode(statusAfter, (bool)), false);
+                /// @dev assert status update before and after processing the payload
+                assertEq(abi.decode(statusBefore, (bool)), true);
+                assertEq(abi.decode(statusAfter, (bool)), false);
+            }
+        }
+        vm.startPrank(deployer);
 
-        //         vm.selectFork(FORKS[ETH]);
-        //     }
-        // }
+        /// try processing the same payload again
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (chainIds[i] != ETH) {
+                vm.selectFork(FORKS[chainIds[i]]);
+                /// @dev re-grant roles state registry role in case it was revoked to test remaining of cases
+                if (superRBACRole_ == keccak256("ROLES_STATE_REGISTRY_PROCESSOR_ROLE")) {
+                    SuperRBAC(getContract(chainIds[i], "SuperRBAC")).grantRole(superRBACRole_, deployer);
+                }
+
+                vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
+
+                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
+            }
+        }
+
+        /// try processing not available payload id
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            if (chainIds[i] != ETH) {
+                vm.selectFork(FORKS[chainIds[i]]);
+
+                vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
+
+                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(2, "");
+            }
+        }
     }
 }

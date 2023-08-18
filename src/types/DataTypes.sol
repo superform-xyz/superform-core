@@ -110,7 +110,7 @@ enum TimeLockStatus {
 }
 
 /// @dev holds information about the timelock payload
-struct TimeLockPayload {
+struct TwoStepsPayload {
     uint8 isXChain;
     address srcSender;
     uint64 srcChainId;

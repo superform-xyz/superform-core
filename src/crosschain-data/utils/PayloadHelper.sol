@@ -5,7 +5,7 @@ import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
 import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import {IPayloadHelper} from "../../interfaces/IPayloadHelper.sol";
-import {CallbackType, ReturnMultiData, ReturnSingleData, InitMultiVaultData, InitSingleVaultData, TimeLockPayload} from "../../types/DataTypes.sol";
+import {CallbackType, ReturnMultiData, ReturnSingleData, InitMultiVaultData, InitSingleVaultData, TwoStepsPayload} from "../../types/DataTypes.sol";
 import {DataLib} from "../../libraries/DataLib.sol";
 
 /// @title PayloadHelper
@@ -118,7 +118,7 @@ contract PayloadHelper is IPayloadHelper {
         override
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
-        TimeLockPayload memory payload = twoStepRegistry.getTimeLockPayload(timelockPayloadId_);
+        TwoStepsPayload memory payload = twoStepRegistry.getTwoStepsPayload(timelockPayloadId_);
 
         return (
             payload.srcSender,

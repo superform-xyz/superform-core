@@ -35,16 +35,19 @@ foundryup
 ### Project structure
 
     .
+    ├── script
     ├── src
       ├── crosschain-data
       ├── crosschain-liquidity
       ├── forms
       ├── interfaces
+      ├── libraries
+      ├── payments
       ├── settings
-      ├── test
       ├── types
       ├── utils
       ├── vendor
+    ├── test
     ├── foundry.toml
     └── README.md
 
@@ -82,7 +85,7 @@ $ forge test
 
 <img width="4245" alt="Superform v1 Smart Contract Architecture (4)" src="https://github.com/superform-xyz/superform-core/assets/33469661/0b057534-20ea-4871-8655-89454c366bf2">
 
-1. All external actions, except SuperForm creation, start in `SuperRouter.sol`. The user has to provide a "StateRequest" containing the amounts being actioned into each vault in each chain, as well as liquidity information, about how the actual deposit/withdraw process will be handled
+1. All external actions, except SuperForm creation, start in `SuperformRouter.sol`. The user has to provide a "StateRequest" containing the amounts being actioned into each vault in each chain, as well as liquidity information, about how the actual deposit/withdraw process will be handled
 2. Deposits/withdraws can be single or multiple destination, single or multi vault, cross-chain or direct chain. For deposit actions, the user can provide a different input token on a source chain and receive the actual underlying token (different than input token) on the destination chain, after swapping and bridging in a single call. Sometimes it is also needed to perform another extra swap at the destination for tokens with low bridge liquidity, through the usage of `MultiTxProcessor.sol`. For withdraw actions, user can choose to receive a different token than the one redeemed for from the vault, back at the source chain.
 3. The vaults themselves are wrapped by Forms - code implementations that adapt to the needs of a given vault. This wrapping action leads to the creation of SuperForms (the triplet of superForm address, form id and chain id).
 4. Any user can wrap a vault into a SuperForm using the SuperForm Factory but only the protocol may add new Form implementations.
@@ -93,7 +96,7 @@ $ forge test
 
 The typical flow for a deposit xchain transaction is:
 
-- Validation of the input data in `SuperRouter.sol`.
+- Validation of the input data in `SuperformRouter.sol`.
 - Dispatching the input tokens to the liquidity bridge using an implementation of a `BridgeValidator.sol` and `LiquidityHandler.sol`.
 - Creating the `AMBMessage` with the information about what is going to be deposited and by whom.
 - Messaging the information about the deposits to the vaults using `CoreStateRegistry.sol`. Typically this is done with the combination of two different AMBs by splitting the message and the proof for added security.
@@ -103,7 +106,7 @@ The typical flow for a deposit xchain transaction is:
 
 The typical flow for a withdraw xchain transaction is:
 
-- Validation of the input data in `SuperRouter.sol`.
+- Validation of the input data in `SuperformRouter.sol`.
 - Burning the corresponding SuperPositions owned by the user in accordance to the input data.
 - Creating the `AMBMessage` with the information about what is going to be withdrawn and by whom.
 - Messaging the information about the withdraws to the vaults using `CoreStateRegistry.sol`. The process follows the same pattern as above

@@ -24,12 +24,13 @@ contract MultiTxProcessor is IMultiTxProcessor {
     ISuperRegistry public immutable superRegistry;
 
     modifier onlySwapper() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasSwapperRole(msg.sender)) revert Error.NOT_SWAPPER();
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasMultiTxProcessorSwapperRole(msg.sender))
+            revert Error.NOT_SWAPPER();
         _;
     }
 
     modifier onlyEmergencyAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasEmergencyAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender))
             revert Error.NOT_EMERGENCY_ADMIN();
         _;
     }
@@ -62,7 +63,7 @@ contract MultiTxProcessor is IMultiTxProcessor {
             chainId,
             false, /// to enter the if-else case of the bridge validator loop
             address(0),
-            superRegistry.coreStateRegistry(),
+            superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")),
             approvalToken_
         );
 

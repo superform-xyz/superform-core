@@ -24,7 +24,8 @@ contract FormBeacon is IFormBeacon {
     bool public paused;
 
     modifier onlySuperformFactory() {
-        if (superRegistry.superformFactory() != msg.sender) revert Error.NOT_SUPERFORM_FACTORY();
+        if (superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")) != msg.sender)
+            revert Error.NOT_SUPERFORM_FACTORY();
         _;
     }
 

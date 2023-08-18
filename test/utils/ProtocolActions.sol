@@ -1553,7 +1553,9 @@ abstract contract ProtocolActions is BaseSetup {
 
         vars.superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
-        vars.superPositions = IERC1155A(ISuperRegistry(vars.stateRegistry).superPositions());
+        vars.superPositions = IERC1155A(
+            ISuperRegistry(vars.stateRegistry).getAddress(ISuperRegistry(vars.stateRegistry).SUPER_POSITIONS())
+        );
         vm.prank(users[args.user]);
 
         /// @dev singleId approvals from ERC1155A are used here https://github.com/superform-xyz/ERC1155A, avoiding approving all superPositions at once
@@ -2123,7 +2125,9 @@ abstract contract ProtocolActions is BaseSetup {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
-        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
+        address superPositionsAddress = ISuperRegistry(superRegistryAddress).getAddress(
+            ISuperRegistry(superRegistryAddress).SUPER_POSITIONS()
+        );
 
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
@@ -2147,7 +2151,9 @@ abstract contract ProtocolActions is BaseSetup {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
-        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
+        address superPositionsAddress = ISuperRegistry(superRegistryAddress).getAddress(
+            ISuperRegistry(superRegistryAddress).SUPER_POSITIONS()
+        );
 
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
@@ -2165,7 +2171,9 @@ abstract contract ProtocolActions is BaseSetup {
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
-        address superPositionsAddress = ISuperRegistry(superRegistryAddress).superPositions();
+        address superPositionsAddress = ISuperRegistry(superRegistryAddress).getAddress(
+            ISuperRegistry(superRegistryAddress).SUPER_POSITIONS()
+        );
 
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 

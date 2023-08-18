@@ -35,7 +35,8 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
                                 Modifiers
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.superRBAC()).hasProtocolAdminRole(msg.sender)) revert Error.NOT_PROTOCOL_ADMIN();
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender))
+            revert Error.NOT_PROTOCOL_ADMIN();
         _;
     }
 
@@ -69,7 +70,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         /// calculate the exact fee needed
         uint256 feesReq = messageBus.calcFee(message_);
 
-        /// NOTE: works only on EVM-networks & contracts using CREATE2/CREATE3
         messageBus.sendMessage{value: feesReq}(authorizedImpl[chainId], chainId, message_);
 
         /// Refund unused fees
