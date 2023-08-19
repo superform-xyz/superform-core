@@ -61,6 +61,14 @@ jobs:
           AVALANCHE_RPC_URL: ${{ secrets.AVALANCHE_RPC_URL }}
           FANTOM_RPC_URL: ${{ secrets.FANTOM_RPC_URL }}
 
+  codecov:
+    name: Upload coverage reports to Codecov
+    runs-on: "SuperformCore"
+    steps:
+      - uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   #slither:
   #  runs-on: ubuntu-latest
   # steps:
