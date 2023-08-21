@@ -176,6 +176,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
         bytes[] memory returnMessagesNormalWithdraw;
+        uint256[][] memory amountsToRemintPerDst;
 
         /// @dev for all form kinds including timelocked (first stage)
         /// @dev if there is a failure we immediately re-mint superShares
@@ -183,11 +184,12 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev this is only for x-chain actions
         if (action.action == Actions.Withdraw) {
             bool toAssert;
-            (success, returnMessagesNormalWithdraw, toAssert) = _stage6_process_superPositions_withdraw(
-                action,
-                vars,
-                multiSuperformsData
-            );
+            (
+                success,
+                returnMessagesNormalWithdraw,
+                amountsToRemintPerDst,
+                toAssert
+            ) = _stage6_process_superPositions_withdraw(action, vars, multiSuperformsData, singleSuperformsData);
             if (!success) {
                 console.log("Stage 6 failed");
                 return;
@@ -201,7 +203,7 @@ abstract contract ProtocolActions is BaseSetup {
                     vars,
                     spAmountSummed,
                     spAmountBeforeWithdrawPerDst,
-                    returnMessagesNormalWithdraw
+                    amountsToRemintPerDst
                 );
             }
         }
@@ -1053,8 +1055,12 @@ abstract contract ProtocolActions is BaseSetup {
     function _stage6_process_superPositions_withdraw(
         TestAction memory action,
         StagesLocalVars memory vars,
-        MultiVaultSFData[] memory multiSuperformsData
-    ) internal returns (bool success, bytes[] memory returnMessages, bool toAssert) {
+        MultiVaultSFData[] memory multiSuperformsData,
+        SingleVaultSFData[] memory singleSuperformsData
+    )
+        internal
+        returns (bool success, bytes[] memory returnMessages, uint256[][] memory amountsToRemintPerDst, bool toAssert)
+    {
         /// @dev assume it will pass by default
         success = true;
         toAssert = false;
@@ -1062,6 +1068,10 @@ abstract contract ProtocolActions is BaseSetup {
 
         uint256 toChainId;
         returnMessages = new bytes[](vars.nDestinations);
+
+        amountsToRemintPerDst = new uint256[][](vars.nDestinations);
+
+        uint256[] memory amountsToRemint;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             toChainId = DST_CHAINS[i];
 
@@ -1083,12 +1093,47 @@ abstract contract ProtocolActions is BaseSetup {
                         PAYLOAD_ID[CHAIN_0]++;
                     }
 
+                    if (action.multiVaults) {
+                        amountsToRemint = new uint256[](multiSuperformsData[i].superformIds.length);
+
+                        for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; j++) {
+                            amountsToRemint[j] = multiSuperformsData[i].amounts[j];
+                            bool found = false;
+                            for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
+                                if (revertingWithdrawSFs[i][k] == multiSuperformsData[i].superformIds[j]) {
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                amountsToRemint[j] = 0;
+                                found = false;
+                            }
+                        }
+                    } else {
+                        amountsToRemint = new uint256[](1);
+                        amountsToRemint[0] = singleSuperformsData[i].amount;
+                        bool found;
+
+                        for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
+                            if (revertingWithdrawSFs[i][k] == singleSuperformsData[i].superformId) {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) {
+                            amountsToRemint[0] = 0;
+                        }
+                    }
+
                     (, returnMessages[i], ) = _processPayload(
                         PAYLOAD_ID[CHAIN_0],
                         CHAIN_0,
                         action.testType,
                         action.revertError
                     );
+
+                    amountsToRemintPerDst[i] = amountsToRemint;
                 }
             }
         }
@@ -2747,29 +2792,24 @@ abstract contract ProtocolActions is BaseSetup {
         StagesLocalVars memory vars,
         uint256[][] memory spAmountsBeforeWithdraw,
         uint256[] memory spAmountBeforeWithdrawPerDst,
-        bytes[] memory returnMessages
+        uint256[][] memory amountsToRemintPerDst
     ) internal {
         vm.selectFork(FORKS[CHAIN_0]);
         uint256[] memory spAmountFinal;
-        ReturnMultiData memory returnMultiData;
-
         bool partialWithdrawVault;
         bool[] memory partialWithdrawVaults;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             /// @dev TODO probably not testing multiDstMultIVault same chain due to no return message for failed cases? - Joao
-            if (action.multiVaults && returnMessages[i].length > 0) {
+            if (action.multiVaults && amountsToRemintPerDst[i].length > 0) {
                 partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
-
-                /// @dev this obtains amounts that failed from returned data obtained as a return from process payload
-                returnMultiData = abi.decode(abi.decode(returnMessages[i], (AMBMessage)).params, (ReturnMultiData));
 
                 /// @dev obtain amounts to assert
                 spAmountFinal = _spAmountsMultiAfterFailedWithdraw(
                     multiSuperformsData[i],
                     action.user,
                     spAmountsBeforeWithdraw[i],
-                    returnMultiData.amounts
+                    amountsToRemintPerDst[i]
                 );
 
                 /// @dev assert
@@ -2781,7 +2821,7 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             } else if (!action.multiVaults) {
                 partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
-                if (returnMessages[i].length > 0) {
+                if (amountsToRemintPerDst[i].length > 0 && amountsToRemintPerDst[i][0] != 0) {
                     if (!partialWithdrawVault) {
                         /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous deposit
                         _assertSingleVaultBalance(
