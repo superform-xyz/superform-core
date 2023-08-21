@@ -13,19 +13,19 @@ interface IPaymentHelper {
 
     /// @dev admin config destination chain config for estimation
     /// @param chainId_ is the identifier of new chain id
-    /// @param dstNativeFeedOracle_ is the native price feed oracle
-    /// @param dstGasPriceOracle_ is the gas price oracle
+    /// @param nativeFeedOracle_ is the native price feed oracle
+    /// @param gasPriceOracle_ is the gas price oracle
     /// @param swapGasUsed_ is the swap gas params
     /// @param updateGasUsed_ is the update gas params
     /// @param depositGasUsed_ is the deposit per vault gas on the chain
     /// @param withdrawGasUsed_ is the withdraw per vault gas on the chain
-    /// @param defaultNativePrice_ is the native price on the dst chain
-    /// @param defaultGasPrice_ is the gas price on the dst chain
+    /// @param defaultNativePrice_ is the native price on the specified chain
+    /// @param defaultGasPrice_ is the gas price on the specified chain
     /// @param dstGasPerKB_ is the gas per size of data
     function addChain(
         uint64 chainId_,
-        address dstNativeFeedOracle_,
-        address dstGasPriceOracle_,
+        address nativeFeedOracle_,
+        address gasPriceOracle_,
         uint256 swapGasUsed_,
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
