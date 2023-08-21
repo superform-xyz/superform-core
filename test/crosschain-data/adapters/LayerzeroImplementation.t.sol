@@ -50,16 +50,17 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.deal(bond, 1 ether);
     }
 
-    // function test_setLzEndpoint(address lzEndPoint_) public {
-    //     /// @dev resetting lzEndpoint's storage slot to 0 (which was set in BaseSetup)
-    //     vm.store(address(layerzeroImplementation), bytes32(uint256(1)), bytes32(uint256(0)));
-    //     vm.assume(lzEndPoint_ != address(0));
+    function test_setLzEndpoint(address lzEndPoint_) public {
+        /// @dev resetting lzEndpoint's storage slot to 0 (which was set in BaseSetup)
+        vm.store(address(layerzeroImplementation), bytes32(uint256(0)), bytes32(uint256(0)));
+        vm.assume(lzEndPoint_ != address(0));
+        console.log(address(layerzeroImplementation.lzEndpoint()));
 
-    //     vm.prank(deployer);
-    //     layerzeroImplementation.setLzEndpoint(lzEndPoint_);
+        vm.prank(deployer);
+        layerzeroImplementation.setLzEndpoint(lzEndPoint_);
 
-    //     assertEq(address(layerzeroImplementation.lzEndpoint()), lzEndPoint_);
-    // }
+        assertEq(address(layerzeroImplementation.lzEndpoint()), lzEndPoint_);
+    }
 
     function test_revert_setLzEndpoint_invalidLzEndpoint_invalidCaller(address malice_) public {
         vm.prank(deployer);
