@@ -77,8 +77,14 @@ interface ISuperformFactory {
     /// @dev allows an admin to change the status of a form
     /// @param formBeaconId_ is the id of the form beacon
     /// @param status_ is the new status
+    /// @param dstChainIds_ are the chain ids to broadcast the current change to
     /// @param extraData_ is optional & passed when broadcasting of status is needed
-    function changeFormBeaconPauseStatus(uint32 formBeaconId_, bool status_, bytes memory extraData_) external payable;
+    function changeFormBeaconPauseStatus(
+        uint32 formBeaconId_,
+        bool status_,
+        uint64[] memory dstChainIds_,
+        bytes memory extraData_
+    ) external payable;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions

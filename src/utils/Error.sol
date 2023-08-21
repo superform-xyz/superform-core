@@ -200,6 +200,9 @@ library Error {
     /// @dev thrown if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
 
+    /// @dev thrown if remote receiver is zero address
+    error ZERO_REMOTE_RECEIVER();
+
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS
     //////////////////////////////////////////////////////////////*/

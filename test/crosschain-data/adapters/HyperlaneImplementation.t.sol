@@ -28,10 +28,16 @@ contract HyperlaneImplementationTest is BaseSetup {
         vm.prank(deployer);
         hyperlaneImplementation.setReceiver(uint32(chainId), getContract(chainId, "HyperlaneImplementation"));
 
-        assertEq(hyperlaneImplementation.authorizedImpl(uint32(chainId)), getContract(chainId, "HyperlaneImplementation"));
+        assertEq(
+            hyperlaneImplementation.authorizedImpl(uint32(chainId)),
+            getContract(chainId, "HyperlaneImplementation")
+        );
     }
 
-    function test_revert_setReceiver_invalidChainId_invalidAuthorizedImpl_invalidCaller(uint256 chainIdSeed_, address malice_) public {
+    function test_revert_setReceiver_invalidChainId_invalidAuthorizedImpl_invalidCaller(
+        uint256 chainIdSeed_,
+        address malice_
+    ) public {
         /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
         uint64 chainId = chainIds[chainIdSeed_ % chainIds.length];
         vm.startPrank(deployer);
@@ -62,7 +68,11 @@ contract HyperlaneImplementationTest is BaseSetup {
         assertEq(hyperlaneImplementation.superChainId(uint32(ambChainId)), superChainId);
     }
 
-    function test_revert_setChainId_invalidChainId_invalidCaller(uint256 superChainIdSeed_, uint256 ambChainIdSeed_, address malice_) public {
+    function test_revert_setChainId_invalidChainId_invalidCaller(
+        uint256 superChainIdSeed_,
+        uint256 ambChainIdSeed_,
+        address malice_
+    ) public {
         vm.startPrank(deployer);
 
         uint64 superChainId = chainIds[superChainIdSeed_ % chainIds.length];
@@ -96,12 +106,17 @@ contract HyperlaneImplementationTest is BaseSetup {
         vm.prank(malice_);
         hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(
             users[userIndex],
+            _getBroadcastChains(ETH),
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_broadcastPayload_invalidGasDstLength(uint256 userSeed_, uint256 gasPerDstLenSeed, uint256 extraDataPerDstLenSeed) public {
+    function test_revert_broadcastPayload_invalidGasDstLength(
+        uint256 userSeed_,
+        uint256 gasPerDstLenSeed,
+        uint256 extraDataPerDstLenSeed
+    ) public {
         vm.startPrank(deployer);
         uint256 userIndex = userSeed_ % users.length;
         uint256 gasPerDstLen = bound(gasPerDstLenSeed, 1, chainIds.length);
@@ -127,6 +142,7 @@ contract HyperlaneImplementationTest is BaseSetup {
         vm.prank(coreStateRegistry);
         hyperlaneImplementation.broadcastPayload{value: 0.1 ether}(
             users[userIndex],
+            _getBroadcastChains(ETH),
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );

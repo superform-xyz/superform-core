@@ -1057,6 +1057,25 @@ abstract contract BaseSetup is DSTest, Test {
         }
     }
 
+    /*//////////////////////////////////////////////////////////////
+                        INTERNAL HELPERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev will return the broadcast chainids array
+    function _getBroadcastChains(uint64 currChainId) internal view returns (uint64[] memory) {
+        uint64[] memory broadcastChainIds = new uint64[](chainIds.length - 1);
+        uint256 currIndex;
+        for (uint256 i; i < chainIds.length; i++) {
+            if (chainIds[i] != currChainId) {
+                broadcastChainIds[currIndex] = chainIds[i];
+                console.log(currIndex);
+                currIndex++;
+            }
+        }
+
+        return broadcastChainIds;
+    }
+
     /// @dev will sync the payloads for broadcast
     function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();

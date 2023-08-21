@@ -153,6 +153,7 @@ contract SuperformFactory is ISuperformFactory {
     function changeFormBeaconPauseStatus(
         uint32 formBeaconId_,
         bool paused_,
+        uint64[] memory dstChainIds_,
         bytes memory extraData_
     ) external payable override onlyProtocolAdmin {
         if (formBeacon[formBeaconId_] == address(0)) revert Error.INVALID_FORM_ID();
@@ -166,7 +167,7 @@ contract SuperformFactory is ISuperformFactory {
                 abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, formBeaconId_, paused_)
             );
 
-            _broadcast(abi.encode(factoryPayload), extraData_);
+            _broadcast(abi.encode(factoryPayload), dstChainIds_, extraData_);
         }
     }
 
@@ -249,8 +250,9 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @dev interacts with factory state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
+    /// @param dstChainIds_ are the dst chains to broadcast the message to.
     /// @param extraData_ is the amb override information.
-    function _broadcast(bytes memory message_, bytes memory extraData_) internal {
+    function _broadcast(bytes memory message_, uint64[] memory dstChainIds_, bytes memory extraData_) internal {
         (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData_, (uint8[], bytes));
 
         /// @dev ambIds are validated inside the factory state registry
@@ -258,6 +260,7 @@ contract SuperformFactory is ISuperformFactory {
         IBroadcaster(superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))).broadcastPayload{value: msg.value}(
             msg.sender,
             ambIds,
+            dstChainIds_,
             message_,
             broadcastParams
         );

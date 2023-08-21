@@ -23,7 +23,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
-    uint16[] public broadcastChains;
     ISuperRegistry public immutable superRegistry;
     ILayerZeroEndpoint public lzEndpoint;
 
@@ -85,20 +84,25 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /// @inheritdoc IAmbImplementation
-    function broadcastPayload(address srcSender_, bytes memory message_, bytes memory extraData_) external payable {
+    function broadcastPayload(
+        address srcSender_,
+        uint64[] memory dstChainIds_,
+        bytes memory message_,
+        bytes memory extraData_
+    ) external payable {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.NOT_STATE_REGISTRY();
         }
 
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-        uint256 totalChains = broadcastChains.length;
+        uint256 totalChains = dstChainIds_.length;
 
         if (d.gasPerDst.length != totalChains || d.extraDataPerDst.length != totalChains) {
             revert Error.INVALID_EXTRA_DATA_LENGTHS();
         }
 
         for (uint256 i; i < totalChains; ) {
-            uint16 dstChainId = broadcastChains[i];
+            uint16 dstChainId = ambChainId[dstChainIds_[i]];
             _lzSend(dstChainId, message_, payable(srcSender_), address(0x0), d.extraDataPerDst[i], d.gasPerDst[i]);
 
             unchecked {
@@ -119,8 +123,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
 
-        /// NOTE: @dev should handle a way to pop
-        broadcastChains.push(ambChainId_);
+        emit ChainAdded(superChainId_);
     }
 
     /*///////////////////////////////////////////////////////////////

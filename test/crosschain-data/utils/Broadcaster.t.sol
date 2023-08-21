@@ -37,6 +37,7 @@ contract BroadcasterTest is BaseSetup {
         factoryStateRegistry.broadcastPayload(
             bond,
             ambIds,
+            _getBroadcastChains(ETH),
             abi.encode(420),
             abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB))
         );
@@ -74,6 +75,7 @@ contract BroadcasterTest is BaseSetup {
         factoryStateRegistry.broadcastPayload{value: 10 wei}(
             bond,
             ambIds,
+            _getBroadcastChains(ETH),
             abi.encode(AMBMessage(420, bytes("whatif"))),
             abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB))
         );
@@ -86,6 +88,7 @@ contract BroadcasterTest is BaseSetup {
         factoryStateRegistry.broadcastPayload{value: 10 wei}(
             bond,
             ambIds,
+            _getBroadcastChains(ETH),
             abi.encode(AMBMessage(420, bytes("whatif"))),
             abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB))
         );

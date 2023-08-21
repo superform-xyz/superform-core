@@ -341,6 +341,7 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.revokeRoleSuperBroadcast{value: value_}(
             superRBACRole_,
             memberAddress,
+            _getBroadcastChains(ETH),
             extraData_,
             superRegistryAddressId_
         );

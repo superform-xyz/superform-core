@@ -20,11 +20,13 @@ interface ISuperRBAC {
     /// @dev revokes the role_ from superRegistryAddressId_ on all chains
     /// @param role_ the role to revoke
     /// @param addressToRevoke_ the address to revoke the role from
+    /// @param dstChainIds_ the chain ids of destination to broadcast to
     /// @param extraData_ amb config if broadcasting is required
     /// @param superRegistryAddressId_ the super registry address id
     function revokeRoleSuperBroadcast(
         bytes32 role_,
         address addressToRevoke_,
+        uint64[] memory dstChainIds_,
         bytes memory extraData_,
         bytes32 superRegistryAddressId_
     ) external payable;

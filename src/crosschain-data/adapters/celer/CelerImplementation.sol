@@ -23,8 +23,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     IMessageBus public messageBus;
     ISuperRegistry public immutable superRegistry;
 
-    uint64[] public broadcastChains;
-
     mapping(uint64 => uint64) public ambChainId;
     mapping(uint64 => uint64) public superChainId;
     mapping(uint64 => address) public authorizedImpl;
@@ -84,6 +82,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     /// @inheritdoc IAmbImplementation
     function broadcastPayload(
         address srcSender_,
+        uint64[] memory dstChainIds_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual {
@@ -91,7 +90,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
             revert Error.NOT_STATE_REGISTRY();
         }
 
-        uint256 totalChains = broadcastChains.length;
+        uint256 totalChains = dstChainIds_.length;
 
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
 
@@ -104,9 +103,14 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         feesReq = feesReq * totalChains;
 
         for (uint64 i; i < totalChains; ) {
-            uint64 chainId = broadcastChains[i];
+            uint64 chainId = dstChainIds_[i];
+            address receiver = authorizedImpl[chainId];
 
-            messageBus.sendMessage{value: d.gasPerDst[i]}(authorizedImpl[chainId], chainId, message_);
+            if (receiver == address(0)) {
+                revert Error.ZERO_REMOTE_RECEIVER();
+            }
+
+            messageBus.sendMessage{value: d.gasPerDst[i]}(receiver, chainId, message_);
 
             unchecked {
                 ++i;
@@ -133,8 +137,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
-
-        broadcastChains.push(ambChainId_);
 
         emit ChainAdded(superChainId_);
     }

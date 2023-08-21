@@ -83,7 +83,11 @@ contract CelerImplementationTest is BaseSetup {
         assertEq(celerImplementation.superChainId(ambChainId), superChainId);
     }
 
-    function test_revert_setChainId_invalidChainId_invalidCaller(uint256 superChainIdSeed_, uint256 ambChainIdSeed_, address malice_) public {
+    function test_revert_setChainId_invalidChainId_invalidCaller(
+        uint256 superChainIdSeed_,
+        uint256 ambChainIdSeed_,
+        address malice_
+    ) public {
         vm.startPrank(deployer);
 
         uint64 superChainId = chainIds[superChainIdSeed_ % chainIds.length];
@@ -131,6 +135,7 @@ contract CelerImplementationTest is BaseSetup {
         vm.prank(coreStateRegistry);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
             users[userIndex],
+            _getBroadcastChains(ETH),
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
@@ -138,12 +143,17 @@ contract CelerImplementationTest is BaseSetup {
         vm.prank(coreStateRegistry);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
             users[userIndex],
+            _getBroadcastChains(ETH),
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_broadcastPayload_invalidGasDstLength(uint256 userSeed_, uint256 gasPerDstLenSeed, uint256 extraDataPerDstLenSeed) public {
+    function test_revert_broadcastPayload_invalidGasDstLength(
+        uint256 userSeed_,
+        uint256 gasPerDstLenSeed,
+        uint256 extraDataPerDstLenSeed
+    ) public {
         vm.startPrank(deployer);
         uint256 userIndex = userSeed_ % users.length;
         uint256 gasPerDstLen = bound(gasPerDstLenSeed, 1, chainIds.length);
@@ -169,6 +179,7 @@ contract CelerImplementationTest is BaseSetup {
         vm.prank(coreStateRegistry);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
             users[userIndex],
+            _getBroadcastChains(ETH),
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
@@ -190,6 +201,7 @@ contract CelerImplementationTest is BaseSetup {
         vm.prank(malice_);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
             users[userIndex],
+            _getBroadcastChains(ETH),
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
@@ -210,7 +222,12 @@ contract CelerImplementationTest is BaseSetup {
 
         vm.prank(coreStateRegistry);
         /// @dev note first arg to be dai
-        celerImplementation.broadcastPayload{value: 0.1 ether}(dai, abi.encode(ambMessage), abi.encode(ambExtraData));
+        celerImplementation.broadcastPayload{value: 0.1 ether}(
+            dai,
+            _getBroadcastChains(ETH),
+            abi.encode(ambMessage),
+            abi.encode(ambExtraData)
+        );
     }
 
     function test_revert_dispatchPayload_gasRefundFailed_invalidCaller(uint256 chainIdSeed_, address malice_) public {

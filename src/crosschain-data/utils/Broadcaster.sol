@@ -23,15 +23,16 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
     function broadcastPayload(
         address srcSender_,
         uint8[] memory ambIds_,
+        uint64[] memory dstChainIds_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable override onlySender {
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
-        _broadcastPayload(srcSender_, ambIds_[0], d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
+        _broadcastPayload(srcSender_, ambIds_[0], dstChainIds_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
 
         if (ambIds_.length > 1) {
-            _broadcastProof(srcSender_, ambIds_, d.gasPerAMB, message_, d.extraDataPerAMB);
+            _broadcastProof(srcSender_, ambIds_, dstChainIds_, d.gasPerAMB, message_, d.extraDataPerAMB);
         }
     }
 
@@ -43,6 +44,7 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
     function _broadcastPayload(
         address srcSender_,
         uint8 ambId_,
+        uint64[] memory dstChainIds_,
         uint256 gasToPay_,
         bytes memory message_,
         bytes memory extraData_
@@ -67,13 +69,14 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
             revert Error.INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.broadcastPayload{value: gasToPay_}(srcSender_, abi.encode(newData), extraData_);
+        ambImplementation.broadcastPayload{value: gasToPay_}(srcSender_, dstChainIds_, abi.encode(newData), extraData_);
     }
 
     /// @dev broadcasts the proof(hash of the message_) through individual message bridge implementations
     function _broadcastProof(
         address srcSender_,
         uint8[] memory ambIds_,
+        uint64[] memory dstChainIds_,
         uint256[] memory gasToPay_,
         bytes memory message_,
         bytes[] memory extraData_
@@ -107,7 +110,12 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
                 revert Error.INVALID_BRIDGE_ID();
             }
 
-            tempImpl.broadcastPayload{value: gasToPay_[i]}(srcSender_, abi.encode(newData), extraData_[i]);
+            tempImpl.broadcastPayload{value: gasToPay_[i]}(
+                srcSender_,
+                dstChainIds_,
+                abi.encode(newData),
+                extraData_[i]
+            );
 
             unchecked {
                 ++i;

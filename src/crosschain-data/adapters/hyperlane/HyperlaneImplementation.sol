@@ -24,8 +24,6 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     IInterchainGasPaymaster public immutable igp;
     ISuperRegistry public immutable superRegistry;
 
-    uint32[] public broadcastChains;
-
     mapping(uint64 => uint32) public ambChainId;
     mapping(uint32 => uint64) public superChainId;
     mapping(uint32 => address) public authorizedImpl;
@@ -84,6 +82,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @inheritdoc IAmbImplementation
     function broadcastPayload(
         address srcSender_,
+        uint64[] memory dstChainIds_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual {
@@ -92,16 +91,21 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         }
 
         BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-        uint256 totalChains = broadcastChains.length;
+        uint256 totalChains = dstChainIds_.length;
 
         if (d.gasPerDst.length != totalChains || d.extraDataPerDst.length != totalChains) {
             revert Error.INVALID_EXTRA_DATA_LENGTHS();
         }
 
         for (uint64 i; i < totalChains; i++) {
-            uint32 domain = broadcastChains[i];
+            uint32 domain = ambChainId[dstChainIds_[i]];
+            address receiver = authorizedImpl[domain];
 
-            bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
+            if (receiver == address(0)) {
+                revert Error.ZERO_REMOTE_RECEIVER();
+            }
+
+            bytes32 messageId = mailbox.dispatch(domain, castAddr(receiver), message_);
 
             igp.payForGas{value: d.gasPerDst[i]}(
                 messageId,
@@ -123,9 +127,6 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
-
-        /// NOTE: @dev should handle a way to pop
-        broadcastChains.push(ambChainId_);
 
         emit ChainAdded(superChainId_);
     }

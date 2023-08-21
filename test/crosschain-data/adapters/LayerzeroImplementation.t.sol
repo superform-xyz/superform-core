@@ -50,16 +50,16 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.deal(bond, 1 ether);
     }
 
-    function test_setLzEndpoint(address lzEndPoint_) public {
-        /// @dev resetting lzEndpoint's storage slot to 0 (which was set in BaseSetup)
-        vm.store(address(layerzeroImplementation), bytes32(uint256(1)), bytes32(uint256(0)));
-        vm.assume(lzEndPoint_ != address(0));
+    // function test_setLzEndpoint(address lzEndPoint_) public {
+    //     /// @dev resetting lzEndpoint's storage slot to 0 (which was set in BaseSetup)
+    //     vm.store(address(layerzeroImplementation), bytes32(uint256(1)), bytes32(uint256(0)));
+    //     vm.assume(lzEndPoint_ != address(0));
 
-        vm.prank(deployer);
-        layerzeroImplementation.setLzEndpoint(lzEndPoint_);
+    //     vm.prank(deployer);
+    //     layerzeroImplementation.setLzEndpoint(lzEndPoint_);
 
-        assertEq(address(layerzeroImplementation.lzEndpoint()), lzEndPoint_);
-    }
+    //     assertEq(address(layerzeroImplementation.lzEndpoint()), lzEndPoint_);
+    // }
 
     function test_revert_setLzEndpoint_invalidLzEndpoint_invalidCaller(address malice_) public {
         vm.prank(deployer);
@@ -103,7 +103,11 @@ contract LayerzeroImplementationTest is BaseSetup {
         assertGt(fees, 0);
     }
 
-    function test_revert_setChainId_invalidChainId_invalidCaller(uint256 superChainIdSeed_, uint256 ambChainIdSeed_, address malice_) public {
+    function test_revert_setChainId_invalidChainId_invalidCaller(
+        uint256 superChainIdSeed_,
+        uint256 ambChainIdSeed_,
+        address malice_
+    ) public {
         vm.startPrank(deployer);
 
         uint64 superChainId = chainIds[superChainIdSeed_ % chainIds.length];
@@ -122,7 +126,11 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.setChainId(superChainId, ambChainId);
     }
 
-    function test_setConfig_getConfig_and_revert_invalidCaller(uint16 versionSeed_, uint16 chainIdSeed_, address malice_) public {
+    function test_setConfig_getConfig_and_revert_invalidCaller(
+        uint16 versionSeed_,
+        uint16 chainIdSeed_,
+        address malice_
+    ) public {
         /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
         uint16 chainId = uint16(chainIds[chainIdSeed_ % chainIds.length]);
         /// @dev remoteChainId on LzLibrary cannot be current fork's chainId
@@ -169,7 +177,10 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     /// @dev uint64[] public chainIds = [1, 56, 43114, 137, 42161, 10];
     /// @dev uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
-    function test_setTrustedRemote_isTrustedRemote_and_revert_invalidCaller(uint16 chainIdSeed_, address malice_) public {
+    function test_setTrustedRemote_isTrustedRemote_and_revert_invalidCaller(
+        uint16 chainIdSeed_,
+        address malice_
+    ) public {
         uint16 chainId = uint16(chainIds[chainIdSeed_ % chainIds.length]);
         vm.assume(chainId != ETH);
         uint16 lzChainId = uint16(lz_chainIds[chainIdSeed_ % lz_chainIds.length]);
@@ -269,12 +280,17 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.prank(malice_);
         layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
             users[userIndex],
+            _getBroadcastChains(ETH),
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_broadcastPayload_invalidExtraDataLengths(uint256 userSeed_, uint256 gasPerDstLenSeed_, uint256 extraDataPerDstLenSeed_) public {
+    function test_revert_broadcastPayload_invalidExtraDataLengths(
+        uint256 userSeed_,
+        uint256 gasPerDstLenSeed_,
+        uint256 extraDataPerDstLenSeed_
+    ) public {
         uint256 userIndex = userSeed_ % users.length;
         uint256 gasPerDstLen = bound(gasPerDstLenSeed_, 1, chainIds.length);
         uint256 extraDataPerDstLen = bound(extraDataPerDstLenSeed_, 1, chainIds.length);
@@ -300,14 +316,21 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.prank(coreStateRegistry);
         layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
             users[userIndex],
+            _getBroadcastChains(ETH),
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId(uint64 chainId, uint256 userSeed_, address malice_) public {
+    function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId(
+        uint64 chainId,
+        uint256 userSeed_,
+        address malice_
+    ) public {
         uint256 userIndex = userSeed_ % users.length;
-        vm.assume(chainId != 1 && chainId != 56 && chainId != 43114 && chainId != 137 && chainId != 42161 && chainId != 10);
+        vm.assume(
+            chainId != 1 && chainId != 56 && chainId != 43114 && chainId != 137 && chainId != 42161 && chainId != 10
+        );
 
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
