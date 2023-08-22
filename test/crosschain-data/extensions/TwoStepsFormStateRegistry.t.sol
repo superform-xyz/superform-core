@@ -79,7 +79,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         vm.prank(deployer);
-        twoStepRegistry.processPayload(1, bytes(""));
+        twoStepRegistry.processPayload(1);
     }
 
     function _legacySuperformPackWithShift() internal view returns (uint256 superformId_) {

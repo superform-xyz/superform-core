@@ -155,6 +155,11 @@ interface ISuperRegistry {
     /// @return registryAddress_ is the address of the state registry
     function getStateRegistry(uint8 registryId_) external view returns (address registryAddress_);
 
+    /// @dev gets the id of the amb
+    /// @param ambAddress_ is the address of an amb
+    /// @return ambId_ is the identifier of an amb
+    function getAmbId(address ambAddress_) external view returns (uint8 ambId_);
+
     /// @dev gets the id of the registry
     /// @notice reverts if the id is not found
     /// @param registryAddress_ is the address of the state registry

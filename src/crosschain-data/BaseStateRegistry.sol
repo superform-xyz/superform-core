@@ -35,6 +35,12 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /// @dev maps payloads to their current status
     mapping(uint256 => PayloadState) public payloadTracking;
 
+    /// @dev maps payloads to the amb ids that delivered them
+    mapping(uint256 => uint8) public msgAMB;
+
+    /// @dev maps payloads to the amb ids that delivered them
+    mapping(bytes32 => uint8[]) public proofAMB;
+
     /// @dev sender varies based on functionality
     /// @notice inheriting contracts should override this function (else not safe)
     /// @dev with general revert to protect dispatchPaylod in case of non override
@@ -85,6 +91,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             bytes32 proofHash = abi.decode(data.params, (bytes32));
             ++messageQuorum[proofHash];
 
+            proofAMB[proofHash].push(superRegistry.getAmbId(msg.sender));
+
             emit ProofReceived(data.params);
         } else {
             /// @dev if message, store header and body of it
@@ -93,14 +101,15 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             payloadBody[payloadsCount] = data.params;
             payloadHeader[payloadsCount] = data.txInfo;
 
+            msgAMB[payloadsCount] = superRegistry.getAmbId(msg.sender);
+
             emit PayloadReceived(srcChainId_, superRegistry.chainId(), payloadsCount);
         }
     }
 
     /// @inheritdoc IBaseStateRegistry
     function processPayload(
-        uint256 payloadId_,
-        bytes memory ambOverride_
+        uint256 payloadId_
     ) external payable virtual override returns (bytes memory savedMessage, bytes memory returnMessage);
 
     /*///////////////////////////////////////////////////////////////

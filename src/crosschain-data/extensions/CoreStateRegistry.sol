@@ -9,6 +9,7 @@ import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
 import {ICoreStateRegistry} from "../../interfaces/ICoreStateRegistry.sol";
 import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
 import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
+import {IPaymentHelper} from "../../interfaces/IPaymentHelper.sol";
 import {IBaseForm} from "../../interfaces/IBaseForm.sol";
 import {IBridgeValidator} from "../../interfaces/IBridgeValidator.sol";
 import {LiqRequest} from "../../types/DataTypes.sol";
@@ -103,14 +104,17 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         /// @dev set the new payload body
         payloadBody[payloadId_] = newPayloadBody;
+        bytes32 newPayloadProof = keccak256(abi.encode(AMBMessage(v.prevPayloadHeader, newPayloadBody)));
 
-        /// @dev re-set previous message quorum to 0
-        delete messageQuorum[v.prevPayloadProof];
+        if (newPayloadProof != v.prevPayloadProof) {
+            /// @dev set new message quorum
+            messageQuorum[newPayloadProof] = messageQuorum[v.prevPayloadProof];
+            proofAMB[newPayloadProof] = proofAMB[v.prevPayloadProof];
 
-        /// @dev set new message quorum
-        messageQuorum[
-            keccak256(abi.encode(AMBMessage(v.prevPayloadHeader, newPayloadBody)))
-        ] = getRequiredMessagingQuorum(v.srcChainId);
+            /// @dev re-set previous message quorum to 0
+            delete messageQuorum[v.prevPayloadProof];
+            delete proofAMB[v.prevPayloadProof];
+        }
 
         /// @dev define the payload status as updated
         payloadTracking[payloadId_] = PayloadState.UPDATED;
@@ -149,14 +153,17 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         /// @dev set the new payload body
         payloadBody[payloadId_] = newPayloadBody;
+        bytes32 newPayloadProof = keccak256(abi.encode(AMBMessage(v.prevPayloadHeader, newPayloadBody)));
 
-        /// @dev re-set previous message quorum to 0
-        delete messageQuorum[v.prevPayloadProof];
+        if (newPayloadProof != v.prevPayloadProof) {
+            /// @dev set new message quorum
+            messageQuorum[newPayloadProof] = messageQuorum[v.prevPayloadProof];
+            proofAMB[newPayloadProof] = proofAMB[v.prevPayloadProof];
 
-        /// @dev set new message quorum
-        messageQuorum[
-            keccak256(abi.encode(AMBMessage(v.prevPayloadHeader, newPayloadBody)))
-        ] = getRequiredMessagingQuorum(v.srcChainId);
+            /// @dev re-set previous message quorum to 0
+            delete messageQuorum[v.prevPayloadProof];
+            delete proofAMB[v.prevPayloadProof];
+        }
 
         /// @dev define the payload status as updated
         payloadTracking[payloadId_] = PayloadState.UPDATED;
@@ -166,8 +173,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
     /// @inheritdoc BaseStateRegistry
     function processPayload(
-        uint256 payloadId_,
-        bytes memory ackExtraData_
+        uint256 payloadId_
     )
         external
         payable
@@ -222,9 +228,22 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             }
         }
 
+        uint8[] memory proofIds = proofAMB[v._proof];
+
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
         if (returnMessage.length > 0) {
-            _dispatchAcknowledgement(v.srcChainId, returnMessage, ackExtraData_);
+            uint8[] memory ambIds = new uint8[](proofIds.length + 1);
+
+            ambIds[0] = msgAMB[payloadId_];
+            for (uint256 i; i < proofIds.length; ) {
+                ambIds[i + 1] = proofIds[i];
+
+                unchecked {
+                    ++i;
+                }
+            }
+
+            _dispatchAcknowledgement(v.srcChainId, ambIds, returnMessage);
         }
 
         /// @dev sets status as processed
@@ -685,11 +704,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     }
 
     /// @dev calls the appropriate dispatch function according to the ackExtraData the keeper fed initially
-    function _dispatchAcknowledgement(uint64 dstChainId_, bytes memory message_, bytes memory ackExtraData_) internal {
-        AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
-        uint8[] memory ambIds_ = ackData.ambIds;
+    function _dispatchAcknowledgement(uint64 dstChainId_, uint8[] memory ambIds_, bytes memory message_) internal {
+        (, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
+            .calculateAMBData(dstChainId_, ambIds_, message_);
 
-        AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
+        AMBExtraData memory d = abi.decode(extraData, (AMBExtraData));
 
         _dispatchPayload(msg.sender, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
 
