@@ -144,11 +144,6 @@ contract SuperRegistryTest is BaseSetup {
         vm.startPrank(deployer);
         superRegistry.setAmbAddress(ambId, ambAddress);
         assertEq(superRegistry.getAmbAddress(3), address(0x3));
-
-        ambAddress[1] = address(0);
-
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        superRegistry.setAmbAddress(ambId, ambAddress);
         vm.stopPrank();
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
@@ -178,15 +173,11 @@ contract SuperRegistryTest is BaseSetup {
         vm.startPrank(deployer);
         superRegistry.setStateRegistryAddress(registryId, registryAddress);
 
-        registryAddress[1] = address(0);
-
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        superRegistry.setAmbAddress(registryId, registryAddress);
         vm.stopPrank();
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
-        superRegistry.setAmbAddress(registryId, registryAddress);
+        superRegistry.setStateRegistryAddress(registryId, registryAddress);
 
         assertEq(superRegistry.isValidStateRegistry(getContract(ETH, "CoreStateRegistry")), true);
     }

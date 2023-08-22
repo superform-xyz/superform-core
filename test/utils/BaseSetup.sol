@@ -1067,7 +1067,7 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 j = 0; j < chainIds.length; j++) {
             vm.selectFork(FORKS[chainIds[j]]);
             for (uint256 k = 1; k < superformsToProcess_; k++) {
-                FactoryStateRegistry(payable(getContract(chainIds[j], "FactoryStateRegistry"))).processPayload(k, "");
+                FactoryStateRegistry(payable(getContract(chainIds[j], "FactoryStateRegistry"))).processPayload(k);
             }
         }
     }
@@ -1278,7 +1278,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 payloadId
     )
         internal
-        returns (uint256 msgValue, bytes memory)
+        returns (uint256 msgValue, bytes memory ackData)
     {
         LocalAckVars memory vars;
 

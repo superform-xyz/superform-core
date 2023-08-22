@@ -34,7 +34,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 bytes memory data_ = hex"ffff";
                 SuperformFactory(getContract(chainIds[i], "SuperformFactory")).stateSync(data_);
 
-                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1, "");
+                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1);
                 bool statusAfter =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 
@@ -50,7 +50,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
-                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1, "");
+                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1);
             }
         }
 
@@ -60,7 +60,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
-                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(2, "");
+                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(2);
             }
         }
 

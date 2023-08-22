@@ -162,8 +162,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
     /// @inheritdoc BaseStateRegistry
     function processPayload(
-        uint256 payloadId_,
-        bytes memory
+        uint256 payloadId_
     )
         external
         payable

@@ -36,10 +36,7 @@ contract RolesStateRegistry is Broadcaster {
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function processPayload(
-        uint256 payloadId_,
-        bytes memory
-    )
+    function processPayload(uint256 payloadId_)
         /// not useful here
         external
         payable

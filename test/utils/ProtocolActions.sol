@@ -1938,7 +1938,7 @@ abstract contract ProtocolActions is BaseSetup {
         if (testType == TestType.Pass) {
             CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
                 value: nativeFee
-            }(payloadId_, ackAmbParams);
+            }(payloadId_);
         } else if (testType == TestType.RevertProcessPayload) {
             /// @dev WARNING the try catch silences the revert, therefore the only way to assert is via emit
             vm.expectEmit();
@@ -1947,7 +1947,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
                 value: nativeFee
-            }(payloadId_, ackAmbParams);
+            }(payloadId_);
             return false;
         }
 
@@ -1982,7 +1982,7 @@ abstract contract ProtocolActions is BaseSetup {
         vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
         TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
             value: msgValue
-        }(payloadId_, ackParams);
+        }(payloadId_);
 
         /// @dev resets quorum and process payload
         vm.prank(deployer);
@@ -1991,14 +1991,14 @@ abstract contract ProtocolActions is BaseSetup {
         vm.prank(deployer);
         TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
             value: msgValue
-        }(payloadId_, ackParams);
+        }(payloadId_);
 
         /// @dev maliciously tries to process the payload again
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
         TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
             value: msgValue
-        }(payloadId_, ackParams);
+        }(payloadId_);
 
         vm.selectFork(initialFork);
         return true;
