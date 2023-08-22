@@ -128,19 +128,24 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev asserts superPosition balances before calling superFormRouter
         (, spAmountSummed, spAmountBeforeWithdrawPerDst, inputBalanceBefore) =
             _assertBeforeAction(action, multiSuperformsData, singleSuperformsData, vars);
-        bool sameChainDsthasRevertingVault;
+        bool sameChainDstHasRevertingVault;
+
         /// @dev passes request data and performs initial call
-        (vars, sameChainDsthasRevertingVault) =
+        /// @dev returns sameChainDstHasRevertingVault - this means that the request reverted, thus no payloadId
+        /// increase happened nor there is any need for payload update or further assertion
+        (vars, sameChainDstHasRevertingVault) =
             _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
         console.log("Stage 2 complete");
 
         /// @dev simulation of cross-chain message delivery (for x-chain actions)
-        aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
+        aV = _stage3_src_to_dst_amb_delivery(
+            action, vars, multiSuperformsData, singleSuperformsData, sameChainDstHasRevertingVault
+        );
         console.log("Stage 3 complete");
 
         /// @dev processing of message delivery on destination   (for x-chain actions)
         success =
-            _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act, sameChainDsthasRevertingVault);
+            _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act, sameChainDstHasRevertingVault);
 
         if (!success) {
             console.log("Stage 4 failed");
@@ -675,7 +680,8 @@ abstract contract ProtocolActions is BaseSetup {
         TestAction memory action,
         StagesLocalVars memory vars,
         MultiVaultSFData[] memory multiSuperformsData,
-        SingleVaultSFData[] memory singleSuperformsData
+        SingleVaultSFData[] memory singleSuperformsData,
+        bool sameChainDstHasRevertingVault
     )
         internal
         returns (MessagingAssertVars[] memory)
@@ -778,7 +784,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
             vm.selectFork(FORKS[aV[i].toChainId]);
 
-            if (CHAIN_0 != aV[i].toChainId) {
+            if (CHAIN_0 != aV[i].toChainId && !sameChainDstHasRevertingVault) {
                 stateRegistry = CoreStateRegistry(payable(getContract(aV[i].toChainId, "CoreStateRegistry")));
 
                 /// @dev increase payloadIds and decode info
@@ -816,13 +822,13 @@ abstract contract ProtocolActions is BaseSetup {
         MessagingAssertVars[] memory aV,
         SingleVaultSFData[] memory singleSuperformsData,
         uint256 actionIndex,
-        bool sameChainDsthasRevertingVault
+        bool sameChainDstHasRevertingVault
     )
         internal
         returns (bool success)
     {
         success = true;
-        if (!sameChainDsthasRevertingVault) {
+        if (!sameChainDstHasRevertingVault) {
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 aV[i].toChainId = DST_CHAINS[i];
                 if (CHAIN_0 != aV[i].toChainId) {
@@ -2979,7 +2985,6 @@ abstract contract ProtocolActions is BaseSetup {
         bool[] memory partialWithdrawVaults;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-
             if (action.multiVaults && amountsToRemintPerDst[i].length > 0) {
                 partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
                 /// @dev obtain amounts to assert
