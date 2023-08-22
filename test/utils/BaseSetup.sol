@@ -69,6 +69,12 @@ abstract contract BaseSetup is DSTest, Test {
             "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
         );
 
+    /// @dev ETH mainnet values as on 22nd Aug, 2023
+    uint256 public constant TOTAL_SUPPLY_DAI = 3961541270138222277363935051;
+    uint256 public constant TOTAL_SUPPLY_USDT = 39026949359163005;
+    uint256 public constant TOTAL_SUPPLY_WETH = 3293797048454740686583782;
+    uint256 public constant TOTAL_SUPPLY_ETH = 120_000_000e18;
+
     /// @dev
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3; /// @dev for mainnet deployment
     address public constant NATIVE_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -213,7 +219,8 @@ abstract contract BaseSetup is DSTest, Test {
     uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10];
     uint64[] public celer_chainIds = [1, 56, 43114, 137, 42161, 10];
 
-    uint256 public constant milionTokensE18 = 1000e18;
+    /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
+    uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
 
     /*//////////////////////////////////////////////////////////////
                         CHAINLINK VARIABLES
@@ -254,6 +261,9 @@ abstract contract BaseSetup is DSTest, Test {
         _preDeploymentSetup();
 
         _fundNativeTokens();
+        console.log("USER[0]", users[0]);
+        console.log("USER[1]", users[1]);
+        console.log("USER[2]", users[2]);
 
         _deployProtocol();
 
@@ -488,7 +498,7 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
-                    new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, milionTokensE18)
+                    new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
                 );
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }

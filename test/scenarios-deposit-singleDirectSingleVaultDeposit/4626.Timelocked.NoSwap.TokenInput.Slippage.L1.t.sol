@@ -48,7 +48,11 @@ contract SDSVD4626TimelockedNoSwapTokenInputSlippageL1 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amount_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_USDT));
+        AMOUNTS[ETH][0] = [amount_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

@@ -22,8 +22,6 @@ contract SDSVD4626KycNoSwapTokenInputNoSlippageL2 is ProtocolActions {
 
         TARGET_FORM_KINDS[POLY][0] = [2];
 
-        AMOUNTS[POLY][0] = [1231];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 0 for same chain same collateral, 1 for socket, 2 for lifi
@@ -48,7 +46,11 @@ contract SDSVD4626KycNoSwapTokenInputNoSlippageL2 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amount_) public {
+        /// @dev amount = 1 works here as slippage = 0
+        amount_ = uint128(bound(amount_, 1, TOTAL_SUPPLY_WETH));
+        AMOUNTS[POLY][0] = [amount_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

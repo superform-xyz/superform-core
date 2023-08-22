@@ -113,6 +113,27 @@ abstract contract ProtocolActions is BaseSetup {
         bool success
     ) internal {
         console.log("new-action");
+
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[CHAIN_0]);
+        address token;
+
+        /// @dev assumption here is DAI has total supply of TOTAL_SUPPLY_DAI on all chains
+        /// and similarly for USDT, WETH and ETH
+        if(action.externalToken == 3) {
+            deal(users[action.user], TOTAL_SUPPLY_ETH);
+        } else {
+            token = getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]);
+
+            if (action.externalToken == 0)
+                deal(token, users[action.user], TOTAL_SUPPLY_DAI);
+            else if (action.externalToken == 1)
+                deal(token, users[action.user], TOTAL_SUPPLY_USDT);
+            else if (action.externalToken == 2)
+                deal(token, users[action.user], TOTAL_SUPPLY_WETH);
+        }
+        vm.selectFork(initialFork);
+
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
 

@@ -22,8 +22,6 @@ contract SDSVD4626RevertNoSwapNativeNoSlippageL2 is ProtocolActions {
 
         TARGET_FORM_KINDS[ARBI][0] = [0];
 
-        AMOUNTS[ARBI][0] = [89283129];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -48,7 +46,11 @@ contract SDSVD4626RevertNoSwapNativeNoSlippageL2 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amount_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amount_ = uint128(bound(amount_, 1, TOTAL_SUPPLY_DAI));
+        AMOUNTS[ARBI][0] = [amount_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

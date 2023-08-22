@@ -16,13 +16,11 @@ contract SDSVD4626TimelockedSwapTokenInputSlippageL2 is ProtocolActions {
         DST_CHAINS = [ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][0] = [2];
+        TARGET_UNDERLYINGS[ETH][0] = [0];
 
         TARGET_VAULTS[ETH][0] = [1]; /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ETH][0] = [1];
-
-        AMOUNTS[ETH][0] = [100];
 
         MAX_SLIPPAGE = 1000;
 
@@ -48,7 +46,11 @@ contract SDSVD4626TimelockedSwapTokenInputSlippageL2 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amount_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_WETH));
+        AMOUNTS[ETH][0] = [amount_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

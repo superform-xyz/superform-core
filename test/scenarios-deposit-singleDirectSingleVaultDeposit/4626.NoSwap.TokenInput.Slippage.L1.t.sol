@@ -22,8 +22,6 @@ contract SDSVD4626NoSwapNativeSlippageL1 is ProtocolActions {
 
         TARGET_FORM_KINDS[AVAX][0] = [0];
 
-        // AMOUNTS[AVAX][0] = [2];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 0 for no bridge, 1 for socket, 2 for lifi
@@ -48,7 +46,9 @@ contract SDSVD4626NoSwapNativeSlippageL1 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint256 amount_) public {
+    function test_scenario(uint128 amount_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_WETH));
         AMOUNTS[AVAX][0] = [amount_];
 
         for (uint256 act = 0; act < actions.length; act++) {
