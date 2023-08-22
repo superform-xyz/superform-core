@@ -115,7 +115,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         for (uint256 i; i < ambId_.length; i++) {
             address ambAddress = ambAddress_[i];
             uint8 ambId = ambId_[i];
-            if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
 
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
