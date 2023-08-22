@@ -516,7 +516,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRBACC.grantRole(vars.superRBACC.CORE_CONTRACTS_ROLE(), vars.superformRouter);
         vars.superRBACC.grantRole(vars.superRBACC.CORE_CONTRACTS_ROLE(), vars.factory);
 
-        /// @dev 17 setup setup srcChain keepers
+        /// @dev 18 setup setup srcChain keepers
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
@@ -680,13 +680,11 @@ abstract contract AbstractDeploySingle is Script {
                     vars.dstChainId
                 );
 
-                /*
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.ROLES_STATE_REGISTRY(),
-                _readContract(chainNames[dstTrueIndex], vars.dstChainId, "RolesStateRegistry"),
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "RolesStateRegistry"),
                     vars.dstChainId
                 );
-                */
 
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.SUPER_POSITIONS(),

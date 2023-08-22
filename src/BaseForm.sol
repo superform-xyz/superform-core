@@ -10,11 +10,16 @@ import { InitSingleVaultData } from "./types/DataTypes.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./utils/Error.sol";
+import { IFormBeacon } from "./interfaces/IFormBeacon.sol";
+import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
+import { DataLib } from "./libraries/DataLib.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
 abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
+    using DataLib for uint256;
+
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -36,6 +41,17 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
     //////////////////////////////////////////////////////////////*/
+
+    modifier notPaused(InitSingleVaultData memory singleVaultData_) {
+        (, uint32 formBeaconId_,) = singleVaultData_.superformId.getSuperform();
+
+        if (
+            IFormBeacon(
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
+            ).paused()
+        ) revert Error.PAUSED();
+        _;
+    }
 
     modifier onlySuperRouter() {
         if (superRegistry.getAddress(keccak256("SUPERFORM_ROUTER")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
@@ -91,6 +107,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         payable
         override
         onlySuperRouter
+        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
         dstAmount = _directDepositIntoVault(singleVaultData_, srcSender_);
@@ -104,6 +121,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         external
         override
         onlySuperRouter
+        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
         dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
@@ -118,6 +136,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         external
         override
         onlyCoreStateRegistry
+        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
         dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
@@ -132,6 +151,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         external
         override
         onlyCoreStateRegistry
+        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
         dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);

@@ -26,6 +26,13 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev just stores the superformIds that failed in a specific payload id
+    mapping(uint256 payloadId => uint256[] superformIds) internal failedDeposits;
+
+    /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
@@ -43,17 +50,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         }
         _;
     }
-
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev just stores the superformIds that failed in a specific payload id
-    mapping(uint256 payloadId => uint256[] superformIds) internal failedDeposits;
-
-    /*///////////////////////////////////////////////////////////////
-                                MODIFIERS
-    //////////////////////////////////////////////////////////////*/
 
     modifier onlySender() override {
         if (superRegistry.getAddress(keccak256("SUPERFORM_ROUTER")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
