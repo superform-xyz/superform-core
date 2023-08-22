@@ -26,27 +26,27 @@ interface ISuperPositions {
 
     /// @dev mints a single super position
     /// @param owner_ is the address of the owner of the super position
-    /// @param superformId_ is the id of the super position being minted
+    /// @param id_ is the id of the super position being minted
     /// @param amount_ is the amount of the super position being minted
-    function mintSingleSP(address owner_, uint256 superformId_, uint256 amount_) external;
+    function mintSingleSP(address owner_, uint256 id_, uint256 amount_) external;
 
     /// @dev mints a batch of super positions
     /// @param owner_ is the address of the owner of the super positions
-    /// @param superformIds_ are the ids of the super positions being minted
+    /// @param ids_ are the ids of the super positions being minted
     /// @param amounts_ are the amounts of the super positions being minted
-    function mintBatchSP(address owner_, uint256[] memory superformIds_, uint256[] memory amounts_) external;
+    function mintBatchSP(address owner_, uint256[] memory ids_, uint256[] memory amounts_) external;
 
     /// @dev burns a single super position
     /// @param srcSender_ is the address of the sender of the super position
-    /// @param superformId_ is the id of the super position being burned
+    /// @param id_ is the id of the super position being burned
     /// @param amount_ is the amount of the super position being burned
-    function burnSingleSP(address srcSender_, uint256 superformId_, uint256 amount_) external;
+    function burnSingleSP(address srcSender_, uint256 id_, uint256 amount_) external;
 
     /// @dev burns a batch of super positions
     /// @param srcSender_ is the address of the sender of the super positions
-    /// @param superformIds_ are the ids of the super positions being burned
+    /// @param ids_ are the ids of the super positions being burned
     /// @param amounts_ are the amounts of the super positions being burned
-    function burnBatchSP(address srcSender_, uint256[] memory superformIds_, uint256[] memory amounts_) external;
+    function burnBatchSP(address srcSender_, uint256[] memory ids_, uint256[] memory amounts_) external;
 
     /// @dev allows registry contract to send payload for processing to the router contract.
     /// @param data_ is the received information to be processed.

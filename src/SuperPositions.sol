@@ -85,39 +85,39 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperPositions
-    function mintSingleSP(address owner_, uint256 superformId_, uint256 amount_) external override onlyMinter {
-        _mint(owner_, superformId_, amount_, "");
+    function mintSingleSP(address owner_, uint256 id_, uint256 amount_) external override onlyMinter {
+        _mint(owner_, id_, amount_, "");
     }
 
     /// @inheritdoc ISuperPositions
     function mintBatchSP(
         address owner_,
-        uint256[] memory superformIds_,
+        uint256[] memory ids_,
         uint256[] memory amounts_
     )
         external
         override
         onlyMinter
     {
-        _batchMint(owner_, superformIds_, amounts_, "");
+        _batchMint(owner_, ids_, amounts_, "");
     }
 
     /// @inheritdoc ISuperPositions
-    function burnSingleSP(address srcSender_, uint256 superformId_, uint256 amount_) external override onlyBurner {
-        _burn(srcSender_, superformId_, amount_);
+    function burnSingleSP(address srcSender_, uint256 id_, uint256 amount_) external override onlyBurner {
+        _burn(srcSender_, id_, amount_);
     }
 
     /// @inheritdoc ISuperPositions
     function burnBatchSP(
         address srcSender_,
-        uint256[] memory superformIds_,
+        uint256[] memory ids_,
         uint256[] memory amounts_
     )
         external
         override
         onlyBurner
     {
-        _batchBurn(srcSender_, superformIds_, amounts_);
+        _batchBurn(srcSender_, ids_, amounts_);
     }
 
     /// @inheritdoc ISuperPositions
