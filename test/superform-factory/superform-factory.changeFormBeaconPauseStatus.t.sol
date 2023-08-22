@@ -37,8 +37,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
             formBeaconId,
             true,
-            _getBroadcastChains(chainId),
-            generateBroadcastParams(5, 2)
+            generateBroadcastParams(_getBroadcastChains(chainId), 2)
         );
 
         bool status = SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormBeaconPaused(
@@ -69,7 +68,6 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
             formBeaconId,
             true,
-            new uint64[](0),
             ""
         );
 
@@ -104,8 +102,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 * 10 ** 18}(
             formBeaconId_invalid,
             true,
-            _getBroadcastChains(chainId),
-            generateBroadcastParams(5, 2)
+            generateBroadcastParams(_getBroadcastChains(chainId), 2)
         );
     }
 }

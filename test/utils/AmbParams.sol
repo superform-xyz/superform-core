@@ -3,7 +3,9 @@ import {AMBExtraData, BroadCastAMBExtraData} from "src/types/DataTypes.sol";
 
 pragma solidity 0.8.19;
 
-function generateBroadcastParams(uint256 dstCount, uint256 ambCount) pure returns (bytes memory) {
+function generateBroadcastParams(uint64[] memory dstChainIds, uint256 ambCount) pure returns (bytes memory) {
+    uint256 dstCount = dstChainIds.length;
+
     /// @dev TODO - Sujith to comment
     uint8[] memory ambIds = new uint8[](ambCount);
     ambIds[0] = 1;
@@ -28,5 +30,5 @@ function generateBroadcastParams(uint256 dstCount, uint256 ambCount) pure return
 
     AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
 
-    return abi.encode(ambIds, abi.encode(extraData));
+    return abi.encode(ambIds, dstChainIds, abi.encode(extraData));
 }

@@ -81,8 +81,8 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
     /// @inheritdoc IAmbImplementation
     function broadcastPayload(
-        address srcSender_,
         uint64[] memory dstChainIds_,
+        address srcSender_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable virtual {

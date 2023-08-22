@@ -280,8 +280,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
         layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
             _getBroadcastChains(ETH),
+            users[userIndex],
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
@@ -316,8 +316,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
         vm.prank(coreStateRegistry);
         layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
             _getBroadcastChains(ETH),
+            users[userIndex],
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );

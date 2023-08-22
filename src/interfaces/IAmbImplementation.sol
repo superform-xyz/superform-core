@@ -27,13 +27,13 @@ interface IAmbImplementation {
     ) external payable;
 
     /// @dev allows state registry to send multiple messages via implementation
-    /// @param srcSender_ is the caller (used for gas refunds)
     /// @param dstChainIds_ is the identifiers of destination chains
+    /// @param srcSender_ is the caller (used for gas refunds)
     /// @param message_ is the cross-chain message to be sent
     /// @param extraData_ is the message amb specific override information
     function broadcastPayload(
-        address srcSender_,
         uint64[] memory dstChainIds_,
+        address srcSender_,
         bytes memory message_,
         bytes memory extraData_
     ) external payable;

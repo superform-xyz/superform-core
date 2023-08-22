@@ -1179,8 +1179,7 @@ contract SuperformRouterTest is ProtocolActions {
         SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 ether}(
             formBeaconId,
             true,
-            _getBroadcastChains(ARBI),
-            generateBroadcastParams(5, 2)
+            generateBroadcastParams(_getBroadcastChains(ARBI), 2)
         );
 
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());

@@ -20,8 +20,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 ether}(
             formBeaconId,
             true,
-            _getBroadcastChains(ETH),
-            generateBroadcastParams(5, 2)
+            generateBroadcastParams(_getBroadcastChains(ETH), 2)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
@@ -77,8 +76,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 ether}(
             formBeaconId,
             true,
-            _getBroadcastChains(ETH),
-            generateBroadcastParams(5, 2)
+            generateBroadcastParams(_getBroadcastChains(ETH), 2)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());

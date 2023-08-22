@@ -69,7 +69,7 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
             revert Error.INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.broadcastPayload{value: gasToPay_}(srcSender_, dstChainIds_, abi.encode(newData), extraData_);
+        ambImplementation.broadcastPayload{value: gasToPay_}(dstChainIds_, srcSender_, abi.encode(newData), extraData_);
     }
 
     /// @dev broadcasts the proof(hash of the message_) through individual message bridge implementations
@@ -111,8 +111,8 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
             }
 
             tempImpl.broadcastPayload{value: gasToPay_[i]}(
-                srcSender_,
                 dstChainIds_,
+                srcSender_,
                 abi.encode(newData),
                 extraData_[i]
             );

@@ -58,7 +58,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.PAYMENT_ADMIN(),
             deployer,
             "",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -94,7 +94,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.MULTI_TX_SWAPPER(),
             deployer,
             "",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -119,7 +119,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.SUPERFORM_FACTORY(),
             deployer,
             "SuperformFactory",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -139,7 +139,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.CORE_REGISTRY_PROCESSOR(),
             deployer,
             "",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -159,7 +159,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.ROLES_REGISTRY_PROCESSOR(),
             deployer,
             "",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -179,7 +179,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.FACTORY_REGISTRY_PROCESSOR(),
             deployer,
             "",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -199,7 +199,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.TWO_STEPS_REGISTRY_PROCESSOR(),
             deployer,
             "",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -219,7 +219,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.CORE_REGISTRY_UPDATER(),
             deployer,
             "",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -239,7 +239,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.TWO_STEPS_FORM_STATE_REGISTRY(),
             deployer,
             "TwoStepsFormStateRegistry",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -259,7 +259,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.SUPERFORM_ROUTER(),
             deployer,
             "SuperformRouter",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -288,7 +288,7 @@ contract SuperRBACTest is BaseSetup {
             superRegistry.CORE_STATE_REGISTRY(),
             deployer,
             "CoreStateRegistry",
-            generateBroadcastParams(5, 2),
+            generateBroadcastParams(_getBroadcastChains(ETH), 2),
             800 ether
         );
     }
@@ -341,7 +341,6 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.revokeRoleSuperBroadcast{value: value_}(
             superRBACRole_,
             memberAddress,
-            _getBroadcastChains(ETH),
             extraData_,
             superRegistryAddressId_
         );

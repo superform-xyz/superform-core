@@ -134,16 +134,16 @@ contract CelerImplementationTest is BaseSetup {
 
         vm.prank(coreStateRegistry);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
             _getBroadcastChains(ETH),
+            users[userIndex],
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
 
         vm.prank(coreStateRegistry);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
             _getBroadcastChains(ETH),
+            users[userIndex],
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
@@ -178,8 +178,8 @@ contract CelerImplementationTest is BaseSetup {
         vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
         vm.prank(coreStateRegistry);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
             _getBroadcastChains(ETH),
+            users[userIndex],
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
@@ -200,8 +200,8 @@ contract CelerImplementationTest is BaseSetup {
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
         celerImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
             _getBroadcastChains(ETH),
+            users[userIndex],
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
@@ -223,8 +223,8 @@ contract CelerImplementationTest is BaseSetup {
         vm.prank(coreStateRegistry);
         /// @dev note first arg to be dai
         celerImplementation.broadcastPayload{value: 0.1 ether}(
-            dai,
             _getBroadcastChains(ETH),
+            dai,
             abi.encode(ambMessage),
             abi.encode(ambExtraData)
         );
