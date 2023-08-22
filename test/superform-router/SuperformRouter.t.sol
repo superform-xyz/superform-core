@@ -725,6 +725,38 @@ contract SuperformRouterTest is ProtocolActions {
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
+    function test_depositWithZeroAmount() public {
+        /// scenario: deposit to an invalid super form id (which doesn't exist on the chain)
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        /// try depositing without approval
+        address superform = getContract(
+            ETH,
+            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            0, /// @dev 0 amount here and in the LiqRequest
+            100,
+            LiqRequest(1, "", getContract(ETH, "USDT"), 0, 0, ""),
+            ""
+        );
+
+        SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+
+        /// @dev no point approving 0 tokens
+        // MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 0);
+
+        vm.expectRevert(Error.ZERO_AMOUNT.selector);
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
+    }
+
     function test_withdrawWithPausedBeacon() public {
         _pauseFormBeacon();
 

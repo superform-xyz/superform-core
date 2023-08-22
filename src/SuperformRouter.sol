@@ -707,6 +707,10 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
             superformId_
         );
 
+        if(amount_ == 0) {
+            revert Error.ZERO_AMOUNT();
+        }
+
         if (chainId != superRegistry.chainId()) {
             revert Error.INVALID_CHAIN_ID();
         }
