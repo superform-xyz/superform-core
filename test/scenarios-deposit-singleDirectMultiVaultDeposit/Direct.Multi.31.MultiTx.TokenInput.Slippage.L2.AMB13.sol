@@ -23,8 +23,6 @@ contract SDiMVDMulti31MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
 
         TARGET_FORM_KINDS[OP][0] = [0, 1];
 
-        AMOUNTS[OP][0] = [21412, 4214521];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -49,7 +47,12 @@ contract SDiMVDMulti31MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_WETH / 2));
+        AMOUNTS[OP][0] = [amountOne_, amountTwo_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
