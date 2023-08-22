@@ -366,7 +366,7 @@ contract SuperRBACTest is BaseSetup {
                 (, bytes memory statusBefore) = address(superRBAC_).call(
                     abi.encodeWithSelector(checkRole_, memberAddress)
                 );
-                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
+                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1);
                 (, bytes memory statusAfter) = address(superRBAC_).call(
                     abi.encodeWithSelector(checkRole_, memberAddress)
                 );
@@ -389,7 +389,7 @@ contract SuperRBACTest is BaseSetup {
 
                 vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
 
-                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1, "");
+                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1);
             }
         }
 
@@ -400,7 +400,7 @@ contract SuperRBACTest is BaseSetup {
 
                 vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
 
-                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(2, "");
+                RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(2);
             }
         }
     }

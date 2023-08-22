@@ -38,8 +38,7 @@ contract FactoryStateRegistry is Broadcaster {
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     function processPayload(
-        uint256 payloadId_,
-        bytes memory /// not useful here
+        uint256 payloadId_
     ) external payable virtual override onlyFactoryStateRegistryProcessor returns (bytes memory, bytes memory) {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();

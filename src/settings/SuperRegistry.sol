@@ -170,6 +170,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
+    function getAmbId(address ambAddress_) external view override returns (uint8 ambId_) {
+        ambId_ = ambIds[ambAddress_];
+    }
+
+    /// @inheritdoc ISuperRegistry
     function getStateRegistry(uint8 registryId_) external view override returns (address registryAddress_) {
         registryAddress_ = registryAddresses[registryId_];
     }
