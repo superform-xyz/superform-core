@@ -18,13 +18,15 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1A
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [2];
-        TARGET_VAULTS[POLY][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[POLY][0] = [3];
+        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[POLY][0] = [0];
         AMOUNTS[POLY][0] = [4121];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][1] = [2];
-        TARGET_VAULTS[OP][1] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[OP][1] = [3];
+        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[OP][1] = [0];
         AMOUNTS[OP][1] = [125];
 
@@ -45,7 +47,7 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1A
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -59,7 +61,7 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1A
                 slippage: 112, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

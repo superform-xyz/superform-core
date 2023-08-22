@@ -21,9 +21,13 @@ contract MDSVDKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [2];
         TARGET_UNDERLYINGS[ARBI][0] = [2];
 
-        TARGET_VAULTS[ETH][0] = [2]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[OP][0] = [2]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[ARBI][0] = [2]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [2];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [2];
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [2];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ETH][0] = [2];
         TARGET_FORM_KINDS[OP][0] = [2];
@@ -51,7 +55,7 @@ contract MDSVDKyc4626NoMultiTxNativeSlippageL1AMB23 is ProtocolActions {
                 slippage: 821, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

@@ -8,7 +8,7 @@ gas_reports = [
     "MultiTxProcessor",
 ]
 libraries = []
-optimizer = true
+optimizer = false
 optimizer_runs = 200
 verbosity = 0
 ffi = false
@@ -38,3 +38,13 @@ optimizer = false
 [fuzz]
 max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
 runs = 50
+
+[fmt]
+  bracket_spacing = true
+  int_types = "long"
+  line_length = 120
+  multiline_func_header = "all"
+  number_underscore = "thousands"
+  quote_style = "double"
+  tab_width = 4
+  wrap_comments = true

@@ -21,13 +21,16 @@ contract MDMVDMulti111563NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
         TARGET_UNDERLYINGS[OP][0] = [2, 2, 2];
 
-        TARGET_VAULTS[AVAX][0] = [1, 1, 1]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[OP][0] = [5, 6, 3]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [1, 1, 1];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [5, 6, 3];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
         TARGET_FORM_KINDS[OP][0] = [1, 2, 0];
 
-        AMOUNTS[AVAX][0] = [999, 9999, 99999];
+        AMOUNTS[AVAX][0] = [999, 9999, 99_999];
         AMOUNTS[OP][0] = [5435, 5543, 5557];
 
         MAX_SLIPPAGE = 1000;
@@ -47,7 +50,7 @@ contract MDMVDMulti111563NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
                 slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

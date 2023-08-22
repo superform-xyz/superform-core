@@ -18,11 +18,13 @@ contract SDiMVW874NativeInputSlippageL2AMB13 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [0, 0, 1];
-        TARGET_VAULTS[ARBI][0] = [8, 7, 4]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [8, 7, 4];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][0] = [0, 2, 1];
 
         TARGET_UNDERLYINGS[ARBI][1] = [0, 0, 1];
-        TARGET_VAULTS[ARBI][1] = [8, 7, 4]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][1] = [8, 7, 4];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][1] = [0, 2, 1];
 
         AMOUNTS[ARBI][0] = [7722, 11, 3];
@@ -45,7 +47,7 @@ contract SDiMVW874NativeInputSlippageL2AMB13 is ProtocolActions {
                 slippage: 555, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -59,7 +61,7 @@ contract SDiMVW874NativeInputSlippageL2AMB13 is ProtocolActions {
                 slippage: 555, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

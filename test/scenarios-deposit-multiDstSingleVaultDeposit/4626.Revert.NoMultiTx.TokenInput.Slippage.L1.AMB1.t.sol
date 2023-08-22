@@ -31,7 +31,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
 
         AMOUNTS[OP][0] = [2];
         AMOUNTS[ETH][0] = [5];
-        AMOUNTS[POLY][0] = [44444];
+        AMOUNTS[POLY][0] = [44_444];
 
         MAX_SLIPPAGE = 1000;
 
@@ -54,7 +54,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

@@ -29,7 +29,9 @@ interface IBridgeValidator {
         address superform_,
         address srcSender_,
         address liqDataToken_
-    ) external view;
+    )
+        external
+        view;
 
     /// @dev decoded txData and returns the receiver address
     /// @param txData_ is the txData of the cross chain deposit

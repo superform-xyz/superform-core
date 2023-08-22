@@ -19,11 +19,13 @@ contract SDiMVDMulti111NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
 
-        TARGET_VAULTS[AVAX][0] = [1, 1, 1]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [1, 1, 1];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
 
-        AMOUNTS[AVAX][0] = [214, 798, 55312];
+        AMOUNTS[AVAX][0] = [214, 798, 55_312];
 
         MAX_SLIPPAGE = 1000;
 
@@ -41,7 +43,7 @@ contract SDiMVDMulti111NoMultiTxTokenInputSlippageL1AMB12 is ProtocolActions {
                 slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

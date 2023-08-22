@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IBaseStateRegistry} from "../../../interfaces/IBaseStateRegistry.sol";
-import {IAmbImplementation} from "../../../interfaces/IAmbImplementation.sol";
-import {ISuperRBAC} from "../../../interfaces/ISuperRBAC.sol";
-import {ISuperRegistry} from "../../../interfaces/ISuperRegistry.sol";
-import {AMBMessage, BroadCastAMBExtraData} from "../../../types/DataTypes.sol";
-import {Error} from "../../../utils/Error.sol";
-import {ILayerZeroReceiver} from "../../../vendor/layerzero/ILayerZeroReceiver.sol";
-import {ILayerZeroUserApplicationConfig} from "../../../vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
-import {ILayerZeroEndpoint} from "../../../vendor/layerzero/ILayerZeroEndpoint.sol";
-import {DataLib} from "../../../libraries/DataLib.sol";
+import { IBaseStateRegistry } from "../../../interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "../../../interfaces/IAmbImplementation.sol";
+import { ISuperRBAC } from "../../../interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "../../../interfaces/ISuperRegistry.sol";
+import { AMBMessage, BroadCastAMBExtraData } from "../../../types/DataTypes.sol";
+import { Error } from "../../../utils/Error.sol";
+import { ILayerZeroReceiver } from "../../../vendor/layerzero/ILayerZeroReceiver.sol";
+import { ILayerZeroUserApplicationConfig } from "../../../vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
+import { ILayerZeroEndpoint } from "../../../vendor/layerzero/ILayerZeroEndpoint.sol";
+import { DataLib } from "../../../libraries/DataLib.sol";
 
 /// @title LayerzeroImplementation
 /// @author Zeropoint Labs
@@ -48,8 +48,9 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
+        }
         _;
     }
 
@@ -68,7 +69,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
 
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @dev layerzero gas payments/refund fails without a native receive function.
-    receive() external payable {}
+    receive() external payable { }
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
@@ -76,7 +77,11 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable override {
+    )
+        external
+        payable
+        override
+    {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.NOT_STATE_REGISTRY();
         }
@@ -97,7 +102,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
             revert Error.INVALID_EXTRA_DATA_LENGTHS();
         }
 
-        for (uint256 i; i < totalChains; ) {
+        for (uint256 i; i < totalChains;) {
             uint16 dstChainId = broadcastChains[i];
             _lzSend(dstChainId, message_, payable(srcSender_), address(0x0), d.extraDataPerDst[i], d.gasPerDst[i]);
 
@@ -131,7 +136,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         AMBMessage memory decoded = abi.decode(_payload, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId, , ) = decoded.txInfo.decodeTxInfo();
+        (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
 
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
@@ -148,7 +153,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         bytes memory srcAddress_,
         uint64 nonce_,
         bytes memory payload_
-    ) public override {
+    )
+        public
+        override
+    {
         // lzReceive must be called by the endpoint for security
         if (msg.sender != address(lzEndpoint)) {
             revert Error.CALLER_NOT_ENDPOINT();
@@ -182,7 +190,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         bytes memory srcAddress_,
         uint64 nonce_,
         bytes memory payload_
-    ) public payable {
+    )
+        public
+        payable
+    {
         // assert there is message to retry
         bytes32 payloadHash = failedMessages[srcChainId_][srcAddress_][nonce_];
 
@@ -212,19 +223,16 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         address zroPaymentAddress_,
         bytes memory adapterParams_,
         uint256 msgValue_
-    ) internal {
+    )
+        internal
+    {
         bytes memory trustedRemote = trustedRemoteLookup[dstChainId_];
         if (trustedRemote.length == 0) {
             revert Error.INVALID_SRC_CHAIN_ID();
         }
 
-        lzEndpoint.send{value: msgValue_}(
-            dstChainId_,
-            trustedRemote,
-            payload_,
-            refundAddress_,
-            zroPaymentAddress_,
-            adapterParams_
+        lzEndpoint.send{ value: msgValue_ }(
+            dstChainId_, trustedRemote, payload_, refundAddress_, zroPaymentAddress_, adapterParams_
         );
     }
 
@@ -233,7 +241,9 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         bytes memory srcAddress_,
         uint64 nonce_,
         bytes memory payload_
-    ) internal {
+    )
+        internal
+    {
         // try-catch all errors/exceptions
         try this.nonblockingLzReceive(srcChainId_, srcAddress_, payload_) {
             // do nothing
@@ -262,7 +272,11 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         uint16 chainId_,
         address,
         uint256 configType_
-    ) external view returns (bytes memory) {
+    )
+        external
+        view
+        returns (bytes memory)
+    {
         return lzEndpoint.getConfig(version_, chainId_, address(this), configType_);
     }
 
@@ -272,7 +286,11 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         uint16 chainId_,
         uint256 configType_,
         bytes calldata config_
-    ) external override onlyProtocolAdmin {
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
         lzEndpoint.setConfig(version_, chainId_, configType_, config_);
     }
 
@@ -307,11 +325,16 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external view override returns (uint256 fees) {
+    )
+        external
+        view
+        override
+        returns (uint256 fees)
+    {
         uint16 chainId = ambChainId[dstChainId_];
 
         if (chainId != 0) {
-            (fees, ) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
+            (fees,) = lzEndpoint.estimateFees(chainId, address(this), message_, false, extraData_);
         }
     }
 }

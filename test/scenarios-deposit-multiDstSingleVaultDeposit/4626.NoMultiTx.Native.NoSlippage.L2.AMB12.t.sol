@@ -21,17 +21,21 @@ contract MDSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
         TARGET_UNDERLYINGS[ETH][0] = [0];
         TARGET_UNDERLYINGS[POLY][0] = [1];
 
-        TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[ETH][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[POLY][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [0];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [0];
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[POLY][0] = [0];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[AVAX][0] = [0];
         TARGET_FORM_KINDS[ETH][0] = [0];
         TARGET_FORM_KINDS[POLY][0] = [0];
 
-        AMOUNTS[AVAX][0] = [98512890];
-        AMOUNTS[ETH][0] = [421821994];
-        AMOUNTS[POLY][0] = [42134];
+        AMOUNTS[AVAX][0] = [98_512_890];
+        AMOUNTS[ETH][0] = [421_821_994];
+        AMOUNTS[POLY][0] = [42_134];
 
         MAX_SLIPPAGE = 1000;
 
@@ -51,7 +55,7 @@ contract MDSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

@@ -1,13 +1,13 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ERC1155A} from "ERC1155A/ERC1155A.sol";
-import {TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMessage} from "./types/DataTypes.sol";
-import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
-import {ISuperPositions} from "./interfaces/ISuperPositions.sol";
-import {ISuperRBAC} from "./interfaces/ISuperRBAC.sol";
-import {Error} from "./utils/Error.sol";
-import {DataLib} from "./libraries/DataLib.sol";
+import { ERC1155A } from "ERC1155A/ERC1155A.sol";
+import { TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMessage } from "./types/DataTypes.sol";
+import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
+import { ISuperPositions } from "./interfaces/ISuperPositions.sol";
+import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
+import { Error } from "./utils/Error.sol";
+import { DataLib } from "./libraries/DataLib.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
@@ -36,14 +36,16 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
     /// note replace this to support some new role called minter in super registry
     modifier onlyMinter() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasMinterRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasMinterRole(msg.sender)) {
             revert Error.NOT_MINTER();
+        }
         _;
     }
 
     modifier onlyBurner() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasBurnerRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasBurnerRole(msg.sender)) {
             revert Error.NOT_BURNER();
+        }
         _;
     }
 
@@ -53,8 +55,9 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
+        }
         _;
     }
 
@@ -91,7 +94,11 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         address owner_,
         uint256[] memory superformIds_,
         uint256[] memory amounts_
-    ) external override onlyMinter {
+    )
+        external
+        override
+        onlyMinter
+    {
         _batchMint(owner_, superformIds_, amounts_, "");
     }
 
@@ -105,7 +112,11 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         address srcSender_,
         uint256[] memory superformIds_,
         uint256[] memory amounts_
-    ) external override onlyBurner {
+    )
+        external
+        override
+        onlyBurner
+    {
         _batchBurn(srcSender_, superformIds_, amounts_);
     }
 
@@ -115,17 +126,21 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     /// @inheritdoc ISuperPositions
-    function stateMultiSync(
-        AMBMessage memory data_
-    ) external payable override onlyMinterStateRegistry returns (uint64 srcChainId_) {
+    function stateMultiSync(AMBMessage memory data_)
+        external
+        payable
+        override
+        onlyMinterStateRegistry
+        returns (uint64 srcChainId_)
+    {
         /// @dev here we decode the txInfo and params from the data brought back from destination
 
-        (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
-            .txInfo
-            .decodeTxInfo();
+        (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
+            data_.txInfo.decodeTxInfo();
 
-        if (callbackType != uint256(CallbackType.RETURN))
+        if (callbackType != uint256(CallbackType.RETURN)) {
             if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
+        }
 
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
@@ -135,7 +150,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         uint256 txType;
 
         /// @dev decode initial payload info stored on source chain in this contract
-        (txType, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
+        (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev verify this is a single vault mint
         if (multi == 0) revert Error.INVALID_PAYLOAD();
@@ -146,8 +161,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         /// @dev mint super positions accordingly
         if (
-            (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) ||
-            (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
+            (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN))
+                || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
             _batchMint(srcSender, returnData.superformIds, returnData.amounts, "");
         } else {
@@ -158,17 +173,21 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     }
 
     /// @inheritdoc ISuperPositions
-    function stateSync(
-        AMBMessage memory data_
-    ) external payable override onlyMinterStateRegistry returns (uint64 srcChainId_) {
+    function stateSync(AMBMessage memory data_)
+        external
+        payable
+        override
+        onlyMinterStateRegistry
+        returns (uint64 srcChainId_)
+    {
         /// @dev here we decode the txInfo and params from the data brought back from destination
 
-        (uint256 returnTxType, uint256 callbackType, uint8 multi, , address returnDataSrcSender, ) = data_
-            .txInfo
-            .decodeTxInfo();
+        (uint256 returnTxType, uint256 callbackType, uint8 multi,, address returnDataSrcSender,) =
+            data_.txInfo.decodeTxInfo();
 
-        if (callbackType != uint256(CallbackType.RETURN))
+        if (callbackType != uint256(CallbackType.RETURN)) {
             if (callbackType != uint256(CallbackType.FAIL)) revert Error.INVALID_PAYLOAD();
+        }
 
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
@@ -178,7 +197,7 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         address srcSender;
 
         /// @dev decode initial payload info stored on source chain in this contract
-        (txType, , , , srcSender, srcChainId_) = txInfo.decodeTxInfo();
+        (txType,,,, srcSender, srcChainId_) = txInfo.decodeTxInfo();
 
         /// @dev verify this is a multi vault mint
         if (multi == 1) revert Error.INVALID_PAYLOAD();
@@ -189,8 +208,8 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
         /// @dev mint super positions accordingly
         if (
-            (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN)) ||
-            (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
+            (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN))
+                || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
             _mint(srcSender, returnData.superformId, returnData.amount, "");
         } else {

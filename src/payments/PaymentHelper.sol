@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {AggregatorV3Interface} from "../vendor/chainlink/AggregatorV3Interface.sol";
-import {IPaymentHelper} from "../interfaces/IPaymentHelper.sol";
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
-import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
-import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {Error} from "../utils/Error.sol";
-import {DataLib} from "../libraries/DataLib.sol";
-import {ArrayCastLib} from "../libraries/ArrayCastLib.sol";
+import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
+import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
+import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
+import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
+import { Error } from "../utils/Error.sol";
+import { DataLib } from "../libraries/DataLib.sol";
+import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
 import "../types/DataTypes.sol";
 
 import "../types/LiquidityTypes.sol";
@@ -86,7 +86,11 @@ contract PaymentHelper is IPaymentHelper {
         uint256 defaultNativePrice_,
         uint256 defaultGasPrice_,
         uint256 gasPerKB_
-    ) external override onlyProtocolAdmin {
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
         if (nativeFeedOracle_ != address(0)) {
             nativeFeedOracle[chainId_] = AggregatorV3Interface(nativeFeedOracle_);
         }
@@ -109,7 +113,11 @@ contract PaymentHelper is IPaymentHelper {
         uint64 chainId_,
         uint256 configType_,
         bytes memory config_
-    ) external override onlyProtocolAdmin {
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
             nativeFeedOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
@@ -175,12 +183,14 @@ contract PaymentHelper is IPaymentHelper {
         uint64 dstChainId_,
         uint8[] calldata ambIds_,
         bytes memory message_
-    ) external view override returns (uint256 totalFees, bytes memory extraData) {
-        (uint256[] memory gasPerAMB, bytes[] memory extraDataPerAMB, uint256 fees) = _estimateAMBFeesReturnExtraData(
-            dstChainId_,
-            ambIds_,
-            message_
-        );
+    )
+        external
+        view
+        override
+        returns (uint256 totalFees, bytes memory extraData)
+    {
+        (uint256[] memory gasPerAMB, bytes[] memory extraDataPerAMB, uint256 fees) =
+            _estimateAMBFeesReturnExtraData(dstChainId_, ambIds_, message_);
 
         extraData = abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB));
         totalFees = fees;
@@ -190,15 +200,18 @@ contract PaymentHelper is IPaymentHelper {
     function estimateMultiDstMultiVault(
         MultiDstMultiVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
-        for (uint256 i; i < req_.dstChainIds.length; ) {
+    )
+        external
+        view
+        override
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
+    {
+        for (uint256 i; i < req_.dstChainIds.length;) {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
             (, uint256 ambFees) = _estimateAMBFees(
-                req_.ambIds[i],
-                req_.dstChainIds[i],
-                _generateMultiVaultMessage(req_.superformsData[i])
+                req_.ambIds[i], req_.dstChainIds[i], _generateMultiVaultMessage(req_.superformsData[i])
             );
 
             srcAmount += ambFees;
@@ -212,10 +225,8 @@ contract PaymentHelper is IPaymentHelper {
 
                 /// @dev step 4: estimation processing cost of acknowledgement
                 /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
-                srcAmount += _estimateAckProcessingCost(
-                    req_.dstChainIds.length,
-                    req_.superformsData[i].superformIds.length
-                );
+                srcAmount +=
+                    _estimateAckProcessingCost(req_.dstChainIds.length, req_.superformsData[i].superformIds.length);
 
                 /// @dev step 5: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
@@ -223,11 +234,8 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 6: estimate execution costs in dst (withdraw / deposit)
             /// note: only execution cost (not acknowledgement messaging cost)
-            totalDstGas += _estimateDstExecutionCost(
-                isDeposit,
-                req_.dstChainIds[i],
-                req_.superformsData[i].superformIds.length
-            );
+            totalDstGas +=
+                _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], req_.superformsData[i].superformIds.length);
 
             /// @dev step 7: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -244,15 +252,18 @@ contract PaymentHelper is IPaymentHelper {
     function estimateMultiDstSingleVault(
         MultiDstSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
-        for (uint256 i; i < req_.dstChainIds.length; ) {
+    )
+        external
+        view
+        override
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
+    {
+        for (uint256 i; i < req_.dstChainIds.length;) {
             uint256 totalDstGas;
 
             /// @dev step 1: estimate amb costs
             (, uint256 ambFees) = _estimateAMBFees(
-                req_.ambIds[i],
-                req_.dstChainIds[i],
-                _generateSingleVaultMessage(req_.superformsData[i])
+                req_.ambIds[i], req_.dstChainIds[i], _generateSingleVaultMessage(req_.superformsData[i])
             );
 
             srcAmount += ambFees;
@@ -290,15 +301,17 @@ contract PaymentHelper is IPaymentHelper {
     function estimateSingleXChainMultiVault(
         SingleXChainMultiVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
+    )
+        external
+        view
+        override
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
+    {
         uint256 totalDstGas;
 
         /// @dev step 1: estimate amb costs
-        (, uint256 ambFees) = _estimateAMBFees(
-            req_.ambIds,
-            req_.dstChainId,
-            _generateMultiVaultMessage(req_.superformsData)
-        );
+        (, uint256 ambFees) =
+            _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateMultiVaultMessage(req_.superformsData));
 
         srcAmount += ambFees;
 
@@ -328,14 +341,16 @@ contract PaymentHelper is IPaymentHelper {
     function estimateSingleXChainSingleVault(
         SingleXChainSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount) {
+    )
+        external
+        view
+        override
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
+    {
         uint256 totalDstGas;
         /// @dev step 1: estimate amb costs
-        (, uint256 ambFees) = _estimateAMBFees(
-            req_.ambIds,
-            req_.dstChainId,
-            _generateSingleVaultMessage(req_.superformData)
-        );
+        (, uint256 ambFees) =
+            _estimateAMBFees(req_.ambIds, req_.dstChainId, _generateSingleVaultMessage(req_.superformData));
 
         srcAmount += ambFees;
 
@@ -365,8 +380,13 @@ contract PaymentHelper is IPaymentHelper {
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount) {
-        (, uint32 formId, ) = req_.superformData.superformId.getSuperform();
+    )
+        external
+        view
+        override
+        returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount)
+    {
+        (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
         if (!isDeposit && formId == TIMELOCK_FORM_ID) {
             srcAmount += twoStepCost[superRegistry.chainId()] * _getGasPrice(superRegistry.chainId());
@@ -382,9 +402,14 @@ contract PaymentHelper is IPaymentHelper {
     function estimateSingleDirectMultiVault(
         SingleDirectMultiVaultStateReq calldata req_,
         bool isDeposit
-    ) external view override returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount) {
-        for (uint256 i; i < req_.superformData.superformIds.length; ) {
-            (, uint32 formId, ) = req_.superformData.superformIds[i].getSuperform();
+    )
+        external
+        view
+        override
+        returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount)
+    {
+        for (uint256 i; i < req_.superformData.superformIds.length;) {
+            (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit && formId == TIMELOCK_FORM_ID) {
                 srcAmount += twoStepCost[superRegistry.chainId()] * _getGasPrice(superRegistry.chainId());
@@ -407,16 +432,18 @@ contract PaymentHelper is IPaymentHelper {
         uint64 dstChainId_,
         bytes memory message_,
         bytes[] memory extraData_
-    ) public view returns (uint256 totalFees, uint256[] memory) {
+    )
+        public
+        view
+        returns (uint256 totalFees, uint256[] memory)
+    {
         uint256 len = ambIds_.length;
         uint256[] memory fees = new uint256[](len);
 
         /// @dev just checks the estimate for sending message from src -> dst
-        for (uint256 i; i < len; ) {
+        for (uint256 i; i < len;) {
             fees[i] = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_,
-                message_,
-                extraData_[i]
+                dstChainId_, message_, extraData_[i]
             );
 
             totalFees += fees[i];
@@ -438,15 +465,19 @@ contract PaymentHelper is IPaymentHelper {
         uint64 dstChainId_,
         uint8[] calldata ambIds_,
         bytes memory message_
-    ) public view returns (bytes[] memory extraDataPerAMB) {
+    )
+        public
+        view
+        returns (bytes[] memory extraDataPerAMB)
+    {
         uint256 len = ambIds_.length;
         uint256 totalDstGasReqInWei = message_.length * gasPerKB[dstChainId_];
 
         extraDataPerAMB = new bytes[](len);
 
-        for (uint256 i; i < len; ) {
+        for (uint256 i; i < len;) {
             if (ambIds_[i] == 1) {
-                extraDataPerAMB[i] = abi.encodePacked(uint16(2), totalDstGasReqInWei, uint(0), address(0));
+                extraDataPerAMB[i] = abi.encodePacked(uint16(2), totalDstGasReqInWei, uint256(0), address(0));
             }
 
             if (ambIds_[i] == 2) {
@@ -464,7 +495,11 @@ contract PaymentHelper is IPaymentHelper {
         uint8[] calldata ambIds_,
         uint64 dstChainId_,
         bytes memory message_
-    ) public view returns (uint256[] memory feeSplitUp, uint256 totalFees) {
+    )
+        public
+        view
+        returns (uint256[] memory feeSplitUp, uint256 totalFees)
+    {
         uint256 len = ambIds_.length;
 
         bytes[] memory extraDataPerAMB = _generateExtraData(dstChainId_, ambIds_, message_);
@@ -472,11 +507,9 @@ contract PaymentHelper is IPaymentHelper {
         feeSplitUp = new uint256[](len);
 
         /// @dev just checks the estimate for sending message from src -> dst
-        for (uint256 i; i < len; ) {
+        for (uint256 i; i < len;) {
             uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_,
-                message_,
-                extraDataPerAMB[i]
+                dstChainId_, message_, extraDataPerAMB[i]
             );
 
             totalFees += tempFee;
@@ -493,7 +526,11 @@ contract PaymentHelper is IPaymentHelper {
         uint64 dstChainId_,
         uint8[] calldata ambIds_,
         bytes memory message_
-    ) public view returns (uint256[] memory feeSplitUp, bytes[] memory extraDataPerAMB, uint256 totalFees) {
+    )
+        public
+        view
+        returns (uint256[] memory feeSplitUp, bytes[] memory extraDataPerAMB, uint256 totalFees)
+    {
         uint256 len = ambIds_.length;
 
         extraDataPerAMB = _generateExtraData(dstChainId_, ambIds_, message_);
@@ -501,11 +538,9 @@ contract PaymentHelper is IPaymentHelper {
         feeSplitUp = new uint256[](len);
 
         /// @dev just checks the estimate for sending message from src -> dst
-        for (uint256 i; i < len; ) {
+        for (uint256 i; i < len;) {
             uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_,
-                message_,
-                extraDataPerAMB[i]
+                dstChainId_, message_, extraDataPerAMB[i]
             );
 
             totalFees += tempFee;
@@ -521,17 +556,20 @@ contract PaymentHelper is IPaymentHelper {
     function _estimateSwapFees(
         uint64 dstChainId_,
         LiqRequest[] memory liqReq_
-    ) internal view returns (uint256 gasUsed) {
+    )
+        internal
+        view
+        returns (uint256 gasUsed)
+    {
         uint256 totalSwaps;
 
-        for (uint256 i; i < liqReq_.length; ) {
+        for (uint256 i; i < liqReq_.length;) {
             /// @dev checks if tx_data receiver is multiTxProcessor
             if (
-                liqReq_[i].bridgeId != 0 &&
-                IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).validateReceiver(
-                    liqReq_[i].txData,
-                    superRegistry.getAddress(keccak256("MULTI_TX_PROCESSOR"))
-                )
+                liqReq_[i].bridgeId != 0
+                    && IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).validateReceiver(
+                        liqReq_[i].txData, superRegistry.getAddress(keccak256("MULTI_TX_PROCESSOR"))
+                    )
             ) {
                 ++totalSwaps;
             }
@@ -550,7 +588,7 @@ contract PaymentHelper is IPaymentHelper {
 
     /// @dev helps estimate the liq amount involved in the tx
     function _estimateLiqAmount(LiqRequest[] memory req_) internal pure returns (uint256 liqAmount) {
-        for (uint256 i; i < req_.length; ) {
+        for (uint256 i; i < req_.length;) {
             if (req_[i].token == NATIVE) {
                 liqAmount += req_[i].amount;
             }
@@ -571,7 +609,11 @@ contract PaymentHelper is IPaymentHelper {
         bool isDeposit_,
         uint64 dstChainId_,
         uint256 vaultsCount_
-    ) internal view returns (uint256 gasUsed) {
+    )
+        internal
+        view
+        returns (uint256 gasUsed)
+    {
         uint256 executionGasPerVault = isDeposit_ ? depositGasUsed[dstChainId_] : withdrawGasUsed[dstChainId_];
 
         return executionGasPerVault * vaultsCount_;
@@ -581,16 +623,22 @@ contract PaymentHelper is IPaymentHelper {
     function _estimateAckProcessingCost(
         uint256 dstChainCount_,
         uint256 vaultsCount_
-    ) internal view returns (uint256 nativeFee) {
+    )
+        internal
+        view
+        returns (uint256 nativeFee)
+    {
         uint256 gasCost = dstChainCount_ * vaultsCount_ * ackGasCost[superRegistry.chainId()];
 
         return gasCost * _getGasPrice(superRegistry.chainId());
     }
 
     /// @dev generates the amb message for single vault data
-    function _generateSingleVaultMessage(
-        SingleVaultSFData memory sfData_
-    ) internal view returns (bytes memory message_) {
+    function _generateSingleVaultMessage(SingleVaultSFData memory sfData_)
+        internal
+        view
+        returns (bytes memory message_)
+    {
         bytes memory ambData = abi.encode(
             InitSingleVaultData(
                 _getNextPayloadId(),
@@ -605,7 +653,11 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev generates the amb message for multi vault data
-    function _generateMultiVaultMessage(MultiVaultSFData memory sfData_) internal view returns (bytes memory message_) {
+    function _generateMultiVaultMessage(MultiVaultSFData memory sfData_)
+        internal
+        view
+        returns (bytes memory message_)
+    {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
                 _getNextPayloadId(),
@@ -648,8 +700,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps generate the new payload id
     /// @dev next payload id = current payload id + 1
     function _getNextPayloadId() internal view returns (uint256 nextPayloadId) {
-        nextPayloadId = ReadOnlyBaseRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")))
-            .payloadsCount();
+        nextPayloadId = ReadOnlyBaseRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"))).payloadsCount();
         ++nextPayloadId;
     }
 
@@ -657,7 +708,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev returns default set values if an oracle is not configured for the network
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
         if (address(gasPriceOracle[chainId_]) != address(0)) {
-            (, int256 value, , , ) = gasPriceOracle[chainId_].latestRoundData();
+            (, int256 value,,,) = gasPriceOracle[chainId_].latestRoundData();
             return uint256(value);
         }
 
@@ -668,7 +719,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev returns `0` - if no oracle is set
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
         if (address(nativeFeedOracle[chainId_]) != address(0)) {
-            (, int256 dstTokenPrice, , , ) = nativeFeedOracle[chainId_].latestRoundData();
+            (, int256 dstTokenPrice,,,) = nativeFeedOracle[chainId_].latestRoundData();
             return uint256(dstTokenPrice);
         }
 

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
+
 import "forge-std/Test.sol";
 /// Types Imports
-import {ISocketRegistry} from "src/vendor/socket/ISocketRegistry.sol";
+import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 
 import "./MockERC20.sol";
 
@@ -11,7 +12,7 @@ import "./MockERC20.sol";
 contract SocketRouterMock is ISocketRegistry, Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    receive() external payable {}
+    receive() external payable { }
 
     function outboundTransferTo(ISocketRegistry.UserRequest calldata userRequest_) external payable override {
         ISocketRegistry.BridgeRequest memory bridgeRequest = userRequest_.bridgeRequest;
@@ -46,7 +47,8 @@ contract SocketRouterMock is ISocketRegistry, Test {
         } else if (middlewareRequest.id != 0 && bridgeRequest.id == 0) {
             /// @dev assume, for mocking purposes that cases with just swap is for the same token
             /// @dev this is for direct actions and multiTx swap of destination
-            /// @dev bridge is used here to mint tokens in a new contract, but actually it's just a swap (chain id is the same)
+            /// @dev bridge is used here to mint tokens in a new contract, but actually it's just a swap (chain id is
+            /// the same)
             _bridge(
                 userRequest_.amount,
                 userRequest_.receiverAddress,
@@ -57,7 +59,7 @@ contract SocketRouterMock is ISocketRegistry, Test {
         }
     }
 
-    function routes() external view override returns (RouteData[] memory) {}
+    function routes() external view override returns (RouteData[] memory) { }
 
     function _bridge(
         uint256 amount_,
@@ -65,7 +67,9 @@ contract SocketRouterMock is ISocketRegistry, Test {
         address inputToken_,
         bytes memory data_,
         bool prevSwap
-    ) internal {
+    )
+        internal
+    {
         /// @dev encapsulating from
         (address from, uint256 toForkId, address outputToken) = abi.decode(data_, (address, uint256, address));
 
@@ -83,7 +87,7 @@ contract SocketRouterMock is ISocketRegistry, Test {
             MockERC20(outputToken).mint(receiver_, amount_);
         } else {
             if (prevForkId != toForkId) vm.deal(address(this), amount_);
-            (bool success, ) = payable(receiver_).call{value: amount_}("");
+            (bool success,) = payable(receiver_).call{ value: amount_ }("");
             require(success);
         }
         vm.selectFork(prevForkId);

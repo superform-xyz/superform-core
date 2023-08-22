@@ -22,26 +22,31 @@ contract MDMVW00001200TokenInputSlipapgeL1AMB12 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         /// first 3 superforms are equal
         TARGET_UNDERLYINGS[ARBI][0] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[POLY][0] = [0, 0, 0, 2];
-        TARGET_VAULTS[POLY][0] = [1, 2, 0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[POLY][0] = [1, 2, 0, 0];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[POLY][0] = [1, 2, 0, 0];
 
         TARGET_UNDERLYINGS[ARBI][1] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
 
         TARGET_UNDERLYINGS[POLY][1] = [0, 0, 0, 2];
-        TARGET_VAULTS[POLY][1] = [1, 2, 0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[POLY][1] = [1, 2, 0, 0];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[POLY][1] = [1, 2, 0, 0];
 
         AMOUNTS[ARBI][0] = [111, 222, 333, 444];
         AMOUNTS[ARBI][1] = [11, 222, 333, 444];
 
-        /// @dev first 3 vaults are equal, we mark them all as partial, even if only 1 amount is partial, otherwise assertions do not pass
+        /// @dev first 3 vaults are equal, we mark them all as partial, even if only 1 amount is partial, otherwise
+        /// assertions do not pass
         PARTIAL[ARBI][1] = [true, true, true, false];
 
         AMOUNTS[POLY][0] = [2, 3, 4, 5];
@@ -67,7 +72,7 @@ contract MDMVW00001200TokenInputSlipapgeL1AMB12 is ProtocolActions {
                 slippage: 222, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -81,7 +86,7 @@ contract MDMVW00001200TokenInputSlipapgeL1AMB12 is ProtocolActions {
                 slippage: 222, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

@@ -4,14 +4,15 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../utils/ProtocolActions.sol";
 
-contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
+contract MDMVW84002408NativeInputSlipapgeL1AMB12 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationMultiVault, large test
-        AMBs = [1, 3];
+
+        AMBs = [1, 2];
         MultiDstAMBs = [AMBs, AMBs, AMBs];
 
         CHAIN_0 = ETH;
@@ -19,10 +20,10 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         /// first 3 superforms are equal
-        TARGET_UNDERLYINGS[ETH][0] = [2, 2];
-        TARGET_VAULTS[ETH][0] = [0, 1];
+        TARGET_UNDERLYINGS[ETH][0] = [2, 2, 1];
+        TARGET_VAULTS[ETH][0] = [8, 4, 0];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ETH][0] = [0, 1];
+        TARGET_FORM_KINDS[ETH][0] = [0, 1, 0];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
@@ -36,10 +37,10 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[AVAX][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[ETH][1] = [2, 2];
-        TARGET_VAULTS[ETH][1] = [0, 1];
+        TARGET_UNDERLYINGS[ETH][1] = [2, 2, 1];
+        TARGET_VAULTS[ETH][1] = [8, 4, 0];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ETH][1] = [0, 1];
+        TARGET_FORM_KINDS[ETH][1] = [0, 1, 0];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[POLY][1] = [0, 1, 2];
@@ -53,10 +54,10 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[AVAX][1] = [0, 0];
 
-        AMOUNTS[ETH][0] = [25, 5235];
-        AMOUNTS[ETH][1] = [11, 5235];
+        AMOUNTS[ETH][0] = [25, 5235, 887];
+        AMOUNTS[ETH][1] = [11, 5235, 887];
 
-        PARTIAL[ETH][1] = [true, false];
+        PARTIAL[ETH][1] = [true, false, false];
 
         AMOUNTS[POLY][0] = [9765, 9765, 222];
         AMOUNTS[POLY][1] = [9765, 9765, 2];
@@ -68,16 +69,14 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ETH][0] = [2, 2, 2, 2];
-        LIQ_BRIDGES[ETH][1] = [2, 2, 2, 2];
+        LIQ_BRIDGES[ETH][0] = [1, 1, 1, 1];
+        LIQ_BRIDGES[ETH][1] = [1, 1, 1, 1];
 
-        LIQ_BRIDGES[POLY][0] = [2, 2, 2, 2];
-        LIQ_BRIDGES[POLY][1] = [2, 2, 2, 2];
+        LIQ_BRIDGES[POLY][0] = [1, 1, 1, 1];
+        LIQ_BRIDGES[POLY][1] = [1, 1, 1, 1];
 
-        LIQ_BRIDGES[AVAX][0] = [2, 2, 2, 2];
-        LIQ_BRIDGES[AVAX][1] = [2, 2, 2, 2];
-
-        GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
+        LIQ_BRIDGES[AVAX][0] = [1, 1, 1, 1];
+        LIQ_BRIDGES[AVAX][1] = [1, 1, 1, 1];
 
         /// @dev push in order the actions should be executed
         actions.push(

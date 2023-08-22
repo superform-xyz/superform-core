@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 import "../utils/ProtocolActions.sol";
 
 contract BridgeValidatorInvalidReceiverTest is BaseSetup {
@@ -169,15 +169,20 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         uint64 toChainId_,
         uint256 amount_,
         string memory receiver_
-    ) internal returns (bytes memory txData) {
+    )
+        internal
+        returns (bytes memory txData)
+    {
         if (liqBridgeKind_ == 1) {
             ISocketRegistry.BridgeRequest memory bridgeRequest;
             ISocketRegistry.MiddlewareRequest memory middlewareRequest;
             ISocketRegistry.UserRequest memory userRequest;
             /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
+            /// bridging request
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// request id
+                1,
+                /// request id
                 0,
                 underlyingToken_,
                 abi.encode(getContract(toChainId_, receiver_), FORKS[toChainId_])
@@ -185,18 +190,15 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
 
             /// @dev empty bridge request
             bridgeRequest = ISocketRegistry.BridgeRequest(
-                0, /// id
+                0,
+                /// id
                 0,
                 address(0),
                 abi.encode(getContract(toChainId_, receiver_), FORKS[toChainId_])
             );
 
             userRequest = ISocketRegistry.UserRequest(
-                getContract(toChainId_, receiver_),
-                uint256(toChainId_),
-                amount_,
-                middlewareRequest,
-                bridgeRequest
+                getContract(toChainId_, receiver_), uint256(toChainId_), amount_, middlewareRequest, bridgeRequest
             );
 
             txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
@@ -205,8 +207,10 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
             swapData[0] = ILiFi.SwapData(
-                address(0), /// callTo (arbitrary)
-                address(0), /// callTo (approveTo)
+                address(0),
+                /// callTo (arbitrary)
+                address(0),
+                /// callTo (approveTo)
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
@@ -215,7 +219,8 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             );
 
             bridgeData = ILiFi.BridgeData(
-                bytes32("1"), /// request id
+                bytes32("1"),
+                /// request id
                 "",
                 "",
                 address(0),

@@ -18,7 +18,9 @@ contract SXSVDTimelockedRevert4626NoMultiTxTokenInputSlippageL2AMB13 is Protocol
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [2];
 
-        TARGET_VAULTS[POLY][0] = [5]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[POLY][0] = [5];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[POLY][0] = [1];
 
@@ -40,7 +42,7 @@ contract SXSVDTimelockedRevert4626NoMultiTxTokenInputSlippageL2AMB13 is Protocol
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

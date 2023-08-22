@@ -21,10 +21,7 @@ interface ISuperformFactory {
     /// @param superformId is the id of the superform
     /// @param superform is the address of the superform
     event SuperformCreated(
-        uint256 indexed formBeaconId,
-        address indexed vault,
-        uint256 indexed superformId,
-        address superform
+        uint256 indexed formBeaconId, address indexed vault, uint256 indexed superformId, address superform
     );
 
     /// @dev emitted when a new SuperRegistry is set
@@ -43,7 +40,9 @@ interface ISuperformFactory {
         address formImplementation_,
         uint32 formBeaconId_,
         bytes32 salt_
-    ) external returns (address beacon);
+    )
+        external
+        returns (address beacon);
 
     /// @dev To add new vaults to Form implementations, fusing them together into Superforms
     /// @param formBeaconId_ is the form beacon we want to attach the vault to
@@ -53,7 +52,9 @@ interface ISuperformFactory {
     function createSuperform(
         uint32 formBeaconId_,
         address vault_
-    ) external returns (uint256 superformId_, address superform_);
+    )
+        external
+        returns (uint256 superformId_, address superform_);
 
     /// @dev To add new vaults to Form implementations, fusing them together into Superforms
     /// @param formBeaconIds_ are the form beacon ids we want to attach the vaults to
@@ -63,7 +64,9 @@ interface ISuperformFactory {
     function createSuperforms(
         uint32[] memory formBeaconIds_,
         address[] memory vaults_
-    ) external returns (uint256[] memory superformIds_, address[] memory superforms_);
+    )
+        external
+        returns (uint256[] memory superformIds_, address[] memory superforms_);
 
     /// @dev to synchronize superforms added to different chains using factory registry
     /// @param data_ is the cross-chain superform id
@@ -78,7 +81,13 @@ interface ISuperformFactory {
     /// @param formBeaconId_ is the id of the form beacon
     /// @param status_ is the new status
     /// @param extraData_ is optional & passed when broadcasting of status is needed
-    function changeFormBeaconPauseStatus(uint32 formBeaconId_, bool status_, bytes memory extraData_) external payable;
+    function changeFormBeaconPauseStatus(
+        uint32 formBeaconId_,
+        bool status_,
+        bytes memory extraData_
+    )
+        external
+        payable;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -99,17 +108,19 @@ interface ISuperformFactory {
     /// @return superform_ is the address of the superform
     /// @return formBeaconId_ is the id of the form beacon
     /// @return chainId_ is the chain id
-    function getSuperform(
-        uint256 superformId_
-    ) external pure returns (address superform_, uint32 formBeaconId_, uint64 chainId_);
+    function getSuperform(uint256 superformId_)
+        external
+        pure
+        returns (address superform_, uint32 formBeaconId_, uint64 chainId_);
 
     /// @dev Reverse query of getSuperform, returns all superforms for a given vault
     /// @param vault_ is the address of a vault
     /// @return superformIds_ is the id of the superform
     /// @return superforms_ is the address of the superform
-    function getAllSuperformsFromVault(
-        address vault_
-    ) external view returns (uint256[] memory superformIds_, address[] memory superforms_);
+    function getAllSuperformsFromVault(address vault_)
+        external
+        view
+        returns (uint256[] memory superformIds_, address[] memory superforms_);
 
     /// @dev Returns all Superforms
     /// @return superformIds_ is the id of the superform

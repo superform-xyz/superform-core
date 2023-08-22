@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 
 import "../utils/BaseSetup.sol";
-import {TransactionType, CallbackType, AMBMessage} from "src/types/DataTypes.sol";
-import {DataLib} from "src/libraries/DataLib.sol";
-import {CoreStateRegistry} from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import {Error} from "src/utils/Error.sol";
+import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
+import { Error } from "src/utils/Error.sol";
 
 contract BaseStateRegistryTest is BaseSetup {
     CoreStateRegistry public coreStateRegistry;
@@ -40,11 +40,7 @@ contract BaseStateRegistryTest is BaseSetup {
         vm.expectRevert(Error.INVALID_BRIDGE_ID.selector);
         vm.prank(getContract(ETH, "SuperformRouter"));
         coreStateRegistry.dispatchPayload(
-            bond,
-            ambIds,
-            ARBI,
-            abi.encode(420),
-            abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB))
+            bond, ambIds, ARBI, abi.encode(420), abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB))
         );
     }
 
@@ -65,7 +61,7 @@ contract BaseStateRegistryTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformRouter"));
         vm.deal(getContract(ETH, "SuperformRouter"), 2 wei);
 
-        coreStateRegistry.dispatchPayload{value: 2 wei}(
+        coreStateRegistry.dispatchPayload{ value: 2 wei }(
             bond,
             ambIds,
             ARBI,
@@ -78,7 +74,7 @@ contract BaseStateRegistryTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformRouter"));
         vm.deal(getContract(ETH, "SuperformRouter"), 2 wei);
 
-        coreStateRegistry.dispatchPayload{value: 2 wei}(
+        coreStateRegistry.dispatchPayload{ value: 2 wei }(
             bond,
             ambIds,
             ARBI,

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {UpgradeableBeacon} from "openzeppelin-contracts/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import {IFormBeacon} from "../interfaces/IFormBeacon.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {Error} from "../utils/Error.sol";
+import { UpgradeableBeacon } from "openzeppelin-contracts/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import { IFormBeacon } from "../interfaces/IFormBeacon.sol";
+import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
+import { Error } from "../utils/Error.sol";
 
 /// @title FormBeacon
 /// @notice The Beacon for any given form.
@@ -24,8 +24,9 @@ contract FormBeacon is IFormBeacon {
     bool public paused;
 
     modifier onlySuperformFactory() {
-        if (superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")) != msg.sender)
+        if (superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")) != msg.sender) {
             revert Error.NOT_SUPERFORM_FACTORY();
+        }
         _;
     }
 

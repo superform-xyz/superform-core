@@ -2,12 +2,12 @@
 pragma solidity 0.8.19;
 
 import "../../utils/BaseSetup.sol";
-import {TransactionType, CallbackType, AMBMessage} from "src/types/DataTypes.sol";
-import {DataLib} from "src/libraries/DataLib.sol";
-import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
-import {CelerImplementation} from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
-import {CoreStateRegistry} from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import {Error} from "src/utils/Error.sol";
+import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
+import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
+import { Error } from "src/utils/Error.sol";
 
 contract CelerImplementationTest is BaseSetup {
     /// @dev event emitted from CelerMessageBus on ETH (CELER_BUS)
@@ -83,7 +83,13 @@ contract CelerImplementationTest is BaseSetup {
         assertEq(celerImplementation.superChainId(ambChainId), superChainId);
     }
 
-    function test_revert_setChainId_invalidChainId_invalidCaller(uint256 superChainIdSeed_, uint256 ambChainIdSeed_, address malice_) public {
+    function test_revert_setChainId_invalidChainId_invalidCaller(
+        uint256 superChainIdSeed_,
+        uint256 ambChainIdSeed_,
+        address malice_
+    )
+        public
+    {
         vm.startPrank(deployer);
 
         uint64 superChainId = chainIds[superChainIdSeed_ % chainIds.length];
@@ -118,7 +124,7 @@ contract CelerImplementationTest is BaseSetup {
         vm.expectEmit(true, false, false, true, CELER_BUS);
 
         /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
-        for (uint i = 1; i < chainIds.length; i++) {
+        for (uint256 i = 1; i < chainIds.length; i++) {
             emit Message(
                 address(celerImplementation),
                 celerImplementation.authorizedImpl(chainIds[i]),
@@ -129,21 +135,23 @@ contract CelerImplementationTest is BaseSetup {
         }
 
         vm.prank(coreStateRegistry);
-        celerImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        celerImplementation.broadcastPayload{ value: 0.1 ether }(
+            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
         );
 
         vm.prank(coreStateRegistry);
-        celerImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        celerImplementation.broadcastPayload{ value: 0.1 ether }(
+            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_broadcastPayload_invalidGasDstLength(uint256 userSeed_, uint256 gasPerDstLenSeed, uint256 extraDataPerDstLenSeed) public {
+    function test_revert_broadcastPayload_invalidGasDstLength(
+        uint256 userSeed_,
+        uint256 gasPerDstLenSeed,
+        uint256 extraDataPerDstLenSeed
+    )
+        public
+    {
         vm.startPrank(deployer);
         uint256 userIndex = userSeed_ % users.length;
         uint256 gasPerDstLen = bound(gasPerDstLenSeed, 1, chainIds.length);
@@ -153,10 +161,10 @@ contract CelerImplementationTest is BaseSetup {
         AMBMessage memory ambMessage;
         address coreStateRegistry;
 
-        (ambMessage, , coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
+        (ambMessage,, coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
 
         uint256[] memory gasPerDst = new uint256[](gasPerDstLen);
-        for (uint i = 0; i < gasPerDst.length; i++) {
+        for (uint256 i = 0; i < gasPerDst.length; i++) {
             gasPerDst[i] = 0.1 ether;
         }
 
@@ -167,10 +175,8 @@ contract CelerImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
         vm.prank(coreStateRegistry);
-        celerImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        celerImplementation.broadcastPayload{ value: 0.1 ether }(
+            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
         );
     }
 
@@ -188,10 +194,8 @@ contract CelerImplementationTest is BaseSetup {
 
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
-        celerImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        celerImplementation.broadcastPayload{ value: 0.1 ether }(
+            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
         );
     }
 
@@ -210,7 +214,7 @@ contract CelerImplementationTest is BaseSetup {
 
         vm.prank(coreStateRegistry);
         /// @dev note first arg to be dai
-        celerImplementation.broadcastPayload{value: 0.1 ether}(dai, abi.encode(ambMessage), abi.encode(ambExtraData));
+        celerImplementation.broadcastPayload{ value: 0.1 ether }(dai, abi.encode(ambMessage), abi.encode(ambExtraData));
     }
 
     function test_revert_dispatchPayload_gasRefundFailed_invalidCaller(uint256 chainIdSeed_, address malice_) public {
@@ -231,21 +235,15 @@ contract CelerImplementationTest is BaseSetup {
         vm.expectRevert(Error.GAS_REFUND_FAILED.selector);
         vm.prank(coreStateRegistry);
         /// @dev note first arg to be dai, second arg to be optimism
-        celerImplementation.dispatchPayload{value: 0.1 ether}(
-            dai,
-            chainId,
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        celerImplementation.dispatchPayload{ value: 0.1 ether }(
+            dai, chainId, abi.encode(ambMessage), abi.encode(ambExtraData)
         );
 
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
-        celerImplementation.dispatchPayload{value: 0.1 ether}(
-            users[0],
-            chainId,
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        celerImplementation.dispatchPayload{ value: 0.1 ether }(
+            users[0], chainId, abi.encode(ambMessage), abi.encode(ambExtraData)
         );
     }
 
@@ -253,32 +251,27 @@ contract CelerImplementationTest is BaseSetup {
         vm.startPrank(deployer);
         AMBMessage memory ambMessage;
 
-        (ambMessage, , ) = setupBroadcastPayloadAMBData(address(celerImplementation));
+        (ambMessage,,) = setupBroadcastPayloadAMBData(address(celerImplementation));
 
         vm.prank(deployer);
         celerImplementation.setReceiver(ETH, address(celerImplementation));
 
         vm.prank(CELER_BUS);
-        celerImplementation.executeMessage{value: 0.1 ether}(
-            address(celerImplementation),
-            ETH,
-            abi.encode(ambMessage),
-            getContract(ETH, "CelerHelper")
+        celerImplementation.executeMessage{ value: 0.1 ether }(
+            address(celerImplementation), ETH, abi.encode(ambMessage), getContract(ETH, "CelerHelper")
         );
 
         vm.expectRevert(Error.DUPLICATE_PAYLOAD.selector);
         vm.prank(CELER_BUS);
-        celerImplementation.executeMessage{value: 0.1 ether}(
-            address(celerImplementation),
-            ETH,
-            abi.encode(ambMessage),
-            getContract(ETH, "CelerHelper")
+        celerImplementation.executeMessage{ value: 0.1 ether }(
+            address(celerImplementation), ETH, abi.encode(ambMessage), getContract(ETH, "CelerHelper")
         );
 
         vm.expectRevert(Error.INVALID_SRC_SENDER.selector);
         vm.prank(CELER_BUS);
         celerImplementation.executeMessage(
-            malice_, /// @dev invalid srcChainSender
+            malice_,
+            /// @dev invalid srcChainSender
             ETH,
             abi.encode(ambMessage),
             getContract(ETH, "CelerHelper")
@@ -287,33 +280,37 @@ contract CelerImplementationTest is BaseSetup {
         vm.expectRevert(Error.CALLER_NOT_MESSAGE_BUS.selector);
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
-        celerImplementation.executeMessage{value: 0.1 ether}(
-            getContract(ETH, "CelerImplemtation"),
-            ETH,
-            abi.encode(ambMessage),
-            getContract(ETH, "CelerHelper")
+        celerImplementation.executeMessage{ value: 0.1 ether }(
+            getContract(ETH, "CelerImplemtation"), ETH, abi.encode(ambMessage), getContract(ETH, "CelerHelper")
         );
     }
 
-    function setupBroadcastPayloadAMBData(
-        address _srcSender
-    ) public returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
+    function setupBroadcastPayloadAMBData(address _srcSender)
+        public
+        returns (AMBMessage memory, BroadCastAMBExtraData memory, address)
+    {
         AMBMessage memory ambMessage = AMBMessage(
             DataLib.packTxInfo(
-                uint8(TransactionType.DEPOSIT), /// @dev TransactionType
+                uint8(TransactionType.DEPOSIT),
+                /// @dev TransactionType
                 uint8(CallbackType.INIT),
-                0, /// @dev isMultiVaults
-                1, /// @dev STATE_REGISTRY_TYPE,
-                _srcSender, /// @dev srcSender,
-                ETH /// @dev srcChainId
+                0,
+                /// @dev isMultiVaults
+                1,
+                /// @dev STATE_REGISTRY_TYPE,
+                _srcSender,
+                /// @dev srcSender,
+                ETH
             ),
-            "" /// ambData
+            /// @dev srcChainId
+            ""
         );
+        /// ambData
 
         /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10];
         /// @dev excluding chainIds[0] = 1 i.e. ETH, as no point broadcasting to same chain
         uint256[] memory gasPerDst = new uint256[](5);
-        for (uint i = 0; i < gasPerDst.length; i++) {
+        for (uint256 i = 0; i < gasPerDst.length; i++) {
             gasPerDst[i] = 0.1 ether;
         }
 

@@ -18,14 +18,18 @@ contract SXSVWRevertTimelockedNativeSlippage is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [0];
 
-        TARGET_VAULTS[ARBI][0] = [4]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [4];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ARBI][0] = [1];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][1] = [0];
 
-        TARGET_VAULTS[ARBI][1] = [4]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][1] = [4];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ARBI][1] = [1];
 
@@ -49,7 +53,7 @@ contract SXSVWRevertTimelockedNativeSlippage is ProtocolActions {
                 slippage: 224, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -63,7 +67,7 @@ contract SXSVWRevertTimelockedNativeSlippage is ProtocolActions {
                 slippage: 224, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

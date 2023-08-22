@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ISuperPositions} from "../../interfaces/ISuperPositions.sol";
-import {IBaseStateRegistry} from "../../interfaces/IBaseStateRegistry.sol";
-import {ITwoStepsFormStateRegistry} from "../../interfaces/ITwoStepsFormStateRegistry.sol";
-import {IPayloadHelper} from "../../interfaces/IPayloadHelper.sol";
-import {CallbackType, ReturnMultiData, ReturnSingleData, InitMultiVaultData, InitSingleVaultData, TwoStepsPayload} from "../../types/DataTypes.sol";
-import {DataLib} from "../../libraries/DataLib.sol";
+import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
+import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
+import { ITwoStepsFormStateRegistry } from "../../interfaces/ITwoStepsFormStateRegistry.sol";
+import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
+import {
+    CallbackType,
+    ReturnMultiData,
+    ReturnSingleData,
+    InitMultiVaultData,
+    InitSingleVaultData,
+    TwoStepsPayload
+} from "../../types/DataTypes.sol";
+import { DataLib } from "../../libraries/DataLib.sol";
 
 /// @title PayloadHelper
 /// @author ZeroPoint Labs
@@ -26,9 +33,7 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeDstPayload(
-        uint256 dstPayloadId_
-    )
+    function decodeDstPayload(uint256 dstPayloadId_)
         external
         view
         override
@@ -46,8 +51,8 @@ contract PayloadHelper is IPayloadHelper {
         bytes memory payloadBody = dstPayloadRegistry.payloadBody(dstPayloadId_);
         uint256 payloadHeader = dstPayloadRegistry.payloadHeader(dstPayloadId_);
 
-        (uint8 txType_, uint8 callbackType_, uint8 multi_, , address srcSender_, uint64 srcChainId_) = payloadHeader
-            .decodeTxInfo();
+        (uint8 txType_, uint8 callbackType_, uint8 multi_,, address srcSender_, uint64 srcChainId_) =
+            payloadHeader.decodeTxInfo();
 
         if (callbackType_ == uint256(CallbackType.RETURN) || callbackType == uint256(CallbackType.FAIL)) {
             if (multi_ == 1) {
@@ -94,9 +99,7 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeSrcPayload(
-        uint256 srcPayloadId_
-    )
+    function decodeSrcPayload(uint256 srcPayloadId_)
         external
         view
         override
@@ -105,14 +108,12 @@ contract PayloadHelper is IPayloadHelper {
         uint256 txInfo = srcPayloadRegistry.txHistory(srcPayloadId_);
 
         if (txInfo != 0) {
-            (txType, callbackType, multi, , srcSender, srcChainId) = txInfo.decodeTxInfo();
+            (txType, callbackType, multi,, srcSender, srcChainId) = txInfo.decodeTxInfo();
         }
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeTimeLockPayload(
-        uint256 timelockPayloadId_
-    )
+    function decodeTimeLockPayload(uint256 timelockPayloadId_)
         external
         view
         override
@@ -121,17 +122,11 @@ contract PayloadHelper is IPayloadHelper {
         TwoStepsPayload memory payload = twoStepRegistry.getTwoStepsPayload(timelockPayloadId_);
 
         return (
-            payload.srcSender,
-            payload.srcChainId,
-            payload.data.payloadId,
-            payload.data.superformId,
-            payload.data.amount
+            payload.srcSender, payload.srcChainId, payload.data.payloadId, payload.data.superformId, payload.data.amount
         );
     }
 
-    function decodeTimeLockFailedPayload(
-        uint256 timelockPayloadId_
-    )
+    function decodeTimeLockFailedPayload(uint256 timelockPayloadId_)
         external
         view
         override
@@ -141,7 +136,7 @@ contract PayloadHelper is IPayloadHelper {
         bytes memory payloadBody = timelockPayloadRegistry.payloadBody(timelockPayloadId_);
         uint256 payloadHeader = timelockPayloadRegistry.payloadHeader(timelockPayloadId_);
 
-        (, uint8 callbackType_, , , address srcSender_, uint64 srcChainId_) = payloadHeader.decodeTxInfo();
+        (, uint8 callbackType_,,, address srcSender_, uint64 srcChainId_) = payloadHeader.decodeTxInfo();
 
         /// @dev callback type can never be INIT / RETURN
         if (callbackType_ == uint256(CallbackType.FAIL)) {

@@ -21,9 +21,13 @@ contract MDSVW010NativeSlippageL12AMB12 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [1];
         TARGET_UNDERLYINGS[AVAX][0] = [1];
 
-        TARGET_VAULTS[ARBI][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[OP][0] = [1]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [0];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [1];
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [0];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ARBI][0] = [0];
         TARGET_FORM_KINDS[OP][0] = [1];
@@ -34,9 +38,13 @@ contract MDSVW010NativeSlippageL12AMB12 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][1] = [1];
         TARGET_UNDERLYINGS[AVAX][1] = [1];
 
-        TARGET_VAULTS[ARBI][1] = [0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[OP][1] = [1]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[AVAX][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][1] = [0];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][1] = [1];
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][1] = [0];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ARBI][1] = [0];
         TARGET_FORM_KINDS[OP][1] = [1];
@@ -44,11 +52,11 @@ contract MDSVW010NativeSlippageL12AMB12 is ProtocolActions {
 
         AMOUNTS[ARBI][0] = [777];
         AMOUNTS[OP][0] = [955];
-        AMOUNTS[AVAX][0] = [42141];
+        AMOUNTS[AVAX][0] = [42_141];
 
         AMOUNTS[ARBI][1] = [777];
         AMOUNTS[OP][1] = [955];
-        AMOUNTS[AVAX][1] = [42141];
+        AMOUNTS[AVAX][1] = [42_141];
 
         MAX_SLIPPAGE = 1000;
 
@@ -72,7 +80,7 @@ contract MDSVW010NativeSlippageL12AMB12 is ProtocolActions {
                 slippage: 775, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -85,9 +93,10 @@ contract MDSVW010NativeSlippageL12AMB12 is ProtocolActions {
                 revertRole: "",
                 slippage: 775, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 2 /// @dev on Withdraws external token (to receive, cannot be native)
+                externalToken: 2
             })
         );
+        /// @dev on Withdraws external token (to receive, cannot be native)
     }
 
     /*///////////////////////////////////////////////////////////////

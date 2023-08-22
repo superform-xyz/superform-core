@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import {IBaseStateRegistry} from "../../../interfaces/IBaseStateRegistry.sol";
-import {IAmbImplementation} from "../../../interfaces/IAmbImplementation.sol";
-import {ISuperRegistry} from "../../../interfaces/ISuperRegistry.sol";
-import {ISuperRBAC} from "../../../interfaces/ISuperRBAC.sol";
-import {IMessageBus} from "../../../vendor/celer/IMessageBus.sol";
-import {IMessageReceiver} from "../../../vendor/celer/IMessageReceiver.sol";
-import {Error} from "../../../utils/Error.sol";
-import {AMBMessage, BroadCastAMBExtraData} from "../../../types/DataTypes.sol";
-import {DataLib} from "../../../libraries/DataLib.sol";
+import { IBaseStateRegistry } from "../../../interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "../../../interfaces/IAmbImplementation.sol";
+import { ISuperRegistry } from "../../../interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "../../../interfaces/ISuperRBAC.sol";
+import { IMessageBus } from "../../../vendor/celer/IMessageBus.sol";
+import { IMessageReceiver } from "../../../vendor/celer/IMessageReceiver.sol";
+import { Error } from "../../../utils/Error.sol";
+import { AMBMessage, BroadCastAMBExtraData } from "../../../types/DataTypes.sol";
+import { DataLib } from "../../../libraries/DataLib.sol";
 
 /// @title CelerImplementation
 /// @author Zeropoint Labs
@@ -35,8 +35,9 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
                                 Modifiers
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
+        }
         _;
     }
 
@@ -52,15 +53,21 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice receive enables refund processing for gas payments
-    receive() external payable {}
+    receive() external payable { }
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         address srcSender_,
         uint64 dstChainId_,
         bytes memory message_,
-        bytes memory /// extraData_
-    ) external payable virtual override {
+        bytes memory
+    )
+        /// extraData_
+        external
+        payable
+        virtual
+        override
+    {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.NOT_STATE_REGISTRY();
         }
@@ -70,11 +77,11 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         /// calculate the exact fee needed
         uint256 feesReq = messageBus.calcFee(message_);
 
-        messageBus.sendMessage{value: feesReq}(authorizedImpl[chainId], chainId, message_);
+        messageBus.sendMessage{ value: feesReq }(authorizedImpl[chainId], chainId, message_);
 
         /// Refund unused fees
         /// NOTE: check security implications here
-        (bool success, ) = payable(srcSender_).call{value: msg.value - feesReq}("");
+        (bool success,) = payable(srcSender_).call{ value: msg.value - feesReq }("");
 
         if (!success) {
             revert Error.GAS_REFUND_FAILED();
@@ -86,7 +93,11 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         address srcSender_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual {
+    )
+        external
+        payable
+        virtual
+    {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.NOT_STATE_REGISTRY();
         }
@@ -103,10 +114,10 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         uint256 feesReq = messageBus.calcFee(message_);
         feesReq = feesReq * totalChains;
 
-        for (uint64 i; i < totalChains; ) {
+        for (uint64 i; i < totalChains;) {
             uint64 chainId = broadcastChains[i];
 
-            messageBus.sendMessage{value: d.gasPerDst[i]}(authorizedImpl[chainId], chainId, message_);
+            messageBus.sendMessage{ value: d.gasPerDst[i] }(authorizedImpl[chainId], chainId, message_);
 
             unchecked {
                 ++i;
@@ -115,7 +126,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
         /// Refund unused fees
         /// NOTE: check security implications here
-        (bool success, ) = payable(srcSender_).call{value: msg.value - feesReq}("");
+        (bool success,) = payable(srcSender_).call{ value: msg.value - feesReq }("");
 
         if (!success) {
             revert Error.GAS_REFUND_FAILED();
@@ -157,11 +168,17 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
     /// @inheritdoc IMessageReceiver
     function executeMessage(
-        address sender_, /// srcContract_
+        address sender_,
+        /// srcContract_
         uint64 srcChainId_,
         bytes calldata message_,
         address // executor
-    ) external payable override returns (ExecutionStatus) {
+    )
+        external
+        payable
+        override
+        returns (ExecutionStatus)
+    {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
@@ -185,7 +202,7 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         AMBMessage memory decoded = abi.decode(message_, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId, , ) = decoded.txInfo.decodeTxInfo();
+        (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 

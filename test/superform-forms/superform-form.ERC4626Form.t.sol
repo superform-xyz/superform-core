@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 import "../utils/ProtocolActions.sol";
 
 contract SuperformERC4626FormTest is BaseSetup {
@@ -28,17 +28,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         string memory symbol = ERC4626Form(payable(superformCreated)).getVaultSymbol();
 
@@ -62,17 +56,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         string memory symbol = ERC4626Form(payable(superformCreated)).superformYieldTokenSymbol();
 
@@ -95,17 +83,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         uint256 assets = 10;
         uint256 withdrawableAssets = ERC4626Form(payable(superformCreated)).previewWithdrawFrom(assets);
@@ -129,21 +111,15 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         uint256 withdrawableAssets = ERC4626Form(payable(superformCreated)).getPreviewPricePerVaultShare();
 
-        assertEq(withdrawableAssets, 1000000000000000000);
+        assertEq(withdrawableAssets, 1_000_000_000_000_000_000);
     }
 
     function test_superformVaultTotalAssets() public {
@@ -162,17 +138,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         uint256 totalAssets = ERC4626Form(payable(superformCreated)).getTotalAssets();
 
@@ -195,17 +165,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         uint256 vaultShareBalance = ERC4626Form(payable(superformCreated)).getVaultShareBalance();
 
@@ -228,21 +192,15 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         uint256 priceVaultShare = ERC4626Form(payable(superformCreated)).getPricePerVaultShare();
 
-        assertEq(priceVaultShare, 1000000000000000000);
+        assertEq(priceVaultShare, 1_000_000_000_000_000_000);
     }
 
     function test_superformVaultDecimals() public {
@@ -261,17 +219,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         uint256 vaultDecimals = ERC4626Form(payable(superformCreated)).getVaultDecimals();
 
@@ -294,17 +246,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         string memory vaultName = ERC4626Form(payable(superformCreated)).getVaultName();
 
@@ -327,17 +273,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         string memory tokenName = ERC4626Form(payable(superformCreated)).superformYieldTokenName();
 
@@ -348,20 +288,13 @@ contract SuperformERC4626FormTest is BaseSetup {
         /// scenario: user deposits with his own collateral but failed to approve
         vm.selectFork(FORKS[ETH]);
 
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        SingleVaultSFData memory data = SingleVaultSFData(
-            superformId,
-            1e18,
-            100,
-            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
-            ""
-        );
+        SingleVaultSFData memory data =
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
@@ -379,24 +312,17 @@ contract SuperformERC4626FormTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
         /// try depositing without approval
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        SingleVaultSFData memory data = SingleVaultSFData(
-            superformId,
-            2e18,
-            100,
-            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
-            ""
-        );
+        SingleVaultSFData memory data =
+            SingleVaultSFData(superformId, 2e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
         /// @dev make sure the beacon proxy has enough usdc for the user to hack it
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 3e18);
@@ -413,13 +339,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
         address USDT = getContract(ETH, "USDT");
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
-        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
@@ -443,13 +367,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
-        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
         address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
@@ -459,12 +381,7 @@ contract SuperformERC4626FormTest is BaseSetup {
         vm.startPrank(getContract(ETH, "CoreStateRegistry"));
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1,
-            superformId,
-            1e18,
-            100,
-            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), 3e18, 0, ""),
-            ""
+            1, superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), 3e18, 0, ""), ""
         );
 
         vm.expectRevert(Error.WITHDRAW_TX_DATA_NOT_UPDATED.selector);
@@ -478,13 +395,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
-        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
         address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
@@ -520,24 +435,17 @@ contract SuperformERC4626FormTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
-        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
         address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
 
-        SingleVaultSFData memory data = SingleVaultSFData(
-            superformId,
-            1e18,
-            100,
-            LiqRequest(1, "", getContract(ETH, "WETH"), 3e18, 0, ""),
-            ""
-        );
+        SingleVaultSFData memory data =
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "WETH"), 3e18, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
@@ -554,13 +462,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
-        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
         address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
@@ -568,12 +474,7 @@ contract SuperformERC4626FormTest is BaseSetup {
         bytes memory invalidTxData = abi.encode(1);
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1,
-            superformId,
-            1e18,
-            100,
-            LiqRequest(1, invalidTxData, getContract(ETH, "WETH"), 3e18, 0, ""),
-            ""
+            1, superformId, 1e18, 100, LiqRequest(1, invalidTxData, getContract(ETH, "WETH"), 3e18, 0, ""), ""
         );
 
         vm.startPrank(getContract(ETH, "CoreStateRegistry"));
@@ -618,24 +519,17 @@ contract SuperformERC4626FormTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        SingleVaultSFData memory data = SingleVaultSFData(
-            superformId,
-            1e18,
-            100,
-            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
-            ""
-        );
+        SingleVaultSFData memory data =
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
@@ -649,15 +543,20 @@ contract SuperformERC4626FormTest is BaseSetup {
         uint64 toChainId_,
         uint256 amount_,
         address receiver_
-    ) internal returns (bytes memory txData) {
+    )
+        internal
+        returns (bytes memory txData)
+    {
         if (liqBridgeKind_ == 1) {
             ISocketRegistry.BridgeRequest memory bridgeRequest;
             ISocketRegistry.MiddlewareRequest memory middlewareRequest;
             ISocketRegistry.UserRequest memory userRequest;
             /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
+            /// bridging request
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// request id
+                1,
+                /// request id
                 0,
                 underlyingToken_,
                 abi.encode(from_, FORKS[toChainId_])
@@ -665,19 +564,15 @@ contract SuperformERC4626FormTest is BaseSetup {
 
             /// @dev empty bridge request
             bridgeRequest = ISocketRegistry.BridgeRequest(
-                0, /// id
+                0,
+                /// id
                 0,
                 address(0),
                 abi.encode(receiver_, FORKS[toChainId_])
             );
 
-            userRequest = ISocketRegistry.UserRequest(
-                receiver_,
-                uint256(toChainId_),
-                amount_,
-                middlewareRequest,
-                bridgeRequest
-            );
+            userRequest =
+                ISocketRegistry.UserRequest(receiver_, uint256(toChainId_), amount_, middlewareRequest, bridgeRequest);
 
             txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
         } else if (liqBridgeKind_ == 2) {
@@ -685,8 +580,10 @@ contract SuperformERC4626FormTest is BaseSetup {
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
             swapData[0] = ILiFi.SwapData(
-                address(0), /// callTo (arbitrary)
-                address(0), /// callTo (approveTo)
+                address(0),
+                /// callTo (arbitrary)
+                address(0),
+                /// callTo (approveTo)
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
@@ -695,7 +592,8 @@ contract SuperformERC4626FormTest is BaseSetup {
             );
 
             bridgeData = ILiFi.BridgeData(
-                bytes32("1"), /// request id
+                bytes32("1"),
+                /// request id
                 "",
                 "",
                 address(0),

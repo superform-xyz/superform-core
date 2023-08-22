@@ -4,11 +4,11 @@ pragma solidity 0.8.19;
 import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
 
-import {DataLib} from "src/libraries/DataLib.sol";
-import {ISuperformFactory} from "src/interfaces/ISuperformFactory.sol";
-import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
-import {SuperPositions} from "src/SuperPositions.sol";
-import {Error} from "src/utils/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { SuperPositions } from "src/SuperPositions.sol";
+import { Error } from "src/utils/Error.sol";
 
 contract SuperPositionTest is BaseSetup {
     bytes4 INTERFACE_ID_ERC165 = 0x01ffc9a7;

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {ERC4626} from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
-import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import { ERC4626 } from "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC4626.sol";
+import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 /// @notice Mock ERC4626Timelock contract
 /// @dev Requires two separate calls to perform ERC4626.withdraw() or redeem()
@@ -16,16 +16,16 @@ contract ERC4626TimelockMockRevertDeposit is ERC4626 {
 
     struct UnlockRequest {
         /// Unique id of the request
-        uint id;
+        uint256 id;
         // The timestamp at which the `shareAmount` was requested to be unlocked
-        uint startedAt;
+        uint256 startedAt;
         // The amount of shares to burn
-        uint shareAmount;
+        uint256 shareAmount;
     }
 
     mapping(address owner => UnlockRequest) public requests;
 
-    constructor(IERC20 asset_, string memory name_, string memory symbol_) ERC4626(asset_) ERC20(name_, symbol_) {}
+    constructor(IERC20 asset_, string memory name_, string memory symbol_) ERC4626(asset_) ERC20(name_, symbol_) { }
 
     function deposit(uint256 assets, address receiver) public override returns (uint256) {
         revert();
@@ -51,7 +51,7 @@ contract ERC4626TimelockMockRevertDeposit is ERC4626 {
 
         /// @dev Internal tracking of withdraw/redeem requests routed through this vault
         requestId++;
-        requests[owner] = (UnlockRequest({id: requestId, startedAt: block.timestamp, shareAmount: sharesAmount}));
+        requests[owner] = (UnlockRequest({ id: requestId, startedAt: block.timestamp, shareAmount: sharesAmount }));
     }
 
     function cancelUnlock(address owner) external {

@@ -34,6 +34,9 @@ foundryup
 
 🎉 Foundry is installed! 🎉
 
+
+Note: you should also install pre-commit and Foundry Pre-Commit Hook to format before commiting. Check https://github.com/0xYYY/foundry-pre-commit for more info
+
 ### Project structure
 
     .

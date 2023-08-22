@@ -1,12 +1,12 @@
 // SPDX-License-Identifer: Apache-2.0
 pragma solidity 0.8.19;
 
-import {Broadcaster} from "../utils/Broadcaster.sol";
-import {ISuperformFactory} from "../../interfaces/ISuperformFactory.sol";
-import {PayloadState} from "../../types/DataTypes.sol";
-import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {Error} from "../../utils/Error.sol";
-import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
+import { Broadcaster } from "../utils/Broadcaster.sol";
+import { ISuperformFactory } from "../../interfaces/ISuperformFactory.sol";
+import { PayloadState } from "../../types/DataTypes.sol";
+import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
+import { Error } from "../../utils/Error.sol";
+import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 
 /// @title FactoryStateRegistry
 /// @author Zeropoint Labs
@@ -32,15 +32,22 @@ contract FactoryStateRegistry is Broadcaster {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_) Broadcaster(superRegistry_) {}
+    constructor(ISuperRegistry superRegistry_) Broadcaster(superRegistry_) { }
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     function processPayload(
         uint256 payloadId_,
-        bytes memory /// not useful here
-    ) external payable virtual override onlyFactoryStateRegistryProcessor returns (bytes memory, bytes memory) {
+        bytes memory
+    )
+        /// not useful here
+        external
+        payable
+        virtual
+        override
+        onlyFactoryStateRegistryProcessor
+    {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }

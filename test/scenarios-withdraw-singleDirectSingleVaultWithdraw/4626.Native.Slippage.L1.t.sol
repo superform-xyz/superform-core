@@ -18,14 +18,18 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [0];
 
-        TARGET_VAULTS[OP][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [0];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][0] = [0];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][1] = [0];
 
-        TARGET_VAULTS[OP][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][1] = [0];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][1] = [0];
 
@@ -49,7 +53,7 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -63,7 +67,7 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

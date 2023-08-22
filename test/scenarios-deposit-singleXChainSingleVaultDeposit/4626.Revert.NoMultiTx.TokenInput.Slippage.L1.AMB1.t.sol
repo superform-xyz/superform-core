@@ -17,7 +17,8 @@ contract SXSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [1];
-        TARGET_VAULTS[POLY][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[POLY][0] = [3];
+        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
 
         TARGET_FORM_KINDS[POLY][0] = [0];
 
@@ -39,7 +40,7 @@ contract SXSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
                 slippage: 312, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

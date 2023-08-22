@@ -1,11 +1,11 @@
 // SPDX-License-Identifer: Apache-2.0
 pragma solidity 0.8.19;
 
-import {Broadcaster} from "../utils/Broadcaster.sol";
-import {ISuperRBAC} from "../../interfaces/ISuperRBAC.sol";
-import {PayloadState} from "../../types/DataTypes.sol";
-import {ISuperRegistry} from "../../interfaces/ISuperRegistry.sol";
-import {Error} from "../../utils/Error.sol";
+import { Broadcaster } from "../utils/Broadcaster.sol";
+import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
+import { PayloadState } from "../../types/DataTypes.sol";
+import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
+import { Error } from "../../utils/Error.sol";
 
 /// @title RolesStateRegistry
 /// @author Zeropoint Labs
@@ -22,9 +22,7 @@ contract RolesStateRegistry is Broadcaster {
 
     modifier onlyRolesStateRegistryProcessor() {
         if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRolesStateRegistryProcessorRole(
-                msg.sender
-            )
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRolesStateRegistryProcessorRole(msg.sender)
         ) revert Error.NOT_PROCESSOR();
         _;
     }
@@ -32,7 +30,7 @@ contract RolesStateRegistry is Broadcaster {
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    constructor(ISuperRegistry superRegistry_) Broadcaster(superRegistry_) {}
+    constructor(ISuperRegistry superRegistry_) Broadcaster(superRegistry_) { }
 
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
@@ -40,8 +38,15 @@ contract RolesStateRegistry is Broadcaster {
 
     function processPayload(
         uint256 payloadId_,
-        bytes memory /// not useful here
-    ) external payable virtual override onlyRolesStateRegistryProcessor returns (bytes memory, bytes memory) {
+        bytes memory
+    )
+        /// not useful here
+        external
+        payable
+        virtual
+        override
+        onlyRolesStateRegistryProcessor
+    {
         if (payloadId_ > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }

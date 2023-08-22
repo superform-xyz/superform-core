@@ -20,8 +20,11 @@ contract MDSVWNormal4626NativeSlippageL1AMB12 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [0];
         TARGET_UNDERLYINGS[AVAX][0] = [1];
 
-        TARGET_VAULTS[OP][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [0];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [0];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][0] = [0];
         TARGET_FORM_KINDS[AVAX][0] = [0];
@@ -30,14 +33,17 @@ contract MDSVWNormal4626NativeSlippageL1AMB12 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][1] = [0];
         TARGET_UNDERLYINGS[AVAX][1] = [1];
 
-        TARGET_VAULTS[OP][1] = [0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[AVAX][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][1] = [0];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][1] = [0];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][1] = [0];
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
-        AMOUNTS[OP][0] = [541135];
-        AMOUNTS[OP][1] = [541135];
+        AMOUNTS[OP][0] = [541_135];
+        AMOUNTS[OP][1] = [541_135];
 
         AMOUNTS[AVAX][0] = [11];
         AMOUNTS[AVAX][1] = [10];
@@ -64,7 +70,7 @@ contract MDSVWNormal4626NativeSlippageL1AMB12 is ProtocolActions {
                 slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -78,7 +84,7 @@ contract MDSVWNormal4626NativeSlippageL1AMB12 is ProtocolActions {
                 slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

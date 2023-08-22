@@ -17,11 +17,12 @@ contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [2];
-        TARGET_VAULTS[AVAX][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[AVAX][0] = [3];
+        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
 
         TARGET_FORM_KINDS[AVAX][0] = [0];
 
-        AMOUNTS[AVAX][0] = [472186431];
+        AMOUNTS[AVAX][0] = [472_186_431];
 
         MAX_SLIPPAGE = 1000;
 
@@ -39,7 +40,7 @@ contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
                 slippage: 742, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

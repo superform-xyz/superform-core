@@ -47,7 +47,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1RepeatingDstMulti
                 slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {AMBMessage} from "../types/DataTypes.sol";
+import { AMBMessage } from "../types/DataTypes.sol";
 
 /// @title ISuperPositions
 /// @author Zeropoint Labs.

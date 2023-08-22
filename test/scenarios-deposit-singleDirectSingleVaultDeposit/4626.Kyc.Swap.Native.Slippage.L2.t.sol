@@ -18,11 +18,13 @@ contract SDSVD4626KycSwapNativeSlippageL2 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][0] = [1];
 
-        TARGET_VAULTS[ETH][0] = [2]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [2];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ETH][0] = [2];
 
-        AMOUNTS[ETH][0] = [31245];
+        AMOUNTS[ETH][0] = [31_245];
 
         MAX_SLIPPAGE = 1000;
 
@@ -40,7 +42,7 @@ contract SDSVD4626KycSwapNativeSlippageL2 is ProtocolActions {
                 slippage: 123, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 
