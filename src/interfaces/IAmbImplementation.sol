@@ -24,7 +24,9 @@ interface IAmbImplementation {
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable;
+    )
+        external
+        payable;
 
     /// @dev allows state registry to send multiple messages via implementation
     /// @param srcSender_ is the caller (used for gas refunds)
@@ -46,5 +48,8 @@ interface IAmbImplementation {
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external view returns (uint256 fees);
+    )
+        external
+        view
+        returns (uint256 fees);
 }

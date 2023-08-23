@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import {Script} from "forge-std/Script.sol";
-import {IERC1155A} from "ERC1155A/interfaces/IERC1155A.sol";
+import { Script } from "forge-std/Script.sol";
+import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 /// @dev Protocol imports
-import {CoreStateRegistry} from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import {FactoryStateRegistry} from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import {RolesStateRegistry} from "src/crosschain-data/extensions/RolesStateRegistry.sol";
-import {ISuperformFactory} from "src/interfaces/ISuperformFactory.sol";
-import {SuperformRouter} from "src/SuperformRouter.sol";
-import {SuperRegistry} from "src/settings/SuperRegistry.sol";
-import {SuperRBAC} from "src/settings/SuperRBAC.sol";
-import {SuperPositions} from "src/SuperPositions.sol";
-import {SuperformFactory} from "src/SuperformFactory.sol";
-import {ERC4626Form} from "src/forms/ERC4626Form.sol";
-import {ERC4626TimelockForm} from "src/forms/ERC4626TimelockForm.sol";
-import {ERC4626KYCDaoForm} from "src/forms/ERC4626KYCDaoForm.sol";
-import {MultiTxProcessor} from "src/crosschain-liquidity/MultiTxProcessor.sol";
-import {LiFiValidator} from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
-import {SocketValidator} from "src/crosschain-liquidity/socket/SocketValidator.sol";
-import {LayerzeroImplementation} from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
-import {HyperlaneImplementation} from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
-import {CelerImplementation} from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
-import {IMailbox} from "src/vendor/hyperlane/IMailbox.sol";
-import {IInterchainGasPaymaster} from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
-import {TwoStepsFormStateRegistry} from "src/crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
-import {PayloadHelper} from "src/crosschain-data/utils/PayloadHelper.sol";
-import {PaymentHelper} from "src/payments/PaymentHelper.sol";
-import {PayMaster} from "src/payments/PayMaster.sol";
-import {SuperTransmuter} from "src/SuperTransmuter.sol";
+import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
+import { FactoryStateRegistry } from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
+import { RolesStateRegistry } from "src/crosschain-data/extensions/RolesStateRegistry.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { SuperformRouter } from "src/SuperformRouter.sol";
+import { SuperRegistry } from "src/settings/SuperRegistry.sol";
+import { SuperRBAC } from "src/settings/SuperRBAC.sol";
+import { SuperPositions } from "src/SuperPositions.sol";
+import { SuperformFactory } from "src/SuperformFactory.sol";
+import { ERC4626Form } from "src/forms/ERC4626Form.sol";
+import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
+import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
+import { MultiTxProcessor } from "src/crosschain-liquidity/MultiTxProcessor.sol";
+import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
+import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
+import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
+import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
+import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
+import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
+import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
+import { TwoStepsFormStateRegistry } from "src/crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
+import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
+import { PaymentHelper } from "src/payments/PaymentHelper.sol";
+import { PayMaster } from "src/payments/PayMaster.sol";
+import { SuperTransmuter } from "src/SuperTransmuter.sol";
 
 struct SetupVars {
     uint64 chainId;
@@ -219,21 +219,21 @@ abstract contract AbstractDeploySingle is Script {
 
     uint64 public constant ETH = 1;
     uint64 public constant BSC = 56;
-    uint64 public constant AVAX = 43114;
+    uint64 public constant AVAX = 43_114;
     uint64 public constant POLY = 137;
-    uint64 public constant ARBI = 42161;
+    uint64 public constant ARBI = 42_161;
     uint64 public constant OP = 10;
     uint64 public constant FTM = 250;
 
-    uint64[] public chainIds = [1, 56, 43114, 137, 42161, 10, 250];
+    uint64[] public chainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
     string[] public chainNames = ["Ethereum", "Binance", "Avalanche", "Polygon", "Arbitrum", "Optimism", "Fantom"];
 
     /// @dev vendor chain ids
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
-    uint32[] public hyperlane_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
-    uint64[] public celer_chainIds = [1, 56, 43114, 137, 42161, 10, 250];
-    uint256[] public socketChainIds = [1, 56, 43114, 137, 42161, 10, 250];
-    uint256[] public lifiChainIds = [1, 56, 43114, 137, 42161, 10, 250];
+    uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
+    uint64[] public celer_chainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
+    uint256[] public socketChainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
+    uint256[] public lifiChainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
 
     uint256 public constant milionTokensE18 = 1 ether;
 
@@ -300,7 +300,10 @@ abstract contract AbstractDeploySingle is Script {
         uint256 trueIndex,
         Cycle cycle,
         uint64[] memory s_superFormChainIds
-    ) internal setEnvDeploy(cycle) {
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
         SetupVars memory vars;
         /// @dev liquidity validator addresses
         address[] memory bridgeValidators = new address[](bridgeIds.length);
@@ -360,9 +363,7 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
 
         vars.superRegistryC.setAddress(
-            vars.superRegistryC.FACTORY_STATE_REGISTRY(),
-            vars.factoryStateRegistry,
-            vars.chainId
+            vars.superRegistryC.FACTORY_STATE_REGISTRY(), vars.factoryStateRegistry, vars.chainId
         );
         /// @dev 3.3 - deploy Form State Registry
         vars.twoStepsFormStateRegistry = address(new TwoStepsFormStateRegistry{salt: salt}(vars.superRegistryC));
@@ -370,9 +371,7 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
         vars.superRegistryC.setAddress(
-            vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(),
-            vars.twoStepsFormStateRegistry,
-            vars.chainId
+            vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
         );
         vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
@@ -382,15 +381,14 @@ abstract contract AbstractDeploySingle is Script {
         contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
 
         vars.superRegistryC.setAddress(
-            vars.superRegistryC.ROLES_STATE_REGISTRY(),
-            vars.rolesStateRegistry,
-            vars.chainId
+            vars.superRegistryC.ROLES_STATE_REGISTRY(), vars.rolesStateRegistry, vars.chainId
         );
 
         address[] memory registryAddresses = new address[](4);
         registryAddresses[0] = vars.coreStateRegistry;
         registryAddresses[1] = vars.factoryStateRegistry;
-        registryAddresses[2] = vars.rolesStateRegistry; /// @dev unused for now (will be address 0)
+        registryAddresses[2] = vars.rolesStateRegistry;
+        /// @dev unused for now (will be address 0)
         registryAddresses[3] = vars.twoStepsFormStateRegistry;
 
         uint8[] memory registryIds = new uint8[](4);
@@ -480,16 +478,14 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRBACC.grantRole(vars.superRBACC.BURNER_ROLE(), vars.superformRouter);
 
         /// @dev 11 - Deploy SuperPositions
-        vars.superPositions = address(
-            new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry)
-        );
+        vars.superPositions =
+            address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry));
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
 
-        contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] = address(
-            new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry)
-        );
+        contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] =
+            address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry));
 
         /// @dev 12 - Deploy Payload Helper
         vars.PayloadHelper = address(
@@ -520,7 +516,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRBACC.grantRole(vars.superRBACC.CORE_CONTRACTS_ROLE(), vars.superformRouter);
         vars.superRBACC.grantRole(vars.superRBACC.CORE_CONTRACTS_ROLE(), vars.factory);
 
-        /// @dev 17 setup setup srcChain keepers
+        /// @dev 18 setup setup srcChain keepers
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
@@ -547,11 +543,16 @@ abstract contract AbstractDeploySingle is Script {
 
     /// @dev stage 2 must be called only after stage 1 is complete for all chains!
     function _deployStage2(
-        uint256 i, /// 0, 1, 2
-        uint256 trueIndex, /// 0, 1, 2, 3, 4, 5
+        uint256 i,
+        /// 0, 1, 2
+        uint256 trueIndex,
+        /// 0, 1, 2, 3, 4, 5
         Cycle cycle,
         uint64[] memory s_superFormChainIds
-    ) internal setEnvDeploy(cycle) {
+    )
+        internal
+        setEnvDeploy(cycle)
+    {
         SetupVars memory vars;
 
         vars.chainId = s_superFormChainIds[i];
@@ -562,9 +563,8 @@ abstract contract AbstractDeploySingle is Script {
         vars.celerImplementation = _readContract(chainNames[trueIndex], vars.chainId, "CelerImplementation");
         vars.superRegistry = _readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
-        vars.superRegistryC = SuperRegistry(
-            payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry"))
-        );
+        vars.superRegistryC =
+            SuperRegistry(payable(_readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry")));
 
         /// @dev Set all trusted remotes for each chain & configure amb chains ids
         for (uint256 j = 0; j < s_superFormChainIds.length; j++) {
@@ -582,54 +582,40 @@ abstract contract AbstractDeploySingle is Script {
                 vars.dstHypChainId = hyperlane_chainIds[dstTrueIndex];
                 vars.dstCelerChainId = celer_chainIds[dstTrueIndex];
 
-                vars.dstLzImplementation = _readContract(
-                    chainNames[dstTrueIndex],
-                    vars.dstChainId,
-                    "LayerzeroImplementation"
-                );
-                vars.dstHyperlaneImplementation = _readContract(
-                    chainNames[dstTrueIndex],
-                    vars.dstChainId,
-                    "HyperlaneImplementation"
-                );
-                vars.dstCelerImplementation = _readContract(
-                    chainNames[dstTrueIndex],
-                    vars.dstChainId,
-                    "CelerImplementation"
-                );
+                vars.dstLzImplementation =
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "LayerzeroImplementation");
+                vars.dstHyperlaneImplementation =
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "HyperlaneImplementation");
+                vars.dstCelerImplementation =
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "CelerImplementation");
 
                 LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
-                    vars.dstLzChainId,
-                    abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
+                    vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
                 );
 
                 LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
                 LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
-                    0, /// Defaults To Zero
+                    0,
+                    /// Defaults To Zero
                     vars.dstLzChainId,
-                    6, /// For Oracle Config
+                    6,
+                    /// For Oracle Config
                     abi.encode(CHAINLINK_lzOracle)
                 );
 
                 HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setReceiver(
-                    vars.dstHypChainId,
-                    vars.dstHyperlaneImplementation
+                    vars.dstHypChainId, vars.dstHyperlaneImplementation
                 );
 
                 HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
-                    vars.dstChainId,
-                    vars.dstHypChainId
+                    vars.dstChainId, vars.dstHypChainId
                 );
 
                 CelerImplementation(payable(vars.celerImplementation)).setReceiver(
-                    vars.dstCelerChainId,
-                    vars.dstCelerImplementation
+                    vars.dstCelerChainId, vars.dstCelerImplementation
                 );
 
-                CelerImplementation(payable(vars.celerImplementation)).setChainId(
-                    vars.dstChainId,
-                    vars.dstCelerChainId
-                );
+                CelerImplementation(payable(vars.celerImplementation)).setChainId(vars.dstChainId, vars.dstCelerChainId);
                 SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
                 /// @dev these values are mocks and has to be replaced
@@ -642,11 +628,12 @@ abstract contract AbstractDeploySingle is Script {
                     vars.dstChainId,
                     PRICE_FEEDS[vars.chainId][vars.dstChainId],
                     address(0),
-                    50000,
-                    40000,
-                    70000,
-                    80000,
-                    12e8, /// 12 usd
+                    50_000,
+                    40_000,
+                    70_000,
+                    80_000,
+                    12e8,
+                    /// 12 usd
                     28 gwei,
                     10 wei
                 );
@@ -693,13 +680,11 @@ abstract contract AbstractDeploySingle is Script {
                     vars.dstChainId
                 );
 
-                /*
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.ROLES_STATE_REGISTRY(),
-                                        _readContract(chainNames[dstTrueIndex], vars.dstChainId, "RolesStateRegistry"),
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "RolesStateRegistry"),
                     vars.dstChainId
                 );
-                */
 
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.SUPER_POSITIONS(),
@@ -729,45 +714,31 @@ abstract contract AbstractDeploySingle is Script {
                 vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.dstChainId);
                 vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), ownerAddress, vars.dstChainId);
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.CORE_REGISTRY_PROCESSOR(),
-                    ownerAddress,
-                    vars.dstChainId
+                    vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
                 );
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.CORE_REGISTRY_UPDATER(),
-                    ownerAddress,
-                    vars.dstChainId
+                    vars.superRegistryC.CORE_REGISTRY_UPDATER(), ownerAddress, vars.dstChainId
                 );
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(),
-                    ownerAddress,
-                    vars.dstChainId
+                    vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
                 );
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(),
-                    ownerAddress,
-                    vars.dstChainId
+                    vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
                 );
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(),
-                    ownerAddress,
-                    vars.dstChainId
+                    vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
                 );
             } else {
                 /// ack gas cost: 40000
                 /// two step form cost: 50000
                 /// default gas price: 50 Gwei
                 PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
-                    vars.chainId,
-                    1,
-                    abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
+                    vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                 );
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(40000));
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 11, abi.encode(50000));
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(40_000));
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 11, abi.encode(50_000));
                 PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
-                    vars.chainId,
-                    8,
-                    abi.encode(50 * 10 ** 9 wei)
+                    vars.chainId, 8, abi.encode(50 * 10 ** 9 wei)
                 );
             }
         }
@@ -900,9 +871,8 @@ abstract contract AbstractDeploySingle is Script {
         string memory json = vm.serializeAddress("EXPORTS", label, addr);
         string memory root = vm.projectRoot();
 
-        string memory chainOutputFolder = string(
-            abi.encodePacked("/script/output/", vm.toString(uint256(chainId)), "/")
-        );
+        string memory chainOutputFolder =
+            string(abi.encodePacked("/script/output/", vm.toString(uint256(chainId)), "/"));
 
         if (vm.envOr("FOUNDRY_EXPORTS_OVERWRITE_LATEST", false)) {
             vm.writeJson(json, string(abi.encodePacked(root, chainOutputFolder, name, "-latest.json")));
@@ -917,9 +887,8 @@ abstract contract AbstractDeploySingle is Script {
     function _readContract(string memory name, uint64 chainId, string memory contractName) internal returns (address) {
         string memory json;
         string memory root = vm.projectRoot();
-        json = string(
-            abi.encodePacked(root, "/script/output/", vm.toString(uint256(chainId)), "/", name, "-latest.json")
-        );
+        json =
+            string(abi.encodePacked(root, "/script/output/", vm.toString(uint256(chainId)), "/", name, "-latest.json"));
         string memory file = vm.readFile(json);
         return vm.parseJsonAddress(file, string(abi.encodePacked(".", contractName)));
     }
@@ -928,9 +897,7 @@ abstract contract AbstractDeploySingle is Script {
         assembly {
             addr := create2(0, add(bytecode_, 0x20), mload(bytecode_), salt_)
 
-            if iszero(extcodesize(addr)) {
-                revert(0, 0)
-            }
+            if iszero(extcodesize(addr)) { revert(0, 0) }
         }
 
         return addr;

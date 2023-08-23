@@ -4,11 +4,11 @@ pragma solidity 0.8.19;
 import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
 
-import {RolesStateRegistry} from "src/crosschain-data/extensions/RolesStateRegistry.sol";
-import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
-import {SuperRBAC} from "src/settings/SuperRBAC.sol";
+import { RolesStateRegistry } from "src/crosschain-data/extensions/RolesStateRegistry.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 
 contract SuperRBACTest is BaseSetup {
     SuperRBAC public superRBAC;
@@ -304,8 +304,7 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.stateSync(
             abi.encode(
                 AMBFactoryMessage(
-                    keccak256("SYNC_REVOKE"),
-                    abi.encode(keccak256("MINTER_ROLE"), keccak256("NON_EXISTENT_ID"))
+                    keccak256("SYNC_REVOKE"), abi.encode(keccak256("MINTER_ROLE"), keccak256("NON_EXISTENT_ID"))
                 )
             )
         );
@@ -324,7 +323,9 @@ contract SuperRBACTest is BaseSetup {
         string memory member_,
         bytes memory extraData_,
         uint256 value_
-    ) internal {
+    )
+        internal
+    {
         vm.deal(actor_, value_ + 1 ether);
         vm.prank(actor_);
 
@@ -338,11 +339,8 @@ contract SuperRBACTest is BaseSetup {
         }
 
         /// @dev setting the status as false in chain id = ETH
-        superRBAC.revokeRoleSuperBroadcast{value: value_}(
-            superRBACRole_,
-            memberAddress,
-            extraData_,
-            superRegistryAddressId_
+        superRBAC.revokeRoleSuperBroadcast{ value: value_ }(
+            superRBACRole_, memberAddress, extraData_, superRegistryAddressId_
         );
 
         vm.prank(deployer);
@@ -363,13 +361,11 @@ contract SuperRBACTest is BaseSetup {
                 vm.selectFork(FORKS[chainIds[i]]);
                 superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
 
-                (, bytes memory statusBefore) = address(superRBAC_).call(
-                    abi.encodeWithSelector(checkRole_, memberAddress)
-                );
+                (, bytes memory statusBefore) =
+                    address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
                 RolesStateRegistry(payable(getContract(chainIds[i], "RolesStateRegistry"))).processPayload(1);
-                (, bytes memory statusAfter) = address(superRBAC_).call(
-                    abi.encodeWithSelector(checkRole_, memberAddress)
-                );
+                (, bytes memory statusAfter) =
+                    address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
 
                 /// @dev assert status update before and after processing the payload
                 assertEq(abi.decode(statusBefore, (bool)), true);

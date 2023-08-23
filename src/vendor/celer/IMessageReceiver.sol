@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.0;
 
-/// @dev is imported from (https://github.com/celer-network/sgn-v2-contracts/blob/main/contracts/message/interfaces/IMessageReceiverApp.sol)
+/// @dev is imported from
+/// (https://github.com/celer-network/sgn-v2-contracts/blob/main/contracts/message/interfaces/IMessageReceiverApp.sol)
 interface IMessageReceiver {
     enum ExecutionStatus {
         Fail, // execution failed, finalized
@@ -19,5 +20,8 @@ interface IMessageReceiver {
         uint64 _srcChainId,
         bytes calldata _message,
         address _executor
-    ) external payable returns (ExecutionStatus);
+    )
+        external
+        payable
+        returns (ExecutionStatus);
 }

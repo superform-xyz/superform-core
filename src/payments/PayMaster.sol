@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {Error} from "../utils/Error.sol";
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
-import {IPayMaster} from "../interfaces/IPayMaster.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
-import {LiquidityHandler} from "../crosschain-liquidity/LiquidityHandler.sol";
+import { Error } from "../utils/Error.sol";
+import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
+import { IPayMaster } from "../interfaces/IPayMaster.sol";
+import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
+import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import { LiquidityHandler } from "../crosschain-liquidity/LiquidityHandler.sol";
 import "../types/LiquidityTypes.sol";
 
 /// @title PayMaster
@@ -58,7 +58,11 @@ contract PayMaster is IPayMaster, LiquidityHandler {
         bytes32 superRegistryId_,
         LiqRequest memory req_,
         uint64 dstChainId_
-    ) external override onlyPaymentAdmin {
+    )
+        external
+        override
+        onlyPaymentAdmin
+    {
         address receiver = superRegistry.getAddressByChainId(superRegistryId_, dstChainId_);
 
         if (receiver == address(0)) {
@@ -93,7 +97,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
     /// @dev helper to move native tokens same chain
     function _withdrawNative(address receiver_, uint256 amount_) internal {
-        (bool success, ) = payable(receiver_).call{value: amount_}("");
+        (bool success,) = payable(receiver_).call{ value: amount_ }("");
 
         if (!success) {
             revert Error.FAILED_WITHDRAW();
@@ -105,8 +109,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
     /// @dev helper to move native tokens cross-chain
     function _validateAndDispatchTokens(LiqRequest memory liqRequest_, address receiver_) internal {
         bool valid = IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateReceiver(
-            liqRequest_.txData,
-            receiver_
+            liqRequest_.txData, receiver_
         );
 
         if (!valid) {

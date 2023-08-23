@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 import "../../utils/ProtocolActions.sol";
 
 contract CoreStateRegistryTest is ProtocolActions {
@@ -68,8 +68,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.prank(getContract(AVAX, "SuperformRouter"));
         SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
-            1,
-            DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
         );
 
         vm.prank(getContract(AVAX, "HyperlaneImplementation"));

@@ -285,6 +285,9 @@ library Error {
     /// @dev thrown when liqData token is empty but txData is not
     error EMPTY_TOKEN_NON_EMPTY_TXDATA();
 
+    /// @dev if implementation formBeacon is PAUSED then users cannot perform any action
+    error PAUSED();
+
     /*///////////////////////////////////////////////////////////////
                         PAYMASTER ERRORS
     //////////////////////////////////////////////////////////////*/

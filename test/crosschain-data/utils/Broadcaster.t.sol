@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 
 import "../../utils/BaseSetup.sol";
-import {TransactionType, CallbackType, AMBMessage} from "src/types/DataTypes.sol";
-import {DataLib} from "src/libraries/DataLib.sol";
-import {FactoryStateRegistry} from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import {Error} from "src/utils/Error.sol";
+import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { FactoryStateRegistry } from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
+import { Error } from "src/utils/Error.sol";
 
 contract BroadcasterTest is BaseSetup {
     FactoryStateRegistry public factoryStateRegistry;
@@ -35,10 +35,7 @@ contract BroadcasterTest is BaseSetup {
         vm.expectRevert(Error.INVALID_BRIDGE_ID.selector);
         vm.prank(getContract(ETH, "SuperformFactory"));
         factoryStateRegistry.broadcastPayload(
-            bond,
-            ambIds,
-            abi.encode(420),
-            abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB))
+            bond, ambIds, abi.encode(420), abi.encode(AMBExtraData(gasPerAMB, extraDataPerAMB))
         );
     }
 
@@ -71,7 +68,7 @@ contract BroadcasterTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformFactory"));
         vm.deal(getContract(ETH, "SuperformFactory"), 10 wei);
 
-        factoryStateRegistry.broadcastPayload{value: 10 wei}(
+        factoryStateRegistry.broadcastPayload{ value: 10 wei }(
             bond,
             ambIds,
             abi.encode(AMBMessage(420, bytes("whatif"))),
@@ -83,7 +80,7 @@ contract BroadcasterTest is BaseSetup {
         vm.prank(getContract(ETH, "SuperformFactory"));
         vm.deal(getContract(ETH, "SuperformFactory"), 10 wei);
 
-        factoryStateRegistry.broadcastPayload{value: 10 wei}(
+        factoryStateRegistry.broadcastPayload{ value: 10 wei }(
             bond,
             ambIds,
             abi.encode(AMBMessage(420, bytes("whatif"))),

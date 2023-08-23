@@ -2,9 +2,9 @@
 pragma solidity 0.8.19;
 
 /// Interfaces
-import {IPayloadHelper} from "src/interfaces/IPayloadHelper.sol";
-import {IPaymentHelper} from "src/interfaces/IPaymentHelper.sol";
-import {ISuperformRouter} from "src/interfaces/ISuperformRouter.sol";
+import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { ISuperformRouter } from "src/interfaces/ISuperformRouter.sol";
 
 // Test Utils
 import "../../utils/ProtocolActions.sol";
@@ -28,11 +28,13 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         TARGET_UNDERLYINGS[POLY][0] = [0, 0];
 
-        TARGET_VAULTS[POLY][0] = [0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[POLY][0] = [0, 0];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[POLY][0] = [0, 0];
 
-        AMOUNTS[POLY][0] = [23183, 213];
+        AMOUNTS[POLY][0] = [23_183, 213];
 
         MAX_SLIPPAGE = 1000;
 
@@ -50,7 +52,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 
@@ -88,14 +90,18 @@ contract PayloadHelperMultiTest is ProtocolActions {
         address _PaymentHelper = contracts[CHAIN_0][bytes32(bytes("PaymentHelper"))];
         IPaymentHelper paymentHelper = IPaymentHelper(_PaymentHelper);
 
-        (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) = helper.decodeSrcPayload(
-            1
-        );
+        (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
+            helper.decodeSrcPayload(1);
 
-        assertEq(txType, 0); /// 0 for deposit
-        assertEq(callbackType, 0); /// 0 for init
-        assertEq(srcChainId, 10); /// chain id of optimism is 10
-        assertEq(multi, 1); /// 0 for not multi vault
+        assertEq(txType, 0);
+
+        /// 0 for deposit
+        assertEq(callbackType, 0);
+        /// 0 for init
+        assertEq(srcChainId, 10);
+        /// chain id of optimism is 10
+        assertEq(multi, 1);
+        /// 0 for not multi vault
         assertEq(srcSender, users[0]);
     }
 
@@ -123,9 +129,13 @@ contract PayloadHelperMultiTest is ProtocolActions {
         extraDataGenerated[0] = abi.encode("500000");
         extraDataGenerated[1] = abi.encode("0");
 
-        assertEq(txType, 0); /// 0 for deposit
-        assertEq(callbackType, 0); /// 0 for init
-        assertEq(srcChainId, 10); /// chain id of optimism is 10
+        assertEq(txType, 0);
+
+        /// 0 for deposit
+        assertEq(callbackType, 0);
+        /// 0 for init
+        assertEq(srcChainId, 10);
+        /// chain id of optimism is 10
         assertEq(srcPayloadId, 1);
         assertEq(amounts, AMOUNTS[POLY][0]);
         for (uint256 i = 0; i < slippage.length; ++i) {
@@ -134,7 +144,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         /// @notice: just asserting if fees are greater than 0
         /// no way to write serious tests on forked testnet at this point. should come back to this later on.
-        (uint256 ambFees, ) = paymentHelper.estimateAMBFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
+        (uint256 ambFees,) = paymentHelper.estimateAMBFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
         assertGe(ambFees, 0);
     }
 
@@ -158,9 +168,13 @@ contract PayloadHelperMultiTest is ProtocolActions {
             uint256 srcPayloadId
         ) = helper.decodeDstPayload(1);
 
-        assertEq(txType, 0); /// 0 for deposit
-        assertEq(callbackType, 1); /// 1 for return
-        assertEq(srcChainId, 137); /// chain id of polygon is 137
+        assertEq(txType, 0);
+
+        /// 0 for deposit
+        assertEq(callbackType, 1);
+        /// 1 for return
+        assertEq(srcChainId, 137);
+        /// chain id of polygon is 137
         assertEq(srcPayloadId, 1);
         assertEq(amounts, AMOUNTS[POLY][0]);
 

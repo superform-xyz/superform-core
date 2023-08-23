@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IBridgeValidator} from "../interfaces/IBridgeValidator.sol";
-import {Error} from "../utils/Error.sol";
+import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
+import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import { Error } from "../utils/Error.sol";
 
 /// @title BridgeValidator
 /// @author Zeropoint Labs
@@ -20,8 +20,9 @@ abstract contract BridgeValidator is IBridgeValidator {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
+        }
         _;
     }
 
@@ -41,7 +42,12 @@ abstract contract BridgeValidator is IBridgeValidator {
     function validateTxDataAmount(
         bytes calldata txData_,
         uint256 amount_
-    ) external view virtual override returns (bool);
+    )
+        external
+        view
+        virtual
+        override
+        returns (bool);
 
     /// @inheritdoc IBridgeValidator
     function validateTxData(
@@ -52,11 +58,20 @@ abstract contract BridgeValidator is IBridgeValidator {
         address superform_,
         address srcSender_,
         address liqDataToken_
-    ) external view virtual override;
+    )
+        external
+        view
+        virtual
+        override;
 
     /// @inheritdoc IBridgeValidator
     function validateReceiver(
         bytes calldata txData_,
         address _receiver
-    ) external pure virtual override returns (bool valid_);
+    )
+        external
+        pure
+        virtual
+        override
+        returns (bool valid_);
 }

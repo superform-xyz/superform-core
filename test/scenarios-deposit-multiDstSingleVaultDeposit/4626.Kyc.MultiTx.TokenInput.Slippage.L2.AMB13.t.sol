@@ -21,16 +21,21 @@ contract MDSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
         TARGET_UNDERLYINGS[BSC][0] = [2];
         TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[AVAX][0] = [2]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[BSC][0] = [2]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[ETH][0] = [2]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [2];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[BSC][0] = [2];
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [2];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[AVAX][0] = [2];
         TARGET_FORM_KINDS[BSC][0] = [2];
         TARGET_FORM_KINDS[ETH][0] = [2];
 
         AMOUNTS[AVAX][0] = [78];
-        AMOUNTS[BSC][0] = [2]; /// @dev NOTE: for direct chain transfers, 2 is the minimum otherwise it reverts with ZERO_SHARES()
+        AMOUNTS[BSC][0] = [2];
+        /// @dev NOTE: for direct chain transfers, 2 is the minimum otherwise it reverts with ZERO_SHARES()
         AMOUNTS[ETH][0] = [7999];
 
         MAX_SLIPPAGE = 1000;
@@ -51,7 +56,7 @@ contract MDSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
                 slippage: 412, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

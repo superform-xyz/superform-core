@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "../utils/ProtocolActions.sol";
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 
 contract SuperformFactoryStateSyncTest is BaseSetup {
     function setUp() public override {
@@ -17,10 +17,8 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         vm.startPrank(deployer);
 
         vm.recordLogs();
-        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 ether}(
-            formBeaconId,
-            true,
-            generateBroadcastParams(5, 2)
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 ether }(
+            formBeaconId, true, generateBroadcastParams(5, 2)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
@@ -29,18 +27,16 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                bool statusBefore = SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(
-                    formBeaconId
-                );
+                bool statusBefore =
+                    SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 
                 vm.expectRevert(Error.NOT_FACTORY_STATE_REGISTRY.selector);
                 bytes memory data_ = hex"ffff";
                 SuperformFactory(getContract(chainIds[i], "SuperformFactory")).stateSync(data_);
 
                 FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1);
-                bool statusAfter = SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(
-                    formBeaconId
-                );
+                bool statusAfter =
+                    SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 
                 /// @dev assert status update before and after processing the payload
                 assertEq(statusBefore, false);
@@ -73,10 +69,8 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         /// @dev checks if proof for this next one is diff
         vm.recordLogs();
-        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{value: 800 ether}(
-            formBeaconId,
-            true,
-            generateBroadcastParams(5, 2)
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 ether }(
+            formBeaconId, true, generateBroadcastParams(5, 2)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
@@ -90,10 +84,8 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         bytes32 SYNC_BEACON_STATUS = keccak256("SYNC_BEACON_STATUS");
         bytes memory extraData = hex"ffff";
 
-        AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
-            SYNC_BEACON_STATUS,
-            abi.encode(ETH, 1, formBeaconId, false)
-        );
+        AMBFactoryMessage memory factoryPayload =
+            AMBFactoryMessage(SYNC_BEACON_STATUS, abi.encode(ETH, 1, formBeaconId, false));
 
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
         vm.prank(getContract(ETH, "FactoryStateRegistry"));

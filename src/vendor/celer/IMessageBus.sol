@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity >=0.8.0;
 
-/// @dev is imported from (https://github.com/celer-network/sgn-v2-contracts/blob/main/contracts/message/interfaces/IMessageBus.sol)
+/// @dev is imported from
+/// (https://github.com/celer-network/sgn-v2-contracts/blob/main/contracts/message/interfaces/IMessageBus.sol)
 library MsgDataTypes {
     string constant ABORT_PREFIX = "MSG::ABORT:";
 
@@ -121,11 +122,14 @@ interface IMessageBus {
         address _srcBridge,
         bytes32 _srcTransferId,
         bytes calldata _message
-    ) external payable;
+    )
+        external
+        payable;
 
     /// @notice Execute a message not associated with a transfer.
     /// @param _message Arbitrary message bytes originated from and encoded by the source app contract
-    /// @param _sigs The list of signatures sorted by signing addresses in ascending order. A relay must be signed-off by
+    /// @param _sigs The list of signatures sorted by signing addresses in ascending order. A relay must be signed-off
+    /// by
     /// +2/3 of the sigsVerifier's current signing power to be delivered.
     /// @param _signers The sorted list of signers.
     /// @param _powers The signing powers of the signers.
@@ -135,12 +139,15 @@ interface IMessageBus {
         bytes[] calldata _sigs,
         address[] calldata _signers,
         uint256[] calldata _powers
-    ) external payable;
+    )
+        external
+        payable;
 
     /// @notice Execute a message with a successful transfer.
     /// @param _message Arbitrary message bytes originated from and encoded by the source app contract
     /// @param _transfer The transfer info.
-    /// @param _sigs The list of signatures sorted by signing addresses in ascending order. A relay must be signed-off by
+    /// @param _sigs The list of signatures sorted by signing addresses in ascending order. A relay must be signed-off
+    /// by
     /// +2/3 of the sigsVerifier's current signing power to be delivered.
     /// @param _signers The sorted list of signers.
     /// @param _powers The signing powers of the signers.
@@ -150,22 +157,28 @@ interface IMessageBus {
         bytes[] calldata _sigs,
         address[] calldata _signers,
         uint256[] calldata _powers
-    ) external payable;
+    )
+        external
+        payable;
 
     /// @notice Execute a message with a refunded transfer.
     /// @param _message Arbitrary message bytes originated from and encoded by the source app contract
     /// @param _transfer The transfer info.
-    /// @param _sigs The list of signatures sorted by signing addresses in ascending order. A relay must be signed-off by
+    /// @param _sigs The list of signatures sorted by signing addresses in ascending order. A relay must be signed-off
+    /// by
     /// +2/3 of the sigsVerifier's current signing power to be delivered.
     /// @param _signers The sorted list of signers.
     /// @param _powers The signing powers of the signers.
     function executeMessageWithTransferRefund(
-        bytes calldata _message, /// the same message associated with the original transfer
+        bytes calldata _message,
+        /// the same message associated with the original transfer
         MsgDataTypes.TransferInfo calldata _transfer,
         bytes[] calldata _sigs,
         address[] calldata _signers,
         uint256[] calldata _powers
-    ) external payable;
+    )
+        external
+        payable;
 
     /// @notice Withdraws message fee in the form of native gas token.
     /// @param _account The address receiving the fee.
@@ -180,7 +193,8 @@ interface IMessageBus {
         bytes[] calldata _sigs,
         address[] calldata _signers,
         uint256[] calldata _powers
-    ) external;
+    )
+        external;
 
     /// @notice Calculates the required fee for the message.
     /// @param _message Arbitrary message bytes to be decoded by the destination app contract.

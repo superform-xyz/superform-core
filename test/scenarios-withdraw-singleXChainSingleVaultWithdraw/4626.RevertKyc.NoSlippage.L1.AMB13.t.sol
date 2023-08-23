@@ -18,19 +18,23 @@ contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [2];
 
-        TARGET_VAULTS[AVAX][0] = [7]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [7];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[AVAX][0] = [2];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][1] = [2];
 
-        TARGET_VAULTS[AVAX][1] = [7]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][1] = [7];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[AVAX][1] = [2];
 
-        AMOUNTS[AVAX][0] = [31231];
-        AMOUNTS[AVAX][1] = [31231];
+        AMOUNTS[AVAX][0] = [31_231];
+        AMOUNTS[AVAX][1] = [31_231];
 
         MAX_SLIPPAGE = 1000;
 
@@ -49,7 +53,7 @@ contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
         actions.push(
             TestAction({
@@ -62,7 +66,7 @@ contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

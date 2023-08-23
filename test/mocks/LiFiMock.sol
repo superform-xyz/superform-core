@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 /// Types Imports
-import {ILiFi} from "src/vendor/lifi/ILiFi.sol";
+import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import "./MockERC20.sol";
 
 /// @title Socket Router Mock
@@ -11,13 +11,17 @@ import "./MockERC20.sol";
 contract LiFiMock is Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    receive() external payable {}
+    receive() external payable { }
 
     function swapAndStartBridgeTokensViaBridge(
         ILiFi.BridgeData calldata bridgeData,
         ILiFi.SwapData[] calldata swapData
-    ) external payable {
-        /// @dev for the purpose of this mock, encapsulating mock data in swap data, regardless if we are doing a swap or not
+    )
+        external
+        payable
+    {
+        /// @dev for the purpose of this mock, encapsulating mock data in swap data, regardless if we are doing a swap
+        /// or not
         if (!bridgeData.hasSourceSwaps && !bridgeData.hasDestinationCall) {
             /// @dev just mock bridge
             _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
@@ -25,17 +29,15 @@ contract LiFiMock is Test {
             /// @dev else, assume according to socket a swap and bridge is involved
             /// @dev assume from amount = minAmount
             _swap(
-                swapData[0].fromAmount,
-                swapData[0].sendingAssetId,
-                swapData[0].receivingAssetId,
-                swapData[0].callData
+                swapData[0].fromAmount, swapData[0].sendingAssetId, swapData[0].receivingAssetId, swapData[0].callData
             );
 
             _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, true);
         } else if (!bridgeData.hasSourceSwaps && bridgeData.hasDestinationCall) {
             /// @dev assume, for mocking purposes that cases with just swap is for the same token
             /// @dev this is for direct actions and multiTx swap of destination
-            /// @dev bridge is used here to mint tokens in a new contract, but actually it's just a swap (chain id is the same)
+            /// @dev bridge is used here to mint tokens in a new contract, but actually it's just a swap (chain id is
+            /// the same)
             _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
         }
     }
@@ -46,7 +48,9 @@ contract LiFiMock is Test {
         address inputToken_,
         bytes memory data_,
         bool prevSwap
-    ) internal {
+    )
+        internal
+    {
         /// @dev encapsulating from
         (address from, uint256 toForkId, address outputToken) = abi.decode(data_, (address, uint256, address));
 
@@ -65,7 +69,7 @@ contract LiFiMock is Test {
             MockERC20(outputToken).mint(receiver_, amount_);
         } else {
             if (prevForkId != toForkId) vm.deal(address(this), amount_);
-            (bool success, ) = payable(receiver_).call{value: amount_}("");
+            (bool success,) = payable(receiver_).call{ value: amount_ }("");
             require(success);
         }
         vm.selectFork(prevForkId);

@@ -1,12 +1,12 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {AccessControl} from "openzeppelin-contracts/contracts/access/AccessControl.sol";
-import {IBroadcaster} from "../interfaces/IBroadcaster.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
-import {Error} from "../utils/Error.sol";
-import {AMBFactoryMessage} from "../types/DataTypes.sol";
+import { AccessControl } from "openzeppelin-contracts/contracts/access/AccessControl.sol";
+import { IBroadcaster } from "../interfaces/IBroadcaster.sol";
+import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
+import { Error } from "../utils/Error.sol";
+import { AMBFactoryMessage } from "../types/DataTypes.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.
@@ -74,14 +74,16 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         address addressToRevoke_,
         bytes memory extraData_,
         bytes32 superRegistryAddressId_
-    ) external payable override {
+    )
+        external
+        payable
+        override
+    {
         revokeRole(role_, addressToRevoke_);
 
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload = AMBFactoryMessage(
-                SYNC_REVOKE,
-                abi.encode(role_, superRegistryAddressId_)
-            );
+            AMBFactoryMessage memory rolesPayload =
+                AMBFactoryMessage(SYNC_REVOKE, abi.encode(role_, superRegistryAddressId_));
 
             _broadcast(abi.encode(rolesPayload), extraData_);
         }
@@ -89,8 +91,9 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     function stateSync(bytes memory data_) external override {
-        if (msg.sender != superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY")))
+        if (msg.sender != superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))) {
             revert Error.NOT_ROLES_STATE_REGISTRY();
+        }
 
         AMBFactoryMessage memory rolesPayload = abi.decode(data_, (AMBFactoryMessage));
 
@@ -186,11 +189,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-        IBroadcaster(superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))).broadcastPayload{value: msg.value}(
-            msg.sender,
-            ambIds,
-            message_,
-            broadcastParams
+        IBroadcaster(superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))).broadcastPayload{ value: msg.value }(
+            msg.sender, ambIds, message_, broadcastParams
         );
     }
 }

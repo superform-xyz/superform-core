@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {SuperformFactory} from "src/SuperformFactory.sol";
-import {ERC4626Form} from "src/forms/ERC4626Form.sol";
-import {FormBeacon} from "src/forms/FormBeacon.sol";
+import { SuperformFactory } from "src/SuperformFactory.sol";
+import { ERC4626Form } from "src/forms/ERC4626Form.sol";
+import { FormBeacon } from "src/forms/FormBeacon.sol";
 import "../utils/BaseSetup.sol";
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 
 contract SuperformFactoryAddBeaconTest is BaseSetup {
     /// @dev emitted when Beacon Is Added
@@ -44,8 +44,7 @@ contract SuperformFactoryAddBeaconTest is BaseSetup {
         address superformMockBeacon2 = computeCreate2Address(
             salt,
             hashInitCode(
-                type(FormBeacon).creationCode,
-                abi.encode(getContract(chainId, "SuperRegistry"), formImplementation)
+                type(FormBeacon).creationCode, abi.encode(getContract(chainId, "SuperRegistry"), formImplementation)
             ),
             getContract(chainId, "SuperformFactory")
         );
@@ -56,9 +55,7 @@ contract SuperformFactoryAddBeaconTest is BaseSetup {
         emit FormBeaconAdded(formImplementation, superformMockBeacon, formBeaconId);
 
         address beacon_returned = SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
+            formImplementation, formBeaconId, salt
         );
     }
 
@@ -73,16 +70,12 @@ contract SuperformFactoryAddBeaconTest is BaseSetup {
 
         vm.startPrank(deployer);
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation1,
-            formBeaconId,
-            salt
+            formImplementation1, formBeaconId, salt
         );
 
         vm.expectRevert(Error.BEACON_ID_ALREADY_EXISTS.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation2,
-            formBeaconId,
-            salt
+            formImplementation2, formBeaconId, salt
         );
     }
 

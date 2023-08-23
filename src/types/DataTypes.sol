@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
+
 import "./LiquidityTypes.sol";
 
 /// @dev contains all the common struct and enums used for data communication between chains.
@@ -14,8 +15,9 @@ enum TransactionType {
 enum CallbackType {
     INIT,
     RETURN,
-    FAIL /// @dev Used only in withdraw flow now
+    FAIL
 }
+/// @dev Used only in withdraw flow now
 
 /// @dev Payloads are stored, updated (deposits) or processed (finalized)
 enum PayloadState {
@@ -119,15 +121,18 @@ struct TwoStepsPayload {
     TimeLockStatus status;
 }
 
-/// @dev struct that contains the type of transaction, callback flags and other identification, as well as the vaults data in params
+/// @dev struct that contains the type of transaction, callback flags and other identification, as well as the vaults
+/// data in params
 struct AMBMessage {
-    uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag  if multi/single vault, registry id, srcSender and srcChainId
+    uint256 txInfo; // tight packing of  TransactionType txType,  CallbackType flag  if multi/single vault, registry id,
+        // srcSender and srcChainId
     bytes params; // decoding txInfo will point to the right datatype of params. Refer PayloadHelper.sol
 }
 
 /// @dev contains the message for factory payloads (pause updates)
 struct AMBFactoryMessage {
-    bytes32 messageType; /// keccak("ADD_FORM"), keccak("PAUSE_FORM")
+    bytes32 messageType;
+    /// keccak("ADD_FORM"), keccak("PAUSE_FORM")
     bytes message;
 }
 
@@ -145,6 +150,7 @@ struct ReturnSingleData {
     uint256 amount;
 }
 /// @dev struct that contains the data on the fees to pay
+
 struct SingleDstAMBParams {
     uint256 gasToPay;
     bytes encodedAMBExtraData;

@@ -41,7 +41,8 @@ contract MDSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
         LIQ_BRIDGES[OP][0] = [2];
 
         /// @dev define the test type for every destination chain and for every action
-        /// should allow us to revert on specific destination calls, such as specific updatePayloads, specific processPayloads, etc.
+        /// should allow us to revert on specific destination calls, such as specific updatePayloads, specific
+        /// processPayloads, etc.
 
         TEST_TYPE_PER_DST[POLY][0] = TestType.Pass;
         TEST_TYPE_PER_DST[AVAX][0] = TestType.Pass;
@@ -58,7 +59,7 @@ contract MDSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
                 slippage: 742, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

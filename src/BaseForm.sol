@@ -1,18 +1,25 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import {ERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
-import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
-import {InitSingleVaultData} from "./types/DataTypes.sol";
-import {IBaseForm} from "./interfaces/IBaseForm.sol";
-import {ISuperRegistry} from "./interfaces/ISuperRegistry.sol";
-import {Error} from "./utils/Error.sol";
+import { Initializable } from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { ERC165Upgradeable } from
+    "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import { IERC165Upgradeable } from
+    "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+import { InitSingleVaultData } from "./types/DataTypes.sol";
+import { IBaseForm } from "./interfaces/IBaseForm.sol";
+import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
+import { Error } from "./utils/Error.sol";
+import { IFormBeacon } from "./interfaces/IFormBeacon.sol";
+import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
+import { DataLib } from "./libraries/DataLib.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
 abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
+    using DataLib for uint256;
+
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -35,14 +42,26 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
                             MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
+    modifier notPaused(InitSingleVaultData memory singleVaultData_) {
+        (, uint32 formBeaconId_,) = singleVaultData_.superformId.getSuperform();
+
+        if (
+            IFormBeacon(
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
+            ).paused()
+        ) revert Error.PAUSED();
+        _;
+    }
+
     modifier onlySuperRouter() {
         if (superRegistry.getAddress(keccak256("SUPERFORM_ROUTER")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyCoreStateRegistry() {
-        if (superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")) != msg.sender)
+        if (superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")) != msg.sender) {
             revert Error.NOT_CORE_STATE_REGISTRY();
+        }
         _;
     }
 
@@ -67,11 +86,15 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
-    receive() external payable {}
+    receive() external payable { }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC165Upgradeable, IERC165Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC165Upgradeable, IERC165Upgradeable)
+        returns (bool)
+    {
         return interfaceId == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId);
     }
 
@@ -79,7 +102,14 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
-    ) external payable override onlySuperRouter returns (uint256 dstAmount) {
+    )
+        external
+        payable
+        override
+        onlySuperRouter
+        notPaused(singleVaultData_)
+        returns (uint256 dstAmount)
+    {
         dstAmount = _directDepositIntoVault(singleVaultData_, srcSender_);
     }
 
@@ -87,7 +117,13 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
-    ) external override onlySuperRouter returns (uint256 dstAmount) {
+    )
+        external
+        override
+        onlySuperRouter
+        notPaused(singleVaultData_)
+        returns (uint256 dstAmount)
+    {
         dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
     }
 
@@ -96,7 +132,13 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
-    ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
+    )
+        external
+        override
+        onlyCoreStateRegistry
+        notPaused(singleVaultData_)
+        returns (uint256 dstAmount)
+    {
         dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
     }
 
@@ -105,7 +147,13 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
-    ) external override onlyCoreStateRegistry returns (uint256 dstAmount) {
+    )
+        external
+        override
+        onlyCoreStateRegistry
+        notPaused(singleVaultData_)
+        returns (uint256 dstAmount)
+    {
         dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
     }
 
@@ -165,27 +213,39 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function _directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
-    ) internal virtual returns (uint256 dstAmount);
+    )
+        internal
+        virtual
+        returns (uint256 dstAmount);
 
     /// @dev Withdraws underlying tokens from a vault
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
-    ) internal virtual returns (uint256 dstAmount_);
+    )
+        internal
+        virtual
+        returns (uint256 dstAmount_);
 
     /// @dev Deposits underlying tokens into a vault
     function _xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
-    ) internal virtual returns (uint256 dstAmount);
+    )
+        internal
+        virtual
+        returns (uint256 dstAmount);
 
     /// @dev Withdraws underlying tokens from a vault
     function _xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
-    ) internal virtual returns (uint256 dstAmount);
+    )
+        internal
+        virtual
+        returns (uint256 dstAmount);
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS
@@ -195,17 +255,29 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function _vaultSharesAmountToUnderlyingAmount(
         uint256 vaultSharesAmount_,
         uint256 pricePerVaultShare_
-    ) internal view virtual returns (uint256);
+    )
+        internal
+        view
+        virtual
+        returns (uint256);
 
     /// @dev Converts a vault share amount into an equivalent underlying asset amount, rounding up
     function _vaultSharesAmountToUnderlyingAmountRoundingUp(
         uint256 vaultSharesAmount_,
         uint256 pricePerVaultShare_
-    ) internal view virtual returns (uint256);
+    )
+        internal
+        view
+        virtual
+        returns (uint256);
 
     /// @dev Converts an underlying asset amount into an equivalent vault shares amount
     function _underlyingAmountToVaultSharesAmount(
         uint256 underlyingAmount_,
         uint256 pricePerVaultShare_
-    ) internal view virtual returns (uint256);
+    )
+        internal
+        view
+        virtual
+        returns (uint256);
 }

@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
-import {SuperRegistry} from "src/settings/SuperRegistry.sol";
-import {SuperRBAC} from "src/settings/SuperRBAC.sol";
+import { SuperRegistry } from "src/settings/SuperRegistry.sol";
+import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 
 import "src/types/LiquidityTypes.sol";
 import "src/types/DataTypes.sol";
@@ -83,8 +83,10 @@ struct TestAction {
     bytes32 revertRole; // temporary until errors are added to RBAC libraries
     int256 slippage;
     bool multiTx;
-    uint256 externalToken; /// @dev must be 3 if external token is native (for deposits). For withdrawals, externalToken is the output token and should not be set to 3 (no native for output in our tests)
+    uint256 externalToken;
 }
+/// @dev must be 3 if external token is native (for deposits). For withdrawals, externalToken is the output token and
+/// should not be set to 3 (no native for output in our tests)
 
 struct TestAssertionVars {
     uint256 lenRequests;

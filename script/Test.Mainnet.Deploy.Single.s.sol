@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import {AbstractDeploySingle} from "./Abstract.Deploy.Single.s.sol";
+import { AbstractDeploySingle } from "./Abstract.Deploy.Single.s.sol";
 
 contract TestMainnetDeploySingle is AbstractDeploySingle {
     /*//////////////////////////////////////////////////////////////
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] SELECTED_CHAIN_IDS = [56, 137, 43114]; /// @dev BSC, POLY & AVAX
+    uint64[] SELECTED_CHAIN_IDS = [56, 137, 43_114];
+
+    /// @dev BSC, POLY & AVAX
 
     /// @notice The main stage 1 script entrypoint
     function deployStage1(uint256 selectedChainIndex) external {

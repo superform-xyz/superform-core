@@ -12,13 +12,16 @@ contract SDSVD4626TimelockedSwapTokenInputSlippageL2 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         AMBs = [2, 3];
         /// works for OP only??
-        CHAIN_0 = ETH; /// @dev NOTE: polygon has an issue with permit2, avax doesn't have permit2
+        CHAIN_0 = ETH;
+        /// @dev NOTE: polygon has an issue with permit2, avax doesn't have permit2
         DST_CHAINS = [ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[ETH][0] = [1]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [1];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ETH][0] = [1];
 
@@ -40,7 +43,7 @@ contract SDSVD4626TimelockedSwapTokenInputSlippageL2 is ProtocolActions {
                 slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

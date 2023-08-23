@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {Error} from "../utils/Error.sol";
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {IBaseStateRegistry} from "../interfaces/IBaseStateRegistry.sol";
-import {IAmbImplementation} from "../interfaces/IAmbImplementation.sol";
-import {PayloadState, AMBMessage, AMBExtraData} from "../types/DataTypes.sol";
+import { Error } from "../utils/Error.sol";
+import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
+import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
+import { PayloadState, AMBMessage, AMBExtraData } from "../types/DataTypes.sol";
 
 /// @title BaseStateRegistry
 /// @author Zeropoint Labs
 /// @dev contract module that allows inheriting contracts to implement crosschain messaging & processing mechanisms.
 /// @dev This is a lightweight version that allows only dispatching and receiving crosschain
-/// @dev payloads (messages). Inheriting children contracts have the flexibility to define their own processing mechanisms.
+/// @dev payloads (messages). Inheriting children contracts have the flexibility to define their own processing
+/// mechanisms.
 abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
@@ -59,7 +60,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    receive() external payable {}
+    receive() external payable { }
 
     /// @inheritdoc IBaseStateRegistry
     function dispatchPayload(
@@ -68,7 +69,12 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable override onlySender {
+    )
+        external
+        payable
+        override
+        onlySender
+    {
         AMBExtraData memory d = abi.decode(extraData_, (AMBExtraData));
 
         _dispatchPayload(srcSender_, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
@@ -108,9 +114,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     }
 
     /// @inheritdoc IBaseStateRegistry
-    function processPayload(
-        uint256 payloadId_
-    ) external payable virtual override returns (bytes memory savedMessage, bytes memory returnMessage);
+    function processPayload(uint256 payloadId_) external payable virtual override;
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
@@ -124,7 +128,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         uint256 gasToPay_,
         bytes memory message_,
         bytes memory overrideData_
-    ) internal {
+    )
+        internal
+    {
         IAmbImplementation ambImplementation = IAmbImplementation(superRegistry.getAmbAddress(ambId_));
 
         /// @dev revert if an unknown amb id is used
@@ -132,7 +138,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             revert Error.INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.dispatchPayload{value: gasToPay_}(srcSender_, dstChainId_, message_, overrideData_);
+        ambImplementation.dispatchPayload{ value: gasToPay_ }(srcSender_, dstChainId_, message_, overrideData_);
     }
 
     /// @dev dispatches the proof(hash of the message_) through individual message bridge implementations
@@ -143,12 +149,14 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
         uint256[] memory gasToPay_,
         bytes memory message_,
         bytes[] memory overrideData_
-    ) internal {
+    )
+        internal
+    {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
         data.params = abi.encode(keccak256(message_));
 
         /// @dev i starts from 1 since 0 is primary amb id which dispatches the message itself
-        for (uint8 i = 1; i < ambIds_.length; ) {
+        for (uint8 i = 1; i < ambIds_.length;) {
             uint8 tempAmbId = ambIds_[i];
 
             if (tempAmbId == ambIds_[0]) {
@@ -162,7 +170,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             }
 
             /// @dev proof is dispatched in the form of a payload
-            tempImpl.dispatchPayload{value: gasToPay_[i]}(srcSender_, dstChainId_, abi.encode(data), overrideData_[i]);
+            tempImpl.dispatchPayload{ value: gasToPay_[i] }(srcSender_, dstChainId_, abi.encode(data), overrideData_[i]);
 
             unchecked {
                 ++i;

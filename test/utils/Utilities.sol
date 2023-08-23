@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/Test.sol";
-import {DSTest} from "ds-test/test.sol";
+import { Test } from "forge-std/Test.sol";
+import { DSTest } from "ds-test/test.sol";
 
 //common utilities for forge tests
 contract Utilities is DSTest, Test {
@@ -16,9 +16,7 @@ contract Utilities is DSTest, Test {
     }
 
     //create users with 100 ether balance
-    function createUsers(
-        uint256 userNum
-    ) public returns (address payable[] memory) {
+    function createUsers(uint256 userNum) public returns (address payable[] memory) {
         address payable[] memory users = new address payable[](userNum);
         for (uint256 i = 0; i < userNum; i++) {
             address payable user = this.getNextUserAddress();

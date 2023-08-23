@@ -27,7 +27,7 @@ contract MDSVD4626RevertTimelockedMultiTxNativeNoSlippageL1AMB23 is ProtocolActi
         TARGET_FORM_KINDS[ARBI][0] = [1];
 
         AMOUNTS[ETH][0] = [111];
-        AMOUNTS[ARBI][0] = [565322];
+        AMOUNTS[ARBI][0] = [565_322];
 
         MAX_SLIPPAGE = 1000;
 
@@ -49,7 +49,7 @@ contract MDSVD4626RevertTimelockedMultiTxNativeNoSlippageL1AMB23 is ProtocolActi
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

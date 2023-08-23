@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {DataLib} from "./DataLib.sol";
-import {Error} from "../utils/Error.sol";
-import {LiqRequest} from "../types/LiquidityTypes.sol";
-import {PayloadState, TransactionType, CallbackType} from "../types/DataTypes.sol";
+import { DataLib } from "./DataLib.sol";
+import { Error } from "../utils/Error.sol";
+import { LiqRequest } from "../types/LiquidityTypes.sol";
+import { PayloadState, TransactionType, CallbackType } from "../types/DataTypes.sol";
 
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {
@@ -14,7 +14,7 @@ library PayloadUpdaterLib {
             revert Error.NEGATIVE_SLIPPAGE();
         }
 
-        uint256 minAmount = (maxAmount * (10000 - slippage)) / 10000;
+        uint256 minAmount = (maxAmount * (10_000 - slippage)) / 10_000;
 
         /// @dev amount must fall within the slippage bounds
         if (newAmount < minAmount) {
@@ -26,8 +26,11 @@ library PayloadUpdaterLib {
         uint256[] memory newAmount,
         uint256[] memory maxAmount,
         uint256[] memory slippage
-    ) internal pure {
-        for (uint256 i; i < newAmount.length; ) {
+    )
+        internal
+        pure
+    {
+        for (uint256 i; i < newAmount.length;) {
             validateSlippage(newAmount[i], maxAmount[i], slippage[i]);
 
             unchecked {
@@ -48,8 +51,11 @@ library PayloadUpdaterLib {
         uint256 txInfo_,
         PayloadState currentPayloadState_,
         uint8 isMulti
-    ) internal pure {
-        (uint256 txType, uint256 callbackType, uint8 multi, , , ) = DataLib.decodeTxInfo(txInfo_);
+    )
+        internal
+        pure
+    {
+        (uint256 txType, uint256 callbackType, uint8 multi,,,) = DataLib.decodeTxInfo(txInfo_);
 
         if (txType != uint256(TransactionType.DEPOSIT) || callbackType != uint256(CallbackType.INIT)) {
             revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
@@ -68,8 +74,11 @@ library PayloadUpdaterLib {
         uint256 txInfo_,
         PayloadState currentPayloadState_,
         uint8 isMulti
-    ) internal pure {
-        (uint256 txType, uint256 callbackType, uint8 multi, , , ) = DataLib.decodeTxInfo(txInfo_);
+    )
+        internal
+        pure
+    {
+        (uint256 txType, uint256 callbackType, uint8 multi,,,) = DataLib.decodeTxInfo(txInfo_);
 
         if (txType != uint256(TransactionType.WITHDRAW) || callbackType != uint256(CallbackType.INIT)) {
             revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();

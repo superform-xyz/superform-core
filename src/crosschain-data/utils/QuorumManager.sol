@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IQuorumManager} from "../../interfaces/IQuorumManager.sol";
-import {Error} from "../../utils/Error.sol";
+import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
+import { Error } from "../../utils/Error.sol";
 
 /// @title QuorumManager
 /// @author ZeroPoint Labs
-/// @dev separates quorum management concerns into an abstract contract. Can be re-used (currently used by superRegistry) to set different quorums per amb in different areas of the protocol
+/// @dev separates quorum management concerns into an abstract contract. Can be re-used (currently used by
+/// superRegistry) to set different quorums per amb in different areas of the protocol
 abstract contract QuorumManager is IQuorumManager {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES

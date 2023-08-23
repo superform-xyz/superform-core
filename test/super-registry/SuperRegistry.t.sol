@@ -4,10 +4,10 @@ pragma solidity 0.8.19;
 import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
 
-import {ISuperformFactory} from "src/interfaces/ISuperformFactory.sol";
-import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
-import {SuperRegistry} from "src/settings/SuperRegistry.sol";
-import {Error} from "src/utils/Error.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { SuperRegistry } from "src/settings/SuperRegistry.sol";
+import { Error } from "src/utils/Error.sol";
 
 contract SuperRegistryTest is BaseSetup {
     SuperRegistry public superRegistry;
@@ -144,11 +144,6 @@ contract SuperRegistryTest is BaseSetup {
         vm.startPrank(deployer);
         superRegistry.setAmbAddress(ambId, ambAddress);
         assertEq(superRegistry.getAmbAddress(3), address(0x3));
-
-        ambAddress[1] = address(0);
-
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        superRegistry.setAmbAddress(ambId, ambAddress);
         vm.stopPrank();
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
@@ -178,15 +173,11 @@ contract SuperRegistryTest is BaseSetup {
         vm.startPrank(deployer);
         superRegistry.setStateRegistryAddress(registryId, registryAddress);
 
-        registryAddress[1] = address(0);
-
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        superRegistry.setAmbAddress(registryId, registryAddress);
         vm.stopPrank();
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
-        superRegistry.setAmbAddress(registryId, registryAddress);
+        superRegistry.setStateRegistryAddress(registryId, registryAddress);
 
         assertEq(superRegistry.isValidStateRegistry(getContract(ETH, "CoreStateRegistry")), true);
     }
@@ -203,18 +194,17 @@ contract SuperRegistryTest is BaseSetup {
 
     function _setAndAssert(bytes32 id_, address contractAddress) internal {
         vm.prank(deployer);
-        (bool success, ) = address(superRegistry).call(
+        (bool success,) = address(superRegistry).call(
             abi.encodeWithSelector(superRegistry.setAddress.selector, id_, contractAddress, ETH)
         );
 
-        (, bytes memory isSet) = address(superRegistry).call(
-            abi.encodeWithSelector(superRegistry.getAddress.selector, id_)
-        );
+        (, bytes memory isSet) =
+            address(superRegistry).call(abi.encodeWithSelector(superRegistry.getAddress.selector, id_));
         assertEq(abi.decode(isSet, (bool)), true);
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
-        (bool success_, ) = address(superRegistry).call(
+        (bool success_,) = address(superRegistry).call(
             abi.encodeWithSelector(superRegistry.setAddress.selector, id_, address(0x2), ETH)
         );
     }

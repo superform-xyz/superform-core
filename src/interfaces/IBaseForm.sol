@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {IERC165Upgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
-import {InitSingleVaultData} from "../types/DataTypes.sol";
-import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import { IERC165Upgradeable } from
+    "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+import { InitSingleVaultData } from "../types/DataTypes.sol";
+import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 
 /// @title IBaseForm
 /// @author ZeroPoint Labs
@@ -30,7 +31,10 @@ interface IBaseForm is IERC165Upgradeable {
     function directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
-    ) external payable returns (uint256 dstAmount);
+    )
+        external
+        payable
+        returns (uint256 dstAmount);
 
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
@@ -39,7 +43,9 @@ interface IBaseForm is IERC165Upgradeable {
     function directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
-    ) external returns (uint256 dstAmount);
+    )
+        external
+        returns (uint256 dstAmount);
 
     /// @dev process same chain id deposits
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
@@ -50,7 +56,9 @@ interface IBaseForm is IERC165Upgradeable {
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
-    ) external returns (uint256 dstAmount);
+    )
+        external
+        returns (uint256 dstAmount);
 
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action
@@ -61,7 +69,9 @@ interface IBaseForm is IERC165Upgradeable {
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
-    ) external returns (uint256 dstAmount);
+    )
+        external
+        returns (uint256 dstAmount);
 
     /// @notice get Superform name of the ERC20 vault representation
     /// @return The ERC20 name

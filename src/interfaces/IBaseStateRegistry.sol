@@ -42,7 +42,9 @@ interface IBaseStateRegistry {
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable;
+    )
+        external
+        payable;
 
     /// @dev allows state registry to receive messages from message bridge implementations
     /// @param srcChainId_ is the superform chainId from which the payload is dispatched/sent
@@ -55,9 +57,7 @@ interface IBaseStateRegistry {
     /// NOTE: Only {CORE_STATE_REGISTRY_PROCESSOR_ROLE} role can call this function
     /// NOTE: this should handle reverting the state on source chain in-case of failure
     /// (or) can implement scenario based reverting like in coreStateRegistry
-    function processPayload(
-        uint256 payloadId_
-    ) external payable returns (bytes memory savedMessage, bytes memory returnMessage);
+    function processPayload(uint256 payloadId_) external payable;
 
     /// @dev allows users to read the bytes payload_ stored per payloadId_
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
