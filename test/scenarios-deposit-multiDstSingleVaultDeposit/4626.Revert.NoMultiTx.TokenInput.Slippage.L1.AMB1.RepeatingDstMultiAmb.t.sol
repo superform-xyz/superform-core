@@ -27,9 +27,6 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1RepeatingDstMulti
         TARGET_FORM_KINDS[ARBI][0] = [0];
         TARGET_FORM_KINDS[ETH][0] = [0];
 
-        AMOUNTS[ARBI][0] = [242];
-        AMOUNTS[ETH][0] = [144];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -55,7 +52,14 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1RepeatingDstMulti
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        /// @dev TOTAL_SUPPLY_DAI / 4 coz size of DST_CHAINS is 4
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI / 4)); 
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_DAI / 4));
+        AMOUNTS[ARBI][0] = [amountOne_];
+        AMOUNTS[ETH][0] = [amountTwo_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

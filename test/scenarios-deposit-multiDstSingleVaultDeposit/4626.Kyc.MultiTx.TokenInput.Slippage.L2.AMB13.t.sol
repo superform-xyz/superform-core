@@ -29,10 +29,6 @@ contract MDSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
         TARGET_FORM_KINDS[BSC][0] = [2];
         TARGET_FORM_KINDS[ETH][0] = [2];
 
-        AMOUNTS[AVAX][0] = [78];
-        AMOUNTS[BSC][0] = [2]; /// @dev NOTE: for direct chain transfers, 2 is the minimum otherwise it reverts with ZERO_SHARES()
-        AMOUNTS[ETH][0] = [7999];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -59,7 +55,15 @@ contract MDSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_USDT / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_USDT / 3));
+        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_USDT / 3));
+        AMOUNTS[AVAX][0] = [amountOne_];
+        AMOUNTS[BSC][0] = [amountTwo_];
+        AMOUNTS[ETH][0] = [amountThree_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

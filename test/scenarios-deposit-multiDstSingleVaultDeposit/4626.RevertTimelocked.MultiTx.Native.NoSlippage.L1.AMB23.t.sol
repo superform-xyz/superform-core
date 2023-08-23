@@ -26,9 +26,6 @@ contract MDSVD4626RevertTimelockedMultiTxNativeNoSlippageL1AMB23 is ProtocolActi
         TARGET_FORM_KINDS[ETH][0] = [0];
         TARGET_FORM_KINDS[ARBI][0] = [1];
 
-        AMOUNTS[ETH][0] = [111];
-        AMOUNTS[ARBI][0] = [565322];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -57,7 +54,12 @@ contract MDSVD4626RevertTimelockedMultiTxNativeNoSlippageL1AMB23 is ProtocolActi
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
+        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_ETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_ETH / 2));
+        AMOUNTS[ETH][0] = [amountOne_];
+        AMOUNTS[ARBI][0] = [amountTwo_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
