@@ -604,7 +604,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
 
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
-            underlying.approve(superform_, singleVaultData.amount);
+            underlying.transfer(superform_, singleVaultData.amount);
+            // underlying.approve(superform_, singleVaultData.amount);
 
             /// @dev deposit to superform
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
@@ -621,7 +622,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     );
             } catch {
                 /// @dev cleaning unused approval
-                underlying.approve(superform_, 0);
+                // underlying.approve(superform_, 0);
                 /// @dev if any deposit fails, add it to failedDeposits mapping for future rescuing
                 failedDeposits[payloadId_].push(singleVaultData.superformId);
 
