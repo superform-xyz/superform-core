@@ -680,16 +680,15 @@ contract SuperformRouterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         /// try depositing without approval
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
-            0, /// @dev 0 amount here and in the LiqRequest
+            0,
+            /// @dev 0 amount here and in the LiqRequest
             100,
             LiqRequest(1, "", getContract(ETH, "USDT"), 0, 0, ""),
             ""
@@ -697,7 +696,7 @@ contract SuperformRouterTest is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
         /// @dev no point approving 0 tokens
         // MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 0);

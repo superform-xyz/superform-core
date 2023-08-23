@@ -55,7 +55,7 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1RepeatingDstMulti
     function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
         /// @dev TOTAL_SUPPLY_DAI / 4 coz size of DST_CHAINS is 4
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI / 4)); 
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI / 4));
         amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_DAI / 4));
         AMOUNTS[ARBI][0] = [amountOne_];
         AMOUNTS[ETH][0] = [amountTwo_];

@@ -689,7 +689,7 @@ contract SuperformRouter is ISuperformRouter, LiquidityHandler {
         (,, uint64 chainId) =
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
 
-        if(amount_ == 0) {
+        if (amount_ == 0) {
             revert Error.ZERO_AMOUNT();
         }
 

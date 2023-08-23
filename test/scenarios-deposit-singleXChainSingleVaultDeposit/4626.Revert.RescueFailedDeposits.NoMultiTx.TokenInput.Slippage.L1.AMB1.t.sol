@@ -74,7 +74,7 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1A
         amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_WETH));
         AMOUNTS[POLY][0] = [amountOne_];
 
-        uint256 dstAmount = (AMOUNTS[POLY][0][0] * uint256(10000 - actions[0].slippage)) / 10000;
+        uint256 dstAmount = (AMOUNTS[POLY][0][0] * uint256(10_000 - actions[0].slippage)) / 10_000;
 
         /// @dev amount = 1 after one slippage will become 0, hence starting with 2
         amountTwo_ = uint128(bound(amountTwo_, 2, dstAmount));

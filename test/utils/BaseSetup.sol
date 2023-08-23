@@ -69,9 +69,9 @@ abstract contract BaseSetup is DSTest, Test {
     );
 
     /// @dev ETH mainnet values as on 22nd Aug, 2023
-    uint256 public constant TOTAL_SUPPLY_DAI = 3961541270138222277363935051;
-    uint256 public constant TOTAL_SUPPLY_USDT = 39026949359163005;
-    uint256 public constant TOTAL_SUPPLY_WETH = 3293797048454740686583782;
+    uint256 public constant TOTAL_SUPPLY_DAI = 3_961_541_270_138_222_277_363_935_051;
+    uint256 public constant TOTAL_SUPPLY_USDT = 39_026_949_359_163_005;
+    uint256 public constant TOTAL_SUPPLY_WETH = 3_293_797_048_454_740_686_583_782;
     uint256 public constant TOTAL_SUPPLY_ETH = 120_000_000e18;
 
     /// @dev
