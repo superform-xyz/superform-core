@@ -1,6 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {IERC20} from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+
+import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
 /// @title Liquidity Handler.
 /// @author https://github.com/dragonfly-xyz/useful-solidity-patterns/blob/main/patterns/permit2/Permit2Vault.sol
@@ -39,5 +40,6 @@ interface IPermit2 {
         SignatureTransferDetails calldata transferDetails,
         address owner,
         bytes calldata signature
-    ) external;
+    )
+        external;
 }

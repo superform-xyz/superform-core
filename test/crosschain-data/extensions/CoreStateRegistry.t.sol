@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 import "../../utils/ProtocolActions.sol";
 
 contract CoreStateRegistryTest is ProtocolActions {
@@ -30,14 +30,12 @@ contract CoreStateRegistryTest is ProtocolActions {
         uint256[] memory gasPerAMB = new uint256[](1);
         gasPerAMB[0] = 5 ether;
 
-        bytes memory ackData = abi.encode(AckAMBData(ambIds, abi.encode(AMBExtraData(gasPerAMB, new bytes[](1)))));
-
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
         MockERC20(getContract(AVAX, "USDT")).transfer(deployer, 1e18);
 
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{value: 5 ether}(1, ackData);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: 5 ether }(1);
     }
 
     /// @dev test processPayload reverts with insufficient collateral for multi vault case
@@ -61,14 +59,12 @@ contract CoreStateRegistryTest is ProtocolActions {
         uint256[] memory gasPerAMB = new uint256[](1);
         gasPerAMB[0] = 5 ether;
 
-        bytes memory ackData = abi.encode(AckAMBData(ambIds, abi.encode(AMBExtraData(gasPerAMB, new bytes[](1)))));
-
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
         MockERC20(getContract(AVAX, "USDT")).transfer(deployer, 840);
 
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{value: 5 ether}(1, ackData);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: 5 ether }(1);
     }
 
     /// @dev test processPayload with just 1 AMB
@@ -81,7 +77,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[AVAX]);
         vm.prank(deployer);
         vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1, bytes(""));
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
     }
 
     /// @dev test processPayload without updating deposit payload
@@ -97,7 +93,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_NOT_UPDATED.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1, bytes(""));
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
     }
 
     /// @dev test processPayload without updating deposit payload
@@ -119,14 +115,12 @@ contract CoreStateRegistryTest is ProtocolActions {
         uint256[] memory gasPerAMB = new uint256[](1);
         gasPerAMB[0] = 5 ether;
 
-        bytes memory ackData = abi.encode(AckAMBData(ambIds, abi.encode(AMBExtraData(gasPerAMB, new bytes[](1)))));
-
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{value: 5 ether}(1, ackData);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: 5 ether }(1);
 
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{value: 5 ether}(1, ackData);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload{ value: 5 ether }(1);
     }
 
     /// @dev test processPayload without updating multi vault deposit payload
@@ -142,7 +136,7 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_NOT_UPDATED.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1, bytes(""));
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).processPayload(1);
     }
 
     /// @dev test all revert cases with single vault deposit payload update
@@ -248,10 +242,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform = getContract(
-            AVAX,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
 
@@ -287,7 +279,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.recordLogs();
-        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit{value: 2 ether}(
+        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit{ value: 2 ether }(
             SingleXChainSingleVaultStateReq(ambIds, AVAX, data)
         );
         vm.stopPrank();
@@ -295,7 +287,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         /// @dev mocks the cross-chain payload delivery
         LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
             LZ_ENDPOINTS[AVAX],
-            500000, /// note: using some max limit
+            5_000_000,
+            /// note: using some max limit
             FORKS[AVAX],
             vm.getRecordedLogs()
         );
@@ -306,12 +299,10 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         address superform = beaconId == 1
             ? getContract(
-                AVAX,
-                string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId]))
+                AVAX, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId]))
             )
             : getContract(
-                AVAX,
-                string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId]))
+                AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId]))
             );
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[beaconId], AVAX);
@@ -321,24 +312,21 @@ contract CoreStateRegistryTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingleSP(deployer, superformId, 1e18);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId,
-            1e18,
-            100,
-            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), 1e18, 0, bytes("")),
-            bytes("")
+            superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), 1e18, 0, bytes("")), bytes("")
         );
 
         vm.recordLogs();
 
         vm.prank(deployer);
-        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultWithdraw{value: 2 ether}(
+        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultWithdraw{ value: 2 ether }(
             SingleXChainSingleVaultStateReq(ambIds, AVAX, data)
         );
 
         /// @dev mocks the cross-chain payload delivery
         LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
             LZ_ENDPOINTS[AVAX],
-            500000, /// note: using some max limit
+            5_000_000,
+            /// note: using some max limit
             FORKS[AVAX],
             vm.getRecordedLogs()
         );
@@ -349,10 +337,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform = getContract(
-            AVAX,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
 
@@ -389,18 +375,13 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
         liqReqArr[1] = liqReqArr[0];
 
-        MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds,
-            uint256MemArr,
-            uint256MemArr,
-            liqReqArr,
-            bytes("")
-        );
+        MultiVaultSFData memory data =
+            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""));
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.recordLogs();
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit{value: 2 ether}(
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
             SingleXChainMultiVaultStateReq(ambIds, AVAX, data)
         );
         vm.stopPrank();
@@ -408,7 +389,8 @@ contract CoreStateRegistryTest is ProtocolActions {
         /// @dev mocks the cross-chain payload delivery
         LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
             LZ_ENDPOINTS[AVAX],
-            500000, /// note: using some max limit
+            5_000_000,
+            /// note: using some max limit
             FORKS[AVAX],
             vm.getRecordedLogs()
         );
@@ -418,8 +400,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         address superform = getContract(
-            AVAX,
-            string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+            AVAX, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
         );
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
@@ -440,24 +421,19 @@ contract CoreStateRegistryTest is ProtocolActions {
         liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), 1e18, 0, bytes(""));
         liqReqArr[1] = liqReqArr[0];
 
-        MultiVaultSFData memory data = MultiVaultSFData(
-            superformIds,
-            amountArr,
-            new uint256[](2),
-            liqReqArr,
-            bytes("")
-        );
+        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amountArr, new uint256[](2), liqReqArr, bytes(""));
 
         vm.recordLogs();
         vm.prank(deployer);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{value: 2 ether}(
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{ value: 2 ether }(
             SingleXChainMultiVaultStateReq(ambIds, AVAX, data)
         );
 
         /// @dev mocks the cross-chain payload delivery
         LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
             LZ_ENDPOINTS[AVAX],
-            5000000, /// note: using some max limit
+            50_000_000,
+            /// note: using some max limit
             FORKS[AVAX],
             vm.getRecordedLogs()
         );

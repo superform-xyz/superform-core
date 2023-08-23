@@ -18,7 +18,9 @@ contract SXSVDNormal4626MultiTokenInputNoSlippageL1AMB23 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [1];
 
-        TARGET_VAULTS[OP][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [0];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][0] = [0];
 
@@ -40,7 +42,7 @@ contract SXSVDNormal4626MultiTokenInputNoSlippageL1AMB23 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

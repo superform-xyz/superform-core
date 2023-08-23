@@ -21,8 +21,11 @@ contract MDMVDMulti0000NoMultiTxIncludingSingleDirectTokenInputSlippageL2AMB12 i
         TARGET_UNDERLYINGS[OP][0] = [0, 1];
         TARGET_UNDERLYINGS[ETH][0] = [1, 0];
 
-        TARGET_VAULTS[OP][0] = [0, 0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[ETH][0] = [1, 1]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [0, 0];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [1, 1];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][0] = [0, 0];
         TARGET_FORM_KINDS[ETH][0] = [1, 1];
@@ -44,7 +47,7 @@ contract MDMVDMulti0000NoMultiTxIncludingSingleDirectTokenInputSlippageL2AMB12 i
                 slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

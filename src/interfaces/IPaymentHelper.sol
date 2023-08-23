@@ -13,19 +13,19 @@ interface IPaymentHelper {
 
     /// @dev admin config destination chain config for estimation
     /// @param chainId_ is the identifier of new chain id
-    /// @param dstNativeFeedOracle_ is the native price feed oracle
-    /// @param dstGasPriceOracle_ is the gas price oracle
+    /// @param nativeFeedOracle_ is the native price feed oracle
+    /// @param gasPriceOracle_ is the gas price oracle
     /// @param swapGasUsed_ is the swap gas params
     /// @param updateGasUsed_ is the update gas params
     /// @param depositGasUsed_ is the deposit per vault gas on the chain
     /// @param withdrawGasUsed_ is the withdraw per vault gas on the chain
-    /// @param defaultNativePrice_ is the native price on the dst chain
-    /// @param defaultGasPrice_ is the gas price on the dst chain
+    /// @param defaultNativePrice_ is the native price on the specified chain
+    /// @param defaultGasPrice_ is the gas price on the specified chain
     /// @param dstGasPerKB_ is the gas per size of data
     function addChain(
         uint64 chainId_,
-        address dstNativeFeedOracle_,
-        address dstGasPriceOracle_,
+        address nativeFeedOracle_,
+        address gasPriceOracle_,
         uint256 swapGasUsed_,
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
@@ -33,7 +33,8 @@ interface IPaymentHelper {
         uint256 defaultNativePrice_,
         uint256 defaultGasPrice_,
         uint256 dstGasPerKB_
-    ) external;
+    )
+        external;
 
     /// @dev admin update remote chain config for estimation
     /// @param chainId_ is the remote chain's identifier
@@ -53,7 +54,10 @@ interface IPaymentHelper {
         uint64 dstChainId_,
         uint8[] calldata ambIds_,
         bytes memory message_
-    ) external view returns (uint256 totalFees, bytes memory extraData);
+    )
+        external
+        view
+        returns (uint256 totalFees, bytes memory extraData);
 
     /// @dev returns the gas fees estimation in native tokens if we send message through a combination of AMBs
     /// @param ambIds_ is the identifier of different AMBs
@@ -66,7 +70,10 @@ interface IPaymentHelper {
         uint64 dstChainId_,
         bytes memory message_,
         bytes[] memory extraData_
-    ) external view returns (uint256 ambFees, uint256[] memory);
+    )
+        external
+        view
+        returns (uint256 ambFees, uint256[] memory);
 
     /// @dev estimates the gas fees for multiple destination and multi vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
@@ -77,7 +84,10 @@ interface IPaymentHelper {
     function estimateMultiDstMultiVault(
         MultiDstMultiVaultStateReq calldata req_,
         bool isDeposit
-    ) external view returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
+    )
+        external
+        view
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
 
     /// @dev estimates the gas fees for multiple destination and single vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
@@ -88,10 +98,14 @@ interface IPaymentHelper {
     function estimateMultiDstSingleVault(
         MultiDstSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
+    )
+        external
+        view
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
 
     /// @dev estimates the gas fees for single destination and multi vault operation
-    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
+    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter    ///
+    /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
     /// @return liqAmount is the amount of liquidity to be provided in native tokens
     /// @return srcAmount is the gas expense on source chain in native tokens
     /// @return dstAmount is the gas expense on dst chain in terms of src chain's native tokens
@@ -99,7 +113,10 @@ interface IPaymentHelper {
     function estimateSingleXChainMultiVault(
         SingleXChainMultiVaultStateReq calldata req_,
         bool isDeposit
-    ) external view returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
+    )
+        external
+        view
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
 
     /// @dev estimates the gas fees for single destination and single vault operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
@@ -110,7 +127,10 @@ interface IPaymentHelper {
     function estimateSingleXChainSingleVault(
         SingleXChainSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
+    )
+        external
+        view
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
 
     /// @dev estimates the gas fees for same chain operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
@@ -121,7 +141,10 @@ interface IPaymentHelper {
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
         bool isDeposit
-    ) external view returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
+    )
+        external
+        view
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
 
     /// @dev estimates the gas fees for multiple same chain operation
     /// @param req_ is the request object containing all necessary data for the actual operation on SuperRouter
@@ -132,5 +155,8 @@ interface IPaymentHelper {
     function estimateSingleDirectMultiVault(
         SingleDirectMultiVaultStateReq calldata req_,
         bool isDeposit
-    ) external view returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
+    )
+        external
+        view
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount);
 }

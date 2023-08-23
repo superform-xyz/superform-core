@@ -18,7 +18,9 @@ contract SXSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][0] = [0];
 
-        TARGET_VAULTS[ETH][0] = [2]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [2];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ETH][0] = [2];
 
@@ -38,7 +40,7 @@ contract SXSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
                 slippage: 321, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: true,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

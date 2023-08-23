@@ -12,7 +12,9 @@ interface ISocketRegistry {
     struct MiddlewareRequest {
         uint256 id;
         uint256 optionalNativeAmount;
-        address inputToken; /// @dev if this is Native token, then inside socket what happens is amount + middlewareRequest.optionalNativeAmount is summed
+        address inputToken;
+        /// @dev if this is Native token, then inside socket what happens is amount +
+        /// middlewareRequest.optionalNativeAmount is summed
         bytes data;
     }
 

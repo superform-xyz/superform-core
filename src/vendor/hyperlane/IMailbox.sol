@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 pragma solidity >=0.8.0;
 
-/// @dev is imported from (https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/interfaces/IMailbox.sol)
+/// @dev is imported from
+/// (https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/main/solidity/contracts/interfaces/IMailbox.sol)
 interface IMailbox {
     // ============ Events ============
     /// @notice Emitted when a new message is dispatched via Hyperlane
@@ -33,7 +34,9 @@ interface IMailbox {
         uint32 _destinationDomain,
         bytes32 _recipientAddress,
         bytes calldata _messageBody
-    ) external returns (bytes32);
+    )
+        external
+        returns (bytes32);
 
     function process(bytes calldata _metadata, bytes calldata _message) external;
 

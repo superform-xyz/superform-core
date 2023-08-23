@@ -19,15 +19,17 @@ contract SDiMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0];
 
         TARGET_UNDERLYINGS[ARBI][1] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
 
-        AMOUNTS[ARBI][0] = [7722, 11, 3, 54218];
-        AMOUNTS[ARBI][1] = [7722, 11, 3, 54218];
+        AMOUNTS[ARBI][0] = [7722, 11, 3, 54_218];
+        AMOUNTS[ARBI][1] = [7722, 11, 3, 54_218];
 
         MAX_SLIPPAGE = 1000;
 
@@ -46,7 +48,7 @@ contract SDiMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -60,7 +62,7 @@ contract SDiMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

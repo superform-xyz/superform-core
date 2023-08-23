@@ -1,10 +1,10 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {ISuperRBAC} from "../interfaces/ISuperRBAC.sol";
-import {ISuperRegistry} from "../interfaces/ISuperRegistry.sol";
-import {QuorumManager} from "../crosschain-data/utils/QuorumManager.sol";
-import {Error} from "../utils/Error.sol";
+import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
+import { QuorumManager } from "../crosschain-data/utils/QuorumManager.sol";
+import { Error } from "../utils/Error.sol";
 
 /// @title SuperRegistry
 /// @author Zeropoint Labs.
@@ -93,7 +93,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         uint8[] memory bridgeId_,
         address[] memory bridgeAddress_,
         address[] memory bridgeValidator_
-    ) external override onlyProtocolAdmin {
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
         for (uint256 i = 0; i < bridgeId_.length; i++) {
             uint8 bridgeId = bridgeId_[i];
             address bridgeAddress = bridgeAddress_[i];
@@ -111,7 +115,6 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         for (uint256 i; i < ambId_.length; i++) {
             address ambAddress = ambAddress_[i];
             uint8 ambId = ambId_[i];
-            if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
 
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
@@ -123,7 +126,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     function setStateRegistryAddress(
         uint8[] memory registryId_,
         address[] memory registryAddress_
-    ) external override onlyProtocolAdmin {
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
         for (uint256 i; i < registryId_.length; i++) {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
@@ -167,6 +174,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getAmbAddress(uint8 ambId_) external view override returns (address ambAddress_) {
         ambAddress_ = ambAddresses[ambId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getAmbId(address ambAddress_) external view override returns (uint8 ambId_) {
+        ambId_ = ambIds[ambAddress_];
     }
 
     /// @inheritdoc ISuperRegistry

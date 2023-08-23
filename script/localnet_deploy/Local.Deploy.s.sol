@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import {AbstractDeploy} from "./Abstract.Deploy.s.sol";
-import {MockERC20} from "test/mocks/MockERC20.sol";
-import {IERC4626} from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
-import {VaultMock} from "test/mocks/VaultMock.sol";
-import {ERC4626TimelockMock} from "test/mocks/ERC4626TimelockMock.sol";
-import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
-import {AggregatorV3Interface} from "test/utils/AggregatorV3Interface.sol";
+import { AbstractDeploy } from "./Abstract.Deploy.s.sol";
+import { MockERC20 } from "test/mocks/MockERC20.sol";
+import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
+import { VaultMock } from "test/mocks/VaultMock.sol";
+import { ERC4626TimelockMock } from "test/mocks/ERC4626TimelockMock.sol";
+import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
+import { AggregatorV3Interface } from "test/utils/AggregatorV3Interface.sol";
 
 contract LocalDeploy is AbstractDeploy {
     /*//////////////////////////////////////////////////////////////
@@ -28,7 +28,9 @@ contract LocalDeploy is AbstractDeploy {
                         SELECT CHAIN IDS TO DEPLOY HERE
     //////////////////////////////////////////////////////////////*/
 
-    uint64[] SELECTED_CHAIN_IDS = [56, 137, 43114]; /// @dev BSC, POLY & AVAX
+    uint64[] SELECTED_CHAIN_IDS = [56, 137, 43_114];
+
+    /// @dev BSC, POLY & AVAX
     Chains[] SELECTED_CHAIN_NAMES = [Chains.Bsc_Fork, Chains.Polygon_Fork, Chains.Avalanche_Fork];
     /*//////////////////////////////////////////////////////////////
                         CHAINLINK VARIABLES
@@ -87,11 +89,11 @@ contract LocalDeploy is AbstractDeploy {
 
             /// @dev 5 - Deploy UNDERLYING_TOKENS and VAULTS
             /// @dev FIXME grab testnet tokens
-            /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x chainId
+            /// NOTE: This loop deploys all Forms on all chainIds with all of the UNDERLYING TOKENS (id x form) x
+            /// chainId
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
-                UNDERLYING_TOKEN = address(
-                    new MockERC20(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], ownerAddress, milionTokensE18)
-                );
+                UNDERLYING_TOKEN =
+                    address(new MockERC20(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], ownerAddress, milionTokensE18));
                 contracts[SELECTED_CHAIN_IDS[i]][bytes32(bytes(UNDERLYING_TOKENS[j]))] = UNDERLYING_TOKEN;
             }
 
@@ -133,7 +135,8 @@ contract LocalDeploy is AbstractDeploy {
             }
         }
 
-        /// @dev Deployment Stage 2 - Setup trusted remotes and deploy superforms. This must be done after the rest of the protocol has been deployed on all chains
+        /// @dev Deployment Stage 2 - Setup trusted remotes and deploy superforms. This must be done after the rest of
+        /// the protocol has been deployed on all chains
         for (uint256 i = 0; i < SELECTED_CHAIN_IDS.length; i++) {
             for (uint256 j = 0; j < chainIds.length; j++) {
                 if (chainIds[j] == SELECTED_CHAIN_IDS[i]) {
@@ -149,7 +152,10 @@ contract LocalDeploy is AbstractDeploy {
         uint64 targetChainId_,
         uint256 targetForkId_,
         uint256 ethForkId_
-    ) internal returns (uint256) {
+    )
+        internal
+        returns (uint256)
+    {
         uint256 multiplier;
 
         if (targetChainId_ == ETH || targetChainId_ == ARBI || targetChainId_ == OP) {
@@ -203,11 +209,14 @@ contract LocalDeploy is AbstractDeploy {
     function _fundNativeTokens(
         uint256[] memory forkIds,
         uint64[] memory s_superFormChainIds
-    ) internal setEnvDeploy(Cycle.Dev) {
+    )
+        internal
+        setEnvDeploy(Cycle.Dev)
+    {
         for (uint256 i = 0; i < s_superFormChainIds.length; i++) {
             uint256 multiplier = _getPriceMultiplier(s_superFormChainIds[i], forkIds[i], forkIds[forkIds.length - 1]);
 
-            uint256 amountDeployer = 100000 * multiplier * 1e18;
+            uint256 amountDeployer = 100_000 * multiplier * 1e18;
 
             vm.selectFork(forkIds[i]);
             vm.startBroadcast(deployerPrivateKey);

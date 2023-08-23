@@ -18,7 +18,9 @@ contract SDSVD4626SwapTokenInputSlippageL1 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][0] = [1];
 
-        TARGET_VAULTS[OP][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [0];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][0] = [0];
 
@@ -37,9 +39,10 @@ contract SDSVD4626SwapTokenInputSlippageL1 is ProtocolActions {
                 revertRole: "",
                 slippage: 852, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 /// @dev input token != vault underlying - swap involved
+                externalToken: 0
             })
         );
+        /// @dev input token != vault underlying - swap involved
     }
 
     /*///////////////////////////////////////////////////////////////

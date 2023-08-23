@@ -20,8 +20,11 @@ contract MDSVW70TokenInputSlippageL1AMB13 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][0] = [2];
         TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[OP][0] = [7]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[ETH][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][0] = [7];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [0];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][0] = [0];
         TARGET_FORM_KINDS[ETH][0] = [0];
@@ -30,8 +33,11 @@ contract MDSVW70TokenInputSlippageL1AMB13 is ProtocolActions {
         TARGET_UNDERLYINGS[OP][1] = [2];
         TARGET_UNDERLYINGS[ETH][1] = [2];
 
-        TARGET_VAULTS[OP][1] = [7]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[ETH][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[OP][1] = [7];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][1] = [0];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[OP][1] = [0];
         TARGET_FORM_KINDS[ETH][1] = [0];
@@ -64,7 +70,7 @@ contract MDSVW70TokenInputSlippageL1AMB13 is ProtocolActions {
                 slippage: 999, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -78,7 +84,7 @@ contract MDSVW70TokenInputSlippageL1AMB13 is ProtocolActions {
                 slippage: 999, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

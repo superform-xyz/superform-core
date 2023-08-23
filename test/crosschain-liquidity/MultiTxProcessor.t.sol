@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 import "../utils/ProtocolActions.sol";
 
 contract MultiTxProcessorTest is BaseSetup {
@@ -38,7 +38,7 @@ contract MultiTxProcessorTest is BaseSetup {
         vm.startPrank(deployer);
 
         uint256 balanceBefore = multiTxProcessor.balance;
-        (bool success, ) = multiTxProcessor.call{value: transferAmount}("");
+        (bool success,) = multiTxProcessor.call{ value: transferAmount }("");
         uint256 balanceAfter = multiTxProcessor.balance;
         assertEq(balanceBefore + transferAmount, balanceAfter);
 
@@ -58,13 +58,12 @@ contract MultiTxProcessorTest is BaseSetup {
         uint256 balanceBefore = multiTxProcessor.balance;
 
         vm.startPrank(deployer);
-        (bool success, ) = multiTxProcessor.call{value: transferAmount}("");
+        (bool success,) = multiTxProcessor.call{ value: transferAmount }("");
         uint256 balanceAfter = multiTxProcessor.balance;
         assertEq(balanceBefore + transferAmount, balanceAfter);
 
         SuperRBAC(getContract(ETH, "SuperRBAC")).grantRole(
-            SuperRBAC(getContract(ETH, "SuperRBAC")).EMERGENCY_ADMIN_ROLE(),
-            address(this)
+            SuperRBAC(getContract(ETH, "SuperRBAC")).EMERGENCY_ADMIN_ROLE(), address(this)
         );
         vm.stopPrank();
         balanceBefore = multiTxProcessor.balance;
@@ -82,21 +81,15 @@ contract MultiTxProcessorTest is BaseSetup {
 
         address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-        (bool success, ) = payable(multiTxProcessor).call{value: 1e18}("");
+        (bool success,) = payable(multiTxProcessor).call{ value: 1e18 }("");
         MultiTxProcessor(multiTxProcessor).processTx(
-            1,
-            _buildTxData(1, native, multiTxProcessor, ETH, 1e18),
-            native,
-            1e18
+            1, _buildTxData(1, native, multiTxProcessor, ETH, 1e18), native, 1e18
         );
 
         /// @dev no funds in multi-tx processor at this point; should revert
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
         MultiTxProcessor(multiTxProcessor).processTx(
-            1,
-            _buildTxData(1, native, multiTxProcessor, ETH, 1e18),
-            native,
-            1e18
+            1, _buildTxData(1, native, multiTxProcessor, ETH, 1e18), native, 1e18
         );
     }
 
@@ -109,10 +102,7 @@ contract MultiTxProcessorTest is BaseSetup {
         /// @dev no funds in multi-tx processor at this point; should revert
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
         MultiTxProcessor(multiTxProcessor).processTx(
-            1,
-            _buildTxData(1, getContract(ETH, "USDT"), multiTxProcessor, ETH, 1e18),
-            getContract(ETH, "USDT"),
-            1e18
+            1, _buildTxData(1, getContract(ETH, "USDT"), multiTxProcessor, ETH, 1e18), getContract(ETH, "USDT"), 1e18
         );
     }
 
@@ -140,7 +130,7 @@ contract MultiTxProcessorTest is BaseSetup {
         amounts[0] = 1e18;
         amounts[1] = 1e18;
 
-        (bool success, ) = payable(multiTxProcessor).call{value: 2e18}("");
+        (bool success,) = payable(multiTxProcessor).call{ value: 2e18 }("");
         if (!success) revert();
 
         MultiTxProcessor(multiTxProcessor).batchProcessTx(bridgeId, txData, approvalToken, amounts);
@@ -156,15 +146,20 @@ contract MultiTxProcessorTest is BaseSetup {
         address from_,
         uint64 toChainId_,
         uint256 amount_
-    ) internal returns (bytes memory txData) {
+    )
+        internal
+        returns (bytes memory txData)
+    {
         if (liqBridgeKind_ == 1) {
             ISocketRegistry.BridgeRequest memory bridgeRequest;
             ISocketRegistry.MiddlewareRequest memory middlewareRequest;
             ISocketRegistry.UserRequest memory userRequest;
             /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
+            /// bridging request
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// request id
+                1,
+                /// request id
                 0,
                 underlyingToken_,
                 abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingToken_)
@@ -172,7 +167,8 @@ contract MultiTxProcessorTest is BaseSetup {
 
             /// @dev empty bridge request
             bridgeRequest = ISocketRegistry.BridgeRequest(
-                0, /// id
+                0,
+                /// id
                 0,
                 underlyingToken_,
                 abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingToken_)
@@ -192,8 +188,10 @@ contract MultiTxProcessorTest is BaseSetup {
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
             swapData[0] = ILiFi.SwapData(
-                address(0), /// callTo (arbitrary)
-                address(0), /// callTo (approveTo)
+                address(0),
+                /// callTo (arbitrary)
+                address(0),
+                /// callTo (approveTo)
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
@@ -202,7 +200,8 @@ contract MultiTxProcessorTest is BaseSetup {
             );
 
             bridgeData = ILiFi.BridgeData(
-                bytes32("1"), /// request id
+                bytes32("1"),
+                /// request id
                 "",
                 "",
                 address(0),

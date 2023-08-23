@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {Error} from "../utils/Error.sol";
+import { Error } from "../utils/Error.sol";
 
 /// @dev rationale for "memory-safe" assembly: https://docs.soliditylang.org/en/v0.8.20/assembly.html#memory-safety
 library DataLib {
@@ -12,7 +12,11 @@ library DataLib {
         uint8 registryId_,
         address srcSender_,
         uint64 srcChainId_
-    ) internal pure returns (uint256 txInfo) {
+    )
+        internal
+        pure
+        returns (uint256 txInfo)
+    {
         assembly ("memory-safe") {
             txInfo := txType_
             txInfo := or(txInfo, shl(8, callbackType_))
@@ -23,9 +27,7 @@ library DataLib {
         }
     }
 
-    function decodeTxInfo(
-        uint256 txInfo_
-    )
+    function decodeTxInfo(uint256 txInfo_)
         internal
         pure
         returns (uint8 txType, uint8 callbackType, uint8 multi, uint8 registryId, address srcSender, uint64 srcChainId)
@@ -43,9 +45,11 @@ library DataLib {
     /// @return superform_ is the address of the superform
     /// @return formBeaconId_ is the form id
     /// @return chainId_ is the chain id
-    function getSuperform(
-        uint256 superformId_
-    ) internal pure returns (address superform_, uint32 formBeaconId_, uint64 chainId_) {
+    function getSuperform(uint256 superformId_)
+        internal
+        pure
+        returns (address superform_, uint32 formBeaconId_, uint64 chainId_)
+    {
         superform_ = address(uint160(superformId_));
         formBeaconId_ = uint32(superformId_ >> 160);
         chainId_ = uint64(superformId_ >> 192);
@@ -56,15 +60,18 @@ library DataLib {
     /// @return superforms_ are the address of the vaults
     /// @return formIds_ are the form ids
     /// @return chainIds_ are the chain ids
-    function getSuperforms(
-        uint256[] memory superformIds_
-    ) internal pure returns (address[] memory superforms_, uint32[] memory formIds_, uint64[] memory chainIds_) {
+    function getSuperforms(uint256[] memory superformIds_)
+        internal
+        pure
+        returns (address[] memory superforms_, uint32[] memory formIds_, uint64[] memory chainIds_)
+    {
         superforms_ = new address[](superformIds_.length);
         formIds_ = new uint32[](superformIds_.length);
         chainIds_ = new uint64[](superformIds_.length);
 
         assembly ("memory-safe") {
-            /// @dev pointer to the end of the superformIds_ array (shl(5, mload(superformIds_)) == mul(32, mload(superformIds_))
+            /// @dev pointer to the end of the superformIds_ array (shl(5, mload(superformIds_)) == mul(32,
+            /// mload(superformIds_))
             let end := add(add(superformIds_, 0x20), shl(5, mload(superformIds_)))
             /// @dev initialize pointers for all the 4 arrays
             let i := add(superformIds_, 0x20)
@@ -73,13 +80,10 @@ library DataLib {
             let l := add(chainIds_, 0x20)
 
             let superformId := 0
-            for {
-
-            } 1 {
-
-            } {
+            for { } 1 { } {
                 superformId := mload(i)
-                /// @dev execute what getSuperform() does on a single superformId and store the results in the respective arrays
+                /// @dev execute what getSuperform() does on a single superformId and store the results in the
+                /// respective arrays
                 mstore(j, superformId)
                 mstore(k, shr(160, superformId))
                 mstore(l, shr(192, superformId))
@@ -89,9 +93,7 @@ library DataLib {
                 k := add(k, 0x20)
                 l := add(l, 0x20)
                 /// @dev check if we've reached the end of the array
-                if iszero(lt(i, end)) {
-                    break
-                }
+                if iszero(lt(i, end)) { break }
             }
         }
     }
@@ -101,7 +103,7 @@ library DataLib {
     /// @param chainId_ is the chainId to check if the superform id belongs to
     function validateSuperformChainId(uint256 superformId_, uint64 chainId_) internal pure {
         /// @dev validates if superformId exists on factory
-        (, , uint64 chainId) = getSuperform(superformId_);
+        (,, uint64 chainId) = getSuperform(superformId_);
 
         if (chainId != chainId_) {
             revert Error.INVALID_CHAIN_ID();
@@ -123,7 +125,11 @@ library DataLib {
         address superform_,
         uint32 formBeaconId_,
         uint64 chainId_
-    ) internal pure returns (uint256 superformId_) {
+    )
+        internal
+        pure
+        returns (uint256 superformId_)
+    {
         assembly ("memory-safe") {
             superformId_ := superform_
             superformId_ := or(superformId_, shl(160, formBeaconId_))

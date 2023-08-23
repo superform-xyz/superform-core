@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 import "../utils/ProtocolActions.sol";
 
 contract MockGasPriceOracle {
@@ -32,10 +32,11 @@ contract PaymentHelperTest is BaseSetup {
         /// @dev scenario: single vault withdrawal involving timelock
         /// expected fees to be greater than zero
         bytes memory emptyBytes;
-        (, , , uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
+        (,,, uint256 fees) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(), /// timelock
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
                     420,
                     420,
                     LiqRequest(1, emptyBytes, address(0), 420, 420, emptyBytes),
@@ -47,10 +48,11 @@ contract PaymentHelperTest is BaseSetup {
 
         assertGt(fees, 0);
 
-        (, , , uint256 fees2) = paymentHelper.estimateSingleDirectSingleVault(
+        (,,, uint256 fees2) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(), /// timelock
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
                     420,
                     420,
                     LiqRequest(1, emptyBytes, address(0), 420, 420, emptyBytes),
@@ -62,10 +64,11 @@ contract PaymentHelperTest is BaseSetup {
 
         assertEq(fees2, 0);
 
-        (, , , uint256 fees3) = paymentHelper.estimateSingleDirectSingleVault(
+        (,,, uint256 fees3) = paymentHelper.estimateSingleDirectSingleVault(
             SingleDirectSingleVaultStateReq(
                 SingleVaultSFData(
-                    _generateSuperformPackWithShift(), /// timelock
+                    _generateSuperformPackWithShift(),
+                    /// timelock
                     420,
                     420,
                     LiqRequest(1, emptyBytes, address(0), 420, 420, emptyBytes),
@@ -91,10 +94,11 @@ contract PaymentHelperTest is BaseSetup {
         LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
         liqRequestMemoryArray[0] = LiqRequest(1, emptyBytes, address(0), 420, 420, emptyBytes);
 
-        (, , , uint256 fees) = paymentHelper.estimateSingleDirectMultiVault(
+        (,,, uint256 fees) = paymentHelper.estimateSingleDirectMultiVault(
             SingleDirectMultiVaultStateReq(
                 MultiVaultSFData(
-                    superFormIds, /// timelock
+                    superFormIds,
+                    /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
                     liqRequestMemoryArray,
@@ -106,10 +110,11 @@ contract PaymentHelperTest is BaseSetup {
 
         assertGt(fees, 0);
 
-        (, , , uint256 fees2) = paymentHelper.estimateSingleDirectMultiVault(
+        (,,, uint256 fees2) = paymentHelper.estimateSingleDirectMultiVault(
             SingleDirectMultiVaultStateReq(
                 MultiVaultSFData(
-                    superFormIds, /// timelock
+                    superFormIds,
+                    /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
                     liqRequestMemoryArray,
@@ -137,12 +142,13 @@ contract PaymentHelperTest is BaseSetup {
         uint8[] memory ambIds = new uint8[](1);
         ambIds[0] = 1;
 
-        (, , uint256 fees, ) = paymentHelper.estimateSingleXChainSingleVault(
+        (,, uint256 fees,) = paymentHelper.estimateSingleXChainSingleVault(
             SingleXChainSingleVaultStateReq(
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(), /// timelock
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
                     420,
                     420,
                     LiqRequest(1, txData, address(0), 420, 420, emptyBytes),
@@ -169,12 +175,13 @@ contract PaymentHelperTest is BaseSetup {
         uint8[] memory ambIds = new uint8[](1);
         ambIds[0] = 1;
 
-        (, , , uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
+        (,,, uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
             SingleXChainSingleVaultStateReq(
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(), /// timelock
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
                     420,
                     420,
                     LiqRequest(1, txData, address(0), 420, 420, emptyBytes),
@@ -201,12 +208,13 @@ contract PaymentHelperTest is BaseSetup {
         uint8[] memory ambIds = new uint8[](1);
         ambIds[0] = 1;
 
-        (, , , uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
+        (,,, uint256 fees) = paymentHelper.estimateSingleXChainSingleVault(
             SingleXChainSingleVaultStateReq(
                 ambIds,
                 137,
                 SingleVaultSFData(
-                    _generateTimelockSuperformPackWithShift(), /// timelock
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
                     420,
                     420,
                     LiqRequest(1, txData, address(0), 420, 420, emptyBytes),
@@ -363,15 +371,20 @@ contract PaymentHelperTest is BaseSetup {
         address from_,
         uint64 toChainId_,
         uint256 amount_
-    ) internal returns (bytes memory txData) {
+    )
+        internal
+        returns (bytes memory txData)
+    {
         if (liqBridgeKind_ == 1) {
             ISocketRegistry.BridgeRequest memory bridgeRequest;
             ISocketRegistry.MiddlewareRequest memory middlewareRequest;
             ISocketRegistry.UserRequest memory userRequest;
             /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
+            /// bridging request
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// request id
+                1,
+                /// request id
                 0,
                 underlyingToken_,
                 abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingToken_)
@@ -379,7 +392,8 @@ contract PaymentHelperTest is BaseSetup {
 
             /// @dev empty bridge request
             bridgeRequest = ISocketRegistry.BridgeRequest(
-                0, /// id
+                0,
+                /// id
                 0,
                 underlyingToken_,
                 abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingToken_)
@@ -399,8 +413,10 @@ contract PaymentHelperTest is BaseSetup {
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
             swapData[0] = ILiFi.SwapData(
-                address(0), /// callTo (arbitrary)
-                address(0), /// callTo (approveTo)
+                address(0),
+                /// callTo (arbitrary)
+                address(0),
+                /// callTo (approveTo)
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
@@ -409,7 +425,8 @@ contract PaymentHelperTest is BaseSetup {
             );
 
             bridgeData = ILiFi.BridgeData(
-                bytes32("1"), /// request id
+                bytes32("1"),
+                /// request id
                 "",
                 "",
                 address(0),

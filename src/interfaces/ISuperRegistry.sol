@@ -17,10 +17,7 @@ interface ISuperRegistry {
 
     /// @dev is emitted when an address is set.
     event AddressUpdated(
-        bytes32 indexed protocolAddressId,
-        uint64 indexed chainId,
-        address indexed oldAddress,
-        address newAddress
+        bytes32 indexed protocolAddressId, uint64 indexed chainId, address indexed oldAddress, address newAddress
     );
 
     /// @dev is emitted when a new token bridge is configured.
@@ -57,7 +54,8 @@ interface ISuperRegistry {
         uint8[] memory bridgeId_,
         address[] memory bridgeAddress_,
         address[] memory bridgeValidator_
-    ) external;
+    )
+        external;
 
     /// @dev allows admin to set the amb address for an amb id.
     /// @param ambId_         represents the bridge unqiue identifier.
@@ -154,6 +152,11 @@ interface ISuperRegistry {
     /// @param registryId_ is the id of the state registry
     /// @return registryAddress_ is the address of the state registry
     function getStateRegistry(uint8 registryId_) external view returns (address registryAddress_);
+
+    /// @dev gets the id of the amb
+    /// @param ambAddress_ is the address of an amb
+    /// @return ambId_ is the identifier of an amb
+    function getAmbId(address ambAddress_) external view returns (uint8 ambId_);
 
     /// @dev gets the id of the registry
     /// @notice reverts if the id is not found

@@ -2,6 +2,8 @@
 
 This repository contains the core protocol smart contracts of [Superform](https://app.superform.xyz/).
 
+[![codecov](https://codecov.io/gh/superform-xyz/superform-core/graph/badge.svg?token=BEJIKMVWZ6)](https://codecov.io/gh/superform-xyz/superform-core)
+
 ### Table of contents
 
 - [Prerequisites](#prerequisites)
@@ -31,6 +33,9 @@ foundryup
 ```
 
 🎉 Foundry is installed! 🎉
+
+
+Note: you should also install pre-commit and Foundry Pre-Commit Hook to format before commiting. Check https://github.com/0xYYY/foundry-pre-commit for more info
 
 ### Project structure
 

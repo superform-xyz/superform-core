@@ -4,11 +4,11 @@ pragma solidity 0.8.19;
 import "../utils/BaseSetup.sol";
 import "../utils/Utilities.sol";
 
-import {DataLib} from "src/libraries/DataLib.sol";
-import {Transmuter} from "ERC1155A/transmuter/Transmuter.sol";
-import {SuperTransmuter} from "src/SuperTransmuter.sol";
-import {Error} from "src/utils/Error.sol";
-import {VaultMock} from "../mocks/VaultMock.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { Transmuter } from "ERC1155A/transmuter/Transmuter.sol";
+import { SuperTransmuter } from "src/SuperTransmuter.sol";
+import { Error } from "src/utils/Error.sol";
+import { VaultMock } from "../mocks/VaultMock.sol";
 
 contract SuperTransmuterTest is BaseSetup {
     SuperTransmuter public superTransmuter;
@@ -30,10 +30,8 @@ contract SuperTransmuterTest is BaseSetup {
     }
 
     function test_registerTransmuter() public {
-        (uint256 superformId, ) = SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            vault
-        );
+        (uint256 superformId,) =
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
         superTransmuter.registerTransmuter(superformId);
     }
 
@@ -50,10 +48,8 @@ contract SuperTransmuterTest is BaseSetup {
     }
 
     function test_alreadyRegistered() public {
-        (uint256 superformId, ) = SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            vault
-        );
+        (uint256 superformId,) =
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
         superTransmuter.registerTransmuter(superformId);
         vm.expectRevert(Transmuter.TRANSMUTER_ALREADY_REGISTERED.selector);
 

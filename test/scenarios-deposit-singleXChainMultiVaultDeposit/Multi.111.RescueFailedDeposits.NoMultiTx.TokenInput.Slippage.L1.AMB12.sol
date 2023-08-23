@@ -18,13 +18,15 @@ contract SDMVDMulti111RescueFailedDepositsNoMultiTxTokenInputSlippageL1AMB12 is 
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
-        TARGET_VAULTS[AVAX][0] = [3, 3, 3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[AVAX][0] = [3, 3, 3];
+        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[AVAX][0] = [0, 0, 0];
-        AMOUNTS[AVAX][0] = [214, 798, 55312];
+        AMOUNTS[AVAX][0] = [214, 798, 55_312];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][1] = [2, 2, 2];
-        TARGET_VAULTS[ETH][1] = [3, 3, 3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
+        TARGET_VAULTS[ETH][1] = [3, 3, 3];
+        /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[ETH][1] = [0, 0, 0];
         AMOUNTS[ETH][1] = [10, 40, 2800];
 
@@ -45,7 +47,7 @@ contract SDMVDMulti111RescueFailedDepositsNoMultiTxTokenInputSlippageL1AMB12 is 
                 slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -59,7 +61,7 @@ contract SDMVDMulti111RescueFailedDepositsNoMultiTxTokenInputSlippageL1AMB12 is 
                 slippage: 400, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

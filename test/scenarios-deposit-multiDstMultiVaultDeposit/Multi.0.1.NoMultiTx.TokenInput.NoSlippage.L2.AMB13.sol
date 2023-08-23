@@ -21,8 +21,11 @@ contract MDMVDMulti01NoMultiTxTokenInputNoSlippageL2AMB13 is ProtocolActions {
         TARGET_UNDERLYINGS[ETH][0] = [0];
         TARGET_UNDERLYINGS[AVAX][0] = [1];
 
-        TARGET_VAULTS[ETH][0] = [0]; /// @dev id 0 is normal 4626
-        TARGET_VAULTS[AVAX][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [0];
+
+        /// @dev id 0 is normal 4626
+        TARGET_VAULTS[AVAX][0] = [0];
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ETH][0] = [0];
         TARGET_FORM_KINDS[AVAX][0] = [0];
@@ -44,7 +47,7 @@ contract MDMVDMulti01NoMultiTxTokenInputNoSlippageL2AMB13 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {BridgeValidator} from "../BridgeValidator.sol";
-import {ILiFi} from "../../vendor/lifi/ILiFi.sol";
-import {Error} from "../../utils/Error.sol";
+import { BridgeValidator } from "../BridgeValidator.sol";
+import { ILiFi } from "../../vendor/lifi/ILiFi.sol";
+import { Error } from "../../utils/Error.sol";
 
 /// @title LiFiValidator
 /// @author Zeropoint Labs
@@ -13,7 +13,7 @@ contract LiFiValidator is BridgeValidator {
                                 Constructor
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) {}
+    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
 
     /*///////////////////////////////////////////////////////////////
                             External Functions
@@ -21,7 +21,7 @@ contract LiFiValidator is BridgeValidator {
 
     /// @inheritdoc BridgeValidator
     function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external pure override returns (bool) {
-        (ILiFi.BridgeData memory bridgeData, ) = _decodeCallData(txData_);
+        (ILiFi.BridgeData memory bridgeData,) = _decodeCallData(txData_);
 
         return bridgeData.minAmount == amount_;
     }
@@ -35,7 +35,11 @@ contract LiFiValidator is BridgeValidator {
         address superform_,
         address srcSender_,
         address liqDataToken_
-    ) external view override {
+    )
+        external
+        view
+        override
+    {
         (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData) = _decodeCallData(txData_);
 
         address sendingAssetId = bridgeData.hasSourceSwaps ? swapData[0].sendingAssetId : bridgeData.sendingAssetId;
@@ -53,10 +57,12 @@ contract LiFiValidator is BridgeValidator {
             } else {
                 /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry or MultiTxProcessor
                 if (
-                    !(bridgeData.receiver ==
-                        superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), dstChainId_) ||
-                        bridgeData.receiver ==
-                        superRegistry.getAddressByChainId(keccak256("MULTI_TX_PROCESSOR"), dstChainId_))
+                    !(
+                        bridgeData.receiver
+                            == superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), dstChainId_)
+                            || bridgeData.receiver
+                                == superRegistry.getAddressByChainId(keccak256("MULTI_TX_PROCESSOR"), dstChainId_)
+                    )
                 ) revert Error.INVALID_TXDATA_RECEIVER();
             }
         } else {
@@ -70,7 +76,7 @@ contract LiFiValidator is BridgeValidator {
 
     /// @inheritdoc BridgeValidator
     function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
-        (ILiFi.BridgeData memory bridgeData, ) = _decodeCallData(txData_);
+        (ILiFi.BridgeData memory bridgeData,) = _decodeCallData(txData_);
 
         return bridgeData.receiver == receiver_;
     }
@@ -78,9 +84,11 @@ contract LiFiValidator is BridgeValidator {
     /// @notice Decode lifi's calldata
     /// @param data LiFi call data
     /// @return bridgeData LiFi BridgeData
-    function _decodeCallData(
-        bytes calldata data
-    ) internal pure returns (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData) {
+    function _decodeCallData(bytes calldata data)
+        internal
+        pure
+        returns (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData)
+    {
         (bridgeData) = abi.decode(data[4:], (ILiFi.BridgeData));
 
         if (bridgeData.hasSourceSwaps) {

@@ -3,9 +3,9 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
-import {Error} from "src/utils/Error.sol";
-import {ArrayCastLib} from "src/libraries/ArrayCastLib.sol";
-import {LiqRequest} from "src/types/LiquidityTypes.sol";
+import { Error } from "src/utils/Error.sol";
+import { ArrayCastLib } from "src/libraries/ArrayCastLib.sol";
+import { LiqRequest } from "src/types/LiquidityTypes.sol";
 
 contract ArrayCastLibUser {
     function castToArray(LiqRequest memory a) external pure returns (LiqRequest[] memory) {

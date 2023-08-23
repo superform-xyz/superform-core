@@ -4,13 +4,13 @@ pragma solidity 0.8.19;
 import "../../utils/BaseSetup.sol";
 import "pigeon/src/layerzero/lib/LZPacket.sol";
 
-import {TransactionType, CallbackType, AMBMessage} from "src/types/DataTypes.sol";
-import {DataLib} from "src/libraries/DataLib.sol";
-import {ISuperRegistry} from "src/interfaces/ISuperRegistry.sol";
-import {IAmbImplementation} from "src/interfaces/IAmbImplementation.sol";
-import {LayerzeroImplementation} from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
-import {CoreStateRegistry} from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import {Error} from "src/utils/Error.sol";
+import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
+import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
+import { Error } from "src/utils/Error.sol";
 
 interface ILzEndpoint {
     function hasStoredPayload(uint16 _srcChainId, bytes calldata _srcAddress) external view returns (bool);
@@ -39,10 +39,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         superRegistry = ISuperRegistry(getContract(ETH, "SuperRegistry"));
         layerzeroImplementation = LayerzeroImplementation(payable(superRegistry.getAmbAddress(1)));
 
-        srcAddressOP = abi.encodePacked(
-            getContract(ETH, "LayerzeroImplementation"),
-            getContract(OP, "LayerzeroImplementation")
-        );
+        srcAddressOP =
+            abi.encodePacked(getContract(ETH, "LayerzeroImplementation"), getContract(OP, "LayerzeroImplementation"));
 
         /// @dev malicious caller
         bond = address(7);
@@ -89,7 +87,7 @@ contract LayerzeroImplementationTest is BaseSetup {
     function test_estimateFeesWithInvalidChainId(uint64 chainId) public {
         /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
         /// @dev notice chainId = 1 is invalid
-        vm.assume(chainId != 137 && chainId != 42161 && chainId != 10 && chainId != 56 && chainId != 43114);
+        vm.assume(chainId != 137 && chainId != 42_161 && chainId != 10 && chainId != 56 && chainId != 43_114);
         uint256 fees = layerzeroImplementation.estimateFees(chainId, abi.encode(420), bytes(""));
         assertEq(fees, 0);
     }
@@ -103,7 +101,13 @@ contract LayerzeroImplementationTest is BaseSetup {
         assertGt(fees, 0);
     }
 
-    function test_revert_setChainId_invalidChainId_invalidCaller(uint256 superChainIdSeed_, uint256 ambChainIdSeed_, address malice_) public {
+    function test_revert_setChainId_invalidChainId_invalidCaller(
+        uint256 superChainIdSeed_,
+        uint256 ambChainIdSeed_,
+        address malice_
+    )
+        public
+    {
         vm.startPrank(deployer);
 
         uint64 superChainId = chainIds[superChainIdSeed_ % chainIds.length];
@@ -122,7 +126,13 @@ contract LayerzeroImplementationTest is BaseSetup {
         layerzeroImplementation.setChainId(superChainId, ambChainId);
     }
 
-    function test_setConfig_getConfig_and_revert_invalidCaller(uint16 versionSeed_, uint16 chainIdSeed_, address malice_) public {
+    function test_setConfig_getConfig_and_revert_invalidCaller(
+        uint16 versionSeed_,
+        uint16 chainIdSeed_,
+        address malice_
+    )
+        public
+    {
         /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
         uint16 chainId = uint16(chainIds[chainIdSeed_ % chainIds.length]);
         /// @dev remoteChainId on LzLibrary cannot be current fork's chainId
@@ -169,13 +179,17 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     /// @dev uint64[] public chainIds = [1, 56, 43114, 137, 42161, 10];
     /// @dev uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
-    function test_setTrustedRemote_isTrustedRemote_and_revert_invalidCaller(uint16 chainIdSeed_, address malice_) public {
+    function test_setTrustedRemote_isTrustedRemote_and_revert_invalidCaller(
+        uint16 chainIdSeed_,
+        address malice_
+    )
+        public
+    {
         uint16 chainId = uint16(chainIds[chainIdSeed_ % chainIds.length]);
         vm.assume(chainId != ETH);
         uint16 lzChainId = uint16(lz_chainIds[chainIdSeed_ % lz_chainIds.length]);
         bytes memory srcAddress = abi.encodePacked(
-            getContract(ETH, "LayerzeroImplementation"),
-            getContract(chainId, "LayerzeroImplementation")
+            getContract(ETH, "LayerzeroImplementation"), getContract(chainId, "LayerzeroImplementation")
         );
 
         vm.prank(deployer);
@@ -186,10 +200,8 @@ contract LayerzeroImplementationTest is BaseSetup {
         uint16 newChainId = uint16(chainIds[(chainIdSeed_ / 2) % chainIds.length]);
         vm.assume(newChainId != ETH);
         uint16 newLzChainId = uint16(lz_chainIds[(chainIdSeed_ / 2) % lz_chainIds.length]);
-        bytes memory newSrcAddress = abi.encodePacked(
-            getContract(newChainId, "LayerzeroImplementation"),
-            address(layerzeroImplementation)
-        );
+        bytes memory newSrcAddress =
+            abi.encodePacked(getContract(newChainId, "LayerzeroImplementation"), address(layerzeroImplementation));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(malice_);
@@ -225,7 +237,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.selectFork(FORKS[ETH]);
 
-        Vm.Log[] memory logs = _depositFromETHtoOP(500000);
+        Vm.Log[] memory logs = _depositFromETHtoOP(500_000);
 
         _resetCoreStateRegistry(FORKS[OP], true);
 
@@ -267,14 +279,18 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
-        layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        layerzeroImplementation.broadcastPayload{ value: 0.1 ether }(
+            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_broadcastPayload_invalidExtraDataLengths(uint256 userSeed_, uint256 gasPerDstLenSeed_, uint256 extraDataPerDstLenSeed_) public {
+    function test_revert_broadcastPayload_invalidExtraDataLengths(
+        uint256 userSeed_,
+        uint256 gasPerDstLenSeed_,
+        uint256 extraDataPerDstLenSeed_
+    )
+        public
+    {
         uint256 userIndex = userSeed_ % users.length;
         uint256 gasPerDstLen = bound(gasPerDstLenSeed_, 1, chainIds.length);
         uint256 extraDataPerDstLen = bound(extraDataPerDstLenSeed_, 1, chainIds.length);
@@ -284,10 +300,10 @@ contract LayerzeroImplementationTest is BaseSetup {
         BroadCastAMBExtraData memory ambExtraData;
         address coreStateRegistry;
 
-        (ambMessage, , coreStateRegistry) = _setupBroadcastPayloadAMBData(users[userIndex]);
+        (ambMessage,, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[userIndex]);
 
         uint256[] memory gasPerDst = new uint256[](gasPerDstLen);
-        for (uint i = 0; i < gasPerDst.length; i++) {
+        for (uint256 i = 0; i < gasPerDst.length; i++) {
             gasPerDst[i] = 0.1 ether;
         }
 
@@ -298,16 +314,22 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
         vm.prank(coreStateRegistry);
-        layerzeroImplementation.broadcastPayload{value: 0.1 ether}(
-            users[userIndex],
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        layerzeroImplementation.broadcastPayload{ value: 0.1 ether }(
+            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
         );
     }
 
-    function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId(uint64 chainId, uint256 userSeed_, address malice_) public {
+    function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId(
+        uint64 chainId,
+        uint256 userSeed_,
+        address malice_
+    )
+        public
+    {
         uint256 userIndex = userSeed_ % users.length;
-        vm.assume(chainId != 1 && chainId != 56 && chainId != 43114 && chainId != 137 && chainId != 42161 && chainId != 10);
+        vm.assume(
+            chainId != 1 && chainId != 56 && chainId != 43_114 && chainId != 137 && chainId != 42_161 && chainId != 10
+        );
 
         AMBMessage memory ambMessage;
         BroadCastAMBExtraData memory ambExtraData;
@@ -319,28 +341,22 @@ contract LayerzeroImplementationTest is BaseSetup {
 
         vm.deal(malice_, 100 ether);
         vm.prank(malice_);
-        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
-            users[userIndex],
-            chainId,
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(
+            users[userIndex], chainId, abi.encode(ambMessage), abi.encode(ambExtraData)
         );
 
         vm.expectRevert(Error.INVALID_SRC_CHAIN_ID.selector);
         vm.prank(coreStateRegistry);
         /// @dev notice the use of chainId, whose trustedRemote is not set
-        layerzeroImplementation.dispatchPayload{value: 0.1 ether}(
-            users[userIndex],
-            chainId,
-            abi.encode(ambMessage),
-            abi.encode(ambExtraData)
+        layerzeroImplementation.dispatchPayload{ value: 0.1 ether }(
+            users[userIndex], chainId, abi.encode(ambMessage), abi.encode(ambExtraData)
         );
     }
 
     function test_revert_lzReceive_invalidCaller_duplicatePayload_invalidSrcSender() public {
         vm.selectFork(FORKS[ETH]);
 
-        Vm.Log[] memory logs = _depositFromETHtoOP(500000);
+        Vm.Log[] memory logs = _depositFromETHtoOP(500_000);
 
         bytes memory payload;
         for (uint256 i; i < logs.length; i++) {
@@ -387,13 +403,14 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.prank(coreStateRegistryETH);
 
         vm.recordLogs();
-        layerzeroImplementation.dispatchPayload{value: 1 ether}(bond, OP, crossChainMsg, bytes(""));
+        layerzeroImplementation.dispatchPayload{ value: 1 ether }(bond, OP, crossChainMsg, bytes(""));
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
         /// @dev payload will fail in _nonblockLzReceive
         LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).help(
             LZ_ENDPOINT_OP,
-            gasLimit_, /// note: using `0` to get the payload stored in LZ_ENDPOINT
+            gasLimit_,
+            /// note: using `0` to get the payload stored in LZ_ENDPOINT
             FORKS[OP],
             logs
         );
@@ -416,25 +433,32 @@ contract LayerzeroImplementationTest is BaseSetup {
         superRegistryOP.setStateRegistryAddress(registryId_, registryAddress_);
     }
 
-    function _setupBroadcastPayloadAMBData(
-        address _srcSender
-    ) internal returns (AMBMessage memory, BroadCastAMBExtraData memory, address) {
+    function _setupBroadcastPayloadAMBData(address _srcSender)
+        internal
+        returns (AMBMessage memory, BroadCastAMBExtraData memory, address)
+    {
         AMBMessage memory ambMessage = AMBMessage(
             DataLib.packTxInfo(
-                uint8(TransactionType.DEPOSIT), /// @dev TransactionType
+                uint8(TransactionType.DEPOSIT),
+                /// @dev TransactionType
                 uint8(CallbackType.INIT),
-                0, /// @dev isMultiVaults
-                1, /// @dev STATE_REGISTRY_TYPE,
-                _srcSender, /// @dev srcSender,
-                ETH /// @dev srcChainId
+                0,
+                /// @dev isMultiVaults
+                1,
+                /// @dev STATE_REGISTRY_TYPE,
+                _srcSender,
+                /// @dev srcSender,
+                ETH
             ),
-            "" /// ambData
+            /// @dev srcChainId
+            ""
         );
+        /// ambData
 
         /// @dev gasFees for chainIds = [56, 43114, 137, 42161, 10];
         /// @dev excluding chainIds[0] = 1 i.e. ETH, as no point broadcasting to same chain
         uint256[] memory gasPerDst = new uint256[](5);
-        for (uint i = 0; i < gasPerDst.length; i++) {
+        for (uint256 i = 0; i < gasPerDst.length; i++) {
             gasPerDst[i] = 0.1 ether;
         }
 

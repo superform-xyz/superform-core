@@ -27,7 +27,9 @@ interface ISuperRBAC {
         address addressToRevoke_,
         bytes memory extraData_,
         bytes32 superRegistryAddressId_
-    ) external payable;
+    )
+        external
+        payable;
 
     /// @dev allows sync of global roles from different chains
     /// @notice may not work for all roles

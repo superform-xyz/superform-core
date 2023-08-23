@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import {kycDAO4626} from "super-vaults/kycdao-4626/kycdao4626.sol";
-import {InitSingleVaultData} from "../types/DataTypes.sol";
-import {ERC4626FormImplementation} from "./ERC4626FormImplementation.sol";
-import {BaseForm} from "../BaseForm.sol";
-import {Error} from "../utils/Error.sol";
+import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
+import { InitSingleVaultData } from "../types/DataTypes.sol";
+import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";
+import { BaseForm } from "../BaseForm.sol";
+import { Error } from "../utils/Error.sol";
 
 /// @title ERC4626KYCDaoForm
 /// @notice The Form implementation for IERC4626 vaults with kycDAO NFT checks
@@ -22,7 +22,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 1) {}
+    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 1) { }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
@@ -38,7 +38,11 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     function _directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
-    ) internal override returns (uint256 dstAmount) {
+    )
+        internal
+        override
+        returns (uint256 dstAmount)
+    {
         _kycCheck(srcSender_);
 
         dstAmount = _processDirectDeposit(singleVaultData_, srcSender_);
@@ -48,7 +52,11 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     function _directWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_
-    ) internal override returns (uint256 dstAmount) {
+    )
+        internal
+        override
+        returns (uint256 dstAmount)
+    {
         _kycCheck(srcSender_);
 
         dstAmount = _processDirectWithdraw(singleVaultData_, srcSender_);
@@ -58,7 +66,11 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
-    ) internal override returns (uint256 dstAmount) {
+    )
+        internal
+        override
+        returns (uint256 dstAmount)
+    {
         _kycCheck(srcSender_);
 
         dstAmount = _processXChainDeposit(singleVaultData_, srcChainId_);
@@ -69,7 +81,11 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
-    ) internal override returns (uint256 dstAmount) {
+    )
+        internal
+        override
+        returns (uint256 dstAmount)
+    {
         _kycCheck(srcSender_);
 
         dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);

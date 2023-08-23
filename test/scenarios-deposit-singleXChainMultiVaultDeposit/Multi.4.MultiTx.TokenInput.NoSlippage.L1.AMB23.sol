@@ -19,7 +19,9 @@ contract SDMVDMulti4MultiTxTokenInputNoSlippageL1AMB23 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ETH][0] = [2];
 
-        TARGET_VAULTS[ETH][0] = [4]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [4];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ETH][0] = [1];
 
@@ -39,7 +41,7 @@ contract SDMVDMulti4MultiTxTokenInputNoSlippageL1AMB23 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

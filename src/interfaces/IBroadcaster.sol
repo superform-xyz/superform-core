@@ -15,5 +15,7 @@ interface IBroadcaster {
         uint8[] memory ambIds_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable;
+    )
+        external
+        payable;
 }

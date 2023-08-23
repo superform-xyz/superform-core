@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {SuperformFactory} from "src/SuperformFactory.sol";
-import {VaultMock} from "../mocks/VaultMock.sol";
-import {MockERC20} from "../mocks/MockERC20.sol";
-import {ERC4626FormExternal} from "../mocks/ERC4626FormExternal.sol";
+import { SuperformFactory } from "src/SuperformFactory.sol";
+import { VaultMock } from "../mocks/VaultMock.sol";
+import { MockERC20 } from "../mocks/MockERC20.sol";
+import { ERC4626FormExternal } from "../mocks/ERC4626FormExternal.sol";
 import "../utils/BaseSetup.sol";
 
 contract SuperformERC4626FormTest is BaseSetup {
@@ -31,23 +31,16 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         uint256 vaultShareAmount = 100;
 
-        uint256 shareAmount = ERC4626FormExternal(payable(superformCreated)).vaultSharesAmountToUnderlyingAmount(
-            vaultShareAmount
-        );
+        uint256 shareAmount =
+            ERC4626FormExternal(payable(superformCreated)).vaultSharesAmountToUnderlyingAmount(vaultShareAmount);
 
         assertEq(vaultShareAmount, shareAmount);
     }
@@ -69,17 +62,11 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         uint256 vaultShareAmount = 100;
 
@@ -106,23 +93,16 @@ contract SuperformERC4626FormTest is BaseSetup {
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation,
-            formBeaconId,
-            salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
         /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
-            formBeaconId,
-            address(vault)
-        );
+        (, address superformCreated) =
+            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
 
         uint256 vaultShareAmount = 100;
 
-        uint256 shareAmount = ERC4626FormExternal(payable(superformCreated)).underlyingAmountToVaultSharesAmount(
-            vaultShareAmount
-        );
+        uint256 shareAmount =
+            ERC4626FormExternal(payable(superformCreated)).underlyingAmountToVaultSharesAmount(vaultShareAmount);
 
         assertEq(vaultShareAmount, shareAmount);
     }

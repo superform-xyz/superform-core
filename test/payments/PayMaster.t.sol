@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import {Error} from "src/utils/Error.sol";
+import { Error } from "src/utils/Error.sol";
 import "../utils/ProtocolActions.sol";
 
 contract KeeperMock {
-    receive() external payable {}
+    receive() external payable { }
 }
 
 contract KeeperMockThatWontAcceptEth {
@@ -79,7 +79,7 @@ contract PayMasterTest is BaseSetup {
 
         /// @dev try to make payment for zero address
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(getContract(ETH, "PayMaster")).makePayment{value: 1 wei}(address(0));
+        PayMaster(getContract(ETH, "PayMaster")).makePayment{ value: 1 wei }(address(0));
     }
 
     function test_withdrawNativeToMultiTxProcessorFraud() public {
@@ -89,7 +89,7 @@ contract PayMasterTest is BaseSetup {
         address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        PayMaster(feeCollector).makePayment{value: 1 wei}(deployer);
+        PayMaster(feeCollector).makePayment{ value: 1 wei }(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         superRegistry.setAddress(keccak256("MULTI_TX_SWAPPER"), multiTxProcessorFraud, ETH);
@@ -106,7 +106,7 @@ contract PayMasterTest is BaseSetup {
         address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        PayMaster(feeCollector).makePayment{value: 1 wei}(deployer);
+        PayMaster(feeCollector).makePayment{ value: 1 wei }(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
@@ -134,7 +134,7 @@ contract PayMasterTest is BaseSetup {
         address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        PayMaster(feeCollector).makePayment{value: 1 wei}(deployer);
+        PayMaster(feeCollector).makePayment{ value: 1 wei }(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
@@ -162,7 +162,7 @@ contract PayMasterTest is BaseSetup {
         address feeCollector = getContract(ETH, "PayMaster");
 
         /// @dev makes payment of 1 wei
-        PayMaster(feeCollector).makePayment{value: 1 wei}(deployer);
+        PayMaster(feeCollector).makePayment{ value: 1 wei }(deployer);
         assertEq(feeCollector.balance, 1 wei);
 
         /// @dev admin tries withdraw more than balance (check if handled gracefully)
@@ -191,7 +191,7 @@ contract PayMasterTest is BaseSetup {
         address feeCollectorDst = getContract(ARBI, "PayMaster");
 
         /// @dev makes payment of 1 ether
-        PayMaster(feeCollector).makePayment{value: 1 ether}(deployer);
+        PayMaster(feeCollector).makePayment{ value: 1 ether }(deployer);
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
@@ -201,12 +201,7 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).rebalanceTo(
             keccak256("MULTI_TX_SWAPPER"),
             LiqRequest(
-                1,
-                _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst),
-                NATIVE,
-                1 ether,
-                1 ether,
-                ""
+                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, 1 ether, 1 ether, ""
             ),
             420
         );
@@ -218,12 +213,7 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).rebalanceTo(
             keccak256("MULTI_TX_SWAPPER"),
             LiqRequest(
-                1,
-                _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst),
-                NATIVE,
-                1 ether,
-                1 ether,
-                ""
+                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, 1 ether, 1 ether, ""
             ),
             ARBI
         );
@@ -256,7 +246,7 @@ contract PayMasterTest is BaseSetup {
         address feeCollectorDst = getContract(ARBI, "PayMaster");
 
         /// @dev makes payment of 1 ether
-        PayMaster(feeCollector).makePayment{value: 1 ether}(deployer);
+        PayMaster(feeCollector).makePayment{ value: 1 ether }(deployer);
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
@@ -266,12 +256,7 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
             LiqRequest(
-                1,
-                _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst),
-                NATIVE,
-                1 ether,
-                1 ether,
-                ""
+                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, 1 ether, 1 ether, ""
             ),
             420
         );
@@ -283,12 +268,7 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
             LiqRequest(
-                1,
-                _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst),
-                NATIVE,
-                1 ether,
-                1 ether,
-                ""
+                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, 1 ether, 1 ether, ""
             ),
             ARBI
         );
@@ -297,12 +277,7 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
             LiqRequest(
-                1,
-                _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI),
-                NATIVE,
-                1 ether,
-                1 ether,
-                ""
+                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI), NATIVE, 1 ether, 1 ether, ""
             ),
             ARBI
         );
@@ -321,7 +296,7 @@ contract PayMasterTest is BaseSetup {
         address feeCollectorDst = getContract(ARBI, "PayMaster");
 
         /// @dev makes payment of 1 ether
-        PayMaster(feeCollector).makePayment{value: 1 ether}(deployer);
+        PayMaster(feeCollector).makePayment{ value: 1 ether }(deployer);
         assertEq(feeCollector.balance, 1 ether);
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
@@ -331,12 +306,7 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
             LiqRequest(
-                1,
-                _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst),
-                NATIVE,
-                1 ether,
-                1 ether,
-                ""
+                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, 1 ether, 1 ether, ""
             ),
             420
         );
@@ -348,12 +318,7 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
             LiqRequest(
-                1,
-                _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst),
-                NATIVE,
-                1 ether,
-                1 ether,
-                ""
+                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, 1 ether, 1 ether, ""
             ),
             ARBI
         );
@@ -362,12 +327,7 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
             LiqRequest(
-                1,
-                _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txUpdaterARBI),
-                NATIVE,
-                1 ether,
-                1 ether,
-                ""
+                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txUpdaterARBI), NATIVE, 1 ether, 1 ether, ""
             ),
             ARBI
         );
@@ -383,34 +343,25 @@ contract PayMasterTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform = getContract(
-            ETH,
-            string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        SingleVaultSFData memory data = SingleVaultSFData(
-            superformId,
-            1e18,
-            100,
-            LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""),
-            ""
-        );
+        SingleVaultSFData memory data =
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon, , ) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
-        (, , , uint256 msgFees) = PaymentHelper(getContract(ETH, "PaymentHelper")).estimateSingleDirectSingleVault(
-            req,
-            true
-        );
+        (,,, uint256 msgFees) =
+            PaymentHelper(getContract(ETH, "PaymentHelper")).estimateSingleDirectSingleVault(req, true);
         msgFees = msgFees + 2 ether;
 
-        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit{value: msgFees}(
+        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit{ value: msgFees }(
             req
         );
     }
@@ -422,15 +373,20 @@ contract PayMasterTest is BaseSetup {
         uint64 toChainId_,
         uint256 amount_,
         address receiver_
-    ) internal returns (bytes memory txData) {
+    )
+        internal
+        returns (bytes memory txData)
+    {
         if (liqBridgeKind_ == 1) {
             ISocketRegistry.BridgeRequest memory bridgeRequest;
             ISocketRegistry.MiddlewareRequest memory middlewareRequest;
             ISocketRegistry.UserRequest memory userRequest;
             /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of bridging request
+            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
+            /// bridging request
             middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1, /// request id
+                1,
+                /// request id
                 0,
                 underlyingToken_,
                 abi.encode(from_, FORKS[toChainId_], underlyingToken_)
@@ -438,19 +394,15 @@ contract PayMasterTest is BaseSetup {
 
             /// @dev empty bridge request
             bridgeRequest = ISocketRegistry.BridgeRequest(
-                0, /// id
+                0,
+                /// id
                 0,
                 address(0),
                 abi.encode(receiver_, FORKS[toChainId_], underlyingToken_)
             );
 
-            userRequest = ISocketRegistry.UserRequest(
-                receiver_,
-                uint256(toChainId_),
-                amount_,
-                middlewareRequest,
-                bridgeRequest
-            );
+            userRequest =
+                ISocketRegistry.UserRequest(receiver_, uint256(toChainId_), amount_, middlewareRequest, bridgeRequest);
 
             txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
         } else if (liqBridgeKind_ == 2) {
@@ -458,8 +410,10 @@ contract PayMasterTest is BaseSetup {
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
             swapData[0] = ILiFi.SwapData(
-                address(0), /// callTo (arbitrary)
-                address(0), /// callTo (approveTo)
+                address(0),
+                /// callTo (arbitrary)
+                address(0),
+                /// callTo (approveTo)
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
@@ -468,7 +422,8 @@ contract PayMasterTest is BaseSetup {
             );
 
             bridgeData = ILiFi.BridgeData(
-                bytes32("1"), /// request id
+                bytes32("1"),
+                /// request id
                 "",
                 "",
                 address(0),

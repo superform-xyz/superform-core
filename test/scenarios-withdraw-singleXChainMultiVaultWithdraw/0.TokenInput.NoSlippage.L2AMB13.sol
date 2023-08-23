@@ -18,11 +18,13 @@ contract SDMVW0TokenInputNoSlippageL2AMB13 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [1];
-        TARGET_VAULTS[ARBI][0] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [0];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][0] = [0];
 
         TARGET_UNDERLYINGS[ARBI][1] = [1];
-        TARGET_VAULTS[ARBI][1] = [0]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][1] = [0];
+        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][1] = [0];
 
         AMOUNTS[ARBI][0] = [15];
@@ -47,7 +49,7 @@ contract SDMVW0TokenInputNoSlippageL2AMB13 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
 
         actions.push(
@@ -61,7 +63,7 @@ contract SDMVW0TokenInputNoSlippageL2AMB13 is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 

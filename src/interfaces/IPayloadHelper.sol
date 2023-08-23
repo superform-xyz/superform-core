@@ -15,9 +15,7 @@ interface IPayloadHelper {
     /// @return slippage is the max slippage configured by the user (only for deposits)
     /// @return superformIds is the unique identifiers of the superforms
     /// @return srcPayloadId is the identifier of the corresponding payload on srcChain
-    function decodeDstPayload(
-        uint256 dstPayloadId_
-    )
+    function decodeDstPayload(uint256 dstPayloadId_)
         external
         view
         returns (
@@ -38,24 +36,21 @@ interface IPayloadHelper {
     /// @return isMulti indicates if the transaction involves operations to multiple vaults
     /// @return srcSender is the user who initiated the transaction on the srcChain
     /// @return srcChainId is the unique identifier of the srcChain
-    function decodeSrcPayload(
-        uint256 srcPayloadId_
-    ) external view returns (uint8 txType, uint8 callbackType, uint8 isMulti, address srcSender, uint64 srcChainId);
+    function decodeSrcPayload(uint256 srcPayloadId_)
+        external
+        view
+        returns (uint8 txType, uint8 callbackType, uint8 isMulti, address srcSender, uint64 srcChainId);
 
     /// @dev returns decoded two step form payloads
     /// @param timelockPayloadId_ is the unique identifier of payload in two step registry
-    function decodeTimeLockPayload(
-        uint256 timelockPayloadId_
-    )
+    function decodeTimeLockPayload(uint256 timelockPayloadId_)
         external
         view
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);
 
     /// @dev returns decoded failed two step form payloads
     /// @param timelockPayloadId_ is the unique identifier of payload in two step registry
-    function decodeTimeLockFailedPayload(
-        uint256 timelockPayloadId_
-    )
+    function decodeTimeLockFailedPayload(uint256 timelockPayloadId_)
         external
         view
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount);

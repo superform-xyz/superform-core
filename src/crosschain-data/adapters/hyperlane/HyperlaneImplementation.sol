@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
-import {IBaseStateRegistry} from "../../../interfaces/IBaseStateRegistry.sol";
-import {IAmbImplementation} from "../../../interfaces/IAmbImplementation.sol";
-import {IMailbox} from "../../../vendor/hyperlane/IMailbox.sol";
-import {IMessageRecipient} from "../../../vendor/hyperlane/IMessageRecipient.sol";
-import {ISuperRBAC} from "../../../interfaces/ISuperRBAC.sol";
-import {ISuperRegistry} from "../../../interfaces/ISuperRegistry.sol";
-import {IInterchainGasPaymaster} from "../../../vendor/hyperlane/IInterchainGasPaymaster.sol";
-import {AMBMessage, BroadCastAMBExtraData} from "../../../types/DataTypes.sol";
-import {Error} from "../../../utils/Error.sol";
-import {DataLib} from "../../../libraries/DataLib.sol";
+
+import { IBaseStateRegistry } from "../../../interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "../../../interfaces/IAmbImplementation.sol";
+import { IMailbox } from "../../../vendor/hyperlane/IMailbox.sol";
+import { IMessageRecipient } from "../../../vendor/hyperlane/IMessageRecipient.sol";
+import { ISuperRBAC } from "../../../interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "../../../interfaces/ISuperRegistry.sol";
+import { IInterchainGasPaymaster } from "../../../vendor/hyperlane/IInterchainGasPaymaster.sol";
+import { AMBMessage, BroadCastAMBExtraData } from "../../../types/DataTypes.sol";
+import { Error } from "../../../utils/Error.sol";
+import { DataLib } from "../../../libraries/DataLib.sol";
 
 /// @title HyperlaneImplementation
 /// @author Zeropoint Labs
@@ -36,8 +37,9 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
                                 Modifiers
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender))
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
+        }
         _;
     }
 
@@ -57,7 +59,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
     /// @notice receive enables processing native token transfers into the smart contract.
     /// @dev hyperlane gas payments/refund fails without a native receive function.
-    receive() external payable {}
+    receive() external payable { }
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
@@ -65,7 +67,12 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual override {
+    )
+        external
+        payable
+        virtual
+        override
+    {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.NOT_STATE_REGISTRY();
         }
@@ -73,11 +80,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         uint32 domain = ambChainId[dstChainId_];
         bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
 
-        igp.payForGas{value: msg.value}(
-            messageId,
-            domain,
-            extraData_.length > 0 ? abi.decode(extraData_, (uint256)) : 0,
-            srcSender_
+        igp.payForGas{ value: msg.value }(
+            messageId, domain, extraData_.length > 0 ? abi.decode(extraData_, (uint256)) : 0, srcSender_
         );
     }
 
@@ -86,7 +90,11 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         address srcSender_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual {
+    )
+        external
+        payable
+        virtual
+    {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.NOT_STATE_REGISTRY();
         }
@@ -103,7 +111,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
             bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
 
-            igp.payForGas{value: d.gasPerDst[i]}(
+            igp.payForGas{ value: d.gasPerDst[i] }(
                 messageId,
                 domain,
                 d.extraDataPerDst[i].length > 0 ? abi.decode(d.extraDataPerDst[i], (uint256)) : 0,
@@ -171,7 +179,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         AMBMessage memory decoded = abi.decode(body_, (AMBMessage));
 
         /// NOTE: experimental split of registry contracts
-        (, , , uint8 registryId, , ) = decoded.txInfo.decodeTxInfo();
+        (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
@@ -187,7 +195,12 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         uint64 dstChainId_,
         bytes memory,
         bytes memory extraData_
-    ) external view override returns (uint256 fees) {
+    )
+        external
+        view
+        override
+        returns (uint256 fees)
+    {
         return igp.quoteGasPayment(ambChainId[dstChainId_], abi.decode(extraData_, (uint256)));
     }
 

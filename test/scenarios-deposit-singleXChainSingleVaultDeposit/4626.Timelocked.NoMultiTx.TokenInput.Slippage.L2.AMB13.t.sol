@@ -18,7 +18,9 @@ contract SXSVDTimelocked4626NoMultiTxTokenInputSlippageL2AMB13 is ProtocolAction
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [2];
 
-        TARGET_VAULTS[ARBI][0] = [1]; /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ARBI][0] = [1];
+
+        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[ARBI][0] = [1];
 
@@ -38,7 +40,7 @@ contract SXSVDTimelocked4626NoMultiTxTokenInputSlippageL2AMB13 is ProtocolAction
                 slippage: 321, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
-            })
+             })
         );
     }
 
