@@ -49,7 +49,10 @@ contract SDMVDMulti0NoMultiTxTokenInputNoSlippageL2AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amount_) public {
+        amount_ = uint128(bound(amount_, 1, TOTAL_SUPPLY_WETH));
+        AMOUNTS[ETH][0] = [amount_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

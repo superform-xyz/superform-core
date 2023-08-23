@@ -23,8 +23,6 @@ contract SDMVDMulti00NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
 
         TARGET_FORM_KINDS[POLY][0] = [0, 0];
 
-        AMOUNTS[POLY][0] = [3213, 12];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -49,7 +47,11 @@ contract SDMVDMulti00NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
+        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_ETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_ETH / 2));
+        AMOUNTS[POLY][0] = [amountOne_, amountTwo_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

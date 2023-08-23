@@ -56,7 +56,7 @@ contract SDMVDMulti111RescueFailedDepositsNoMultiTxTokenInputSlippageL1AMB12 is 
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 400, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
             })
@@ -67,7 +67,30 @@ contract SDMVDMulti111RescueFailedDepositsNoMultiTxTokenInputSlippageL1AMB12 is 
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(
+        uint128 amountOne_,
+        uint128 amountOneRescue_,
+        uint128 amountTwo_,
+        uint128 amountTwoRescue_,
+        uint128 amountThree_,
+        uint128 amountThreeRescue_
+    ) public {
+        /// @dev amount = 2 after two slippages will become 0, hence starting with 3
+        amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_WETH / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 3, TOTAL_SUPPLY_WETH / 3));
+        amountThree_ = uint128(bound(amountThree_, 3, TOTAL_SUPPLY_WETH / 3));
+        AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
+
+        uint256 dstAmountOne = (AMOUNTS[AVAX][0][0] * uint256(10000 - actions[0].slippage)) / 10000;
+        uint256 dstAmountTwo = (AMOUNTS[AVAX][0][1] * uint256(10000 - actions[0].slippage)) / 10000;
+        uint256 dstAmountThree = (AMOUNTS[AVAX][0][2] * uint256(10000 - actions[0].slippage)) / 10000;
+
+        /// @dev amount = 1 after one slippage will become 0, hence starting with 2
+        amountOneRescue_ = uint128(bound(amountOneRescue_, 2, dstAmountOne));
+        amountTwoRescue_ = uint128(bound(amountTwoRescue_, 2, dstAmountTwo));
+        amountThreeRescue_ = uint128(bound(amountThreeRescue_, 2, dstAmountThree));
+        AMOUNTS[ETH][1] = [amountOneRescue_, amountTwoRescue_, amountThreeRescue_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

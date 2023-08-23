@@ -23,8 +23,6 @@ contract SDMVDMulti4MultiTxTokenInputNoSlippageL1AMB23 is ProtocolActions {
 
         TARGET_FORM_KINDS[ETH][0] = [1];
 
-        AMOUNTS[ETH][0] = [421];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -49,7 +47,10 @@ contract SDMVDMulti4MultiTxTokenInputNoSlippageL1AMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amount_) public {
+        amount_ = uint128(bound(amount_, 1, TOTAL_SUPPLY_WETH));
+        AMOUNTS[ETH][0] = [amount_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
