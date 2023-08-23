@@ -27,9 +27,6 @@ contract SDiMVW874NativeInputSlippageL2AMB13 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][1] = [0, 2, 1];
 
-        AMOUNTS[ARBI][0] = [7722, 11, 3];
-        AMOUNTS[ARBI][1] = [7722, 11, 3];
-
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[ARBI][0] = [2, 2, 2];
@@ -69,7 +66,14 @@ contract SDiMVW874NativeInputSlippageL2AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario( uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 3));
+        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_ETH / 3));
+        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_];
+        AMOUNTS[ARBI][1] = [amountOne_, amountTwo_, amountThree_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

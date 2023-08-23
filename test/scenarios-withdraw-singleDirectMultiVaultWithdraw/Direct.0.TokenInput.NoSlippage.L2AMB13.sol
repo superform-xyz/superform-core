@@ -27,8 +27,8 @@ contract SDiMVW0TokenInputNoSlippageL2AMB13 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][1] = [0];
 
-        AMOUNTS[ARBI][0] = [15];
-        AMOUNTS[ARBI][1] = [2];
+        // AMOUNTS[ARBI][0] = [15];
+        // AMOUNTS[ARBI][1] = [2];
 
         PARTIAL[ARBI][1] = [true];
 
@@ -71,7 +71,14 @@ contract SDiMVW0TokenInputNoSlippageL2AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_USDT));
+        AMOUNTS[ARBI][0] = [amountOne_];
+
+        /// @dev bound to amountOne_ - 1 as partial is true
+        amountTwo_ = uint128(bound(amountTwo_, 1, amountOne_ - 1));
+        AMOUNTS[ARBI][1] = [amountTwo_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

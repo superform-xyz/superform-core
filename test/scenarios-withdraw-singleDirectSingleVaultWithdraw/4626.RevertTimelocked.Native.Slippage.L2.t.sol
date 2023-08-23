@@ -33,9 +33,6 @@ contract SXSVWRevertTimelockedNativeSlippage is ProtocolActions {
 
         TARGET_FORM_KINDS[ARBI][1] = [1];
 
-        AMOUNTS[ARBI][0] = [111];
-        AMOUNTS[ARBI][1] = [111];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -75,7 +72,13 @@ contract SXSVWRevertTimelockedNativeSlippage is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        /// @dev bounding to WETH supply as it is smaller than ETH supply, coz otherwise swaps to WETH might fail
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH));
+        AMOUNTS[ARBI][0] = [amountOne_];
+        AMOUNTS[ARBI][1] = [amountOne_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

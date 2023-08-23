@@ -33,9 +33,6 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
 
         TARGET_FORM_KINDS[OP][1] = [0];
 
-        AMOUNTS[OP][0] = [8764];
-        AMOUNTS[OP][1] = [8764];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -75,7 +72,13 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        /// @dev bounding to WETH supply as it is smaller than ETH supply, coz otherwise swaps to WETH might fail
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH));
+        AMOUNTS[OP][0] = [amountOne_];
+        AMOUNTS[OP][1] = [amountOne_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
