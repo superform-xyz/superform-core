@@ -16,17 +16,6 @@ abstract contract BridgeValidator is IBridgeValidator {
     ISuperRegistry public immutable superRegistry;
 
     /*///////////////////////////////////////////////////////////////
-                                Modifiers
-    //////////////////////////////////////////////////////////////*/
-
-    modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
-            revert Error.NOT_PROTOCOL_ADMIN();
-        }
-        _;
-    }
-
-    /*///////////////////////////////////////////////////////////////
                                 Constructor
     //////////////////////////////////////////////////////////////*/
 

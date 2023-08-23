@@ -605,11 +605,7 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev configures lzImplementation and hyperlane to super registry
             vars.superRegistryC.setAmbAddress(ambIds, vars.ambAddresses);
 
-            /// @dev 17 Setup extra RBAC
-            vars.superRBACC.grantRole(vars.superRBACC.CORE_CONTRACTS_ROLE(), vars.superformRouter);
-            vars.superRBACC.grantRole(vars.superRBACC.CORE_CONTRACTS_ROLE(), vars.factory);
-
-            /// @dev 18 setup setup srcChain keepers
+            /// @dev 17 setup setup srcChain keepers
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.chainId);
