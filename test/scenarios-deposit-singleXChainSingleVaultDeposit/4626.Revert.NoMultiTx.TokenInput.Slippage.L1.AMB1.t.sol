@@ -17,11 +17,10 @@ contract SXSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[POLY][0] = [1];
+
         TARGET_VAULTS[POLY][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
 
         TARGET_FORM_KINDS[POLY][0] = [0];
-
-        AMOUNTS[POLY][0] = [4121];
 
         MAX_SLIPPAGE = 1000;
 
@@ -47,7 +46,11 @@ contract SXSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amount_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_WETH));
+        AMOUNTS[POLY][0] = [amount_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

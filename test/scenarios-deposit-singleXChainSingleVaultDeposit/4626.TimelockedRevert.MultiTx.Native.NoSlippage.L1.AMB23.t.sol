@@ -22,8 +22,6 @@ contract SXSVDTimelockedRevert4626NoMultiTxTokenInputSlippageL2AMB13 is Protocol
 
         TARGET_FORM_KINDS[POLY][0] = [1];
 
-        AMOUNTS[POLY][0] = [2];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -48,7 +46,10 @@ contract SXSVDTimelockedRevert4626NoMultiTxTokenInputSlippageL2AMB13 is Protocol
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amount_) public {
+        amount_ = uint128(bound(amount_, 1, TOTAL_SUPPLY_USDT));
+        AMOUNTS[POLY][0] = [amount_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

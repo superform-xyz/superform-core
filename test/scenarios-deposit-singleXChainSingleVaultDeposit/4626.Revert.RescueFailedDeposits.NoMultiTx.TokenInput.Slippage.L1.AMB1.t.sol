@@ -20,13 +20,13 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1A
         TARGET_UNDERLYINGS[POLY][0] = [2];
         TARGET_VAULTS[POLY][0] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[POLY][0] = [0];
-        AMOUNTS[POLY][0] = [4121];
+        // AMOUNTS[POLY][0] = [4121];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[OP][1] = [2];
         TARGET_VAULTS[OP][1] = [3]; /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[OP][1] = [0];
-        AMOUNTS[OP][1] = [125];
+        // AMOUNTS[OP][1] = [125];
 
         MAX_SLIPPAGE = 1000;
 
@@ -67,7 +67,17 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1A
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
+        /// @dev amount = 2 after two slippages will become 0, hence starting with 3
+        amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_WETH));
+        AMOUNTS[POLY][0] = [amountOne_];
+
+        uint256 dstAmount = (AMOUNTS[POLY][0][0] * uint256(10000 - actions[0].slippage)) / 10000;
+
+        /// @dev amount = 1 after one slippage will become 0, hence starting with 2
+        amountTwo_ = uint128(bound(amountTwo_, 2, dstAmount));
+        AMOUNTS[OP][1] = [amountTwo_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

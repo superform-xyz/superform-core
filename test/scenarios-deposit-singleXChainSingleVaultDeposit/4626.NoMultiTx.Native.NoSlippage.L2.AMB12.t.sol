@@ -22,8 +22,6 @@ contract SXSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
 
         TARGET_FORM_KINDS[POLY][0] = [0];
 
-        AMOUNTS[POLY][0] = [8213];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -48,7 +46,10 @@ contract SXSVDNormal4626NoMultiTxNativeNoSlippageL2AMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amount_) public {
+        amount_ = uint128(bound(amount_, 1, TOTAL_SUPPLY_ETH));
+        AMOUNTS[POLY][0] = [amount_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
