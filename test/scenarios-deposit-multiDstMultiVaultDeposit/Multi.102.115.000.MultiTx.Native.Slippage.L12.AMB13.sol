@@ -30,10 +30,6 @@ contract MDMVDMulti102115000MultiTxNativeSlippageL12AMB13 is ProtocolActions {
         TARGET_FORM_KINDS[ETH][0] = [1, 1, 1];
         TARGET_FORM_KINDS[AVAX][0] = [0, 0, 0];
 
-        AMOUNTS[ARBI][0] = [766324, 987, 132];
-        AMOUNTS[ETH][0] = [1233, 4421, 2];
-        AMOUNTS[AVAX][0] = [11, 22, 33];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -60,7 +56,15 @@ contract MDMVDMulti102115000MultiTxNativeSlippageL12AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH / 9));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_WETH / 9));
+        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_WETH / 9));
+        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_];
+        AMOUNTS[ETH][0] = [amountThree_, amountOne_, amountTwo_];
+        AMOUNTS[AVAX][0] = [amountTwo_, amountThree_, amountOne_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

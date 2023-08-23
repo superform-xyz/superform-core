@@ -27,9 +27,6 @@ contract MDMVDMulti01NoMultiTxTokenInputNoSlippageL2AMB13 is ProtocolActions {
         TARGET_FORM_KINDS[ETH][0] = [0];
         TARGET_FORM_KINDS[AVAX][0] = [0];
 
-        AMOUNTS[ETH][0] = [45512];
-        AMOUNTS[AVAX][0] = [123333123131];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -55,7 +52,12 @@ contract MDMVDMulti01NoMultiTxTokenInputNoSlippageL2AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
+        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_USDT / 4));
+        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_USDT / 4));
+        AMOUNTS[ETH][0] = [amountOne_, amountTwo_];
+        AMOUNTS[AVAX][0] = [amountTwo_, amountOne_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

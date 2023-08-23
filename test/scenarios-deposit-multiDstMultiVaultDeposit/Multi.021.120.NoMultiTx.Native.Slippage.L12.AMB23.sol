@@ -27,9 +27,6 @@ contract MDMVDMulti021120NoMultiTxNativeSlippageL12AMB23 is ProtocolActions {
         TARGET_FORM_KINDS[ETH][0] = [0, 2, 1];
         TARGET_FORM_KINDS[OP][0] = [1, 2, 0];
 
-        AMOUNTS[ETH][0] = [11, 22, 33];
-        AMOUNTS[OP][0] = [44, 55, 66];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -55,7 +52,14 @@ contract MDMVDMulti021120NoMultiTxNativeSlippageL12AMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH / 6));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 6));
+        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_ETH / 6));
+        AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];
+        AMOUNTS[OP][0] = [amountThree_, amountOne_, amountTwo_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
