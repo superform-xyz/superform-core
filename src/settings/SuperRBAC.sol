@@ -15,22 +15,22 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     uint8 public constant STATE_REGISTRY_TYPE = 2;
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
-    bytes32 public immutable PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE"); // needs edit
-    bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE"); // needs edit
-    bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE"); // missing
-    bytes32 public constant override MULTI_TX_SWAPPER_ROLE = keccak256("MULTI_TX_SWAPPER_ROLE"); // added
+    bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
+    bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
+    bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE");
+    bytes32 public constant override MULTI_TX_SWAPPER_ROLE = keccak256("MULTI_TX_SWAPPER_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_PROCESSOR_ROLE =
-        keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE"); // added
+        keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override ROLES_STATE_REGISTRY_PROCESSOR_ROLE =
-        keccak256("ROLES_STATE_REGISTRY_PROCESSOR_ROLE"); // missing
+        keccak256("ROLES_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override FACTORY_STATE_REGISTRY_PROCESSOR_ROLE =
-        keccak256("FACTORY_STATE_REGISTRY_PROCESSOR_ROLE"); // missing
+        keccak256("FACTORY_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE =
-        keccak256("TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE"); // missing
-    bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"); // added
-    bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE"); // missing
-    bytes32 public constant override BURNER_ROLE = keccak256("BURNER_ROLE"); // missing
-    bytes32 public constant override MINTER_STATE_REGISTRY_ROLE = keccak256("MINTER_STATE_REGISTRY_ROLE"); // missing
+        keccak256("TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE");
+    bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
+    bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant override BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant override MINTER_STATE_REGISTRY_ROLE = keccak256("MINTER_STATE_REGISTRY_ROLE");
 
     ISuperRegistry public superRegistry;
 
