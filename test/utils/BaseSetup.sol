@@ -257,9 +257,6 @@ abstract contract BaseSetup is DSTest, Test {
         _preDeploymentSetup();
 
         _fundNativeTokens();
-        console.log("USER[0]", users[0]);
-        console.log("USER[1]", users[1]);
-        console.log("USER[2]", users[2]);
 
         _deployProtocol();
 
