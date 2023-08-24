@@ -11,7 +11,8 @@ import {
     ReturnSingleData,
     InitMultiVaultData,
     InitSingleVaultData,
-    TwoStepsPayload
+    TwoStepsPayload,
+    LiqRequest
 } from "../../types/DataTypes.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 
@@ -32,70 +33,118 @@ contract PayloadHelper is IPayloadHelper {
         twoStepRegistry = ITwoStepsFormStateRegistry(twoStepRegistry_);
     }
 
+    struct DecodeDstPayloadInternalVars {
+        uint8 txType;
+        uint8 callbackType;
+        address srcSender;
+        uint64 srcChainId;
+        uint256[] amounts;
+        uint256[] slippage;
+        uint256[] superformIds;
+        uint256 srcPayloadId;
+        bytes[] txDatas;
+        address[] liqDataTokens;
+        uint256[] liqDataAmounts;
+        uint8 multi;
+        ReturnMultiData rd;
+        ReturnSingleData rsd;
+        InitMultiVaultData imvd;
+        InitSingleVaultData isvd;
+        uint256 i;
+    }
+
     /// @inheritdoc IPayloadHelper
     function decodeDstPayload(uint256 dstPayloadId_)
         external
         view
         override
         returns (
-            uint8 txType,
-            uint8 callbackType,
-            address srcSender,
-            uint64 srcChainId,
-            uint256[] memory amounts,
-            uint256[] memory slippage,
-            uint256[] memory superformIds,
-            uint256 srcPayloadId
+            uint8,
+            uint8,
+            address,
+            uint64,
+            uint256[] memory,
+            uint256[] memory,
+            uint256[] memory,
+            uint256,
+            bytes[] memory,
+            address[] memory,
+            uint256[] memory
         )
     {
-        bytes memory payloadBody = dstPayloadRegistry.payloadBody(dstPayloadId_);
-        uint256 payloadHeader = dstPayloadRegistry.payloadHeader(dstPayloadId_);
+        DecodeDstPayloadInternalVars memory v;
 
-        (uint8 txType_, uint8 callbackType_, uint8 multi_,, address srcSender_, uint64 srcChainId_) =
-            payloadHeader.decodeTxInfo();
+        (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) =
+            dstPayloadRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
 
-        if (callbackType_ == uint256(CallbackType.RETURN) || callbackType == uint256(CallbackType.FAIL)) {
-            if (multi_ == 1) {
-                ReturnMultiData memory rd = abi.decode(payloadBody, (ReturnMultiData));
-                amounts = rd.amounts;
-                srcPayloadId = rd.payloadId;
+        if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
+            if (v.multi == 1) {
+                v.rd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (ReturnMultiData));
+                v.amounts = v.rd.amounts;
+                v.srcPayloadId = v.rd.payloadId;
             } else {
-                ReturnSingleData memory rsd = abi.decode(payloadBody, (ReturnSingleData));
-                uint256[] memory amounts_ = new uint256[](1);
-                amounts_[0] = rsd.amount;
+                v.rsd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (ReturnSingleData));
+                v.amounts = new uint256[](1);
+                v.amounts[0] = v.rsd.amount;
 
-                amounts = amounts_;
-                srcPayloadId = rsd.payloadId;
+                v.srcPayloadId = v.rsd.payloadId;
             }
         }
 
-        if (callbackType_ == uint256(CallbackType.INIT)) {
-            if (multi_ == 1) {
-                InitMultiVaultData memory imvd = abi.decode(payloadBody, (InitMultiVaultData));
-                amounts = imvd.amounts;
-                slippage = imvd.maxSlippage;
-                superformIds = imvd.superformIds;
-                srcPayloadId = imvd.payloadId;
+        if (v.callbackType == uint256(CallbackType.INIT)) {
+            if (v.multi == 1) {
+                v.imvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
+                v.amounts = v.imvd.amounts;
+                v.slippage = v.imvd.maxSlippage;
+                v.superformIds = v.imvd.superformIds;
+                v.srcPayloadId = v.imvd.payloadId;
+                v.txDatas = new bytes[](v.imvd.liqData.length);
+                v.liqDataTokens = new address[](v.imvd.liqData.length);
+                v.liqDataAmounts = new uint256[](v.imvd.liqData.length);
+
+                for (v.i; v.i < v.imvd.liqData.length; v.i++) {
+                    v.txDatas[v.i] = v.imvd.liqData[v.i].txData;
+                    v.liqDataTokens[v.i] = v.imvd.liqData[v.i].token;
+                    v.liqDataAmounts[v.i] = v.imvd.liqData[v.i].amount;
+                }
             } else {
-                InitSingleVaultData memory isvd = abi.decode(payloadBody, (InitSingleVaultData));
+                v.isvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
-                uint256[] memory amounts_ = new uint256[](1);
-                amounts_[0] = isvd.amount;
-                amounts = amounts_;
+                v.amounts = new uint256[](1);
+                v.amounts[0] = v.isvd.amount;
 
-                uint256[] memory slippage_ = new uint256[](1);
-                slippage_[0] = isvd.maxSlippage;
-                slippage = slippage_;
+                v.slippage = new uint256[](1);
+                v.slippage[0] = v.isvd.maxSlippage;
 
-                uint256[] memory superformIds_ = new uint256[](1);
-                superformIds_[0] = isvd.superformId;
-                superformIds = superformIds_;
+                v.superformIds = new uint256[](1);
+                v.superformIds[0] = v.isvd.superformId;
 
-                srcPayloadId = isvd.payloadId;
+                v.srcPayloadId = v.isvd.payloadId;
+
+                v.txDatas = new bytes[](1);
+                v.txDatas[0] = v.isvd.liqData.txData;
+
+                v.liqDataTokens = new address[](1);
+                v.liqDataTokens[0] = v.isvd.liqData.token;
+
+                v.liqDataAmounts = new uint256[](1);
+                v.liqDataAmounts[0] = v.isvd.liqData.amount;
             }
         }
 
-        return (txType_, callbackType_, srcSender_, srcChainId_, amounts, slippage, superformIds, srcPayloadId);
+        return (
+            v.txType,
+            v.callbackType,
+            v.srcSender,
+            v.srcChainId,
+            v.amounts,
+            v.slippage,
+            v.superformIds,
+            v.srcPayloadId,
+            v.txDatas,
+            v.liqDataTokens,
+            v.liqDataAmounts
+        );
     }
 
     /// @inheritdoc IPayloadHelper

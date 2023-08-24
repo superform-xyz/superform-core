@@ -105,81 +105,74 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertEq(srcSender, users[0]);
     }
 
+    struct CheckDstPayloadInternalVars {
+        bytes[] extraDataGenerated;
+        uint256 ambFees;
+        uint8 txType;
+        uint8 callbackType;
+        address srcSender;
+        uint64 srcChainId;
+        uint256[] amounts;
+        uint256[] slippage;
+        uint256[] superformIds;
+        uint256 srcPayloadId;
+        bytes[] txDatas;
+        address[] liqDataTokens;
+        uint256[] liqDataAmounts;
+    }
+
     function _checkDstPayloadInit() internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
+        CheckDstPayloadInternalVars memory v;
 
-        address _PayloadHelper = contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))];
-        IPayloadHelper helper = IPayloadHelper(_PayloadHelper);
+        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId,,,) =
+            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
 
-        address _PaymentHelper = contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))];
-        IPaymentHelper paymentHelper = IPaymentHelper(_PaymentHelper);
+        v.extraDataGenerated = new bytes[](2);
+        v.extraDataGenerated[0] = abi.encode("500000");
+        v.extraDataGenerated[1] = abi.encode("0");
 
-        (
-            uint8 txType,
-            uint8 callbackType,
-            address srcSender,
-            uint64 srcChainId,
-            uint256[] memory amounts,
-            uint256[] memory slippage,
-            uint256[] memory superformIds,
-            uint256 srcPayloadId
-        ) = helper.decodeDstPayload(1);
-
-        bytes[] memory extraDataGenerated = new bytes[](2);
-        extraDataGenerated[0] = abi.encode("500000");
-        extraDataGenerated[1] = abi.encode("0");
-
-        assertEq(txType, 0);
+        assertEq(v.txType, 0);
 
         /// 0 for deposit
-        assertEq(callbackType, 0);
+        assertEq(v.callbackType, 0);
         /// 0 for init
-        assertEq(srcChainId, 10);
+        assertEq(v.srcChainId, 10);
         /// chain id of optimism is 10
-        assertEq(srcPayloadId, 1);
-        assertEq(amounts, AMOUNTS[POLY][0]);
-        for (uint256 i = 0; i < slippage.length; ++i) {
-            assertEq(slippage[i], MAX_SLIPPAGE);
+        assertEq(v.srcPayloadId, 1);
+        assertEq(v.amounts, AMOUNTS[POLY][0]);
+        for (uint256 i = 0; i < v.slippage.length; ++i) {
+            assertEq(v.slippage[i], MAX_SLIPPAGE);
         }
 
         /// @notice: just asserting if fees are greater than 0
         /// no way to write serious tests on forked testnet at this point. should come back to this later on.
-        (uint256 ambFees,) = paymentHelper.estimateAMBFees(AMBs, DST_CHAINS[0], abi.encode(1), extraDataGenerated);
-        assertGe(ambFees, 0);
+        (v.ambFees,) = IPaymentHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))]).estimateAMBFees(
+            AMBs, DST_CHAINS[0], abi.encode(1), v.extraDataGenerated
+        );
+        assertGe(v.ambFees, 0);
     }
 
     function _checkDstPayloadReturn() internal {
         vm.selectFork(FORKS[CHAIN_0]);
 
-        address _PayloadHelper = contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))];
-        IPayloadHelper helper = IPayloadHelper(_PayloadHelper);
+        CheckDstPayloadInternalVars memory v;
 
-        address _PaymentHelper = contracts[CHAIN_0][bytes32(bytes("PaymentHelper"))];
-        IPaymentHelper paymentHelper = IPaymentHelper(_PaymentHelper);
+        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId,,,) =
+            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
 
-        (
-            uint8 txType,
-            uint8 callbackType,
-            address srcSender,
-            uint64 srcChainId,
-            uint256[] memory amounts,
-            uint256[] memory slippage,
-            uint256[] memory superformIds,
-            uint256 srcPayloadId
-        ) = helper.decodeDstPayload(1);
-
-        assertEq(txType, 0);
+        assertEq(v.txType, 0);
 
         /// 0 for deposit
-        assertEq(callbackType, 1);
+        assertEq(v.callbackType, 1);
         /// 1 for return
-        assertEq(srcChainId, 137);
+        assertEq(v.srcChainId, 137);
         /// chain id of polygon is 137
-        assertEq(srcPayloadId, 1);
-        assertEq(amounts, AMOUNTS[POLY][0]);
+        assertEq(v.srcPayloadId, 1);
+        assertEq(v.amounts, AMOUNTS[POLY][0]);
 
-        for (uint256 i = 0; i < slippage.length; ++i) {
-            assertEq(slippage[i], MAX_SLIPPAGE);
+        for (uint256 i = 0; i < v.slippage.length; ++i) {
+            assertEq(v.slippage[i], MAX_SLIPPAGE);
         }
     }
 }
