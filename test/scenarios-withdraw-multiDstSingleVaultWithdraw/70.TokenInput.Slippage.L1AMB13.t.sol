@@ -42,12 +42,6 @@ contract MDSVW70TokenInputSlippageL1AMB13 is ProtocolActions {
         TARGET_FORM_KINDS[OP][1] = [0];
         TARGET_FORM_KINDS[ETH][1] = [0];
 
-        AMOUNTS[OP][0] = [1500];
-        AMOUNTS[OP][1] = [900];
-
-        AMOUNTS[ETH][0] = [2000];
-        AMOUNTS[ETH][1] = [2000];
-
         PARTIAL[OP][1] = [true];
 
         MAX_SLIPPAGE = 1000;
@@ -92,7 +86,18 @@ contract MDSVW70TokenInputSlippageL1AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountOneWithdraw_, uint128 amountTwo_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_WETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_WETH / 2));
+
+        AMOUNTS[OP][0] = [amountOne_];
+        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, amountOne_ - 1));
+        AMOUNTS[OP][1] = [amountOneWithdraw_];
+
+        AMOUNTS[ETH][0] = [amountTwo_];
+        AMOUNTS[ETH][1] = [amountTwo_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

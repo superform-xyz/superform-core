@@ -42,12 +42,6 @@ contract MDSVWNormal4626NativeSlippageL1AMB12 is ProtocolActions {
         TARGET_FORM_KINDS[OP][1] = [0];
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
-        AMOUNTS[OP][0] = [541_135];
-        AMOUNTS[OP][1] = [541_135];
-
-        AMOUNTS[AVAX][0] = [11];
-        AMOUNTS[AVAX][1] = [10];
-
         PARTIAL[AVAX][1] = [true];
 
         MAX_SLIPPAGE = 1000;
@@ -92,7 +86,18 @@ contract MDSVWNormal4626NativeSlippageL1AMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountTwoWithdraw_) public {
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH / 2));
+        /// @dev amount = 2 after slippage will become 1, but amountWithdraw >= 2, hence starting with 3
+        amountTwo_ = uint128(bound(amountTwo_, 3, TOTAL_SUPPLY_ETH / 2));
+
+        AMOUNTS[OP][0] = [amountOne_];
+        AMOUNTS[OP][1] = [amountOne_];
+
+        AMOUNTS[AVAX][0] = [amountTwo_];
+        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 2, amountTwo_ - 1));
+        AMOUNTS[AVAX][1] = [amountTwoWithdraw_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

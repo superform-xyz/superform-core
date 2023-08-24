@@ -42,12 +42,6 @@ contract MDSVW10NativeSlippageL2AMB23 is ProtocolActions {
         TARGET_FORM_KINDS[OP][1] = [1];
         TARGET_FORM_KINDS[ARBI][1] = [0];
 
-        AMOUNTS[OP][0] = [900];
-        AMOUNTS[OP][1] = [900];
-
-        AMOUNTS[ARBI][0] = [1000];
-        AMOUNTS[ARBI][1] = [1000];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -90,7 +84,17 @@ contract MDSVW10NativeSlippageL2AMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_WETH / 2));
+
+        AMOUNTS[OP][0] = [amountOne_];
+        AMOUNTS[OP][1] = [amountOne_];
+
+        AMOUNTS[ARBI][0] = [amountTwo_];
+        AMOUNTS[ARBI][1] = [amountTwo_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
