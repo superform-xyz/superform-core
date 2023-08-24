@@ -16,3 +16,6 @@
 [submodule "lib/ERC1155A"]
 	path = lib/ERC1155A
 	url = https://github.com/superform-xyz/ERC1155A
+[submodule "lib/wormhole-solidity-sdk"]
+	path = lib/wormhole-solidity-sdk
+	url = https://github.com/wormhole-foundation/wormhole-solidity-sdk
