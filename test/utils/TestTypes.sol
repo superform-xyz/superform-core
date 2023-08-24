@@ -107,6 +107,7 @@ struct SetupVars {
     uint16 dstLzChainId;
     uint32 dstHypChainId;
     uint64 dstCelerChainId;
+    uint16 dstWormholeChainId;
     uint256 fork;
     address[] ambAddresses;
     address superform;
@@ -117,6 +118,8 @@ struct SetupVars {
     address hyperlaneImplementation;
     address celerHelper;
     address celerImplementation;
+    address wormholeHelper;
+    address wormholeImplementation;
     address socketRouter;
     address lifiRouter;
     address erc4626Form;
@@ -135,6 +138,7 @@ struct SetupVars {
     address dstLzImplementation;
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
+    address dstWormholeImplementation;
     address multiTxProcessor;
     address payMaster;
     address superRegistry;

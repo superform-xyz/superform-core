@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console.sol";
+
 import "wormhole-solidity-sdk/interfaces/IWormhole.sol";
 import "wormhole-solidity-sdk/interfaces/IWormholeRelayer.sol";
 import "wormhole-solidity-sdk/interfaces/IWormholeReceiver.sol";
 
-import {IBaseStateRegistry} from "../../../interfaces/IBaseStateRegistry.sol";
-import {IAmbImplementation} from "../../../interfaces/IAmbImplementation.sol";
-import {ISuperRBAC} from "../../../interfaces/ISuperRBAC.sol";
-import {ISuperRegistry} from "../../../interfaces/ISuperRegistry.sol";
-import {AMBMessage, BroadCastAMBExtraData} from "../../../types/DataTypes.sol";
-import {Error} from "../../../utils/Error.sol";
-import {DataLib} from "../../../libraries/DataLib.sol";
+import { IBaseStateRegistry } from "../../../interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "../../../interfaces/IAmbImplementation.sol";
+import { ISuperRBAC } from "../../../interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "../../../interfaces/ISuperRegistry.sol";
+import { AMBMessage, BroadCastAMBExtraData } from "../../../types/DataTypes.sol";
+import { Error } from "../../../utils/Error.sol";
+import { DataLib } from "../../../libraries/DataLib.sol";
 
 /// @title WormholeImplementation
 /// @author Zeropoint Labs
@@ -39,10 +41,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC")))
-                .hasProtocolAdminRole(msg.sender)
-        ) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
@@ -54,13 +53,9 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
 
     /// @param wormhole_ is wormhole address for respective chain
     /// @param relayer_ is the automatic relayer address for respective chain
-    constructor(
-        IWormhole wormhole_,
-        IWormholeRelayer relayer_,
-        ISuperRegistry superRegistry_
-    ) {
-        relayer = relayer_;
-        wormhole = wormhole_;
+    constructor(address wormhole_, address relayer_, ISuperRegistry superRegistry_) {
+        relayer = IWormholeRelayer(relayer_);
+        wormhole = IWormhole(wormhole_);
         superRegistry = superRegistry_;
     }
 
@@ -74,23 +69,22 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         uint64 dstChainId_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual override {
+    )
+        external
+        payable
+        virtual
+        override
+    {
         if (!superRegistry.isValidStateRegistry(msg.sender)) {
             revert Error.NOT_STATE_REGISTRY();
         }
 
         uint16 dstChainId = ambChainId[dstChainId_];
-        (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(
-            extraData_,
-            (uint256, uint256)
-        );
 
-        relayer.sendPayloadToEvm{value: msg.value}(
-            dstChainId,
-            authorizedImpl[dstChainId],
-            message_,
-            dstNativeAirdrop,
-            dstGasLimit
+        (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
+
+        relayer.sendPayloadToEvm{ value: msg.value }(
+            dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit
         );
     }
 
@@ -99,7 +93,11 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         address srcSender_,
         bytes memory message_,
         bytes memory extraData_
-    ) external payable virtual {
+    )
+        external
+        payable
+        virtual
+    {
         /// @dev is wormhole's inherent fee for sending a message
         /// NOTE: is zero for now
         uint256 msgFee = wormhole.messageFee();
@@ -108,8 +106,9 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
             revert Error.CROSS_CHAIN_TX_UNDERPAID();
         }
 
-        wormhole.publishMessage{value: msg.value}(
-            0, /// batch id
+        wormhole.publishMessage{ value: msg.value }(
+            0,
+            /// batch id
             message_,
             broadcastFinality
         );
@@ -122,7 +121,11 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         bytes32 sourceAddress,
         uint16 sourceChain,
         bytes32 deliveryHash
-    ) public payable override {
+    )
+        public
+        payable
+        override
+    {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
@@ -130,6 +133,8 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
             revert Error.CALLER_NOT_RELAYER();
         }
 
+        console.log(authorizedImpl[sourceChain]);
+        console.log(_bytes32ToAddress(sourceAddress));
         if (_bytes32ToAddress(sourceAddress) != authorizedImpl[sourceChain]) {
             revert Error.INVALID_SRC_SENDER();
         }
@@ -142,7 +147,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
 
         /// @dev decoding payload
         AMBMessage memory decoded = abi.decode(payload, (AMBMessage));
-        (, , , uint8 registryId, , ) = decoded.txInfo.decodeTxInfo();
+        (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
@@ -153,10 +158,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setChainId(
-        uint64 superChainId_,
-        uint16 ambChainId_
-    ) external onlyProtocolAdmin {
+    function setChainId(uint64 superChainId_, uint16 ambChainId_) external onlyProtocolAdmin {
         if (superChainId_ == 0 || ambChainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -171,10 +173,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     /// @param chainId_ is the identifier of the destination chain within wormhole
     /// @param authorizedImpl_ is the implementation of the wormhole message bridge on the specified destination
     /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setReceiver(
-        uint16 chainId_,
-        address authorizedImpl_
-    ) external onlyProtocolAdmin {
+    function setReceiver(uint16 chainId_, address authorizedImpl_) external onlyProtocolAdmin {
         if (chainId_ == 0) {
             revert Error.INVALID_CHAIN_ID();
         }
@@ -206,17 +205,24 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         uint64 dstChainId_,
         bytes memory,
         bytes memory extraData_
-    ) external view override returns (uint256 fees) {
-        (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(
-            extraData_,
-            (uint256, uint256)
-        );
+    )
+        external
+        view
+        override
+        returns (uint256 fees)
+    {
+        uint256 dstNativeAirdrop;
+        uint256 dstGasLimit;
 
-        (fees, ) = relayer.quoteEVMDeliveryPrice(
-            ambChainId[dstChainId_],
-            dstNativeAirdrop,
-            dstGasLimit
-        );
+        if (extraData_.length > 0) {
+            (dstNativeAirdrop, dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
+        }
+
+        uint16 dstChainId = ambChainId[dstChainId_];
+
+        if (dstChainId != 0) {
+            (fees,) = relayer.quoteEVMDeliveryPrice(dstChainId, dstNativeAirdrop, dstGasLimit);
+        }
     }
 
     /*///////////////////////////////////////////////////////////////

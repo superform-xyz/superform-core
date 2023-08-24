@@ -7,6 +7,7 @@ import "ds-test/test.sol";
 import { LayerZeroHelper } from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import { HyperlaneHelper } from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import { CelerHelper } from "pigeon/src/celer/CelerHelper.sol";
+import { WormholeHelper } from "pigeon/src/wormhole/WormholeHelper.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 
@@ -47,6 +48,7 @@ import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
+import { WormholeImplementation } from "src/crosschain-data/adapters/wormhole/WormholeImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
@@ -128,7 +130,8 @@ abstract contract BaseSetup is DSTest, Test {
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
     /// @notice id 3 is celer
-    uint8[] public ambIds = [uint8(1), 2, 3];
+    /// @notice id 4 is wormhole
+    uint8[] public ambIds = [uint8(1), 2, 3, 4];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -137,6 +140,7 @@ abstract contract BaseSetup is DSTest, Test {
     mapping(uint64 => address) public LZ_ENDPOINTS;
     mapping(uint64 => address) public CELER_BUSSES;
     mapping(uint64 => uint64) public CELER_CHAIN_IDS;
+    mapping(uint64 => uint16) public WORMHOLE_CHAIN_IDS;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -174,14 +178,36 @@ abstract contract BaseSetup is DSTest, Test {
         0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d
     ];
 
-    /*////////////////////////////////////////////////////zr//////////
+    address[] public wormholeCore = [
+        0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B,
+        0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B,
+        0x54a8e5f9c4CbA08F9943965859F6c34eAF03E26c,
+        0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7,
+        0xa5f208e072434bC67592E4C49C1B991BA79BCA46,
+        0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722
+    ];
+
+    /*//////////////////////////////////////////////////////////////
+                        WORMHOLE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+    address public ETH_wormholeCore = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
+    address public ARBI_wormholeCore = 0xa5f208e072434bC67592E4C49C1B991BA79BCA46;
+    address public AVAX_wormholeCore = 0x54a8e5f9c4CbA08F9943965859F6c34eAF03E26c;
+    address public BSC_wormholeCore = 0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B;
+    address public OP_wormholeCore = 0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722;
+    address public POLY_wormholeCore = 0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7;
+
+    /// @dev uses CREATE2
+    address public wormholeRelayer = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
+
+    /*//////////////////////////////////////////////////////////////
                         HYPERLANE VARIABLES
     //////////////////////////////////////////////////////////////*/
     IMailbox public constant HyperlaneMailbox = IMailbox(0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70);
     IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
         IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
 
-    /*////////////////////////////////////////////////////zr//////////
+    /*//////////////////////////////////////////////////////////////
                         CELER VARIABLES
     //////////////////////////////////////////////////////////////*/
     address public constant ETH_messageBus = 0x4066D196A423b2b3B8B054f4F40efB47a74E200C;
@@ -214,6 +240,7 @@ abstract contract BaseSetup is DSTest, Test {
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10];
     uint64[] public celer_chainIds = [1, 56, 43_114, 137, 42_161, 10];
+    uint16[] public wormhole_chainIds = [2, 6, 23, 5, 4, 24];
 
     uint256 public constant milionTokensE18 = 1000e18;
 
@@ -317,6 +344,12 @@ abstract contract BaseSetup is DSTest, Test {
 
             contracts[vars.chainId][bytes32(bytes("CelerHelper"))] = vars.celerHelper;
 
+            /// @dev 1.4- deploy Wormhole Helper from Pigeon
+            vars.wormholeHelper = address(new WormholeHelper{salt: salt}());
+            vm.allowCheatcodes(vars.wormholeHelper);
+
+            contracts[vars.chainId][bytes32(bytes("WormholeHelper"))] = vars.wormholeHelper;
+
             /// @dev 2 - Deploy SuperRBAC
             vars.superRBAC = address(new SuperRBAC{salt: salt}(deployer));
             contracts[vars.chainId][bytes32(bytes("SuperRBAC"))] = vars.superRBAC;
@@ -366,7 +399,11 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 4.1 - deploy Core State Registry
 
-            vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(SuperRegistry(vars.superRegistry)));
+            vars.coreStateRegistry = address(
+                new CoreStateRegistry{salt: salt}(
+                    SuperRegistry(vars.superRegistry)
+                )
+            );
             contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
             vars.superRegistryC.setAddress(
@@ -445,9 +482,20 @@ abstract contract BaseSetup is DSTest, Test {
 
             CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[i]);
 
+            /// @dev 6.4 - deploy Wormhole Implementation
+            vars.wormholeImplementation = address(
+                new WormholeImplementation{salt: salt}(
+                    wormholeCore[i],
+                    wormholeRelayer,
+                    vars.superRegistryC
+                )
+            );
+            contracts[vars.chainId][bytes32(bytes("WormholeImplementation"))] = vars.wormholeImplementation;
+
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
             vars.ambAddresses[2] = vars.celerImplementation;
+            vars.ambAddresses[3] = vars.wormholeImplementation;
 
             /// @dev 7.1 deploy SocketRouterMock and LiFiRouterMock. These mocks are very minimal versions to allow
             /// liquidity bridge testing
@@ -479,7 +527,12 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
-                    new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, milionTokensE18)
+                    new MockERC20{salt: salt}(
+                        UNDERLYING_TOKENS[j],
+                        UNDERLYING_TOKENS[j],
+                        deployer,
+                        milionTokensE18
+                    )
                 );
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
@@ -489,7 +542,9 @@ abstract contract BaseSetup is DSTest, Test {
             /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
             /// chainId
             for (uint32 j = 0; j < FORM_BEACON_IDS.length; j++) {
-                IERC4626[][] memory doubleVaults = new IERC4626[][](UNDERLYING_TOKENS.length);
+                IERC4626[][] memory doubleVaults = new IERC4626[][](
+                    UNDERLYING_TOKENS.length
+                );
 
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;
@@ -565,14 +620,22 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.BURNER_ROLE(), vars.superformRouter);
 
             /// @dev 12 - Deploy SuperPositions and SuperTransmuter
-            vars.superPositions =
-                address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+            vars.superPositions = address(
+                new SuperPositions{salt: salt}(
+                    "https://apiv2-dev.superform.xyz/",
+                    vars.superRegistry
+                )
+            );
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
 
-            contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] =
-                address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] = address(
+                new SuperTransmuter{salt: salt}(
+                    IERC1155A(vars.superPositions),
+                    vars.superRegistry
+                )
+            );
 
             /// @dev 13- deploy Payload Helper
             vars.PayloadHelper = address(
@@ -634,9 +697,12 @@ abstract contract BaseSetup is DSTest, Test {
             vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
+            vars.wormholeImplementation = getContract(vars.chainId, "WormholeImplementation");
+
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
             vars.superRegistryC = SuperRegistry(payable(vars.superRegistry));
+
             /// @dev Set all trusted remotes for each chain, configure amb chains ids, setupQuorum for all chains as 1
             /// and setup PaymentHelper
             /// @dev has to be performed after all main contracts have been deployed on all chains
@@ -647,10 +713,12 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstLzChainId = lz_chainIds[j];
                     vars.dstHypChainId = hyperlane_chainIds[j];
                     vars.dstCelerChainId = celer_chainIds[j];
+                    vars.dstWormholeChainId = wormhole_chainIds[j];
 
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
                     vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
+                    vars.dstWormholeImplementation = getContract(vars.dstChainId, "WormholeImplementation");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
@@ -673,6 +741,14 @@ abstract contract BaseSetup is DSTest, Test {
 
                     CelerImplementation(payable(vars.celerImplementation)).setChainId(
                         vars.dstChainId, vars.dstCelerChainId
+                    );
+
+                    WormholeImplementation(payable(vars.wormholeImplementation)).setReceiver(
+                        vars.dstWormholeChainId, vars.dstWormholeImplementation
+                    );
+
+                    WormholeImplementation(payable(vars.wormholeImplementation)).setChainId(
+                        vars.dstChainId, vars.dstWormholeChainId
                     );
 
                     vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
@@ -850,12 +926,12 @@ abstract contract BaseSetup is DSTest, Test {
     function _preDeploymentSetup() private {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
-        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 16_742_187);
-        forks[BSC] = vm.createFork(BSC_RPC_URL, 26_121_321);
-        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 26_933_006);
-        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 39_887_036);
-        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 66_125_184);
-        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 78_219_242);
+        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 17_984_296);
+        forks[BSC] = vm.createFork(BSC_RPC_URL, 31_131_747);
+        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 34_317_974);
+        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 46_695_352);
+        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 124_493_242);
+        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 108_639_543);
         //forks[FTM] = vm.createFork(FANTOM_RPC_URL, 56806404);
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -886,8 +962,11 @@ abstract contract BaseSetup is DSTest, Test {
 
         mapping(uint64 => uint64) storage celerChainIdsStorage = CELER_CHAIN_IDS;
 
+        mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
+
         for (uint256 i = 0; i < chainIds.length; i++) {
             celerChainIdsStorage[chainIds[i]] = celer_chainIds[i];
+            wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
         }
 
         /// price feeds on all chains, for paymentHelper
@@ -1225,6 +1304,11 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 2 = Hyperlane
             if (selectedAmbIds[i] == 2) {
                 ambParams[i] = abi.encode(500_000);
+            }
+
+            /// @dev 4 = Wormhole
+            if (selectedAmbIds[i] == 4) {
+                ambParams[i] = abi.encode(0, 500_000);
             }
         }
 

@@ -670,6 +670,8 @@ abstract contract ProtocolActions is BaseSetup {
         address[] endpoints;
         uint16[] lzChainIds;
         uint64[] celerChainIds;
+        address[] wormholeRelayers;
+        address[] expDstChainAddresses;
         address[] celerBusses;
         uint256[] forkIds;
         uint256 k;
@@ -712,6 +714,9 @@ abstract contract ProtocolActions is BaseSetup {
         internalVars.celerBusses = new address[](vars.nUniqueDsts);
         internalVars.celerChainIds = new uint64[](vars.nUniqueDsts);
 
+        internalVars.wormholeRelayers = new address[](vars.nUniqueDsts);
+        internalVars.expDstChainAddresses = new address[](vars.nUniqueDsts);
+
         internalVars.forkIds = new uint256[](vars.nUniqueDsts);
 
         internalVars.k = 0;
@@ -728,6 +733,10 @@ abstract contract ProtocolActions is BaseSetup {
                     internalVars.celerBusses[internalVars.k] = celerMessageBusses[i];
 
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
+
+                    internalVars.wormholeRelayers[internalVars.k] = wormholeRelayer;
+                    internalVars.expDstChainAddresses[internalVars.k] =
+                        getContract(chainIds[i], "WormholeImplementation");
 
                     internalVars.k++;
                 }
@@ -766,6 +775,16 @@ abstract contract ProtocolActions is BaseSetup {
                     internalVars.celerBusses,
                     internalVars.celerChainIds,
                     internalVars.forkIds,
+                    vars.logs
+                );
+            }
+
+            if (AMBs[index] == 4) {
+                WormholeHelper(getContract(CHAIN_0, "WormholeHelper")).help(
+                    WORMHOLE_CHAIN_IDS[CHAIN_0],
+                    internalVars.forkIds,
+                    internalVars.expDstChainAddresses,
+                    internalVars.wormholeRelayers,
                     vars.logs
                 );
             }
@@ -2187,6 +2206,13 @@ abstract contract ProtocolActions is BaseSetup {
                     CELER_CHAIN_IDS[FROM_CHAIN],
                     FORKS[FROM_CHAIN],
                     logs
+                );
+            }
+
+            /// @notice ID: 4 Wormhole
+            if (AMBs[i] == 4) {
+                WormholeHelper(getContract(TO_CHAIN, "WormholeHelper")).help(
+                    WORMHOLE_CHAIN_IDS[TO_CHAIN], FORKS[FROM_CHAIN], wormholeRelayer, logs
                 );
             }
         }
