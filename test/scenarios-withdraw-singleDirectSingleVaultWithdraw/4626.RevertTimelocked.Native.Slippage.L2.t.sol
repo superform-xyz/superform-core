@@ -74,8 +74,7 @@ contract SXSVWRevertTimelockedNativeSlippage is ProtocolActions {
 
     function test_scenario(uint128 amountOne_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        /// @dev bounding to WETH supply as it is smaller than ETH supply, coz otherwise swaps to WETH might fail
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH));
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH));
         AMOUNTS[ARBI][0] = [amountOne_];
         AMOUNTS[ARBI][1] = [amountOne_];
 

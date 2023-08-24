@@ -74,9 +74,11 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
 
     function test_scenario(uint128 amountOne_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        /// @dev bounding to WETH supply as it is smaller than ETH supply, coz otherwise swaps to WETH might fail
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH));
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH));
         AMOUNTS[OP][0] = [amountOne_];
+        /// @dev note that current socket/lifi mocks simulate swapping by directly minting WETH
+        /// and burning DAI with a 1:1 price ratio, with no mint-cap on WETH supply hence these work
+        /// off the hook, but should consider the correct price ratio to make it more mainnet-like
         AMOUNTS[OP][1] = [amountOne_];
 
         for (uint256 act = 0; act < actions.length; act++) {
