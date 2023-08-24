@@ -547,7 +547,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             underlying = IERC20(IBaseForm(superforms[i]).getVaultAsset());
 
             if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
-                underlying.transfer(superforms[i], multiVaultData.amounts[i]);
+                underlying.approve(superforms[i], multiVaultData.amounts[i]);
                 LiqRequest memory emptyRequest;
 
                 /// @dev it is critical to validate that the action is being performed to the correct chainId coming
@@ -572,6 +572,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     /// @dev marks the indexes that require a callback mint of SuperPositions (successful)
                     dstAmounts[i] = dstAmount;
                 } catch {
+                    /// @dev cleaning unused approval
+                    underlying.approve(superforms[i], 0);
+
                     /// @dev if any deposit fails, we mark errors as true and add it to failedDeposits mapping for
                     /// future rescuing
                     if (!errors) errors = true;
@@ -659,8 +662,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
 
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
-            underlying.transfer(superform_, singleVaultData.amount);
-            // underlying.approve(superform_, singleVaultData.amount);
+            underlying.approve(superform_, singleVaultData.amount);
 
             /// @dev deposit to superform
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
@@ -676,7 +678,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 );
             } catch {
                 /// @dev cleaning unused approval
-                // underlying.approve(superform_, 0);
+                underlying.approve(superform_, 0);
                 /// @dev if any deposit fails, add it to failedDeposits mapping for future rescuing
                 failedDeposits[payloadId_].push(singleVaultData.superformId);
 

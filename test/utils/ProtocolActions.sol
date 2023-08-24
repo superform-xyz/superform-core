@@ -1244,8 +1244,8 @@ abstract contract ProtocolActions is BaseSetup {
 
             uint256 finalAmount;
             /// @dev simulating slippage from bridges
-            for (uint256 i; i < AMOUNTS[CHAIN_0][actionIndex].length; ++i) {
-                finalAmount += (AMOUNTS[CHAIN_0][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
+            for (uint256 i; i < AMOUNTS[DST_CHAINS[0]][actionIndex].length; ++i) {
+                finalAmount += (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
             }
 
             SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
@@ -1261,7 +1261,7 @@ abstract contract ProtocolActions is BaseSetup {
                 getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]),
                 rescueSuperformIds[0],
                 /// @dev initiating with first rescueSuperformId
-                (AMOUNTS[CHAIN_0][actionIndex][0] * (10_000 - uint256(action.slippage))) / 10_000,
+                (AMOUNTS[DST_CHAINS[0]][actionIndex][0] * (10_000 - uint256(action.slippage))) / 10_000,
                 /// @dev initiating with slippage adjusted amount of first vault
                 LIQ_BRIDGES[CHAIN_0][actionIndex][0],
                 MAX_SLIPPAGE,
@@ -1270,7 +1270,8 @@ abstract contract ProtocolActions is BaseSetup {
                     : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
                 CHAIN_0,
                 DST_CHAINS[0],
-                /// unsure about its usage
+                /// @dev liqBridgeSrcChainId set as liqBridgeToChainId_ in _buildLiqBridgeTxData() i.e.
+                /// the chain to which tokens will flow to, on rescue
                 CHAIN_0,
                 DST_CHAINS[0],
                 action.multiTx,
@@ -1281,7 +1282,7 @@ abstract contract ProtocolActions is BaseSetup {
                 singleVaultCallDataArgs.superformId = rescueSuperformIds[i];
                 /// @dev slippage adjusted amount that'll be withdrawn
                 singleVaultCallDataArgs.amount =
-                    (AMOUNTS[CHAIN_0][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
+                    (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
                 liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
             }
 
