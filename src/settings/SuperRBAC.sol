@@ -15,11 +15,10 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     uint8 public constant STATE_REGISTRY_TYPE = 2;
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
-    bytes32 public immutable PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
+    bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
     bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE");
     bytes32 public constant override MULTI_TX_SWAPPER_ROLE = keccak256("MULTI_TX_SWAPPER_ROLE");
-    bytes32 public constant override CORE_CONTRACTS_ROLE = keccak256("CORE_CONTRACTS_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override ROLES_STATE_REGISTRY_PROCESSOR_ROLE =
@@ -43,7 +42,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(MULTI_TX_SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
-        _setRoleAdmin(CORE_CONTRACTS_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(ROLES_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(FACTORY_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -78,6 +76,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         external
         payable
         override
+        onlyRole(PROTOCOL_ADMIN_ROLE)
     {
         revokeRole(role_, addressToRevoke_);
 
@@ -130,11 +129,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function hasMultiTxProcessorSwapperRole(address swapper_) external view override returns (bool) {
         return hasRole(MULTI_TX_SWAPPER_ROLE, swapper_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasCoreContractsRole(address coreContracts_) external view override returns (bool) {
-        return hasRole(CORE_CONTRACTS_ROLE, coreContracts_);
     }
 
     /// @inheritdoc ISuperRBAC
