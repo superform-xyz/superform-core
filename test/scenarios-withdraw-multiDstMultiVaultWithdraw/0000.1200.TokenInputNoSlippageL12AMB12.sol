@@ -42,15 +42,9 @@ contract MDMVW00001200TokenInputSlipapgeL1AMB12 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[POLY][1] = [1, 2, 0, 0];
 
-        AMOUNTS[ARBI][0] = [111, 222, 333, 444];
-        AMOUNTS[ARBI][1] = [11, 222, 333, 444];
-
         /// @dev first 3 vaults are equal, we mark them all as partial, even if only 1 amount is partial, otherwise
         /// assertions do not pass
         PARTIAL[ARBI][1] = [true, true, true, false];
-
-        AMOUNTS[POLY][0] = [2, 3, 4, 5];
-        AMOUNTS[POLY][1] = [2, 3, 4, 5];
 
         MAX_SLIPPAGE = 1000;
 
@@ -94,7 +88,33 @@ contract MDMVW00001200TokenInputSlipapgeL1AMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(
+        uint128 amountOne_,
+        uint128 amountOneWithdraw_,
+        uint128 amountTwo_,
+        uint128 amountTwoWithdraw_,
+        uint128 amountThree_,
+        uint128 amountThreeWithdraw_,
+        uint128 amountFour_
+    ) public {
+        /// @dev min amountOne_ and amountThree_ need to be 3 as their withdraw amount >= 2
+        amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_USDT / 8));
+        amountTwo_ = uint128(bound(amountTwo_, 3, TOTAL_SUPPLY_USDT / 8));
+        amountThree_ = uint128(bound(amountThree_, 3, TOTAL_SUPPLY_USDT / 8));
+        amountFour_ = uint128(bound(amountFour_, 2, TOTAL_SUPPLY_USDT / 8));
+        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountFour_];
+
+        /// @dev bound to amountOne_ - 1 as partial is true for first vault
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, amountOne_ - 1));
+        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 2, amountTwo_ - 1));
+        amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, amountThree_ - 1));
+        AMOUNTS[ARBI][1] = [amountOneWithdraw_, amountTwoWithdraw_, amountThreeWithdraw_, amountFour_];
+
+        /// @dev shuffled order of amounts to randomise
+        AMOUNTS[POLY][0] = [amountFour_, amountOne_, amountTwo_, amountThree_];
+        AMOUNTS[POLY][1] = [amountFour_, amountOne_, amountTwo_, amountThree_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
