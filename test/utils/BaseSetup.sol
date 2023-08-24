@@ -1288,7 +1288,7 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,,,,) =
+        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,) =
             vars.payloadHelper.decodeDstPayload(payloadId);
 
         vars.message =

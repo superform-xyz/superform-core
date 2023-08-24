@@ -27,19 +27,24 @@ contract PayloadHelperMultiTest is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
 
         TARGET_UNDERLYINGS[POLY][0] = [0, 0];
+        TARGET_VAULTS[POLY][1] = [0, 0];
 
         TARGET_VAULTS[POLY][0] = [0, 0];
+        TARGET_VAULTS[POLY][1] = [0, 0];
 
         /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[POLY][0] = [0, 0];
+        TARGET_FORM_KINDS[POLY][1] = [0, 0];
 
         AMOUNTS[POLY][0] = [23_183, 213];
+        AMOUNTS[POLY][1] = [23_183, 213];
 
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for SOCKET, 2 for LI.FI
         LIQ_BRIDGES[POLY][0] = [1, 1];
+        LIQ_BRIDGES[POLY][1] = [1, 1];
 
         actions.push(
             TestAction({
@@ -52,6 +57,20 @@ contract PayloadHelperMultiTest is ProtocolActions {
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+             })
+        );
+
+        actions.push(
+            TestAction({
+                action: Actions.Withdraw,
+                multiVaults: true,
+                user: 0,
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: false,
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -79,6 +98,24 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         _checkDstPayloadInit();
         _checkDstPayloadReturn();
+    }
+
+    function test_payloadHelperLiqMulti() public {
+        address _superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
+        superformRouter = ISuperformRouter(_superformRouter);
+
+        for (uint256 act = 0; act < actions.length; act++) {
+            TestAction memory action = actions[act];
+            MultiVaultSFData[] memory multiSuperformsData;
+            SingleVaultSFData[] memory singleSuperformsData;
+            MessagingAssertVars[] memory aV;
+            StagesLocalVars memory vars;
+            bool success;
+
+            _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
+        }
+
+        _checkDstPayloadLiqData(actions[0]);
     }
 
     function _checkSrcPayload() internal {
@@ -116,16 +153,13 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint256[] slippage;
         uint256[] superformIds;
         uint256 srcPayloadId;
-        bytes[] txDatas;
-        address[] liqDataTokens;
-        uint256[] liqDataAmounts;
     }
 
     function _checkDstPayloadInit() internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId,,,) =
+        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
             IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
@@ -153,12 +187,43 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertGe(v.ambFees, 0);
     }
 
+    struct CheckDstPayloadLiqDataInternalVars {
+        uint8[] bridgeIds;
+        bytes[] txDatas;
+        address[] tokens;
+        uint256[] amounts;
+        uint256[] nativeAmounts;
+        bytes[] permit2datas;
+    }
+
+    function _checkDstPayloadLiqData(TestAction memory action) internal {
+        vm.selectFork(FORKS[DST_CHAINS[0]]);
+        CheckDstPayloadLiqDataInternalVars memory v;
+
+        (v.bridgeIds, v.txDatas, v.tokens, v.amounts, v.nativeAmounts, v.permit2datas) =
+            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayloadLiqData(1);
+        console.log(v.bridgeIds.length);
+
+        assertEq(v.bridgeIds[0], 1);
+
+        assertGt(v.txDatas[0].length, 0);
+        console.log("AA");
+
+        assertEq(v.tokens[0], getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]));
+        console.log("BB");
+
+        assertEq(v.amounts, AMOUNTS[POLY][0]);
+        console.log("CC");
+
+        assertEq(v.permit2datas.length, 0);
+    }
+
     function _checkDstPayloadReturn() internal {
         vm.selectFork(FORKS[CHAIN_0]);
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId,,,) =
+        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
 
         assertEq(v.txType, 0);

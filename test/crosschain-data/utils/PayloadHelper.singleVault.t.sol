@@ -92,9 +92,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
         uint256[] slippage;
         uint256[] superformIds;
         uint256 srcPayloadId;
-        bytes[] txDatas;
-        address[] liqDataTokens;
-        uint256[] liqDataAmounts;
     }
 
     function _checkSrcPayload() internal {
@@ -115,7 +112,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         assertEq(srcSender, users[0]);
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType, v.srcSender, v.srcChainId,,,, v.srcPayloadId,,,) =
+        (v.txType, v.callbackType, v.srcSender, v.srcChainId,,,, v.srcPayloadId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
 
         assertEq(v.txType, 0);
@@ -134,7 +131,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId,,,) =
+        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
             IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
@@ -167,7 +164,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId,,,) =
+        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
 
         assertEq(v.txType, 0);
