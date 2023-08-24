@@ -99,31 +99,6 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
-    function test_grantCoreContractsRole() public {
-        vm.startPrank(deployer);
-        superRBAC.grantRole(superRBAC.CORE_CONTRACTS_ROLE(), address(0x1));
-        vm.stopPrank();
-
-        assertEq(superRBAC.hasCoreContractsRole(address(0x1)), true);
-    }
-
-    /// SuperformRouter and Factory
-    function test_revokeCoreContractsRole() public {
-        vm.startPrank(deployer);
-        superRBAC.grantRole(superRBAC.CORE_CONTRACTS_ROLE(), deployer);
-        vm.stopPrank();
-
-        _revokeAndCheck(
-            superRBAC.hasCoreContractsRole.selector,
-            superRBAC.CORE_CONTRACTS_ROLE(),
-            superRegistry.SUPERFORM_FACTORY(),
-            deployer,
-            "SuperformFactory",
-            generateBroadcastParams(5, 2),
-            800 ether
-        );
-    }
-
     function test_grantCoreStateRegistryProcessorRole() public {
         vm.startPrank(deployer);
         superRBAC.grantRole(superRBAC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
