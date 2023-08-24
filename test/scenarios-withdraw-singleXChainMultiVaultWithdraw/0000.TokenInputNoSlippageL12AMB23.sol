@@ -28,9 +28,6 @@ contract SDMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
 
-        AMOUNTS[ARBI][0] = [7722, 11, 3, 54_218];
-        AMOUNTS[ARBI][1] = [7722, 11, 3, 54_218];
-
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[ARBI][0] = [1, 2, 1, 2];
@@ -70,7 +67,14 @@ contract SDMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_, uint128 amountFour_) public {
+        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_WETH / 4));
+        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_WETH / 4));
+        amountThree_ = uint128(bound(amountThree_, 1, TOTAL_SUPPLY_WETH / 4));
+        amountFour_ = uint128(bound(amountFour_, 1, TOTAL_SUPPLY_WETH / 4));
+        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountFour_];
+        AMOUNTS[ARBI][1] = [amountOne_, amountTwo_, amountThree_, amountFour_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

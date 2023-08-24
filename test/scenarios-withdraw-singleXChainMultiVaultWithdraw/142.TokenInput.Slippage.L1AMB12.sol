@@ -27,9 +27,6 @@ contract SDMVW142TokenInputSlippageL1AMB12 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[AVAX][1] = [1, 1, 2];
 
-        AMOUNTS[AVAX][0] = [421_412, 88_888, 7777];
-        AMOUNTS[AVAX][1] = [214, 88_888, 777];
-
         PARTIAL[AVAX][1] = [true, false, true];
 
         MAX_SLIPPAGE = 1000;
@@ -71,7 +68,26 @@ contract SDMVW142TokenInputSlippageL1AMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(
+        uint128 amountOne_,
+        uint128 amountOneWithdraw_,
+        uint128 amountTwo_,
+        uint128 amountThree_,
+        uint128 amountThreeWithdraw_
+    ) public {
+        /// @dev min amountOne_ and amountThree_ need to be 3 as their withdraw amount >= 2
+        amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_USDT / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_USDT / 3));
+        amountThree_ = uint128(bound(amountThree_, 3, TOTAL_SUPPLY_USDT / 3));
+        AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
+
+        /// @dev bound to amountOne_ - 1 as partial is true for first vault
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, amountOne_ - 1));
+        /// @dev bound to amountThree_ - 1 as partial is true for third vault
+        amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, amountThree_ - 1));
+        AMOUNTS[AVAX][1] = [amountOneWithdraw_, amountTwo_, amountThreeWithdraw_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

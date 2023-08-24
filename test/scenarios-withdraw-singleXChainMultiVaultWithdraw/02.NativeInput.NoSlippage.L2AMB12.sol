@@ -27,9 +27,6 @@ contract SDMVW02NativeInputNoSlippageL2AMB12 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[OP][1] = [0, 2];
 
-        AMOUNTS[OP][0] = [12, 21_312_312];
-        AMOUNTS[OP][1] = [12, 2222];
-
         PARTIAL[OP][1] = [false, true];
 
         MAX_SLIPPAGE = 1000;
@@ -73,7 +70,15 @@ contract SDMVW02NativeInputNoSlippageL2AMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountTwoWithdraw_) public {
+        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_ETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 2));
+        AMOUNTS[OP][0] = [amountOne_, amountTwo_];
+
+        /// @dev bound to amountTwo_ - 1 as partial is true for second vault
+        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, amountTwo_ - 1));
+        AMOUNTS[OP][1] = [amountOne_, amountTwoWithdraw_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
