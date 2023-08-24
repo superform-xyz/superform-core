@@ -390,7 +390,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRegistryC.setAddress(
                 vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
             );
-            vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
+            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
             /// @dev 4.3 - deploy Roles State Registry
             vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(vars.superRegistryC));
@@ -555,18 +555,18 @@ abstract contract BaseSetup is DSTest, Test {
             ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
             /// @dev 11 - Deploy SuperformRouter
-            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1));
             contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
             /// @dev grant extra roles to superformRouter
-            vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.superformRouter);
-            vars.superRBACC.grantRole(vars.superRBACC.BURNER_ROLE(), vars.superformRouter);
+            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.superformRouter);
+            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_BURNER_ROLE(), vars.superformRouter);
 
             /// @dev 12 - Deploy SuperPositions and SuperTransmuter
             vars.superPositions =
-                address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+                address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry, 1));
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);

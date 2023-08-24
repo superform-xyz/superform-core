@@ -40,7 +40,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         vm.prank(getContract(ETH, "TwoStepsFormStateRegistry"));
         vm.expectRevert(Error.WITHDRAW_TX_DATA_NOT_UPDATED.selector);
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TimeLockStatus.PENDING)
+            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
         );
     }
 
@@ -75,7 +75,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         vm.prank(getContract(ETH, "TwoStepsFormStateRegistry"));
         vm.expectRevert(Error.EMPTY_TOKEN_NON_EMPTY_TXDATA.selector);
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TimeLockStatus.PENDING)
+            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
         );
     }
 
@@ -105,7 +105,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
 
         vm.prank(getContract(ETH, "TwoStepsFormStateRegistry"));
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TimeLockStatus.PENDING)
+            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
         );
     }
 
@@ -139,7 +139,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector);
         vm.prank(getContract(ETH, "TwoStepsFormStateRegistry"));
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TimeLockStatus.PENDING)
+            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
         );
     }
 

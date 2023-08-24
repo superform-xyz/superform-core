@@ -20,7 +20,7 @@ import {
     AMBMessage,
     ReturnSingleData,
     PayloadState,
-    TimeLockStatus,
+    TwoStepsStatus,
     TwoStepsPayload
 } from "../../types/DataTypes.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
@@ -101,7 +101,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         ++timeLockPayloadCounter;
 
         twoStepsPayload[timeLockPayloadCounter] =
-            TwoStepsPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimeLockStatus.PENDING);
+            TwoStepsPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING);
     }
 
     /// @inheritdoc ITwoStepsFormStateRegistry
@@ -117,7 +117,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     {
         TwoStepsPayload memory p = twoStepsPayload[timeLockPayloadId_];
 
-        if (p.status != TimeLockStatus.PENDING) {
+        if (p.status != TwoStepsStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
@@ -126,7 +126,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         }
 
         /// @dev set status here to prevent re-entrancy
-        p.status = TimeLockStatus.PROCESSED;
+        p.status = TwoStepsStatus.PROCESSED;
         (address superform,,) = p.data.superformId.getSuperform();
 
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now

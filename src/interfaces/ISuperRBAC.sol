@@ -67,10 +67,10 @@ interface ISuperRBAC {
     function CORE_STATE_REGISTRY_UPDATER_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of minter role
-    function MINTER_ROLE() external view returns (bytes32);
+    function SUPERPOSITIONS_MINTER_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of burner role
-    function BURNER_ROLE() external view returns (bytes32);
+    function SUPERPOSITIONS_BURNER_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of minter state registry role
     function MINTER_STATE_REGISTRY_ROLE() external view returns (bytes32);
@@ -113,13 +113,13 @@ interface ISuperRBAC {
 
     /// @dev returns whether the given address has the super positions minter role
     /// @param minter_ the address to check
-    function hasMinterRole(address minter_) external view returns (bool);
+    function hasSuperPositionsMinterRole(address minter_) external view returns (bool);
 
     /// @dev returns whether the given address has the super positions burner role
     /// @param burner_ the address to check
-    function hasBurnerRole(address burner_) external view returns (bool);
+    function hasSuperPositionsBurnerRole(address burner_) external view returns (bool);
 
-    /// @dev returns whether the given state registry address has the minter role
+    /// @dev returns whether the given state registry address has the minter state registry role
     /// @param stateRegistry_ the address to check
     function hasMinterStateRegistryRole(address stateRegistry_) external view returns (bool);
 }

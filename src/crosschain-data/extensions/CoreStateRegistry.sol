@@ -491,7 +491,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             (address superform_,,) = singleVaultData.superformId.getSuperform();
 
             try IBaseForm(superform_).xChainWithdrawFromVault(singleVaultData, srcSender_, srcChainId_) {
-                /// @dev marks the indexes that don't require a callback re-mint of SuperPositions (successful
+                /// @dev marks the indexes that don't require a callback re-mint of shares (successful
                 /// withdraws)
                 multiVaultData.amounts[i] = 0;
             } catch {
@@ -569,7 +569,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     srcChainId_
                 ) returns (uint256 dstAmount) {
                     if (!fulfilment) fulfilment = true;
-                    /// @dev marks the indexes that require a callback mint of SuperPositions (successful)
+                    /// @dev marks the indexes that require a callback mint of shares (successful)
                     dstAmounts[i] = dstAmount;
                 } catch {
                     /// @dev if any deposit fails, we mark errors as true and add it to failedDeposits mapping for

@@ -104,21 +104,21 @@ struct InitSingleVaultData {
     bytes extraFormData;
 }
 
-/// @dev all statuses of the timeloc
-enum TimeLockStatus {
+/// @dev all statuses of the two steps payload
+enum TwoStepsStatus {
     UNAVAILABLE,
     PENDING,
     PROCESSED
 }
 
-/// @dev holds information about the timelock payload
+/// @dev holds information about the two-steps payload
 struct TwoStepsPayload {
     uint8 isXChain;
     address srcSender;
     uint64 srcChainId;
     uint256 lockedTill;
     InitSingleVaultData data;
-    TimeLockStatus status;
+    TwoStepsStatus status;
 }
 
 /// @dev struct that contains the type of transaction, callback flags and other identification, as well as the vaults

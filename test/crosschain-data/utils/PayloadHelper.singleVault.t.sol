@@ -4,14 +4,14 @@ pragma solidity 0.8.19;
 /// Interfaces
 import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
-import { ISuperformRouter } from "src/interfaces/ISuperformRouter.sol";
+import { IBaseRouter } from "src/interfaces/IBaseRouter.sol";
 
 // Test Utils
 import "../../utils/ProtocolActions.sol";
 
 contract PayloadHelperSingleTest is ProtocolActions {
     /// @dev Access SuperformRouter interface
-    ISuperformRouter superformRouter;
+    IBaseRouter superformRouter;
 
     function setUp() public override {
         super.setUp();
@@ -62,7 +62,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
 
     function test_payloadHelperSingle() public {
         address _superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
-        superformRouter = ISuperformRouter(_superformRouter);
+        superformRouter = IBaseRouter(_superformRouter);
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];

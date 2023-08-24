@@ -2,16 +2,17 @@
 pragma solidity 0.8.19;
 
 import { ERC1155A } from "ERC1155A/ERC1155A.sol";
+import { StateSyncer } from "./StateSyncer.sol";
 import { TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMessage } from "./types/DataTypes.sol";
-import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { ISuperPositions } from "./interfaces/ISuperPositions.sol";
 import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
+import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { Error } from "./utils/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
-contract SuperPositions is ISuperPositions, ERC1155A {
+contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
@@ -24,33 +25,21 @@ contract SuperPositions is ISuperPositions, ERC1155A {
     /// @dev is the base uri frozen status
     bool public dynamicURIFrozen;
 
-    /// @dev is the super registry address
-    ISuperRegistry public immutable superRegistry;
-
-    /// @dev maps all transaction data routed through the smart contract.
-    mapping(uint256 transactionId => uint256 txInfo) public override txHistory;
-
     /*///////////////////////////////////////////////////////////////
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
 
-    /// note replace this to support some new role called minter in super registry
     modifier onlyMinter() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasMinterRole(msg.sender)) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsMinterRole(msg.sender)) {
             revert Error.NOT_MINTER();
         }
         _;
     }
 
     modifier onlyBurner() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasBurnerRole(msg.sender)) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsBurnerRole(msg.sender)) {
             revert Error.NOT_BURNER();
         }
-        _;
-    }
-
-    modifier onlyRouter() {
-        if (superRegistry.getAddress(keccak256("SUPERFORM_ROUTER")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
@@ -74,10 +63,15 @@ contract SuperPositions is ISuperPositions, ERC1155A {
 
     /// @param dynamicURI_  URL for external metadata of ERC1155 SuperPositions
     /// @param superRegistry_ the superform registry contract
-
-    constructor(string memory dynamicURI_, address superRegistry_) {
+    /// @param routerType_ the router type
+    constructor(
+        string memory dynamicURI_,
+        address superRegistry_,
+        uint8 routerType_
+    )
+        StateSyncer(superRegistry_, routerType_)
+    {
         dynamicURI = dynamicURI_;
-        superRegistry = ISuperRegistry(superRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -120,16 +114,11 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         _batchBurn(srcSender_, ids_, amounts_);
     }
 
-    /// @inheritdoc ISuperPositions
-    function updateTxHistory(uint256 payloadId_, uint256 txInfo_) external override onlyRouter {
-        txHistory[payloadId_] = txInfo_;
-    }
-
-    /// @inheritdoc ISuperPositions
+    /// @inheritdoc IStateSyncer
     function stateMultiSync(AMBMessage memory data_)
         external
         payable
-        override
+        override(IStateSyncer, StateSyncer)
         onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {
@@ -172,11 +161,11 @@ contract SuperPositions is ISuperPositions, ERC1155A {
         emit Completed(returnData.payloadId);
     }
 
-    /// @inheritdoc ISuperPositions
+    /// @inheritdoc IStateSyncer
     function stateSync(AMBMessage memory data_)
         external
         payable
-        override
+        override(IStateSyncer, StateSyncer)
         onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {

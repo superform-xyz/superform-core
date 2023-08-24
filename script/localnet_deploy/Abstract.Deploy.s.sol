@@ -369,7 +369,7 @@ abstract contract AbstractDeploy is Script {
         vars.superRegistryC.setAddress(
             vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
         );
-        vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
+        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
         /// @dev 3.4 - deploy Roles State Registry
         vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(vars.superRegistryC));
@@ -464,18 +464,18 @@ abstract contract AbstractDeploy is Script {
 
         /// @dev 10 - Deploy SuperformRouter
 
-        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1));
         contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
         /// @dev grant extra roles to superformRouter
-        vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.superformRouter);
-        vars.superRBACC.grantRole(vars.superRBACC.BURNER_ROLE(), vars.superformRouter);
+        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.superformRouter);
+        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_BURNER_ROLE(), vars.superformRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions =
-            address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+            address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry, 1));
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
