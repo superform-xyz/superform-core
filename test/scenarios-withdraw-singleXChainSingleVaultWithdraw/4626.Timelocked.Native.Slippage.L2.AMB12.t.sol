@@ -33,9 +33,6 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
 
         TARGET_FORM_KINDS[ARBI][1] = [1];
 
-        AMOUNTS[ARBI][0] = [421_412];
-        AMOUNTS[ARBI][1] = [421_412];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -77,7 +74,12 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH));
+        AMOUNTS[ARBI][0] = [amountOne_];
+        AMOUNTS[ARBI][1] = [amountOne_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;

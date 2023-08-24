@@ -33,9 +33,6 @@ contract SXSVWNormal4626NativeSlippageL2AMB23 is ProtocolActions {
 
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
-        AMOUNTS[AVAX][0] = [541_135];
-        AMOUNTS[AVAX][1] = [541_135];
-
         MAX_SLIPPAGE = 1000;
 
         /// @dev 1 for socket, 2 for lifi
@@ -76,7 +73,11 @@ contract SXSVWNormal4626NativeSlippageL2AMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_) public {
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI));
+        AMOUNTS[AVAX][0] = [amountOne_];
+        AMOUNTS[AVAX][1] = [amountOne_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
