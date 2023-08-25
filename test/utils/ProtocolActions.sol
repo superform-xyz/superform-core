@@ -1348,25 +1348,27 @@ abstract contract ProtocolActions is BaseSetup {
         );
     }
 
-    function _buildLiqBridgeTxData(
-        uint8 liqBridgeKind_,
-        address externalToken_, // this is underlyingTokenDst for withdraws
-        address underlyingToken_,
-        address underlyingTokenDst_, // this is external token (to receive in the end) for withdraws
-        address from_,
-        uint64 toChainId_,
-        bool multiTx_,
-        address toDst_,
-        uint256 liqBridgeToChainId_,
-        uint256 amount_,
-        bool withdraw,
-        int256 slippage_
-    )
+    struct LiqBridgeTxDataArgs {
+        uint256 liqBridgeKind;
+        address externalToken; // this is underlyingTokenDst for withdraws
+        address underlyingToken;
+        address underlyingTokenDst; // this is external token (to receive in the end) for withdraws
+        address from;
+        uint64 toChainId;
+        bool multiTx;
+        address toDst;
+        uint256 liqBridgeToChainId;
+        uint256 amount;
+        bool withdraw;
+        int256 slippage;
+    }
+
+    function _buildLiqBridgeTxData(LiqBridgeTxDataArgs memory args)
         internal
         returns (bytes memory txData)
     {
         /// @dev for socket
-        if (liqBridgeKind_ == 1) {
+        if (args.liqBridgeKind == 1) {
             ISocketRegistry.BridgeRequest memory bridgeRequest;
             ISocketRegistry.MiddlewareRequest memory middlewareRequest;
             ISocketRegistry.UserRequest memory userRequest;
@@ -1374,14 +1376,14 @@ abstract contract ProtocolActions is BaseSetup {
             /// underlying)
             /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
             /// bridging request
-            if (externalToken_ != underlyingToken_) {
+            if (args.externalToken != args.underlyingToken) {
                 middlewareRequest = ISocketRegistry.MiddlewareRequest(
                     1,
                     /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                     0,
                     /// @dev unused in tests
-                    externalToken_,
-                    abi.encode(from_)
+                    args.externalToken,
+                    abi.encode(args.from)
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
@@ -1391,11 +1393,11 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                     0,
                     /// @dev unused in tests
-                    withdraw ? externalToken_ : underlyingToken_,
+                    args.withdraw ? args.externalToken : args.underlyingToken,
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, slippage_)
+                    abi.encode(args.from, FORKS[args.toChainId], args.underlyingTokenDst, args.slippage)
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
@@ -1404,28 +1406,28 @@ abstract contract ProtocolActions is BaseSetup {
                     1,
                     /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
                     0,
-                    withdraw ? externalToken_ : underlyingToken_,
+                    args.withdraw ? args.externalToken : args.underlyingToken,
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, slippage_)
+                    abi.encode(args.from, FORKS[args.toChainId], args.underlyingTokenDst, args.slippage)
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
             }
 
             userRequest = ISocketRegistry.UserRequest(
-                multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                args.multiTx && CHAIN_0 != args.toChainId ? getContract(args.toChainId, "MultiTxProcessor") : args.toDst,
                 /// @dev for cross-chain multiTx actions, 1st liquidity dst is MultiTxProcessor
-                liqBridgeToChainId_,
-                amount_,
+                args.liqBridgeToChainId,
+                args.amount,
                 middlewareRequest,
                 bridgeRequest
             );
 
             txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
             /// @dev for lifi
-        } else if (liqBridgeKind_ == 2) {
+        } else if (args.liqBridgeKind == 2) {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
@@ -1434,19 +1436,19 @@ abstract contract ProtocolActions is BaseSetup {
                 /// @dev  callTo (arbitrary)
                 address(0),
                 /// @dev  callTo (approveTo)
-                externalToken_,
-                withdraw ? externalToken_ : underlyingToken_,
+                args.externalToken,
+                args.withdraw ? args.externalToken : args.underlyingToken,
                 /// @dev initial token to extract will be externalToken in args, which is the actual underlyingTokenDst
                 /// for withdraws (check how the call is made in _buildSingleVaultWithdrawCallData )
-                amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_),
+                args.amount,
+                abi.encode(args.from, FORKS[args.toChainId], args.underlyingTokenDst, args.slippage),
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
                 false
             );
             /// @dev  arbitrary
 
-            if (externalToken_ != underlyingToken_) {
+            if (args.externalToken != args.underlyingToken) {
                 bridgeData = ILiFi.BridgeData(
                     bytes32("1"),
                     /// @dev request id, arbitrary number
@@ -1456,14 +1458,14 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev unused in tests
                     address(0),
                     /// @dev unused in tests
-                    withdraw ? externalToken_ : underlyingToken_,
+                    args.withdraw ? args.externalToken : args.underlyingToken,
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                    args.multiTx && CHAIN_0 != args.toChainId ? getContract(args.toChainId, "MultiTxProcessor") : args.toDst,
                     /// @dev for cross-chain multiTx actions, 1st liquidity dst is MultiTxProcessor
-                    amount_,
-                    liqBridgeToChainId_,
+                    args.amount,
+                    args.liqBridgeToChainId,
                     true,
                     /// @dev if external != underlying, this is true
                     false
@@ -1478,14 +1480,14 @@ abstract contract ProtocolActions is BaseSetup {
                     "",
                     /// @dev unused in tests
                     address(0),
-                    withdraw ? externalToken_ : underlyingToken_,
+                    args.withdraw ? args.externalToken : args.underlyingToken,
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    multiTx_ && CHAIN_0 != toChainId_ ? getContract(toChainId_, "MultiTxProcessor") : toDst_,
+                    args.multiTx && CHAIN_0 != args.toChainId ? getContract(args.toChainId, "MultiTxProcessor") : args.toDst,
                     /// @dev for cross-chain multiTx actions, 1st liquidity dst is MultiTxProcessor
-                    amount_,
-                    liqBridgeToChainId_,
+                    args.amount,
+                    args.liqBridgeToChainId,
                     false,
                     false
                 );
@@ -1523,7 +1525,7 @@ abstract contract ProtocolActions is BaseSetup {
             v.from = args.toDst;
         }
 
-        v.txData = _buildLiqBridgeTxData(
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             args.liqBridge,
             args.externalToken,
             args.underlyingToken,
@@ -1537,6 +1539,8 @@ abstract contract ProtocolActions is BaseSetup {
             false,
             args.slippage
         );
+
+        v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
 
         /// @dev to also inscribe the token address in the Struct
         address liqRequestToken = args.externalToken != args.underlyingToken ? args.externalToken : args.underlyingToken;
@@ -1620,7 +1624,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(initialFork);
 
-        vars.txData = _buildLiqBridgeTxData(
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             args.liqBridge,
             args.underlyingTokenDst,
             /// @dev notice the switch of underlyingTokenDst with external token, because external token is meant to be
@@ -1640,6 +1644,8 @@ abstract contract ProtocolActions is BaseSetup {
             /// @dev putting a placeholder value for now (not really used)
             args.slippage
         );
+
+        vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
 
         /// @dev push all txData to this state var to re-feed in certain test cases
         if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
@@ -2075,7 +2081,7 @@ abstract contract ProtocolActions is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_),
+                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, slippage_),
                 false // arbitrary
             );
 

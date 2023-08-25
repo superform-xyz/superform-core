@@ -19,6 +19,7 @@ import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 
 import "../../types/DataTypes.sol";
+import "forge-std/console.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -660,6 +661,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.transfer(superform_, singleVaultData.amount);
+            console.log("COORE", underlying.balanceOf(address(this)));
 
             /// @dev deposit to superform
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
