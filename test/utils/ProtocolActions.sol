@@ -67,6 +67,10 @@ abstract contract ProtocolActions is BaseSetup {
     /// where txData expires in mainnet)
     bool GENERATE_WITHDRAW_TX_DATA_ON_DST;
 
+    /// @dev bool flag to detect on each action if a given destination has a reverting vault (action is stoped in stage
+    /// 2)
+    bool sameChainDstHasRevertingVault;
+
     /// @dev to be aware which destinations have been 'used' already
     mapping(uint64 chainId => UniqueDSTInfo info) public usedDSTs;
 
@@ -118,6 +122,28 @@ abstract contract ProtocolActions is BaseSetup {
         internal
     {
         console.log("new-action");
+
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[CHAIN_0]);
+        address token;
+
+        /// @dev assumption here is DAI has total supply of TOTAL_SUPPLY_DAI on all chains
+        /// and similarly for USDT, WETH and ETH
+        if (action.externalToken == 3) {
+            deal(users[action.user], TOTAL_SUPPLY_ETH);
+        } else {
+            token = getContract(CHAIN_0, UNDERLYING_TOKENS[action.externalToken]);
+
+            if (action.externalToken == 0) {
+                deal(token, users[action.user], TOTAL_SUPPLY_DAI);
+            } else if (action.externalToken == 1) {
+                deal(token, users[action.user], TOTAL_SUPPLY_USDT);
+            } else if (action.externalToken == 2) {
+                deal(token, users[action.user], TOTAL_SUPPLY_WETH);
+            }
+        }
+        vm.selectFork(initialFork);
+
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
 
@@ -128,24 +154,19 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev asserts superPosition balances before calling superFormRouter
         (, spAmountSummed, spAmountBeforeWithdrawPerDst, inputBalanceBefore) =
             _assertBeforeAction(action, multiSuperformsData, singleSuperformsData, vars);
-        bool sameChainDstHasRevertingVault;
 
         /// @dev passes request data and performs initial call
         /// @dev returns sameChainDstHasRevertingVault - this means that the request reverted, thus no payloadId
         /// increase happened nor there is any need for payload update or further assertion
-        (vars, sameChainDstHasRevertingVault) =
-            _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
+        vars = _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
         console.log("Stage 2 complete");
 
         /// @dev simulation of cross-chain message delivery (for x-chain actions)
-        aV = _stage3_src_to_dst_amb_delivery(
-            action, vars, multiSuperformsData, singleSuperformsData, sameChainDstHasRevertingVault
-        );
+        aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
         console.log("Stage 3 complete");
 
         /// @dev processing of message delivery on destination   (for x-chain actions)
-        success =
-            _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act, sameChainDstHasRevertingVault);
+        success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act);
 
         if (!success) {
             console.log("Stage 4 failed");
@@ -249,6 +270,7 @@ abstract contract ProtocolActions is BaseSetup {
         delete revertingDepositSFs;
         delete revertingWithdrawSFs;
         delete revertingWithdrawTimelockedSFs;
+        delete sameChainDstHasRevertingVault;
 
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             delete countTimelocked[i];
@@ -440,7 +462,7 @@ abstract contract ProtocolActions is BaseSetup {
         StagesLocalVars memory vars
     )
         internal
-        returns (StagesLocalVars memory, bool sameChainDstHasRevertingVault)
+        returns (StagesLocalVars memory)
     {
         vm.selectFork(FORKS[CHAIN_0]);
         SuperformRouter superformRouter = SuperformRouter(vars.fromSrc);
@@ -661,7 +683,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
 
-        return (vars, sameChainDstHasRevertingVault);
+        return vars;
     }
 
     struct Stage3InternalVars {
@@ -680,8 +702,7 @@ abstract contract ProtocolActions is BaseSetup {
         TestAction memory action,
         StagesLocalVars memory vars,
         MultiVaultSFData[] memory multiSuperformsData,
-        SingleVaultSFData[] memory singleSuperformsData,
-        bool sameChainDstHasRevertingVault
+        SingleVaultSFData[] memory singleSuperformsData
     )
         internal
         returns (MessagingAssertVars[] memory)
@@ -821,8 +842,7 @@ abstract contract ProtocolActions is BaseSetup {
         StagesLocalVars memory vars,
         MessagingAssertVars[] memory aV,
         SingleVaultSFData[] memory singleSuperformsData,
-        uint256 actionIndex,
-        bool sameChainDstHasRevertingVault
+        uint256 actionIndex
     )
         internal
         returns (bool success)
@@ -1224,8 +1244,8 @@ abstract contract ProtocolActions is BaseSetup {
 
             uint256 finalAmount;
             /// @dev simulating slippage from bridges
-            for (uint256 i; i < AMOUNTS[CHAIN_0][actionIndex].length; ++i) {
-                finalAmount += (AMOUNTS[CHAIN_0][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
+            for (uint256 i; i < AMOUNTS[DST_CHAINS[0]][actionIndex].length; ++i) {
+                finalAmount += (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
             }
 
             SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
@@ -1241,7 +1261,7 @@ abstract contract ProtocolActions is BaseSetup {
                 getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]),
                 rescueSuperformIds[0],
                 /// @dev initiating with first rescueSuperformId
-                (AMOUNTS[CHAIN_0][actionIndex][0] * (10_000 - uint256(action.slippage))) / 10_000,
+                (AMOUNTS[DST_CHAINS[0]][actionIndex][0] * (10_000 - uint256(action.slippage))) / 10_000,
                 /// @dev initiating with slippage adjusted amount of first vault
                 LIQ_BRIDGES[CHAIN_0][actionIndex][0],
                 MAX_SLIPPAGE,
@@ -1250,7 +1270,8 @@ abstract contract ProtocolActions is BaseSetup {
                     : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
                 CHAIN_0,
                 DST_CHAINS[0],
-                /// unsure about its usage
+                /// @dev liqBridgeSrcChainId set as liqBridgeToChainId_ in _buildLiqBridgeTxData() i.e.
+                /// the chain to which tokens will flow to, on rescue
                 CHAIN_0,
                 DST_CHAINS[0],
                 action.multiTx,
@@ -1261,7 +1282,7 @@ abstract contract ProtocolActions is BaseSetup {
                 singleVaultCallDataArgs.superformId = rescueSuperformIds[i];
                 /// @dev slippage adjusted amount that'll be withdrawn
                 singleVaultCallDataArgs.amount =
-                    (AMOUNTS[CHAIN_0][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
+                    (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
                 liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
             }
 
