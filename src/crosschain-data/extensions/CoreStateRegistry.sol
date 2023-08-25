@@ -5,7 +5,7 @@ import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { LiquidityHandler } from "../../crosschain-liquidity/LiquidityHandler.sol";
-import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
+import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { ICoreStateRegistry } from "../../interfaces/ICoreStateRegistry.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
@@ -214,9 +214,17 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
-            v.multi == 1
-                ? ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateMultiSync(v._message)
-                : ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(v._message);
+            if (v.multi == 1) {
+                InitMultiVaultData memory multiVaultData = abi.decode(v._payloadBody, (InitMultiVaultData));
+                (uint8 superformRouterId,) = multiVaultData.routeInfo.decodeRouteInfo();
+
+                IStateSyncer(superRegistry.getStateSyncer(superformRouterId)).stateMultiSync(v._message);
+            } else {
+                InitSingleVaultData memory singleVaultData = abi.decode(v._payloadBody, (InitSingleVaultData));
+                (uint8 superformRouterId,) = singleVaultData.routeInfo.decodeRouteInfo();
+
+                IStateSyncer(superRegistry.getStateSyncer(superformRouterId)).stateSync(v._message);
+            }
         }
 
         bytes memory returnMessage;
@@ -480,6 +488,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
             singleVaultData = InitSingleVaultData({
                 payloadId: multiVaultData.payloadId,
+                routeInfo: multiVaultData.routeInfo,
                 superformId: multiVaultData.superformIds[i],
                 amount: multiVaultData.amounts[i],
                 maxSlippage: multiVaultData.maxSlippage[i],
@@ -559,6 +568,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 try IBaseForm(superforms[i]).xChainDepositIntoVault(
                     InitSingleVaultData({
                         payloadId: multiVaultData.payloadId,
+                        routeInfo: multiVaultData.routeInfo,
                         superformId: multiVaultData.superformIds[i],
                         amount: multiVaultData.amounts[i],
                         maxSlippage: multiVaultData.maxSlippage[i],

@@ -32,6 +32,9 @@ interface ISuperRegistry {
     /// @dev is emitted when a new state registry is configured.
     event SetStateRegistryAddress(uint8 registryId_, address registryAddress_);
 
+    /// @dev is emitted when a new router/state syncer is configured.
+    event SetRouterInfo(uint8 superFormRouterId_, address stateSyncer_);
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
@@ -66,6 +69,11 @@ interface ISuperRegistry {
     /// @param registryId_    represents the state registry's unqiue identifier.
     /// @param registryAddress_    represents the state registry's address.
     function setStateRegistryAddress(uint8[] memory registryId_, address[] memory registryAddress_) external;
+
+    /// @dev allows admin to set the superform routers info
+    /// @param superformRouterId_    represents the superform router's unqiue identifier.
+    /// @param stateSyncer_    represents the state syncer's address.
+    function setRouterInfo(uint8[] memory superformRouterId_, address[] memory stateSyncer_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -163,6 +171,16 @@ interface ISuperRegistry {
     /// @param registryAddress_ is the address of the state registry
     /// @return registryId_ is the id of the state registry
     function getStateRegistryId(address registryAddress_) external view returns (uint8 registryId_);
+
+    /// @dev gets the address of a state syncer
+    /// @param superformRouterId_ is the id of a state syncer
+    /// @return stateSyncer_ is the address of the form
+    function getStateSyncer(uint8 superformRouterId_) external view returns (address stateSyncer_);
+
+    /// @dev gets the id of the superform router
+    /// @param stateSyncer_ is the address of the state syncer
+    /// @return superformRouterId_ is the id of the superform router
+    function getSuperformRouterId(address stateSyncer_) external view returns (uint8 superformRouterId_);
 
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry

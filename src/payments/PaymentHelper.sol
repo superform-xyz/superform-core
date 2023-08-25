@@ -642,6 +642,8 @@ contract PaymentHelper is IPaymentHelper {
         bytes memory ambData = abi.encode(
             InitSingleVaultData(
                 _getNextPayloadId(),
+                DataLib.packRouteInfo(1, 1),
+                /// @dev added a sample route info for fee calc.
                 sfData_.superformId,
                 sfData_.amount,
                 sfData_.maxSlippage,
@@ -661,6 +663,8 @@ contract PaymentHelper is IPaymentHelper {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
                 _getNextPayloadId(),
+                DataLib.packRouteInfo(1, 1),
+                /// @dev added a sample route info for fee calc.
                 sfData_.superformIds,
                 sfData_.amounts,
                 sfData_.maxSlippages,

@@ -40,6 +40,23 @@ library DataLib {
         srcChainId = uint64(txInfo_ >> 192);
     }
 
+    function packRouteInfo(uint8 superformRouterId_, uint64 liqDstChainId_) internal pure returns (uint256 routeInfo) {
+        assembly ("memory-safe") {
+            routeInfo := routeInfo
+            routeInfo := or(routeInfo, shl(8, superformRouterId_))
+            routeInfo := or(routeInfo, shl(72, liqDstChainId_))
+        }
+    }
+
+    function decodeRouteInfo(uint256 routeInfo_)
+        internal
+        pure
+        returns (uint8 superformRouterId, uint64 liqDstChainId)
+    {
+        superformRouterId = uint8(routeInfo_);
+        liqDstChainId = uint64(routeInfo_ >> 8);
+    }
+
     /// @dev returns the vault-form-chain pair of a superform
     /// @param superformId_ is the id of the superform
     /// @return superform_ is the address of the superform

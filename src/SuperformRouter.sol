@@ -31,13 +31,12 @@ contract SuperformRouter is BaseRouterImplementation {
     {
         uint256 chainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
-
         for (uint256 i; i < req.dstChainIds.length;) {
             if (chainId == req.dstChainIds[i]) {
                 _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainMultiVaultDeposit(
-                    SingleXChainMultiVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superformsData[i])
+                    SingleXChainMultiVaultStateReq(req.ambIds[i], req.dstChainIds[i], 0, req.superformsData[i])
                 );
             }
             unchecked {
@@ -65,7 +64,7 @@ contract SuperformRouter is BaseRouterImplementation {
                 _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainSingleVaultDeposit(
-                    SingleXChainSingleVaultStateReq(req.ambIds[i], dstChainId, req.superformsData[i])
+                    SingleXChainSingleVaultStateReq(req.ambIds[i], dstChainId, 0, req.superformsData[i])
                 );
             }
         }
@@ -135,7 +134,9 @@ contract SuperformRouter is BaseRouterImplementation {
                 _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainMultiVaultWithdraw(
-                    SingleXChainMultiVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superformsData[i])
+                    SingleXChainMultiVaultStateReq(
+                        req.ambIds[i], req.dstChainIds[i], req.liqDstChainId[i], req.superformsData[i]
+                    )
                 );
             }
 
@@ -162,7 +163,9 @@ contract SuperformRouter is BaseRouterImplementation {
                 _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainSingleVaultWithdraw(
-                    SingleXChainSingleVaultStateReq(req.ambIds[i], dstChainId, req.superformsData[i])
+                    SingleXChainSingleVaultStateReq(
+                        req.ambIds[i], dstChainId, req.liqDstChainId[i], req.superformsData[i]
+                    )
                 );
             }
         }

@@ -50,6 +50,7 @@ struct SingleVaultSFData {
 struct MultiDstMultiVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
+    uint64[] liqDstChainId;
     MultiVaultSFData[] superformsData;
 }
 
@@ -57,6 +58,7 @@ struct MultiDstMultiVaultStateReq {
 struct SingleXChainMultiVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
+    uint64 liqDstChainId;
     MultiVaultSFData superformsData;
 }
 
@@ -64,6 +66,7 @@ struct SingleXChainMultiVaultStateReq {
 struct MultiDstSingleVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
+    uint64[] liqDstChainId;
     SingleVaultSFData[] superformsData;
 }
 
@@ -71,22 +74,26 @@ struct MultiDstSingleVaultStateReq {
 struct SingleXChainSingleVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
+    uint64 liqDstChainId;
     SingleVaultSFData superformData;
 }
 
 /// @dev overarching struct for single direct chain requests with single vaults
 struct SingleDirectSingleVaultStateReq {
+    uint64 liqDstChainId;
     SingleVaultSFData superformData;
 }
 
 /// @dev overarching struct for single direct chain requests with multi vaults
 struct SingleDirectMultiVaultStateReq {
+    uint64 liqDstChainId;
     MultiVaultSFData superformData;
 }
 
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitMultiVaultData {
     uint256 payloadId;
+    uint256 routeInfo;
     uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippage;
@@ -97,6 +104,7 @@ struct InitMultiVaultData {
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitSingleVaultData {
     uint256 payloadId;
+    uint256 routeInfo;
     uint256 superformId;
     uint256 amount;
     uint256 maxSlippage;

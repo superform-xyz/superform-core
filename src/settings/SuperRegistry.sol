@@ -21,11 +21,14 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
     mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
     mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
+    mapping(uint8 superformRouterId => address stateSyncer) public stateSyncers;
     mapping(uint8 registryId => address registryAddress) public registryAddresses;
     /// @dev is the reverse mapping of registryAddresses
     mapping(address registryAddress => uint8 registryId) public stateRegistryIds;
     /// @dev is the reverse mapping of ambAddresses
     mapping(address ambAddress => uint8 bridgeId) public ambIds;
+    /// @dev is the reverse mapping of bridgeAddresses
+    mapping(address stateSyncer => uint8 superformRouterId) public superformRouterIds;
 
     /// @dev core protocol - identifiers
     bytes32 public constant override SUPERFORM_ROUTER = keccak256("SUPERFORM_ROUTER");
@@ -142,6 +145,25 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         }
     }
 
+    /// @inheritdoc ISuperRegistry
+    function setRouterInfo(
+        uint8[] memory superformRouterId_,
+        address[] memory stateSyncer_
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
+        for (uint256 i; i < superformRouterId_.length; i++) {
+            address stateSyncer = stateSyncer_[i];
+            uint8 superFormRouterId = superformRouterId_[i];
+
+            stateSyncers[superFormRouterId] = stateSyncer;
+            superformRouterIds[stateSyncer] = superFormRouterId;
+            emit SetRouterInfo(superFormRouterId, stateSyncer);
+        }
+    }
+
     /// @inheritdoc QuorumManager
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
         requiredQuorum[srcChainId_] = quorum_;
@@ -189,6 +211,16 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
         registryId_ = stateRegistryIds[registryAddress_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getStateSyncer(uint8 superformRouterId_) external view override returns (address stateSyncer_) {
+        stateSyncer_ = stateSyncers[superformRouterId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getSuperformRouterId(address stateSyncer_) external view override returns (uint8 superformRouterId_) {
+        superformRouterId_ = superformRouterIds[stateSyncer_];
     }
 
     /// @inheritdoc ISuperRegistry
