@@ -697,7 +697,9 @@ abstract contract ProtocolActions is BaseSetup {
                 delete usedDSTs[DST_CHAINS[i]];
 
                 ++usedDSTs[DST_CHAINS[i]].payloadNumber;
-                uniqueDSTs.push(DST_CHAINS[i]);
+                if (DST_CHAINS[i] != CHAIN_0) {
+                    uniqueDSTs.push(DST_CHAINS[i]);
+                }
             } else {
                 /// @dev add repetitions (for non unique destinations)
                 ++usedDSTs[DST_CHAINS[i]].payloadNumber;
@@ -722,7 +724,7 @@ abstract contract ProtocolActions is BaseSetup {
         internalVars.k = 0;
         for (uint256 i = 0; i < chainIds.length; i++) {
             for (uint256 j = 0; j < vars.nUniqueDsts; j++) {
-                if (uniqueDSTs[j] == chainIds[i]) {
+                if (uniqueDSTs[j] == chainIds[i] && chainIds[i] != CHAIN_0) {
                     internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
 

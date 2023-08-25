@@ -485,12 +485,12 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 6.4 - deploy Wormhole Implementation
             vars.wormholeImplementation = address(
                 new WormholeImplementation{salt: salt}(
-                    wormholeCore[i],
-                    wormholeRelayer,
                     vars.superRegistryC
                 )
             );
             contracts[vars.chainId][bytes32(bytes("WormholeImplementation"))] = vars.wormholeImplementation;
+
+            WormholeImplementation(vars.wormholeImplementation).setWormholeConfig(wormholeCore[i], wormholeRelayer);
 
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;

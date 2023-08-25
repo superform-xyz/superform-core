@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 import "wormhole-solidity-sdk/interfaces/IWormhole.sol";
 import "wormhole-solidity-sdk/interfaces/IWormholeRelayer.sol";
 import "wormhole-solidity-sdk/interfaces/IWormholeReceiver.sol";
@@ -27,8 +25,8 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
-    IWormholeRelayer public immutable relayer;
-    IWormhole public immutable wormhole;
+    IWormholeRelayer public relayer;
+    IWormhole public wormhole;
 
     uint8 public broadcastFinality;
 
@@ -51,17 +49,25 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    /// @param wormhole_ is wormhole address for respective chain
-    /// @param relayer_ is the automatic relayer address for respective chain
-    constructor(address wormhole_, address relayer_, ISuperRegistry superRegistry_) {
-        relayer = IWormholeRelayer(relayer_);
-        wormhole = IWormhole(wormhole_);
+    /// @param superRegistry_ is super registry address for respective chain
+    constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }
 
     /*///////////////////////////////////////////////////////////////
                                 EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows protocol admin to configure wormhole core contract
+    /// @param wormhole_ is wormhole address for respective chain
+    /// @param relayer_ is the automatic relayer address for respective chain
+    function setWormholeConfig(address wormhole_, address relayer_) external onlyProtocolAdmin {
+        if (wormhole_ == address(0) || relayer_ == address(0)) revert Error.ZERO_ADDRESS();
+        if (address(wormhole) == address(0) && address(relayer) == address(0)) {
+            wormhole = IWormhole(wormhole_);
+            relayer = IWormholeRelayer(relayer_);
+        }
+    }
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
@@ -98,6 +104,10 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         payable
         virtual
     {
+        if (!superRegistry.isValidStateRegistry(msg.sender)) {
+            revert Error.NOT_STATE_REGISTRY();
+        }
+
         /// @dev is wormhole's inherent fee for sending a message
         /// NOTE: is zero for now
         uint256 msgFee = wormhole.messageFee();
@@ -133,8 +143,6 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
             revert Error.CALLER_NOT_RELAYER();
         }
 
-        console.log(authorizedImpl[sourceChain]);
-        console.log(_bytes32ToAddress(sourceAddress));
         if (_bytes32ToAddress(sourceAddress) != authorizedImpl[sourceChain]) {
             revert Error.INVALID_SRC_SENDER();
         }

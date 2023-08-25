@@ -14,6 +14,7 @@ verbosity = 0
 ffi = false
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
+remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/"]
 
 [rpc_endpoints]
 ethereum = "${ETHEREUM_RPC_URL}"
