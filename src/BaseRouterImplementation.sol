@@ -57,7 +57,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         ambData = InitMultiVaultData(
             vars.currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, 0),
+            DataLib.packRouteInfo(ROUTER_TYPE, req.dstChainId),
             /// @dev no liqDstChainId for deposits
             req.superformsData.superformIds,
             req.superformsData.amounts,
@@ -78,7 +78,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             /// @dev dispatch liquidity data
             _validateAndDispatchTokens(
-                vars.liqRequest, permit2, superform, vars.srcChainId, req.dstChainId, msg.sender, true
+                vars.liqRequest, permit2, superform, vars.srcChainId, req.dstChainId, req.dstChainId, msg.sender, true
             );
             unchecked {
                 ++j;
@@ -122,7 +122,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
-            vars.liqRequest, superRegistry.PERMIT2(), superform, vars.srcChainId, req.dstChainId, msg.sender, true
+            vars.liqRequest,
+            superRegistry.PERMIT2(),
+            superform,
+            vars.srcChainId,
+            req.dstChainId,
+            req.dstChainId,
+            msg.sender,
+            true
         );
 
         uint256[] memory superformIds = new uint256[](1);
@@ -154,7 +161,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         InitSingleVaultData memory vaultData = InitSingleVaultData(
             vars.currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, 0),
+            DataLib.packRouteInfo(ROUTER_TYPE, vars.srcChainId),
             /// @dev no liqDstChainId for deposits
             req.superformData.superformId,
             req.superformData.amount,
@@ -176,7 +183,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
             vars.currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, 0),
+            DataLib.packRouteInfo(ROUTER_TYPE, vars.srcChainId),
             /// @dev no liqDstChainId for deposits
             req.superformData.superformIds,
             req.superformData.amounts,
@@ -338,7 +345,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         ambData = InitSingleVaultData(
             currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, 0),
+            DataLib.packRouteInfo(ROUTER_TYPE, dstChainId_),
             /// @dev no liqDstChainId for deposits
             superformData_.superformId,
             superformData_.amount,
@@ -386,6 +393,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address superform_,
         uint64 srcChainId_,
         uint64 dstChainId_,
+        uint64 liqDstChainId_,
         address srcSender_,
         bool deposit_
     )
@@ -394,7 +402,14 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     {
         /// @dev validates remaining params of txData
         IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateTxData(
-            liqRequest_.txData, srcChainId_, dstChainId_, deposit_, superform_, srcSender_, liqRequest_.token
+            liqRequest_.txData,
+            srcChainId_,
+            dstChainId_,
+            liqDstChainId_,
+            deposit_,
+            superform_,
+            srcSender_,
+            liqRequest_.token
         );
 
         /// @dev dispatches tokens through the selected liquidity bridge to the destnation contract (CoreStateRegistry

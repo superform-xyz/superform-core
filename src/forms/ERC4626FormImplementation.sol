@@ -156,6 +156,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.txData,
                 vars.chainId,
                 vars.chainId,
+                vars.chainId,
                 true,
                 address(this),
                 srcSender_,
@@ -212,6 +213,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// @dev this check here might be too much already, but can't hurt
             if (singleVaultData_.liqData.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
+            (, uint64 liqDstChainId) = singleVaultData_.routeInfo.decodeRouteInfo();
+
             uint64 chainId = superRegistry.chainId();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
@@ -219,6 +222,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.txData,
                 chainId,
                 chainId,
+                liqDstChainId,
                 false,
                 address(this),
                 srcSender,
@@ -303,11 +307,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (singleVaultData_.liqData.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
+            (, uint64 liqDstChainId) = singleVaultData_.routeInfo.decodeRouteInfo();
+
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
                 singleVaultData_.liqData.txData,
                 vars.dstChainId,
                 srcChainId,
+                liqDstChainId,
                 false,
                 address(this),
                 srcSender,

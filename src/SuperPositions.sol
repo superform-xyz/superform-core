@@ -133,6 +133,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
 
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
+        if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
 
         uint256 txInfo = txHistory[returnData.payloadId];
         address srcSender;
@@ -180,6 +181,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
 
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
+        if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
 
         uint256 txInfo = txHistory[returnData.payloadId];
         uint256 txType;
@@ -206,6 +208,19 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         }
 
         emit Completed(returnData.payloadId);
+    }
+
+    function stateSyncTwoStep(
+        address sender_,
+        uint256 id_,
+        uint256 amount_
+    )
+        external
+        payable
+        override(IStateSyncer, StateSyncer)
+        onlyMinter
+    {
+        _mint(sender_, id_, amount_, "");
     }
 
     /*///////////////////////////////////////////////////////////////

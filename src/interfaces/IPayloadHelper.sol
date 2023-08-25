@@ -15,6 +15,8 @@ interface IPayloadHelper {
     /// @return slippage is the max slippage configured by the user (only for deposits)
     /// @return superformIds is the unique identifiers of the superforms
     /// @return srcPayloadId is the identifier of the corresponding payload on srcChain
+    /// @return superformRouterId is the identifier of the superform router
+    /// @return liqDstChainId is the identifier of the chain where the liquidity is being sent
     function decodeDstPayload(uint256 dstPayloadId_)
         external
         view
@@ -26,7 +28,29 @@ interface IPayloadHelper {
             uint256[] memory amounts,
             uint256[] memory slippage,
             uint256[] memory superformIds,
-            uint256 srcPayloadId
+            uint256 srcPayloadId,
+            uint8 superformRouterId,
+            uint64 liqDstChainId
+        );
+
+    /// @dev reads the payload from the core state registry and decodes liqData for it (to be used in withdraw cases)
+    /// @param dstPayloadId_ is the unique identifier of the payload received in dst core state registry
+    /// @return bridgeIds is the ids of the bridges to be used
+    /// @return txDatas is the array of txData to be sent to the bridges
+    /// @return tokens is the tokens to be used in the liqData
+    /// @return amounts is the amounts to be used in the liqData
+    /// @return nativeAmounts is the native amounts to be used in the liqData
+    /// @return permit2datas is the permit2 datas to be used in the liqData
+    function decodeDstPayloadLiqData(uint256 dstPayloadId_)
+        external
+        view
+        returns (
+            uint8[] memory bridgeIds,
+            bytes[] memory txDatas,
+            address[] memory tokens,
+            uint256[] memory amounts,
+            uint256[] memory nativeAmounts,
+            bytes[] memory permit2datas
         );
 
     /// @dev reads the payload from the core state registry and decodes it in a more detailed manner.

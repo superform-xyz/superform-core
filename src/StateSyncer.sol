@@ -55,4 +55,7 @@ abstract contract StateSyncer is IStateSyncer {
 
     /// @inheritdoc IStateSyncer
     function stateSync(AMBMessage memory data_) external payable virtual override returns (uint64 srcChainId_);
+
+    /// @inheritdoc IStateSyncer
+    function stateSyncTwoStep(address sender_, uint256 superformid, uint256 amount) external payable virtual override;
 }

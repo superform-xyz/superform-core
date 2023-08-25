@@ -17,6 +17,12 @@ interface IStateSyncer {
     /// @return srcChainId_ is the decoded srcChainId.
     function stateSync(AMBMessage memory data_) external payable returns (uint64 srcChainId_);
 
+    /// @dev allows two steps state registry contract to re-mint shares on source
+    /// @param sender_ is the address of the sender
+    /// @param superformid is the id of the superform
+    /// @param amount is the amount to re-mint
+    function stateSyncTwoStep(address sender_, uint256 superformid, uint256 amount) external payable;
+
     /// @dev saves the message being sent together with the associated id formulated in a router
     /// @param payloadId_ is the id of the message being saved
     /// @param txInfo_ is the relevant information of the transaction being saved

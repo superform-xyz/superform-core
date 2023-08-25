@@ -124,6 +124,7 @@ struct TwoStepsPayload {
     uint8 isXChain;
     address srcSender;
     uint64 srcChainId;
+    uint256 routeInfo;
     uint256 lockedTill;
     InitSingleVaultData data;
     TwoStepsStatus status;
@@ -147,6 +148,7 @@ struct AMBFactoryMessage {
 /// @dev struct that contains info on returned data from destination
 struct ReturnMultiData {
     uint256 payloadId;
+    uint8 superformRouterId;
     uint256[] superformIds;
     uint256[] amounts;
 }
@@ -154,6 +156,7 @@ struct ReturnMultiData {
 /// @dev struct that contains info on returned data from destination
 struct ReturnSingleData {
     uint256 payloadId;
+    uint8 superformRouterId;
     uint256 superformId;
     uint256 amount;
 }
