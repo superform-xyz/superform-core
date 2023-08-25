@@ -204,6 +204,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
+        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatchSP(
             msg.sender, req.superformsData.superformIds, req.superformsData.amounts
         );
@@ -299,6 +300,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev SuperPositions are burnt optimistically here
+        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatchSP(
             msg.sender, req.superformData.superformIds, req.superformData.amounts
         );
@@ -370,6 +372,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
+        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnSingleSP(
             srcSender_, superformData_.superformId, superformData_.amount
         );
@@ -447,6 +450,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vars.srcSender, vars.ambIds, vars.dstChainId, abi.encode(ambMessage), extraData
         );
 
+        /// @dev FIXME: should call stateSyncer
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
             vars.currentPayloadId, ambMessage.txInfo
         );
@@ -480,6 +484,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         /// @dev mint super positions at the end of the deposit action
+        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingleSP(
             srcSender_, vaultData_.superformId, dstAmount
         );
@@ -517,6 +522,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
+        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
         ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatchSP(
             srcSender_, vaultData_.superformIds, dstAmounts
         );

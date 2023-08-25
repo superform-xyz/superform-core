@@ -115,6 +115,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     }
 
     /// @inheritdoc IStateSyncer
+    /// @dev FIXME remove payable keyword?
     function stateMultiSync(AMBMessage memory data_)
         external
         payable
@@ -163,6 +164,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     }
 
     /// @inheritdoc IStateSyncer
+    /// @dev FIXME remove payable keyword?
     function stateSync(AMBMessage memory data_)
         external
         payable
@@ -210,6 +212,8 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         emit Completed(returnData.payloadId);
     }
 
+    /// @inheritdoc IStateSyncer
+    /// @dev FIXME remove payable keyword?
     function stateSyncTwoStep(
         address sender_,
         uint256 id_,
