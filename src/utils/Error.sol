@@ -12,6 +12,9 @@ library Error {
     /// @dev error thrown when address input is address 0
     error ZERO_ADDRESS();
 
+    /// @dev error thrown when address input is address 0
+    error ZERO_AMOUNT();
+
     /// @dev error thrown when beacon id already exists
     error BEACON_ID_ALREADY_EXISTS();
 

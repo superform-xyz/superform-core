@@ -51,9 +51,6 @@ interface ISuperRBAC {
     /// @dev returns the id of the multi tx swapper role
     function MULTI_TX_SWAPPER_ROLE() external view returns (bytes32);
 
-    /// @dev returns the id of the core contracts role
-    function CORE_CONTRACTS_ROLE() external view returns (bytes32);
-
     /// @dev returns the id of the core state registry processor role
     function CORE_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
@@ -93,10 +90,6 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the swapper role
     /// @param swapper_ the address to check
     function hasMultiTxProcessorSwapperRole(address swapper_) external view returns (bool);
-
-    /// @dev returns whether the given address has the core contracts role
-    /// @param coreContracts_ the address to check
-    function hasCoreContractsRole(address coreContracts_) external view returns (bool);
 
     /// @dev returns whether the given address has the processor role
     /// @param processor_ the address to check
