@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 // Test Utils
-import "../utils/ProtocolActions.sol";
+import "../../../utils/ProtocolActions.sol";
 
 contract SDiMVDMulti021NoMultiTxNativeSlippageL12AMB24 is ProtocolActions {
     function setUp() public override {

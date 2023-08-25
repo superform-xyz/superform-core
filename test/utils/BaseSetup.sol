@@ -534,16 +534,7 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
-<<<<<<< HEAD
-                    new MockERC20{salt: salt}(
-                        UNDERLYING_TOKENS[j],
-                        UNDERLYING_TOKENS[j],
-                        deployer,
-                        milionTokensE18
-                    )
-=======
                     new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
->>>>>>> origin/develop
                 );
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }

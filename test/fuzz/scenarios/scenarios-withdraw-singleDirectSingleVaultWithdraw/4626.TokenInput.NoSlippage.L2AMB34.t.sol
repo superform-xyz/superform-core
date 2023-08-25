@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 // Test Utils
-import "../utils/ProtocolActions.sol";
+import "../../../utils/ProtocolActions.sol";
 
 contract SXSVWNormal4626TokenInputSlippage is ProtocolActions {
     function setUp() public override {
