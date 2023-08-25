@@ -9,6 +9,7 @@ interface IAmbImplementation {
                     Events
     //////////////////////////////////////////////////////////////*/
     event ChainAdded(uint64 superChainId);
+    event AuthorizedImplAdded(uint64 superChainId, address authImpl);
 
     /*///////////////////////////////////////////////////////////////
                     External Functions

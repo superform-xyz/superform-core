@@ -119,11 +119,17 @@ library Error {
     /// @dev hyperlane adapter specific error, when caller not hyperlane mailbox
     error CALLER_NOT_MAILBOX();
 
+    /// @dev wormhole relayer specific error, when caller not wormhole relayer
+    error CALLER_NOT_RELAYER();
+
     /// @dev layerzero adapter specific error, when caller not layerzero endpoint
     error CALLER_NOT_ENDPOINT();
 
     /// @dev thrown when src chain sender is not valid
     error INVALID_SRC_SENDER();
+
+    /// @dev thrown when broadcast finality for wormhole is invalid
+    error INVALID_BROADCAST_FINALITY();
 
     /// @dev thrown when src chain is blocked from messaging
     error INVALID_SRC_CHAIN_ID();
@@ -202,6 +208,9 @@ library Error {
 
     /// @dev thrown if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
+
+    /// @dev thrown if not enough native fees is paid for amb to send the message
+    error CROSS_CHAIN_TX_UNDERPAID();
 
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM FACTORY ERRORS

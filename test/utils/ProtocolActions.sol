@@ -692,6 +692,8 @@ abstract contract ProtocolActions is BaseSetup {
         address[] endpoints;
         uint16[] lzChainIds;
         uint64[] celerChainIds;
+        address[] wormholeRelayers;
+        address[] expDstChainAddresses;
         address[] celerBusses;
         uint256[] forkIds;
         uint256 k;
@@ -716,7 +718,9 @@ abstract contract ProtocolActions is BaseSetup {
                 delete usedDSTs[DST_CHAINS[i]];
 
                 ++usedDSTs[DST_CHAINS[i]].payloadNumber;
-                uniqueDSTs.push(DST_CHAINS[i]);
+                if (DST_CHAINS[i] != CHAIN_0) {
+                    uniqueDSTs.push(DST_CHAINS[i]);
+                }
             } else {
                 /// @dev add repetitions (for non unique destinations)
                 ++usedDSTs[DST_CHAINS[i]].payloadNumber;
@@ -733,12 +737,15 @@ abstract contract ProtocolActions is BaseSetup {
         internalVars.celerBusses = new address[](vars.nUniqueDsts);
         internalVars.celerChainIds = new uint64[](vars.nUniqueDsts);
 
+        internalVars.wormholeRelayers = new address[](vars.nUniqueDsts);
+        internalVars.expDstChainAddresses = new address[](vars.nUniqueDsts);
+
         internalVars.forkIds = new uint256[](vars.nUniqueDsts);
 
         internalVars.k = 0;
         for (uint256 i = 0; i < chainIds.length; i++) {
             for (uint256 j = 0; j < vars.nUniqueDsts; j++) {
-                if (uniqueDSTs[j] == chainIds[i]) {
+                if (uniqueDSTs[j] == chainIds[i] && chainIds[i] != CHAIN_0) {
                     internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
 
@@ -749,6 +756,10 @@ abstract contract ProtocolActions is BaseSetup {
                     internalVars.celerBusses[internalVars.k] = celerMessageBusses[i];
 
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
+
+                    internalVars.wormholeRelayers[internalVars.k] = wormholeRelayer;
+                    internalVars.expDstChainAddresses[internalVars.k] =
+                        getContract(chainIds[i], "WormholeImplementation");
 
                     internalVars.k++;
                 }
@@ -787,6 +798,16 @@ abstract contract ProtocolActions is BaseSetup {
                     internalVars.celerBusses,
                     internalVars.celerChainIds,
                     internalVars.forkIds,
+                    vars.logs
+                );
+            }
+
+            if (AMBs[index] == 4) {
+                WormholeHelper(getContract(CHAIN_0, "WormholeHelper")).help(
+                    WORMHOLE_CHAIN_IDS[CHAIN_0],
+                    internalVars.forkIds,
+                    internalVars.expDstChainAddresses,
+                    internalVars.wormholeRelayers,
                     vars.logs
                 );
             }
@@ -2207,6 +2228,13 @@ abstract contract ProtocolActions is BaseSetup {
                     CELER_CHAIN_IDS[FROM_CHAIN],
                     FORKS[FROM_CHAIN],
                     logs
+                );
+            }
+
+            /// @notice ID: 4 Wormhole
+            if (AMBs[i] == 4) {
+                WormholeHelper(getContract(TO_CHAIN, "WormholeHelper")).help(
+                    WORMHOLE_CHAIN_IDS[TO_CHAIN], FORKS[FROM_CHAIN], wormholeRelayer, logs
                 );
             }
         }

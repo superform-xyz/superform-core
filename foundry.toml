@@ -1,11 +1,11 @@
 [profile.default]
 solc-version = "0.8.19"
 gas_reports = [
-    "SuperformRouter",
-    "BaseForm",
-    "SuperformFactory",
-    "SuperPositions",
-    "MultiTxProcessor",
+  "SuperformRouter",
+  "BaseForm",
+  "SuperformFactory",
+  "SuperPositions",
+  "MultiTxProcessor",
 ]
 libraries = []
 optimizer = true
@@ -14,6 +14,7 @@ verbosity = 0
 ffi = false
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
+remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/"]
 
 [rpc_endpoints]
 ethereum = "${ETHEREUM_RPC_URL}"
@@ -40,11 +41,11 @@ max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
 runs = 50
 
 [fmt]
-  bracket_spacing = true
-  int_types = "long"
-  line_length = 120
-  multiline_func_header = "all"
-  number_underscore = "thousands"
-  quote_style = "double"
-  tab_width = 4
-  wrap_comments = true
+bracket_spacing = true
+int_types = "long"
+line_length = 120
+multiline_func_header = "all"
+number_underscore = "thousands"
+quote_style = "double"
+tab_width = 4
+wrap_comments = true
