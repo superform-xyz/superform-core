@@ -68,6 +68,12 @@ abstract contract BaseSetup is DSTest, Test {
         "PermitTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
     );
 
+    /// @dev ETH mainnet values as on 22nd Aug, 2023
+    uint256 public constant TOTAL_SUPPLY_DAI = 3_961_541_270_138_222_277_363_935_051;
+    uint256 public constant TOTAL_SUPPLY_USDT = 39_026_949_359_163_005;
+    uint256 public constant TOTAL_SUPPLY_WETH = 3_293_797_048_454_740_686_583_782;
+    uint256 public constant TOTAL_SUPPLY_ETH = 120_000_000e18;
+
     /// @dev
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     /// @dev for mainnet deployment
@@ -215,7 +221,8 @@ abstract contract BaseSetup is DSTest, Test {
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10];
     uint64[] public celer_chainIds = [1, 56, 43_114, 137, 42_161, 10];
 
-    uint256 public constant milionTokensE18 = 1000e18;
+    /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
+    uint256 public constant hundredBilly = 100 * 1e9 * 1e18;
 
     /*//////////////////////////////////////////////////////////////
                         CHAINLINK VARIABLES
@@ -479,7 +486,7 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 vars.UNDERLYING_TOKEN = address(
-                    new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, milionTokensE18)
+                    new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
                 );
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
