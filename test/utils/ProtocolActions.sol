@@ -415,7 +415,8 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev these are just the originating and dst chain ids casted to uint256 (the liquidity bridge
                     /// chain ids)
                     action.multiTx,
-                    vars.partialWithdrawVaults.length > 0 ? vars.partialWithdrawVaults[0] : false
+                    vars.partialWithdrawVaults.length > 0 ? vars.partialWithdrawVaults[0] : false,
+                    action.slippage
                 );
 
                 if (
@@ -875,7 +876,8 @@ abstract contract ProtocolActions is BaseSetup {
                                         aV[i].toChainId,
                                         vars.underlyingSrcToken,
                                         vars.underlyingDstToken,
-                                        vars.amounts
+                                        vars.amounts,
+                                        action.slippage
                                     );
                                 } else {
                                     _processMultiTx(
@@ -884,7 +886,8 @@ abstract contract ProtocolActions is BaseSetup {
                                         aV[i].toChainId,
                                         vars.underlyingSrcToken[0],
                                         vars.underlyingDstToken[0],
-                                        singleSuperformsData[i].amount
+                                        singleSuperformsData[i].amount,
+                                        action.slippage
                                     );
                                 }
                             }
@@ -924,7 +927,8 @@ abstract contract ProtocolActions is BaseSetup {
                                         aV[i].toChainId,
                                         vars.underlyingSrcToken,
                                         vars.underlyingDstToken,
-                                        vars.amounts
+                                        vars.amounts,
+                                        action.slippage
                                     );
                                 } else {
                                     _processMultiTx(
@@ -933,7 +937,8 @@ abstract contract ProtocolActions is BaseSetup {
                                         aV[i].toChainId,
                                         vars.underlyingSrcToken[0],
                                         vars.underlyingDstToken[0],
-                                        singleSuperformsData[i].amount
+                                        singleSuperformsData[i].amount,
+                                        action.slippage
                                     );
                                 }
                             }
@@ -1254,7 +1259,8 @@ abstract contract ProtocolActions is BaseSetup {
                 CHAIN_0,
                 DST_CHAINS[0],
                 action.multiTx,
-                false
+                false,
+                action.slippage
             );
 
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
@@ -1325,7 +1331,8 @@ abstract contract ProtocolActions is BaseSetup {
                 args.liquidityBridgeSrcChainId,
                 args.liquidityBridgeToChainId,
                 args.multiTx,
-                args.partialWithdrawVaults.length > 0 ? args.partialWithdrawVaults[i] : false
+                args.partialWithdrawVaults.length > 0 ? args.partialWithdrawVaults[i] : false,
+                args.slippage
             );
             if (args.action == Actions.Deposit || args.action == Actions.DepositPermit2) {
                 superformData = _buildSingleVaultDepositCallData(callDataArgs, args.action);
@@ -1352,7 +1359,8 @@ abstract contract ProtocolActions is BaseSetup {
         address toDst_,
         uint256 liqBridgeToChainId_,
         uint256 amount_,
-        bool withdraw
+        bool withdraw,
+        int256 slippage_
     )
         internal
         returns (bytes memory txData)
@@ -1387,7 +1395,7 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_)
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, slippage_)
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
@@ -1400,7 +1408,7 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_)
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, slippage_)
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
@@ -1526,7 +1534,8 @@ abstract contract ProtocolActions is BaseSetup {
             args.toDst,
             args.liquidityBridgeToChainId,
             args.amount,
-            false
+            false,
+            args.slippage
         );
 
         /// @dev to also inscribe the token address in the Struct
@@ -1627,7 +1636,9 @@ abstract contract ProtocolActions is BaseSetup {
             users[args.user],
             args.liquidityBridgeSrcChainId,
             args.amount,
-            true
+            true,
+            /// @dev putting a placeholder value for now (not really used)
+            args.slippage
         );
 
         /// @dev push all txData to this state var to re-feed in certain test cases
@@ -2010,7 +2021,8 @@ abstract contract ProtocolActions is BaseSetup {
         address underlyingTokenDst_,
         address from_,
         uint64 toChainId_,
-        uint256 amount_
+        uint256 amount_,
+        int256 slippage_
     )
         internal
         returns (bytes memory txData)
@@ -2037,7 +2049,7 @@ abstract contract ProtocolActions is BaseSetup {
                 0,
                 /// @dev unused in tests
                 address(0),
-                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingTokenDst_)
+                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingTokenDst_, slippage_)
             );
 
             userRequest = ISocketRegistry.UserRequest(
@@ -2099,7 +2111,8 @@ abstract contract ProtocolActions is BaseSetup {
         uint64 targetChainId_,
         address underlyingToken_,
         address underlyingTokenDst_,
-        uint256 amount_
+        uint256 amount_,
+        int256 slippage_
     )
         internal
     {
@@ -2113,7 +2126,8 @@ abstract contract ProtocolActions is BaseSetup {
             underlyingTokenDst_,
             getContract(targetChainId_, "MultiTxProcessor"),
             targetChainId_,
-            amount_
+            amount_,
+            slippage_
         );
 
         vm.prank(deployer);
@@ -2130,7 +2144,8 @@ abstract contract ProtocolActions is BaseSetup {
         uint64 targetChainId_,
         address[] memory underlyingTokens_,
         address[] memory underlyingTokensDst_,
-        uint256[] memory amounts_
+        uint256[] memory amounts_,
+        int256 slippage_
     )
         internal
     {
@@ -2147,7 +2162,8 @@ abstract contract ProtocolActions is BaseSetup {
                 underlyingTokensDst_[i],
                 getContract(targetChainId_, "MultiTxProcessor"),
                 targetChainId_,
-                amounts_[i]
+                amounts_[i],
+                slippage_
             );
         }
         vm.prank(deployer);

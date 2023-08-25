@@ -178,6 +178,7 @@ struct SingleVaultCallDataArgs {
     uint256 liquidityBridgeToChainId;
     bool multiTx;
     bool partialWithdrawVault;
+    int256 slippage;
 }
 
 struct MultiVaultCallDataArgs {
