@@ -29,6 +29,26 @@ interface IPayloadHelper {
             uint256 srcPayloadId
         );
 
+    /// @dev reads the payload from the core state registry and decodes liqData for it (to be used in withdraw cases)
+    /// @param dstPayloadId_ is the unique identifier of the payload received in dst core state registry
+    /// @return bridgeIds is the ids of the bridges to be used
+    /// @return txDatas is the data to be sent to the bridges
+    /// @return tokens is the tokens to be used in the liqData
+    /// @return amounts is the amounts to be used in the liqData
+    /// @return nativeAmounts is the native amounts to be used in the liqData
+    /// @return permit2datas is the permit2 datas to be used in the liqData
+    function decodeDstPayloadLiqData(uint256 dstPayloadId_)
+        external
+        view
+        returns (
+            uint8[] memory bridgeIds,
+            bytes[] memory txDatas,
+            address[] memory tokens,
+            uint256[] memory amounts,
+            uint256[] memory nativeAmounts,
+            bytes[] memory permit2datas
+        );
+
     /// @dev reads the payload from the core state registry and decodes it in a more detailed manner.
     /// @param srcPayloadId_ is the unique identifier of the payload allocated by super router
     /// @return txType is the type of transaction. check {TransactionType} enum in DataTypes.sol

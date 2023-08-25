@@ -87,10 +87,10 @@ abstract contract ProtocolActions is BaseSetup {
     mapping(uint64 chainId => mapping(uint256 action => uint32[] formKinds)) public TARGET_FORM_KINDS;
 
     /// @dev all amounts for the action
-    mapping(uint64 chainId => mapping(uint256 index => uint256[] action)) public AMOUNTS;
+    mapping(uint64 chainId => mapping(uint256 index => uint256[] amounts)) public AMOUNTS;
 
     /// @dev if the action is a partial withdraw (has no effect for deposits) - important for assertions
-    mapping(uint64 chainId => mapping(uint256 index => bool[] action)) public PARTIAL;
+    mapping(uint64 chainId => mapping(uint256 index => bool[] partials)) public PARTIAL;
 
     /// @dev holds txData for destination updates
     mapping(uint64 chainId => bytes[] generatedTxData) public TX_DATA_TO_UPDATE_ON_DST;
@@ -1356,7 +1356,6 @@ abstract contract ProtocolActions is BaseSetup {
             liqRequests[i] = superformData.liqRequest;
             maxSlippageTemp[i] = args.maxSlippage;
         }
-
         superformsData = MultiVaultSFData(
             args.superformIds, finalAmounts, maxSlippageTemp, liqRequests, abi.encode(args.partialWithdrawVaults)
         );
@@ -2250,9 +2249,6 @@ abstract contract ProtocolActions is BaseSetup {
                         amountsToRemint[j] = 0;
                         found = false;
                     }
-                    console.log("j", j);
-
-                    console.log("amounts to remint", amountsToRemint[j]);
                 }
             } else {
                 amountsToRemint = new uint256[](1);
@@ -2311,9 +2307,6 @@ abstract contract ProtocolActions is BaseSetup {
                         amountsToRemint[j] = 0;
                         found = false;
                     }
-                    console.log("j", j);
-
-                    console.log("amounts to remint", amountsToRemint[j]);
                 }
             } else {
                 amountsToRemint = new uint256[](1);
