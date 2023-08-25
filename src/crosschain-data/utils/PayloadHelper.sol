@@ -15,7 +15,6 @@ import {
     LiqRequest
 } from "../../types/DataTypes.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
-import "forge-std/console.sol";
 
 /// @title PayloadHelper
 /// @author ZeroPoint Labs
@@ -160,9 +159,7 @@ contract PayloadHelper is IPayloadHelper {
         (, v.callbackType, v.multi,,,) = dstPayloadRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
 
         if (v.multi == 1) {
-            console.log("IM HERE 1");
             v.imvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
-            console.log("v.imvd.liqData.length", v.imvd.liqData.length);
 
             v.bridgeIds = new uint8[](v.imvd.liqData.length);
             v.txDatas = new bytes[](v.imvd.liqData.length);
@@ -180,8 +177,6 @@ contract PayloadHelper is IPayloadHelper {
                 v.permit2datas[v.i] = v.imvd.liqData[v.i].permit2data;
             }
         } else {
-            console.log("IM HERE 2");
-
             v.isvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
             v.bridgeIds = new uint8[](1);
@@ -202,8 +197,6 @@ contract PayloadHelper is IPayloadHelper {
             v.permit2datas = new bytes[](1);
             v.permit2datas[0] = v.isvd.liqData.permit2data;
         }
-
-        console.log("v.bridgeIds.length", v.bridgeIds.length);
 
         return (v.bridgeIds, v.txDatas, v.liqDataTokens, v.liqDataAmounts, v.liqDataNativeAmounts, v.permit2datas);
     }

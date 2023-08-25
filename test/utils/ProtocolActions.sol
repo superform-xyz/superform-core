@@ -1335,7 +1335,6 @@ abstract contract ProtocolActions is BaseSetup {
             liqRequests[i] = superformData.liqRequest;
             maxSlippageTemp[i] = args.maxSlippage;
         }
-
         superformsData = MultiVaultSFData(
             args.superformIds, finalAmounts, maxSlippageTemp, liqRequests, abi.encode(args.partialWithdrawVaults)
         );
@@ -2229,9 +2228,6 @@ abstract contract ProtocolActions is BaseSetup {
                         amountsToRemint[j] = 0;
                         found = false;
                     }
-                    console.log("j", j);
-
-                    console.log("amounts to remint", amountsToRemint[j]);
                 }
             } else {
                 amountsToRemint = new uint256[](1);
@@ -2290,9 +2286,6 @@ abstract contract ProtocolActions is BaseSetup {
                         amountsToRemint[j] = 0;
                         found = false;
                     }
-                    console.log("j", j);
-
-                    console.log("amounts to remint", amountsToRemint[j]);
                 }
             } else {
                 amountsToRemint = new uint256[](1);

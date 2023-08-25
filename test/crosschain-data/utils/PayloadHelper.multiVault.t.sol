@@ -19,20 +19,16 @@ contract PayloadHelperMultiTest is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationSingleVault Deposit test case
-        AMBs = [2, 3];
+        AMBs = [1, 2];
 
         CHAIN_0 = OP;
         DST_CHAINS = [POLY];
 
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-
         TARGET_UNDERLYINGS[POLY][0] = [0, 0];
-        TARGET_VAULTS[POLY][1] = [0, 0];
+        TARGET_UNDERLYINGS[POLY][1] = [0, 0];
 
         TARGET_VAULTS[POLY][0] = [0, 0];
         TARGET_VAULTS[POLY][1] = [0, 0];
-
-        /// @dev id 0 is normal 4626
 
         TARGET_FORM_KINDS[POLY][0] = [0, 0];
         TARGET_FORM_KINDS[POLY][1] = [0, 0];
@@ -115,7 +111,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
-        _checkDstPayloadLiqData(actions[0]);
+        _checkDstPayloadLiqData(actions[1]);
     }
 
     function _checkSrcPayload() internal {
@@ -201,21 +197,18 @@ contract PayloadHelperMultiTest is ProtocolActions {
         CheckDstPayloadLiqDataInternalVars memory v;
 
         (v.bridgeIds, v.txDatas, v.tokens, v.amounts, v.nativeAmounts, v.permit2datas) =
-            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayloadLiqData(1);
+            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayloadLiqData(2);
         console.log(v.bridgeIds.length);
 
         assertEq(v.bridgeIds[0], 1);
 
         assertGt(v.txDatas[0].length, 0);
-        console.log("AA");
 
-        assertEq(v.tokens[0], getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]));
-        console.log("BB");
+        assertEq(v.tokens[0], getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[POLY][1][0]]));
 
         assertEq(v.amounts, AMOUNTS[POLY][0]);
-        console.log("CC");
 
-        assertEq(v.permit2datas.length, 0);
+        assertEq(v.permit2datas[0].length, 0);
     }
 
     function _checkDstPayloadReturn() internal {
