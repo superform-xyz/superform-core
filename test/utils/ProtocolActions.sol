@@ -62,6 +62,8 @@ abstract contract ProtocolActions is BaseSetup {
     /// @dev test slippage and max slippage are global params
     uint256 SLIPPAGE;
     uint256 MAX_SLIPPAGE;
+    /// @dev percentage of total slippage that is used for multiTx
+    uint256 MULTI_TX_SLIPPAGE_SHARE;
 
     /// @dev bool to flag if scenario should have txData fullfiled on destination for a withdraw (used to test cases
     /// where txData expires in mainnet)
@@ -118,6 +120,9 @@ abstract contract ProtocolActions is BaseSetup {
         internal
     {
         console.log("new-action");
+
+        if(action.multiTx) MULTI_TX_SLIPPAGE_SHARE = 40;
+
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
 
@@ -1397,7 +1402,7 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(args.from, FORKS[args.toChainId], args.underlyingTokenDst, args.slippage)
+                    abi.encode(args.from, FORKS[args.toChainId], args.underlyingTokenDst, args.slippage, false, MULTI_TX_SLIPPAGE_SHARE)
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
@@ -1410,7 +1415,7 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev initial token to extract will be externalToken in args, which is the actual
                     /// underlyingTokenDst for withdraws (check how the call is made in
                     /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(args.from, FORKS[args.toChainId], args.underlyingTokenDst, args.slippage)
+                    abi.encode(args.from, FORKS[args.toChainId], args.underlyingTokenDst, args.slippage, false, MULTI_TX_SLIPPAGE_SHARE)
                 );
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
@@ -1441,7 +1446,7 @@ abstract contract ProtocolActions is BaseSetup {
                 /// @dev initial token to extract will be externalToken in args, which is the actual underlyingTokenDst
                 /// for withdraws (check how the call is made in _buildSingleVaultWithdrawCallData )
                 args.amount,
-                abi.encode(args.from, FORKS[args.toChainId], args.underlyingTokenDst, args.slippage),
+                abi.encode(args.from, FORKS[args.toChainId], args.underlyingTokenDst, args.slippage, false, MULTI_TX_SLIPPAGE_SHARE),
                 /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
                 /// mainnet
                 false
@@ -1586,6 +1591,8 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
         vm.selectFork(v.initialFork);
+
+        // uint256 slippageAdjustedAmount = (args.amount * (10_000 - uint256(args.slippage))) / 10_000;
 
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
@@ -2033,6 +2040,10 @@ abstract contract ProtocolActions is BaseSetup {
         internal
         returns (bytes memory txData)
     {
+        /// @dev amount_ adjusted after bridge slippage
+        int256 bridgeSlippage = (slippage_ * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        amount_ = (amount_ * uint256(10000 - bridgeSlippage)) / 10000;
+
         if (liqBridgeKind_ == 1) {
             /// @dev for socket
             ISocketRegistry.BridgeRequest memory bridgeRequest;
@@ -2055,7 +2066,8 @@ abstract contract ProtocolActions is BaseSetup {
                 0,
                 /// @dev unused in tests
                 address(0),
-                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingTokenDst_, slippage_)
+                /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
+                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingTokenDst_, slippage_, true, MULTI_TX_SLIPPAGE_SHARE)
             );
 
             userRequest = ISocketRegistry.UserRequest(
@@ -2081,7 +2093,8 @@ abstract contract ProtocolActions is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, slippage_),
+                /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
+                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, slippage_, true, MULTI_TX_SLIPPAGE_SHARE),
                 false // arbitrary
             );
 

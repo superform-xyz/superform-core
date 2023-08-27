@@ -71,9 +71,10 @@ contract SocketRouterMock is ISocketRegistry, Test {
         internal
     {
         /// @dev encapsulating from
-        (address from, uint256 toForkId, address outputToken, int256 slippage) = abi.decode(data_, (address, uint256, address, int256));
+        (address from, uint256 toForkId, address outputToken, int256 slippage, bool isMultiTx, uint256 multiTxSlippageShare) = abi.decode(data_, (address, uint256, address, int256, bool, uint256));
 
         if (inputToken_ != NATIVE) {
+            console.log("MULTIII_SOCK", MockERC20(inputToken_).balanceOf(from));
             if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
             MockERC20(inputToken_).burn(address(this), amount_);
         } else {
@@ -83,7 +84,11 @@ contract SocketRouterMock is ISocketRegistry, Test {
         uint256 prevForkId = vm.activeFork();
         vm.selectFork(toForkId);
 
-        uint256 amountOut = (amount_ * uint256(10000 - slippage)) / 10000;
+        uint256 amountOut;
+        if(isMultiTx) slippage = (slippage * int256(multiTxSlippageShare)) / 100;
+        else slippage = (slippage * int256(100 - multiTxSlippageShare)) / 100;
+
+        amountOut = (amount_ * uint256(10000 - slippage)) / 10000;
 
         if (outputToken != NATIVE) {
             MockERC20(outputToken).mint(receiver_, amountOut);
