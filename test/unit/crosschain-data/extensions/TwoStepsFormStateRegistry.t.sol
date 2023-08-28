@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
-contract CoreStateRegistryTest is ProtocolActions {
+contract TwoStepsStateRegistryTest is ProtocolActions {
     TwoStepsFormStateRegistry public twoStepRegistry;
 
     function setUp() public override {
@@ -82,6 +82,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
+        console.log("payloadsCount ", twoStepRegistry.payloadsCount());
         vm.prank(deployer);
         twoStepRegistry.processPayload(1);
     }

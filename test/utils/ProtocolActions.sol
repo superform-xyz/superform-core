@@ -386,6 +386,7 @@ abstract contract ProtocolActions is BaseSetup {
                         MAX_SLIPPAGE,
                         vars.vaultMock,
                         CHAIN_0,
+                        DST_CHAINS[i],
                         uint256(chainIds[vars.chain0Index]),
                         i,
                         vars.chainDstIndex,
@@ -432,6 +433,7 @@ abstract contract ProtocolActions is BaseSetup {
                     MAX_SLIPPAGE,
                     vars.vaultMock[0],
                     CHAIN_0,
+                    DST_CHAINS[i],
                     action.action != Actions.Withdraw ? DST_CHAINS[i] : FINAL_LIQ_DST_WITHDRAW[DST_CHAINS[i]][0],
                     uint256(chainIds[vars.chain0Index]),
                     /// @dev these are just the originating and dst chain ids casted to uint256 (the liquidity bridge
@@ -1296,6 +1298,7 @@ abstract contract ProtocolActions is BaseSetup {
                     : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
                 CHAIN_0,
                 DST_CHAINS[0],
+                DST_CHAINS[0],
                 /// @dev liqBridgeSrcChainId set as liqBridgeToChainId_ in _buildLiqBridgeTxData() i.e.
                 /// the chain to which tokens will flow to, on rescue
                 CHAIN_0,
@@ -1345,14 +1348,14 @@ abstract contract ProtocolActions is BaseSetup {
         uint256[] memory maxSlippageTemp = new uint256[](len);
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
-            uint64 toChainId = DST_CHAINS[args.index];
+
             /// @dev FOR TESTING AND MAINNET:: in sameChain actions, slippage is encoded in the request with the amount
             /// (extracted from bridge api)
             if (
                 args.slippage != 0
                     && (
                         (
-                            args.srcChainId == toChainId
+                            args.srcChainId == args.toChainId
                                 && (args.action == Actions.Deposit || args.action == Actions.DepositPermit2)
                         ) || (args.action == Actions.Withdraw)
                     )
@@ -1361,7 +1364,7 @@ abstract contract ProtocolActions is BaseSetup {
             }
 
             /// @dev re-assign to attach final destination chain id for withdraws (used for liqData generation)
-            toChainId =
+            uint64 liqDstChainId =
                 action != Actions.Withdraw ? DST_CHAINS[args.index] : FINAL_LIQ_DST_WITHDRAW[DST_CHAINS[args.index]][i];
 
             callDataArgs = SingleVaultCallDataArgs(
@@ -1377,9 +1380,10 @@ abstract contract ProtocolActions is BaseSetup {
                 args.maxSlippage,
                 args.vaultMock[i],
                 args.srcChainId,
-                toChainId,
+                args.toChainId,
+                liqDstChainId,
                 args.liquidityBridgeSrcChainId,
-                uint256(toChainId),
+                uint256(args.toChainId),
                 args.multiTx,
                 args.partialWithdrawVaults.length > 0 ? args.partialWithdrawVaults[i] : false
             );
@@ -1677,7 +1681,7 @@ abstract contract ProtocolActions is BaseSetup {
             /// @dev notice the switch of underlyingTokenDst with external token, because external token is meant to be
             /// received in the end after a withdraw
             args.toDst,
-            args.srcChainId,
+            args.liqDstChainId,
             false,
             /// @dev withdraws are never multiTx
             users[args.user],
@@ -1696,7 +1700,7 @@ abstract contract ProtocolActions is BaseSetup {
             GENERATE_WITHDRAW_TX_DATA_ON_DST ? bytes("") : vars.txData,
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
-            args.toChainId,
+            args.liqDstChainId,
             args.amount,
             0,
             ""

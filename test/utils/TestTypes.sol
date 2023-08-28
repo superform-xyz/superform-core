@@ -178,6 +178,7 @@ struct SingleVaultCallDataArgs {
     address vaultMock;
     uint64 srcChainId;
     uint64 toChainId;
+    uint64 liqDstChainId;
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
     bool multiTx;
@@ -197,6 +198,7 @@ struct MultiVaultCallDataArgs {
     uint256 maxSlippage;
     address[] vaultMock;
     uint64 srcChainId;
+    uint64 toChainId;
     uint256 liquidityBridgeSrcChainId;
     uint256 index;
     uint256 chainDstIndex;

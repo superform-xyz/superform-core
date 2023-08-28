@@ -31,12 +31,12 @@ contract SDMVW02NativeInputNoSlippageL2AMB12 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[OP][0] = [2, 2, 2];
-        LIQ_BRIDGES[OP][1] = [2, 2, 2];
+        LIQ_BRIDGES[OP][0] = [2, 2];
+        LIQ_BRIDGES[OP][1] = [2, 2];
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
-        FINAL_LIQ_DST_WITHDRAW[OP] = [AVAX, AVAX, AVAX];
+        FINAL_LIQ_DST_WITHDRAW[OP] = [AVAX, AVAX];
 
         /// @dev push in order the actions should be executed
         actions.push(
