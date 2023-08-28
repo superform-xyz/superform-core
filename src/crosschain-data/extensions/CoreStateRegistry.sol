@@ -19,6 +19,7 @@ import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 
 import "../../types/DataTypes.sol";
+import "forge-std/console.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs

@@ -249,25 +249,30 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "USDT"),
+            getContract(ETH, "USDT"),
+            getContract(AVAX, "USDT"),
+            superformRouter,
+            ETH,
+            AVAX,
+            false,
+            getContract(AVAX, "CoreStateRegistry"),
+            uint256(AVAX),
+            1e18,
+            false,
+            /// @dev placeholder value, not used
+            0
+        );
+
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             1e18,
             100,
             LiqRequest(
                 1,
-                _buildLiqBridgeTxData(
-                    1,
-                    getContract(ETH, "USDT"),
-                    getContract(ETH, "USDT"),
-                    getContract(AVAX, "USDT"),
-                    superformRouter,
-                    AVAX,
-                    false,
-                    getContract(AVAX, "CoreStateRegistry"),
-                    uint256(AVAX),
-                    1e18,
-                    false
-                ),
+                _buildLiqBridgeTxData(liqBridgeTxDataArgs),
                 getContract(ETH, "USDT"),
                 1e18,
                 0,
@@ -353,21 +358,27 @@ contract CoreStateRegistryTest is ProtocolActions {
         uint256MemArr[1] = 420;
 
         LiqRequest[] memory liqReqArr = new LiqRequest[](2);
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "USDT"),
+            getContract(ETH, "USDT"),
+            getContract(AVAX, "USDT"),
+            superformRouter,
+            ETH,
+            AVAX,
+            false,
+            getContract(AVAX, "CoreStateRegistry"),
+            uint256(AVAX),
+            420,
+            false,
+            /// @dev placeholder value, not used
+            0
+        );
+
         liqReqArr[0] = LiqRequest(
             1,
-            _buildLiqBridgeTxData(
-                1,
-                getContract(ETH, "USDT"),
-                getContract(ETH, "USDT"),
-                getContract(AVAX, "USDT"),
-                superformRouter,
-                AVAX,
-                false,
-                getContract(AVAX, "CoreStateRegistry"),
-                uint256(AVAX),
-                420,
-                false
-            ),
+            _buildLiqBridgeTxData(liqBridgeTxDataArgs),
             getContract(ETH, "USDT"),
             420,
             0,

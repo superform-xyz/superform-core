@@ -980,42 +980,53 @@ contract SuperformRouterTest is ProtocolActions {
         maxSlippages[0] = 1000;
         maxSlippages[1] = 1000;
 
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "USDT"),
+            getContract(ETH, "USDT"),
+            getContract(ARBI, "USDT"),
+            superformRouter,
+            ETH,
+            ARBI,
+            false,
+            getContract(ARBI, "CoreStateRegistry"),
+            uint256(ARBI),
+            1e18,
+            false,
+            /// @dev placeholder value, not used
+            0
+        );
+
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
         liqReqs[0] = LiqRequest(
             1,
-            _buildLiqBridgeTxData(
-                1,
-                getContract(ETH, "USDT"),
-                getContract(ETH, "USDT"),
-                getContract(ARBI, "USDT"),
-                superformRouter,
-                ARBI,
-                false,
-                getContract(ARBI, "CoreStateRegistry"),
-                uint256(ARBI),
-                1e18,
-                false
-            ),
+            _buildLiqBridgeTxData(liqBridgeTxDataArgs),
             getContract(ETH, "USDT"),
             1e18,
             0,
             ""
         );
+
+        liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "WETH"),
+            getContract(ETH, "WETH"),
+            getContract(ARBI, "WETH"),
+            superformRouter,
+            ETH,
+            ARBI,
+            false,
+            getContract(ARBI, "CoreStateRegistry"),
+            uint256(ARBI),
+            1e18,
+            false,
+            /// @dev placeholder value, not used
+            0
+        );
+
         liqReqs[1] = LiqRequest(
             1,
-            _buildLiqBridgeTxData(
-                1,
-                getContract(ETH, "WETH"),
-                getContract(ETH, "WETH"),
-                getContract(ARBI, "WETH"),
-                superformRouter,
-                ARBI,
-                false,
-                getContract(ARBI, "CoreStateRegistry"),
-                uint256(ARBI),
-                1e18,
-                false
-            ),
+            _buildLiqBridgeTxData(liqBridgeTxDataArgs),
             getContract(ETH, "WETH"),
             1e18,
             0,
