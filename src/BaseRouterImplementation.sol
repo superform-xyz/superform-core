@@ -37,8 +37,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     //////////////////////////////////////////////////////////////*/
 
     /// @param superRegistry_ the superform registry contract
+    /// @param stateRegistryType_ the state registry type
     /// @param routerType_ the router type
-    constructor(address superRegistry_, uint8 routerType_) BaseRouter(superRegistry_, 1) { }
+    constructor(
+        address superRegistry_,
+        uint8 stateRegistryType_,
+        uint8 routerType_
+    )
+        BaseRouter(superRegistry_, stateRegistryType_, routerType_)
+    { }
 
     /*///////////////////////////////////////////////////////////////
                         INTERNAL/HELPER FUNCTIONS

@@ -612,7 +612,7 @@ abstract contract BaseSetup is DSTest, Test {
             ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
             /// @dev 11 - Deploy SuperformRouter
-            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1));
+            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1, 1));
             contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
@@ -634,6 +634,14 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.superRegistry
                 )
             );
+
+            /// @dev 12.1 Set Router Info
+            uint8[] memory superformRouterIds = new uint8[](1);
+            superformRouterIds[0] = 1;
+            address[] memory stateSyncers = new address[](1);
+            stateSyncers[0] = vars.superPositions;
+
+            vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers);
 
             /// @dev 13- deploy Payload Helper
             vars.PayloadHelper = address(

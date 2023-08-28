@@ -469,7 +469,7 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev 10 - Deploy SuperformRouter
 
-        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1));
+        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1, 1));
         contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
@@ -486,6 +486,14 @@ abstract contract AbstractDeploySingle is Script {
 
         contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] =
             address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry));
+
+        /// @dev 11.1 Set Router Info
+        uint8[] memory superformRouterIds = new uint8[](1);
+        superformRouterIds[0] = 1;
+        address[] memory stateSyncers = new address[](1);
+        stateSyncers[0] = vars.superPositions;
+
+        vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers);
 
         /// @dev 12 - Deploy Payload Helper
         vars.PayloadHelper = address(

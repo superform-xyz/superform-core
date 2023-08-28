@@ -16,8 +16,15 @@ contract SuperformRouter is BaseRouterImplementation {
     //////////////////////////////////////////////////////////////*/
 
     /// @param superRegistry_ the superform registry contract
+    /// @param stateRegistryType_ the state registry type
     /// @param routerType_ the router type
-    constructor(address superRegistry_, uint8 routerType_) BaseRouterImplementation(superRegistry_, 1) { }
+    constructor(
+        address superRegistry_,
+        uint8 stateRegistryType_,
+        uint8 routerType_
+    )
+        BaseRouterImplementation(superRegistry_, stateRegistryType_, routerType_)
+    { }
 
     /*///////////////////////////////////////////////////////////////
                           EXTERNAL FUNCTIONS
