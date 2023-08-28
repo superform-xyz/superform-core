@@ -19,11 +19,11 @@ remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/"]
 [profile.localdev]
 solc-version = "0.8.19"
 gas_reports = [
-    "SuperformRouter",
-    "BaseForm",
-    "SuperformFactory",
-    "SuperPositions",
-    "MultiTxProcessor",
+  "SuperformRouter",
+  "BaseForm",
+  "SuperformFactory",
+  "SuperPositions",
+  "MultiTxProcessor",
 ]
 libraries = []
 optimizer = false

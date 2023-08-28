@@ -186,11 +186,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         }
 
         (, uint256 callbackType,,,, uint64 srcChainId) = _payloadHeader.decodeTxInfo();
-
         AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
 
-        InitSingleVaultData memory singleVaultData = abi.decode(_payloadBody, (InitSingleVaultData));
-
+        ReturnSingleData memory singleVaultData = abi.decode(_payloadBody, (ReturnSingleData));
         if (callbackType == uint256(CallbackType.FAIL)) {
             IStateSyncer(superRegistry.getStateSyncer(singleVaultData.superformRouterId)).stateSync(_message);
         }
