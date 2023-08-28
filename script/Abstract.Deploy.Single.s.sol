@@ -497,7 +497,7 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev 12 - Deploy Payload Helper
         vars.PayloadHelper = address(
-            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superPositions, vars.twoStepsFormStateRegistry)
+            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superRegistry, vars.twoStepsFormStateRegistry)
         );
         contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);

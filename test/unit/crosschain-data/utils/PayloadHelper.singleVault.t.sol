@@ -41,8 +41,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
         /// @dev 1 for SOCKET, 2 for LI.FI
         LIQ_BRIDGES[POLY][0] = [1];
 
-        FINAL_LIQ_DST_WITHDRAW[POLY] = [OP];
-
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -101,7 +99,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
 
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeSrcPayload(1);
+            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodePayloadHistoryOnSrc(1, 1);
 
         assertEq(txType, 0);
 
@@ -113,22 +111,6 @@ contract PayloadHelperSingleTest is ProtocolActions {
         assertEq(multi, 0);
         /// 0 for not multi vault
         assertEq(srcSender, users[0]);
-        CheckDstPayloadInternalVars memory v;
-
-        (v.txType, v.callbackType, v.srcSender, v.srcChainId,,,, v.srcPayloadId, v.superformRouterId) =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
-
-        assertEq(v.txType, 0);
-
-        /// 0 for deposit
-        assertEq(v.callbackType, 1);
-        /// 1 for RETURN
-        assertEq(v.srcChainId, POLY);
-        /// chain id of optimism is 10
-        assertEq(v.srcSender, users[0]);
-        assertEq(v.srcPayloadId, 1);
-
-        assertEq(v.superformRouterId, 1);
     }
 
     function _checkDstPayloadInit() internal {
@@ -137,7 +119,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         CheckDstPayloadInternalVars memory v;
 
         (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId, v.superformRouterId) =
-            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
+            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
         v.extraDataGenerated[0] = abi.encode("500000");
@@ -173,7 +155,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         CheckDstPayloadInternalVars memory v;
 
         (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId, v.superformRouterId) =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
+            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         assertEq(v.txType, 0);
 

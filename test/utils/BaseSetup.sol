@@ -647,7 +647,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.PayloadHelper = address(
                 new PayloadHelper{salt: salt}(
                     vars.coreStateRegistry,
-                    vars.superPositions,
+                    vars.superRegistry,
                     vars.twoStepsFormStateRegistry
                 )
             );
@@ -1381,7 +1381,7 @@ abstract contract BaseSetup is DSTest, Test {
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
         (,,,, uint256[] memory amounts,, uint256[] memory superformIds,,) =
-            vars.payloadHelper.decodeDstPayload(payloadId);
+            vars.payloadHelper.decodeCoreStateRegistryPayload(payloadId);
 
         vars.message = abi.encode(
             AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(2 ** 8 - 1, payloadId, superformIds, amounts)))

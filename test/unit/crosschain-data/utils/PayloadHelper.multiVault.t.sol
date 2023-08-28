@@ -122,7 +122,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         IPaymentHelper paymentHelper = IPaymentHelper(_PaymentHelper);
 
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
-            helper.decodeSrcPayload(1);
+            helper.decodePayloadHistoryOnSrc(1, 1);
 
         assertEq(txType, 0);
 
@@ -164,7 +164,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
             ,
             v.srcPayloadId,
             v.superformRouterId
-        ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
+        ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
         v.extraDataGenerated[0] = abi.encode("500000");
@@ -231,7 +231,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         CheckDstPayloadInternalVars memory v;
 
         (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId, v.superformRouterId) =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
+            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
         assertEq(v.txType, 0);
 

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
+import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
+import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ITwoStepsFormStateRegistry } from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
@@ -62,17 +63,17 @@ contract PayloadHelper is IPayloadHelper {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    IBaseStateRegistry public immutable dstPayloadRegistry;
-    ISuperPositions public immutable srcPayloadRegistry;
+    IBaseStateRegistry public immutable coreStateRegistry;
+    ISuperRegistry public immutable superRegistry;
     ITwoStepsFormStateRegistry public immutable twoStepRegistry;
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address dstPayloadRegistry_, address srcPayloadRegistry_, address twoStepRegistry_) {
-        dstPayloadRegistry = IBaseStateRegistry(dstPayloadRegistry_);
-        srcPayloadRegistry = ISuperPositions(srcPayloadRegistry_);
+    constructor(address dstPayloadRegistry_, address superRegistry_, address twoStepRegistry_) {
+        coreStateRegistry = IBaseStateRegistry(dstPayloadRegistry_);
+        superRegistry = ISuperRegistry(superRegistry_);
         twoStepRegistry = ITwoStepsFormStateRegistry(twoStepRegistry_);
     }
 
@@ -81,7 +82,7 @@ contract PayloadHelper is IPayloadHelper {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPayloadHelper
-    function decodeDstPayload(uint256 dstPayloadId_)
+    function decodeCoreStateRegistryPayload(uint256 dstPayloadId_)
         external
         view
         override
@@ -100,32 +101,34 @@ contract PayloadHelper is IPayloadHelper {
         DecodeDstPayloadInternalVars memory v;
 
         (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) =
-            dstPayloadRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
+            coreStateRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
 
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             if (v.multi == 1) {
-                v.rd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (ReturnMultiData));
+                v.rd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (ReturnMultiData));
                 v.amounts = v.rd.amounts;
                 v.srcPayloadId = v.rd.payloadId;
+                v.superformRouterId = v.rd.superformRouterId;
             } else {
-                v.rsd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (ReturnSingleData));
+                v.rsd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (ReturnSingleData));
                 v.amounts = new uint256[](1);
                 v.amounts[0] = v.rsd.amount;
 
                 v.srcPayloadId = v.rsd.payloadId;
+                v.superformRouterId = v.rd.superformRouterId;
             }
         }
 
         if (v.callbackType == uint256(CallbackType.INIT)) {
             if (v.multi == 1) {
-                v.imvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
+                v.imvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
                 v.superformRouterId = v.imvd.superformRouterId;
                 v.amounts = v.imvd.amounts;
                 v.slippage = v.imvd.maxSlippage;
                 v.superformIds = v.imvd.superformIds;
                 v.srcPayloadId = v.imvd.payloadId;
             } else {
-                v.isvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));
+                v.isvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
                 v.superformRouterId = v.isvd.superformRouterId;
 
@@ -172,10 +175,10 @@ contract PayloadHelper is IPayloadHelper {
     {
         DecodeDstPayloadLiqDataInternalVars memory v;
 
-        (, v.callbackType, v.multi,,,) = dstPayloadRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
+        (, v.callbackType, v.multi,,,) = coreStateRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
 
         if (v.multi == 1) {
-            v.imvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
+            v.imvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
             v.bridgeIds = new uint8[](v.imvd.liqData.length);
             v.txDatas = new bytes[](v.imvd.liqData.length);
@@ -195,7 +198,7 @@ contract PayloadHelper is IPayloadHelper {
                 v.permit2datas[v.i] = v.imvd.liqData[v.i].permit2data;
             }
         } else {
-            v.isvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));
+            v.isvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
             v.bridgeIds = new uint8[](1);
             v.bridgeIds[0] = v.isvd.liqData.bridgeId;
@@ -231,13 +234,16 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeSrcPayload(uint256 srcPayloadId_)
+    function decodePayloadHistoryOnSrc(
+        uint256 srcPayloadId_,
+        uint8 superformRouterId_
+    )
         external
         view
         override
         returns (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId)
     {
-        uint256 txInfo = srcPayloadRegistry.txHistory(srcPayloadId_);
+        uint256 txInfo = IStateSyncer(superRegistry.getStateSyncer(superformRouterId_)).txHistory(srcPayloadId_);
 
         if (txInfo != 0) {
             (txType, callbackType, multi,, srcSender, srcChainId) = txInfo.decodeTxInfo();
