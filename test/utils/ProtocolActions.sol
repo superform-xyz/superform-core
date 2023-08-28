@@ -1298,7 +1298,7 @@ abstract contract ProtocolActions is BaseSetup {
                     : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
                 CHAIN_0,
                 DST_CHAINS[0],
-                DST_CHAINS[0],
+                CHAIN_0,
                 /// @dev liqBridgeSrcChainId set as liqBridgeToChainId_ in _buildLiqBridgeTxData() i.e.
                 /// the chain to which tokens will flow to, on rescue
                 CHAIN_0,

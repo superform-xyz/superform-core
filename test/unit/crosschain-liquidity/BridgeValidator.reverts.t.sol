@@ -128,8 +128,23 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         );
     }
 
-    function test_socket_invalid_tx_data_chain() public {
+    function test_socket_invalid_tx_data_chain_id() public {
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
+
+        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
+            _buildTxData(1, address(0), deployer, OP, uint256(100), "PayMaster"),
+            ETH,
+            ARBI,
+            BSC,
+            true,
+            address(0),
+            deployer,
+            address(0)
+        );
+    }
+
+    function test_socket_invalid_deposit_liq_dst_chain_id() public {
+        vm.expectRevert(Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID.selector);
 
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
             _buildTxData(1, address(0), deployer, BSC, uint256(100), "PayMaster"),

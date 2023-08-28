@@ -537,6 +537,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (,, uint64 chainId) =
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
 
+        if (amount_ == 0) {
+            revert Error.ZERO_AMOUNT();
+        }
+
         if (chainId != superRegistry.chainId()) {
             revert Error.INVALID_CHAIN_ID();
         }

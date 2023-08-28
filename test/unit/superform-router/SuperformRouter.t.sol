@@ -1003,7 +1003,7 @@ contract SuperformRouterTest is ProtocolActions {
                 false
             ),
             getContract(ETH, "USDT"),
-            ETH,
+            ARBI,
             1e18,
             0,
             ""
@@ -1024,7 +1024,7 @@ contract SuperformRouterTest is ProtocolActions {
                 false
             ),
             getContract(ETH, "WETH"),
-            ETH,
+            ARBI,
             1e18,
             0,
             ""
