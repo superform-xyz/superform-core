@@ -51,11 +51,20 @@ abstract contract StateSyncer is IStateSyncer {
     }
 
     /// @inheritdoc IStateSyncer
-    function stateMultiSync(AMBMessage memory data_) external payable virtual override returns (uint64 srcChainId_);
+    function mintSingle(address sender_, uint256 id_, uint256 amount_) external virtual override;
 
     /// @inheritdoc IStateSyncer
-    function stateSync(AMBMessage memory data_) external payable virtual override returns (uint64 srcChainId_);
+    function mintBatch(address sender_, uint256[] memory ids_, uint256[] memory amounts_) external virtual override;
 
     /// @inheritdoc IStateSyncer
-    function stateSyncTwoStep(address sender_, uint256 superformid, uint256 amount) external payable virtual override;
+    function burnSingle(address sender_, uint256 id_, uint256 amount_) external virtual override;
+
+    /// @inheritdoc IStateSyncer
+    function burnBatch(address sender_, uint256[] memory ids_, uint256[] memory amounts_) external virtual override;
+
+    /// @inheritdoc IStateSyncer
+    function stateMultiSync(AMBMessage memory data_) external virtual override returns (uint64 srcChainId_);
+
+    /// @inheritdoc IStateSyncer
+    function stateSync(AMBMessage memory data_) external virtual override returns (uint64 srcChainId_);
 }

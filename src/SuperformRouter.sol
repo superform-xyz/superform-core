@@ -32,16 +32,12 @@ contract SuperformRouter is BaseRouterImplementation {
         uint256 chainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
 
-        uint64 dstChainId;
-
         for (uint256 i; i < req.dstChainIds.length;) {
-            dstChainId = req.dstChainIds[i];
-
             if (chainId == req.dstChainIds[i]) {
-                _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(dstChainId, req.superformsData[i]));
+                _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainMultiVaultDeposit(
-                    SingleXChainMultiVaultStateReq(req.ambIds[i], dstChainId, dstChainId, req.superformsData[i])
+                    SingleXChainMultiVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superformsData[i])
                 );
             }
             unchecked {
@@ -61,15 +57,12 @@ contract SuperformRouter is BaseRouterImplementation {
         uint64 srcChainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
 
-        uint64 dstChainId;
-
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
-            dstChainId = req.dstChainIds[i];
-            if (srcChainId == dstChainId) {
-                _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq(dstChainId, req.superformsData[i]));
+            if (srcChainId == req.dstChainIds[i]) {
+                _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainSingleVaultDeposit(
-                    SingleXChainSingleVaultStateReq(req.ambIds[i], dstChainId, dstChainId, req.superformsData[i])
+                    SingleXChainSingleVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superformsData[i])
                 );
             }
         }
@@ -134,17 +127,12 @@ contract SuperformRouter is BaseRouterImplementation {
         uint256 chainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
 
-        uint64 dstChainId;
-        uint64 liqDstChainId;
-
         for (uint256 i; i < req.dstChainIds.length;) {
-            dstChainId = req.dstChainIds[i];
-            liqDstChainId = req.liqDstChainId[i];
-            if (chainId == dstChainId) {
-                _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(liqDstChainId, req.superformsData[i]));
+            if (chainId == req.dstChainIds[i]) {
+                _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainMultiVaultWithdraw(
-                    SingleXChainMultiVaultStateReq(req.ambIds[i], dstChainId, liqDstChainId, req.superformsData[i])
+                    SingleXChainMultiVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superformsData[i])
                 );
             }
 
@@ -164,18 +152,12 @@ contract SuperformRouter is BaseRouterImplementation {
     {
         uint256 balanceBefore = address(this).balance - msg.value;
 
-        uint64 dstChainId;
-        uint64 liqDstChainId;
-
         for (uint256 i = 0; i < req.dstChainIds.length; i++) {
-            dstChainId = req.dstChainIds[i];
-            liqDstChainId = req.liqDstChainId[i];
-
-            if (superRegistry.chainId() == dstChainId) {
-                _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(liqDstChainId, req.superformsData[i]));
+            if (superRegistry.chainId() == req.dstChainIds[i]) {
+                _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainSingleVaultWithdraw(
-                    SingleXChainSingleVaultStateReq(req.ambIds[i], dstChainId, liqDstChainId, req.superformsData[i])
+                    SingleXChainSingleVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superformsData[i])
                 );
             }
         }

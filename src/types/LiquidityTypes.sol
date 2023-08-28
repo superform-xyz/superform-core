@@ -9,6 +9,9 @@ struct LiqRequest {
     bytes txData;
     /// @dev generated data (input token is already here)
     address token;
+    /// @dev dstChainId = liqDstchainId for deposits. For withdraws it is the target chain id for where the underlying
+    /// will be sent
+    uint64 liqDstChainId;
     /// @dev this is the input token (pre-swap, not necessarily the underlying token)
     uint256 amount;
     /// @dev in what amount token is bridged (already present inside txData

@@ -69,8 +69,6 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (liqData.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            (, uint64 liqDstChainId) = p_.routeInfo.decodeRouteInfo();
-
             uint64 chainId = superRegistry.chainId();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
@@ -78,7 +76,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                 liqData.txData,
                 chainId,
                 p_.isXChain == 1 ? p_.srcChainId : chainId,
-                liqDstChainId,
+                liqData.liqDstChainId,
                 false,
                 address(this),
                 p_.srcSender,
@@ -133,7 +131,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two
         /// step
         /// @dev state registry for re-processing at a later date
-        _storePayload(0, srcSender_, superRegistry.chainId(), singleVaultData_.routeInfo, lockedTill, singleVaultData_);
+        _storePayload(
+            0, srcSender_, superRegistry.chainId(), singleVaultData_.superformRouterId, lockedTill, singleVaultData_
+        );
+
+        return 0;
     }
 
     /// @inheritdoc BaseForm
@@ -168,7 +170,9 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two
         /// step
         /// @dev state registry for re-processing at a later date
-        _storePayload(1, srcSender_, srcChainId_, singleVaultData_.routeInfo, lockedTill, singleVaultData_);
+        _storePayload(1, srcSender_, srcChainId_, singleVaultData_.superformRouterId, lockedTill, singleVaultData_);
+
+        return 0;
     }
 
     /// @dev calls the vault to request unlock
@@ -185,7 +189,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         uint8 type_,
         address srcSender_,
         uint64 srcChainId_,
-        uint256 routeInfo_,
+        uint8 superformRouterId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     )
@@ -193,6 +197,6 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     {
         ITwoStepsFormStateRegistry registry =
             ITwoStepsFormStateRegistry(superRegistry.getAddress(keccak256("TWO_STEPS_FORM_STATE_REGISTRY")));
-        registry.receivePayload(type_, srcSender_, srcChainId_, routeInfo_, lockedTill_, data_);
+        registry.receivePayload(type_, srcSender_, srcChainId_, superformRouterId_, lockedTill_, data_);
     }
 }

@@ -12,7 +12,7 @@ import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { IFormBeacon } from "./interfaces/IFormBeacon.sol";
 import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
-import { ISuperPositions } from "./interfaces/ISuperPositions.sol";
+import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { LiquidityHandler } from "./crosschain-liquidity/LiquidityHandler.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 import { Error } from "./utils/Error.sol";
@@ -56,9 +56,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.currentPayloadId = ++payloadIds;
 
         ambData = InitMultiVaultData(
+            ROUTER_TYPE,
             vars.currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, req.dstChainId),
-            /// @dev no liqDstChainId for deposits
             req.superformsData.superformIds,
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
@@ -78,7 +77,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             /// @dev dispatch liquidity data
             _validateAndDispatchTokens(
-                vars.liqRequest, permit2, superform, vars.srcChainId, req.dstChainId, req.dstChainId, msg.sender, true
+                vars.liqRequest, permit2, superform, vars.srcChainId, req.dstChainId, msg.sender, true
             );
             unchecked {
                 ++j;
@@ -122,14 +121,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
-            vars.liqRequest,
-            superRegistry.PERMIT2(),
-            superform,
-            vars.srcChainId,
-            req.dstChainId,
-            req.dstChainId,
-            msg.sender,
-            true
+            vars.liqRequest, superRegistry.PERMIT2(), superform, vars.srcChainId, req.dstChainId, msg.sender, true
         );
 
         uint256[] memory superformIds = new uint256[](1);
@@ -160,9 +152,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.currentPayloadId = ++payloadIds;
 
         InitSingleVaultData memory vaultData = InitSingleVaultData(
+            ROUTER_TYPE,
             vars.currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, vars.srcChainId),
-            /// @dev no liqDstChainId for deposits
             req.superformData.superformId,
             req.superformData.amount,
             req.superformData.maxSlippage,
@@ -182,9 +173,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.currentPayloadId = ++payloadIds;
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
+            ROUTER_TYPE,
             vars.currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, vars.srcChainId),
-            /// @dev no liqDstChainId for deposits
             req.superformData.superformIds,
             req.superformData.amounts,
             req.superformData.maxSlippages,
@@ -205,7 +195,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatchSP(
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnBatch(
             msg.sender, req.superformsData.superformIds, req.superformsData.amounts
         );
 
@@ -217,8 +207,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev write packed txData
         ambData = InitMultiVaultData(
+            ROUTER_TYPE,
             vars.currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, req.liqDstChainId),
             req.superformsData.superformIds,
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
@@ -254,8 +244,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         InitSingleVaultData memory ambData;
 
         /// @dev this step validates and returns ambData from the state request
-        (ambData, vars.currentPayloadId) =
-            _buildWithdrawAmbData(msg.sender, req.dstChainId, req.liqDstChainId, req.superformData);
+        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(msg.sender, req.dstChainId, req.superformData);
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = req.superformData.superformId;
@@ -285,8 +274,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         InitSingleVaultData memory ambData;
 
-        (ambData, vars.currentPayloadId) =
-            _buildWithdrawAmbData(msg.sender, vars.srcChainId, req.liqDstChainId, req.superformData);
+        (ambData, vars.currentPayloadId) = _buildWithdrawAmbData(msg.sender, vars.srcChainId, req.superformData);
 
         /// @dev same chain action
         _directSingleWithdraw(ambData, msg.sender);
@@ -300,14 +288,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev SuperPositions are burnt optimistically here
-        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnBatchSP(
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnBatch(
             msg.sender, req.superformData.superformIds, req.superformData.amounts
         );
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
+            ROUTER_TYPE,
             vars.currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, req.liqDstChainId),
             req.superformData.superformIds,
             req.superformData.amounts,
             req.superformData.maxSlippages,
@@ -334,7 +321,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (InitSingleVaultData memory ambData, uint256 currentPayloadId)
     {
         /// @dev validate superformsData
-        if (!_validatSuperformData(dstChainId_, superformData_)) revert Error.INVALID_SUPERFORMS_DATA();
+        if (!_validateSuperformData(dstChainId_, superformData_)) revert Error.INVALID_SUPERFORMS_DATA();
 
         if (
             !IBridgeValidator(superRegistry.getBridgeValidator(superformData_.liqRequest.bridgeId)).validateTxDataAmount(
@@ -346,9 +333,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         LiqRequest memory emptyRequest;
 
         ambData = InitSingleVaultData(
+            ROUTER_TYPE,
             currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, dstChainId_),
-            /// @dev no liqDstChainId for deposits
             superformData_.superformId,
             superformData_.amount,
             superformData_.maxSlippage,
@@ -360,7 +346,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _buildWithdrawAmbData(
         address srcSender_,
         uint64 dstChainId_,
-        uint64 liqDstChainId_,
         SingleVaultSFData memory superformData_
     )
         internal
@@ -368,20 +353,20 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         returns (InitSingleVaultData memory ambData, uint256 currentPayloadId)
     {
         /// @dev validate superformsData
-        if (!_validatSuperformData(dstChainId_, superformData_)) {
+        if (!_validateSuperformData(dstChainId_, superformData_)) {
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
         /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).burnSingleSP(
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnSingle(
             srcSender_, superformData_.superformId, superformData_.amount
         );
 
         currentPayloadId = ++payloadIds;
 
         ambData = InitSingleVaultData(
+            ROUTER_TYPE,
             currentPayloadId,
-            DataLib.packRouteInfo(ROUTER_TYPE, liqDstChainId_),
             superformData_.superformId,
             superformData_.amount,
             superformData_.maxSlippage,
@@ -396,7 +381,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address superform_,
         uint64 srcChainId_,
         uint64 dstChainId_,
-        uint64 liqDstChainId_,
         address srcSender_,
         bool deposit_
     )
@@ -408,7 +392,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             liqRequest_.txData,
             srcChainId_,
             dstChainId_,
-            liqDstChainId_,
+            liqRequest_.liqDstChainId,
             deposit_,
             superform_,
             srcSender_,
@@ -450,8 +434,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vars.srcSender, vars.ambIds, vars.dstChainId, abi.encode(ambMessage), extraData
         );
 
-        /// @dev FIXME: should call stateSyncer
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).updateTxHistory(
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).updateTxHistory(
             vars.currentPayloadId, ambMessage.txInfo
         );
     }
@@ -472,8 +455,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = _directDeposit(
             superform,
+            vaultData_.superformRouterId,
             vaultData_.payloadId,
-            vaultData_.routeInfo,
             vaultData_.superformId,
             vaultData_.amount,
             vaultData_.maxSlippage,
@@ -484,8 +467,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         /// @dev mint super positions at the end of the deposit action
-        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingleSP(
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintSingle(
             srcSender_, vaultData_.superformId, dstAmount
         );
     }
@@ -505,8 +487,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             /// @dev deposits collateral to a given vault and mint vault positions.
             dstAmounts[i] = _directDeposit(
                 superforms[i],
+                vaultData_.superformRouterId,
                 vaultData_.payloadId,
-                vaultData_.routeInfo,
                 vaultData_.superformIds[i],
                 vaultData_.amounts[i],
                 vaultData_.maxSlippage[i],
@@ -522,8 +504,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
-        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
-        ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintBatchSP(
+        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintBatch(
             srcSender_, vaultData_.superformIds, dstAmounts
         );
     }
@@ -531,8 +512,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @notice fulfils the final stage of same chain deposit action
     function _directDeposit(
         address superform,
+        uint8 superformRouterId_,
         uint256 payloadId_,
-        uint256 routeInfo_,
         uint256 superformId_,
         uint256 amount_,
         uint256 maxSlippage_,
@@ -555,7 +536,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev deposits collateral to a given vault and mint vault positions directly through the form
         dstAmount = IBaseForm(superform).directDepositIntoVault{ value: msgValue_ }(
-            InitSingleVaultData(payloadId_, routeInfo_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_),
+            InitSingleVaultData(
+                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
+            ),
             srcSender_
         );
     }
@@ -572,8 +555,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         _directWithdraw(
             superform,
+            vaultData_.superformRouterId,
             vaultData_.payloadId,
-            vaultData_.routeInfo,
             vaultData_.superformId,
             vaultData_.amount,
             vaultData_.maxSlippage,
@@ -593,8 +576,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             /// @dev deposits collateral to a given vault and mint vault positions.
             _directWithdraw(
                 superforms[i],
+                vaultData_.superformRouterId,
                 vaultData_.payloadId,
-                vaultData_.routeInfo,
                 vaultData_.superformIds[i],
                 vaultData_.amounts[i],
                 vaultData_.maxSlippage[i],
@@ -612,8 +595,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @notice fulfils the final stage of same chain withdrawal action
     function _directWithdraw(
         address superform,
-        uint256 txData_,
-        uint256 routeInfo_,
+        uint8 superformRouterId_,
+        uint256 payloadId_,
         uint256 superformId_,
         uint256 amount_,
         uint256 maxSlippage_,
@@ -634,7 +617,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev in direct withdraws, form is called directly
         IBaseForm(superform).directWithdrawFromVault(
-            InitSingleVaultData(txData_, routeInfo_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_),
+            InitSingleVaultData(
+                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
+            ),
             srcSender_
         );
     }
@@ -643,7 +628,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                             VALIDATION HELPERS
     //////////////////////////////////////////////////////////////*/
 
-    function _validatSuperformData(
+    function _validateSuperformData(
         uint64 dstChainId_,
         SingleVaultSFData memory superformData_
     )

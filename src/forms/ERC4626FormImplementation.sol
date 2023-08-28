@@ -156,7 +156,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.txData,
                 vars.chainId,
                 vars.chainId,
-                vars.chainId,
+                singleVaultData_.liqData.liqDstChainId,
                 true,
                 address(this),
                 srcSender_,
@@ -187,6 +187,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
 
+    struct ProcessDirectWithdawLocalVars {
+        uint64 chainId;
+        address collateral;
+        address receiver;
+        uint256 len1;
+        IERC4626 v;
+    }
+
     function _processDirectWithdraw(
         InitSingleVaultData memory singleVaultData_,
         address srcSender
@@ -194,35 +202,34 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         internal
         returns (uint256 dstAmount)
     {
-        uint256 len1 = singleVaultData_.liqData.txData.length;
+        ProcessDirectWithdawLocalVars memory v;
+        v.len1 = singleVaultData_.liqData.txData.length;
         /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it
         /// is this contract (before swap)
-        address receiver = len1 == 0 ? srcSender : address(this);
+        v.receiver = v.len1 == 0 ? srcSender : address(this);
 
-        IERC4626 v = IERC4626(vault);
-        address collateral = address(v.asset());
+        v.v = IERC4626(vault);
+        v.collateral = address(v.v.asset());
 
         /// @dev the token we are swapping from to our desired output token (if there is txData), must be the same as
         /// the vault asset
-        if (singleVaultData_.liqData.token != collateral) revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
+        if (singleVaultData_.liqData.token != v.collateral) revert Error.DIRECT_WITHDRAW_INVALID_COLLATERAL();
 
         /// @dev redeem the underlying
-        dstAmount = v.redeem(singleVaultData_.amount, receiver, address(this));
+        dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
-        if (len1 != 0) {
+        if (v.len1 != 0) {
             /// @dev this check here might be too much already, but can't hurt
             if (singleVaultData_.liqData.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            (, uint64 liqDstChainId) = singleVaultData_.routeInfo.decodeRouteInfo();
-
-            uint64 chainId = superRegistry.chainId();
+            v.chainId = superRegistry.chainId();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
                 singleVaultData_.liqData.txData,
-                chainId,
-                chainId,
-                liqDstChainId,
+                v.chainId,
+                v.chainId,
+                singleVaultData_.liqData.liqDstChainId,
                 false,
                 address(this),
                 srcSender,
@@ -307,14 +314,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (singleVaultData_.liqData.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            (, uint64 liqDstChainId) = singleVaultData_.routeInfo.decodeRouteInfo();
-
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
                 singleVaultData_.liqData.txData,
                 vars.dstChainId,
                 srcChainId,
-                liqDstChainId,
+                singleVaultData_.liqData.liqDstChainId,
                 false,
                 address(this),
                 srcSender,

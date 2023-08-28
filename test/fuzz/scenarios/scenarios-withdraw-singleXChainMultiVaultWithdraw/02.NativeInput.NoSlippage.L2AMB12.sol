@@ -36,6 +36,8 @@ contract SDMVW02NativeInputNoSlippageL2AMB12 is ProtocolActions {
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
+        FINAL_LIQ_DST_WITHDRAW[OP] = [AVAX, AVAX, AVAX];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({

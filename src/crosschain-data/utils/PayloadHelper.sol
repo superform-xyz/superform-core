@@ -36,7 +36,6 @@ contract PayloadHelper is IPayloadHelper {
         uint256[] superformIds;
         uint256 srcPayloadId;
         uint8 superformRouterId;
-        uint64 liqDstChainId;
         uint8 multi;
         ReturnMultiData rd;
         ReturnSingleData rsd;
@@ -50,6 +49,7 @@ contract PayloadHelper is IPayloadHelper {
         uint8[] bridgeIds;
         bytes[] txDatas;
         address[] liqDataTokens;
+        uint64[] liqDataChainIds;
         uint256[] liqDataAmounts;
         uint256[] liqDataNativeAmounts;
         bytes[] permit2datas;
@@ -94,8 +94,7 @@ contract PayloadHelper is IPayloadHelper {
             uint256[] memory slippage,
             uint256[] memory superformIds,
             uint256 srcPayloadId,
-            uint8 superformRouterId,
-            uint64 liqDstChainId
+            uint8 superformRouterId
         )
     {
         DecodeDstPayloadInternalVars memory v;
@@ -120,7 +119,7 @@ contract PayloadHelper is IPayloadHelper {
         if (v.callbackType == uint256(CallbackType.INIT)) {
             if (v.multi == 1) {
                 v.imvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
-                (v.superformRouterId, v.liqDstChainId) = v.imvd.routeInfo.decodeRouteInfo();
+                v.superformRouterId = v.imvd.superformRouterId;
                 v.amounts = v.imvd.amounts;
                 v.slippage = v.imvd.maxSlippage;
                 v.superformIds = v.imvd.superformIds;
@@ -128,7 +127,7 @@ contract PayloadHelper is IPayloadHelper {
             } else {
                 v.isvd = abi.decode(dstPayloadRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));
 
-                (v.superformRouterId, v.liqDstChainId) = v.isvd.routeInfo.decodeRouteInfo();
+                v.superformRouterId = v.isvd.superformRouterId;
 
                 v.amounts = new uint256[](1);
                 v.amounts[0] = v.isvd.amount;
@@ -152,8 +151,7 @@ contract PayloadHelper is IPayloadHelper {
             v.slippage,
             v.superformIds,
             v.srcPayloadId,
-            v.superformRouterId,
-            v.liqDstChainId
+            v.superformRouterId
         );
     }
 
@@ -166,6 +164,7 @@ contract PayloadHelper is IPayloadHelper {
             uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
+            uint64[] memory liqDstChainId,
             uint256[] memory amounts,
             uint256[] memory nativeAmounts,
             bytes[] memory permit2datas
@@ -181,6 +180,7 @@ contract PayloadHelper is IPayloadHelper {
             v.bridgeIds = new uint8[](v.imvd.liqData.length);
             v.txDatas = new bytes[](v.imvd.liqData.length);
             v.liqDataTokens = new address[](v.imvd.liqData.length);
+            v.liqDataChainIds = new uint64[](v.imvd.liqData.length);
             v.liqDataAmounts = new uint256[](v.imvd.liqData.length);
             v.liqDataNativeAmounts = new uint256[](v.imvd.liqData.length);
             v.permit2datas = new bytes[](v.imvd.liqData.length);
@@ -189,6 +189,7 @@ contract PayloadHelper is IPayloadHelper {
                 v.bridgeIds[v.i] = v.imvd.liqData[v.i].bridgeId;
                 v.txDatas[v.i] = v.imvd.liqData[v.i].txData;
                 v.liqDataTokens[v.i] = v.imvd.liqData[v.i].token;
+                v.liqDataChainIds[v.i] = v.imvd.liqData[v.i].liqDstChainId;
                 v.liqDataAmounts[v.i] = v.imvd.liqData[v.i].amount;
                 v.liqDataNativeAmounts[v.i] = v.imvd.liqData[v.i].nativeAmount;
                 v.permit2datas[v.i] = v.imvd.liqData[v.i].permit2data;
@@ -205,6 +206,9 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataTokens = new address[](1);
             v.liqDataTokens[0] = v.isvd.liqData.token;
 
+            v.liqDataChainIds = new uint64[](1);
+            v.liqDataChainIds[0] = v.isvd.liqData.liqDstChainId;
+
             v.liqDataAmounts = new uint256[](1);
             v.liqDataAmounts[0] = v.isvd.liqData.amount;
 
@@ -215,7 +219,15 @@ contract PayloadHelper is IPayloadHelper {
             v.permit2datas[0] = v.isvd.liqData.permit2data;
         }
 
-        return (v.bridgeIds, v.txDatas, v.liqDataTokens, v.liqDataAmounts, v.liqDataNativeAmounts, v.permit2datas);
+        return (
+            v.bridgeIds,
+            v.txDatas,
+            v.liqDataTokens,
+            v.liqDataChainIds,
+            v.liqDataAmounts,
+            v.liqDataNativeAmounts,
+            v.permit2datas
+        );
     }
 
     /// @inheritdoc IPayloadHelper

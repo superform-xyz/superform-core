@@ -39,6 +39,8 @@ contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [1];
         LIQ_BRIDGES[AVAX][1] = [1];
 
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [OP];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

@@ -50,7 +50,6 @@ struct SingleVaultSFData {
 struct MultiDstMultiVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
-    uint64[] liqDstChainId;
     MultiVaultSFData[] superformsData;
 }
 
@@ -58,7 +57,6 @@ struct MultiDstMultiVaultStateReq {
 struct SingleXChainMultiVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
-    uint64 liqDstChainId;
     MultiVaultSFData superformsData;
 }
 
@@ -66,7 +64,6 @@ struct SingleXChainMultiVaultStateReq {
 struct MultiDstSingleVaultStateReq {
     uint8[][] ambIds;
     uint64[] dstChainIds;
-    uint64[] liqDstChainId;
     SingleVaultSFData[] superformsData;
 }
 
@@ -74,26 +71,23 @@ struct MultiDstSingleVaultStateReq {
 struct SingleXChainSingleVaultStateReq {
     uint8[] ambIds;
     uint64 dstChainId;
-    uint64 liqDstChainId;
     SingleVaultSFData superformData;
 }
 
 /// @dev overarching struct for single direct chain requests with single vaults
 struct SingleDirectSingleVaultStateReq {
-    uint64 liqDstChainId;
     SingleVaultSFData superformData;
 }
 
 /// @dev overarching struct for single direct chain requests with multi vaults
 struct SingleDirectMultiVaultStateReq {
-    uint64 liqDstChainId;
     MultiVaultSFData superformData;
 }
 
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitMultiVaultData {
+    uint8 superformRouterId;
     uint256 payloadId;
-    uint256 routeInfo;
     uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippage;
@@ -103,8 +97,8 @@ struct InitMultiVaultData {
 
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitSingleVaultData {
+    uint8 superformRouterId;
     uint256 payloadId;
-    uint256 routeInfo;
     uint256 superformId;
     uint256 amount;
     uint256 maxSlippage;
@@ -122,9 +116,9 @@ enum TwoStepsStatus {
 /// @dev holds information about the two-steps payload
 struct TwoStepsPayload {
     uint8 isXChain;
+    uint8 superformRouterId;
     address srcSender;
     uint64 srcChainId;
-    uint256 routeInfo;
     uint256 lockedTill;
     InitSingleVaultData data;
     TwoStepsStatus status;
@@ -147,16 +141,16 @@ struct AMBFactoryMessage {
 
 /// @dev struct that contains info on returned data from destination
 struct ReturnMultiData {
-    uint256 payloadId;
     uint8 superformRouterId;
+    uint256 payloadId;
     uint256[] superformIds;
     uint256[] amounts;
 }
 
 /// @dev struct that contains info on returned data from destination
 struct ReturnSingleData {
-    uint256 payloadId;
     uint8 superformRouterId;
+    uint256 payloadId;
     uint256 superformId;
     uint256 amount;
 }

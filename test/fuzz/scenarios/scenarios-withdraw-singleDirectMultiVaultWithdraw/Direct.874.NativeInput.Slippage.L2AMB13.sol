@@ -32,6 +32,8 @@ contract SDiMVW874NativeInputSlippageL2AMB13 is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [2, 2, 2];
         LIQ_BRIDGES[ARBI][1] = [2, 2, 2];
 
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI, ARBI, ARBI];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
@@ -66,7 +68,7 @@ contract SDiMVW874NativeInputSlippageL2AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario( uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
         amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH / 3));
         amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 3));

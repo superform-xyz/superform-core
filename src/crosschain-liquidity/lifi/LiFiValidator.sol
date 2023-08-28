@@ -56,8 +56,9 @@ contract LiFiValidator is BridgeValidator {
 
         if (deposit_) {
             if (srcChainId_ == dstChainId_) {
-                /// @dev If same chain deposits then receiver address must be the superform
+                if (dstChainId_ != liqDstChainId_) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
 
+                /// @dev If same chain deposits then receiver address must be the superform
                 if (bridgeData.receiver != superform_) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
                 /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry or MultiTxProcessor

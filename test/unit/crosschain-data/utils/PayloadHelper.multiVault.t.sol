@@ -40,6 +40,8 @@ contract PayloadHelperMultiTest is ProtocolActions {
         LIQ_BRIDGES[POLY][0] = [1, 1];
         LIQ_BRIDGES[POLY][1] = [1, 1];
 
+        FINAL_LIQ_DST_WITHDRAW[POLY] = [OP, OP];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -145,14 +147,24 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint256[] slippage;
         uint256[] superformIds;
         uint256 srcPayloadId;
+        uint8 superformRouterId;
     }
 
     function _checkDstPayloadInit() internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType, v.srcSender, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
-            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
+        (
+            v.txType,
+            v.callbackType,
+            v.srcSender,
+            v.srcChainId,
+            v.amounts,
+            v.slippage,
+            ,
+            v.srcPayloadId,
+            v.superformRouterId
+        ) = IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
 
         v.extraDataGenerated = new bytes[](2);
         v.extraDataGenerated[0] = abi.encode("500000");
@@ -167,6 +179,9 @@ contract PayloadHelperMultiTest is ProtocolActions {
         /// chain id of optimism is 10
         assertEq(v.srcPayloadId, 1);
         assertEq(v.amounts, AMOUNTS[POLY][0]);
+
+        assertEq(v.superformRouterId, 1);
+
         for (uint256 i = 0; i < v.slippage.length; ++i) {
             assertEq(v.slippage[i], MAX_SLIPPAGE);
         }
@@ -183,6 +198,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint8[] bridgeIds;
         bytes[] txDatas;
         address[] tokens;
+        uint64[] liqDstChainIds;
         uint256[] amounts;
         uint256[] nativeAmounts;
         bytes[] permit2datas;
@@ -192,7 +208,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadLiqDataInternalVars memory v;
 
-        (v.bridgeIds, v.txDatas, v.tokens, v.amounts, v.nativeAmounts, v.permit2datas) =
+        (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts, v.nativeAmounts, v.permit2datas) =
             IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayloadLiqData(2);
         console.log(v.bridgeIds.length);
 
@@ -201,6 +217,8 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertGt(v.txDatas[0].length, 0);
 
         assertEq(v.tokens[0], getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[POLY][1][0]]));
+
+        assertEq(v.liqDstChainIds[0], FINAL_LIQ_DST_WITHDRAW[POLY][0]);
 
         assertEq(v.amounts, AMOUNTS[POLY][0]);
 
@@ -212,7 +230,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         CheckDstPayloadInternalVars memory v;
 
-        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId) =
+        (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId, v.superformRouterId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeDstPayload(1);
 
         assertEq(v.txType, 0);
@@ -224,6 +242,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         /// chain id of polygon is 137
         assertEq(v.srcPayloadId, 1);
         assertEq(v.amounts, AMOUNTS[POLY][0]);
+        assertEq(v.superformRouterId, 1);
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
             assertEq(v.slippage[i], MAX_SLIPPAGE);

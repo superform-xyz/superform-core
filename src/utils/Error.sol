@@ -109,6 +109,9 @@ library Error {
     /// @dev thrown when the validation of bridge txData fails due to wrong token
     error INVALID_TXDATA_TOKEN();
 
+    /// @dev thrown when in deposits, the liqDstChainId doesn't match the stateReq dstChainId
+    error INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
+
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/

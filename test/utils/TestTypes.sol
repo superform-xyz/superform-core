@@ -197,9 +197,9 @@ struct MultiVaultCallDataArgs {
     uint256 maxSlippage;
     address[] vaultMock;
     uint64 srcChainId;
-    uint64 toChainId;
     uint256 liquidityBridgeSrcChainId;
-    uint256 liquidityBridgeToChainId;
+    uint256 index;
+    uint256 chainDstIndex;
     bool multiTx;
     Actions action;
     int256 slippage;

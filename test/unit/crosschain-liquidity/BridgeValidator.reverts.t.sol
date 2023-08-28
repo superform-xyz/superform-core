@@ -15,6 +15,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             _buildTxData(2, address(0), deployer, BSC, uint256(100), "CoreStateRegistry"),
             ETH,
             BSC,
+            BSC,
             true,
             address(0),
             deployer,
@@ -28,6 +29,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
             _buildTxData(2, address(0), deployer, BSC, uint256(100), "PayMaster"),
             ETH,
+            BSC,
             BSC,
             true,
             address(0),
@@ -43,6 +45,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             _buildTxData(2, address(0), deployer, BSC, uint256(100), "CoreStateRegistry"),
             ETH,
             ARBI,
+            ARBI,
             true,
             address(0),
             deployer,
@@ -57,6 +60,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             _buildTxData(2, address(0), deployer, ETH, uint256(100), "PayMaster"),
             ETH,
             ETH,
+            ETH,
             true,
             address(0),
             deployer,
@@ -68,8 +72,24 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            _buildTxData(2, address(0), deployer, ARBI, uint256(100), "PayMaster"),
+            _buildTxData(2, address(0), deployer, OP, uint256(100), "PayMaster"),
             ETH,
+            ARBI,
+            OP,
+            false,
+            address(0),
+            deployer,
+            address(0)
+        );
+    }
+
+    function test_lifi_invalid_txdata_chainid_withdraw() public {
+        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
+
+        LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
+            _buildTxData(2, address(0), deployer, OP, uint256(100), "PayMaster"),
+            ETH,
+            ARBI,
             ARBI,
             false,
             address(0),
@@ -85,6 +105,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             _buildTxData(2, address(0), deployer, ARBI, uint256(100), "CoreStateRegistry"),
             ETH,
             ARBI,
+            ARBI,
             true,
             address(0),
             deployer,
@@ -98,6 +119,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
             _buildTxData(1, address(0), deployer, BSC, uint256(100), "PayMaster"),
             ETH,
+            BSC,
             BSC,
             true,
             address(0),
@@ -113,6 +135,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             _buildTxData(1, address(0), deployer, BSC, uint256(100), "PayMaster"),
             ETH,
             ARBI,
+            BSC,
             true,
             address(0),
             deployer,
@@ -126,6 +149,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
             _buildTxData(1, address(1), deployer, BSC, uint256(100), "CoreStateRegistry"),
             ETH,
+            BSC,
             BSC,
             true,
             address(0),
@@ -141,6 +165,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             _buildTxData(1, address(1), deployer, ETH, uint256(100), "CoreStateRegistry"),
             ETH,
             ETH,
+            ETH,
             true,
             address(0),
             deployer,
@@ -154,6 +179,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
             _buildTxData(1, address(1), deployer, BSC, uint256(100), "CoreStateRegistry"),
             ETH,
+            BSC,
             BSC,
             false,
             address(0),

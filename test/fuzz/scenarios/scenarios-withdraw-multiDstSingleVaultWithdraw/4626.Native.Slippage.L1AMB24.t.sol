@@ -59,6 +59,9 @@ contract MDSVWNormal4626NativeSlippageL1AMB24 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [1];
         LIQ_BRIDGES[AVAX][1] = [1];
 
+        FINAL_LIQ_DST_WITHDRAW[OP] = [POLY];
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [POLY];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

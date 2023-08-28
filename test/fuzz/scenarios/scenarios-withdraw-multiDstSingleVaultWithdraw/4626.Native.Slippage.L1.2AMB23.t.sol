@@ -54,6 +54,9 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [2];
         LIQ_BRIDGES[AVAX][1] = [2];
 
+        FINAL_LIQ_DST_WITHDRAW[OP] = [POLY];
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [POLY];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,
@@ -92,7 +95,9 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
         uint128 amountOneWithdraw_,
         uint128 amountTwo_,
         uint128 amountTwoWithdraw_
-    ) public {
+    )
+        public
+    {
         /// @dev amount = 2 after slippage will become 1, but amountWithdraw >= 2, hence starting with 3
         amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_ETH / 2));
         amountTwo_ = uint128(bound(amountTwo_, 3, TOTAL_SUPPLY_ETH / 2));

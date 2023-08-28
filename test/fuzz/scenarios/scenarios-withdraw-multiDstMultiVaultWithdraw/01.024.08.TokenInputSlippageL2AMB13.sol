@@ -70,6 +70,10 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
+        FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH, ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH, ETH, ETH];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
@@ -109,7 +113,9 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
         uint128 amountOneWithdraw_,
         uint128 amountTwo_,
         uint128 amountThree_
-    ) public {
+    )
+        public
+    {
         /// @dev min amountOne_ needs to be 3 as its withdraw amount >= 2
         /// @dev 7 => 2 * amountOne_ + 3 * amountTwo_ + 2 * amountThree_ during deposits
         amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_ETH / 7));

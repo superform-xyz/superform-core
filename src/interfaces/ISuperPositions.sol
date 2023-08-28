@@ -18,32 +18,8 @@ interface ISuperPositions is IStateSyncer {
     event Completed(uint256 txId);
 
     /*///////////////////////////////////////////////////////////////
-                        PROTECTED FUNCTIONS
+                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev mints a single super position
-    /// @param owner_ is the address of the owner of the super position
-    /// @param id_ is the id of the super position being minted
-    /// @param amount_ is the amount of the super position being minted
-    function mintSingleSP(address owner_, uint256 id_, uint256 amount_) external;
-
-    /// @dev mints a batch of super positions
-    /// @param owner_ is the address of the owner of the super positions
-    /// @param ids_ are the ids of the super positions being minted
-    /// @param amounts_ are the amounts of the super positions being minted
-    function mintBatchSP(address owner_, uint256[] memory ids_, uint256[] memory amounts_) external;
-
-    /// @dev burns a single super position
-    /// @param srcSender_ is the address of the sender of the super position
-    /// @param id_ is the id of the super position being burned
-    /// @param amount_ is the amount of the super position being burned
-    function burnSingleSP(address srcSender_, uint256 id_, uint256 amount_) external;
-
-    /// @dev burns a batch of super positions
-    /// @param srcSender_ is the address of the sender of the super positions
-    /// @param ids_ are the ids of the super positions being burned
-    /// @param amounts_ are the amounts of the super positions being burned
-    function burnBatchSP(address srcSender_, uint256[] memory ids_, uint256[] memory amounts_) external;
 
     /// @dev sets the dynamic uri for NFT
     /// @param dynamicURI_ is the dynamic uri of the NFT

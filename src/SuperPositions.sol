@@ -78,47 +78,61 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc ISuperPositions
-    function mintSingleSP(address owner_, uint256 id_, uint256 amount_) external override onlyMinter {
-        _mint(owner_, id_, amount_, "");
+    /// @inheritdoc IStateSyncer
+    function mintSingle(
+        address sender_,
+        uint256 id_,
+        uint256 amount_
+    )
+        external
+        override(IStateSyncer, StateSyncer)
+        onlyMinter
+    {
+        _mint(sender_, id_, amount_, "");
     }
 
-    /// @inheritdoc ISuperPositions
-    function mintBatchSP(
+    /// @inheritdoc IStateSyncer
+    function mintBatch(
         address owner_,
         uint256[] memory ids_,
         uint256[] memory amounts_
     )
         external
-        override
+        override(IStateSyncer, StateSyncer)
         onlyMinter
     {
         _batchMint(owner_, ids_, amounts_, "");
     }
 
-    /// @inheritdoc ISuperPositions
-    function burnSingleSP(address srcSender_, uint256 id_, uint256 amount_) external override onlyBurner {
+    /// @inheritdoc IStateSyncer
+    function burnSingle(
+        address srcSender_,
+        uint256 id_,
+        uint256 amount_
+    )
+        external
+        override(IStateSyncer, StateSyncer)
+        onlyBurner
+    {
         _burn(srcSender_, id_, amount_);
     }
 
-    /// @inheritdoc ISuperPositions
-    function burnBatchSP(
+    /// @inheritdoc IStateSyncer
+    function burnBatch(
         address srcSender_,
         uint256[] memory ids_,
         uint256[] memory amounts_
     )
         external
-        override
+        override(IStateSyncer, StateSyncer)
         onlyBurner
     {
         _batchBurn(srcSender_, ids_, amounts_);
     }
 
     /// @inheritdoc IStateSyncer
-    /// @dev FIXME remove payable keyword?
     function stateMultiSync(AMBMessage memory data_)
         external
-        payable
         override(IStateSyncer, StateSyncer)
         onlyMinterStateRegistry
         returns (uint64 srcChainId_)
@@ -164,10 +178,8 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     }
 
     /// @inheritdoc IStateSyncer
-    /// @dev FIXME remove payable keyword?
     function stateSync(AMBMessage memory data_)
         external
-        payable
         override(IStateSyncer, StateSyncer)
         onlyMinterStateRegistry
         returns (uint64 srcChainId_)
@@ -210,21 +222,6 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         }
 
         emit Completed(returnData.payloadId);
-    }
-
-    /// @inheritdoc IStateSyncer
-    /// @dev FIXME remove payable keyword?
-    function stateSyncTwoStep(
-        address sender_,
-        uint256 id_,
-        uint256 amount_
-    )
-        external
-        payable
-        override(IStateSyncer, StateSyncer)
-        onlyMinter
-    {
-        _mint(sender_, id_, amount_, "");
     }
 
     /*///////////////////////////////////////////////////////////////

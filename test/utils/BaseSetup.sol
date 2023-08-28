@@ -1246,6 +1246,7 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 i; i < singleSuperformsData.length; i++) {
             bytes memory ambData = abi.encode(
                 InitSingleVaultData(
+                    2 ** 8 - 1,
                     2 ** 256 - 1,
                     /// @dev uses max payload id
                     singleSuperformsData[i].superformId,
@@ -1261,6 +1262,7 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 i; i < multiSuperformsData.length; i++) {
             bytes memory ambData = abi.encode(
                 InitMultiVaultData(
+                    2 ** 8 - 1,
                     2 ** 256 - 1,
                     /// @dev uses max payload id
                     multiSuperformsData[i].superformIds,
@@ -1370,11 +1372,12 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,) =
+        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,,) =
             vars.payloadHelper.decodeDstPayload(payloadId);
 
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, superformIds, amounts))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(2 ** 8 - 1, payloadId, superformIds, amounts)))
+        );
 
         address _paymentHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
         vars.paymentHelper = PaymentHelper(_paymentHelper);
@@ -1417,8 +1420,9 @@ abstract contract BaseSetup is DSTest, Test {
         (,, uint256 payloadId, uint256 superformId, uint256 amount) =
             vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
 
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(2 ** 8 - 1, payloadId, superformId, amount)))
+        );
 
         (vars.totalFees, gasPerAMB) =
             vars.paymentHelper.estimateAMBFees(selectedAmbIds, vars.srcChainId, abi.encode(vars.message), paramsPerAMB);

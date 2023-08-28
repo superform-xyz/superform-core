@@ -30,7 +30,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), 3e18, 0, ""), ""
+            1, 1, superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 3e18, 0, ""), ""
         );
 
         /// @dev simulating withdrawals with malicious tx data
@@ -40,7 +40,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         vm.prank(getContract(ETH, "TwoStepsFormStateRegistry"));
         vm.expectRevert(Error.WITHDRAW_TX_DATA_NOT_UPDATED.selector);
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
+            420, TwoStepsPayload(1, 1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
         );
     }
 
@@ -65,7 +65,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         bytes memory invalidNonEmptyTxData = abi.encode(1);
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, superformId, 1e18, 100, LiqRequest(1, invalidNonEmptyTxData, address(0), 3e18, 0, ""), ""
+            1, 1, superformId, 1e18, 100, LiqRequest(1, invalidNonEmptyTxData, address(0), ETH, 3e18, 0, ""), ""
         );
 
         /// @dev simulating withdrawals with malicious tx data
@@ -75,7 +75,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         vm.prank(getContract(ETH, "TwoStepsFormStateRegistry"));
         vm.expectRevert(Error.EMPTY_TOKEN_NON_EMPTY_TXDATA.selector);
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
+            420, TwoStepsPayload(1, 1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
         );
     }
 
@@ -98,14 +98,14 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         vm.stopPrank();
 
         InitSingleVaultData memory data =
-            InitSingleVaultData(1, superformId, 1e18, 100, LiqRequest(1, "", address(0), 3e18, 0, ""), "");
+            InitSingleVaultData(1, 1, superformId, 1e18, 100, LiqRequest(1, "", address(0), ETH, 3e18, 0, ""), "");
 
         vm.prank(getContract(ETH, "CoreStateRegistry"));
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
 
         vm.prank(getContract(ETH, "TwoStepsFormStateRegistry"));
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
+            420, TwoStepsPayload(1, 1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
         );
     }
 
@@ -130,7 +130,13 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         bytes memory invalidNonEmptyTxData = abi.encode(1);
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, superformId, 1e18, 100, LiqRequest(1, invalidNonEmptyTxData, getContract(ETH, "USDT"), 3e18, 0, ""), ""
+            1,
+            1,
+            superformId,
+            1e18,
+            100,
+            LiqRequest(1, invalidNonEmptyTxData, getContract(ETH, "USDT"), ETH, 3e18, 0, ""),
+            ""
         );
 
         vm.prank(getContract(ETH, "CoreStateRegistry"));
@@ -139,7 +145,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector);
         vm.prank(getContract(ETH, "TwoStepsFormStateRegistry"));
         ERC4626TimelockForm(payable(superform)).withdrawAfterCoolDown(
-            420, TwoStepsPayload(1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
+            420, TwoStepsPayload(1, 1, deployer, ETH, block.timestamp, data, TwoStepsStatus.PENDING)
         );
     }
 
@@ -159,7 +165,7 @@ contract SuperformERC4626TimelockFormTest is BaseSetup {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
 
         SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""), "");
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 

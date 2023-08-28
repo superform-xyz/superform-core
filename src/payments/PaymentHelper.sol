@@ -384,7 +384,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
@@ -396,6 +396,8 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
+
+        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -406,7 +408,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         for (uint256 i; i < req_.superformData.superformIds.length;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
@@ -424,6 +426,8 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
+
+        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -645,9 +649,9 @@ contract PaymentHelper is IPaymentHelper {
     {
         bytes memory ambData = abi.encode(
             InitSingleVaultData(
+                1,
+                /// @dev sample router id for estimation
                 _getNextPayloadId(),
-                DataLib.packRouteInfo(1, 1),
-                /// @dev added a sample route info for fee calc.
                 sfData_.superformId,
                 sfData_.amount,
                 sfData_.maxSlippage,
@@ -666,9 +670,9 @@ contract PaymentHelper is IPaymentHelper {
     {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
+                1,
+                /// @dev sample router id for estimation
                 _getNextPayloadId(),
-                DataLib.packRouteInfo(1, 1),
-                /// @dev added a sample route info for fee calc.
                 sfData_.superformIds,
                 sfData_.amounts,
                 sfData_.maxSlippages,
