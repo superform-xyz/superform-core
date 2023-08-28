@@ -52,7 +52,15 @@ contract LiFiMock is Test {
         internal
     {
         /// @dev encapsulating from
-        (address from, uint256 toForkId, address outputToken, int256 slippage, bool isMultiTx, uint256 multiTxSlippageShare) = abi.decode(data_, (address, uint256, address, int256, bool, uint256));
+        (
+            address from,
+            uint256 toForkId,
+            address outputToken,
+            int256 slippage,
+            bool isMultiTx,
+            uint256 multiTxSlippageShare,
+            bool isDirect
+        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool));
 
         if (inputToken_ != NATIVE) {
             console.log("MULTIII_B", MockERC20(inputToken_).balanceOf(from));
@@ -67,10 +75,11 @@ contract LiFiMock is Test {
         vm.selectFork(toForkId);
 
         uint256 amountOut;
-        if(isMultiTx) slippage = (slippage * int256(multiTxSlippageShare)) / 100;
+        if (isDirect) slippage = 0;
+        else if (isMultiTx) slippage = (slippage * int256(multiTxSlippageShare)) / 100;
         else slippage = (slippage * int256(100 - multiTxSlippageShare)) / 100;
 
-        amountOut = (amount_ * uint256(10000 - slippage)) / 10000;
+        amountOut = (amount_ * uint256(10_000 - slippage)) / 10_000;
 
         if (outputToken != NATIVE) {
             MockERC20(outputToken).mint(receiver_, amountOut);

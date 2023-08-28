@@ -25,6 +25,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             getContract(ETH, "USDT"),
             getContract(ETH, "ERC4626TimelockForm"),
             ETH,
+            ETH,
             false,
             deployer,
             uint256(ETH),
