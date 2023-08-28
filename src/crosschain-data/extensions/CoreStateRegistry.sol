@@ -661,7 +661,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         (address superform_,,) = singleVaultData.superformId.getSuperform();
 
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
-
+        console.log("SINGLEVAULT_AMOUNT", singleVaultData.amount);
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.approve(superform_, singleVaultData.amount);
 
