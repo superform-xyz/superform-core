@@ -109,12 +109,13 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
         uint128 amountOneWithdraw_,
         uint128 amountTwo_,
         uint128 amountThree_
-    ) public {
-        /// @dev min amountOne_ needs to be 3 as its withdraw amount >= 2
+    )
+        public
+    {
         /// @dev 7 => 2 * amountOne_ + 3 * amountTwo_ + 2 * amountThree_ during deposits
-        amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_ETH / 7));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 7));
-        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_ETH / 7));
+        amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_ETH / 7));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 7));
+        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 7));
 
         /// @dev bound to amountOne_ - 1 as partial is true for first vault
         /// @dev amount = 1 after slippage will become 0, hence starting with 2

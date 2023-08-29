@@ -891,7 +891,8 @@ abstract contract ProtocolActions is BaseSetup {
                             aV[i].toChainId,
                             action.testType,
                             action.revertError,
-                            action.revertRole
+                            action.revertRole,
+                            action.multiTx
                         );
 
                         vars.singleVaultsPayloadArg = updateSingleVaultDepositPayloadArgs(
@@ -901,7 +902,8 @@ abstract contract ProtocolActions is BaseSetup {
                             aV[i].toChainId,
                             action.testType,
                             action.revertError,
-                            action.revertRole
+                            action.revertRole,
+                            action.multiTx
                         );
 
                         if (action.testType == TestType.Pass) {
@@ -1658,8 +1660,6 @@ abstract contract ProtocolActions is BaseSetup {
         }
         vm.selectFork(v.initialFork);
 
-        // uint256 slippageAdjustedAmount = (args.amount * (10_000 - uint256(args.slippage))) / 10_000;
-
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(args.superformId, args.amount, args.maxSlippage, v.liqReq, abi.encode(false));
@@ -1870,11 +1870,19 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 len = args.amounts.length;
         uint256[] memory finalAmounts = new uint256[](len);
 
+        int256 bridgeSlippage;
+        int256 multiTxSlippage;
         /// @dev slippage calculation
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
-                finalAmounts[i] = (args.amounts[i] * (10_000 - uint256(args.slippage))) / 10_000;
+                bridgeSlippage = (args.slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - bridgeSlippage)) / 10_000;
+
+                if (args.isMultiTx) {
+                    multiTxSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                    finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - multiTxSlippage)) / 10_000;
+                }
             }
         }
 
@@ -1924,11 +1932,18 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 finalAmount;
 
         finalAmount = args.amount;
-        if (args.slippage > 0) {
-            finalAmount = (args.amount * (10_000 - uint256(args.slippage))) / 10_000;
-        }
-        /// @dev if test type is RevertProcessPayload, revert is further down the call chain
 
+        int256 bridgeSlippage;
+        bridgeSlippage = (args.slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        finalAmount = (finalAmount * uint256(10_000 - bridgeSlippage)) / 10_000;
+
+        int256 multiTxSlippage;
+        if (args.isMultiTx) {
+            multiTxSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+            finalAmount = (finalAmount * uint256(10_000 - multiTxSlippage)) / 10_000;
+        }
+
+        /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
 
@@ -2508,56 +2523,71 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 k;
     }
 
+    struct SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs {
+        MultiVaultSFData multiSuperformsData;
+        bool assertWithSlippage;
+        int256 slippage;
+        bool sameChain;
+        uint256 repetitions;
+        uint256 lenRevertDeposit;
+        uint256 dstIndex;
+        bool isMultiTx;
+    }
+
     /// @dev function to calculate summed amounts per superForms (repeats the amount for the same superForm if repeated)
     function _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
-        MultiVaultSFData memory multiSuperformsData,
-        bool assertWithSlippage,
-        int256 slippage,
-        bool sameChain,
-        uint256 repetitions,
-        uint256 lenRevertDeposit,
-        uint256 dstIndex
+        SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs memory args
     )
         internal
         returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 totalSpAmount)
     {
         DepositMultiSPCalculationVars memory v;
-        v.lenSuperforms = multiSuperformsData.superformIds.length;
+        v.lenSuperforms = args.multiSuperformsData.superformIds.length;
         emptyAmount = new uint256[](v.lenSuperforms);
         spAmountSummed = new uint256[](v.lenSuperforms);
+        int256 bridgeSlippage;
+        int256 multiTxSlippage;
 
         /// @dev create an array of amounts summing the amounts of the same superform ids
-        (v.superforms,,) = DataLib.getSuperforms(multiSuperformsData.superformIds);
+        (v.superforms,,) = DataLib.getSuperforms(args.multiSuperformsData.superformIds);
 
         for (v.i = 0; v.i < v.lenSuperforms; v.i++) {
-            totalSpAmount += multiSuperformsData.amounts[v.i];
+            totalSpAmount += args.multiSuperformsData.amounts[v.i];
             for (v.j = 0; v.j < v.lenSuperforms; v.j++) {
                 v.foundRevertingDeposit = false;
                 /// @dev find if a superform is a reverting
-                if (lenRevertDeposit > 0) {
-                    for (v.k = 0; v.k < lenRevertDeposit; v.k++) {
+                if (args.lenRevertDeposit > 0) {
+                    for (v.k = 0; v.k < args.lenRevertDeposit; v.k++) {
                         v.foundRevertingDeposit =
-                            revertingDepositSFs[dstIndex][v.k] == multiSuperformsData.superformIds[v.i];
+                            revertingDepositSFs[args.dstIndex][v.k] == args.multiSuperformsData.superformIds[v.i];
                         if (v.foundRevertingDeposit) break;
                     }
                 }
                 /// @dev if a superform is repeated but not reverting
                 if (
-                    multiSuperformsData.superformIds[v.i] == multiSuperformsData.superformIds[v.j]
+                    args.multiSuperformsData.superformIds[v.i] == args.multiSuperformsData.superformIds[v.j]
                         && !v.foundRevertingDeposit
                 ) {
                     /// @dev calculate amounts with slippage if needed for assertions
-                    v.finalAmount = multiSuperformsData.amounts[v.j];
-                    if (assertWithSlippage && slippage != 0 && !sameChain) {
-                        v.finalAmount = (multiSuperformsData.amounts[v.j] * (10_000 - uint256(slippage))) / 10_000;
+                    v.finalAmount = args.multiSuperformsData.amounts[v.j];
+                    if (args.assertWithSlippage && args.slippage != 0 && !args.sameChain) {
+                        /// @dev applying bridge slippage
+                        bridgeSlippage = (args.slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                        v.finalAmount = (v.finalAmount * uint256(10_000 - bridgeSlippage)) / 10_000;
+
+                        /// @dev applying multiTx slippage
+                        if (args.isMultiTx) {
+                            multiTxSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                            v.finalAmount = (v.finalAmount * uint256(10_000 - multiTxSlippage)) / 10_000;
+                        }
                     }
                     /// @dev add number of repetitions to properly assert
-                    v.finalAmount = v.finalAmount * repetitions;
+                    v.finalAmount = v.finalAmount * args.repetitions;
 
                     spAmountSummed[v.i] += v.finalAmount;
                 }
             }
-            vm.selectFork(FORKS[DST_CHAINS[dstIndex]]);
+            vm.selectFork(FORKS[DST_CHAINS[args.dstIndex]]);
 
             /// @dev calculate the final amount summed on the basis of previewDeposit
             spAmountSummed[v.i] = IBaseForm(v.superforms[v.i]).previewDepositTo(spAmountSummed[v.i]);
@@ -2750,8 +2780,11 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
                 /// @dev obtain amounts to assert
-                (emptyAmount, spAmountSummedPerDst,) =
-                    _spAmountsMultiBeforeActionOrAfterSuccessDeposit(multiSuperformsData[i], false, 0, false, 1, 0, i);
+                (emptyAmount, spAmountSummedPerDst,) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
+                    SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs(
+                        multiSuperformsData[i], false, 0, false, 1, 0, i, action.multiTx
+                    )
+                );
 
                 /// @dev assert
                 _assertMultiVaultBalance(
@@ -2824,13 +2857,16 @@ abstract contract ProtocolActions is BaseSetup {
             if (action.multiVaults) {
                 /// @dev obtain amounts to assert. Count with destination repetitions
                 (, spAmountSummed, totalSpAmount) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
-                    multiSuperformsData[i],
-                    true,
-                    action.slippage,
-                    CHAIN_0 == DST_CHAINS[i],
-                    repetitions,
-                    lenRevertDeposit,
-                    i
+                    SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs(
+                        multiSuperformsData[i],
+                        true,
+                        action.slippage,
+                        CHAIN_0 == DST_CHAINS[i],
+                        repetitions,
+                        lenRevertDeposit,
+                        i,
+                        action.multiTx
+                    )
                 );
                 totalSpAmountAllDestinations += totalSpAmount;
 
@@ -2870,7 +2906,15 @@ abstract contract ProtocolActions is BaseSetup {
                 uint256 finalAmount = singleSuperformsData[i].amount;
 
                 if (action.slippage != 0 && CHAIN_0 != DST_CHAINS[i]) {
-                    finalAmount = (singleSuperformsData[i].amount * (10_000 - uint256(action.slippage))) / 10_000;
+                    /// @dev applying bridge slippage
+                    vars.slippage = (action.slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                    finalAmount = (finalAmount * uint256(10_000 - vars.slippage)) / 10_000;
+
+                    /// @dev applying multiTx slippage
+                    if (action.multiTx) {
+                        vars.slippage = (action.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                        finalAmount = (finalAmount * uint256(10_000 - vars.slippage)) / 10_000;
+                    }
                 }
 
                 finalAmount = repetitions * finalAmount;

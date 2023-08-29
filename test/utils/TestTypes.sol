@@ -58,6 +58,7 @@ struct StagesLocalVars {
     uint256 chainDstIndex;
     uint256 nUniqueDsts;
     bool[] partialWithdrawVaults;
+    int256 slippage;
 }
 
 struct MessagingAssertVars {
@@ -243,6 +244,7 @@ struct updateMultiVaultDepositPayloadArgs {
     TestType testType;
     bytes4 revertError;
     bytes32 revertRole;
+    bool isMultiTx;
 }
 
 struct updateSingleVaultDepositPayloadArgs {
@@ -253,6 +255,7 @@ struct updateSingleVaultDepositPayloadArgs {
     TestType testType;
     bytes4 revertError;
     bytes32 revertRole;
+    bool isMultiTx;
 }
 
 /*//////////////////////////////////////////////////////////////
