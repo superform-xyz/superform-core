@@ -115,7 +115,7 @@ contract PayloadHelper is IPayloadHelper {
                 v.amounts[0] = v.rsd.amount;
 
                 v.srcPayloadId = v.rsd.payloadId;
-                v.superformRouterId = v.rd.superformRouterId;
+                v.superformRouterId = v.rsd.superformRouterId;
             }
         }
 

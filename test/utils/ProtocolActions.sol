@@ -908,13 +908,16 @@ abstract contract ProtocolActions is BaseSetup {
                         );
 
                         if (action.testType == TestType.Pass) {
+                            console.log("C");
+
                             if (action.multiTx) {
-                                /// @dev this calls targetVaults again only to obtain underlyingSrcToken and
-                                /// underlyingDstToken. Call could be avoided if file is more optimized
+                                /// @dev calling state variables again to obtain fresh memory values corresponding to
+                                /// DST
                                 (, vars.underlyingSrcToken, vars.underlyingDstToken,,) =
                                     _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
-                                /// @dev first mulitTxCall is performed to ensure tokens reach CoreStateRegistry on
-                                /// deposits
+                                vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
+
+                                /// @dev mulitTxCall is performed to ensure tokens reach CoreStateRegistry on deposits
                                 if (action.multiVaults) {
                                     vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
                                     _batchProcessMultiTx(
@@ -1020,7 +1023,6 @@ abstract contract ProtocolActions is BaseSetup {
                         unchecked {
                             PAYLOAD_ID[aV[i].toChainId]++;
                         }
-                        console.log("grabbing logs");
 
                         /// @dev for scenarios with GENERATE_WITHDRAW_TX_DATA_ON_DST update txData on destination
                         if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
@@ -1032,6 +1034,7 @@ abstract contract ProtocolActions is BaseSetup {
                                 }
                             }
                         }
+                        console.log("grabbing logs");
 
                         vm.recordLogs();
 
@@ -2197,7 +2200,6 @@ abstract contract ProtocolActions is BaseSetup {
     {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
-
         bytes[] memory txDatas = new bytes[](underlyingTokens_.length);
 
         /// @dev liqData is rebuilt here to perform to send the tokens from MultiTxProcessor to CoreStateRegistry
@@ -2211,6 +2213,7 @@ abstract contract ProtocolActions is BaseSetup {
                 amounts_[i]
             );
         }
+
         vm.prank(deployer);
 
         MultiTxProcessor(payable(getContract(targetChainId_, "MultiTxProcessor"))).batchProcessTx(

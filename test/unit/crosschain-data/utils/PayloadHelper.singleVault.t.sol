@@ -101,15 +101,17 @@ contract PayloadHelperSingleTest is ProtocolActions {
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodePayloadHistoryOnSrc(1, 1);
 
+        /// @dev 0 for deposit
         assertEq(txType, 0);
 
-        /// 0 for deposit
+        /// @dev 0 for init
         assertEq(callbackType, 0);
-        /// 0 for init
+
+        /// @dev chain id of optimism is 10
         assertEq(srcChainId, 10);
-        /// chain id of optimism is 10
+
+        /// @dev 0 for not multi vault
         assertEq(multi, 0);
-        /// 0 for not multi vault
         assertEq(srcSender, users[0]);
     }
 
@@ -125,13 +127,15 @@ contract PayloadHelperSingleTest is ProtocolActions {
         v.extraDataGenerated[0] = abi.encode("500000");
         v.extraDataGenerated[1] = abi.encode("0");
 
+        /// @dev 0 for deposit
         assertEq(v.txType, 0);
 
-        /// 0 for deposit
+        /// @dev 0 for init
         assertEq(v.callbackType, 0);
-        /// 0 for init
+
+        /// @dev chain id of optimism is 10
         assertEq(v.srcChainId, 10);
-        /// chain id of optimism is 10
+
         assertEq(v.srcPayloadId, 1);
         assertEq(v.amounts, AMOUNTS[POLY][0]);
 
@@ -142,7 +146,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         }
 
         /// @notice: just asserting if fees are greater than 0
-        /// no way to write serious tests on forked testnet at this point. should come back to this later on.
+        /// FIXME no way to write serious tests on forked testnet at this point. should come back to this later on.
         (v.ambFees,) = IPaymentHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PaymentHelper"))]).estimateAMBFees(
             AMBs, DST_CHAINS[0], abi.encode(1), v.extraDataGenerated
         );
@@ -157,13 +161,14 @@ contract PayloadHelperSingleTest is ProtocolActions {
         (v.txType, v.callbackType,, v.srcChainId, v.amounts, v.slippage,, v.srcPayloadId, v.superformRouterId) =
             IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(1);
 
+        /// @dev 0 for deposit
         assertEq(v.txType, 0);
 
-        /// 0 for deposit
+        /// @dev 1 for return
         assertEq(v.callbackType, 1);
-        /// 1 for return
+
+        /// @dev chain id of polygon is 137
         assertEq(v.srcChainId, 137);
-        /// chain id of polygon is 137
         assertEq(v.srcPayloadId, 1);
         assertEq(v.amounts, AMOUNTS[POLY][0]);
 
