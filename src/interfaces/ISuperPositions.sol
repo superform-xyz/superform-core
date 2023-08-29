@@ -14,9 +14,6 @@ interface ISuperPositions is IStateSyncer {
     /// @dev is emitted when a dynamic uri is updated
     event DynamicURIUpdated(string oldURI, string newURI, bool frozen);
 
-    /// @dev is emitted when a cross-chain transaction is completed.
-    event Completed(uint256 txId);
-
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/

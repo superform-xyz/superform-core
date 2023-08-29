@@ -33,7 +33,7 @@ interface ISuperRegistry {
     event SetStateRegistryAddress(uint8 registryId_, address registryAddress_);
 
     /// @dev is emitted when a new router/state syncer is configured.
-    event SetRouterInfo(uint8 superFormRouterId_, address stateSyncer_);
+    event SetRouterInfo(uint8 superFormRouterId_, address stateSyncer_, address router_);
 
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
@@ -71,9 +71,15 @@ interface ISuperRegistry {
     function setStateRegistryAddress(uint8[] memory registryId_, address[] memory registryAddress_) external;
 
     /// @dev allows admin to set the superform routers info
-    /// @param superformRouterId_    represents the superform router's unqiue identifier.
-    /// @param stateSyncer_    represents the state syncer's address.
-    function setRouterInfo(uint8[] memory superformRouterId_, address[] memory stateSyncer_) external;
+    /// @param superformRouterIds_    represents the superform router's unqiue identifier.
+    /// @param stateSyncers_    represents the state syncer's address.
+    /// @param routers_    represents the router's address.
+    function setRouterInfo(
+        uint8[] memory superformRouterIds_,
+        address[] memory stateSyncers_,
+        address[] memory routers_
+    )
+        external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -174,13 +180,18 @@ interface ISuperRegistry {
 
     /// @dev gets the address of a state syncer
     /// @param superformRouterId_ is the id of a state syncer
-    /// @return stateSyncer_ is the address of the form
+    /// @return stateSyncer_ is the address of a state syncer
     function getStateSyncer(uint8 superformRouterId_) external view returns (address stateSyncer_);
 
-    /// @dev gets the id of the superform router
-    /// @param stateSyncer_ is the address of the state syncer
-    /// @return superformRouterId_ is the id of the superform router
-    function getSuperformRouterId(address stateSyncer_) external view returns (uint8 superformRouterId_);
+    /// @dev gets the address of a router
+    /// @param superformRouterId_ is the id of a state syncer
+    /// @return router_ is the address of a router
+    function getRouter(uint8 superformRouterId_) external view returns (address router_);
+
+    /// @dev gets the id of a router
+    /// @param router_ is the address of a router
+    /// @return superformRouterId_ is the id of a superform router / state syncer
+    function getSuperformRouterId(address router_) external view returns (uint8 superformRouterId_);
 
     /// @dev helps validate if an address is a valid state registry
     /// @param registryAddress_ is the address of the state registry

@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { AMBMessage } from "./types/DataTypes.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
-
+import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { Error } from "./utils/Error.sol";
 
 /// @title StateSyncer
@@ -27,7 +27,35 @@ abstract contract StateSyncer is IStateSyncer {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyRouter() {
-        if (superRegistry.getAddress(keccak256("SUPERFORM_ROUTER")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.getSuperformRouterId(msg.sender) == 0) revert Error.NOT_SUPER_ROUTER();
+        _;
+    }
+
+    modifier onlyMinter() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsMinterRole(msg.sender)) {
+            revert Error.NOT_MINTER();
+        }
+        _;
+    }
+
+    modifier onlyBurner() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsBurnerRole(msg.sender)) {
+            revert Error.NOT_BURNER();
+        }
+        _;
+    }
+
+    modifier onlyProtocolAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
+            revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+
+    modifier onlyMinterStateRegistry() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasMinterStateRegistryRole(msg.sender)) {
+            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
+        }
         _;
     }
     /*///////////////////////////////////////////////////////////////
@@ -51,16 +79,30 @@ abstract contract StateSyncer is IStateSyncer {
     }
 
     /// @inheritdoc IStateSyncer
-    function mintSingle(address sender_, uint256 id_, uint256 amount_) external virtual override;
+    function mintSingle(address srcSender_, uint256 id_, uint256 amount_) external virtual override;
 
     /// @inheritdoc IStateSyncer
-    function mintBatch(address sender_, uint256[] memory ids_, uint256[] memory amounts_) external virtual override;
+    function mintBatch(
+        address srcSender_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_
+    )
+        external
+        virtual
+        override;
 
     /// @inheritdoc IStateSyncer
-    function burnSingle(address sender_, uint256 id_, uint256 amount_) external virtual override;
+    function burnSingle(address srcSender_, uint256 id_, uint256 amount_) external virtual override;
 
     /// @inheritdoc IStateSyncer
-    function burnBatch(address sender_, uint256[] memory ids_, uint256[] memory amounts_) external virtual override;
+    function burnBatch(
+        address srcSender_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_
+    )
+        external
+        virtual
+        override;
 
     /// @inheritdoc IStateSyncer
     function stateMultiSync(AMBMessage memory data_) external virtual override returns (uint64 srcChainId_);

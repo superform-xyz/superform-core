@@ -201,7 +201,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnBatch(
             msg.sender, req.superformsData.superformIds, req.superformsData.amounts
         );
@@ -364,7 +363,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.INVALID_SUPERFORMS_DATA();
         }
 
-        /// @dev FIXME: should stateSyncer have wrappers to all mint and burn functions?
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).burnSingle(
             srcSender_, superformData_.superformId, superformData_.amount
         );

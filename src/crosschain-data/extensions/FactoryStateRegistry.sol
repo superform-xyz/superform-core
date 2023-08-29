@@ -16,7 +16,9 @@ contract FactoryStateRegistry is Broadcaster {
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlySender() override {
-        if (superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")) != msg.sender) {
+            revert Error.NOT_SUPERFORM_FACTORY();
+        }
         _;
     }
 

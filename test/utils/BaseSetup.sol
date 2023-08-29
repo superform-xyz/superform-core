@@ -636,12 +636,17 @@ abstract contract BaseSetup is DSTest, Test {
             );
 
             /// @dev 12.1 Set Router Info
+
             uint8[] memory superformRouterIds = new uint8[](1);
             superformRouterIds[0] = 1;
+
             address[] memory stateSyncers = new address[](1);
             stateSyncers[0] = vars.superPositions;
 
-            vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers);
+            address[] memory routers = new address[](1);
+            routers[0] = vars.superformRouter;
+
+            vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
             /// @dev 13- deploy Payload Helper
             vars.PayloadHelper = address(
