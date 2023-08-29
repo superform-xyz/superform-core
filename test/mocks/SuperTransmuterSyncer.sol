@@ -6,7 +6,7 @@ import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { sERC20 } from "ERC1155A/transmuter/sERC20.sol";
 import { StateSyncer } from "src/StateSyncer.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
-import { ISuperTransmuter } from "src/interfaces/ISuperTransmuter.sol";
+import { ISuperTransmuter } from "./ISuperTransmuter.sol";
 import { TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { Error } from "src/utils/Error.sol";
@@ -41,12 +41,12 @@ contract SuperTransmuterSyncer is ISuperTransmuter, Transmuter, StateSyncer {
 
     /// @inheritdoc ISuperTransmuter
     function registerTransmuter(uint256 superformId) external override returns (address) {
-        (address superform, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
+        (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId);
 
+        if (superRegistry.chainId() != chainId) revert Error.INVALID_CHAIN_ID();
         if (superform == address(0)) revert Error.NOT_SUPERFORM();
         if (formBeaconId == 0) revert Error.FORM_DOES_NOT_EXIST();
         if (synthethicTokenId[superformId] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
-
         address syntheticToken = address(
             new sERC20(
                 string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName())),
@@ -59,8 +59,43 @@ contract SuperTransmuterSyncer is ISuperTransmuter, Transmuter, StateSyncer {
         return synthethicTokenId[superformId];
     }
 
+    /// @dev to be modified in mainnet for a real state sync function
+    function mockStateSync(
+        uint256 superformId,
+        string memory tokenName,
+        string memory tokenSymbol,
+        uint8 decimals
+    )
+        external
+        returns (address)
+    {
+        (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
+
+        if (formBeaconId == 0) revert Error.FORM_DOES_NOT_EXIST();
+        if (synthethicTokenId[superformId] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
+
+        address syntheticToken = address(
+            new sERC20(
+                tokenName,
+                tokenSymbol,
+                decimals
+            )
+        );
+        synthethicTokenId[superformId] = syntheticToken;
+
+        return synthethicTokenId[superformId];
+    }
+
     /// @inheritdoc IStateSyncer
-    function mintSingle(address srcSender_, uint256 id_, uint256 amount_) external override(StateSyncer) onlyMinter {
+    function mintSingle(
+        address srcSender_,
+        uint256 id_,
+        uint256 amount_
+    )
+        external
+        override(IStateSyncer, StateSyncer)
+        onlyMinter
+    {
         sERC20(synthethicTokenId[id_]).mint(srcSender_, amount_);
     }
 
@@ -71,7 +106,7 @@ contract SuperTransmuterSyncer is ISuperTransmuter, Transmuter, StateSyncer {
         uint256[] memory amounts_
     )
         external
-        override(StateSyncer)
+        override(IStateSyncer, StateSyncer)
         onlyMinter
     {
         for (uint256 i = 0; i < ids_.length; i++) {
@@ -80,7 +115,15 @@ contract SuperTransmuterSyncer is ISuperTransmuter, Transmuter, StateSyncer {
     }
 
     /// @inheritdoc IStateSyncer
-    function burnSingle(address srcSender_, uint256 id_, uint256 amount_) external override(StateSyncer) onlyBurner {
+    function burnSingle(
+        address srcSender_,
+        uint256 id_,
+        uint256 amount_
+    )
+        external
+        override(IStateSyncer, StateSyncer)
+        onlyBurner
+    {
         sERC20(synthethicTokenId[id_]).burn(srcSender_, amount_);
     }
 
@@ -91,7 +134,7 @@ contract SuperTransmuterSyncer is ISuperTransmuter, Transmuter, StateSyncer {
         uint256[] memory amounts_
     )
         external
-        override(StateSyncer)
+        override(IStateSyncer, StateSyncer)
         onlyBurner
     {
         /// @dev note each allowance check in burn needs to pass. Since we burn atomically (on SuperformRouter level),
@@ -104,7 +147,7 @@ contract SuperTransmuterSyncer is ISuperTransmuter, Transmuter, StateSyncer {
     /// @inheritdoc IStateSyncer
     function stateMultiSync(AMBMessage memory data_)
         external
-        override(StateSyncer)
+        override(IStateSyncer, StateSyncer)
         onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {
@@ -153,7 +196,7 @@ contract SuperTransmuterSyncer is ISuperTransmuter, Transmuter, StateSyncer {
     /// @inheritdoc IStateSyncer
     function stateSync(AMBMessage memory data_)
         external
-        override(StateSyncer)
+        override(IStateSyncer, StateSyncer)
         onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {

@@ -35,6 +35,17 @@ contract SuperTransmuterTest is BaseSetup {
         superTransmuter.registerTransmuter(superformId);
     }
 
+    function test_withdrawFromInvalidChainId() public {
+        address superform =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+
+        superTransmuter.registerTransmuter(superformId);
+    }
+
     function test_InvalidSuperFormAddress() public {
         uint256 invalidSuperFormId = DataLib.packSuperform(address(0), 4, ETH);
         vm.expectRevert(Error.NOT_SUPERFORM.selector);

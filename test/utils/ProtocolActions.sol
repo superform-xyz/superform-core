@@ -908,8 +908,6 @@ abstract contract ProtocolActions is BaseSetup {
                         );
 
                         if (action.testType == TestType.Pass) {
-                            console.log("C");
-
                             if (action.multiTx) {
                                 /// @dev calling state variables again to obtain fresh memory values corresponding to
                                 /// DST

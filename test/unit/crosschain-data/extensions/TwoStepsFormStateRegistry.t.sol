@@ -82,7 +82,6 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
-        console.log("payloadsCount ", twoStepRegistry.payloadsCount());
         vm.prank(deployer);
         twoStepRegistry.processPayload(1);
     }

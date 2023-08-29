@@ -212,7 +212,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
         IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayloadLiqData(
             2
         );
-        console.log(v.bridgeIds.length);
 
         assertEq(v.bridgeIds[0], 1);
 
