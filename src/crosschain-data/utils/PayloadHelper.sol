@@ -159,7 +159,7 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodeDstPayloadLiqData(uint256 dstPayloadId_)
+    function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
         external
         view
         override
@@ -167,7 +167,7 @@ contract PayloadHelper is IPayloadHelper {
             uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
-            uint64[] memory liqDstChainId,
+            uint64[] memory liqDstChainIds,
             uint256[] memory amounts,
             uint256[] memory nativeAmounts,
             bytes[] memory permit2datas
@@ -234,7 +234,7 @@ contract PayloadHelper is IPayloadHelper {
     }
 
     /// @inheritdoc IPayloadHelper
-    function decodePayloadHistoryOnSrc(
+    function decodeStateSyncerPayloadHistory(
         uint256 srcPayloadId_,
         uint8 superformRouterId_
     )

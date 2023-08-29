@@ -99,7 +99,7 @@ contract PayloadHelperSingleTest is ProtocolActions {
         vm.selectFork(FORKS[CHAIN_0]);
 
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
-            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodePayloadHistoryOnSrc(1, 1);
+            IPayloadHelper(contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))]).decodeStateSyncerPayloadHistory(1, 1);
 
         /// @dev 0 for deposit
         assertEq(txType, 0);

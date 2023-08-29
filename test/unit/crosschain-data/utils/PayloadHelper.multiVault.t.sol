@@ -122,7 +122,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         IPaymentHelper paymentHelper = IPaymentHelper(_PaymentHelper);
 
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
-            helper.decodePayloadHistoryOnSrc(1, 1);
+            helper.decodeStateSyncerPayloadHistory(1, 1);
 
         assertEq(txType, 0);
 
@@ -209,7 +209,9 @@ contract PayloadHelperMultiTest is ProtocolActions {
         CheckDstPayloadLiqDataInternalVars memory v;
 
         (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts, v.nativeAmounts, v.permit2datas) =
-            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeDstPayloadLiqData(2);
+        IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayloadLiqData(
+            2
+        );
         console.log(v.bridgeIds.length);
 
         assertEq(v.bridgeIds[0], 1);

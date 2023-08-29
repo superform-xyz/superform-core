@@ -36,18 +36,19 @@ interface IPayloadHelper {
     /// @return bridgeIds is the ids of the bridges to be used
     /// @return txDatas is the array of txData to be sent to the bridges
     /// @return tokens is the tokens to be used in the liqData
-    /// @return liqDstChainId is the destination chain id for the underlying token
+    /// @return liqDstChainIds are the final destination chain id for the underlying token (can be arbitrary on
+    /// withdraws)
     /// @return amounts is the amounts to be used in the liqData
     /// @return nativeAmounts is the native amounts to be used in the liqData
     /// @return permit2datas is the permit2 datas to be used in the liqData
-    function decodeDstPayloadLiqData(uint256 dstPayloadId_)
+    function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
         external
         view
         returns (
             uint8[] memory bridgeIds,
             bytes[] memory txDatas,
             address[] memory tokens,
-            uint64[] memory liqDstChainId,
+            uint64[] memory liqDstChainIds,
             uint256[] memory amounts,
             uint256[] memory nativeAmounts,
             bytes[] memory permit2datas
@@ -61,7 +62,7 @@ interface IPayloadHelper {
     /// @return isMulti indicates if the transaction involves operations to multiple vaults
     /// @return srcSender is the user who initiated the transaction on the srcChain
     /// @return srcChainId is the unique identifier of the srcChain
-    function decodePayloadHistoryOnSrc(
+    function decodeStateSyncerPayloadHistory(
         uint256 srcPayloadId_,
         uint8 superformRouterId_
     )
