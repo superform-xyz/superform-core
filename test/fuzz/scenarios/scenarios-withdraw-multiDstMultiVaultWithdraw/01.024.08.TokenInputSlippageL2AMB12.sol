@@ -108,7 +108,9 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
         uint128 amountOneWithdraw_,
         uint128 amountTwo_,
         uint128 amountThree_
-    ) public {
+    )
+        public
+    {
         /// @dev min amountOne_ needs to be 3 as its withdraw amount >= 2
         /// @dev 7 => 2 * amountOne_ + 3 * amountTwo_ + 2 * amountThree_ during deposits
         amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_ETH / 7));

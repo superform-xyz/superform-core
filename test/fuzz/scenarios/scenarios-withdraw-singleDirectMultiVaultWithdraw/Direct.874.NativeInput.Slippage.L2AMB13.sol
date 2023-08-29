@@ -66,7 +66,7 @@ contract SDiMVW874NativeInputSlippageL2AMB13 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario( uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
         amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH / 3));
         amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 3));

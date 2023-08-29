@@ -94,59 +94,6 @@ contract HyperlaneImplementationTest is BaseSetup {
         hyperlaneImplementation.setChainId(superChainId, uint32(ambChainId));
     }
 
-    function test_revert_broadcastPayload_invalidCaller(uint256 userSeed, address malice_) public {
-        uint256 userIndex = userSeed % users.length;
-        vm.startPrank(deployer);
-
-        AMBMessage memory ambMessage;
-        BroadCastAMBExtraData memory ambExtraData;
-        address coreStateRegistry;
-
-        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
-
-        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-        vm.deal(malice_, 100 ether);
-        vm.prank(malice_);
-        hyperlaneImplementation.broadcastPayload{ value: 0.1 ether }(
-            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
-        );
-    }
-
-    function test_revert_broadcastPayload_invalidGasDstLength(
-        uint256 userSeed_,
-        uint256 gasPerDstLenSeed,
-        uint256 extraDataPerDstLenSeed
-    )
-        public
-    {
-        vm.startPrank(deployer);
-        uint256 userIndex = userSeed_ % users.length;
-        uint256 gasPerDstLen = bound(gasPerDstLenSeed, 1, chainIds.length);
-        uint256 extraDataPerDstLen = bound(extraDataPerDstLenSeed, 1, chainIds.length);
-        vm.assume(gasPerDstLen != extraDataPerDstLen);
-
-        AMBMessage memory ambMessage;
-        address coreStateRegistry;
-
-        (ambMessage,, coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
-
-        uint256[] memory gasPerDst = new uint256[](gasPerDstLen);
-        for (uint256 i = 0; i < gasPerDst.length; i++) {
-            gasPerDst[i] = 0.1 ether;
-        }
-
-        /// @dev keeping extraDataPerDst empty for now
-        bytes[] memory extraDataPerDst = new bytes[](extraDataPerDstLen);
-
-        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
-
-        vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
-        vm.prank(coreStateRegistry);
-        hyperlaneImplementation.broadcastPayload{ value: 0.1 ether }(
-            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
-        );
-    }
-
     function test_revert_dispatchPayload_invalidCaller(uint256 userSeed_, address malice_) public {
         vm.startPrank(deployer);
         uint256 userIndex = userSeed_ % users.length;
@@ -232,9 +179,7 @@ contract HyperlaneImplementationTest is BaseSetup {
         BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
 
         address coreStateRegistry = getContract(1, "CoreStateRegistry");
-        /// @dev bcoz we're simulating hyperlaneImplementation.broadcastPayload() from CoreStateRegistry (below),
-        /// we need sufficient ETH in CoreStateRegistry and HyperlaneImplementation. On mainnet, these funds will
-        /// come from the user via SuperformRouter
+
         vm.deal(coreStateRegistry, 10 ether);
         vm.deal(address(hyperlaneImplementation), 10 ether);
 

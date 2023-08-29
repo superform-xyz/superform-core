@@ -1,25 +1,43 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { Error } from "../../utils/Error.sol";
-import { BaseStateRegistry } from "../BaseStateRegistry.sol";
-import { IBroadcaster } from "../../interfaces/IBroadcaster.sol";
-import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
-import { AMBMessage, AMBExtraData } from "../../types/DataTypes.sol";
-import { IAmbImplementation } from "../../interfaces/IAmbImplementation.sol";
-import { DataLib } from "../../libraries/DataLib.sol";
+import { Error } from "src/utils/Error.sol";
+import { IBaseBroadcaster } from "src/interfaces/IBaseBroadcaster.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { AMBMessage, AMBExtraData } from "src/types/DataTypes.sol";
+import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
-/// @title Broadcaster
+/// @title BaseBroadcaster
 /// @author ZeroPoint Labs
-/// @dev separates brodcasting concerns into an abstract implementation
-abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
+/// @notice helps core contract communicate with multiple dst chains through supported AMBs
+abstract contract BaseBroadcaster is IBaseBroadcaster {
+    /*///////////////////////////////////////////////////////////////
+                              STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+    ISuperRegistry public superRegistry;
+
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     ///@dev set up admin during deployment.
-    constructor(ISuperRegistry superRegistry_) BaseStateRegistry(superRegistry_) { }
+    constructor(ISuperRegistry superRegistry_) {
+        superRegistry = superRegistry_;
+    }
 
-    /// @inheritdoc IBroadcaster
+    /*///////////////////////////////////////////////////////////////
+                                CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev sender varies based on functionality
+    /// @notice inheriting contracts should override this function (else not safe)
+    /// @dev with general revert to protect dispatchPaylod in case of non override
+    modifier onlySender() virtual {
+        revert Error.DISABLED();
+        _;
+    }
+
+    /// @inheritdoc IBaseBroadcaster
     function broadcastPayload(
         address srcSender_,
         uint8[] memory ambIds_,
@@ -39,6 +57,9 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
             _broadcastProof(srcSender_, ambIds_, d.gasPerAMB, message_, d.extraDataPerAMB);
         }
     }
+
+    /// @inheritdoc IBaseBroadcaster
+    function receivePayload(uint64 srcChainId_, bytes memory message_) external override { }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
@@ -62,7 +83,7 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
             message_
         );
 
-        IAmbImplementation ambImplementation = IAmbImplementation(superRegistry.getAmbAddress(ambId_));
+        IBroadcastAmbImplementation ambImplementation = IBroadcastAmbImplementation(superRegistry.getAmbAddress(ambId_));
 
         /// @dev reverts if an unknown amb id is used
         if (address(ambImplementation) == address(0)) {
@@ -100,7 +121,7 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
                 revert Error.INVALID_PROOF_BRIDGE_ID();
             }
 
-            IAmbImplementation tempImpl = IAmbImplementation(superRegistry.getAmbAddress(tempAmbId));
+            IBroadcastAmbImplementation tempImpl = IBroadcastAmbImplementation(superRegistry.getAmbAddress(tempAmbId));
 
             if (address(tempImpl) == address(0)) {
                 revert Error.INVALID_BRIDGE_ID();

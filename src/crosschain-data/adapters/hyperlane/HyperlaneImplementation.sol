@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IBaseStateRegistry } from "../../../interfaces/IBaseStateRegistry.sol";
-import { IAmbImplementation } from "../../../interfaces/IAmbImplementation.sol";
-import { IMailbox } from "../../../vendor/hyperlane/IMailbox.sol";
-import { IMessageRecipient } from "../../../vendor/hyperlane/IMessageRecipient.sol";
-import { ISuperRBAC } from "../../../interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "../../../interfaces/ISuperRegistry.sol";
-import { IInterchainGasPaymaster } from "../../../vendor/hyperlane/IInterchainGasPaymaster.sol";
-import { AMBMessage, BroadCastAMBExtraData } from "../../../types/DataTypes.sol";
-import { Error } from "../../../utils/Error.sol";
-import { DataLib } from "../../../libraries/DataLib.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
+import { IMessageRecipient } from "src/vendor/hyperlane/IMessageRecipient.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
+import { AMBMessage } from "src/types/DataTypes.sol";
+import { Error } from "src/utils/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title HyperlaneImplementation
 /// @author Zeropoint Labs
@@ -24,8 +24,6 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     IMailbox public immutable mailbox;
     IInterchainGasPaymaster public immutable igp;
     ISuperRegistry public immutable superRegistry;
-
-    uint32[] public broadcastChains;
 
     mapping(uint64 => uint32) public ambChainId;
     mapping(uint32 => uint64) public superChainId;
@@ -85,41 +83,6 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         );
     }
 
-    /// @inheritdoc IAmbImplementation
-    function broadcastPayload(
-        address srcSender_,
-        bytes memory message_,
-        bytes memory extraData_
-    )
-        external
-        payable
-        virtual
-    {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
-        BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-        uint256 totalChains = broadcastChains.length;
-
-        if (d.gasPerDst.length != totalChains || d.extraDataPerDst.length != totalChains) {
-            revert Error.INVALID_EXTRA_DATA_LENGTHS();
-        }
-
-        for (uint64 i; i < totalChains; i++) {
-            uint32 domain = broadcastChains[i];
-
-            bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
-
-            igp.payForGas{ value: d.gasPerDst[i] }(
-                messageId,
-                domain,
-                d.extraDataPerDst[i].length > 0 ? abi.decode(d.extraDataPerDst[i], (uint256)) : 0,
-                srcSender_
-            );
-        }
-    }
-
     /// @dev allows protocol admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
@@ -131,9 +94,6 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
-
-        /// NOTE: @dev should handle a way to pop
-        broadcastChains.push(ambChainId_);
 
         emit ChainAdded(superChainId_);
     }

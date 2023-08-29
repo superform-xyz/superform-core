@@ -5,8 +5,6 @@ import { Script } from "forge-std/Script.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import { FactoryStateRegistry } from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import { RolesStateRegistry } from "src/crosschain-data/extensions/RolesStateRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
@@ -82,7 +80,6 @@ abstract contract AbstractDeploySingle is Script {
 
     string[22] public contractNames = [
         "CoreStateRegistry",
-        "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
@@ -96,7 +93,6 @@ abstract contract AbstractDeploySingle is Script {
         "SuperformRouter",
         "SuperPositions",
         "MultiTxProcessor",
-        "RolesStateRegistry",
         "SuperRegistry",
         "SuperRBAC",
         "SuperTransmuter",
@@ -339,12 +335,6 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the ROLES_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-        vars.superRBACC.grantRole(vars.superRBACC.ROLES_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the FACTORY_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-        vars.superRBACC.grantRole(vars.superRBACC.FACTORY_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
-
         /// @dev FIXME: in reality who should have the TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
@@ -352,22 +342,13 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
 
         /// @dev 3.1 - deploy Core State Registry
-
         vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId);
-        /// @dev 3.2- deploy Factory State Registry
 
-        vars.factoryStateRegistry = address(new FactoryStateRegistry{salt: salt}(vars.superRegistryC));
-        contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.FACTORY_STATE_REGISTRY(), vars.factoryStateRegistry, vars.chainId
-        );
-        /// @dev 3.3 - deploy Form State Registry
+        /// @dev 3.2 - deploy Form State Registry
         vars.twoStepsFormStateRegistry = address(new TwoStepsFormStateRegistry{salt: salt}(vars.superRegistryC));
-
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
         vars.superRegistryC.setAddress(
@@ -375,27 +356,13 @@ abstract contract AbstractDeploySingle is Script {
         );
         vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
-        /// @dev 3.4 - deploy Roles State Registry
-        vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(vars.superRegistryC));
-
-        contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.ROLES_STATE_REGISTRY(), vars.rolesStateRegistry, vars.chainId
-        );
-
-        address[] memory registryAddresses = new address[](4);
+        address[] memory registryAddresses = new address[](2);
         registryAddresses[0] = vars.coreStateRegistry;
-        registryAddresses[1] = vars.factoryStateRegistry;
-        registryAddresses[2] = vars.rolesStateRegistry;
-        /// @dev unused for now (will be address 0)
-        registryAddresses[3] = vars.twoStepsFormStateRegistry;
+        registryAddresses[1] = vars.twoStepsFormStateRegistry;
 
-        uint8[] memory registryIds = new uint8[](4);
+        uint8[] memory registryIds = new uint8[](2);
         registryIds[0] = 1;
         registryIds[1] = 2;
-        registryIds[2] = 3;
-        registryIds[3] = 4;
 
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
         vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.coreStateRegistry);
@@ -667,18 +634,6 @@ abstract contract AbstractDeploySingle is Script {
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(),
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "TwoStepsFormStateRegistry"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistryC.setAddress(
-                    vars.superRegistryC.FACTORY_STATE_REGISTRY(),
-                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "FactoryStateRegistry"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistryC.setAddress(
-                    vars.superRegistryC.ROLES_STATE_REGISTRY(),
-                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "RolesStateRegistry"),
                     vars.dstChainId
                 );
 

@@ -29,8 +29,6 @@ import { KYCDaoNFTMock } from "../mocks/KYCDaoNFTMock.sol";
 
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import { FactoryStateRegistry } from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import { RolesStateRegistry } from "src/crosschain-data/extensions/RolesStateRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
@@ -48,7 +46,8 @@ import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
-import { WormholeImplementation } from "src/crosschain-data/adapters/wormhole/WormholeImplementation.sol";
+import { WormholeARImplementation } from
+    "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
@@ -388,14 +387,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
             assert(vars.superRBACC.hasCoreStateRegistryProcessorRole(deployer));
 
-            /// @dev FIXME: in reality who should have the ROLES_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.ROLES_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasRolesStateRegistryProcessorRole(deployer));
-
-            /// @dev FIXME: in reality who should have the FACTORY_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.FACTORY_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasFactoryStateRegistryProcessorRole(deployer));
-
             /// @dev FIXME: in reality who should have the TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
             assert(vars.superRBACC.hasTwoStepsStateRegistryProcessorRole(deployer));
@@ -417,16 +408,7 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId
             );
 
-            /// @dev 4.2- deploy Factory State Registry
-            vars.factoryStateRegistry = address(new FactoryStateRegistry{salt: salt}(vars.superRegistryC));
-
-            contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
-
-            vars.superRegistryC.setAddress(
-                vars.superRegistryC.FACTORY_STATE_REGISTRY(), vars.factoryStateRegistry, vars.chainId
-            );
-
-            /// @dev 4.3 - deploy Form State Registry
+            /// @dev 4.2 - deploy Form State Registry
             vars.twoStepsFormStateRegistry = address(new TwoStepsFormStateRegistry{salt: salt}(vars.superRegistryC));
 
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
@@ -436,26 +418,17 @@ abstract contract BaseSetup is DSTest, Test {
             );
             vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
-            /// @dev 4.3 - deploy Roles State Registry
-            vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(vars.superRegistryC));
-
-            contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
-
             vars.superRegistryC.setAddress(
                 vars.superRegistryC.ROLES_STATE_REGISTRY(), vars.rolesStateRegistry, vars.chainId
             );
 
-            address[] memory registryAddresses = new address[](4);
+            address[] memory registryAddresses = new address[](2);
             registryAddresses[0] = vars.coreStateRegistry;
-            registryAddresses[1] = vars.factoryStateRegistry;
-            registryAddresses[2] = vars.rolesStateRegistry;
-            registryAddresses[3] = vars.twoStepsFormStateRegistry;
+            registryAddresses[1] = vars.twoStepsFormStateRegistry;
 
-            uint8[] memory registryIds = new uint8[](4);
+            uint8[] memory registryIds = new uint8[](2);
             registryIds[0] = 1;
             registryIds[1] = 2;
-            registryIds[2] = 3;
-            registryIds[3] = 4;
 
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
             vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.coreStateRegistry);
@@ -491,13 +464,13 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 6.4 - deploy Wormhole Implementation
             vars.wormholeImplementation = address(
-                new WormholeImplementation{salt: salt}(
+                new WormholeARImplementation{salt: salt}(
                     vars.superRegistryC
                 )
             );
-            contracts[vars.chainId][bytes32(bytes("WormholeImplementation"))] = vars.wormholeImplementation;
+            contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
-            WormholeImplementation(vars.wormholeImplementation).setWormholeConfig(wormholeCore[i], wormholeRelayer);
+            WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
 
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
@@ -695,7 +668,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
-            vars.wormholeImplementation = getContract(vars.chainId, "WormholeImplementation");
+            vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
 
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
@@ -716,7 +689,7 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
                     vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
-                    vars.dstWormholeImplementation = getContract(vars.dstChainId, "WormholeImplementation");
+                    vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
@@ -741,11 +714,11 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstChainId, vars.dstCelerChainId
                     );
 
-                    WormholeImplementation(payable(vars.wormholeImplementation)).setReceiver(
-                        vars.dstWormholeChainId, vars.dstWormholeImplementation
+                    WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
+                        vars.dstWormholeChainId, vars.dstWormholeARImplementation
                     );
 
-                    WormholeImplementation(payable(vars.wormholeImplementation)).setChainId(
+                    WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
                         vars.dstChainId, vars.dstWormholeChainId
                     );
 
@@ -801,18 +774,6 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(),
                         getContract(vars.dstChainId, "TwoStepsFormStateRegistry"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.FACTORY_STATE_REGISTRY(),
-                        getContract(vars.dstChainId, "FactoryStateRegistry"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.ROLES_STATE_REGISTRY(),
-                        getContract(vars.dstChainId, "RolesStateRegistry"),
                         vars.dstChainId
                     );
 
@@ -1140,14 +1101,14 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     /// @dev will sync the broadcasted factory payloads
-    function _processFactoryPayloads(uint256 superformsToProcess_) private {
-        for (uint256 j = 0; j < chainIds.length; j++) {
-            vm.selectFork(FORKS[chainIds[j]]);
-            for (uint256 k = 1; k < superformsToProcess_; k++) {
-                FactoryStateRegistry(payable(getContract(chainIds[j], "FactoryStateRegistry"))).processPayload(k);
-            }
-        }
-    }
+    // function _processFactoryPayloads(uint256 superformsToProcess_) private {
+    //     for (uint256 j = 0; j < chainIds.length; j++) {
+    //         vm.selectFork(FORKS[chainIds[j]]);
+    //         for (uint256 k = 1; k < superformsToProcess_; k++) {
+    //             FactoryStateRegistry(payable(getContract(chainIds[j], "FactoryStateRegistry"))).processPayload(k);
+    //         }
+    //     }
+    // }
 
     function _deployWithCreate2(bytes memory bytecode_, uint256 salt_) internal returns (address addr) {
         /// @solidity memory-safe-assembly

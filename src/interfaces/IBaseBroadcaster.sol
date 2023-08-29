@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 /// @title IBaseStateRegistry
 /// @author ZeroPoint Labs
 /// @dev is an helper for base state registry with broadcasting abilities.
-interface IBroadcaster {
+interface IBaseBroadcaster {
     /// @dev allows core contracts to send payload to all configured destination chain.
     /// @param srcSender_ is the caller of the function (used for gas refunds).
     /// @param ambIds_ is the identifier of the arbitrary message bridge to be used
@@ -18,4 +18,7 @@ interface IBroadcaster {
     )
         external
         payable;
+
+    /// @dev allows ambs to write broadcasted messages
+    function receivePayload(uint64 srcChainId_, bytes memory message_) external;
 }

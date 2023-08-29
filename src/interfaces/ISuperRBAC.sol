@@ -54,12 +54,6 @@ interface ISuperRBAC {
     /// @dev returns the id of the core state registry processor role
     function CORE_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
-    /// @dev returns the id of the roles state registry processor role
-    function ROLES_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
-
-    /// @dev returns the id of the factory state registry processor role
-    function FACTORY_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
-
     /// @dev returns the id of the two steps state registry processor role
     function TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
@@ -94,14 +88,6 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the processor role
     /// @param processor_ the address to check
     function hasCoreStateRegistryProcessorRole(address processor_) external view returns (bool);
-
-    /// @dev returns whether the given address has the processor role
-    /// @param processor_ the address to check
-    function hasRolesStateRegistryProcessorRole(address processor_) external view returns (bool);
-
-    /// @dev returns whether the given address has the processor role
-    /// @param processor_ the address to check
-    function hasFactoryStateRegistryProcessorRole(address processor_) external view returns (bool);
 
     /// @dev returns whether the given address has the two steps processor role
     /// @param twoStepsProcessor_ the address to check

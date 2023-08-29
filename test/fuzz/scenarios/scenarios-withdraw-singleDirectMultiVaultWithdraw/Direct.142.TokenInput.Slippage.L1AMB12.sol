@@ -74,7 +74,9 @@ contract SDiMVW142TokenInputSlippageL1AMB12 is ProtocolActions {
         uint128 amountTwo_,
         uint128 amountThree_,
         uint128 amountThreeWithdraw_
-    ) public {
+    )
+        public
+    {
         /// @dev min amountOne_ and amountThree_ need to be 3 as their withdraw amount >= 2
         amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_USDT / 3));
         amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_USDT / 3));

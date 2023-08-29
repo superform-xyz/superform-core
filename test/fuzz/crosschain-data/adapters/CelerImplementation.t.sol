@@ -108,115 +108,6 @@ contract CelerImplementationTest is BaseSetup {
         celerImplementation.setChainId(superChainId, ambChainId);
     }
 
-    function test_broadcastPayload(uint256 userSeed_) public {
-        vm.startPrank(deployer);
-        uint256 userIndex = userSeed_ % users.length;
-
-        /// @dev need to call setCelerBus(), setReceiver(), setChainId() before calling broadcastPayload(),
-        /// but we don't need to, as it's already done in BaseSetup
-        AMBMessage memory ambMessage;
-        BroadCastAMBExtraData memory ambExtraData;
-        address coreStateRegistry;
-
-        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
-
-        /// @dev only checking topic1 as it is the only one indexed in the Message event
-        vm.expectEmit(true, false, false, true, CELER_BUS);
-
-        /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
-        for (uint256 i = 1; i < chainIds.length; i++) {
-            emit Message(
-                address(celerImplementation),
-                celerImplementation.authorizedImpl(chainIds[i]),
-                chainIds[i],
-                abi.encode(ambMessage),
-                0.1 ether
-            );
-        }
-
-        vm.prank(coreStateRegistry);
-        celerImplementation.broadcastPayload{ value: 0.1 ether }(
-            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
-        );
-
-        vm.prank(coreStateRegistry);
-        celerImplementation.broadcastPayload{ value: 0.1 ether }(
-            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
-        );
-    }
-
-    function test_revert_broadcastPayload_invalidGasDstLength(
-        uint256 userSeed_,
-        uint256 gasPerDstLenSeed,
-        uint256 extraDataPerDstLenSeed
-    )
-        public
-    {
-        vm.startPrank(deployer);
-        uint256 userIndex = userSeed_ % users.length;
-        uint256 gasPerDstLen = bound(gasPerDstLenSeed, 1, chainIds.length);
-        uint256 extraDataPerDstLen = bound(extraDataPerDstLenSeed, 1, chainIds.length);
-        vm.assume(gasPerDstLen != extraDataPerDstLen);
-
-        AMBMessage memory ambMessage;
-        address coreStateRegistry;
-
-        (ambMessage,, coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
-
-        uint256[] memory gasPerDst = new uint256[](gasPerDstLen);
-        for (uint256 i = 0; i < gasPerDst.length; i++) {
-            gasPerDst[i] = 0.1 ether;
-        }
-
-        /// @dev keeping extraDataPerDst empty for now
-        bytes[] memory extraDataPerDst = new bytes[](extraDataPerDstLen);
-
-        BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
-
-        vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
-        vm.prank(coreStateRegistry);
-        celerImplementation.broadcastPayload{ value: 0.1 ether }(
-            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
-        );
-    }
-
-    function test_revert_broadcastPayload_invalidCaller(uint256 userSeed_, address malice_) public {
-        vm.startPrank(deployer);
-        uint256 userIndex = userSeed_ % users.length;
-
-        AMBMessage memory ambMessage;
-        BroadCastAMBExtraData memory ambExtraData;
-        address coreStateRegistry;
-
-        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(users[userIndex]);
-
-        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-
-        vm.deal(malice_, 100 ether);
-        vm.prank(malice_);
-        celerImplementation.broadcastPayload{ value: 0.1 ether }(
-            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
-        );
-    }
-
-    function test_revert_broadcastPayload_gasRefundFailed() public {
-        vm.startPrank(deployer);
-        AMBMessage memory ambMessage;
-        BroadCastAMBExtraData memory ambExtraData;
-        address coreStateRegistry;
-
-        /// @dev a contract that doesn't accept ETH
-        address dai = getContract(1, "DAI");
-
-        (ambMessage, ambExtraData, coreStateRegistry) = setupBroadcastPayloadAMBData(dai);
-
-        vm.expectRevert(Error.GAS_REFUND_FAILED.selector);
-
-        vm.prank(coreStateRegistry);
-        /// @dev note first arg to be dai
-        celerImplementation.broadcastPayload{ value: 0.1 ether }(dai, abi.encode(ambMessage), abi.encode(ambExtraData));
-    }
-
     function test_revert_dispatchPayload_gasRefundFailed_invalidCaller(uint256 chainIdSeed_, address malice_) public {
         vm.startPrank(deployer);
         /// @dev chainIds = [1, 56, 43114, 137, 42161, 10];
@@ -320,9 +211,7 @@ contract CelerImplementationTest is BaseSetup {
         BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
 
         address coreStateRegistry = getContract(1, "CoreStateRegistry");
-        /// @dev bcoz we're simulating celerImplementation.broadcastPayload() from CoreStateRegistry (below),
-        /// we need sufficient ETH in CoreStateRegistry and CelerImplementation. On mainnet, these funds will
-        /// come from the user via SuperformRouter
+
         vm.deal(coreStateRegistry, 10 ether);
         vm.deal(address(celerImplementation), 10 ether);
 

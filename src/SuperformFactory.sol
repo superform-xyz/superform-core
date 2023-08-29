@@ -8,7 +8,7 @@ import { FormBeacon } from "./forms/FormBeacon.sol";
 import { AMBFactoryMessage } from "./types/DataTypes.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { IBroadcaster } from "./interfaces/IBroadcaster.sol";
+import { IBaseBroadcaster } from "./interfaces/IBaseBroadcaster.sol";
 import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./utils/Error.sol";
@@ -282,9 +282,9 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBroadcaster(superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))).broadcastPayload{ value: msg.value }(
-            msg.sender, ambIds, message_, broadcastParams
-        );
+        IBaseBroadcaster(superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))).broadcastPayload{
+            value: msg.value
+        }(msg.sender, ambIds, message_, broadcastParams);
     }
 
     /// @dev synchornize beacon status update message from remote chain

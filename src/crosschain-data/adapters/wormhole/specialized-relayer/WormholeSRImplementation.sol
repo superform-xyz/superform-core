@@ -2,37 +2,32 @@
 pragma solidity 0.8.19;
 
 import "wormhole-solidity-sdk/interfaces/IWormhole.sol";
-import "wormhole-solidity-sdk/interfaces/IWormholeRelayer.sol";
-import "wormhole-solidity-sdk/interfaces/IWormholeReceiver.sol";
 
-import { IBaseStateRegistry } from "../../../interfaces/IBaseStateRegistry.sol";
-import { IAmbImplementation } from "../../../interfaces/IAmbImplementation.sol";
-import { ISuperRBAC } from "../../../interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "../../../interfaces/ISuperRegistry.sol";
-import { AMBMessage, BroadCastAMBExtraData } from "../../../types/DataTypes.sol";
-import { Error } from "../../../utils/Error.sol";
-import { DataLib } from "../../../libraries/DataLib.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { AMBMessage, BroadCastAMBExtraData } from "src/types/DataTypes.sol";
+import { Error } from "src/utils/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title WormholeImplementation
 /// @author Zeropoint Labs
-/// @notice allows state registries to use wormhole for crosschain communication
-/// @dev uses automatic relayers of wormhole for 1:1 messaging
+/// @notice allows broadcast state registry contracts to send messages to multiple chains
 /// @dev uses multicast of wormhole for broadcasting
-contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
+contract WormholeSRImplementation is IBroadcastAmbImplementation {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
-    IWormholeRelayer public relayer;
     IWormhole public wormhole;
 
     uint8 public broadcastFinality;
 
     mapping(uint64 => uint16) public ambChainId;
     mapping(uint16 => uint64) public superChainId;
-    mapping(uint16 => address) public authorizedImpl;
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
@@ -60,41 +55,14 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
 
     /// @dev allows protocol admin to configure wormhole core contract
     /// @param wormhole_ is wormhole address for respective chain
-    /// @param relayer_ is the automatic relayer address for respective chain
-    function setWormholeConfig(address wormhole_, address relayer_) external onlyProtocolAdmin {
-        if (wormhole_ == address(0) || relayer_ == address(0)) revert Error.ZERO_ADDRESS();
-        if (address(wormhole) == address(0) && address(relayer) == address(0)) {
+    function setWormholeCore(address wormhole_) external onlyProtocolAdmin {
+        if (wormhole_ == address(0)) revert Error.ZERO_ADDRESS();
+        if (address(wormhole) == address(0)) {
             wormhole = IWormhole(wormhole_);
-            relayer = IWormholeRelayer(relayer_);
         }
     }
 
-    /// @inheritdoc IAmbImplementation
-    function dispatchPayload(
-        address srcSender_,
-        uint64 dstChainId_,
-        bytes memory message_,
-        bytes memory extraData_
-    )
-        external
-        payable
-        virtual
-        override
-    {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
-        uint16 dstChainId = ambChainId[dstChainId_];
-
-        (uint256 dstNativeAirdrop, uint256 dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
-
-        relayer.sendPayloadToEvm{ value: msg.value }(
-            dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit
-        );
-    }
-
-    /// @inheritdoc IAmbImplementation
+    /// @inheritdoc IBroadcastAmbImplementation
     function broadcastPayload(
         address srcSender_,
         bytes memory message_,
@@ -124,42 +92,30 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         );
     }
 
-    /// @inheritdoc IWormholeReceiver
-    function receiveWormholeMessages(
-        bytes memory payload,
-        bytes[] memory,
-        bytes32 sourceAddress,
-        uint16 sourceChain,
-        bytes32 deliveryHash
-    )
-        public
-        payable
-        override
-    {
-        /// @dev 1. validate caller
+    function receiveMessage(bytes memory encodedMessage) public {
+        (IWormhole.VM memory wormholeMessage, bool valid, string memory reason) =
+            wormhole.parseAndVerifyVM(encodedMessage);
+
+        /// @dev 1. validate caller [can be open; anyone with a valid vaa can hit this]
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        if (msg.sender != address(relayer)) {
-            revert Error.CALLER_NOT_RELAYER();
-        }
+        // if (msg.sender != address(relayer)) {
+        //     revert Error.CALLER_NOT_RELAYER();
+        // }
 
-        if (_bytes32ToAddress(sourceAddress) != authorizedImpl[sourceChain]) {
-            revert Error.INVALID_SRC_SENDER();
-        }
-
-        if (processedMessages[deliveryHash]) {
+        if (processedMessages[wormholeMessage.hash]) {
             revert Error.DUPLICATE_PAYLOAD();
         }
 
-        processedMessages[deliveryHash] = true;
+        processedMessages[wormholeMessage.hash] = true;
 
         /// @dev decoding payload
-        AMBMessage memory decoded = abi.decode(payload, (AMBMessage));
-        (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
-        address registryAddress = superRegistry.getStateRegistry(registryId);
-        IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
+        // AMBMessage memory decoded = abi.decode(payload, (AMBMessage));
+        // (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
+        // address registryAddress = superRegistry.getStateRegistry(registryId);
+        // IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
-        targetRegistry.receivePayload(superChainId[sourceChain], payload);
+        // targetRegistry.receivePayload(superChainId[sourceChain], payload);
     }
 
     /// @dev allows protocol admin to add new chain ids in future
@@ -177,23 +133,6 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         emit ChainAdded(superChainId_);
     }
 
-    /// @dev allows protocol admin to set receiver implmentation on a new chain id
-    /// @param chainId_ is the identifier of the destination chain within wormhole
-    /// @param authorizedImpl_ is the implementation of the wormhole message bridge on the specified destination
-    /// NOTE: cannot be defined in an interface as types vary for each message bridge (amb)
-    function setReceiver(uint16 chainId_, address authorizedImpl_) external onlyProtocolAdmin {
-        if (chainId_ == 0) {
-            revert Error.INVALID_CHAIN_ID();
-        }
-
-        if (authorizedImpl_ == address(0)) {
-            revert Error.ZERO_ADDRESS();
-        }
-
-        authorizedImpl[chainId_] = authorizedImpl_;
-        emit AuthorizedImplAdded(chainId_, authorizedImpl_);
-    }
-
     /// @dev allows protocol admin to set broadcast finality
     /// @param finality_ is the required finality on src chain
     function setFinality(uint8 finality_) external onlyProtocolAdmin {
@@ -208,10 +147,9 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
                     View Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc IAmbImplementation
+    /// @inheritdoc IBroadcastAmbImplementation
     function estimateFees(
-        uint64 dstChainId_,
-        bytes memory,
+        bytes memory message_,
         bytes memory extraData_
     )
         external
@@ -219,18 +157,7 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
         override
         returns (uint256 fees)
     {
-        uint256 dstNativeAirdrop;
-        uint256 dstGasLimit;
-
-        if (extraData_.length > 0) {
-            (dstNativeAirdrop, dstGasLimit) = abi.decode(extraData_, (uint256, uint256));
-        }
-
-        uint16 dstChainId = ambChainId[dstChainId_];
-
-        if (dstChainId != 0) {
-            (fees,) = relayer.quoteEVMDeliveryPrice(dstChainId, dstNativeAirdrop, dstGasLimit);
-        }
+        return wormhole.messageFee();
     }
 
     /*///////////////////////////////////////////////////////////////

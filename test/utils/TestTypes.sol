@@ -138,7 +138,7 @@ struct SetupVars {
     address dstLzImplementation;
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
-    address dstWormholeImplementation;
+    address dstWormholeARImplementation;
     address multiTxProcessor;
     address payMaster;
     address superRegistry;
