@@ -44,7 +44,7 @@ abstract contract Broadcaster is IBroadcaster, BaseStateRegistry {
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev broadcasts the payload(message_) through individual message bridge implementations
+    /// @dev broadcasts the message through individual message bridge implementations
     function _broadcastPayload(
         address srcSender_,
         uint8 ambId_,

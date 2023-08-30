@@ -838,7 +838,8 @@ abstract contract ProtocolActions is BaseSetup {
 
                 /// @dev increase payloadIds and decode info
                 aV[i].receivedPayloadId = stateRegistry.payloadsCount() - usedDSTs[aV[i].toChainId].payloadNumber + 1;
-                aV[i].data = abi.decode(stateRegistry.payload(aV[i].receivedPayloadId), (AMBMessage));
+                aV[i].data =
+                    abi.decode(_payload(address(stateRegistry), aV[i].toChainId, aV[i].receivedPayloadId), (AMBMessage));
 
                 if (action.multiVaults) {
                     aV[i].expectedMultiVaultsData = multiSuperformsData[i];
@@ -1234,7 +1235,8 @@ abstract contract ProtocolActions is BaseSetup {
                     IBaseStateRegistry(contracts[CHAIN_0][bytes32(bytes("TwoStepsFormStateRegistry"))]);
 
                 /// @dev if a payload exists to be processed, process it
-                if (twoStepsFormStateRegistry.payload(TWO_STEP_PAYLOAD_ID[CHAIN_0] + 1).length > 0) {
+                if (_payload(address(twoStepsFormStateRegistry), CHAIN_0, TWO_STEP_PAYLOAD_ID[CHAIN_0] + 1).length > 0)
+                {
                     unchecked {
                         TWO_STEP_PAYLOAD_ID[CHAIN_0]++;
                     }

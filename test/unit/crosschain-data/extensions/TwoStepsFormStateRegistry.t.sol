@@ -23,7 +23,6 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
             0,
             deployer,
             ETH,
-            1,
             block.timestamp - 5 seconds,
             InitSingleVaultData(
                 1,

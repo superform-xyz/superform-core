@@ -57,6 +57,7 @@ import { TwoStepsFormStateRegistry } from "src/crosschain-data/extensions/TwoSte
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
@@ -1443,5 +1444,20 @@ abstract contract BaseSetup is DSTest, Test {
         AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
 
         return (vars.totalFees, abi.encode(AckAMBData(selectedAmbIds, abi.encode(extraData))));
+    }
+
+    function _payload(address registry, uint64 chainId, uint256 payloadId_) internal returns (bytes memory payload_) {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[chainId]);
+        uint256 payloadHeader = IBaseStateRegistry(registry).payloadHeader(payloadId_);
+        bytes memory payloadBody = IBaseStateRegistry(registry).payloadBody(payloadId_);
+        if (payloadHeader == 0 || payloadBody.length == 0) {
+            vm.selectFork(initialFork);
+
+            return bytes("");
+        }
+        vm.selectFork(initialFork);
+
+        return abi.encode(AMBMessage(payloadHeader, payloadBody));
     }
 }

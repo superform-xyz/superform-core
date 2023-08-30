@@ -11,14 +11,12 @@ interface ITwoStepsFormStateRegistry {
     /// @param type_ is the nature of transaction (xChain: 1 or same chain: 0)
     /// @param srcSender_ is the address of the source chain caller
     /// @param srcChainId_ is the chainId of the source chain
-    /// @param superformRouterId is the identifier of the superform router
     /// @param lockedTill_ is the deadline for timelock (after which we can call `finalizePayload`)
     /// @param data_ is the basic information of superformId, amount to withdraw of type InitSingleVaultData
     function receivePayload(
         uint8 type_,
         address srcSender_,
         uint64 srcChainId_,
-        uint8 superformRouterId,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     )

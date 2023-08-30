@@ -46,6 +46,17 @@ contract SuperformFactory is ISuperformFactory {
 
     mapping(bytes32 vaultBeaconCombination => uint256 superformIds) public vaultBeaconToSuperforms;
 
+    /*///////////////////////////////////////////////////////////////
+                            MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
+            revert Error.NOT_EMERGENCY_ADMIN();
+        }
+        _;
+    }
+
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
@@ -174,7 +185,7 @@ contract SuperformFactory is ISuperformFactory {
         external
         payable
         override
-        onlyProtocolAdmin
+        onlyEmergencyAdmin
     {
         if (formBeacon[formBeaconId_] == address(0)) revert Error.INVALID_FORM_ID();
 
