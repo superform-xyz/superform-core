@@ -97,6 +97,9 @@ interface ISuperRegistry {
     /// @dev returns the id of the superform factory module
     function SUPERFORM_FACTORY() external view returns (bytes32);
 
+    /// @dev returns the id of the superform transmuter
+    function SUPER_TRANSMUTER() external view returns (bytes32);
+
     /// @dev returns the id of the superform paymaster contract
     function PAYMASTER() external view returns (bytes32);
 

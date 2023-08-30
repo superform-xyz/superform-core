@@ -638,6 +638,12 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
 
+            vars.superRegistryC.setAddress(
+                vars.superRegistryC.SUPER_TRANSMUTER(),
+                contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))],
+                vars.chainId
+            );
+
             /// @dev 12.1 Set Router Info
 
             uint8[] memory superformRouterIds = new uint8[](1);
@@ -831,6 +837,12 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.SUPER_POSITIONS(),
                         getContract(vars.dstChainId, "SuperPositions"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.SUPER_TRANSMUTER(),
+                        getContract(vars.dstChainId, "SuperTransmuter"),
                         vars.dstChainId
                     );
 

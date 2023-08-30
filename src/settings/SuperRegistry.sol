@@ -34,6 +34,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev core protocol - identifiers
     bytes32 public constant override SUPERFORM_ROUTER = keccak256("SUPERFORM_ROUTER");
     bytes32 public constant override SUPERFORM_FACTORY = keccak256("SUPERFORM_FACTORY");
+    bytes32 public constant override SUPER_TRANSMUTER = keccak256("SUPER_TRANSMUTER");
     bytes32 public constant override PAYMASTER = keccak256("PAYMASTER");
     bytes32 public constant override PAYMENT_HELPER = keccak256("PAYMENT_HELPER");
     bytes32 public constant override CORE_STATE_REGISTRY = keccak256("CORE_STATE_REGISTRY");

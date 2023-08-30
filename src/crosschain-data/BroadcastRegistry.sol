@@ -57,6 +57,7 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
         if (
             msg.sender != superRegistry.getAddress(keccak256("SUPER_RBAC"))
                 && msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))
+                && msg.sender != superRegistry.getAddress(keccak256("SUPER_TRANSMUTER"))
         ) {
             revert Error.NOT_ALLOWED_BROADCASTER();
         }

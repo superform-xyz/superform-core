@@ -8,9 +8,13 @@ interface ISuperTransmuter {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
     /// @dev anyone can register a transmuter for an existent superform
     /// @notice this overrides registerTransmuter from original transmuter implementation so that users cannot insert
     /// name, symbol, and decimals
     /// @param superformId the superform to register a transmuter for
-    function registerTransmuter(uint256 superformId) external returns (address);
+    /// @param extraData_ is an optional param to broadcast changes to all chains
+    function registerTransmuter(uint256 superformId, bytes memory extraData_) external returns (address);
+
+    function stateSync(bytes memory data_) external payable;
 }
