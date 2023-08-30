@@ -64,4 +64,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         virtual
         override
         returns (bool valid_);
+
+    /// @inheritdoc IBridgeValidator
+    function decodeAmount(bytes calldata txData_) external view virtual override returns (uint256 amount_);
 }

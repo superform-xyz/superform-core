@@ -392,8 +392,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         internal
         virtual
     {
+        address bridgeValidator = superRegistry.getBridgeValidator(liqRequest_.bridgeId);
         /// @dev validates remaining params of txData
-        IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateTxData(
+        IBridgeValidator(bridgeValidator).validateTxData(
             liqRequest_.txData,
             srcChainId_,
             dstChainId_,
@@ -410,7 +411,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superRegistry.getBridgeAddress(liqRequest_.bridgeId),
             liqRequest_.txData,
             liqRequest_.token,
-            liqRequest_.amount,
+            IBridgeValidator(bridgeValidator).decodeAmount(liqRequest_.txData),
             srcSender_,
             liqRequest_.nativeAmount,
             liqRequest_.permit2data,

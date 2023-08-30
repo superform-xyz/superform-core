@@ -1614,7 +1614,6 @@ abstract contract ProtocolActions is BaseSetup {
             v.txData,
             liqRequestToken,
             args.toChainId,
-            args.amount,
             liqRequestToken == NATIVE_TOKEN ? args.amount : 0,
             /// @dev for native actions amount is also here
             v.permit2Calldata
@@ -1702,7 +1701,6 @@ abstract contract ProtocolActions is BaseSetup {
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
             args.liqDstChainId,
-            args.amount,
             0,
             ""
         );

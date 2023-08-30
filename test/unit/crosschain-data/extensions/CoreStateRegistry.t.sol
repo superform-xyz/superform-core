@@ -270,7 +270,6 @@ contract CoreStateRegistryTest is ProtocolActions {
                 ),
                 getContract(ETH, "USDT"),
                 AVAX,
-                1e18,
                 0,
                 bytes("")
             ),
@@ -313,11 +312,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId,
-            1e18,
-            100,
-            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 1e18, 0, bytes("")),
-            bytes("")
+            superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0, bytes("")), bytes("")
         );
 
         vm.recordLogs();
@@ -375,7 +370,6 @@ contract CoreStateRegistryTest is ProtocolActions {
             ),
             getContract(ETH, "USDT"),
             AVAX,
-            420,
             0,
             bytes("")
         );
@@ -424,7 +418,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         amountArr[1] = 1e18;
 
         LiqRequest[] memory liqReqArr = new LiqRequest[](2);
-        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), ETH, 1e18, 0, bytes(""));
+        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), ETH, 0, bytes(""));
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amountArr, new uint256[](2), liqReqArr, bytes(""));

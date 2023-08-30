@@ -48,7 +48,6 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
                     ),
                     getContract(ETH, "USDT"),
                     ETH,
-                    420,
                     0,
                     bytes("")
                 ),

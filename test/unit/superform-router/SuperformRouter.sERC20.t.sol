@@ -95,7 +95,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
 
         SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, ""), "");
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
@@ -120,9 +120,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.startPrank(getContract(ETH, "SuperformRouter"));
         superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
-        SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 10_001, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, ""), ""
-        );
+        SingleVaultSFData memory data =
+            SingleVaultSFData(superformId, 1e18, 10_001, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
@@ -177,8 +176,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         ambIds[0] = 1;
 
         LiqRequest[] memory liqReq = new LiqRequest[](2);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
-        liqReq[1] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
+        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
+        liqReq[1] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
@@ -225,7 +224,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint8[] memory ambIds = new uint8[](1);
         ambIds[0] = 1;
 
-        LiqRequest memory liqReq = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, "");
+        LiqRequest memory liqReq = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, "");
 
         SingleVaultSFData memory data = SingleVaultSFData(superformId, amount, maxSlippage, liqReq, "");
 
@@ -276,7 +275,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         ambIds[0] = 1;
 
         LiqRequest[] memory liqReq = new LiqRequest[](1);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
+        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
@@ -309,7 +308,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         ambIds[0] = 1;
 
         LiqRequest[] memory liqReq = new LiqRequest[](1);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
+        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
@@ -345,7 +344,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         ambIds[0] = 1;
 
         LiqRequest[] memory liqReq = new LiqRequest[](1);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
+        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
@@ -398,7 +397,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             ),
             getContract(ARBI, "USDT"),
             ETH,
-            1e18,
             0,
             ""
         );
@@ -436,7 +434,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         ambIds[0] = 1;
 
         LiqRequest[] memory liqReq = new LiqRequest[](1);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
+        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
@@ -473,7 +471,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         ambIds[0] = 1;
 
         LiqRequest[] memory liqReq = new LiqRequest[](1);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
+        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
@@ -509,7 +507,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         ambIds[0] = 1;
 
         LiqRequest[] memory liqReq = new LiqRequest[](1);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
+        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
@@ -551,8 +549,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         maxSlippages[1] = 1000;
 
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
-        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, "");
-        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 1e18, 0, "");
+        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, "");
+        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
         uint8[] memory ambIds = new uint8[](1);
@@ -604,8 +602,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         maxSlippages[1] = 99_999;
 
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
-        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, "");
-        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 1e18, 0, "");
+        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, "");
+        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
         uint8[] memory ambIds = new uint8[](1);
@@ -657,8 +655,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         maxSlippages[1] = 1000;
 
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
-        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, "");
-        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 1e18, 0, "");
+        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, "");
+        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
         uint8[] memory ambIds = new uint8[](1);
@@ -689,7 +687,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
 
         SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, ""), "");
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
@@ -718,7 +716,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             0,
             /// @dev 0 amount here and in the LiqRequest
             100,
-            LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, 0, ""),
+            LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, ""),
             ""
         );
 
@@ -778,7 +776,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         ambIds[0] = 1;
 
         LiqRequest[] memory liqReq = new LiqRequest[](1);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
+        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
@@ -815,7 +813,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         ambIds[0] = 1;
 
         LiqRequest[] memory liqReq = new LiqRequest[](1);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
+        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
@@ -854,7 +852,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                 ),
                 getContract(ARBI, "USDT"),
                 ETH,
-                1e18,
                 0,
                 ""
             ),
@@ -896,7 +893,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                 ),
                 getContract(ETH, "USDT"),
                 ETH,
-                1e18,
                 0,
                 ""
             ),
@@ -939,7 +935,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                 ),
                 getContract(ARBI, "USDT"),
                 ETH,
-                1e18,
                 0,
                 ""
             ),
@@ -982,7 +977,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                 ),
                 getContract(ARBI, "USDT"),
                 ETH,
-                1e18,
                 0,
                 ""
             ),
@@ -1070,7 +1064,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             ),
             getContract(ETH, "USDT"),
             ARBI,
-            1e18,
             0,
             ""
         );
@@ -1091,7 +1084,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             ),
             getContract(ETH, "WETH"),
             ARBI,
-            1e18,
             0,
             ""
         );

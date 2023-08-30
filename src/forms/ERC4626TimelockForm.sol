@@ -66,8 +66,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         dstAmount = v.redeem(amount_, receiver, address(this));
         /// @dev validate and dispatches the tokens
         if (len1 != 0) {
+            address bridgeValidator = superRegistry.getBridgeValidator(liqData.bridgeId);
+            uint256 amount = IBridgeValidator(bridgeValidator).decodeAmount(liqData.txData);
+
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (liqData.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             uint64 chainId = superRegistry.chainId();
 
@@ -87,7 +90,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                 superRegistry.getBridgeAddress(liqData.bridgeId),
                 liqData.txData,
                 liqData.token,
-                liqData.amount,
+                amount,
                 address(this),
                 liqData.nativeAmount,
                 /// @dev be careful over here

@@ -598,7 +598,8 @@ contract PaymentHelper is IPaymentHelper {
     function _estimateLiqAmount(LiqRequest[] memory req_) internal pure returns (uint256 liqAmount) {
         for (uint256 i; i < req_.length;) {
             if (req_[i].token == NATIVE) {
-                liqAmount += req_[i].amount;
+                liqAmount +=
+                    IBridgeValidator(superRegistry.getBridgeValidator(req_[i].bridgeId)).decodeAmount(req_[i].txData);
             }
 
             unchecked {

@@ -108,9 +108,9 @@ contract PayMaster is IPayMaster, LiquidityHandler {
 
     /// @dev helper to move native tokens cross-chain
     function _validateAndDispatchTokens(LiqRequest memory liqRequest_, address receiver_) internal {
-        bool valid = IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateReceiver(
-            liqRequest_.txData, receiver_
-        );
+        address bridgeValidator = superRegistry.getBridgeValidator(liqRequest_.bridgeId);
+
+        bool valid = IBridgeValidator(bridgeValidator).validateReceiver(liqRequest_.txData, receiver_);
 
         if (!valid) {
             revert Error.INVALID_TXDATA_RECEIVER();
@@ -120,7 +120,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             superRegistry.getBridgeAddress(liqRequest_.bridgeId),
             liqRequest_.txData,
             liqRequest_.token,
-            liqRequest_.amount,
+            IBridgeValidator(bridgeValidator).decodeAmount(liqRequest_.txData),
             msg.sender,
             liqRequest_.nativeAmount,
             liqRequest_.permit2data,

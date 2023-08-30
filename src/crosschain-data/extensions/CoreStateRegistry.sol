@@ -297,11 +297,13 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         delete failedDeposits[payloadId_];
 
         v.dstChainId = superRegistry.chainId();
+        address bridgeValidator;
 
         for (uint256 i; i < l1;) {
             (v.superform,,) = superformIds[i].getSuperform();
+            bridgeValidator = superRegistry.getBridgeValidator(liqData_[i].bridgeId);
 
-            IBridgeValidator(superRegistry.getBridgeValidator(liqData_[i].bridgeId)).validateTxData(
+            IBridgeValidator(bridgeValidator).validateTxData(
                 liqData_[i].txData,
                 v.dstChainId,
                 v.srcChainId,
@@ -318,7 +320,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 superRegistry.getBridgeAddress(liqData_[i].bridgeId),
                 liqData_[i].txData,
                 liqData_[i].token,
-                liqData_[i].amount,
+                IBridgeValidator(bridgeValidator).decodeAmount(liqData_[i].txData),
                 address(this),
                 liqData_[i].nativeAmount,
                 liqData_[i].permit2data,

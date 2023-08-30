@@ -92,9 +92,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     struct directDepositLocalVars {
         uint64 chainId;
         address collateral;
+        address bridgeValidator;
         uint256 dstAmount;
         uint256 balanceBefore;
         uint256 balanceAfter;
+        uint256 amount;
     }
 
     function _processDirectDeposit(
@@ -117,16 +119,21 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         bool isPermit = singleVaultData_.liqData.permit2data.length > 0;
 
         IERC20 token = IERC20(singleVaultData_.liqData.token);
-        uint256 amount = singleVaultData_.liqData.amount;
+        vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+
+        /// @dev FIXME: what if the amount here is different than the amount actually deposited in the vault below?
+        /// @dev shouldn't it be singleVaultData_.amount?
+
+        vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmount(singleVaultData_.liqData.txData);
 
         if (!isSwap) {
             /// @dev handles the collateral token transfers.
             if (!isPermit) {
-                if (token.allowance(srcSender_, address(this)) < amount) {
+                if (token.allowance(srcSender_, address(this)) < vars.amount) {
                     revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
                 }
                 /// @dev transfers input token, which is the same as vault asset, to the form
-                token.safeTransferFrom(srcSender_, address(this), amount);
+                token.safeTransferFrom(srcSender_, address(this), vars.amount);
             } else {
                 (uint256 nonce, uint256 deadline, bytes memory signature) =
                     abi.decode(singleVaultData_.liqData.permit2data, (uint256, uint256, bytes));
@@ -134,12 +141,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 IPermit2(superRegistry.PERMIT2()).permitTransferFrom(
                     // The permit message.
                     IPermit2.PermitTransferFrom({
-                        permitted: IPermit2.TokenPermissions(token, amount),
+                        permitted: IPermit2.TokenPermissions(token, vars.amount),
                         nonce: nonce,
                         deadline: deadline
                     }),
                     // The transfer recipient and amount.
-                    IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: amount }),
+                    IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: vars.amount }),
                     // The owner of the tokens, which must also be
                     // the signer of the message, otherwise this call
                     // will fail.
@@ -152,7 +159,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         } else {
             /// @dev in this case, a swap is needed, first the txData is validated and then the final asset is obtained
             vars.chainId = superRegistry.chainId();
-            IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
+
+            IBridgeValidator(vars.bridgeValidator).validateTxData(
                 singleVaultData_.liqData.txData,
                 vars.chainId,
                 vars.chainId,
@@ -167,7 +175,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
-                amount,
+                vars.amount,
                 srcSender_,
                 singleVaultData_.liqData.nativeAmount,
                 singleVaultData_.liqData.permit2data,
@@ -191,7 +199,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint64 chainId;
         address collateral;
         address receiver;
+        address bridgeValidator;
         uint256 len1;
+        uint256 amount;
         IERC4626 v;
     }
 
@@ -219,13 +229,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         dstAmount = v.v.redeem(singleVaultData_.amount, v.receiver, address(this));
 
         if (v.len1 != 0) {
+            v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+            v.amount = IBridgeValidator(v.bridgeValidator).decodeAmount(singleVaultData_.liqData.txData);
+
             /// @dev this check here might be too much already, but can't hurt
-            if (singleVaultData_.liqData.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             v.chainId = superRegistry.chainId();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
+            IBridgeValidator(v.bridgeValidator).validateTxData(
                 singleVaultData_.liqData.txData,
                 v.chainId,
                 v.chainId,
@@ -236,11 +249,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.token
             );
 
+            /// @dev FIXME: notice that in direct withdraws we withdraw v.amount (coming from txData), but not what was
+            /// actually redeemed? Why? xChainWithdraw operates differently here
+
             dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                singleVaultData_.liqData.amount,
+                v.amount,
                 address(this),
                 singleVaultData_.liqData.nativeAmount,
                 "",
@@ -277,8 +293,10 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint64 dstChainId;
         address receiver;
         address collateral;
+        address bridgeValidator;
         uint256 balanceBefore;
         uint256 balanceAfter;
+        uint256 amount;
     }
 
     function _processXChainWithdraw(
@@ -314,11 +332,14 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         dstAmount = v.redeem(singleVaultData_.amount, vars.receiver, address(this));
 
         if (len != 0) {
+            vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
+            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmount(singleVaultData_.liqData.txData);
+
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (singleVaultData_.liqData.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
+            if (vars.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId)).validateTxData(
+            IBridgeValidator(vars.bridgeValidator).validateTxData(
                 singleVaultData_.liqData.txData,
                 vars.dstChainId,
                 srcChainId,
