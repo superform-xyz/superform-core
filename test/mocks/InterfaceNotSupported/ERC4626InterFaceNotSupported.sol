@@ -11,7 +11,7 @@ contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_) { }
+    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 1) { }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
@@ -66,10 +66,4 @@ contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation {
     {
         dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
     }
-
-    function getVaultName() external view override returns (string memory) { }
-
-    function getVaultSymbol() external view override returns (string memory) { }
-
-    function getVaultDecimals() external view override returns (uint256) { }
 }

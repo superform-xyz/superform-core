@@ -61,6 +61,10 @@ contract MDSVW010NativeSlippageL12AMB12 is ProtocolActions {
         LIQ_BRIDGES[OP][1] = [2];
         LIQ_BRIDGES[AVAX][1] = [2];
 
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI];
+        FINAL_LIQ_DST_WITHDRAW[OP] = [ARBI];
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [ARBI];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

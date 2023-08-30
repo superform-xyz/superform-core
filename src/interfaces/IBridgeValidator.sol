@@ -17,6 +17,7 @@ interface IBridgeValidator {
     /// @param txData_ the txData of the cross chain deposit
     /// @param srcChainId_ the chainId of the source chain
     /// @param dstChainId_ the chainId of the destination chain
+    /// @param liqDstChainId_ the chainId of the destination chain for liquidity
     /// @param deposit_ true if the action is a deposit, false if it is a withdraw
     /// @param superform_ the address of the superform
     /// @param srcSender_ the address of the sender on the source chain
@@ -25,6 +26,7 @@ interface IBridgeValidator {
         bytes calldata txData_,
         uint64 srcChainId_,
         uint64 dstChainId_,
+        uint64 liqDstChainId_,
         bool deposit_,
         address superform_,
         address srcSender_,

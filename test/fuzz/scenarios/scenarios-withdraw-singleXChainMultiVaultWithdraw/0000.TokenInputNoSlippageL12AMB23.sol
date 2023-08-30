@@ -33,6 +33,8 @@ contract SDMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [1, 2, 1, 2];
         LIQ_BRIDGES[ARBI][1] = [1, 1, 2, 2];
 
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH, ETH, ETH, ETH];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({

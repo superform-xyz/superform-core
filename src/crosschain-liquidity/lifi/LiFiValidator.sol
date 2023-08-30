@@ -31,6 +31,7 @@ contract LiFiValidator is BridgeValidator {
         bytes calldata txData_,
         uint64 srcChainId_,
         uint64 dstChainId_,
+        uint64 liqDstChainId_,
         bool deposit_,
         address superform_,
         address srcSender_,
@@ -45,14 +46,19 @@ contract LiFiValidator is BridgeValidator {
         address sendingAssetId = bridgeData.hasSourceSwaps ? swapData[0].sendingAssetId : bridgeData.sendingAssetId;
 
         /// @dev 1. chainId validation
-        if (uint256(dstChainId_) != bridgeData.destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
+        /// @dev for deposits, liqDstChainId/toChainId will be the normal destination (where the target superform is)
+        /// @dev for withdraws, liqDstChainId/toChainId will be the desired chain to where the underlying must be sent
+        /// @dev to after vault redemption
+
+        if (uint256(liqDstChainId_) != bridgeData.destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
 
         /// @dev 2. receiver address validation
 
         if (deposit_) {
             if (srcChainId_ == dstChainId_) {
-                /// @dev If same chain deposits then receiver address must be the superform
+                if (dstChainId_ != liqDstChainId_) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
 
+                /// @dev If same chain deposits then receiver address must be the superform
                 if (bridgeData.receiver != superform_) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
                 /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry or MultiTxProcessor

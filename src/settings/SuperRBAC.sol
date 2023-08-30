@@ -28,8 +28,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
-    bytes32 public constant override MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant override BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant override SUPERPOSITIONS_MINTER_ROLE = keccak256("SUPERPOSITIONS_MINTER_ROLE");
+    bytes32 public constant override SUPERPOSITIONS_BURNER_ROLE = keccak256("SUPERPOSITIONS_BURNER_ROLE");
     bytes32 public constant override MINTER_STATE_REGISTRY_ROLE = keccak256("MINTER_STATE_REGISTRY_ROLE");
 
     ISuperRegistry public superRegistry;
@@ -47,8 +47,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         _setRoleAdmin(FACTORY_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_UPDATER_ROLE, PROTOCOL_ADMIN_ROLE);
-        _setRoleAdmin(MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
-        _setRoleAdmin(BURNER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(SUPERPOSITIONS_MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(SUPERPOSITIONS_BURNER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(MINTER_STATE_REGISTRY_ROLE, PROTOCOL_ADMIN_ROLE);
     }
 
@@ -157,13 +157,13 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
-    function hasMinterRole(address minter_) external view override returns (bool) {
-        return hasRole(MINTER_ROLE, minter_);
+    function hasSuperPositionsMinterRole(address minter_) external view override returns (bool) {
+        return hasRole(SUPERPOSITIONS_MINTER_ROLE, minter_);
     }
 
     /// @inheritdoc ISuperRBAC
-    function hasBurnerRole(address burner_) external view override returns (bool) {
-        return hasRole(BURNER_ROLE, burner_);
+    function hasSuperPositionsBurnerRole(address burner_) external view override returns (bool) {
+        return hasRole(SUPERPOSITIONS_BURNER_ROLE, burner_);
     }
 
     /// @inheritdoc ISuperRBAC

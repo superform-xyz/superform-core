@@ -25,7 +25,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[2], ETH);
 
         SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), 1e18, 0, ""), "");
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, ""), "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 

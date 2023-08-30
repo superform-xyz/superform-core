@@ -5,7 +5,7 @@ import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
-import { ISuperPositions } from "../../interfaces/ISuperPositions.sol";
+import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { IERC4626TimelockForm } from "../../forms/interfaces/IERC4626TimelockForm.sol";
 import { ITwoStepsFormStateRegistry } from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
@@ -20,7 +20,7 @@ import {
     AMBMessage,
     ReturnSingleData,
     PayloadState,
-    TimeLockStatus,
+    TwoStepsStatus,
     TwoStepsPayload
 } from "../../types/DataTypes.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
@@ -91,6 +91,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         uint8 type_,
         address srcSender_,
         uint64 srcChainId_,
+        uint8 superformRouterId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     )
@@ -100,8 +101,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     {
         ++timeLockPayloadCounter;
 
-        twoStepsPayload[timeLockPayloadCounter] =
-            TwoStepsPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TimeLockStatus.PENDING);
+        twoStepsPayload[timeLockPayloadCounter] = TwoStepsPayload(
+            type_, superformRouterId_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING
+        );
     }
 
     /// @inheritdoc ITwoStepsFormStateRegistry
@@ -117,7 +119,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     {
         TwoStepsPayload memory p = twoStepsPayload[timeLockPayloadId_];
 
-        if (p.status != TimeLockStatus.PENDING) {
+        if (p.status != TwoStepsStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
         }
 
@@ -126,7 +128,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         }
 
         /// @dev set status here to prevent re-entrancy
-        p.status = TimeLockStatus.PROCESSED;
+        p.status = TwoStepsStatus.PROCESSED;
         (address superform,,) = p.data.superformId.getSuperform();
 
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
@@ -135,7 +137,14 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
             /// @dev validate the incoming tx data
             IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId)).validateTxData(
-                txData_, superRegistry.chainId(), p.srcChainId, false, superform, p.srcSender, p.data.liqData.token
+                txData_,
+                superRegistry.chainId(),
+                p.srcChainId,
+                p.data.liqData.liqDstChainId,
+                false,
+                superform,
+                p.srcSender,
+                p.data.liqData.token
             );
 
             p.data.liqData.txData = txData_;
@@ -150,7 +159,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             }
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
-                ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).mintSingleSP(
+                IStateSyncer(superRegistry.getStateSyncer(p.superformRouterId)).mintSingle(
                     p.srcSender, p.data.superformId, p.data.amount
                 );
             }
@@ -177,11 +186,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         }
 
         (, uint256 callbackType,,,, uint64 srcChainId) = _payloadHeader.decodeTxInfo();
-
         AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
 
+        ReturnSingleData memory singleVaultData = abi.decode(_payloadBody, (ReturnSingleData));
         if (callbackType == uint256(CallbackType.FAIL)) {
-            ISuperPositions(superRegistry.getAddress(keccak256("SUPER_POSITIONS"))).stateSync(_message);
+            IStateSyncer(superRegistry.getStateSyncer(singleVaultData.superformRouterId)).stateSync(_message);
         }
 
         /// @dev validates quorum
@@ -235,7 +244,12 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                     superRegistry.chainId()
                 ),
                 abi.encode(
-                    ReturnSingleData(singleVaultData_.payloadId, singleVaultData_.superformId, singleVaultData_.amount)
+                    ReturnSingleData(
+                        singleVaultData_.superformRouterId,
+                        singleVaultData_.payloadId,
+                        singleVaultData_.superformId,
+                        singleVaultData_.amount
+                    )
                 )
             )
         );

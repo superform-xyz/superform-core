@@ -1,77 +1,86 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
+import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
+import { sERC20 } from "ERC1155A/transmuter/sERC20.sol";
+
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
+import { SuperformRouter } from "src/SuperformRouter.sol";
+import { SuperTransmuterSyncer } from "test/mocks/SuperTransmuterSyncer.sol";
 
-contract SuperformRouterTest is ProtocolActions {
+contract SuperformRouterSERC20Test is ProtocolActions {
+    SuperformRouter superformRouterSERC20;
+    SuperformRouter superformRouterSERC20Arbi;
+
+    SuperTransmuterSyncer superTransmuterSyncer;
+    SuperTransmuterSyncer superTransmuterSyncerArbi;
+
     function setUp() public override {
         super.setUp();
-    }
-
-    function test_tokenEmergencyWithdraw() public {
-        uint256 transferAmount = 1 * 10 ** 18; // 1 token
-        address payable token = payable(getContract(ETH, "DAI"));
-        address payable superformRouter = payable(getContract(ETH, "SuperformRouter"));
-
-        /// @dev admin transfers some ETH and DAI tokens to multi tx processor
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        uint256 balanceBefore = MockERC20(token).balanceOf(superformRouter);
-        MockERC20(token).transfer(superformRouter, transferAmount);
-        uint256 balanceAfter = MockERC20(token).balanceOf(superformRouter);
-        assertEq(balanceBefore + transferAmount, balanceAfter);
+        superformRouterSERC20 = new SuperformRouter(getContract(ETH, "SuperRegistry"), 1, 2);
 
-        balanceBefore = MockERC20(token).balanceOf(superformRouter);
-        SuperformRouter(superformRouter).emergencyWithdrawToken(token, transferAmount);
-        balanceAfter = MockERC20(token).balanceOf(superformRouter);
-        assertEq(balanceBefore - transferAmount, balanceAfter);
-    }
+        superTransmuterSyncer =
+        new SuperTransmuterSyncer(IERC1155A(getContract(ETH, "SuperPositions")), getContract(ETH, "SuperRegistry"), 2);
 
-    function test_emergencyNativeTokenWithdraw() public {
-        uint256 transferAmount = 1e18; // 1 token
-        address payable superformRouter = payable(getContract(ETH, "SuperformRouter"));
+        vm.selectFork(FORKS[ARBI]);
 
-        /// @dev admin transfers some ETH and DAI tokens to multi tx processor
-        vm.selectFork(FORKS[ETH]);
-        vm.startPrank(deployer);
+        superformRouterSERC20Arbi = new SuperformRouter(getContract(ARBI, "SuperRegistry"), 1, 2);
 
-        uint256 balanceBefore = superformRouter.balance;
-        (bool success,) = superformRouter.call{ value: transferAmount }("");
-        uint256 balanceAfter = superformRouter.balance;
-        assertEq(balanceBefore + transferAmount, balanceAfter);
+        superTransmuterSyncerArbi =
+        new SuperTransmuterSyncer(IERC1155A(getContract(ARBI, "SuperPositions")), getContract(ARBI, "SuperRegistry"), 2);
 
-        balanceBefore = superformRouter.balance;
-        SuperformRouter(superformRouter).emergencyWithdrawNativeToken(transferAmount);
-        balanceAfter = superformRouter.balance;
-        assertEq(balanceBefore - transferAmount, balanceAfter);
-    }
-
-    function test_native_token_emergency_withdrawFailure() public {
-        uint256 transferAmount = 1e18; // 1 token
-        address payable superformRouter = payable(getContract(ETH, "SuperformRouter"));
-
-        /// @dev admin transfers some ETH and DAI tokens to multi tx processor
         vm.selectFork(FORKS[ETH]);
 
-        uint256 balanceBefore = superformRouter.balance;
+        SuperRBAC superRBACC = SuperRBAC(getContract(ETH, "SuperRBAC"));
+        SuperRegistry superRegistryC = SuperRegistry(getContract(ETH, "SuperRegistry"));
 
-        vm.startPrank(deployer);
-        (bool success,) = superformRouter.call{ value: transferAmount }("");
-        uint256 balanceAfter = superformRouter.balance;
-        assertEq(balanceBefore + transferAmount, balanceAfter);
+        superRBACC.grantRole(superRBACC.SUPERPOSITIONS_MINTER_ROLE(), address(superformRouterSERC20));
+        superRBACC.grantRole(superRBACC.SUPERPOSITIONS_BURNER_ROLE(), address(superformRouterSERC20));
 
-        SuperRBAC(getContract(ETH, "SuperRBAC")).grantRole(
-            SuperRBAC(getContract(ETH, "SuperRBAC")).EMERGENCY_ADMIN_ROLE(), address(this)
-        );
+        superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20), ETH);
+        superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncer), ETH);
+
+        uint8[] memory superformRouterIds = new uint8[](2);
+        superformRouterIds[0] = 1;
+        superformRouterIds[1] = 2;
+
+        address[] memory stateSyncers = new address[](2);
+        stateSyncers[0] = getContract(ETH, "SuperPositions");
+        stateSyncers[1] = address(superTransmuterSyncer);
+
+        address[] memory routers = new address[](2);
+        routers[0] = getContract(ETH, "SuperformRouter");
+        routers[1] = address(superformRouterSERC20);
+
+        superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
+
+        vm.selectFork(FORKS[ARBI]);
+
+        superRBACC = SuperRBAC(getContract(ARBI, "SuperRBAC"));
+        superRegistryC = SuperRegistry(getContract(ARBI, "SuperRegistry"));
+
+        superRBACC.grantRole(superRBACC.SUPERPOSITIONS_MINTER_ROLE(), address(superformRouterSERC20Arbi));
+        superRBACC.grantRole(superRBACC.SUPERPOSITIONS_BURNER_ROLE(), address(superformRouterSERC20Arbi));
+
+        superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20Arbi), ARBI);
+        superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncerArbi), ARBI);
+
+        superformRouterIds[0] = 1;
+        superformRouterIds[1] = 2;
+
+        stateSyncers[0] = getContract(ARBI, "SuperPositions");
+        stateSyncers[1] = address(superTransmuterSyncerArbi);
+
+        routers[0] = getContract(ARBI, "SuperformRouter");
+        routers[1] = address(superformRouterSERC20Arbi);
+
+        superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
+
         vm.stopPrank();
-
-        balanceBefore = superformRouter.balance;
-        vm.expectRevert(Error.NATIVE_TOKEN_TRANSFER_FAILURE.selector);
-        SuperformRouter(superformRouter).emergencyWithdrawNativeToken(transferAmount);
-        balanceAfter = superformRouter.balance;
-        assertEq(balanceBefore, balanceAfter);
     }
 
     function test_depositToInvalidFormId() public {
@@ -96,47 +105,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
 
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
-    }
-
-    function test_withdrawFromInvalidFormId() public {
-        /// scenario: withdraw from an invalid super form id (which doesn't exist on the chain)
-        vm.selectFork(FORKS[ETH]);
-
-        address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
-
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
-
-        vm.startPrank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
-
-        vm.startPrank(deployer);
-
-        uint256[] memory superformIds = new uint256[](1);
-        superformIds[0] = superformId;
-
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = 1e18;
-
-        uint256[] memory maxSlippages = new uint256[](1);
-        maxSlippages[0] = 100;
-
-        uint8[] memory ambIds = new uint8[](1);
-        ambIds[0] = 1;
-
-        LiqRequest[] memory liqReq = new LiqRequest[](2);
-        liqReq[0] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
-        liqReq[1] = LiqRequest(1, "", getContract(ARBI, "USDT"), ETH, 1e18, 0, "");
-
-        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
-
-        SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
-
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-
-        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectMultiVaultWithdraw(req);
+        superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
     function test_withdrawInvalidSuperformData() public {
@@ -147,8 +116,9 @@ contract SuperformRouterTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
+        superTransmuterSyncer.registerTransmuter(superformId);
         vm.startPrank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
+        superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId, 1e18, 10_001, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, ""), ""
@@ -162,7 +132,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
+        superformRouterSERC20.singleDirectSingleVaultWithdraw(req);
     }
 
     function test_withdrawWithWrongLiqDataLength() public {
@@ -175,8 +145,22 @@ contract SuperformRouterTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
 
+        vm.selectFork(FORKS[ARBI]);
+
+        superTransmuterSyncerArbi.registerTransmuter(superformId);
+
+        string memory tokenName =
+            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
+        string memory tokenSymbol =
+            string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+        uint8 decimals = uint8(IBaseForm(superform).getVaultDecimals());
+
+        vm.selectFork(FORKS[ETH]);
+
+        superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
+
         vm.startPrank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
+        superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
         vm.startPrank(deployer);
 
@@ -203,21 +187,34 @@ contract SuperformRouterTest is ProtocolActions {
         address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw(req);
+        superformRouterSERC20.singleXChainMultiVaultWithdraw(req);
     }
 
     function test_withdrawWithInvalidChainIds() public {
         /// note: unlikely scenario, deposit should fail for such cases
-        vm.selectFork(FORKS[ETH]);
 
         /// simulating deposits by just minting superPosition
         address superform =
             getContract(ARBI, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        vm.selectFork(FORKS[ARBI]);
+
+        superTransmuterSyncerArbi.registerTransmuter(superformId);
+
+        string memory tokenName =
+            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
+        string memory tokenSymbol =
+            string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+        uint8 decimals = uint8(IBaseForm(superform).getVaultDecimals());
+
+        vm.selectFork(FORKS[ETH]);
+
+        superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
 
         vm.startPrank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
+
+        superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
         vm.startPrank(deployer);
 
@@ -237,7 +234,7 @@ contract SuperformRouterTest is ProtocolActions {
         address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.expectRevert(Error.INVALID_CHAIN_IDS.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultWithdraw(req);
+        superformRouterSERC20.singleXChainSingleVaultWithdraw(req);
     }
 
     function test_withdrawWithWrongSlippageLength() public {
@@ -249,8 +246,21 @@ contract SuperformRouterTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
 
+        vm.selectFork(FORKS[ARBI]);
+
+        superTransmuterSyncerArbi.registerTransmuter(superformId);
+
+        string memory tokenName =
+            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
+        string memory tokenSymbol =
+            string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+        uint8 decimals = uint8(IBaseForm(superform).getVaultDecimals());
+
+        vm.selectFork(FORKS[ETH]);
+
+        superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
         vm.startPrank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
+        superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
         vm.startPrank(deployer);
 
@@ -275,7 +285,7 @@ contract SuperformRouterTest is ProtocolActions {
         address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw(req);
+        superformRouterSERC20.singleXChainMultiVaultWithdraw(req);
     }
 
     function test_depositWithWrongSlippageLength() public {
@@ -309,7 +319,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit(req);
+        superformRouterSERC20.singleXChainMultiVaultDeposit(req);
     }
 
     function test_depositWithMismatchingChainIdsInStateReqAndSuperformsDataMulti() public {
@@ -345,7 +355,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit(req);
+        superformRouterSERC20.singleXChainMultiVaultDeposit(req);
     }
 
     function test_depositWithAmountMismatchInSuperformsDataAndLiqRequest() public {
@@ -401,7 +411,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit(req);
+        superformRouterSERC20.singleXChainMultiVaultDeposit(req);
     }
 
     function test_depositWithWrongAmountsLength() public {
@@ -436,7 +446,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit(req);
+        superformRouterSERC20.singleXChainMultiVaultDeposit(req);
     }
 
     function test_depositWithMismatchingAmountsAndLiqRequestsLengths() public {
@@ -473,7 +483,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit(req);
+        superformRouterSERC20.singleXChainMultiVaultDeposit(req);
     }
 
     function test_depositWithInvalidMaxSlippage() public {
@@ -509,54 +519,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit(req);
-    }
-
-    function test_withdrawWithMismatchingChainIdsInStateReqAndSuperformsDataMulti() public {
-        _successfulMultiVaultDeposit();
-
-        /// scenario: user deposits with his own collateral and has approved enough tokens
-        vm.selectFork(FORKS[ETH]);
-        vm.startPrank(deployer);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
-
-        address superform1 =
-            getContract(ARBI, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
-
-        address superform2 =
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
-
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], POLY);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
-
-        uint256[] memory superformIds = new uint256[](2);
-        superformIds[0] = superformId1;
-        superformIds[1] = superformId2;
-
-        uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 1e18;
-        amounts[1] = 1e18;
-
-        uint256[] memory maxSlippages = new uint256[](2);
-        maxSlippages[0] = 1000;
-        maxSlippages[1] = 1000;
-
-        LiqRequest[] memory liqReqs = new LiqRequest[](2);
-        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, "");
-        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 1e18, 0, "");
-
-        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
-        uint8[] memory ambIds = new uint8[](1);
-        ambIds[0] = 1;
-        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-
-        /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
-        MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
-
-        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
+        superformRouterSERC20.singleXChainMultiVaultDeposit(req);
     }
 
     function test_withdrawWithWrongAmountsLength() public {
@@ -600,8 +563,14 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
         MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
 
+        address sERC20add1 = superTransmuterSyncer.synthethicTokenId(superformId1);
+        address sERC20add2 = superTransmuterSyncer.synthethicTokenId(superformId2);
+
+        sERC20(sERC20add1).approve(address(superformRouterSERC20), 1e18);
+        sERC20(sERC20add2).approve(address(superformRouterSERC20), 1e18);
+
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
+        superformRouterSERC20.singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
     }
 
     function test_withdrawWithInvalidMaxSlippage() public {
@@ -647,8 +616,65 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
         MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
 
+        address sERC20add1 = superTransmuterSyncer.synthethicTokenId(superformId1);
+        address sERC20add2 = superTransmuterSyncer.synthethicTokenId(superformId2);
+
+        sERC20(sERC20add1).approve(address(superformRouterSERC20), 1e18);
+        sERC20(sERC20add2).approve(address(superformRouterSERC20), 1e18);
+
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
+        superformRouterSERC20.singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
+    }
+
+    function test_successful_withdraw() public {
+        _successfulMultiVaultDeposit();
+
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        address superform1 =
+            getContract(ARBI, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+
+        address superform2 =
+            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 1000;
+        maxSlippages[1] = 1000;
+
+        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 1e18, 0, "");
+        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 1e18, 0, "");
+
+        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
+
+        address sERC20add1 = superTransmuterSyncer.synthethicTokenId(superformId1);
+        address sERC20add2 = superTransmuterSyncer.synthethicTokenId(superformId2);
+
+        sERC20(sERC20add1).approve(address(superformRouterSERC20), 1e18);
+        sERC20(sERC20add2).approve(address(superformRouterSERC20), 1e18);
+
+        /// @dev approves before call
+        superformRouterSERC20.singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
+
+        /// @dev could continue remainder of logic to redeem on dst
     }
 
     function test_depositWithInvalidFeeForward() public {
@@ -673,7 +699,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
 
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
-        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
+        superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
     function test_depositWithZeroAmount() public {
@@ -704,7 +730,7 @@ contract SuperformRouterTest is ProtocolActions {
         // MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 0);
 
         vm.expectRevert(Error.ZERO_AMOUNT.selector);
-        SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
+        superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
 
     function test_withdrawWithPausedBeacon() public {
@@ -719,8 +745,23 @@ contract SuperformRouterTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
 
+        vm.selectFork(FORKS[ARBI]);
+
+        superTransmuterSyncerArbi.registerTransmuter(superformId);
+
+        string memory tokenName =
+            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
+        string memory tokenSymbol =
+            string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
+        uint8 decimals = uint8(IBaseForm(superform).getVaultDecimals());
+
+        vm.selectFork(FORKS[ETH]);
+
+        superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
+
         vm.startPrank(getContract(ETH, "SuperformRouter"));
-        SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
+
+        superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
         vm.startPrank(deployer);
 
@@ -746,7 +787,7 @@ contract SuperformRouterTest is ProtocolActions {
         address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw(req);
+        superformRouterSERC20.singleXChainMultiVaultWithdraw(req);
     }
 
     function test_depositWithPausedBeacon() public {
@@ -785,7 +826,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit(req);
+        superformRouterSERC20.singleXChainMultiVaultDeposit(req);
     }
 
     function test_depositWithInvalidAmountThanLiqDataAmount() public {
@@ -827,7 +868,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_TXDATA_AMOUNTS.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit(req);
+        superformRouterSERC20.singleXChainSingleVaultDeposit(req);
     }
 
     function test_depositWithInvalidDstChainId() public {
@@ -869,7 +910,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_CHAIN_IDS.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit(req);
+        superformRouterSERC20.singleXChainSingleVaultDeposit(req);
     }
 
     function test_depositWithMismatchingChainIdsInStateReqAndSuperformsData() public {
@@ -912,7 +953,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit(req);
+        superformRouterSERC20.singleXChainSingleVaultDeposit(req);
     }
 
     function test_depositWithInvalidSlippage() public {
@@ -955,7 +996,7 @@ contract SuperformRouterTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit(req);
+        superformRouterSERC20.singleXChainSingleVaultDeposit(req);
     }
 
     function _successfulMultiVaultDeposit() internal {
@@ -973,6 +1014,31 @@ contract SuperformRouterTest is ProtocolActions {
 
         uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ARBI);
         uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+
+        vm.selectFork(FORKS[ARBI]);
+
+        superTransmuterSyncerArbi.registerTransmuter(superformId1);
+        superTransmuterSyncerArbi.registerTransmuter(superformId2);
+
+        string memory tokenName =
+            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform1).superformYieldTokenName()));
+        string memory tokenSymbol =
+            string(abi.encodePacked("sERC20-", IBaseForm(superform1).superformYieldTokenSymbol()));
+        uint8 decimals = uint8(IBaseForm(superform1).getVaultDecimals());
+
+        vm.selectFork(FORKS[ETH]);
+
+        superTransmuterSyncer.mockStateSync(superformId1, tokenName, tokenSymbol, decimals);
+
+        vm.selectFork(FORKS[ARBI]);
+
+        tokenName = string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform2).superformYieldTokenName()));
+        tokenSymbol = string(abi.encodePacked("sERC20-", IBaseForm(superform2).superformYieldTokenSymbol()));
+        decimals = uint8(IBaseForm(superform2).getVaultDecimals());
+
+        vm.selectFork(FORKS[ETH]);
+
+        superTransmuterSyncer.mockStateSync(superformId2, tokenName, tokenSymbol, decimals);
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
@@ -994,7 +1060,7 @@ contract SuperformRouterTest is ProtocolActions {
                 getContract(ETH, "USDT"),
                 getContract(ETH, "USDT"),
                 getContract(ARBI, "USDT"),
-                superformRouter,
+                address(superformRouterSERC20),
                 ARBI,
                 false,
                 getContract(ARBI, "CoreStateRegistry"),
@@ -1015,7 +1081,7 @@ contract SuperformRouterTest is ProtocolActions {
                 getContract(ETH, "WETH"),
                 getContract(ETH, "WETH"),
                 getContract(ARBI, "WETH"),
-                superformRouter,
+                address(superformRouterSERC20),
                 ARBI,
                 false,
                 getContract(ARBI, "CoreStateRegistry"),
@@ -1036,21 +1102,46 @@ contract SuperformRouterTest is ProtocolActions {
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
-        MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
+        MockERC20(getContract(ETH, "WETH")).approve(address(superformRouterSERC20), 1e18);
         vm.recordLogs();
 
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(req);
+        superformRouterSERC20.singleXChainMultiVaultDeposit{ value: 10 ether }(req);
         vm.stopPrank();
 
         /// @dev mocks the cross-chain payload delivery
         LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
             LZ_ENDPOINTS[ARBI],
-            500_000,
+            1_000_000,
             /// note: using some max limit
             FORKS[ARBI],
             vm.getRecordedLogs()
         );
+        vm.selectFork(FORKS[ARBI]);
+
+        vm.startPrank(deployer);
+        SuperRegistry(getContract(ARBI, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
+
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
+
+        vm.recordLogs();
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 10 ether }(1);
+        vm.stopPrank();
+        LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ETH],
+            1_000_000,
+            /// note: using some max limit
+            FORKS[ETH],
+            vm.getRecordedLogs()
+        );
+
+        vm.selectFork(FORKS[ETH]);
+
+        vm.startPrank(deployer);
+        SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ARBI, 0);
+
+        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: 10 ether }(1);
+        vm.stopPrank();
     }
 
     function _buildMaliciousTxData(

@@ -41,6 +41,8 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

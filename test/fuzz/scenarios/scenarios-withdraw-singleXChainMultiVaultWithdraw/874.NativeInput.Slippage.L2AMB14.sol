@@ -35,6 +35,8 @@ contract SDMVW874NativeInputSlippageL2AMB14 is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [2, 2, 2];
         LIQ_BRIDGES[ARBI][1] = [2, 2, 2];
 
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH, ETH, ETH];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({

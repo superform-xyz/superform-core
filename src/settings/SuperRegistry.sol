@@ -21,11 +21,15 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
     mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
     mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
+    mapping(uint8 superformRouterId => address stateSyncer) public stateSyncers;
+    mapping(uint8 superformRouterId => address router) public routers;
     mapping(uint8 registryId => address registryAddress) public registryAddresses;
     /// @dev is the reverse mapping of registryAddresses
     mapping(address registryAddress => uint8 registryId) public stateRegistryIds;
     /// @dev is the reverse mapping of ambAddresses
     mapping(address ambAddress => uint8 bridgeId) public ambIds;
+    /// @dev is the reverse mapping of routers
+    mapping(address router => uint8 superformRouterId) public superformRouterIds;
 
     /// @dev core protocol - identifiers
     bytes32 public constant override SUPERFORM_ROUTER = keccak256("SUPERFORM_ROUTER");
@@ -142,6 +146,28 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         }
     }
 
+    /// @inheritdoc ISuperRegistry
+    function setRouterInfo(
+        uint8[] memory superformRouterIds_,
+        address[] memory stateSyncers_,
+        address[] memory routers_
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
+        for (uint256 i; i < superformRouterIds_.length; i++) {
+            address stateSyncer = stateSyncers_[i];
+            address router = routers_[i];
+            uint8 superFormRouterId = superformRouterIds_[i];
+
+            stateSyncers[superFormRouterId] = stateSyncer;
+            routers[superFormRouterId] = router;
+            superformRouterIds[router] = superFormRouterId;
+            emit SetRouterInfo(superFormRouterId, stateSyncer, router);
+        }
+    }
+
     /// @inheritdoc QuorumManager
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
         requiredQuorum[srcChainId_] = quorum_;
@@ -189,6 +215,21 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @inheritdoc ISuperRegistry
     function getStateRegistryId(address registryAddress_) external view override returns (uint8 registryId_) {
         registryId_ = stateRegistryIds[registryAddress_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getStateSyncer(uint8 superformRouterId_) external view override returns (address stateSyncer_) {
+        stateSyncer_ = stateSyncers[superformRouterId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getRouter(uint8 superformRouterId_) external view override returns (address router_) {
+        router_ = routers[superformRouterId_];
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function getSuperformRouterId(address router_) external view override returns (uint8 superformRouterId_) {
+        superformRouterId_ = superformRouterIds[router_];
     }
 
     /// @inheritdoc ISuperRegistry
