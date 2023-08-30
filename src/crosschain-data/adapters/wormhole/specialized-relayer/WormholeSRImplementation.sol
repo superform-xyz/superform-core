@@ -116,7 +116,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         // address registryAddress = superRegistry.getStateRegistry(registryId);
         IBroadcastRegistry targetRegistry = IBroadcastRegistry(superRegistry.getStateRegistry(3));
 
-        targetRegistry.receivePayload(superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload);
+        targetRegistry.receiveBroadcastPayload(superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload);
     }
 
     /// @dev allows protocol admin to add new chain ids in future

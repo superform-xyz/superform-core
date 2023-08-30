@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { QuorumManager } from "./utils/QuorumMAnager.sol";
 import { Error } from "src/utils/Error.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
 import { BroadcastMessage, AMBExtraData, PayloadState } from "src/types/DataTypes.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -15,7 +18,7 @@ interface Target {
 /// @title BaseStateRegistry
 /// @author ZeroPoint Labs
 /// @notice helps core contract communicate with multiple dst chains through supported AMBs
-contract BroadcastRegistry is IBroadcastRegistry {
+contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
     /*///////////////////////////////////////////////////////////////
                               STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -28,6 +31,9 @@ contract BroadcastRegistry is IBroadcastRegistry {
 
     /// @dev stores the received payload after assigning
     mapping(uint256 => bytes) public payload;
+
+    /// @dev stores the src chain of every payload
+    mapping(uint256 => uint64) public srcChainId;
 
     /// @dev stores the status of the received payload
     mapping(uint256 => PayloadState) public payloadTracking;
@@ -47,7 +53,7 @@ contract BroadcastRegistry is IBroadcastRegistry {
 
     /// @notice sender should be a valid configured contract
     /// @dev should be factory or roles contract
-    modifier onlySender() virtual {
+    modifier onlySender() {
         if (
             msg.sender != superRegistry.getAddress(keccak256("SUPER_RBAC"))
                 && msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))
@@ -55,6 +61,20 @@ contract BroadcastRegistry is IBroadcastRegistry {
             revert Error.NOT_ALLOWED_BROADCASTER();
         }
         _;
+    }
+
+    modifier onlyProtocolAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
+            revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+
+    /// @inheritdoc QuorumManager
+    function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
+        requiredQuorum[srcChainId_] = quorum_;
+
+        emit QuorumSet(srcChainId_, quorum_);
     }
 
     /// @inheritdoc IBroadcastRegistry
@@ -79,7 +99,7 @@ contract BroadcastRegistry is IBroadcastRegistry {
     }
 
     /// @inheritdoc IBroadcastRegistry
-    function receivePayload(uint64 srcChainId_, bytes memory message_) external override {
+    function receiveBroadcastPayload(uint64 srcChainId_, bytes memory message_) external override {
         /// FIXME: add sender validations
         if (message_.length == 32) {
             ++messageQuorum[abi.decode(message_, (bytes32))];
@@ -87,6 +107,7 @@ contract BroadcastRegistry is IBroadcastRegistry {
             ++payloadsCount;
 
             payload[payloadsCount] = message_;
+            srcChainId[payloadsCount] = srcChainId_;
         }
     }
 
@@ -100,11 +121,18 @@ contract BroadcastRegistry is IBroadcastRegistry {
             revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
 
-        BroadcastMessage memory data = abi.decode(payload[payloadId], (BroadcastMessage));
+        bytes memory payload_ = payload[payloadId];
+
+        /// @dev The number of valid proofs (quorum) must be equal to the required messaging quorum
+        if (messageQuorum[keccak256(payload_)] < getRequiredMessagingQuorum(srcChainId[payloadId])) {
+            revert Error.QUORUM_NOT_REACHED();
+        }
+
+        BroadcastMessage memory data = abi.decode(payload_, (BroadcastMessage));
         bytes32 targetId = keccak256(data.target);
 
         payloadTracking[payloadId] = PayloadState.PROCESSED;
-        Target(superRegistry.getAddress(targetId)).stateSync(payload[payloadId]);
+        Target(superRegistry.getAddress(targetId)).stateSync(payload_);
     }
 
     /*///////////////////////////////////////////////////////////////

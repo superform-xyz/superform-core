@@ -87,7 +87,6 @@ contract HyperlaneImplementationTest is BaseSetup {
         hyperlaneImplementation.setChainId(0, uint32(ambChainId));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-
         vm.stopPrank();
         vm.assume(malice_ != deployer);
         vm.prank(malice_);

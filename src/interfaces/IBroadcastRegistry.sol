@@ -20,7 +20,7 @@ interface IBroadcastRegistry {
         payable;
 
     /// @dev allows ambs to write broadcasted payloads
-    function receivePayload(uint64 srcChainId_, bytes memory message_) external;
+    function receiveBroadcastPayload(uint64 srcChainId_, bytes memory message_) external;
 
     /// @dev allows previlaged actors to process broadcasted payloads
     /// @param payloadId_ is the identifier of the cross-chain payload

@@ -146,6 +146,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         bytes memory response = layerzeroImplementation.getConfig(version, chainId, address(0), 6);
         assertEq(response, abi.encode(CHAINLINK_lzOracle));
 
+        vm.assume(malice_ != deployer);
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(malice_);
         layerzeroImplementation.setConfig(version, chainId, 6, abi.encode(CHAINLINK_lzOracle));
@@ -203,6 +204,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         bytes memory newSrcAddress =
             abi.encodePacked(getContract(newChainId, "LayerzeroImplementation"), address(layerzeroImplementation));
 
+        vm.assume(malice_ != deployer);
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(malice_);
         layerzeroImplementation.setTrustedRemote(newLzChainId, newSrcAddress);

@@ -763,7 +763,7 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstChainId, vars.dstWormholeChainId
                     );
 
-                    WormholeSRImplementation(payable(vars.wormholeImplementation)).setChainId(
+                    WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
                         vars.dstChainId, vars.dstWormholeChainId
                     );
 
