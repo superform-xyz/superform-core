@@ -351,7 +351,7 @@ abstract contract AbstractDeploy is Script {
         vars.superRegistryC.setAddress(
             vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
         );
-        vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
+        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
         address[] memory registryAddresses = new address[](2);
         registryAddresses[0] = vars.coreStateRegistry;
@@ -434,18 +434,18 @@ abstract contract AbstractDeploy is Script {
 
         /// @dev 10 - Deploy SuperformRouter
 
-        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1, 1));
         contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
         /// @dev grant extra roles to superformRouter
-        vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.superformRouter);
-        vars.superRBACC.grantRole(vars.superRBACC.BURNER_ROLE(), vars.superformRouter);
+        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.superformRouter);
+        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_BURNER_ROLE(), vars.superformRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions =
-            address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+            address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry, 1));
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
@@ -453,9 +453,22 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] =
             address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry));
 
+        /// @dev 11.1 Set Router Info
+
+        uint8[] memory superformRouterIds = new uint8[](1);
+        superformRouterIds[0] = 1;
+
+        address[] memory stateSyncers = new address[](1);
+        stateSyncers[0] = vars.superPositions;
+
+        address[] memory routers = new address[](1);
+        routers[0] = vars.superformRouter;
+
+        vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
+
         /// @dev 12 - Deploy Payload Helper
         vars.PayloadHelper = address(
-            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superPositions, vars.twoStepsFormStateRegistry)
+            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superRegistry, vars.twoStepsFormStateRegistry)
         );
         contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);

@@ -39,6 +39,8 @@ contract SXSVWRevertTimelockedNativeSlippage is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [2];
         LIQ_BRIDGES[ARBI][1] = [2];
 
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

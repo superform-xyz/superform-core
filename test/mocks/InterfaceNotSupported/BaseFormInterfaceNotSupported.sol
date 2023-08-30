@@ -8,12 +8,16 @@ import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/utils/Error.sol";
+import { IFormBeacon } from "src/interfaces/IFormBeacon.sol";
+import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
-/// @notice WIP: deposit and withdraw functions' arguments should be made uniform across direct and xchain
 abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
+    using DataLib for uint256;
+
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -26,25 +30,34 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice state variable are all declared public to avoid creating functions to expose.
-
     /// @dev The superRegistry address is used to access relevant protocol addresses
     ISuperRegistry public immutable superRegistry;
 
     /// @dev the vault this form pertains to
-    address public vault;
+    address internal vault;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
+    modifier notPaused(InitSingleVaultData memory singleVaultData_) {
+        (, uint32 formBeaconId_,) = singleVaultData_.superformId.getSuperform();
+
+        if (
+            IFormBeacon(
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
+            ).paused()
+        ) revert Error.PAUSED();
+        _;
+    }
+
     modifier onlySuperRouter() {
-        if (superRegistry.getAddress(superRegistry.SUPERFORM_ROUTER()) != msg.sender) revert Error.NOT_SUPER_ROUTER();
+        if (superRegistry.getAddress(keccak256("SUPERFORM_ROUTER")) != msg.sender) revert Error.NOT_SUPER_ROUTER();
         _;
     }
 
     modifier onlyCoreStateRegistry() {
-        if (superRegistry.getAddress(superRegistry.CORE_STATE_REGISTRY()) != msg.sender) {
+        if (superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")) != msg.sender) {
             revert Error.NOT_CORE_STATE_REGISTRY();
         }
         _;
@@ -82,6 +95,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         payable
         override
         onlySuperRouter
+        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
         dstAmount = _directDepositIntoVault(singleVaultData_, srcSender_);
@@ -95,6 +109,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         external
         override
         onlySuperRouter
+        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
         dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
@@ -109,6 +124,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         external
         override
         onlyCoreStateRegistry
+        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
         dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
@@ -123,6 +139,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         external
         override
         onlyCoreStateRegistry
+        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
         dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
@@ -132,42 +149,49 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
                     PURE/VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice get Superform name of the ERC20 vault representation
-    /// @return The ERC20 name
-    function superformYieldTokenName() external view virtual returns (string memory);
+    /// @inheritdoc IBaseForm
+    function superformYieldTokenName() external view virtual override returns (string memory);
 
-    /// @notice get Superform symbol of the ERC20 vault representation
-    /// @return The ERC20 symbol
-    function superformYieldTokenSymbol() external view virtual returns (string memory);
+    /// @inheritdoc IBaseForm
+    function superformYieldTokenSymbol() external view virtual override returns (string memory);
 
     /// @inheritdoc IBaseForm
     function getVaultAsset() public view virtual override returns (address);
 
-    /// @notice Returns the amount of underlying tokens each share of a vault is worth.
-    /// @return The pricePerVaultShare value
-    function getPricePerVaultShare() public view virtual returns (uint256);
+    /// @inheritdoc IBaseForm
+    function getVaultName() public view virtual override returns (string memory);
 
-    /// @notice Returns the amount of vault shares owned by the form.
-    /// @return The form's vault share balance
-    function getVaultShareBalance() public view virtual returns (uint256);
+    /// @inheritdoc IBaseForm
+    function getVaultSymbol() public view virtual override returns (string memory);
 
-    /// @notice get the total amount of underlying managed in the ERC4626 vault
-    /// NOTE: does not exist in timeless implementation
-    function getTotalAssets() public view virtual returns (uint256);
+    /// @inheritdoc IBaseForm
+    function getVaultDecimals() public view virtual override returns (uint256);
 
-    /// @notice returns the state registry id
-    function getStateRegistryId() external view virtual returns (uint256);
+    // @inheritdoc IBaseForm
+    function getVaultAddress() external view override returns (address) {
+        return vault;
+    }
 
-    /// @notice get the total amount of assets received if shares are actually redeemed
-    /// @notice https://eips.ethereum.org/EIPS/eip-4626
-    function getPreviewPricePerVaultShare() public view virtual returns (uint256);
+    /// @inheritdoc IBaseForm
+    function getPricePerVaultShare() public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function getVaultShareBalance() public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function getTotalAssets() public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
+    function getStateRegistryId() external view virtual override returns (uint256);
+
+    // @inheritdoc IBaseForm
+    function getPreviewPricePerVaultShare() public view virtual override returns (uint256);
 
     /// @inheritdoc IBaseForm
     function previewDepositTo(uint256 assets_) public view virtual override returns (uint256);
 
-    /// @notice positionBalance() -> .vaultIds&destAmounts
-    /// @return how much of an asset + interest (accrued) is to withdraw from the Vault
-    function previewWithdrawFrom(uint256 assets_) public view virtual returns (uint256);
+    /// @inheritdoc IBaseForm
+    function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256);
 
     /*///////////////////////////////////////////////////////////////
                 INTERNAL STATE CHANGING VIRTUAL FUNCTIONS

@@ -17,6 +17,9 @@ abstract contract BaseBroadcaster is IBaseBroadcaster {
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public superRegistry;
 
+    /// @dev stores the received payload after assigning
+    mapping(uint256 => bytes) public payload;
+
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -59,7 +62,10 @@ abstract contract BaseBroadcaster is IBaseBroadcaster {
     }
 
     /// @inheritdoc IBaseBroadcaster
-    function receivePayload(uint64 srcChainId_, bytes memory message_) external override { }
+    function receivePayload(uint64 srcChainId_, bytes memory message_) external virtual override;
+
+    /// @inheritdoc IBaseBroadcaster
+    function processPayload(uint256 payloadId) external virtual override;
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS

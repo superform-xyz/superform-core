@@ -92,6 +92,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         );
     }
 
+    /// NOTE: add caller validation
     function receiveMessage(bytes memory encodedMessage) public {
         (IWormhole.VM memory wormholeMessage, bool valid, string memory reason) =
             wormhole.parseAndVerifyVM(encodedMessage);

@@ -54,6 +54,9 @@ contract MDMVW00001200TokenInputSlipapgeL1AMB12 is ProtocolActions {
         LIQ_BRIDGES[POLY][0] = [1, 2, 1, 2];
         LIQ_BRIDGES[POLY][1] = [1, 1, 2, 2];
 
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH, ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH, ETH, ETH];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({

@@ -39,6 +39,8 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
         LIQ_BRIDGES[OP][0] = [1];
         LIQ_BRIDGES[OP][1] = [1];
 
+        FINAL_LIQ_DST_WITHDRAW[OP] = [OP];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.19;
+// // SPDX-License-Identifier: Unlicense
+// pragma solidity 0.8.19;
 
 // import "test/utils/BaseSetup.sol";
 // import "test/utils/Utilities.sol";
@@ -201,16 +201,16 @@ pragma solidity 0.8.19;
 
 //     function test_grantMinterRole() public {
 //         vm.startPrank(deployer);
-//         superRBAC.grantRole(superRBAC.MINTER_ROLE(), address(0x1));
+//         superRBAC.grantRole(superRBAC.SUPERPOSITIONS_MINTER_ROLE(), address(0x1));
 //         vm.stopPrank();
 
-//         assertEq(superRBAC.hasMinterRole(address(0x1)), true);
+//         assertEq(superRBAC.hasSuperPositionsMinterRole(address(0x1)), true);
 //     }
 
 //     function test_revokeMinterRole() public {
 //         _revokeAndCheck(
-//             superRBAC.hasMinterRole.selector,
-//             superRBAC.MINTER_ROLE(),
+//             superRBAC.hasSuperPositionsMinterRole.selector,
+//             superRBAC.SUPERPOSITIONS_MINTER_ROLE(),
 //             superRegistry.TWO_STEPS_FORM_STATE_REGISTRY(),
 //             deployer,
 //             "TwoStepsFormStateRegistry",
@@ -221,16 +221,16 @@ pragma solidity 0.8.19;
 
 //     function test_grantBurnerRole() public {
 //         vm.startPrank(deployer);
-//         superRBAC.grantRole(superRBAC.BURNER_ROLE(), address(0x1));
+//         superRBAC.grantRole(superRBAC.SUPERPOSITIONS_BURNER_ROLE(), address(0x1));
 //         vm.stopPrank();
 
-//         assertEq(superRBAC.hasBurnerRole(address(0x1)), true);
+//         assertEq(superRBAC.hasSuperPositionsBurnerRole(address(0x1)), true);
 //     }
 
 //     function test_revokeBurnerRole() public {
 //         _revokeAndCheck(
-//             superRBAC.hasBurnerRole.selector,
-//             superRBAC.BURNER_ROLE(),
+//             superRBAC.hasSuperPositionsBurnerRole.selector,
+//             superRBAC.SUPERPOSITIONS_BURNER_ROLE(),
 //             superRegistry.SUPERFORM_ROUTER(),
 //             deployer,
 //             "SuperformRouter",
@@ -279,7 +279,8 @@ pragma solidity 0.8.19;
 //         superRBAC.stateSync(
 //             abi.encode(
 //                 AMBFactoryMessage(
-//                     keccak256("SYNC_REVOKE"), abi.encode(keccak256("MINTER_ROLE"), keccak256("NON_EXISTENT_ID"))
+//                     keccak256("SYNC_REVOKE"),
+//                     abi.encode(keccak256("SUPERPOSITIONS_MINTER_ROLE"), keccak256("NON_EXISTENT_ID"))
 //                 )
 //             )
 //         );

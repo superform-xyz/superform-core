@@ -30,11 +30,15 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter {
 
     /// @inheritdoc ISuperTransmuter
     function registerTransmuter(uint256 superformId) external override returns (address) {
-        (address superform, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
-
+        (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId);
+        if (superRegistry.chainId() != chainId) revert Error.INVALID_CHAIN_ID();
         if (superform == address(0)) revert Error.NOT_SUPERFORM();
         if (formBeaconId == 0) revert Error.FORM_DOES_NOT_EXIST();
         if (synthethicTokenId[superformId] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
+
+        /// @dev if we call this on the chain where the superform is, it works
+        /// @dev however we need this to be called on certain chains where the superform is not deployed
+        /// @dev with broadcasting this could be forwarded to all the other chains
 
         address syntheticToken = address(
             new sERC20(

@@ -27,12 +27,6 @@ library Error {
     /// @dev thrown when msg.sender is not two step form
     error NOT_TWO_STEP_SUPERFORM();
 
-    /// @dev thrown when msg.sender is not factory state registry
-    error NOT_VALID_STATE_REGISTRY();
-
-    /// @dev thrown when msg.sender is not form state registry
-    error NOT_FORM_STATE_REGISTRY();
-
     /// @dev thrown when msg.sender is not a valid amb implementation
     error NOT_AMB_IMPLEMENTATION();
 
@@ -72,6 +66,9 @@ library Error {
     /// @dev thrown if the msg-sender is not super registry
     error NOT_SUPER_REGISTRY();
 
+    /// @dev thrown if the msg-sender is not super rbac
+    error NOT_SUPER_RBAC();
+
     /// @dev thrown if the msg-sender does not have SWAPPER role
     error NOT_SWAPPER();
 
@@ -80,9 +77,6 @@ library Error {
 
     /// @dev thrown if the msg-sender does not have UPDATER role
     error NOT_UPDATER();
-
-    /// @dev thrown if the msg-sender does not have CORE_CONTRACTS role
-    error NOT_CORE_CONTRACTS();
 
     /// @dev thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
@@ -108,6 +102,9 @@ library Error {
 
     /// @dev thrown when the validation of bridge txData fails due to wrong token
     error INVALID_TXDATA_TOKEN();
+
+    /// @dev thrown when in deposits, the liqDstChainId doesn't match the stateReq dstChainId
+    error INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
 
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
@@ -191,20 +188,8 @@ library Error {
     /// @dev thrown if any of the ambs in indexes +1 are repeated  (index 0)
     error INVALID_PROOF_BRIDGE_ID();
 
-    /// @dev thrown if less than 2 AMBs are passed in the state request
-    error INVALID_AMB_IDS_LENGTH();
-
     /// @dev thrown if the gas per dst doesn't match chain ids in broadcasting
     error INVALID_EXTRA_DATA_LENGTHS();
-
-    /// @dev thrown if trying to rescue a non multi failed deposit data
-    error NOT_MULTI_FAILURE();
-
-    /// @dev thrown if trying to rescue a non single failed deposit data
-    error NOT_SINGLE_FAILURE();
-
-    /// @dev thrown if deposits were already rescued
-    error ALREADY_RESCUED();
 
     /// @dev thrown if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();

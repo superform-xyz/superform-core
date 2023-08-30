@@ -41,6 +41,8 @@ contract SXSVWNormal4626NativeSlippageL1AMB23 is ProtocolActions {
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 
+        FINAL_LIQ_DST_WITHDRAW[OP] = [POLY];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

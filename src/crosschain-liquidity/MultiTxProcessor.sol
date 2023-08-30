@@ -67,6 +67,7 @@ contract MultiTxProcessor is IMultiTxProcessor {
             txData_,
             chainId,
             chainId,
+            chainId,
             false,
             /// to enter the if-else case of the bridge validator loop
             address(0),

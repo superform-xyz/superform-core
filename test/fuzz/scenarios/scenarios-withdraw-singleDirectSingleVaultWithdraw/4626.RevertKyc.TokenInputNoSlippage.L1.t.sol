@@ -39,6 +39,8 @@ contract SXSVWRevertKyc4626TokenInputNoSlippageL1 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [1];
         LIQ_BRIDGES[AVAX][1] = [1];
 
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [AVAX];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({

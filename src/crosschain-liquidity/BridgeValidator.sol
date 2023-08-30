@@ -43,6 +43,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         bytes calldata txData_,
         uint64 srcChainId_,
         uint64 dstChainId_,
+        uint64 liqDstChainId_,
         bool deposit_,
         address superform_,
         address srcSender_,

@@ -416,7 +416,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRegistryC.setAddress(
                 vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
             );
-            vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
+            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
             vars.superRegistryC.setAddress(
                 vars.superRegistryC.ROLES_STATE_REGISTRY(), vars.rolesStateRegistry, vars.chainId
@@ -585,22 +585,18 @@ abstract contract BaseSetup is DSTest, Test {
             ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
             /// @dev 11 - Deploy SuperformRouter
-            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1, 1));
             contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
             /// @dev grant extra roles to superformRouter
-            vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.superformRouter);
-            vars.superRBACC.grantRole(vars.superRBACC.BURNER_ROLE(), vars.superformRouter);
+            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.superformRouter);
+            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_BURNER_ROLE(), vars.superformRouter);
 
             /// @dev 12 - Deploy SuperPositions and SuperTransmuter
-            vars.superPositions = address(
-                new SuperPositions{salt: salt}(
-                    "https://apiv2-dev.superform.xyz/",
-                    vars.superRegistry
-                )
-            );
+            vars.superPositions =
+                address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry, 1));
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
@@ -612,11 +608,24 @@ abstract contract BaseSetup is DSTest, Test {
                 )
             );
 
+            /// @dev 12.1 Set Router Info
+
+            uint8[] memory superformRouterIds = new uint8[](1);
+            superformRouterIds[0] = 1;
+
+            address[] memory stateSyncers = new address[](1);
+            stateSyncers[0] = vars.superPositions;
+
+            address[] memory routers = new address[](1);
+            routers[0] = vars.superformRouter;
+
+            vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
+
             /// @dev 13- deploy Payload Helper
             vars.PayloadHelper = address(
                 new PayloadHelper{salt: salt}(
                     vars.coreStateRegistry,
-                    vars.superPositions,
+                    vars.superRegistry,
                     vars.twoStepsFormStateRegistry
                 )
             );
@@ -1211,6 +1220,7 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 i; i < singleSuperformsData.length; i++) {
             bytes memory ambData = abi.encode(
                 InitSingleVaultData(
+                    2 ** 8 - 1,
                     2 ** 256 - 1,
                     /// @dev uses max payload id
                     singleSuperformsData[i].superformId,
@@ -1226,6 +1236,7 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 i; i < multiSuperformsData.length; i++) {
             bytes memory ambData = abi.encode(
                 InitMultiVaultData(
+                    2 ** 8 - 1,
                     2 ** 256 - 1,
                     /// @dev uses max payload id
                     multiSuperformsData[i].superformIds,
@@ -1335,11 +1346,12 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,) =
-            vars.payloadHelper.decodeDstPayload(payloadId);
+        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,,) =
+            vars.payloadHelper.decodeCoreStateRegistryPayload(payloadId);
 
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, superformIds, amounts))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(2 ** 8 - 1, payloadId, superformIds, amounts)))
+        );
 
         address _paymentHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
         vars.paymentHelper = PaymentHelper(_paymentHelper);
@@ -1382,8 +1394,9 @@ abstract contract BaseSetup is DSTest, Test {
         (,, uint256 payloadId, uint256 superformId, uint256 amount) =
             vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
 
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(2 ** 8 - 1, payloadId, superformId, amount)))
+        );
 
         (vars.totalFees, gasPerAMB) =
             vars.paymentHelper.estimateAMBFees(selectedAmbIds, vars.srcChainId, abi.encode(vars.message), paramsPerAMB);
