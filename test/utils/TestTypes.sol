@@ -119,7 +119,9 @@ struct SetupVars {
     address celerHelper;
     address celerImplementation;
     address wormholeHelper;
+    address wormholeBroadcastHelper;
     address wormholeImplementation;
+    address wormholeSRImplementation;
     address socketRouter;
     address lifiRouter;
     address erc4626Form;
@@ -131,6 +133,7 @@ struct SetupVars {
     address PayloadHelper;
     address paymentHelper;
     address twoStepsFormStateRegistry;
+    address broadcastRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
@@ -139,6 +142,7 @@ struct SetupVars {
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
     address dstWormholeARImplementation;
+    address dstWormholeSRImplementation;
     address multiTxProcessor;
     address payMaster;
     address superRegistry;

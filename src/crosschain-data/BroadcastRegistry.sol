@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { Error } from "src/utils/Error.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { BroadcastMessage, AMBExtraData } from "src/types/DataTypes.sol";
+import { BroadcastMessage, AMBExtraData, PayloadState } from "src/types/DataTypes.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
@@ -28,6 +28,9 @@ contract BroadcastRegistry is IBroadcastRegistry {
 
     /// @dev stores the received payload after assigning
     mapping(uint256 => bytes) public payload;
+
+    /// @dev stores the status of the received payload
+    mapping(uint256 => PayloadState) public payloadTracking;
 
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
@@ -89,9 +92,18 @@ contract BroadcastRegistry is IBroadcastRegistry {
 
     /// @inheritdoc IBroadcastRegistry
     function processPayload(uint256 payloadId) external override {
+        if (payloadId > payloadsCount) {
+            revert Error.INVALID_PAYLOAD_ID();
+        }
+
+        if (payloadTracking[payloadId] != PayloadState.STORED) {
+            revert Error.PAYLOAD_ALREADY_PROCESSED();
+        }
+
         BroadcastMessage memory data = abi.decode(payload[payloadId], (BroadcastMessage));
         bytes32 targetId = keccak256(data.target);
 
+        payloadTracking[payloadId] = PayloadState.PROCESSED;
         Target(superRegistry.getAddress(targetId)).stateSync(payload[payloadId]);
     }
 

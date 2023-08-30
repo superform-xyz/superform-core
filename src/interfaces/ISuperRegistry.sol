@@ -109,11 +109,8 @@ interface ISuperRegistry {
     /// @dev returns the id of the two steps form state registry module
     function TWO_STEPS_FORM_STATE_REGISTRY() external view returns (bytes32);
 
-    /// @dev returns the id of the factory state registry module
-    function FACTORY_STATE_REGISTRY() external view returns (bytes32);
-
-    /// @dev returns the id of the factory state registry module
-    function ROLES_STATE_REGISTRY() external view returns (bytes32);
+    /// @dev returns the id of the broadcast state registry module
+    function BROADCAST_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the super positions module
     function SUPER_POSITIONS() external view returns (bytes32);

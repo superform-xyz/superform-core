@@ -194,9 +194,9 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @inheritdoc ISuperformFactory
     function stateSync(bytes memory data_) external payable override {
-        /// @dev this function is only accessible through factory state registry
-        if (msg.sender != superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))) {
-            revert Error.NOT_FACTORY_STATE_REGISTRY();
+        /// @dev this function is only accessible through broadcast registry
+        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
+            revert Error.NOT_BROADCAST_REGISTRY();
         }
 
         BroadcastMessage memory factoryPayload = abi.decode(data_, (BroadcastMessage));
@@ -284,7 +284,7 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))).broadcastPayload{
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
             value: msg.value
         }(msg.sender, ambIds, message_, broadcastParams);
     }

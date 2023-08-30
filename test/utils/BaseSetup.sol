@@ -7,7 +7,10 @@ import "ds-test/test.sol";
 import { LayerZeroHelper } from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import { HyperlaneHelper } from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import { CelerHelper } from "pigeon/src/celer/CelerHelper.sol";
+
 import { WormholeHelper } from "pigeon/src/wormhole/automatic-relayer/WormholeHelper.sol";
+import "pigeon/src/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
+
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 
@@ -29,6 +32,7 @@ import { KYCDaoNFTMock } from "../mocks/KYCDaoNFTMock.sol";
 
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
+import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
@@ -48,6 +52,8 @@ import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/
 import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
 import { WormholeARImplementation } from
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
+import { WormholeSRImplementation } from
+    "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
@@ -135,8 +141,10 @@ abstract contract BaseSetup is DSTest, Test {
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
     /// @notice id 3 is celer
-    /// @notice id 4 is wormhole
-    uint8[] public ambIds = [uint8(1), 2, 3, 4];
+    /// @notice id 4 is wormhole (Automatic Relayer)
+    /// @notice id 5 is wormhole (Specialized Relayer)
+
+    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -350,11 +358,17 @@ abstract contract BaseSetup is DSTest, Test {
 
             contracts[vars.chainId][bytes32(bytes("CelerHelper"))] = vars.celerHelper;
 
-            /// @dev 1.4- deploy Wormhole Helper from Pigeon
+            /// @dev 1.4- deploy Wormhole Automatic Relayer Helper from Pigeon
             vars.wormholeHelper = address(new WormholeHelper{salt: salt}());
             vm.allowCheatcodes(vars.wormholeHelper);
 
             contracts[vars.chainId][bytes32(bytes("WormholeHelper"))] = vars.wormholeHelper;
+
+            /// @dev 1.5- deploy Wormhole Specialized Relayer Helper from Pigeon
+            vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{salt: salt}());
+            vm.allowCheatcodes(vars.wormholeBroadcastHelper);
+
+            contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
 
             /// @dev 2 - Deploy SuperRBAC
             vars.superRBAC = address(new SuperRBAC{salt: salt}(deployer));
@@ -410,7 +424,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 4.2 - deploy Form State Registry
             vars.twoStepsFormStateRegistry = address(new TwoStepsFormStateRegistry{salt: salt}(vars.superRegistryC));
-
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
             vars.superRegistryC.setAddress(
@@ -418,17 +431,23 @@ abstract contract BaseSetup is DSTest, Test {
             );
             vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
+            /// @dev 4.3 - deploy Broadcast State Registry
+            vars.broadcastRegistry = address(new BroadcastRegistry{salt: salt}(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("BroadcastRegistry"))] = vars.broadcastRegistry;
+
             vars.superRegistryC.setAddress(
-                vars.superRegistryC.ROLES_STATE_REGISTRY(), vars.rolesStateRegistry, vars.chainId
+                vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry, vars.chainId
             );
 
-            address[] memory registryAddresses = new address[](2);
+            address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;
             registryAddresses[1] = vars.twoStepsFormStateRegistry;
+            registryAddresses[2] = vars.broadcastRegistry;
 
-            uint8[] memory registryIds = new uint8[](2);
+            uint8[] memory registryIds = new uint8[](3);
             registryIds[0] = 1;
             registryIds[1] = 2;
+            registryIds[2] = 3;
 
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
             vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.coreStateRegistry);
@@ -456,13 +475,13 @@ abstract contract BaseSetup is DSTest, Test {
             );
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
-            /// @dev 6.3 - deploy Celer Implementation
+            /// @dev 6.3- deploy Celer Implementation
             vars.celerImplementation = address(new CelerImplementation{salt: salt}(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
 
             CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[i]);
 
-            /// @dev 6.4 - deploy Wormhole Implementation
+            /// @dev 6.4- deploy Wormhole Automatic Relayer Implementation
             vars.wormholeImplementation = address(
                 new WormholeARImplementation{salt: salt}(
                     vars.superRegistryC
@@ -472,10 +491,21 @@ abstract contract BaseSetup is DSTest, Test {
 
             WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
 
+            /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
+            vars.wormholeSRImplementation = address(
+                new WormholeSRImplementation{salt: salt}(
+                    vars.superRegistryC
+                )
+            );
+            contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
+
+            WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
+
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
             vars.ambAddresses[2] = vars.celerImplementation;
             vars.ambAddresses[3] = vars.wormholeImplementation;
+            vars.ambAddresses[4] = vars.wormholeSRImplementation;
 
             /// @dev 7.1 deploy SocketRouterMock and LiFiRouterMock. These mocks are very minimal versions to allow
             /// liquidity bridge testing
@@ -678,6 +708,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
             vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
+            vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
 
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
@@ -699,6 +730,7 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
                     vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
+                    vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
@@ -728,6 +760,10 @@ abstract contract BaseSetup is DSTest, Test {
                     );
 
                     WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
+                        vars.dstChainId, vars.dstWormholeChainId
+                    );
+
+                    WormholeSRImplementation(payable(vars.wormholeImplementation)).setChainId(
                         vars.dstChainId, vars.dstWormholeChainId
                     );
 
@@ -787,6 +823,12 @@ abstract contract BaseSetup is DSTest, Test {
                     );
 
                     vars.superRegistryC.setAddress(
+                        vars.superRegistryC.BROADCAST_REGISTRY(),
+                        getContract(vars.dstChainId, "BroadcastRegistry"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
                         vars.superRegistryC.SUPER_POSITIONS(),
                         getContract(vars.dstChainId, "SuperPositions"),
                         vars.dstChainId
@@ -816,12 +858,6 @@ abstract contract BaseSetup is DSTest, Test {
                     );
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
                     );
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
@@ -1072,38 +1108,29 @@ abstract contract BaseSetup is DSTest, Test {
     function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
-        address[] memory toMailboxes = new address[](6);
-        uint32[] memory expDstDomains = new uint32[](6);
+        address[] memory dstTargets = new address[](5);
+        address[] memory dstWormhole = new address[](5);
 
-        address[] memory endpoints = new address[](6);
-        uint16[] memory lzChainIds = new uint16[](6);
+        uint256[] memory forkIds = new uint256[](5);
 
-        uint256[] memory forkIds = new uint256[](6);
+        uint16 currWormholeChainId;
 
         uint256 j;
         for (uint256 i = 0; i < chainIds.length; i++) {
-            toMailboxes[j] = hyperlaneMailboxes[i];
-            expDstDomains[j] = hyperlane_chainIds[i];
+            if (chainIds[i] != currentChainId) {
+                dstWormhole[j] = wormholeCore[i];
+                dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
 
-            endpoints[j] = lzEndpoints[i];
-            lzChainIds[j] = lz_chainIds[i];
+                forkIds[j] = FORKS[chainIds[i]];
 
-            forkIds[j] = FORKS[chainIds[i]];
-
-            j++;
+                j++;
+            } else {
+                currWormholeChainId = wormhole_chainIds[i];
+            }
         }
 
-        HyperlaneHelper(getContract(currentChainId, "HyperlaneHelper")).help(
-            address(HyperlaneMailbox), toMailboxes, expDstDomains, forkIds, logs
-        );
-
-        LayerZeroHelper(getContract(currentChainId, "LayerZeroHelper")).help(
-            endpoints,
-            lzChainIds,
-            5_000_000,
-            /// note: using some max limit
-            forkIds,
-            logs
+        WormholeBroadcastHelper.WormholeHelper(getContract(currentChainId, "WormholeBroadcastHelper")).help(
+            currWormholeChainId, forkIds, dstWormhole, dstTargets, logs
         );
 
         vm.startPrank(deployer);

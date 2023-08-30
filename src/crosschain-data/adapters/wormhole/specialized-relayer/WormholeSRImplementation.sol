@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "wormhole-solidity-sdk/interfaces/IWormhole.sol";
 
-import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
@@ -114,9 +114,9 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         // AMBMessage memory decoded = abi.decode(payload, (AMBMessage));
         // (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         // address registryAddress = superRegistry.getStateRegistry(registryId);
-        // IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
+        IBroadcastRegistry targetRegistry = IBroadcastRegistry(superRegistry.getStateRegistry(3));
 
-        // targetRegistry.receivePayload(superChainId[sourceChain], payload);
+        targetRegistry.receivePayload(superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload);
     }
 
     /// @dev allows protocol admin to add new chain ids in future
