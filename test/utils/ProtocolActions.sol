@@ -405,13 +405,17 @@ abstract contract ProtocolActions is BaseSetup {
                 /// case (if we input same amount in scenario)
                 /// @dev JUST FOR TESTING: for partial withdraws its negligible the effect of this extra slippage param
                 /// as it is just for testing
+                ///  || (action.action == Actions.Withdraw)
                 if (
                     action.slippage != 0
                         && (
                             (
                                 CHAIN_0 == DST_CHAINS[i]
-                                    && (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
-                            ) || (action.action == Actions.Withdraw)
+                                    && (
+                                        action.action == Actions.Deposit || action.action == Actions.DepositPermit2
+                                            || (action.action == Actions.Withdraw)
+                                    )
+                            )
                         )
                 ) {
                     finalAmount = (vars.amounts[0] * (10_000 - uint256(action.slippage))) / 10_000;
@@ -1350,13 +1354,17 @@ abstract contract ProtocolActions is BaseSetup {
             finalAmounts[i] = args.amounts[i];
             /// @dev FOR TESTING AND MAINNET:: in sameChain actions, slippage is encoded in the request with the amount
             /// (extracted from bridge api)
+            /// || (args.action == Actions.Withdraw)
             if (
                 args.slippage != 0
                     && (
                         (
                             args.srcChainId == args.toChainId
-                                && (args.action == Actions.Deposit || args.action == Actions.DepositPermit2)
-                        ) || (args.action == Actions.Withdraw)
+                                && (
+                                    args.action == Actions.Deposit || args.action == Actions.DepositPermit2
+                                        || (args.action == Actions.Withdraw)
+                                )
+                        )
                     )
             ) {
                 finalAmounts[i] = (args.amounts[i] * (10_000 - uint256(args.slippage))) / 10_000;
@@ -1861,6 +1869,44 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         return superformIds_;
+    }
+
+    function _getSuperpositionsForDstChain(
+        uint256 user,
+        uint256[] memory underlyingTokens_,
+        uint256[] memory vaultIds_,
+        uint32[] memory formKinds_,
+        uint64 chainId_
+    )
+        internal
+        returns (uint256[] memory superPositionBalances)
+    {
+        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, chainId_);
+        console.log("LENGTH", superformIds.length);
+        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+        vm.selectFork(FORKS[CHAIN_0]);
+
+        superPositionBalances = new uint256[](superformIds.length);
+
+        address superPositionsAddress =
+            ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
+
+        IERC1155A superPositions = IERC1155A(superPositionsAddress);
+
+        // bool partialWithdraw = partialWithdrawVaults.length > 0;
+        for (uint256 i = 0; i < superformIds.length; i++) {
+            console.log("BLIP");
+            superPositionBalances[i] = superPositions.balanceOf(users[user], superformIds[i]);
+            // if (partialWithdrawVaults.length > 0) {
+            //     partialWithdraw = partialWithdrawVaults[i];
+            // }
+
+            // if (!partialWithdraw) {
+            //     assertEq(currentBalanceOfSp, amountsToAssert[i]);
+            // } else {
+            //     assertGt(currentBalanceOfSp, amountsToAssert[i]);
+            // }
+        }
     }
 
     function _updateMultiVaultDepositPayload(updateMultiVaultDepositPayloadArgs memory args) internal returns (bool) {
@@ -2466,6 +2512,7 @@ abstract contract ProtocolActions is BaseSetup {
         bool partialWithdraw = partialWithdrawVaults.length > 0;
         for (uint256 i = 0; i < superformIds.length; i++) {
             currentBalanceOfSp = superPositions.balanceOf(users[user], superformIds[i]);
+            console.log("SPPPPPP", currentBalanceOfSp);
             if (partialWithdrawVaults.length > 0) {
                 partialWithdraw = partialWithdrawVaults[i];
             }
@@ -2591,6 +2638,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             /// @dev calculate the final amount summed on the basis of previewDeposit
             spAmountSummed[v.i] = IBaseForm(v.superforms[v.i]).previewDepositTo(spAmountSummed[v.i]);
+            console.log("SPAMOUNT_SUMMED", spAmountSummed[v.i]);
         }
     }
 
