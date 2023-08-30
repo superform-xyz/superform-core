@@ -5,10 +5,10 @@ import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspect
 import { BeaconProxy } from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
 import { BaseForm } from "./BaseForm.sol";
 import { FormBeacon } from "./forms/FormBeacon.sol";
-import { AMBFactoryMessage } from "./types/DataTypes.sol";
+import { BroadcastMessage } from "./types/DataTypes.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { IBaseBroadcaster } from "./interfaces/IBaseBroadcaster.sol";
+import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./utils/Error.sol";
@@ -182,8 +182,10 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev broadcast the change in status to the other destination chains
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
-                SYNC_BEACON_STATUS, abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, formBeaconId_, paused_)
+            BroadcastMessage memory factoryPayload = BroadcastMessage(
+                "SUPERFORM_FACTORY",
+                SYNC_BEACON_STATUS,
+                abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, formBeaconId_, paused_)
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
@@ -197,7 +199,7 @@ contract SuperformFactory is ISuperformFactory {
             revert Error.NOT_FACTORY_STATE_REGISTRY();
         }
 
-        AMBFactoryMessage memory factoryPayload = abi.decode(data_, (AMBFactoryMessage));
+        BroadcastMessage memory factoryPayload = abi.decode(data_, (BroadcastMessage));
 
         if (factoryPayload.messageType == SYNC_BEACON_STATUS) {
             _syncBeaconStatus(factoryPayload.message);
@@ -282,7 +284,7 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBaseBroadcaster(superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))).broadcastPayload{
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))).broadcastPayload{
             value: msg.value
         }(msg.sender, ambIds, message_, broadcastParams);
     }

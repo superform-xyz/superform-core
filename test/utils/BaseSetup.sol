@@ -7,7 +7,7 @@ import "ds-test/test.sol";
 import { LayerZeroHelper } from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import { HyperlaneHelper } from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import { CelerHelper } from "pigeon/src/celer/CelerHelper.sol";
-import { WormholeHelper } from "pigeon/src/wormhole/WormholeHelper.sol";
+import { WormholeHelper } from "pigeon/src/wormhole/automatic-relayer/WormholeHelper.sol";
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 

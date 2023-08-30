@@ -766,7 +766,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     internalVars.wormholeRelayers[internalVars.k] = wormholeRelayer;
                     internalVars.expDstChainAddresses[internalVars.k] =
-                        getContract(chainIds[i], "WormholeImplementation");
+                        getContract(chainIds[i], "WormholeARImplementation");
 
                     internalVars.k++;
                 }

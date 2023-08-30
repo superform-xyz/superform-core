@@ -50,7 +50,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function test_setLzEndpoint(address lzEndPoint_) public {
         /// @dev resetting lzEndpoint's storage slot to 0 (which was set in BaseSetup)
-        vm.store(address(layerzeroImplementation), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.store(address(layerzeroImplementation), bytes32(uint256(0)), bytes32(uint256(0)));
         vm.assume(lzEndPoint_ != address(0));
 
         vm.prank(deployer);

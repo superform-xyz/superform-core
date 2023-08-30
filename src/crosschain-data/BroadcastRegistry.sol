@@ -2,20 +2,29 @@
 pragma solidity 0.8.19;
 
 import { Error } from "src/utils/Error.sol";
-import { IBaseBroadcaster } from "src/interfaces/IBaseBroadcaster.sol";
+import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { AMBMessage, AMBExtraData } from "src/types/DataTypes.sol";
+import { BroadcastMessage, AMBExtraData } from "src/types/DataTypes.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
-/// @title BaseBroadcaster
+interface Target {
+    function stateSync(bytes memory data_) external;
+}
+
+/// @title BaseStateRegistry
 /// @author ZeroPoint Labs
 /// @notice helps core contract communicate with multiple dst chains through supported AMBs
-abstract contract BaseBroadcaster is IBaseBroadcaster {
+contract BroadcastRegistry is IBroadcastRegistry {
     /*///////////////////////////////////////////////////////////////
                               STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public superRegistry;
+
+    uint256 public payloadsCount;
+
+    /// @dev stores the message quorum
+    mapping(bytes32 => uint256) public messageQuorum;
 
     /// @dev stores the received payload after assigning
     mapping(uint256 => bytes) public payload;
@@ -23,7 +32,8 @@ abstract contract BaseBroadcaster is IBaseBroadcaster {
     /*///////////////////////////////////////////////////////////////
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    ///@dev set up admin during deployment.
+
+    /// @dev set up admin during deployment.
     constructor(ISuperRegistry superRegistry_) {
         superRegistry = superRegistry_;
     }
@@ -32,15 +42,19 @@ abstract contract BaseBroadcaster is IBaseBroadcaster {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev sender varies based on functionality
-    /// @notice inheriting contracts should override this function (else not safe)
-    /// @dev with general revert to protect dispatchPaylod in case of non override
+    /// @notice sender should be a valid configured contract
+    /// @dev should be factory or roles contract
     modifier onlySender() virtual {
-        revert Error.DISABLED();
+        if (
+            msg.sender != superRegistry.getAddress(keccak256("SUPER_RBAC"))
+                && msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))
+        ) {
+            revert Error.NOT_ALLOWED_BROADCASTER();
+        }
         _;
     }
 
-    /// @inheritdoc IBaseBroadcaster
+    /// @inheritdoc IBroadcastRegistry
     function broadcastPayload(
         address srcSender_,
         uint8[] memory ambIds_,
@@ -61,11 +75,25 @@ abstract contract BaseBroadcaster is IBaseBroadcaster {
         }
     }
 
-    /// @inheritdoc IBaseBroadcaster
-    function receivePayload(uint64 srcChainId_, bytes memory message_) external virtual override;
+    /// @inheritdoc IBroadcastRegistry
+    function receivePayload(uint64 srcChainId_, bytes memory message_) external override {
+        /// FIXME: add sender validations
+        if (message_.length == 32) {
+            ++messageQuorum[abi.decode(message_, (bytes32))];
+        } else {
+            ++payloadsCount;
 
-    /// @inheritdoc IBaseBroadcaster
-    function processPayload(uint256 payloadId) external virtual override;
+            payload[payloadsCount] = message_;
+        }
+    }
+
+    /// @inheritdoc IBroadcastRegistry
+    function processPayload(uint256 payloadId) external override {
+        BroadcastMessage memory data = abi.decode(payload[payloadId], (BroadcastMessage));
+        bytes32 targetId = keccak256(data.target);
+
+        Target(superRegistry.getAddress(targetId)).stateSync(payload[payloadId]);
+    }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
@@ -81,14 +109,6 @@ abstract contract BaseBroadcaster is IBaseBroadcaster {
     )
         internal
     {
-        /// @dev when broadcasting, txType, callbackType and multi are set to their default values as they are unused
-        AMBMessage memory newData = AMBMessage(
-            DataLib.packTxInfo(
-                0, 0, 0, superRegistry.getStateRegistryId(address(this)), srcSender_, superRegistry.chainId()
-            ),
-            message_
-        );
-
         IBroadcastAmbImplementation ambImplementation = IBroadcastAmbImplementation(superRegistry.getAmbAddress(ambId_));
 
         /// @dev reverts if an unknown amb id is used
@@ -96,7 +116,7 @@ abstract contract BaseBroadcaster is IBaseBroadcaster {
             revert Error.INVALID_BRIDGE_ID();
         }
 
-        ambImplementation.broadcastPayload{ value: gasToPay_ }(srcSender_, abi.encode(newData), extraData_);
+        ambImplementation.broadcastPayload{ value: gasToPay_ }(srcSender_, message_, extraData_);
     }
 
     /// @dev broadcasts the proof(hash of the message_) through individual message bridge implementations
@@ -109,16 +129,6 @@ abstract contract BaseBroadcaster is IBaseBroadcaster {
     )
         internal
     {
-        bytes memory proof = abi.encode(keccak256(message_));
-
-        /// @dev when broadcasting, txType, callbackType and multi are set to their default values as they are unused
-        AMBMessage memory newData = AMBMessage(
-            DataLib.packTxInfo(
-                0, 0, 0, superRegistry.getStateRegistryId(address(this)), srcSender_, superRegistry.chainId()
-            ),
-            proof
-        );
-
         for (uint8 i = 1; i < ambIds_.length;) {
             uint8 tempAmbId = ambIds_[i];
 
@@ -133,7 +143,7 @@ abstract contract BaseBroadcaster is IBaseBroadcaster {
                 revert Error.INVALID_BRIDGE_ID();
             }
 
-            tempImpl.broadcastPayload{ value: gasToPay_[i] }(srcSender_, abi.encode(newData), extraData_[i]);
+            tempImpl.broadcastPayload{ value: gasToPay_[i] }(srcSender_, abi.encode(keccak256(message_)), extraData_[i]);
 
             unchecked {
                 ++i;

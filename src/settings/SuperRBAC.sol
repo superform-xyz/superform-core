@@ -2,11 +2,11 @@
 pragma solidity 0.8.19;
 
 import { AccessControl } from "openzeppelin-contracts/contracts/access/AccessControl.sol";
-import { IBaseBroadcaster } from "../interfaces/IBaseBroadcaster.sol";
+import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { Error } from "../utils/Error.sol";
-import { AMBFactoryMessage } from "../types/DataTypes.sol";
+import { BroadcastMessage } from "../types/DataTypes.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.
@@ -75,8 +75,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(role_, addressToRevoke_);
 
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload =
-                AMBFactoryMessage(SYNC_REVOKE, abi.encode(role_, superRegistryAddressId_));
+            BroadcastMessage memory rolesPayload =
+                BroadcastMessage("SUPER_RBAC", SYNC_REVOKE, abi.encode(role_, superRegistryAddressId_));
 
             _broadcast(abi.encode(rolesPayload), extraData_);
         }
@@ -88,7 +88,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
             revert Error.NOT_ROLES_STATE_REGISTRY();
         }
 
-        AMBFactoryMessage memory rolesPayload = abi.decode(data_, (AMBFactoryMessage));
+        BroadcastMessage memory rolesPayload = abi.decode(data_, (BroadcastMessage));
 
         if (rolesPayload.messageType == SYNC_REVOKE) {
             (bytes32 role, bytes32 superRegistryAddressId) = abi.decode(rolesPayload.message, (bytes32, bytes32));
@@ -167,7 +167,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-        IBaseBroadcaster(superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))).broadcastPayload{
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))).broadcastPayload{
             value: msg.value
         }(msg.sender, ambIds, message_, broadcastParams);
     }
