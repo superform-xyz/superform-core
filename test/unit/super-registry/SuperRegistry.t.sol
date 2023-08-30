@@ -77,16 +77,6 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.BROADCAST_REGISTRY(), address(0x1));
     }
 
-    /*
-    function test_setRolesStateRegistry_and_revert_invalidCaller() public {
-        _setAndAssert(
-            superRegistry.setRolesStateRegistry.selector,
-            superRegistry.rolesStateRegistry.selector,
-            address(0x1)
-        );
-    }
-    */
-
     function test_setSuperPositions_and_revert_invalidCaller() public {
         _setAndAssert(superRegistry.SUPER_POSITIONS(), address(0x1));
     }

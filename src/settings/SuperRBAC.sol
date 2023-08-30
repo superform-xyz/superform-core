@@ -1,6 +1,8 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console.sol";
+
 import { AccessControl } from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
@@ -12,7 +14,6 @@ import { BroadcastMessage } from "../types/DataTypes.sol";
 /// @author Zeropoint Labs.
 /// @dev Contract to manage roles in the entire superform protocol
 contract SuperRBAC is ISuperRBAC, AccessControl {
-    uint8 public constant STATE_REGISTRY_TYPE = 2;
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
     bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
@@ -84,8 +85,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     function stateSync(bytes memory data_) external override {
-        if (msg.sender != superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))) {
-            revert Error.NOT_ROLES_STATE_REGISTRY();
+        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
+            revert Error.NOT_BROADCAST_REGISTRY();
         }
 
         BroadcastMessage memory rolesPayload = abi.decode(data_, (BroadcastMessage));
@@ -96,8 +97,10 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
             if (addressToRevoke == address(0)) revert Error.ZERO_ADDRESS();
 
+            console.logBytes32(role);
+            console.log(addressToRevoke);
             /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE and EMERGENCY_ADMIN_ROLE
-            if (role != PROTOCOL_ADMIN_ROLE || role != EMERGENCY_ADMIN_ROLE) revokeRole(role, addressToRevoke);
+            if (role != PROTOCOL_ADMIN_ROLE || role != EMERGENCY_ADMIN_ROLE) _revokeRole(role, addressToRevoke);
         }
     }
 
@@ -167,7 +170,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-        IBroadcastRegistry(superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))).broadcastPayload{
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
             value: msg.value
         }(msg.sender, ambIds, message_, broadcastParams);
     }
