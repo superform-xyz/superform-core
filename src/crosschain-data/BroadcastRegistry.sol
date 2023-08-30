@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { QuorumManager } from "./utils/QuorumMAnager.sol";
+import { QuorumManager } from "./utils/QuorumManager.sol";
 import { Error } from "src/utils/Error.sol";
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
