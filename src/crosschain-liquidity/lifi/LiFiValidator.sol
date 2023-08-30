@@ -88,7 +88,7 @@ contract LiFiValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeAmount(bytes calldata txData_) external view override returns (uint256 amount_) {
+    function decodeAmount(bytes calldata txData_) external pure override returns (uint256 amount_) {
         (ILiFi.BridgeData memory bridgeData,) = _decodeCallData(txData_);
 
         return bridgeData.minAmount;

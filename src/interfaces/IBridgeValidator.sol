@@ -44,5 +44,5 @@ interface IBridgeValidator {
     /// @dev decodes the txData and returns the amount
     /// @param txData_ is the txData of the cross chain deposit
     /// @return amount_ the amount of the deposit
-    function decodeAmount(bytes calldata txData_) external view returns (uint256 amount_);
+    function decodeAmount(bytes calldata txData_) external pure returns (uint256 amount_);
 }

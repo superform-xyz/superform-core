@@ -85,7 +85,7 @@ contract SocketValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeAmount(bytes calldata txData_) external view override returns (uint256 amount_) {
+    function decodeAmount(bytes calldata txData_) external pure override returns (uint256 amount_) {
         return _decodeCallData(txData_).amount;
     }
 

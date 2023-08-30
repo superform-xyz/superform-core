@@ -595,7 +595,7 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps estimate the liq amount involved in the tx
-    function _estimateLiqAmount(LiqRequest[] memory req_) internal pure returns (uint256 liqAmount) {
+    function _estimateLiqAmount(LiqRequest[] memory req_) internal view returns (uint256 liqAmount) {
         for (uint256 i; i < req_.length;) {
             if (req_[i].token == NATIVE) {
                 liqAmount +=
