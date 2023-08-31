@@ -12,7 +12,7 @@ import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImpleme
 import { DataLib } from "src/libraries/DataLib.sol";
 
 interface Target {
-    function stateSync(bytes memory data_) external;
+    function stateSyncBroadcast(bytes memory data_) external;
 }
 
 /// @title BaseStateRegistry
@@ -54,11 +54,7 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
     /// @notice sender should be a valid configured contract
     /// @dev should be factory or roles contract
     modifier onlySender() {
-        if (
-            msg.sender != superRegistry.getAddress(keccak256("SUPER_RBAC"))
-                && msg.sender != superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))
-                && msg.sender != superRegistry.getAddress(keccak256("SUPER_TRANSMUTER"))
-        ) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasBroadcasterRole(msg.sender)) {
             revert Error.NOT_ALLOWED_BROADCASTER();
         }
         _;
@@ -133,7 +129,7 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
         bytes32 targetId = keccak256(data.target);
 
         payloadTracking[payloadId] = PayloadState.PROCESSED;
-        Target(superRegistry.getAddress(targetId)).stateSync(payload_);
+        Target(superRegistry.getAddress(targetId)).stateSyncBroadcast(payload_);
     }
 
     /*///////////////////////////////////////////////////////////////

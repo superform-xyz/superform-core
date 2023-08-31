@@ -34,6 +34,21 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter {
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
+    /// @inheritdoc Transmuter
+    /// @notice explicity revert on register transmuter
+    function registerTransmuter(
+        uint256 id,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    )
+        external
+        override
+        returns (address)
+    {
+        revert Error.DISABLED();
+    }
+
     /// @inheritdoc ISuperTransmuter
     function registerTransmuter(uint256 superformId, bytes memory extraData_) external override returns (address) {
         (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId);
@@ -75,7 +90,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter {
     }
 
     /// @inheritdoc ISuperTransmuter
-    function stateSync(bytes memory data_) external payable override {
+    function stateSyncBroadcast(bytes memory data_) external payable override {
         /// @dev this function is only accessible through broadcast registry
         if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
             revert Error.NOT_BROADCAST_REGISTRY();

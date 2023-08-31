@@ -16,5 +16,7 @@ interface ISuperTransmuter {
     /// @param extraData_ is an optional param to broadcast changes to all chains
     function registerTransmuter(uint256 superformId, bytes memory extraData_) external returns (address);
 
-    function stateSync(bytes memory data_) external payable;
+    /// @dev allows sync register new superform ids using broadcast state registry
+    /// @param data_ is the crosschain payload
+    function stateSyncBroadcast(bytes memory data_) external payable;
 }

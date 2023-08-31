@@ -32,7 +32,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
                 vm.expectRevert(Error.NOT_BROADCAST_REGISTRY.selector);
                 bytes memory data_ = hex"ffff";
-                SuperformFactory(getContract(chainIds[i], "SuperformFactory")).stateSync(data_);
+                SuperformFactory(getContract(chainIds[i], "SuperformFactory")).stateSyncBroadcast(data_);
 
                 BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
                 bool statusAfter =
@@ -89,6 +89,6 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
         vm.prank(getContract(ETH, "BroadcastRegistry"));
-        SuperformFactory(getContract(ETH, "SuperformFactory")).stateSync(abi.encode(factoryPayload, extraData));
+        SuperformFactory(getContract(ETH, "SuperformFactory")).stateSyncBroadcast(abi.encode(factoryPayload, extraData));
     }
 }

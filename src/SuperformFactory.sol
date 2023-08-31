@@ -193,7 +193,7 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
-    function stateSync(bytes memory data_) external payable override {
+    function stateSyncBroadcast(bytes memory data_) external payable override {
         /// @dev this function is only accessible through broadcast registry
         if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
             revert Error.NOT_BROADCAST_REGISTRY();

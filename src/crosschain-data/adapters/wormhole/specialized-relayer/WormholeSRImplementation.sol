@@ -77,7 +77,6 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
 
         /// @dev is wormhole's inherent fee for sending a message
-        /// NOTE: is zero for now
         uint256 msgFee = wormhole.messageFee();
 
         if (msg.value != msgFee) {
@@ -92,17 +91,16 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         );
     }
 
-    /// NOTE: add caller validation
     function receiveMessage(bytes memory encodedMessage) public {
         (IWormhole.VM memory wormholeMessage, bool valid, string memory reason) =
             wormhole.parseAndVerifyVM(encodedMessage);
-
-        /// @dev 1. validate caller [can be open; anyone with a valid vaa can hit this]
+        
+        /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        // if (msg.sender != address(relayer)) {
-        //     revert Error.CALLER_NOT_RELAYER();
-        // }
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasWormholeVaaRole(msg.sender)) {
+            revert Error.CALLER_NOT_RELAYER();
+        }
 
         if (processedMessages[wormholeMessage.hash]) {
             revert Error.DUPLICATE_PAYLOAD();
@@ -111,9 +109,6 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         processedMessages[wormholeMessage.hash] = true;
 
         /// @dev decoding payload
-        // AMBMessage memory decoded = abi.decode(payload, (AMBMessage));
-        // (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
-        // address registryAddress = superRegistry.getStateRegistry(registryId);
         IBroadcastRegistry targetRegistry = IBroadcastRegistry(superRegistry.getStateRegistry(3));
 
         targetRegistry.receiveBroadcastPayload(superChainId[wormholeMessage.emitterChainId], wormholeMessage.payload);

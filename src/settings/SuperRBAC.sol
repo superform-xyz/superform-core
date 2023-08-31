@@ -1,8 +1,6 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 import { AccessControl } from "openzeppelin-contracts/contracts/access/AccessControl.sol";
 import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
@@ -20,6 +18,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
     bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE");
     bytes32 public constant override MULTI_TX_SWAPPER_ROLE = keccak256("MULTI_TX_SWAPPER_ROLE");
+    bytes32 public constant override BROADCASTER_ROLE = keccak256("BROADCASTER_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE =
@@ -28,6 +27,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override SUPERPOSITIONS_MINTER_ROLE = keccak256("SUPERPOSITIONS_MINTER_ROLE");
     bytes32 public constant override SUPERPOSITIONS_BURNER_ROLE = keccak256("SUPERPOSITIONS_BURNER_ROLE");
     bytes32 public constant override MINTER_STATE_REGISTRY_ROLE = keccak256("MINTER_STATE_REGISTRY_ROLE");
+    bytes32 public constant override WORMHOLE_VAA_RELAYER_ROLE = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
 
     ISuperRegistry public superRegistry;
 
@@ -45,6 +45,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         _setRoleAdmin(SUPERPOSITIONS_MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SUPERPOSITIONS_BURNER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(MINTER_STATE_REGISTRY_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(BROADCASTER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(WORMHOLE_VAA_RELAYER_ROLE, PROTOCOL_ADMIN_ROLE);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -84,7 +86,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     }
 
     /// @inheritdoc ISuperRBAC
-    function stateSync(bytes memory data_) external override {
+    function stateSyncBroadcast(bytes memory data_) external override {
         if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
             revert Error.NOT_BROADCAST_REGISTRY();
         }
@@ -97,8 +99,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
             if (addressToRevoke == address(0)) revert Error.ZERO_ADDRESS();
 
-            console.logBytes32(role);
-            console.log(addressToRevoke);
             /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE and EMERGENCY_ADMIN_ROLE
             if (role != PROTOCOL_ADMIN_ROLE || role != EMERGENCY_ADMIN_ROLE) _revokeRole(role, addressToRevoke);
         }
@@ -110,12 +110,18 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     function hasProtocolAdminRole(address admin_) external view override returns (bool) {
+        if (admin_ == address(0)) return false;
         return hasRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
     function hasEmergencyAdminRole(address emergencyAdmin_) external view override returns (bool) {
         return hasRole(EMERGENCY_ADMIN_ROLE, emergencyAdmin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasBroadcasterRole(address broadcaster_) external view override returns (bool) {
+        return hasRole(BROADCASTER_ROLE, broadcaster_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -156,6 +162,11 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function hasMinterStateRegistryRole(address stateRegistry_) external view override returns (bool) {
         return hasRole(MINTER_STATE_REGISTRY_ROLE, stateRegistry_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasWormholeVaaRole(address relayer_) external view override returns (bool) {
+        return hasRole(WORMHOLE_VAA_RELAYER_ROLE, relayer_);
     }
 
     /*///////////////////////////////////////////////////////////////

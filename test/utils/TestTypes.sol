@@ -143,6 +143,7 @@ struct SetupVars {
     address dstCelerImplementation;
     address dstWormholeARImplementation;
     address dstWormholeSRImplementation;
+    address dstwormholeBroadcastHelper;
     address multiTxProcessor;
     address payMaster;
     address superRegistry;

@@ -68,9 +68,9 @@ interface ISuperformFactory {
         external
         returns (uint256[] memory superformIds_, address[] memory superforms_);
 
-    /// @dev to synchronize superforms added to different chains using factory registry
+    /// @dev to synchronize superforms added to different chains using broadcast registry
     /// @param data_ is the cross-chain superform id
-    function stateSync(bytes memory data_) external payable;
+    function stateSyncBroadcast(bytes memory data_) external payable;
 
     /// @dev allows an admin to update the logic of a form
     /// @param formBeaconId_ is the id of the form beacon

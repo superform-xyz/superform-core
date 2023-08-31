@@ -385,6 +385,9 @@ abstract contract BaseSetup is DSTest, Test {
 
             assert(vars.superRBACC.hasProtocolAdminRole(deployer));
 
+            vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), vars.wormholeBroadcastHelper);
+            assert(vars.superRBACC.hasWormholeVaaRole(vars.wormholeBroadcastHelper));
+
             /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
             vars.superRBACC.grantRole(vars.superRBACC.EMERGENCY_ADMIN_ROLE(), deployer);
             assert(vars.superRBACC.hasEmergencyAdminRole(deployer));
@@ -409,8 +412,10 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer);
             assert(vars.superRBACC.hasCoreStateRegistryUpdaterRole(deployer));
 
-            /// @dev 4.1 - deploy Core State Registry
+            vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC);
+            assert(vars.superRBACC.hasBroadcasterRole(vars.superRBAC));
 
+            /// @dev 4.1 - deploy Core State Registry
             vars.coreStateRegistry = address(
                 new CoreStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry)
@@ -589,10 +594,10 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 9 - Deploy SuperformFactory
             vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
-
             contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_FACTORY(), vars.factory, vars.chainId);
+            vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.factory);
 
             /// @dev 9 - Deploy 4626Form implementations
             // Standard ERC4626 Form
@@ -644,8 +649,11 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.chainId
             );
 
-            /// @dev 12.1 Set Router Info
+            vars.superRBACC.grantRole(
+                vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))]
+            );
 
+            /// @dev 12.1 Set Router Info
             uint8[] memory superformRouterIds = new uint8[](1);
             superformRouterIds[0] = 1;
 
@@ -715,6 +723,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
             vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
             vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
+            vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
 
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
@@ -737,6 +746,7 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
                     vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
+                    vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
@@ -771,6 +781,11 @@ abstract contract BaseSetup is DSTest, Test {
 
                     WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
                         vars.dstChainId, vars.dstWormholeChainId
+                    );
+
+                    /// sets the relayer address on all subsequent chains
+                    SuperRBAC(vars.superRBAC).grantRole(
+                        SuperRBAC(vars.superRBAC).WORMHOLE_VAA_RELAYER_ROLE(), vars.dstwormholeBroadcastHelper
                     );
 
                     vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);

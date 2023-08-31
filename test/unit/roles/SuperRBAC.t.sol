@@ -270,13 +270,13 @@ contract SuperRBACTest is BaseSetup {
 
     function test_stateSync_invalidCaller() public {
         vm.expectRevert(Error.NOT_BROADCAST_REGISTRY.selector);
-        superRBAC.stateSync("");
+        superRBAC.stateSyncBroadcast("");
     }
 
     function test_stateSync_addressToRevokeIs0() public {
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         vm.prank(getContract(ETH, "BroadcastRegistry"));
-        superRBAC.stateSync(
+        superRBAC.stateSyncBroadcast(
             abi.encode(
                 BroadcastMessage(
                     "SUPER_RBAC",
