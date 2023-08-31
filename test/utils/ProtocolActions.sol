@@ -1257,6 +1257,9 @@ abstract contract ProtocolActions is BaseSetup {
     /// @dev TODO - Smit to add better comments
     function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
+            /// @dev currently testing rescuing deposits with multiTx false
+            MULTI_TX_SLIPPAGE_SHARE = 0;
+
             vm.selectFork(FORKS[CHAIN_0]);
             uint256 userWethBalanceBefore = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
 
@@ -1271,10 +1274,15 @@ abstract contract ProtocolActions is BaseSetup {
                 rescueSuperformIds.length
             );
 
+            uint256 stuckAmount;
             uint256 finalAmount;
             /// @dev simulating slippage from bridges
             for (uint256 i; i < AMOUNTS[DST_CHAINS[0]][actionIndex].length; ++i) {
-                finalAmount += (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
+                /// @dev this is the amount that is stuck in CoreStateRegistry
+                stuckAmount = (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
+                /// @dev this is the amount that will be received by the user on src chain. The slippage experienced is
+                /// the bridge slippage while sending tokens back to src chain
+                finalAmount += (stuckAmount * (10_000 - uint256(action.slippage))) / 10_000;
             }
 
             SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
@@ -1310,7 +1318,7 @@ abstract contract ProtocolActions is BaseSetup {
 
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
                 singleVaultCallDataArgs.superformId = rescueSuperformIds[i];
-                /// @dev slippage adjusted amount that'll be withdrawn
+                /// @dev slippage adjusted amount that'll be withdrawn i.e. amount stuck in CoreStateRegistry
                 singleVaultCallDataArgs.amount =
                     (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
                 liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
@@ -1870,7 +1878,6 @@ abstract contract ProtocolActions is BaseSetup {
         returns (uint256[] memory superPositionBalances)
     {
         uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, chainId_);
-        console.log("LENGTH", superformIds.length);
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -1881,19 +1888,8 @@ abstract contract ProtocolActions is BaseSetup {
 
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
-        // bool partialWithdraw = partialWithdrawVaults.length > 0;
         for (uint256 i = 0; i < superformIds.length; i++) {
-            console.log("BLIP");
             superPositionBalances[i] = superPositions.balanceOf(users[user], superformIds[i]);
-            // if (partialWithdrawVaults.length > 0) {
-            //     partialWithdraw = partialWithdrawVaults[i];
-            // }
-
-            // if (!partialWithdraw) {
-            //     assertEq(currentBalanceOfSp, amountsToAssert[i]);
-            // } else {
-            //     assertGt(currentBalanceOfSp, amountsToAssert[i]);
-            // }
         }
     }
 
