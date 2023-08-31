@@ -112,25 +112,15 @@ contract MDMVW84002408NativeInputSlipapgeL1AMB12 is ProtocolActions {
         public
     {
         /// @dev min amountOne_ needs to be 3 as its withdraw amount >= 2
-        /// @dev 7 => 2 * amountOne_ + 3 * amountTwo_ + 2 * amountThree_ during deposits
         amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_ETH / 7));
         amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 7));
         amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 7));
 
-        /// @dev bound to amountOne_ - 1 as partial is true for first vault
-        /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, amountOne_ - 1));
-
         /// @dev notice partial withdrawals in ETH->0 and POLY->2
         AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];
-        AMOUNTS[ETH][1] = [amountOneWithdraw_, amountTwo_, amountThree_];
-
         AMOUNTS[POLY][0] = [amountTwo_, amountThree_, amountOne_];
-        AMOUNTS[POLY][1] = [amountTwo_, amountThree_, amountOneWithdraw_];
-
         /// @dev shuffled order of amounts to randomise
         AMOUNTS[AVAX][0] = [amountThree_, amountTwo_];
-        AMOUNTS[AVAX][1] = [amountThree_, amountTwo_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -139,6 +129,33 @@ contract MDMVW84002408NativeInputSlipapgeL1AMB12 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    // for (uint256 j = 0; j < superPositions.length; j++) {
+                    //     console.log("SUPERPOSITIONS", j, superPositions[j]);
+                    // }
+
+                    /// @dev notice partial withdrawals in ETH->0 and POLY->2
+                    if (DST_CHAINS[i] == ETH) {
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                        AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], superPositions[2]];
+                    } else if (DST_CHAINS[i] == POLY) {
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[2] - 1));
+                        AMOUNTS[POLY][1] = [superPositions[0], superPositions[1], amountOneWithdraw_];
+                    } else if (DST_CHAINS[i] == AVAX) {
+                        AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1]];
+                    }
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

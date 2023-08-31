@@ -124,12 +124,11 @@ contract MDMVW00001200TokenInputSlipapgeL1AMB12 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, superPositions[0] - 1));
-                    amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 2, superPositions[1] - 1));
-                    amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, superPositions[2] - 1));
-                    console.log("SUPERPOSITIONS", superPositions[0], superPositions[1], superPositions[2]);
-                    console.log("AMOUNTS", amountOneWithdraw_, amountTwoWithdraw_, amountThreeWithdraw_);
-                    console.log("3", superPositions[3]);
+                    /// @dev superPostions[0] = superPositions[1] = superPositions[2] for ARBI (as it's the same
+                    /// superform)
+                    amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] / 3));
+                    amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, superPositions[1] / 3));
+                    amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 1, superPositions[2] / 3));
 
                     if (PARTIAL[DST_CHAINS[i]][1].length > 0) {
                         AMOUNTS[DST_CHAINS[i]][1] =

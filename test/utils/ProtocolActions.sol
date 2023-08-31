@@ -405,17 +405,11 @@ abstract contract ProtocolActions is BaseSetup {
                 /// case (if we input same amount in scenario)
                 /// @dev JUST FOR TESTING: for partial withdraws its negligible the effect of this extra slippage param
                 /// as it is just for testing
-                ///  || (action.action == Actions.Withdraw)
                 if (
                     action.slippage != 0
                         && (
-                            (
-                                CHAIN_0 == DST_CHAINS[i]
-                                    && (
-                                        action.action == Actions.Deposit || action.action == Actions.DepositPermit2
-                                            || (action.action == Actions.Withdraw)
-                                    )
-                            )
+                            CHAIN_0 == DST_CHAINS[i]
+                                && (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
                         )
                 ) {
                     finalAmount = (vars.amounts[0] * (10_000 - uint256(action.slippage))) / 10_000;
@@ -1354,17 +1348,11 @@ abstract contract ProtocolActions is BaseSetup {
             finalAmounts[i] = args.amounts[i];
             /// @dev FOR TESTING AND MAINNET:: in sameChain actions, slippage is encoded in the request with the amount
             /// (extracted from bridge api)
-            /// || (args.action == Actions.Withdraw)
             if (
                 args.slippage != 0
                     && (
-                        (
-                            args.srcChainId == args.toChainId
-                                && (
-                                    args.action == Actions.Deposit || args.action == Actions.DepositPermit2
-                                        || (args.action == Actions.Withdraw)
-                                )
-                        )
+                        args.srcChainId == args.toChainId
+                            && (args.action == Actions.Deposit || args.action == Actions.DepositPermit2)
                     )
             ) {
                 finalAmounts[i] = (args.amounts[i] * (10_000 - uint256(args.slippage))) / 10_000;
@@ -2635,7 +2623,6 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
             vm.selectFork(FORKS[DST_CHAINS[args.dstIndex]]);
-
             /// @dev calculate the final amount summed on the basis of previewDeposit
             spAmountSummed[v.i] = IBaseForm(v.superforms[v.i]).previewDepositTo(spAmountSummed[v.i]);
             console.log("SPAMOUNT_SUMMED", spAmountSummed[v.i]);

@@ -92,18 +92,14 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
         uint128 amountOneWithdraw_,
         uint128 amountTwo_,
         uint128 amountTwoWithdraw_
-    ) public {
-        /// @dev amount = 2 after slippage will become 1, but amountWithdraw >= 2, hence starting with 3
-        amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_ETH / 2));
-        amountTwo_ = uint128(bound(amountTwo_, 3, TOTAL_SUPPLY_ETH / 2));
+    )
+        public
+    {
+        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_ETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 2));
 
         AMOUNTS[OP][0] = [amountOne_];
-        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, amountOne_ - 1));
-        AMOUNTS[OP][1] = [amountOneWithdraw_];
-
         AMOUNTS[AVAX][0] = [amountTwo_];
-        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 2, amountTwo_ - 1));
-        AMOUNTS[AVAX][1] = [amountTwoWithdraw_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -112,6 +108,22 @@ contract MDSVWNormal4626NativeSlippageL12AMB23 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    /// @dev bounded to 1 less due to partial withdrawals
+                    amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                    AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_];
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
