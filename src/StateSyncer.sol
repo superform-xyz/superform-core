@@ -31,19 +31,9 @@ abstract contract StateSyncer is IStateSyncer {
         _;
     }
 
-    modifier onlyMinter() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsMinterRole(msg.sender)) {
-            revert Error.NOT_MINTER();
-        }
-        _;
-    }
+    modifier onlyMinter() virtual;
 
-    modifier onlyBurner() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsBurnerRole(msg.sender)) {
-            revert Error.NOT_BURNER();
-        }
-        _;
-    }
+    modifier onlyBurner() virtual;
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {

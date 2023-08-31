@@ -6,18 +6,37 @@ import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { sERC20 } from "ERC1155A/transmuter/sERC20.sol";
 import { StateSyncer } from "src/StateSyncer.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
-import { ISuperTransmuter } from "./ISuperTransmuter.sol";
+import { ISuperTransmuter } from "src/interfaces/ISuperTransmuter.sol";
 import { TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { Error } from "src/utils/Error.sol";
 import { IStateSyncer } from "src/interfaces/IStateSyncer.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 
 /// @title SuperTransmuter
 /// @author Zeropoint Labs.
 /// @notice This contract inherits from ERC1155A transmuter, changing the way transmuters are registered to only require
 /// a superformId. Metadata is fetched from underlying vault
-contract SuperTransmuterSyncer is ISuperTransmuter, Transmuter, StateSyncer {
+contract SuperTransmuterMock is ISuperTransmuter, Transmuter, StateSyncer {
     using DataLib for uint256;
+
+    /*///////////////////////////////////////////////////////////////
+                            MODIFIER
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyMinter() override {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSERC20MinterRole(msg.sender)) {
+            revert Error.NOT_MINTER();
+        }
+        _;
+    }
+
+    modifier onlyBurner() override {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSERC20BurnerRole(msg.sender)) {
+            revert Error.NOT_BURNER();
+        }
+        _;
+    }
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR

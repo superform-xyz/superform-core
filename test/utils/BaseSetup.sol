@@ -632,7 +632,8 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] = address(
                 new SuperTransmuter{salt: salt}(
                     IERC1155A(vars.superPositions),
-                    vars.superRegistry
+                    vars.superRegistry,
+                    2
                 )
             );
 

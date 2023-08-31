@@ -3,18 +3,17 @@ pragma solidity 0.8.19;
 
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { sERC20 } from "ERC1155A/transmuter/sERC20.sol";
-
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
-import { SuperTransmuterSyncer } from "test/mocks/SuperTransmuterSyncer.sol";
+import { SuperTransmuterMock } from "test/mocks/SuperTransmuterMock.sol";
 
 contract SuperformRouterSERC20Test is ProtocolActions {
     SuperformRouter superformRouterSERC20;
     SuperformRouter superformRouterSERC20Arbi;
 
-    SuperTransmuterSyncer superTransmuterSyncer;
-    SuperTransmuterSyncer superTransmuterSyncerArbi;
+    SuperTransmuterMock superTransmuterSyncer;
+    SuperTransmuterMock superTransmuterSyncerArbi;
 
     function setUp() public override {
         super.setUp();
@@ -24,22 +23,22 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superformRouterSERC20 = new SuperformRouter(getContract(ETH, "SuperRegistry"), 1, 2);
 
         superTransmuterSyncer =
-        new SuperTransmuterSyncer(IERC1155A(getContract(ETH, "SuperPositions")), getContract(ETH, "SuperRegistry"), 2);
+            new SuperTransmuterMock(IERC1155A(getContract(ETH, "SuperPositions")), getContract(ETH, "SuperRegistry"), 2);
 
         vm.selectFork(FORKS[ARBI]);
 
         superformRouterSERC20Arbi = new SuperformRouter(getContract(ARBI, "SuperRegistry"), 1, 2);
 
         superTransmuterSyncerArbi =
-        new SuperTransmuterSyncer(IERC1155A(getContract(ARBI, "SuperPositions")), getContract(ARBI, "SuperRegistry"), 2);
+        new SuperTransmuterMock(IERC1155A(getContract(ARBI, "SuperPositions")), getContract(ARBI, "SuperRegistry"), 2);
 
         vm.selectFork(FORKS[ETH]);
 
         SuperRBAC superRBACC = SuperRBAC(getContract(ETH, "SuperRBAC"));
         SuperRegistry superRegistryC = SuperRegistry(getContract(ETH, "SuperRegistry"));
 
-        superRBACC.grantRole(superRBACC.SUPERPOSITIONS_MINTER_ROLE(), address(superformRouterSERC20));
-        superRBACC.grantRole(superRBACC.SUPERPOSITIONS_BURNER_ROLE(), address(superformRouterSERC20));
+        superRBACC.grantRole(superRBACC.SERC20_MINTER_ROLE(), address(superformRouterSERC20));
+        superRBACC.grantRole(superRBACC.SERC20_BURNER_ROLE(), address(superformRouterSERC20));
 
         superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20), ETH);
         superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncer), ETH);
@@ -63,8 +62,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superRBACC = SuperRBAC(getContract(ARBI, "SuperRBAC"));
         superRegistryC = SuperRegistry(getContract(ARBI, "SuperRegistry"));
 
-        superRBACC.grantRole(superRBACC.SUPERPOSITIONS_MINTER_ROLE(), address(superformRouterSERC20Arbi));
-        superRBACC.grantRole(superRBACC.SUPERPOSITIONS_BURNER_ROLE(), address(superformRouterSERC20Arbi));
+        superRBACC.grantRole(superRBACC.SERC20_MINTER_ROLE(), address(superformRouterSERC20Arbi));
+        superRBACC.grantRole(superRBACC.SERC20_BURNER_ROLE(), address(superformRouterSERC20Arbi));
 
         superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20Arbi), ARBI);
         superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncerArbi), ARBI);
@@ -117,7 +116,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
         superTransmuterSyncer.registerTransmuter(superformId);
-        vm.startPrank(getContract(ETH, "SuperformRouter"));
+        vm.startPrank(address(superformRouterSERC20));
         superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
         SingleVaultSFData memory data =
@@ -158,7 +157,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
 
-        vm.startPrank(getContract(ETH, "SuperformRouter"));
+        vm.startPrank(address(superformRouterSERC20));
         superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
         vm.startPrank(deployer);
@@ -182,8 +181,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultWithdraw(req);
@@ -211,7 +208,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
 
-        vm.startPrank(getContract(ETH, "SuperformRouter"));
+        vm.startPrank(address(superformRouterSERC20));
 
         superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
@@ -229,8 +226,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         SingleVaultSFData memory data = SingleVaultSFData(superformId, amount, maxSlippage, liqReq, "");
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ETH, data);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.expectRevert(Error.INVALID_CHAIN_IDS.selector);
         superformRouterSERC20.singleXChainSingleVaultWithdraw(req);
@@ -258,7 +253,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
-        vm.startPrank(getContract(ETH, "SuperformRouter"));
+
+        vm.startPrank(address(superformRouterSERC20));
+
         superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
         vm.startPrank(deployer);
@@ -280,8 +277,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultWithdraw(req);
@@ -313,9 +308,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultDeposit(req);
@@ -349,9 +343,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultDeposit(req);
@@ -404,9 +397,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultDeposit(req);
@@ -439,9 +431,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultDeposit(req);
@@ -476,9 +467,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultDeposit(req);
@@ -512,9 +502,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultDeposit(req);
@@ -526,8 +515,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
 
         address superform1 =
             getContract(ARBI, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
@@ -558,8 +545,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
-        MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
+        MockERC20(getContract(ETH, "WETH")).approve(address(superformRouterSERC20), 1e18);
 
         address sERC20add1 = superTransmuterSyncer.synthethicTokenId(superformId1);
         address sERC20add2 = superTransmuterSyncer.synthethicTokenId(superformId2);
@@ -577,8 +564,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
 
         address superform1 =
             getContract(ARBI, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
@@ -611,8 +596,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
-        MockERC20(getContract(ETH, "WETH")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
+        MockERC20(getContract(ETH, "WETH")).approve(address(superformRouterSERC20), 1e18);
 
         address sERC20add1 = superTransmuterSyncer.synthethicTokenId(superformId1);
         address sERC20add2 = superTransmuterSyncer.synthethicTokenId(superformId2);
@@ -630,8 +615,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
 
         address superform1 =
             getContract(ARBI, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
@@ -724,9 +707,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
-        /// @dev no point approving 0 tokens
-        // MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 0);
-
         vm.expectRevert(Error.ZERO_AMOUNT.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }
@@ -757,7 +737,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
 
-        vm.startPrank(getContract(ETH, "SuperformRouter"));
+        vm.startPrank(address(superformRouterSERC20));
 
         superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
@@ -781,8 +761,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "");
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultWithdraw(req);
@@ -819,9 +797,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
 
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainMultiVaultDeposit(req);
@@ -860,9 +837,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
 
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_TXDATA_AMOUNTS.selector);
         superformRouterSERC20.singleXChainSingleVaultDeposit(req);
@@ -901,9 +877,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ETH, data);
 
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_CHAIN_IDS.selector);
         superformRouterSERC20.singleXChainSingleVaultDeposit(req);
@@ -943,9 +918,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
 
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainSingleVaultDeposit(req);
@@ -985,9 +959,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
 
-        address superformRouter = getContract(ETH, "SuperformRouter");
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleXChainSingleVaultDeposit(req);
@@ -997,8 +970,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
-
-        address superformRouter = getContract(ETH, "SuperformRouter");
 
         address superform1 =
             getContract(ARBI, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));

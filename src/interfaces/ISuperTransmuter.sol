@@ -1,10 +1,12 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IStateSyncer } from "src/interfaces/IStateSyncer.sol";
+
 /// @title ISuperTransmuter
 /// @author Zeropoint Labs.
 /// @dev interface for Super Transmuter
-interface ISuperTransmuter {
+interface ISuperTransmuter is IStateSyncer {
     /*///////////////////////////////////////////////////////////////
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
