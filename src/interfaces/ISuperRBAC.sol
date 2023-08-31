@@ -31,9 +31,9 @@ interface ISuperRBAC {
         external
         payable;
 
-    /// @dev allows sync of global roles from different chains
+    /// @dev allows sync of global roles from different chains using broadcast registry
     /// @notice may not work for all roles
-    function stateSync(bytes memory data_) external;
+    function stateSyncBroadcast(bytes memory data_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -51,14 +51,11 @@ interface ISuperRBAC {
     /// @dev returns the id of the multi tx swapper role
     function MULTI_TX_SWAPPER_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of the broadcaster role
+    function BROADCASTER_ROLE() external view returns (bytes32);
+
     /// @dev returns the id of the core state registry processor role
     function CORE_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
-
-    /// @dev returns the id of the roles state registry processor role
-    function ROLES_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
-
-    /// @dev returns the id of the factory state registry processor role
-    function FACTORY_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the two steps state registry processor role
     function TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
@@ -75,6 +72,9 @@ interface ISuperRBAC {
     /// @dev returns the id of minter state registry role
     function MINTER_STATE_REGISTRY_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of wormhole vaa relayer role
+    function WORMHOLE_VAA_RELAYER_ROLE() external view returns (bytes32);
+
     /// @dev returns whether the given address has the protocol admin role
     /// @param admin_ the address to check
     function hasProtocolAdminRole(address admin_) external view returns (bool);
@@ -82,6 +82,10 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the emergency admin role
     /// @param admin_ the address to check
     function hasEmergencyAdminRole(address admin_) external view returns (bool);
+
+    /// @dev returns whether the given address has the broadcaster role
+    /// @param broadcaster_ the address to check
+    function hasBroadcasterRole(address broadcaster_) external view returns (bool);
 
     /// @dev returns whether the given address has the payment admin role
     /// @param admin_ the address to check
@@ -94,14 +98,6 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the processor role
     /// @param processor_ the address to check
     function hasCoreStateRegistryProcessorRole(address processor_) external view returns (bool);
-
-    /// @dev returns whether the given address has the processor role
-    /// @param processor_ the address to check
-    function hasRolesStateRegistryProcessorRole(address processor_) external view returns (bool);
-
-    /// @dev returns whether the given address has the processor role
-    /// @param processor_ the address to check
-    function hasFactoryStateRegistryProcessorRole(address processor_) external view returns (bool);
 
     /// @dev returns whether the given address has the two steps processor role
     /// @param twoStepsProcessor_ the address to check
@@ -122,4 +118,8 @@ interface ISuperRBAC {
     /// @dev returns whether the given state registry address has the minter state registry role
     /// @param stateRegistry_ the address to check
     function hasMinterStateRegistryRole(address stateRegistry_) external view returns (bool);
+
+    /// @dev returns whether the given relayer_ address has the wormhole relayer role
+    /// @param relayer_ the address to check
+    function hasWormholeVaaRole(address relayer_) external view returns (bool);
 }

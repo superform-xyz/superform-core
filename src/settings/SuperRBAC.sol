@@ -2,35 +2,32 @@
 pragma solidity 0.8.19;
 
 import { AccessControl } from "openzeppelin-contracts/contracts/access/AccessControl.sol";
-import { IBroadcaster } from "../interfaces/IBroadcaster.sol";
+import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { Error } from "../utils/Error.sol";
-import { AMBFactoryMessage } from "../types/DataTypes.sol";
+import { BroadcastMessage } from "../types/DataTypes.sol";
 
 /// @title SuperRBAC
 /// @author Zeropoint Labs.
 /// @dev Contract to manage roles in the entire superform protocol
 contract SuperRBAC is ISuperRBAC, AccessControl {
-    uint8 public constant STATE_REGISTRY_TYPE = 2;
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
     bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
     bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE");
     bytes32 public constant override MULTI_TX_SWAPPER_ROLE = keccak256("MULTI_TX_SWAPPER_ROLE");
+    bytes32 public constant override BROADCASTER_ROLE = keccak256("BROADCASTER_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
-    bytes32 public constant override ROLES_STATE_REGISTRY_PROCESSOR_ROLE =
-        keccak256("ROLES_STATE_REGISTRY_PROCESSOR_ROLE");
-    bytes32 public constant override FACTORY_STATE_REGISTRY_PROCESSOR_ROLE =
-        keccak256("FACTORY_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
     bytes32 public constant override SUPERPOSITIONS_MINTER_ROLE = keccak256("SUPERPOSITIONS_MINTER_ROLE");
     bytes32 public constant override SUPERPOSITIONS_BURNER_ROLE = keccak256("SUPERPOSITIONS_BURNER_ROLE");
     bytes32 public constant override MINTER_STATE_REGISTRY_ROLE = keccak256("MINTER_STATE_REGISTRY_ROLE");
+    bytes32 public constant override WORMHOLE_VAA_RELAYER_ROLE = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
 
     ISuperRegistry public superRegistry;
 
@@ -43,13 +40,13 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(MULTI_TX_SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
-        _setRoleAdmin(ROLES_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
-        _setRoleAdmin(FACTORY_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_UPDATER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SUPERPOSITIONS_MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SUPERPOSITIONS_BURNER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(MINTER_STATE_REGISTRY_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(BROADCASTER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(WORMHOLE_VAA_RELAYER_ROLE, PROTOCOL_ADMIN_ROLE);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -81,20 +78,20 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         revokeRole(role_, addressToRevoke_);
 
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory rolesPayload =
-                AMBFactoryMessage(SYNC_REVOKE, abi.encode(role_, superRegistryAddressId_));
+            BroadcastMessage memory rolesPayload =
+                BroadcastMessage("SUPER_RBAC", SYNC_REVOKE, abi.encode(role_, superRegistryAddressId_));
 
             _broadcast(abi.encode(rolesPayload), extraData_);
         }
     }
 
     /// @inheritdoc ISuperRBAC
-    function stateSync(bytes memory data_) external override {
-        if (msg.sender != superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))) {
-            revert Error.NOT_ROLES_STATE_REGISTRY();
+    function stateSyncBroadcast(bytes memory data_) external override {
+        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
+            revert Error.NOT_BROADCAST_REGISTRY();
         }
 
-        AMBFactoryMessage memory rolesPayload = abi.decode(data_, (AMBFactoryMessage));
+        BroadcastMessage memory rolesPayload = abi.decode(data_, (BroadcastMessage));
 
         if (rolesPayload.messageType == SYNC_REVOKE) {
             (bytes32 role, bytes32 superRegistryAddressId) = abi.decode(rolesPayload.message, (bytes32, bytes32));
@@ -103,7 +100,7 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
             if (addressToRevoke == address(0)) revert Error.ZERO_ADDRESS();
 
             /// @dev broadcasting cannot update the PROTOCOL_ADMIN_ROLE and EMERGENCY_ADMIN_ROLE
-            if (role != PROTOCOL_ADMIN_ROLE || role != EMERGENCY_ADMIN_ROLE) revokeRole(role, addressToRevoke);
+            if (role != PROTOCOL_ADMIN_ROLE || role != EMERGENCY_ADMIN_ROLE) _revokeRole(role, addressToRevoke);
         }
     }
 
@@ -113,12 +110,18 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
     /// @inheritdoc ISuperRBAC
     function hasProtocolAdminRole(address admin_) external view override returns (bool) {
+        if (admin_ == address(0)) return false;
         return hasRole(PROTOCOL_ADMIN_ROLE, admin_);
     }
 
     /// @inheritdoc ISuperRBAC
     function hasEmergencyAdminRole(address emergencyAdmin_) external view override returns (bool) {
         return hasRole(EMERGENCY_ADMIN_ROLE, emergencyAdmin_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasBroadcasterRole(address broadcaster_) external view override returns (bool) {
+        return hasRole(BROADCASTER_ROLE, broadcaster_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -134,16 +137,6 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function hasCoreStateRegistryProcessorRole(address processor_) external view override returns (bool) {
         return hasRole(CORE_STATE_REGISTRY_PROCESSOR_ROLE, processor_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasRolesStateRegistryProcessorRole(address processor_) external view override returns (bool) {
-        return hasRole(ROLES_STATE_REGISTRY_PROCESSOR_ROLE, processor_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasFactoryStateRegistryProcessorRole(address processor_) external view override returns (bool) {
-        return hasRole(FACTORY_STATE_REGISTRY_PROCESSOR_ROLE, processor_);
     }
 
     /// @inheritdoc ISuperRBAC
@@ -171,6 +164,11 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         return hasRole(MINTER_STATE_REGISTRY_ROLE, stateRegistry_);
     }
 
+    /// @inheritdoc ISuperRBAC
+    function hasWormholeVaaRole(address relayer_) external view override returns (bool) {
+        return hasRole(WORMHOLE_VAA_RELAYER_ROLE, relayer_);
+    }
+
     /*///////////////////////////////////////////////////////////////
                         Internal Functions
     //////////////////////////////////////////////////////////////*/
@@ -183,8 +181,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
 
         /// @dev ambIds are validated inside the factory state registry
         /// @dev if the broadcastParams are wrong, this will revert in the amb implementation
-        IBroadcaster(superRegistry.getAddress(keccak256("ROLES_STATE_REGISTRY"))).broadcastPayload{ value: msg.value }(
-            msg.sender, ambIds, message_, broadcastParams
-        );
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
+            value: msg.value
+        }(msg.sender, ambIds, message_, broadcastParams);
     }
 }

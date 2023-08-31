@@ -132,10 +132,10 @@ struct AMBMessage {
     bytes params; // decoding txInfo will point to the right datatype of params. Refer PayloadHelper.sol
 }
 
-/// @dev contains the message for factory payloads (pause updates)
-struct AMBFactoryMessage {
+/// @dev struct that contains the information required for broadcasting changes
+struct BroadcastMessage {
+    bytes target;
     bytes32 messageType;
-    /// keccak("ADD_FORM"), keccak("PAUSE_FORM")
     bytes message;
 }
 

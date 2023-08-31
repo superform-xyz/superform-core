@@ -1,24 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "wormhole-solidity-sdk/interfaces/IWormhole.sol";
 import "wormhole-solidity-sdk/interfaces/IWormholeRelayer.sol";
 import "wormhole-solidity-sdk/interfaces/IWormholeReceiver.sol";
 
-import { IBaseStateRegistry } from "../../../interfaces/IBaseStateRegistry.sol";
-import { IAmbImplementation } from "../../../interfaces/IAmbImplementation.sol";
-import { ISuperRBAC } from "../../../interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "../../../interfaces/ISuperRegistry.sol";
-import { AMBMessage, BroadCastAMBExtraData } from "../../../types/DataTypes.sol";
-import { Error } from "../../../utils/Error.sol";
-import { DataLib } from "../../../libraries/DataLib.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { AMBMessage } from "src/types/DataTypes.sol";
+import { Error } from "src/utils/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title WormholeImplementation
 /// @author Zeropoint Labs
 /// @notice allows state registries to use wormhole for crosschain communication
 /// @dev uses automatic relayers of wormhole for 1:1 messaging
-/// @dev uses multicast of wormhole for broadcasting
-contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
+contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
@@ -26,9 +24,6 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
     IWormholeRelayer public relayer;
-    IWormhole public wormhole;
-
-    uint8 public broadcastFinality;
 
     mapping(uint64 => uint16) public ambChainId;
     mapping(uint16 => uint64) public superChainId;
@@ -58,13 +53,11 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
                                 EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev allows protocol admin to configure wormhole core contract
-    /// @param wormhole_ is wormhole address for respective chain
+    /// @dev allows protocol admin to configure wormhole relayer contract
     /// @param relayer_ is the automatic relayer address for respective chain
-    function setWormholeConfig(address wormhole_, address relayer_) external onlyProtocolAdmin {
-        if (wormhole_ == address(0) || relayer_ == address(0)) revert Error.ZERO_ADDRESS();
-        if (address(wormhole) == address(0) && address(relayer) == address(0)) {
-            wormhole = IWormhole(wormhole_);
+    function setWormholeRelayer(address relayer_) external onlyProtocolAdmin {
+        if (relayer_ == address(0)) revert Error.ZERO_ADDRESS();
+        if (address(relayer) == address(0)) {
             relayer = IWormholeRelayer(relayer_);
         }
     }
@@ -91,36 +84,6 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
 
         relayer.sendPayloadToEvm{ value: msg.value }(
             dstChainId, authorizedImpl[dstChainId], message_, dstNativeAirdrop, dstGasLimit
-        );
-    }
-
-    /// @inheritdoc IAmbImplementation
-    function broadcastPayload(
-        address srcSender_,
-        bytes memory message_,
-        bytes memory extraData_
-    )
-        external
-        payable
-        virtual
-    {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
-        /// @dev is wormhole's inherent fee for sending a message
-        /// NOTE: is zero for now
-        uint256 msgFee = wormhole.messageFee();
-
-        if (msg.value != msgFee) {
-            revert Error.CROSS_CHAIN_TX_UNDERPAID();
-        }
-
-        wormhole.publishMessage{ value: msg.value }(
-            0,
-            /// batch id
-            message_,
-            broadcastFinality
         );
     }
 
@@ -192,16 +155,6 @@ contract WormholeImplementation is IAmbImplementation, IWormholeReceiver {
 
         authorizedImpl[chainId_] = authorizedImpl_;
         emit AuthorizedImplAdded(chainId_, authorizedImpl_);
-    }
-
-    /// @dev allows protocol admin to set broadcast finality
-    /// @param finality_ is the required finality on src chain
-    function setFinality(uint8 finality_) external onlyProtocolAdmin {
-        if (finality_ == 0) {
-            revert Error.INVALID_BROADCAST_FINALITY();
-        }
-
-        broadcastFinality = finality_;
     }
 
     /*///////////////////////////////////////////////////////////////

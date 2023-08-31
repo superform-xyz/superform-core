@@ -133,7 +133,10 @@ contract SuperformFactoryUpdateFormTest is BaseSetup {
         // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
         SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
 
-        address formImplementation_interface_unsupported = address(new ERC4626FormInterfaceNotSupported(superRegistry));
+        address formImplementation_interface_unsupported = address(
+            new
+            ERC4626FormInterfaceNotSupported(superRegistry)
+        );
 
         vm.expectRevert(Error.FORM_INTERFACE_UNSUPPORTED.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).updateFormBeaconLogic(

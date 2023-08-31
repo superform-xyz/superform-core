@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import { SuperformFactory } from "src/SuperformFactory.sol";
-import { FactoryStateRegistry } from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import "test/utils/BaseSetup.sol";
 import { Error } from "src/utils/Error.sol";
@@ -32,8 +31,8 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
             formImplementation1, formBeaconId, salt
         );
 
-        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 * 10 ** 18 }(
-            formBeaconId, true, generateBroadcastParams(5, 2)
+        SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus(
+            formBeaconId, true, generateBroadcastParams(5, 1)
         );
 
         bool status =
