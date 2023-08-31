@@ -155,12 +155,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         PayloadUpdaterLib.validateWithdrawPayloadUpdate(v.prevPayloadHeader, payloadTracking[payloadId_], v.isMulti);
         v.dstChainId = superRegistry.chainId();
 
-        bytes memory newPayloadBody;
-        if (v.isMulti != 0) {
-            newPayloadBody = _updateMultiVaultWithdrawPayload(v, txData_);
-        } else {
-            newPayloadBody = _updateSingleVaultWithdrawPayload(v, txData_[0]);
-        }
+        bytes memory newPayloadBody = _updateWithdrawPayload(v, txData_, v.isMulti);
 
         /// @dev set the new payload body
         payloadBody[payloadId_] = newPayloadBody;
@@ -397,22 +392,54 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
     struct UpdateMultiVaultWithdrawPayloadLocalVars {
         InitMultiVaultData multiVaultData;
+        InitSingleVaultData singleVaultData;
         uint256 len;
         uint256 i;
         address superform;
+        uint256[] tSuperFormIds;
+        uint256[] tAmounts;
+        uint256[] tMaxSlippage;
+        LiqRequest[] tLiqData;
     }
 
     /// @dev helper function to update multi vault withdraw payload
-    function _updateMultiVaultWithdrawPayload(
+    function _updateWithdrawPayload(
         UpdateWithdrawPayloadVars memory v_,
-        bytes[] calldata txData_
+        bytes[] calldata txData_,
+        uint8 multi
     )
         internal
         view
         returns (bytes memory)
     {
         UpdateMultiVaultWithdrawPayloadLocalVars memory lV;
-        lV.multiVaultData = abi.decode(v_.prevPayloadBody, (InitMultiVaultData));
+        if (multi == 1) {
+            lV.multiVaultData = abi.decode(v_.prevPayloadBody, (InitMultiVaultData));
+        } else {
+            lV.singleVaultData = abi.decode(v_.prevPayloadBody, (InitSingleVaultData));
+
+            lV.tSuperFormIds = new uint256[](1);
+            lV.tSuperFormIds[0] = lV.singleVaultData.superformId;
+
+            lV.tAmounts = new uint256[](1);
+            lV.tAmounts[0] = lV.singleVaultData.amount;
+
+            lV.tMaxSlippage = new uint256[](1);
+            lV.tMaxSlippage[0] = lV.singleVaultData.maxSlippage;
+
+            lV.tLiqData = new LiqRequest[](1);
+            lV.tLiqData[0] = lV.singleVaultData.liqData;
+
+            lV.multiVaultData = InitMultiVaultData(
+                lV.singleVaultData.superformRouterId,
+                lV.singleVaultData.payloadId,
+                lV.tSuperFormIds,
+                lV.tAmounts,
+                lV.tMaxSlippage,
+                lV.tLiqData,
+                lV.singleVaultData.extraFormData
+            );
+        }
 
         lV.len = lV.multiVaultData.liqData.length;
 
@@ -449,43 +476,13 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             }
         }
 
-        return abi.encode(lV.multiVaultData);
-    }
+        if (multi == 0) {
+            lV.singleVaultData.liqData.txData = txData_[0];
 
-    /// @dev helper function to update single vault withdraw payload
-    function _updateSingleVaultWithdrawPayload(
-        UpdateWithdrawPayloadVars memory v_,
-        bytes calldata txData_
-    )
-        internal
-        view
-        returns (bytes memory newPayloadBody_)
-    {
-        InitSingleVaultData memory singleVaultData = abi.decode(v_.prevPayloadBody, (InitSingleVaultData));
-
-        (address superform,,) = singleVaultData.superformId.getSuperform();
-
-        if (IBaseForm(superform).getStateRegistryId() != superRegistry.getStateRegistryId(address(this))) {
-            revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
+            return abi.encode(lV.singleVaultData);
         }
 
-        /// @dev validate payload update
-        PayloadUpdaterLib.validateLiqReq(singleVaultData.liqData);
-
-        IBridgeValidator(superRegistry.getBridgeValidator(singleVaultData.liqData.bridgeId)).validateTxData(
-            txData_,
-            v_.dstChainId,
-            v_.srcChainId,
-            singleVaultData.liqData.liqDstChainId,
-            false,
-            superform,
-            v_.srcSender,
-            singleVaultData.liqData.token
-        );
-
-        singleVaultData.liqData.txData = txData_;
-
-        newPayloadBody_ = abi.encode(singleVaultData);
+        return abi.encode(lV.multiVaultData);
     }
 
     function _processMultiWithdrawal(

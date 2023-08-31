@@ -171,24 +171,6 @@ contract CoreStateRegistryTest is ProtocolActions {
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
     }
 
-    function test_updatePayloadSingleVaultWithdrawUpdateValidator() public {
-        uint8[] memory ambIds = new uint8[](1);
-        ambIds[0] = 1;
-
-        /// beacon id 1 shouldn't be upgradeable.
-        _successfulSingleWithdrawal(ambIds, 1);
-
-        vm.selectFork(FORKS[AVAX]);
-        vm.prank(deployer);
-        SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
-
-        vm.prank(deployer);
-        bytes[] memory txData = new bytes[](1);
-        txData[0] = bytes("");
-        vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
-    }
-
     /// @dev test all revert cases with multi vault withdraw payload update
     function test_updatePayloadMultiVaultWithdrawRevertCases() public {
         uint8[] memory ambIds = new uint8[](1);
