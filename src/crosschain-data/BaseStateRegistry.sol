@@ -177,13 +177,4 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             }
         }
     }
-
-    /// @inheritdoc IBaseStateRegistry
-    function payload(uint256 payloadId_) external view returns (bytes memory payload_) {
-        if (payloadHeader[payloadId_] == 0 || payloadBody[payloadId_].length == 0) {
-            return bytes("");
-        }
-
-        return abi.encode(AMBMessage(payloadHeader[payloadId_], payloadBody[payloadId_]));
-    }
 }

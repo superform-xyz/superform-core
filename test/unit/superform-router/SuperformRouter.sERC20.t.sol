@@ -115,7 +115,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        superTransmuterSyncer.registerTransmuter(superformId);
+        superTransmuterSyncer.registerTransmuter(superformId, "");
         vm.startPrank(address(superformRouterSERC20));
         superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
@@ -145,7 +145,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.selectFork(FORKS[ARBI]);
 
-        superTransmuterSyncerArbi.registerTransmuter(superformId);
+        superTransmuterSyncerArbi.registerTransmuter(superformId, "");
 
         string memory tokenName =
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
@@ -196,7 +196,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
         vm.selectFork(FORKS[ARBI]);
 
-        superTransmuterSyncerArbi.registerTransmuter(superformId);
+        superTransmuterSyncerArbi.registerTransmuter(superformId, "");
 
         string memory tokenName =
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
@@ -242,7 +242,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.selectFork(FORKS[ARBI]);
 
-        superTransmuterSyncerArbi.registerTransmuter(superformId);
+        superTransmuterSyncerArbi.registerTransmuter(superformId, "");
 
         string memory tokenName =
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
@@ -725,7 +725,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.selectFork(FORKS[ARBI]);
 
-        superTransmuterSyncerArbi.registerTransmuter(superformId);
+        superTransmuterSyncerArbi.registerTransmuter(superformId, "");
 
         string memory tokenName =
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
@@ -982,8 +982,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.selectFork(FORKS[ARBI]);
 
-        superTransmuterSyncerArbi.registerTransmuter(superformId1);
-        superTransmuterSyncerArbi.registerTransmuter(superformId2);
+        superTransmuterSyncerArbi.registerTransmuter(superformId1, "");
+        superTransmuterSyncerArbi.registerTransmuter(superformId2, "");
 
         string memory tokenName =
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform1).superformYieldTokenName()));
@@ -1189,7 +1189,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.recordLogs();
         SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 ether }(
-            formBeaconId, true, generateBroadcastParams(5, 2)
+            formBeaconId, true, generateBroadcastParams(5, 1)
         );
 
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());
@@ -1200,7 +1200,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
                 bool statusBefore =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
-                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1);
+                BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
                 bool statusAfter =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 

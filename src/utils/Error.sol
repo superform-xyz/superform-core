@@ -33,11 +33,11 @@ library Error {
     /// @dev thrown when msg.sender is not state registry
     error NOT_STATE_REGISTRY();
 
-    /// @dev thrown when msg.sender is not factory state registry
-    error NOT_FACTORY_STATE_REGISTRY();
+    /// @dev thrown when msg.sender is not an allowed broadcaster
+    error NOT_ALLOWED_BROADCASTER();
 
-    /// @dev thrown when msg.sender is not roles state registry
-    error NOT_ROLES_STATE_REGISTRY();
+    /// @dev thrown when msg.sender is not broadcast state registry
+    error NOT_BROADCAST_REGISTRY();
 
     /// @dev thrown when msg.sender is not two step state registry
     error NOT_TWO_STEP_STATE_REGISTRY();

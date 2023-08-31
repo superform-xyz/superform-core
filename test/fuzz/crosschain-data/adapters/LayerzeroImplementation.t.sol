@@ -50,7 +50,7 @@ contract LayerzeroImplementationTest is BaseSetup {
 
     function test_setLzEndpoint(address lzEndPoint_) public {
         /// @dev resetting lzEndpoint's storage slot to 0 (which was set in BaseSetup)
-        vm.store(address(layerzeroImplementation), bytes32(uint256(1)), bytes32(uint256(0)));
+        vm.store(address(layerzeroImplementation), bytes32(uint256(0)), bytes32(uint256(0)));
         vm.assume(lzEndPoint_ != address(0));
 
         vm.prank(deployer);
@@ -147,6 +147,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         assertEq(response, abi.encode(CHAINLINK_lzOracle));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+        vm.assume(malice_ != deployer);
         vm.prank(malice_);
         layerzeroImplementation.setConfig(version, chainId, 6, abi.encode(CHAINLINK_lzOracle));
     }
@@ -203,6 +204,7 @@ contract LayerzeroImplementationTest is BaseSetup {
         bytes memory newSrcAddress =
             abi.encodePacked(getContract(newChainId, "LayerzeroImplementation"), address(layerzeroImplementation));
 
+        vm.assume(malice_ != deployer);
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(malice_);
         layerzeroImplementation.setTrustedRemote(newLzChainId, newSrcAddress);
@@ -265,58 +267,6 @@ contract LayerzeroImplementationTest is BaseSetup {
         vm.expectEmit(false, false, false, true, getContract(OP, "CoreStateRegistry"));
         emit PayloadReceived(ETH, OP, 1);
         lzImplOP.retryMessage(101, srcAddressOP, 2, payload);
-    }
-
-    function test_revert_broadcastPayload_invalidCaller(uint8 userSeed_, address malice_) public {
-        uint256 userIndex = userSeed_ % users.length;
-
-        AMBMessage memory ambMessage;
-        BroadCastAMBExtraData memory ambExtraData;
-        address coreStateRegistry;
-
-        (ambMessage, ambExtraData, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[userIndex]);
-
-        vm.expectRevert(Error.NOT_STATE_REGISTRY.selector);
-        vm.deal(malice_, 100 ether);
-        vm.prank(malice_);
-        layerzeroImplementation.broadcastPayload{ value: 0.1 ether }(
-            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
-        );
-    }
-
-    function test_revert_broadcastPayload_invalidExtraDataLengths(
-        uint256 userSeed_,
-        uint256 gasPerDstLenSeed_,
-        uint256 extraDataPerDstLenSeed_
-    )
-        public
-    {
-        uint256 userIndex = userSeed_ % users.length;
-        uint256 gasPerDstLen = bound(gasPerDstLenSeed_, 1, chainIds.length);
-        uint256 extraDataPerDstLen = bound(extraDataPerDstLenSeed_, 1, chainIds.length);
-        vm.assume(gasPerDstLen != extraDataPerDstLen);
-
-        AMBMessage memory ambMessage;
-        BroadCastAMBExtraData memory ambExtraData;
-        address coreStateRegistry;
-
-        (ambMessage,, coreStateRegistry) = _setupBroadcastPayloadAMBData(users[userIndex]);
-
-        uint256[] memory gasPerDst = new uint256[](gasPerDstLen);
-        for (uint256 i = 0; i < gasPerDst.length; i++) {
-            gasPerDst[i] = 0.1 ether;
-        }
-
-        /// @dev keeping extraDataPerDst empty for now
-        bytes[] memory extraDataPerDst = new bytes[](extraDataPerDstLen);
-
-        ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
-
-        vm.expectRevert(Error.INVALID_EXTRA_DATA_LENGTHS.selector);
-        vm.prank(coreStateRegistry);
-        layerzeroImplementation.broadcastPayload{ value: 0.1 ether }(
-            users[userIndex], abi.encode(ambMessage), abi.encode(ambExtraData)
-        );
     }
 
     function test_revert_dispatchPayload_invalidCaller_invalidSrcChainId(
@@ -468,9 +418,6 @@ contract LayerzeroImplementationTest is BaseSetup {
         BroadCastAMBExtraData memory ambExtraData = BroadCastAMBExtraData(gasPerDst, extraDataPerDst);
 
         address coreStateRegistry = getContract(1, "CoreStateRegistry");
-        /// @dev bcoz we're simulating layerzeroImplementation.broadcastPayload() from CoreStateRegistry (below),
-        /// we need sufficient ETH in CoreStateRegistry and LayerzeroImplementation. On mainnet, these funds will
-        /// come from the user via SuperformRouter
         vm.deal(coreStateRegistry, 10 ether);
         vm.deal(address(layerzeroImplementation), 10 ether);
 

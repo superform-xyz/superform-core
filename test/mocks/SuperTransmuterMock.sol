@@ -59,7 +59,7 @@ contract SuperTransmuterMock is ISuperTransmuter, Transmuter, StateSyncer {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperTransmuter
-    function registerTransmuter(uint256 superformId) external override returns (address) {
+    function registerTransmuter(uint256 superformId, bytes memory) external override returns (address) {
         (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId);
 
         if (superRegistry.chainId() != chainId) revert Error.INVALID_CHAIN_ID();
@@ -104,6 +104,8 @@ contract SuperTransmuterMock is ISuperTransmuter, Transmuter, StateSyncer {
 
         return synthethicTokenId[superformId];
     }
+
+    function stateSyncBroadcast(bytes memory data_) external payable override { }
 
     /// @inheritdoc IStateSyncer
     function mintSingle(

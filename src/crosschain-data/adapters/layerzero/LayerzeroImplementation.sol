@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IBaseStateRegistry } from "../../../interfaces/IBaseStateRegistry.sol";
-import { IAmbImplementation } from "../../../interfaces/IAmbImplementation.sol";
-import { ISuperRBAC } from "../../../interfaces/ISuperRBAC.sol";
-import { ISuperRegistry } from "../../../interfaces/ISuperRegistry.sol";
-import { AMBMessage, BroadCastAMBExtraData } from "../../../types/DataTypes.sol";
-import { Error } from "../../../utils/Error.sol";
-import { ILayerZeroReceiver } from "../../../vendor/layerzero/ILayerZeroReceiver.sol";
-import { ILayerZeroUserApplicationConfig } from "../../../vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
-import { ILayerZeroEndpoint } from "../../../vendor/layerzero/ILayerZeroEndpoint.sol";
-import { DataLib } from "../../../libraries/DataLib.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { AMBMessage } from "src/types/DataTypes.sol";
+import { Error } from "src/utils/Error.sol";
+import { ILayerZeroReceiver } from "src/vendor/layerzero/ILayerZeroReceiver.sol";
+import { ILayerZeroUserApplicationConfig } from "src/vendor/layerzero/ILayerZeroUserApplicationConfig.sol";
+import { ILayerZeroEndpoint } from "src/vendor/layerzero/ILayerZeroEndpoint.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title LayerzeroImplementation
 /// @author Zeropoint Labs
@@ -23,7 +23,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
-    uint16[] public broadcastChains;
     ISuperRegistry public immutable superRegistry;
     ILayerZeroEndpoint public lzEndpoint;
 
@@ -89,29 +88,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         _lzSend(ambChainId[dstChainId_], message_, payable(srcSender_), address(0x0), extraData_, msg.value);
     }
 
-    /// @inheritdoc IAmbImplementation
-    function broadcastPayload(address srcSender_, bytes memory message_, bytes memory extraData_) external payable {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
-        BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-        uint256 totalChains = broadcastChains.length;
-
-        if (d.gasPerDst.length != totalChains || d.extraDataPerDst.length != totalChains) {
-            revert Error.INVALID_EXTRA_DATA_LENGTHS();
-        }
-
-        for (uint256 i; i < totalChains;) {
-            uint16 dstChainId = broadcastChains[i];
-            _lzSend(dstChainId, message_, payable(srcSender_), address(0x0), d.extraDataPerDst[i], d.gasPerDst[i]);
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
     /// @dev allows protocol admin to add new chain ids in future
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
@@ -123,9 +99,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
 
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
-
-        /// NOTE: @dev should handle a way to pop
-        broadcastChains.push(ambChainId_);
     }
 
     /*///////////////////////////////////////////////////////////////
