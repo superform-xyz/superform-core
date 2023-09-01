@@ -3,20 +3,17 @@ pragma solidity 0.8.19;
 
 /// @dev contains all the common struct used for interchain token transfers.
 struct LiqRequest {
+    /// @dev what bridge to use to move tokens
     uint8 bridgeId;
-    /// @dev what bridge to use to move tokens:  1 - cross chain bridge / 2 - inch implementation / 3 - 0x
-    /// implementation
+    /// @dev generated data
     bytes txData;
-    /// @dev generated data (input token is already here)
+    /// @dev input token. Relevant for withdraws especially to know when to update txData
     address token;
     /// @dev dstChainId = liqDstchainId for deposits. For withdraws it is the target chain id for where the underlying
-    /// will be sent
+    /// is to be delivered
     uint64 liqDstChainId;
-    /// @dev this is the input token (pre-swap, not necessarily the underlying token)
-    uint256 amount;
-    /// @dev in what amount token is bridged (already present inside txData
-    uint256 nativeAmount;
     /// @dev currently this amount is used as msg.value in the txData call. For socket this should be at least amount +
     /// optionalNative(middlewareRequest) + optionalNative(bridgeRequest)
+    uint256 nativeAmount;
     bytes permit2data;
 }

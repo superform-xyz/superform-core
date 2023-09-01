@@ -116,7 +116,6 @@ enum TwoStepsStatus {
 /// @dev holds information about the two-steps payload
 struct TwoStepsPayload {
     uint8 isXChain;
-    uint8 superformRouterId;
     address srcSender;
     uint64 srcChainId;
     uint256 lockedTill;

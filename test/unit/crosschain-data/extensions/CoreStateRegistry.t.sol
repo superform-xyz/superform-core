@@ -171,24 +171,6 @@ contract CoreStateRegistryTest is ProtocolActions {
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
     }
 
-    function test_updatePayloadSingleVaultWithdrawUpdateValidator() public {
-        uint8[] memory ambIds = new uint8[](1);
-        ambIds[0] = 1;
-
-        /// beacon id 1 shouldn't be upgradeable.
-        _successfulSingleWithdrawal(ambIds, 1);
-
-        vm.selectFork(FORKS[AVAX]);
-        vm.prank(deployer);
-        SuperRegistry(getContract(AVAX, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
-
-        vm.prank(deployer);
-        bytes[] memory txData = new bytes[](1);
-        txData[0] = bytes("");
-        vm.expectRevert(Error.INVALID_PAYLOAD_UPDATE_REQUEST.selector);
-        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
-    }
-
     /// @dev test all revert cases with multi vault withdraw payload update
     function test_updatePayloadMultiVaultWithdrawRevertCases() public {
         uint8[] memory ambIds = new uint8[](1);
@@ -270,7 +252,6 @@ contract CoreStateRegistryTest is ProtocolActions {
                 ),
                 getContract(ETH, "USDT"),
                 AVAX,
-                1e18,
                 0,
                 bytes("")
             ),
@@ -313,11 +294,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId,
-            1e18,
-            100,
-            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 1e18, 0, bytes("")),
-            bytes("")
+            superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0, bytes("")), bytes("")
         );
 
         vm.recordLogs();
@@ -375,7 +352,6 @@ contract CoreStateRegistryTest is ProtocolActions {
             ),
             getContract(ETH, "USDT"),
             AVAX,
-            420,
             0,
             bytes("")
         );
@@ -424,7 +400,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         amountArr[1] = 1e18;
 
         LiqRequest[] memory liqReqArr = new LiqRequest[](2);
-        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), ETH, 1e18, 0, bytes(""));
+        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), ETH, 0, bytes(""));
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amountArr, new uint256[](2), liqReqArr, bytes(""));

@@ -84,6 +84,11 @@ contract SocketValidator is BridgeValidator {
         return userRequest.receiverAddress == receiver_;
     }
 
+    /// @inheritdoc BridgeValidator
+    function decodeAmount(bytes calldata txData_) external pure override returns (uint256 amount_) {
+        return _decodeCallData(txData_).amount;
+    }
+
     /// @notice Decode the socket v2 calldata
     /// @param data Socket V2 outboundTransferTo call data
     /// @return userRequest socket UserRequest

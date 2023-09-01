@@ -39,7 +39,7 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, emptyBytes, address(0), ETH, 420, 420, emptyBytes),
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes),
                     emptyBytes
                 )
             ),
@@ -55,7 +55,7 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, emptyBytes, address(0), ETH, 420, 420, emptyBytes),
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes),
                     emptyBytes
                 )
             ),
@@ -71,7 +71,7 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, emptyBytes, address(0), ETH, 420, 420, emptyBytes),
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes),
                     emptyBytes
                 )
             ),
@@ -92,7 +92,7 @@ contract PaymentHelperTest is BaseSetup {
         uint256MemoryArray[0] = 420;
 
         LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
-        liqRequestMemoryArray[0] = LiqRequest(1, emptyBytes, address(0), ETH, 420, 420, emptyBytes);
+        liqRequestMemoryArray[0] = LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes);
 
         (,,, uint256 fees) = paymentHelper.estimateSingleDirectMultiVault(
             SingleDirectMultiVaultStateReq(
@@ -151,7 +151,7 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, txData, address(0), ETH, 420, 420, emptyBytes),
+                    LiqRequest(1, txData, address(0), ETH, 420, emptyBytes),
                     emptyBytes
                 )
             ),
@@ -184,7 +184,7 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, txData, address(0), ETH, 420, 420, emptyBytes),
+                    LiqRequest(1, txData, address(0), ETH, 420, emptyBytes),
                     emptyBytes
                 )
             ),
@@ -217,7 +217,7 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, txData, address(0), ETH, 420, 420, emptyBytes),
+                    LiqRequest(1, txData, address(0), ETH, 420, emptyBytes),
                     emptyBytes
                 )
             ),

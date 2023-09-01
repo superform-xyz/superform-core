@@ -91,7 +91,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         uint8 type_,
         address srcSender_,
         uint64 srcChainId_,
-        uint8 superformRouterId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     )
@@ -101,9 +100,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     {
         ++timeLockPayloadCounter;
 
-        twoStepsPayload[timeLockPayloadCounter] = TwoStepsPayload(
-            type_, superformRouterId_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING
-        );
+        twoStepsPayload[timeLockPayloadCounter] =
+            TwoStepsPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING);
     }
 
     /// @inheritdoc ITwoStepsFormStateRegistry
@@ -159,7 +157,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             }
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
-                IStateSyncer(superRegistry.getStateSyncer(p.superformRouterId)).mintSingle(
+                IStateSyncer(superRegistry.getStateSyncer(p.data.superformRouterId)).mintSingle(
                     p.srcSender, p.data.superformId, p.data.amount
                 );
             }

@@ -8,7 +8,7 @@ import { PayloadState, TransactionType, CallbackType } from "../types/DataTypes.
 
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {
-    function validateSlippage(uint256 newAmount, uint256 maxAmount, uint256 slippage) internal pure {
+    function validateSlippage(uint256 newAmount, uint256 maxAmount, uint256 slippage) public pure {
         /// @dev args validation
         if (newAmount > maxAmount) {
             revert Error.NEGATIVE_SLIPPAGE();
@@ -27,7 +27,7 @@ library PayloadUpdaterLib {
         uint256[] memory maxAmount,
         uint256[] memory slippage
     )
-        internal
+        public
         pure
     {
         for (uint256 i; i < newAmount.length;) {
@@ -39,7 +39,7 @@ library PayloadUpdaterLib {
         }
     }
 
-    function validateLiqReq(LiqRequest memory req_) internal pure {
+    function validateLiqReq(LiqRequest memory req_) public pure {
         /// req token should be address(0)
         /// req tx data length should be 0
         if (req_.token != address(0) && req_.txData.length > 0) {
@@ -52,7 +52,7 @@ library PayloadUpdaterLib {
         PayloadState currentPayloadState_,
         uint8 isMulti
     )
-        internal
+        public
         pure
     {
         (uint256 txType, uint256 callbackType, uint8 multi,,,) = DataLib.decodeTxInfo(txInfo_);
@@ -75,7 +75,7 @@ library PayloadUpdaterLib {
         PayloadState currentPayloadState_,
         uint8 isMulti
     )
-        internal
+        public
         pure
     {
         (uint256 txType, uint256 callbackType, uint8 multi,,,) = DataLib.decodeTxInfo(txInfo_);

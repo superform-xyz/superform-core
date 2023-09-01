@@ -84,7 +84,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             /// @dev dispatch liquidity data
             _validateAndDispatchTokens(
-                vars.liqRequest, permit2, superform, vars.srcChainId, req.dstChainId, msg.sender, true
+                ValidateAndDispatchTokensArgs(
+                    vars.liqRequest, permit2, superform, vars.srcChainId, req.dstChainId, msg.sender, true
+                )
             );
             unchecked {
                 ++j;
@@ -128,7 +130,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
-            vars.liqRequest, superRegistry.PERMIT2(), superform, vars.srcChainId, req.dstChainId, msg.sender, true
+            ValidateAndDispatchTokensArgs(
+                vars.liqRequest, superRegistry.PERMIT2(), superform, vars.srcChainId, req.dstChainId, msg.sender, true
+            )
         );
 
         uint256[] memory superformIds = new uint256[](1);
@@ -380,41 +384,41 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
-    function _validateAndDispatchTokens(
-        LiqRequest memory liqRequest_,
-        address permit2_,
-        address superform_,
-        uint64 srcChainId_,
-        uint64 dstChainId_,
-        address srcSender_,
-        bool deposit_
-    )
-        internal
-        virtual
-    {
+    struct ValidateAndDispatchTokensArgs {
+        LiqRequest liqRequest;
+        address permit2;
+        address superform;
+        uint64 srcChainId;
+        uint64 dstChainId;
+        address srcSender;
+        bool deposit;
+    }
+
+    function _validateAndDispatchTokens(ValidateAndDispatchTokensArgs memory args) internal virtual {
+        address bridgeValidator = superRegistry.getBridgeValidator(args.liqRequest.bridgeId);
         /// @dev validates remaining params of txData
-        IBridgeValidator(superRegistry.getBridgeValidator(liqRequest_.bridgeId)).validateTxData(
-            liqRequest_.txData,
-            srcChainId_,
-            dstChainId_,
-            liqRequest_.liqDstChainId,
-            deposit_,
-            superform_,
-            srcSender_,
-            liqRequest_.token
+        IBridgeValidator(bridgeValidator).validateTxData(
+            args.liqRequest.txData,
+            args.srcChainId,
+            args.dstChainId,
+            args.liqRequest.liqDstChainId,
+            args.deposit,
+            args.superform,
+            args.srcSender,
+            args.liqRequest.token
         );
 
         /// @dev dispatches tokens through the selected liquidity bridge to the destnation contract (CoreStateRegistry
         /// or MultiTxProcessor)
         dispatchTokens(
-            superRegistry.getBridgeAddress(liqRequest_.bridgeId),
-            liqRequest_.txData,
-            liqRequest_.token,
-            liqRequest_.amount,
-            srcSender_,
-            liqRequest_.nativeAmount,
-            liqRequest_.permit2data,
-            permit2_
+            superRegistry.getBridgeAddress(args.liqRequest.bridgeId),
+            args.liqRequest.txData,
+            args.liqRequest.token,
+            IBridgeValidator(bridgeValidator).decodeAmount(args.liqRequest.txData),
+            args.srcSender,
+            args.liqRequest.nativeAmount,
+            args.liqRequest.permit2data,
+            args.permit2
         );
     }
 

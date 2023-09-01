@@ -37,6 +37,16 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    struct withdrawAfterCoolDownLocalVars {
+        uint256 len1;
+        address bridgeValidator;
+        uint64 chainId;
+        address receiver;
+        uint256 amount;
+        LiqRequest liqData;
+    }
+
     /// @dev this function is called when the timelock deposit is ready to be withdrawn after being unlocked
     /// @param amount_ the amount of tokens to withdraw
     /// @param p_ the payload data
@@ -48,48 +58,52 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         onlyTwoStepStateRegistry
         returns (uint256 dstAmount)
     {
+        withdrawAfterCoolDownLocalVars memory vars;
         IERC4626TimelockVault v = IERC4626TimelockVault(vault);
 
-        LiqRequest memory liqData = p_.data.liqData;
-        uint256 len1 = liqData.txData.length;
+        vars.liqData = p_.data.liqData;
+        vars.len1 = vars.liqData.txData.length;
 
         /// @dev a case where the withdraw req liqData has a valid token and tx data is not updated by the keeper
-        if (liqData.token != address(0) && len1 == 0) {
+        if (vars.liqData.token != address(0) && vars.len1 == 0) {
             revert Error.WITHDRAW_TX_DATA_NOT_UPDATED();
-        } else if (liqData.token == address(0) && len1 != 0) {
+        } else if (vars.liqData.token == address(0) && vars.len1 != 0) {
             revert Error.EMPTY_TOKEN_NON_EMPTY_TXDATA();
         }
 
         /// @dev if the txData is empty, the tokens are sent directly to the sender, otherwise sent first to this form
-        address receiver = len1 == 0 ? p_.srcSender : address(this);
+        vars.receiver = vars.len1 == 0 ? p_.srcSender : address(this);
 
-        dstAmount = v.redeem(amount_, receiver, address(this));
+        dstAmount = v.redeem(amount_, vars.receiver, address(this));
         /// @dev validate and dispatches the tokens
-        if (len1 != 0) {
-            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
-            if (liqData.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+        if (vars.len1 != 0) {
+            vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
+            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmount(vars.liqData.txData);
 
-            uint64 chainId = superRegistry.chainId();
+            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
+            if (vars.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
+
+            vars.chainId = superRegistry.chainId();
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
-            IBridgeValidator(superRegistry.getBridgeValidator(liqData.bridgeId)).validateTxData(
-                liqData.txData,
-                chainId,
-                p_.isXChain == 1 ? p_.srcChainId : chainId,
-                liqData.liqDstChainId,
+            IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
+                vars.liqData.txData,
+                vars.chainId,
+                p_.isXChain == 1 ? p_.srcChainId : vars.chainId,
+                vars.liqData.liqDstChainId,
                 false,
                 address(this),
                 p_.srcSender,
-                liqData.token
+                vars.liqData.token
             );
 
             dispatchTokens(
-                superRegistry.getBridgeAddress(liqData.bridgeId),
-                liqData.txData,
-                liqData.token,
-                liqData.amount,
+                superRegistry.getBridgeAddress(vars.liqData.bridgeId),
+                vars.liqData.txData,
+                vars.liqData.token,
+                vars.amount,
                 address(this),
-                liqData.nativeAmount,
+                vars.liqData.nativeAmount,
                 /// @dev be careful over here
                 "",
                 superRegistry.PERMIT2()
@@ -131,9 +145,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two
         /// step
         /// @dev state registry for re-processing at a later date
-        _storePayload(
-            0, srcSender_, superRegistry.chainId(), singleVaultData_.superformRouterId, lockedTill, singleVaultData_
-        );
+        _storePayload(0, srcSender_, superRegistry.chainId(), lockedTill, singleVaultData_);
 
         return 0;
     }
@@ -170,7 +182,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two
         /// step
         /// @dev state registry for re-processing at a later date
-        _storePayload(1, srcSender_, srcChainId_, singleVaultData_.superformRouterId, lockedTill, singleVaultData_);
+        _storePayload(1, srcSender_, srcChainId_, lockedTill, singleVaultData_);
 
         return 0;
     }
@@ -189,7 +201,6 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         uint8 type_,
         address srcSender_,
         uint64 srcChainId_,
-        uint8 superformRouterId_,
         uint256 lockedTill_,
         InitSingleVaultData memory data_
     )
@@ -197,6 +208,6 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     {
         ITwoStepsFormStateRegistry registry =
             ITwoStepsFormStateRegistry(superRegistry.getAddress(keccak256("TWO_STEPS_FORM_STATE_REGISTRY")));
-        registry.receivePayload(type_, srcSender_, srcChainId_, superformRouterId_, lockedTill_, data_);
+        registry.receivePayload(type_, srcSender_, srcChainId_, lockedTill_, data_);
     }
 }

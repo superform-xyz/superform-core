@@ -508,7 +508,7 @@ abstract contract AbstractDeploy is Script {
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
 
         contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] =
-            address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry));
+            address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry, 2));
 
         /// @dev 11.1 Set Router Info
 

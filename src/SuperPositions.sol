@@ -8,6 +8,7 @@ import { ISuperPositions } from "./interfaces/ISuperPositions.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { Error } from "./utils/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
+import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
@@ -23,6 +24,24 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
 
     /// @dev is the base uri frozen status
     bool public dynamicURIFrozen;
+
+    /*///////////////////////////////////////////////////////////////
+                            MODIFIER
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyMinter() override {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsMinterRole(msg.sender)) {
+            revert Error.NOT_MINTER();
+        }
+        _;
+    }
+
+    modifier onlyBurner() override {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsBurnerRole(msg.sender)) {
+            revert Error.NOT_BURNER();
+        }
+        _;
+    }
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR

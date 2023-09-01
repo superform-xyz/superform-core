@@ -7,7 +7,7 @@ import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { ERC4626FormExternal } from "test/mocks/ERC4626FormExternal.sol";
 import "test/utils/BaseSetup.sol";
 
-contract SuperformERC4626FormTest is BaseSetup {
+contract SuperformERC4626FormExternalTest is BaseSetup {
     uint64 internal chainId = ETH;
 
     function setUp() public override {

@@ -86,7 +86,7 @@ contract BaseStateRegistryTest is BaseSetup {
     function test_readPayloadFromStateRegistry() public {
         vm.selectFork(FORKS[ETH]);
 
-        bytes memory payload = coreStateRegistry.payload(type(uint256).max);
+        bytes memory payload = _payload(address(coreStateRegistry), ETH, type(uint256).max);
         assertEq(payload, bytes(""));
     }
 }

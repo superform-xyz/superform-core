@@ -56,9 +56,17 @@ contract PaymentHelper is IPaymentHelper {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
+
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
+            revert Error.NOT_EMERGENCY_ADMIN();
         }
         _;
     }
@@ -116,7 +124,7 @@ contract PaymentHelper is IPaymentHelper {
     )
         external
         override
-        onlyProtocolAdmin
+        onlyEmergencyAdmin
     {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
@@ -595,10 +603,11 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps estimate the liq amount involved in the tx
-    function _estimateLiqAmount(LiqRequest[] memory req_) internal pure returns (uint256 liqAmount) {
+    function _estimateLiqAmount(LiqRequest[] memory req_) internal view returns (uint256 liqAmount) {
         for (uint256 i; i < req_.length;) {
             if (req_[i].token == NATIVE) {
-                liqAmount += req_[i].amount;
+                liqAmount +=
+                    IBridgeValidator(superRegistry.getBridgeValidator(req_[i].bridgeId)).decodeAmount(req_[i].txData);
             }
 
             unchecked {

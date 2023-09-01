@@ -26,6 +26,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
     bytes32 public constant override SUPERPOSITIONS_MINTER_ROLE = keccak256("SUPERPOSITIONS_MINTER_ROLE");
     bytes32 public constant override SUPERPOSITIONS_BURNER_ROLE = keccak256("SUPERPOSITIONS_BURNER_ROLE");
+    bytes32 public constant override SERC20_MINTER_ROLE = keccak256("SERC20_MINTER_ROLE");
+    bytes32 public constant override SERC20_BURNER_ROLE = keccak256("SERC20_BURNER_ROLE");
     bytes32 public constant override MINTER_STATE_REGISTRY_ROLE = keccak256("MINTER_STATE_REGISTRY_ROLE");
     bytes32 public constant override WORMHOLE_VAA_RELAYER_ROLE = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
 
@@ -44,6 +46,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         _setRoleAdmin(CORE_STATE_REGISTRY_UPDATER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SUPERPOSITIONS_MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SUPERPOSITIONS_BURNER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(SERC20_MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(SERC20_BURNER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(MINTER_STATE_REGISTRY_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(BROADCASTER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(WORMHOLE_VAA_RELAYER_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -157,6 +161,16 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /// @inheritdoc ISuperRBAC
     function hasSuperPositionsBurnerRole(address burner_) external view override returns (bool) {
         return hasRole(SUPERPOSITIONS_BURNER_ROLE, burner_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasSERC20MinterRole(address minter_) external view override returns (bool) {
+        return hasRole(SERC20_MINTER_ROLE, minter_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasSERC20BurnerRole(address burner_) external view override returns (bool) {
+        return hasRole(SERC20_BURNER_ROLE, burner_);
     }
 
     /// @inheritdoc ISuperRBAC

@@ -81,8 +81,6 @@ jobs:
 
   coverage:
     needs: ["build"]
-    env:
-      FOUNDRY_FUZZ_RUNS: "1"
     runs-on: "SuperformCore"
     steps:
       - name: "Check out the repo"
@@ -94,7 +92,7 @@ jobs:
         uses: "foundry-rs/foundry-toolchain@v1"
 
       - name: "Generate the coverage report using the unit and the integration tests"
-        run: 'forge coverage --match-path "test/**/*.sol" --report lcov'
+        run: 'FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov'
 
       - name: "Upload coverage report to Codecov"
         uses: "codecov/codecov-action@v3"

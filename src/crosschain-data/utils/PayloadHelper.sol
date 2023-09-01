@@ -6,6 +6,8 @@ import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ITwoStepsFormStateRegistry } from "../../interfaces/ITwoStepsFormStateRegistry.sol";
 import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
+import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
+
 import {
     CallbackType,
     ReturnMultiData,
@@ -193,7 +195,10 @@ contract PayloadHelper is IPayloadHelper {
                 v.txDatas[v.i] = v.imvd.liqData[v.i].txData;
                 v.liqDataTokens[v.i] = v.imvd.liqData[v.i].token;
                 v.liqDataChainIds[v.i] = v.imvd.liqData[v.i].liqDstChainId;
-                v.liqDataAmounts[v.i] = v.imvd.liqData[v.i].amount;
+
+                v.liqDataAmounts[v.i] =
+                    IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i])).decodeAmount(v.txDatas[v.i]);
+
                 v.liqDataNativeAmounts[v.i] = v.imvd.liqData[v.i].nativeAmount;
                 v.permit2datas[v.i] = v.imvd.liqData[v.i].permit2data;
             }
@@ -213,7 +218,8 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataChainIds[0] = v.isvd.liqData.liqDstChainId;
 
             v.liqDataAmounts = new uint256[](1);
-            v.liqDataAmounts[0] = v.isvd.liqData.amount;
+            v.liqDataAmounts[0] =
+                IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0])).decodeAmount(v.txDatas[0]);
 
             v.liqDataNativeAmounts = new uint256[](1);
             v.liqDataNativeAmounts[0] = v.isvd.liqData.nativeAmount;
