@@ -140,10 +140,6 @@ contract MDMVW84002408NativeInputSlipapgeL1AMB12 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    // for (uint256 j = 0; j < superPositions.length; j++) {
-                    //     console.log("SUPERPOSITIONS", j, superPositions[j]);
-                    // }
-
                     /// @dev notice partial withdrawals in ETH->0 and POLY->2
                     if (DST_CHAINS[i] == ETH) {
                         amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));

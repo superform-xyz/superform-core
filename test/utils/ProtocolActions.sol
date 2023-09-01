@@ -2496,7 +2496,7 @@ abstract contract ProtocolActions is BaseSetup {
         bool partialWithdraw = partialWithdrawVaults.length > 0;
         for (uint256 i = 0; i < superformIds.length; i++) {
             currentBalanceOfSp = superPositions.balanceOf(users[user], superformIds[i]);
-            console.log("SPPPPPP", currentBalanceOfSp);
+
             if (partialWithdrawVaults.length > 0) {
                 partialWithdraw = partialWithdrawVaults[i];
             }
@@ -2621,7 +2621,6 @@ abstract contract ProtocolActions is BaseSetup {
             vm.selectFork(FORKS[DST_CHAINS[args.dstIndex]]);
             /// @dev calculate the final amount summed on the basis of previewDeposit
             spAmountSummed[v.i] = IBaseForm(v.superforms[v.i]).previewDepositTo(spAmountSummed[v.i]);
-            console.log("SPAMOUNT_SUMMED", spAmountSummed[v.i]);
         }
     }
 

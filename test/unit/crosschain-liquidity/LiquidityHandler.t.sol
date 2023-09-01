@@ -192,7 +192,8 @@ contract LiquidityHandlerTest is BaseSetup {
                 /// request id
                 0,
                 underlyingToken_,
-                abi.encode(from_, FORKS[toChainId_], getContract(ARBI, "DAI"))
+                /// @dev arbitrary total slippage (200) and 0 multiTxSlippageShare as multiTx is false
+                abi.encode(from_, FORKS[toChainId_], getContract(ARBI, "DAI"), 200, false, 0, false)
             );
 
             /// @dev empty bridge request
@@ -220,7 +221,8 @@ contract LiquidityHandlerTest is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingToken_),
+                /// @dev arbitrary totalSlippage (200) and 0 multiTxSlippageShare as multiTx is false
+                abi.encode(from_, FORKS[toChainId_], underlyingToken_, 200, false, 0, false),
                 false // arbitrary
             );
 

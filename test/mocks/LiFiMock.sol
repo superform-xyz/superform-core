@@ -63,7 +63,6 @@ contract LiFiMock is Test {
         ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool));
 
         if (inputToken_ != NATIVE) {
-            console.log("MULTIII_B", MockERC20(inputToken_).balanceOf(from));
             if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
 
             MockERC20(inputToken_).burn(address(this), amount_);
@@ -95,7 +94,6 @@ contract LiFiMock is Test {
         /// @dev encapsulating from
         address from = abi.decode(data_, (address));
         if (inputToken_ != NATIVE) {
-            console.log("MULTIII", MockERC20(inputToken_).balanceOf(from));
             MockERC20(inputToken_).transferFrom(from, address(this), amount_);
             MockERC20(inputToken_).burn(address(this), amount_);
         }
