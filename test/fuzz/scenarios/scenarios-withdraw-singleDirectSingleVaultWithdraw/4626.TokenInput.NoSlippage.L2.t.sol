@@ -39,6 +39,8 @@ contract SXSVWNormal4626TokenInputSlippage is ProtocolActions {
         LIQ_BRIDGES[ETH][0] = [2];
         LIQ_BRIDGES[ETH][1] = [2];
 
+        FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

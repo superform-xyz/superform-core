@@ -17,8 +17,8 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         vm.startPrank(deployer);
 
         vm.recordLogs();
-        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 ether }(
-            formBeaconId, true, generateBroadcastParams(5, 2)
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus(
+            formBeaconId, true, generateBroadcastParams(5, 1)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
@@ -30,11 +30,11 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 bool statusBefore =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 
-                vm.expectRevert(Error.NOT_FACTORY_STATE_REGISTRY.selector);
+                vm.expectRevert(Error.NOT_BROADCAST_REGISTRY.selector);
                 bytes memory data_ = hex"ffff";
-                SuperformFactory(getContract(chainIds[i], "SuperformFactory")).stateSync(data_);
+                SuperformFactory(getContract(chainIds[i], "SuperformFactory")).stateSyncBroadcast(data_);
 
-                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1);
+                BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
                 bool statusAfter =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 
@@ -50,7 +50,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
-                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(1);
+                BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
             }
         }
 
@@ -60,7 +60,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 vm.selectFork(FORKS[chainIds[i]]);
 
                 vm.expectRevert(Error.INVALID_PAYLOAD_ID.selector);
-                FactoryStateRegistry(payable(getContract(chainIds[i], "FactoryStateRegistry"))).processPayload(2);
+                BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(2);
             }
         }
 
@@ -69,8 +69,8 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         /// @dev checks if proof for this next one is diff
         vm.recordLogs();
-        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 ether }(
-            formBeaconId, true, generateBroadcastParams(5, 2)
+        SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus(
+            formBeaconId, true, generateBroadcastParams(5, 1)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
@@ -84,11 +84,11 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         bytes32 SYNC_BEACON_STATUS = keccak256("SYNC_BEACON_STATUS");
         bytes memory extraData = hex"ffff";
 
-        AMBFactoryMessage memory factoryPayload =
-            AMBFactoryMessage(SYNC_BEACON_STATUS, abi.encode(ETH, 1, formBeaconId, false));
+        BroadcastMessage memory factoryPayload =
+            BroadcastMessage("SUPERFORM_FACTORY", SYNC_BEACON_STATUS, abi.encode(ETH, 1, formBeaconId, false));
 
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
-        vm.prank(getContract(ETH, "FactoryStateRegistry"));
-        SuperformFactory(getContract(ETH, "SuperformFactory")).stateSync(abi.encode(factoryPayload, extraData));
+        vm.prank(getContract(ETH, "BroadcastRegistry"));
+        SuperformFactory(getContract(ETH, "SuperformFactory")).stateSyncBroadcast(abi.encode(factoryPayload, extraData));
     }
 }

@@ -43,6 +43,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         bytes calldata txData_,
         uint64 srcChainId_,
         uint64 dstChainId_,
+        uint64 liqDstChainId_,
         bool deposit_,
         address superform_,
         address srcSender_,
@@ -63,4 +64,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         virtual
         override
         returns (bool valid_);
+
+    /// @inheritdoc IBridgeValidator
+    function decodeAmount(bytes calldata txData_) external pure virtual override returns (uint256 amount_);
 }

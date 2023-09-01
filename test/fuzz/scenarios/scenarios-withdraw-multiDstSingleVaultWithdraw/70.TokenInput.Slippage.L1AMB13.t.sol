@@ -53,6 +53,9 @@ contract MDSVW70TokenInputSlippageL1AMB13 is ProtocolActions {
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[ETH][1] = [1];
 
+        FINAL_LIQ_DST_WITHDRAW[OP] = [POLY];
+        FINAL_LIQ_DST_WITHDRAW[ETH] = [POLY];
+
         actions.push(
             TestAction({
                 action: Actions.Deposit,

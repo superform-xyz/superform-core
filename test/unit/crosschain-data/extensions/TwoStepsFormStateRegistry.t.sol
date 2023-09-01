@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
-contract CoreStateRegistryTest is ProtocolActions {
+contract TwoStepsStateRegistryTest is ProtocolActions {
     TwoStepsFormStateRegistry public twoStepRegistry;
 
     function setUp() public override {
@@ -26,6 +26,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             getContract(ETH, "ERC4626TimelockForm"),
             ETH,
             ETH,
+            ETH,
             false,
             deployer,
             uint256(ETH),
@@ -43,17 +44,11 @@ contract CoreStateRegistryTest is ProtocolActions {
             block.timestamp - 5 seconds,
             InitSingleVaultData(
                 1,
+                1,
                 superformId,
                 420,
                 0,
-                LiqRequest(
-                    1,
-                    _buildLiqBridgeTxData(liqBridgeTxDataArgs),
-                    getContract(ETH, "USDT"),
-                    420,
-                    0,
-                    bytes("")
-                ),
+                LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0, bytes("")),
                 bytes("")
             )
         );
@@ -68,7 +63,9 @@ contract CoreStateRegistryTest is ProtocolActions {
         uint256 superformId = _legacySuperformPackWithShift();
 
         bytes memory _message = abi.encode(
-            AMBMessage(DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), abi.encode(ReturnSingleData(1, superformId, 420)))
+            AMBMessage(
+                DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH), abi.encode(ReturnSingleData(1, 1, superformId, 420))
+            )
         );
 
         vm.prank(getContract(AVAX, "SuperformRouter"));

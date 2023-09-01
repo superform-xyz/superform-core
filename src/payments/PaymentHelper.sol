@@ -56,9 +56,17 @@ contract PaymentHelper is IPaymentHelper {
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
+
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
+            revert Error.NOT_EMERGENCY_ADMIN();
         }
         _;
     }
@@ -116,7 +124,7 @@ contract PaymentHelper is IPaymentHelper {
     )
         external
         override
-        onlyProtocolAdmin
+        onlyEmergencyAdmin
     {
         /// @dev Type 1: DST TOKEN PRICE FEED ORACLE
         if (configType_ == 1) {
@@ -384,7 +392,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
@@ -396,6 +404,8 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
+
+        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -406,7 +416,7 @@ contract PaymentHelper is IPaymentHelper {
         external
         view
         override
-        returns (uint256 liqAmount, uint256 srcAmount, uint256, uint256 totalAmount)
+        returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
         for (uint256 i; i < req_.superformData.superformIds.length;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
@@ -424,6 +434,8 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
+
+        dstAmount = 0;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -591,10 +603,11 @@ contract PaymentHelper is IPaymentHelper {
     }
 
     /// @dev helps estimate the liq amount involved in the tx
-    function _estimateLiqAmount(LiqRequest[] memory req_) internal pure returns (uint256 liqAmount) {
+    function _estimateLiqAmount(LiqRequest[] memory req_) internal view returns (uint256 liqAmount) {
         for (uint256 i; i < req_.length;) {
             if (req_[i].token == NATIVE) {
-                liqAmount += req_[i].amount;
+                liqAmount +=
+                    IBridgeValidator(superRegistry.getBridgeValidator(req_[i].bridgeId)).decodeAmount(req_[i].txData);
             }
 
             unchecked {
@@ -645,6 +658,8 @@ contract PaymentHelper is IPaymentHelper {
     {
         bytes memory ambData = abi.encode(
             InitSingleVaultData(
+                1,
+                /// @dev sample router id for estimation
                 _getNextPayloadId(),
                 sfData_.superformId,
                 sfData_.amount,
@@ -664,6 +679,8 @@ contract PaymentHelper is IPaymentHelper {
     {
         bytes memory ambData = abi.encode(
             InitMultiVaultData(
+                1,
+                /// @dev sample router id for estimation
                 _getNextPayloadId(),
                 sfData_.superformIds,
                 sfData_.amounts,

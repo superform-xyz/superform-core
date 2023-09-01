@@ -7,7 +7,10 @@ import "ds-test/test.sol";
 import { LayerZeroHelper } from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import { HyperlaneHelper } from "pigeon/src/hyperlane/HyperlaneHelper.sol";
 import { CelerHelper } from "pigeon/src/celer/CelerHelper.sol";
-import { WormholeHelper } from "pigeon/src/wormhole/WormholeHelper.sol";
+
+import { WormholeHelper } from "pigeon/src/wormhole/automatic-relayer/WormholeHelper.sol";
+import "pigeon/src/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
+
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 
@@ -29,8 +32,7 @@ import { KYCDaoNFTMock } from "../mocks/KYCDaoNFTMock.sol";
 
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import { FactoryStateRegistry } from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import { RolesStateRegistry } from "src/crosschain-data/extensions/RolesStateRegistry.sol";
+import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
@@ -48,7 +50,10 @@ import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
-import { WormholeImplementation } from "src/crosschain-data/adapters/wormhole/WormholeImplementation.sol";
+import { WormholeARImplementation } from
+    "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
+import { WormholeSRImplementation } from
+    "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import ".././utils/AmbParams.sol";
@@ -57,6 +62,7 @@ import { TwoStepsFormStateRegistry } from "src/crosschain-data/extensions/TwoSte
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
@@ -136,8 +142,10 @@ abstract contract BaseSetup is DSTest, Test {
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
     /// @notice id 3 is celer
-    /// @notice id 4 is wormhole
-    uint8[] public ambIds = [uint8(1), 2, 3, 4];
+    /// @notice id 4 is wormhole (Automatic Relayer)
+    /// @notice id 5 is wormhole (Specialized Relayer)
+
+    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -351,11 +359,17 @@ abstract contract BaseSetup is DSTest, Test {
 
             contracts[vars.chainId][bytes32(bytes("CelerHelper"))] = vars.celerHelper;
 
-            /// @dev 1.4- deploy Wormhole Helper from Pigeon
+            /// @dev 1.4- deploy Wormhole Automatic Relayer Helper from Pigeon
             vars.wormholeHelper = address(new WormholeHelper{salt: salt}());
             vm.allowCheatcodes(vars.wormholeHelper);
 
             contracts[vars.chainId][bytes32(bytes("WormholeHelper"))] = vars.wormholeHelper;
+
+            /// @dev 1.5- deploy Wormhole Specialized Relayer Helper from Pigeon
+            vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{salt: salt}());
+            vm.allowCheatcodes(vars.wormholeBroadcastHelper);
+
+            contracts[vars.chainId][bytes32(bytes("WormholeBroadcastHelper"))] = vars.wormholeBroadcastHelper;
 
             /// @dev 2 - Deploy SuperRBAC
             vars.superRBAC = address(new SuperRBAC{salt: salt}(deployer));
@@ -371,6 +385,9 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRegistryC.setPermit2(vars.canonicalPermit2);
 
             assert(vars.superRBACC.hasProtocolAdminRole(deployer));
+
+            vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), vars.wormholeBroadcastHelper);
+            assert(vars.superRBACC.hasWormholeVaaRole(vars.wormholeBroadcastHelper));
 
             /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
             vars.superRBACC.grantRole(vars.superRBACC.EMERGENCY_ADMIN_ROLE(), deployer);
@@ -388,14 +405,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
             assert(vars.superRBACC.hasCoreStateRegistryProcessorRole(deployer));
 
-            /// @dev FIXME: in reality who should have the ROLES_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.ROLES_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasRolesStateRegistryProcessorRole(deployer));
-
-            /// @dev FIXME: in reality who should have the FACTORY_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-            vars.superRBACC.grantRole(vars.superRBACC.FACTORY_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasFactoryStateRegistryProcessorRole(deployer));
-
             /// @dev FIXME: in reality who should have the TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
             assert(vars.superRBACC.hasTwoStepsStateRegistryProcessorRole(deployer));
@@ -404,8 +413,10 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer);
             assert(vars.superRBACC.hasCoreStateRegistryUpdaterRole(deployer));
 
-            /// @dev 4.1 - deploy Core State Registry
+            vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC);
+            assert(vars.superRBACC.hasBroadcasterRole(vars.superRBAC));
 
+            /// @dev 4.1 - deploy Core State Registry
             vars.coreStateRegistry = address(
                 new CoreStateRegistry{salt: salt}(
                     SuperRegistry(vars.superRegistry)
@@ -417,45 +428,32 @@ abstract contract BaseSetup is DSTest, Test {
                 vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId
             );
 
-            /// @dev 4.2- deploy Factory State Registry
-            vars.factoryStateRegistry = address(new FactoryStateRegistry{salt: salt}(vars.superRegistryC));
-
-            contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
-
-            vars.superRegistryC.setAddress(
-                vars.superRegistryC.FACTORY_STATE_REGISTRY(), vars.factoryStateRegistry, vars.chainId
-            );
-
-            /// @dev 4.3 - deploy Form State Registry
+            /// @dev 4.2 - deploy Form State Registry
             vars.twoStepsFormStateRegistry = address(new TwoStepsFormStateRegistry{salt: salt}(vars.superRegistryC));
-
             contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
             vars.superRegistryC.setAddress(
                 vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
             );
-            vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
+            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
-            /// @dev 4.3 - deploy Roles State Registry
-            vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(vars.superRegistryC));
-
-            contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
+            /// @dev 4.3 - deploy Broadcast State Registry
+            vars.broadcastRegistry = address(new BroadcastRegistry{salt: salt}(vars.superRegistryC));
+            contracts[vars.chainId][bytes32(bytes("BroadcastRegistry"))] = vars.broadcastRegistry;
 
             vars.superRegistryC.setAddress(
-                vars.superRegistryC.ROLES_STATE_REGISTRY(), vars.rolesStateRegistry, vars.chainId
+                vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry, vars.chainId
             );
 
-            address[] memory registryAddresses = new address[](4);
+            address[] memory registryAddresses = new address[](3);
             registryAddresses[0] = vars.coreStateRegistry;
-            registryAddresses[1] = vars.factoryStateRegistry;
-            registryAddresses[2] = vars.rolesStateRegistry;
-            registryAddresses[3] = vars.twoStepsFormStateRegistry;
+            registryAddresses[1] = vars.twoStepsFormStateRegistry;
+            registryAddresses[2] = vars.broadcastRegistry;
 
-            uint8[] memory registryIds = new uint8[](4);
+            uint8[] memory registryIds = new uint8[](3);
             registryIds[0] = 1;
             registryIds[1] = 2;
             registryIds[2] = 3;
-            registryIds[3] = 4;
 
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
             vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.coreStateRegistry);
@@ -483,26 +481,37 @@ abstract contract BaseSetup is DSTest, Test {
             );
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
-            /// @dev 6.3 - deploy Celer Implementation
+            /// @dev 6.3- deploy Celer Implementation
             vars.celerImplementation = address(new CelerImplementation{salt: salt}(vars.superRegistryC));
             contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
 
             CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[i]);
 
-            /// @dev 6.4 - deploy Wormhole Implementation
+            /// @dev 6.4- deploy Wormhole Automatic Relayer Implementation
             vars.wormholeImplementation = address(
-                new WormholeImplementation{salt: salt}(
+                new WormholeARImplementation{salt: salt}(
                     vars.superRegistryC
                 )
             );
-            contracts[vars.chainId][bytes32(bytes("WormholeImplementation"))] = vars.wormholeImplementation;
+            contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
-            WormholeImplementation(vars.wormholeImplementation).setWormholeConfig(wormholeCore[i], wormholeRelayer);
+            WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
+
+            /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
+            vars.wormholeSRImplementation = address(
+                new WormholeSRImplementation{salt: salt}(
+                    vars.superRegistryC
+                )
+            );
+            contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
+
+            WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
 
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
             vars.ambAddresses[2] = vars.celerImplementation;
             vars.ambAddresses[3] = vars.wormholeImplementation;
+            vars.ambAddresses[4] = vars.wormholeSRImplementation;
 
             /// @dev 7.1 deploy SocketRouterMock and LiFiRouterMock. These mocks are very minimal versions to allow
             /// liquidity bridge testing
@@ -586,10 +595,10 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 9 - Deploy SuperformFactory
             vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
-
             contracts[vars.chainId][bytes32(bytes("SuperformFactory"))] = vars.factory;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_FACTORY(), vars.factory, vars.chainId);
+            vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.factory);
 
             /// @dev 9 - Deploy 4626Form implementations
             // Standard ERC4626 Form
@@ -612,22 +621,18 @@ abstract contract BaseSetup is DSTest, Test {
             ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
             /// @dev 11 - Deploy SuperformRouter
-            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+            vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1, 1));
             contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
 
             /// @dev grant extra roles to superformRouter
-            vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.superformRouter);
-            vars.superRBACC.grantRole(vars.superRBACC.BURNER_ROLE(), vars.superformRouter);
+            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.superformRouter);
+            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_BURNER_ROLE(), vars.superformRouter);
 
             /// @dev 12 - Deploy SuperPositions and SuperTransmuter
-            vars.superPositions = address(
-                new SuperPositions{salt: salt}(
-                    "https://apiv2-dev.superform.xyz/",
-                    vars.superRegistry
-                )
-            );
+            vars.superPositions =
+                address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry, 1));
 
             contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
@@ -635,15 +640,38 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] = address(
                 new SuperTransmuter{salt: salt}(
                     IERC1155A(vars.superPositions),
-                    vars.superRegistry
+                    vars.superRegistry,
+                    2
                 )
             );
+
+            vars.superRegistryC.setAddress(
+                vars.superRegistryC.SUPER_TRANSMUTER(),
+                contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))],
+                vars.chainId
+            );
+
+            vars.superRBACC.grantRole(
+                vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))]
+            );
+
+            /// @dev 12.1 Set Router Info
+            uint8[] memory superformRouterIds = new uint8[](1);
+            superformRouterIds[0] = 1;
+
+            address[] memory stateSyncers = new address[](1);
+            stateSyncers[0] = vars.superPositions;
+
+            address[] memory routers = new address[](1);
+            routers[0] = vars.superformRouter;
+
+            vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
             /// @dev 13- deploy Payload Helper
             vars.PayloadHelper = address(
                 new PayloadHelper{salt: salt}(
                     vars.coreStateRegistry,
-                    vars.superPositions,
+                    vars.superRegistry,
                     vars.twoStepsFormStateRegistry
                 )
             );
@@ -695,7 +723,9 @@ abstract contract BaseSetup is DSTest, Test {
             vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
-            vars.wormholeImplementation = getContract(vars.chainId, "WormholeImplementation");
+            vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
+            vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
+            vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
 
             vars.superRegistry = getContract(vars.chainId, "SuperRegistry");
             vars.paymentHelper = getContract(vars.chainId, "PaymentHelper");
@@ -716,7 +746,9 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
                     vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
-                    vars.dstWormholeImplementation = getContract(vars.dstChainId, "WormholeImplementation");
+                    vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
+                    vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
+                    vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
 
                     LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                         vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
@@ -741,12 +773,21 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstChainId, vars.dstCelerChainId
                     );
 
-                    WormholeImplementation(payable(vars.wormholeImplementation)).setReceiver(
-                        vars.dstWormholeChainId, vars.dstWormholeImplementation
+                    WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
+                        vars.dstWormholeChainId, vars.dstWormholeARImplementation
                     );
 
-                    WormholeImplementation(payable(vars.wormholeImplementation)).setChainId(
+                    WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
                         vars.dstChainId, vars.dstWormholeChainId
+                    );
+
+                    WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
+                        vars.dstChainId, vars.dstWormholeChainId
+                    );
+
+                    /// sets the relayer address on all subsequent chains
+                    SuperRBAC(vars.superRBAC).grantRole(
+                        SuperRBAC(vars.superRBAC).WORMHOLE_VAA_RELAYER_ROLE(), vars.dstwormholeBroadcastHelper
                     );
 
                     vars.superRegistryC.setRequiredMessagingQuorum(vars.dstChainId, 1);
@@ -805,20 +846,20 @@ abstract contract BaseSetup is DSTest, Test {
                     );
 
                     vars.superRegistryC.setAddress(
-                        vars.superRegistryC.FACTORY_STATE_REGISTRY(),
-                        getContract(vars.dstChainId, "FactoryStateRegistry"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.ROLES_STATE_REGISTRY(),
-                        getContract(vars.dstChainId, "RolesStateRegistry"),
+                        vars.superRegistryC.BROADCAST_REGISTRY(),
+                        getContract(vars.dstChainId, "BroadcastRegistry"),
                         vars.dstChainId
                     );
 
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.SUPER_POSITIONS(),
                         getContract(vars.dstChainId, "SuperPositions"),
+                        vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.SUPER_TRANSMUTER(),
+                        getContract(vars.dstChainId, "SuperTransmuter"),
                         vars.dstChainId
                     );
 
@@ -846,12 +887,6 @@ abstract contract BaseSetup is DSTest, Test {
                     );
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
-                    );
-                    vars.superRegistryC.setAddress(
-                        vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
                     );
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
@@ -1102,52 +1137,43 @@ abstract contract BaseSetup is DSTest, Test {
     function _broadcastPayloadHelper(uint64 currentChainId, Vm.Log[] memory logs) internal {
         vm.stopPrank();
 
-        address[] memory toMailboxes = new address[](6);
-        uint32[] memory expDstDomains = new uint32[](6);
+        address[] memory dstTargets = new address[](5);
+        address[] memory dstWormhole = new address[](5);
 
-        address[] memory endpoints = new address[](6);
-        uint16[] memory lzChainIds = new uint16[](6);
+        uint256[] memory forkIds = new uint256[](5);
 
-        uint256[] memory forkIds = new uint256[](6);
+        uint16 currWormholeChainId;
 
         uint256 j;
         for (uint256 i = 0; i < chainIds.length; i++) {
-            toMailboxes[j] = hyperlaneMailboxes[i];
-            expDstDomains[j] = hyperlane_chainIds[i];
+            if (chainIds[i] != currentChainId) {
+                dstWormhole[j] = wormholeCore[i];
+                dstTargets[j] = getContract(chainIds[i], "WormholeSRImplementation");
 
-            endpoints[j] = lzEndpoints[i];
-            lzChainIds[j] = lz_chainIds[i];
+                forkIds[j] = FORKS[chainIds[i]];
 
-            forkIds[j] = FORKS[chainIds[i]];
-
-            j++;
+                j++;
+            } else {
+                currWormholeChainId = wormhole_chainIds[i];
+            }
         }
 
-        HyperlaneHelper(getContract(currentChainId, "HyperlaneHelper")).help(
-            address(HyperlaneMailbox), toMailboxes, expDstDomains, forkIds, logs
-        );
-
-        LayerZeroHelper(getContract(currentChainId, "LayerZeroHelper")).help(
-            endpoints,
-            lzChainIds,
-            5_000_000,
-            /// note: using some max limit
-            forkIds,
-            logs
+        WormholeBroadcastHelper.WormholeHelper(getContract(currentChainId, "WormholeBroadcastHelper")).help(
+            currWormholeChainId, forkIds, dstWormhole, dstTargets, logs
         );
 
         vm.startPrank(deployer);
     }
 
     /// @dev will sync the broadcasted factory payloads
-    function _processFactoryPayloads(uint256 superformsToProcess_) private {
-        for (uint256 j = 0; j < chainIds.length; j++) {
-            vm.selectFork(FORKS[chainIds[j]]);
-            for (uint256 k = 1; k < superformsToProcess_; k++) {
-                FactoryStateRegistry(payable(getContract(chainIds[j], "FactoryStateRegistry"))).processPayload(k);
-            }
-        }
-    }
+    // function _processFactoryPayloads(uint256 superformsToProcess_) private {
+    //     for (uint256 j = 0; j < chainIds.length; j++) {
+    //         vm.selectFork(FORKS[chainIds[j]]);
+    //         for (uint256 k = 1; k < superformsToProcess_; k++) {
+    //             FactoryStateRegistry(payable(getContract(chainIds[j], "FactoryStateRegistry"))).processPayload(k);
+    //         }
+    //     }
+    // }
 
     function _deployWithCreate2(bytes memory bytecode_, uint256 salt_) internal returns (address addr) {
         /// @solidity memory-safe-assembly
@@ -1250,6 +1276,7 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 i; i < singleSuperformsData.length; i++) {
             bytes memory ambData = abi.encode(
                 InitSingleVaultData(
+                    2 ** 8 - 1,
                     2 ** 256 - 1,
                     /// @dev uses max payload id
                     singleSuperformsData[i].superformId,
@@ -1265,6 +1292,7 @@ abstract contract BaseSetup is DSTest, Test {
         for (uint256 i; i < multiSuperformsData.length; i++) {
             bytes memory ambData = abi.encode(
                 InitMultiVaultData(
+                    2 ** 8 - 1,
                     2 ** 256 - 1,
                     /// @dev uses max payload id
                     multiSuperformsData[i].superformIds,
@@ -1374,11 +1402,12 @@ abstract contract BaseSetup is DSTest, Test {
         address _payloadHelper = contracts[dstChainId][bytes32(bytes("PayloadHelper"))];
         vars.payloadHelper = PayloadHelper(_payloadHelper);
 
-        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,) =
-            vars.payloadHelper.decodeDstPayload(payloadId);
+        (,,,, uint256[] memory amounts,, uint256[] memory superformIds,,) =
+            vars.payloadHelper.decodeCoreStateRegistryPayload(payloadId);
 
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(payloadId, superformIds, amounts))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnMultiData(2 ** 8 - 1, payloadId, superformIds, amounts)))
+        );
 
         address _paymentHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
         vars.paymentHelper = PaymentHelper(_paymentHelper);
@@ -1421,8 +1450,9 @@ abstract contract BaseSetup is DSTest, Test {
         (,, uint256 payloadId, uint256 superformId, uint256 amount) =
             vars.payloadHelper.decodeTimeLockPayload(timelockPayloadId);
 
-        vars.message =
-            abi.encode(AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(payloadId, superformId, amount))));
+        vars.message = abi.encode(
+            AMBMessage(2 ** 256 - 1, abi.encode(ReturnSingleData(2 ** 8 - 1, payloadId, superformId, amount)))
+        );
 
         (vars.totalFees, gasPerAMB) =
             vars.paymentHelper.estimateAMBFees(selectedAmbIds, vars.srcChainId, abi.encode(vars.message), paramsPerAMB);
@@ -1430,5 +1460,20 @@ abstract contract BaseSetup is DSTest, Test {
         AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
 
         return (vars.totalFees, abi.encode(AckAMBData(selectedAmbIds, abi.encode(extraData))));
+    }
+
+    function _payload(address registry, uint64 chainId, uint256 payloadId_) internal returns (bytes memory payload_) {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[chainId]);
+        uint256 payloadHeader = IBaseStateRegistry(registry).payloadHeader(payloadId_);
+        bytes memory payloadBody = IBaseStateRegistry(registry).payloadBody(payloadId_);
+        if (payloadHeader == 0 || payloadBody.length == 0) {
+            vm.selectFork(initialFork);
+
+            return bytes("");
+        }
+        vm.selectFork(initialFork);
+
+        return abi.encode(AMBMessage(payloadHeader, payloadBody));
     }
 }

@@ -120,7 +120,9 @@ struct SetupVars {
     address celerHelper;
     address celerImplementation;
     address wormholeHelper;
+    address wormholeBroadcastHelper;
     address wormholeImplementation;
+    address wormholeSRImplementation;
     address socketRouter;
     address lifiRouter;
     address erc4626Form;
@@ -132,6 +134,7 @@ struct SetupVars {
     address PayloadHelper;
     address paymentHelper;
     address twoStepsFormStateRegistry;
+    address broadcastRegistry;
     address UNDERLYING_TOKEN;
     address vault;
     address timelockVault;
@@ -139,7 +142,9 @@ struct SetupVars {
     address dstLzImplementation;
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
-    address dstWormholeImplementation;
+    address dstWormholeARImplementation;
+    address dstWormholeSRImplementation;
+    address dstwormholeBroadcastHelper;
     address multiTxProcessor;
     address payMaster;
     address superRegistry;
@@ -179,6 +184,7 @@ struct SingleVaultCallDataArgs {
     address vaultMock;
     uint64 srcChainId;
     uint64 toChainId;
+    uint64 liqDstChainId;
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
     bool multiTx;
@@ -201,7 +207,8 @@ struct MultiVaultCallDataArgs {
     uint64 srcChainId;
     uint64 toChainId;
     uint256 liquidityBridgeSrcChainId;
-    uint256 liquidityBridgeToChainId;
+    uint256 index;
+    uint256 chainDstIndex;
     bool multiTx;
     Actions action;
     int256 slippage;

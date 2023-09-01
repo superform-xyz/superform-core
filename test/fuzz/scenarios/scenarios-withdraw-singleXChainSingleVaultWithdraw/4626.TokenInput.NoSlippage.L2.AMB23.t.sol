@@ -39,6 +39,8 @@ contract SXSVWNormal4626NativeSlippageL2AMB23 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [2];
         LIQ_BRIDGES[AVAX][1] = [2];
 
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [ARBI];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({

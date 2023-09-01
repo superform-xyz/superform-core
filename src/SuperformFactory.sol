@@ -5,10 +5,10 @@ import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspect
 import { BeaconProxy } from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
 import { BaseForm } from "./BaseForm.sol";
 import { FormBeacon } from "./forms/FormBeacon.sol";
-import { AMBFactoryMessage } from "./types/DataTypes.sol";
+import { BroadcastMessage } from "./types/DataTypes.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { IBroadcaster } from "./interfaces/IBroadcaster.sol";
+import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./utils/Error.sol";
@@ -45,6 +45,17 @@ contract SuperformFactory is ISuperformFactory {
     mapping(address vault => uint256[] formBeaconId) public vaultToFormBeaconId;
 
     mapping(bytes32 vaultBeaconCombination => uint256 superformIds) public vaultBeaconToSuperforms;
+
+    /*///////////////////////////////////////////////////////////////
+                            MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyEmergencyAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
+            revert Error.NOT_EMERGENCY_ADMIN();
+        }
+        _;
+    }
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
@@ -174,7 +185,7 @@ contract SuperformFactory is ISuperformFactory {
         external
         payable
         override
-        onlyProtocolAdmin
+        onlyEmergencyAdmin
     {
         if (formBeacon[formBeaconId_] == address(0)) revert Error.INVALID_FORM_ID();
 
@@ -182,8 +193,10 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev broadcast the change in status to the other destination chains
         if (extraData_.length > 0) {
-            AMBFactoryMessage memory factoryPayload = AMBFactoryMessage(
-                SYNC_BEACON_STATUS, abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, formBeaconId_, paused_)
+            BroadcastMessage memory factoryPayload = BroadcastMessage(
+                "SUPERFORM_FACTORY",
+                SYNC_BEACON_STATUS,
+                abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, formBeaconId_, paused_)
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
@@ -191,13 +204,13 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
-    function stateSync(bytes memory data_) external payable override {
-        /// @dev this function is only accessible through factory state registry
-        if (msg.sender != superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))) {
-            revert Error.NOT_FACTORY_STATE_REGISTRY();
+    function stateSyncBroadcast(bytes memory data_) external payable override {
+        /// @dev this function is only accessible through broadcast registry
+        if (msg.sender != superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))) {
+            revert Error.NOT_BROADCAST_REGISTRY();
         }
 
-        AMBFactoryMessage memory factoryPayload = abi.decode(data_, (AMBFactoryMessage));
+        BroadcastMessage memory factoryPayload = abi.decode(data_, (BroadcastMessage));
 
         if (factoryPayload.messageType == SYNC_BEACON_STATUS) {
             _syncBeaconStatus(factoryPayload.message);
@@ -274,17 +287,17 @@ contract SuperformFactory is ISuperformFactory {
                         Internal Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev interacts with factory state registry to broadcasting state changes to all connected remote chains
+    /// @dev interacts with broadcast state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.
     /// @param extraData_ is the amb override information.
     function _broadcast(bytes memory message_, bytes memory extraData_) internal {
         (uint8[] memory ambIds, bytes memory broadcastParams) = abi.decode(extraData_, (uint8[], bytes));
 
-        /// @dev ambIds are validated inside the factory state registry
+        /// @dev ambIds are validated inside the broadcast state registry
         /// @dev broadcastParams if wrong will revert in the amb implementation
-        IBroadcaster(superRegistry.getAddress(keccak256("FACTORY_STATE_REGISTRY"))).broadcastPayload{ value: msg.value }(
-            msg.sender, ambIds, message_, broadcastParams
-        );
+        IBroadcastRegistry(superRegistry.getAddress(keccak256("BROADCAST_REGISTRY"))).broadcastPayload{
+            value: msg.value
+        }(msg.sender, ambIds, message_, broadcastParams);
     }
 
     /// @dev synchornize beacon status update message from remote chain

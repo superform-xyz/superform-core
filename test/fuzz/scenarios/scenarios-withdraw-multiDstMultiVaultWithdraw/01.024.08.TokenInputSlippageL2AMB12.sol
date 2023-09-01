@@ -69,6 +69,10 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [2, 2, 2, 2];
         LIQ_BRIDGES[AVAX][1] = [2, 2, 2, 2];
 
+        FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH, ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH, ETH, ETH];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({

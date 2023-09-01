@@ -31,9 +31,9 @@ interface ISuperRBAC {
         external
         payable;
 
-    /// @dev allows sync of global roles from different chains
+    /// @dev allows sync of global roles from different chains using broadcast registry
     /// @notice may not work for all roles
-    function stateSync(bytes memory data_) external;
+    function stateSyncBroadcast(bytes memory data_) external;
 
     /*///////////////////////////////////////////////////////////////
                             View Functions
@@ -51,14 +51,11 @@ interface ISuperRBAC {
     /// @dev returns the id of the multi tx swapper role
     function MULTI_TX_SWAPPER_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of the broadcaster role
+    function BROADCASTER_ROLE() external view returns (bytes32);
+
     /// @dev returns the id of the core state registry processor role
     function CORE_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
-
-    /// @dev returns the id of the roles state registry processor role
-    function ROLES_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
-
-    /// @dev returns the id of the factory state registry processor role
-    function FACTORY_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the two steps state registry processor role
     function TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
@@ -66,14 +63,23 @@ interface ISuperRBAC {
     /// @dev returns the id of the core state registry updater role
     function CORE_STATE_REGISTRY_UPDATER_ROLE() external view returns (bytes32);
 
-    /// @dev returns the id of minter role
-    function MINTER_ROLE() external view returns (bytes32);
+    /// @dev returns the id of superpositions minter role
+    function SUPERPOSITIONS_MINTER_ROLE() external view returns (bytes32);
 
-    /// @dev returns the id of burner role
-    function BURNER_ROLE() external view returns (bytes32);
+    /// @dev returns the id of superpositions burner role
+    function SUPERPOSITIONS_BURNER_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of serc20 minter role
+    function SERC20_MINTER_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of serc20 burner role
+    function SERC20_BURNER_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of minter state registry role
     function MINTER_STATE_REGISTRY_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of wormhole vaa relayer role
+    function WORMHOLE_VAA_RELAYER_ROLE() external view returns (bytes32);
 
     /// @dev returns whether the given address has the protocol admin role
     /// @param admin_ the address to check
@@ -82,6 +88,10 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the emergency admin role
     /// @param admin_ the address to check
     function hasEmergencyAdminRole(address admin_) external view returns (bool);
+
+    /// @dev returns whether the given address has the broadcaster role
+    /// @param broadcaster_ the address to check
+    function hasBroadcasterRole(address broadcaster_) external view returns (bool);
 
     /// @dev returns whether the given address has the payment admin role
     /// @param admin_ the address to check
@@ -95,14 +105,6 @@ interface ISuperRBAC {
     /// @param processor_ the address to check
     function hasCoreStateRegistryProcessorRole(address processor_) external view returns (bool);
 
-    /// @dev returns whether the given address has the processor role
-    /// @param processor_ the address to check
-    function hasRolesStateRegistryProcessorRole(address processor_) external view returns (bool);
-
-    /// @dev returns whether the given address has the processor role
-    /// @param processor_ the address to check
-    function hasFactoryStateRegistryProcessorRole(address processor_) external view returns (bool);
-
     /// @dev returns whether the given address has the two steps processor role
     /// @param twoStepsProcessor_ the address to check
     function hasTwoStepsStateRegistryProcessorRole(address twoStepsProcessor_) external view returns (bool);
@@ -113,13 +115,25 @@ interface ISuperRBAC {
 
     /// @dev returns whether the given address has the super positions minter role
     /// @param minter_ the address to check
-    function hasMinterRole(address minter_) external view returns (bool);
+    function hasSuperPositionsMinterRole(address minter_) external view returns (bool);
 
     /// @dev returns whether the given address has the super positions burner role
     /// @param burner_ the address to check
-    function hasBurnerRole(address burner_) external view returns (bool);
+    function hasSuperPositionsBurnerRole(address burner_) external view returns (bool);
 
-    /// @dev returns whether the given state registry address has the minter role
+    /// @dev returns whether the given address has the serc20 minter role
+    /// @param minter_ the address to check
+    function hasSERC20MinterRole(address minter_) external view returns (bool);
+
+    /// @dev returns whether the given address has the serc20 burner role
+    /// @param burner_ the address to check
+    function hasSERC20BurnerRole(address burner_) external view returns (bool);
+
+    /// @dev returns whether the given state registry address has the minter state registry role
     /// @param stateRegistry_ the address to check
     function hasMinterStateRegistryRole(address stateRegistry_) external view returns (bool);
+
+    /// @dev returns whether the given relayer_ address has the wormhole relayer role
+    /// @param relayer_ the address to check
+    function hasWormholeVaaRole(address relayer_) external view returns (bool);
 }

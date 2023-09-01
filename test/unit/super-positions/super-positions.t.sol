@@ -55,7 +55,7 @@ contract SuperPositionTest is BaseSetup {
     /// Test revert for invalid txType (single)
     function test_revert_stateSync_InvalidPayloadStatus() public {
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
-        ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(1, 0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
@@ -66,7 +66,7 @@ contract SuperPositionTest is BaseSetup {
     function test_revert_stateSync_InvalidPayload_CallbackType() public {
         /// @dev CallbackType = 0 (INIT)
         uint256 txInfo = DataLib.packTxInfo(0, 0, 0, 1, address(0), ETH);
-        ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(1, 0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
@@ -77,7 +77,7 @@ contract SuperPositionTest is BaseSetup {
     function test_revert_stateSync_InvalidPayload_Multi() public {
         /// @dev multi = 1
         uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
-        ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(1, 0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
@@ -88,7 +88,7 @@ contract SuperPositionTest is BaseSetup {
     function test_revert_stateSync_SrcSenderMismatch() public {
         /// @dev returnDataSrcSender = address(0x1)
         uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0x1), ETH);
-        ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(1, 0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
@@ -99,7 +99,7 @@ contract SuperPositionTest is BaseSetup {
     function test_revert_stateSync_SrcTxTypeMismatch() public {
         /// @dev TxType = 1
         uint256 txInfo = DataLib.packTxInfo(1, 2, 0, 1, address(0), ETH);
-        ReturnSingleData memory maliciousReturnData = ReturnSingleData(0, 1, 100);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(1, 0, 1, 100);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
@@ -117,7 +117,7 @@ contract SuperPositionTest is BaseSetup {
         uint256[] memory x = new uint256[](1);
         x[0] = 100;
 
-        ReturnMultiData memory maliciousReturnData = ReturnMultiData(0, x, x);
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(1, 0, x, x);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
@@ -131,7 +131,7 @@ contract SuperPositionTest is BaseSetup {
         uint256[] memory x = new uint256[](1);
         x[0] = 100;
 
-        ReturnMultiData memory maliciousReturnData = ReturnMultiData(0, x, x);
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(1, 0, x, x);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
@@ -145,7 +145,7 @@ contract SuperPositionTest is BaseSetup {
         uint256[] memory x = new uint256[](1);
         x[0] = 100;
 
-        ReturnMultiData memory maliciousReturnData = ReturnMultiData(0, x, x);
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(1, 0, x, x);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
@@ -159,7 +159,7 @@ contract SuperPositionTest is BaseSetup {
         uint256[] memory x = new uint256[](1);
         x[0] = 100;
 
-        ReturnMultiData memory maliciousReturnData = ReturnMultiData(0, x, x);
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(1, 0, x, x);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
@@ -173,7 +173,7 @@ contract SuperPositionTest is BaseSetup {
         uint256[] memory x = new uint256[](1);
         x[0] = 100;
 
-        ReturnMultiData memory maliciousReturnData = ReturnMultiData(0, x, x);
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(1, 0, x, x);
         AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));

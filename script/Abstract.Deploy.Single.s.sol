@@ -5,8 +5,7 @@ import { Script } from "forge-std/Script.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 /// @dev Protocol imports
 import { CoreStateRegistry } from "src/crosschain-data/extensions/CoreStateRegistry.sol";
-import { FactoryStateRegistry } from "src/crosschain-data/extensions/FactoryStateRegistry.sol";
-import { RolesStateRegistry } from "src/crosschain-data/extensions/RolesStateRegistry.sol";
+import { BroadcastRegistry } from "src/crosschain-data/BroadcastRegistry.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
@@ -22,6 +21,10 @@ import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
+import { WormholeARImplementation } from
+    "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
+import { WormholeSRImplementation } from
+    "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
 import { TwoStepsFormStateRegistry } from "src/crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
@@ -36,6 +39,7 @@ struct SetupVars {
     uint16 dstLzChainId;
     uint32 dstHypChainId;
     uint64 dstCelerChainId;
+    uint16 dstWormholeChainId;
     string fork;
     address[] ambAddresses;
     address superForm;
@@ -44,11 +48,12 @@ struct SetupVars {
     address lzImplementation;
     address hyperlaneImplementation;
     address celerImplementation;
+    address wormholeImplementation;
+    address wormholeSRImplementation;
     address erc4626Form;
     address erc4626TimelockForm;
-    address factoryStateRegistry;
     address twoStepsFormStateRegistry;
-    address rolesStateRegistry;
+    address broadcastRegistry;
     address coreStateRegistry;
     address UNDERLYING_TOKEN;
     address vault;
@@ -57,6 +62,8 @@ struct SetupVars {
     address dstLzImplementation;
     address dstHyperlaneImplementation;
     address dstCelerImplementation;
+    address dstWormholeARImplementation;
+    address dstWormholeSRImplementation;
     address dstStateRegistry;
     address multiTxProcessor;
     address superRegistry;
@@ -80,13 +87,15 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[22] public contractNames = [
+    string[23] public contractNames = [
         "CoreStateRegistry",
-        "FactoryStateRegistry",
         "TwoStepsFormStateRegistry",
+        "BroadcastRegistry",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
         "CelerImplementation",
+        "WormholeImplementation",
+        "WormholeSRImplementation",
         "SocketValidator",
         "LiFiValidator",
         "SuperformFactory",
@@ -96,7 +105,6 @@ abstract contract AbstractDeploySingle is Script {
         "SuperformRouter",
         "SuperPositions",
         "MultiTxProcessor",
-        "RolesStateRegistry",
         "SuperRegistry",
         "SuperRBAC",
         "SuperTransmuter",
@@ -152,7 +160,9 @@ abstract contract AbstractDeploySingle is Script {
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
     /// @notice id 3 is celer
-    uint8[] public ambIds = [uint8(1), 2, 3];
+    /// @notice id 4 is wormhole AR
+    /// @notice 5 is wormhole SR
+    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -215,6 +225,18 @@ abstract contract AbstractDeploySingle is Script {
         0xFF4E183a0Ceb4Fa98E63BbF8077B929c8E5A2bA4
     ];
 
+    address[] public wormholeCore = [
+        0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B,
+        0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B,
+        0x54a8e5f9c4CbA08F9943965859F6c34eAF03E26c,
+        0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7,
+        0xa5f208e072434bC67592E4C49C1B991BA79BCA46,
+        0xEe91C335eab126dF5fDB3797EA9d6aD93aeC9722
+    ];
+
+    /// @dev uses CREATE2
+    address public wormholeRelayer = 0x27428DD2d3DD32A4D7f7C497eAaa23130d894911;
+
     /// @dev superformChainIds
 
     uint64 public constant ETH = 1;
@@ -232,6 +254,7 @@ abstract contract AbstractDeploySingle is Script {
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
     uint64[] public celer_chainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
+    uint16[] public wormhole_chainIds = [2, 6, 23, 5, 4, 24];
     uint256[] public socketChainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
     uint256[] public lifiChainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
 
@@ -339,12 +362,6 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the ROLES_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-        vars.superRBACC.grantRole(vars.superRBACC.ROLES_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
-
-        /// @dev FIXME: in reality who should have the FACTORY_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-        vars.superRBACC.grantRole(vars.superRBACC.FACTORY_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
-
         /// @dev FIXME: in reality who should have the TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
@@ -352,50 +369,35 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
 
         /// @dev 3.1 - deploy Core State Registry
-
         vars.coreStateRegistry = address(new CoreStateRegistry{salt: salt}(vars.superRegistryC));
         contracts[vars.chainId][bytes32(bytes("CoreStateRegistry"))] = vars.coreStateRegistry;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId);
-        /// @dev 3.2- deploy Factory State Registry
 
-        vars.factoryStateRegistry = address(new FactoryStateRegistry{salt: salt}(vars.superRegistryC));
-        contracts[vars.chainId][bytes32(bytes("FactoryStateRegistry"))] = vars.factoryStateRegistry;
-
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.FACTORY_STATE_REGISTRY(), vars.factoryStateRegistry, vars.chainId
-        );
-        /// @dev 3.3 - deploy Form State Registry
+        /// @dev 3.2 - deploy Form State Registry
         vars.twoStepsFormStateRegistry = address(new TwoStepsFormStateRegistry{salt: salt}(vars.superRegistryC));
-
         contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
         vars.superRegistryC.setAddress(
             vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
         );
-        vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.twoStepsFormStateRegistry);
+        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
-        /// @dev 3.4 - deploy Roles State Registry
-        vars.rolesStateRegistry = address(new RolesStateRegistry{salt: salt}(vars.superRegistryC));
+        /// @dev 3.3 - deploy Broadcast State Registry
+        vars.broadcastRegistry = address(new BroadcastRegistry{salt: salt}(vars.superRegistryC));
+        contracts[vars.chainId][bytes32(bytes("BroadcastRegistry"))] = vars.broadcastRegistry;
 
-        contracts[vars.chainId][bytes32(bytes("RolesStateRegistry"))] = vars.rolesStateRegistry;
+        vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry, vars.chainId);
 
-        vars.superRegistryC.setAddress(
-            vars.superRegistryC.ROLES_STATE_REGISTRY(), vars.rolesStateRegistry, vars.chainId
-        );
-
-        address[] memory registryAddresses = new address[](4);
+        address[] memory registryAddresses = new address[](2);
         registryAddresses[0] = vars.coreStateRegistry;
-        registryAddresses[1] = vars.factoryStateRegistry;
-        registryAddresses[2] = vars.rolesStateRegistry;
-        /// @dev unused for now (will be address 0)
-        registryAddresses[3] = vars.twoStepsFormStateRegistry;
+        registryAddresses[1] = vars.twoStepsFormStateRegistry;
+        registryAddresses[2] = vars.broadcastRegistry;
 
-        uint8[] memory registryIds = new uint8[](4);
+        uint8[] memory registryIds = new uint8[](2);
         registryIds[0] = 1;
         registryIds[1] = 2;
         registryIds[2] = 3;
-        registryIds[3] = 4;
 
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
         vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.coreStateRegistry);
@@ -424,9 +426,31 @@ abstract contract AbstractDeploySingle is Script {
 
         CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[trueIndex]);
 
+        /// @dev 4.4- deploy Wormhole Automatic Relayer Implementation
+        vars.wormholeImplementation = address(
+            new WormholeARImplementation{salt: salt}(
+                    vars.superRegistryC
+                )
+        );
+        contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
+
+        WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
+
+        /// @dev 6.5- deploy Wormhole Specialized Relayer Implementation
+        vars.wormholeSRImplementation = address(
+            new WormholeSRImplementation{salt: salt}(
+                    vars.superRegistryC
+                )
+        );
+        contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
+
+        WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
+
         vars.ambAddresses[0] = vars.lzImplementation;
         vars.ambAddresses[1] = vars.hyperlaneImplementation;
         vars.ambAddresses[2] = vars.celerImplementation;
+        vars.ambAddresses[3] = vars.wormholeImplementation;
+        vars.ambAddresses[4] = vars.wormholeSRImplementation;
 
         /// @dev 6- deploy socket validator
         vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
@@ -469,27 +493,40 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev 10 - Deploy SuperformRouter
 
-        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry));
+        vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1, 1));
         contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
         /// @dev grant extra roles to superformRouter
-        vars.superRBACC.grantRole(vars.superRBACC.MINTER_ROLE(), vars.superformRouter);
-        vars.superRBACC.grantRole(vars.superRBACC.BURNER_ROLE(), vars.superformRouter);
+        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.superformRouter);
+        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_BURNER_ROLE(), vars.superformRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions =
-            address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry));
+            address(new SuperPositions{salt: salt}("https://apiv2-dev.superform.xyz/", vars.superRegistry, 1));
 
         contracts[vars.chainId][bytes32(bytes("SuperPositions"))] = vars.superPositions;
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPER_POSITIONS(), vars.superPositions, vars.chainId);
 
         contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] =
-            address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry));
+            address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry, 2));
+
+        /// @dev 11.1 Set Router Info
+
+        uint8[] memory superformRouterIds = new uint8[](1);
+        superformRouterIds[0] = 1;
+
+        address[] memory stateSyncers = new address[](1);
+        stateSyncers[0] = vars.superPositions;
+
+        address[] memory routers = new address[](1);
+        routers[0] = vars.superformRouter;
+
+        vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
         /// @dev 12 - Deploy Payload Helper
         vars.PayloadHelper = address(
-            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superPositions, vars.twoStepsFormStateRegistry)
+            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superRegistry, vars.twoStepsFormStateRegistry)
         );
         contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
@@ -520,9 +557,6 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
-
-        /// FIXME: check if this is safe in all aspects
-        vars.superRBACC.grantRole(vars.superRBACC.PROTOCOL_ADMIN_ROLE(), vars.rolesStateRegistry);
 
         vm.stopBroadcast();
 
@@ -577,6 +611,7 @@ abstract contract AbstractDeploySingle is Script {
                 vars.dstLzChainId = lz_chainIds[dstTrueIndex];
                 vars.dstHypChainId = hyperlane_chainIds[dstTrueIndex];
                 vars.dstCelerChainId = celer_chainIds[dstTrueIndex];
+                vars.dstWormholeChainId = wormhole_chainIds[dstTrueIndex];
 
                 vars.dstLzImplementation =
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "LayerzeroImplementation");
@@ -584,6 +619,10 @@ abstract contract AbstractDeploySingle is Script {
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "HyperlaneImplementation");
                 vars.dstCelerImplementation =
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "CelerImplementation");
+                vars.dstWormholeARImplementation =
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "WormholeARImplementation");
+                vars.dstWormholeSRImplementation =
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "WormholeSRImplementation");
 
                 LayerzeroImplementation(payable(vars.lzImplementation)).setTrustedRemote(
                     vars.dstLzChainId, abi.encodePacked(vars.dstLzImplementation, vars.lzImplementation)
@@ -612,6 +651,18 @@ abstract contract AbstractDeploySingle is Script {
                 );
 
                 CelerImplementation(payable(vars.celerImplementation)).setChainId(vars.dstChainId, vars.dstCelerChainId);
+                WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
+                    vars.dstWormholeChainId, vars.dstWormholeARImplementation
+                );
+
+                WormholeARImplementation(payable(vars.wormholeImplementation)).setChainId(
+                    vars.dstChainId, vars.dstWormholeChainId
+                );
+
+                WormholeSRImplementation(payable(vars.wormholeSRImplementation)).setChainId(
+                    vars.dstChainId, vars.dstWormholeChainId
+                );
+
                 SuperRegistry(payable(vars.superRegistry)).setRequiredMessagingQuorum(vars.dstChainId, 1);
 
                 /// @dev these values are mocks and has to be replaced
@@ -671,14 +722,8 @@ abstract contract AbstractDeploySingle is Script {
                 );
 
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.FACTORY_STATE_REGISTRY(),
-                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "FactoryStateRegistry"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistryC.setAddress(
-                    vars.superRegistryC.ROLES_STATE_REGISTRY(),
-                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "RolesStateRegistry"),
+                    vars.superRegistryC.BROADCAST_REGISTRY(),
+                    getContract(vars.dstChainId, "BroadcastRegistry"),
                     vars.dstChainId
                 );
 

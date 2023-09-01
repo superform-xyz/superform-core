@@ -34,6 +34,8 @@ contract SDMVW142TokenInputSlippageL1AMB12 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
         LIQ_BRIDGES[AVAX][1] = [1, 1, 1];
 
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH, ETH];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
@@ -80,6 +82,7 @@ contract SDMVW142TokenInputSlippageL1AMB12 is ProtocolActions {
         amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_USDT / 3));
         amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_USDT / 3));
         amountThree_ = uint128(bound(amountThree_, 12, TOTAL_SUPPLY_USDT / 3));
+
         AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
 
         for (uint256 act = 0; act < actions.length; act++) {

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import { IBaseStateRegistry } from "../../../interfaces/IBaseStateRegistry.sol";
-import { IAmbImplementation } from "../../../interfaces/IAmbImplementation.sol";
-import { ISuperRegistry } from "../../../interfaces/ISuperRegistry.sol";
-import { ISuperRBAC } from "../../../interfaces/ISuperRBAC.sol";
-import { IMessageBus } from "../../../vendor/celer/IMessageBus.sol";
-import { IMessageReceiver } from "../../../vendor/celer/IMessageReceiver.sol";
-import { Error } from "../../../utils/Error.sol";
-import { AMBMessage, BroadCastAMBExtraData } from "../../../types/DataTypes.sol";
-import { DataLib } from "../../../libraries/DataLib.sol";
+import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
+import { IAmbImplementation } from "src/interfaces/IAmbImplementation.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { IMessageBus } from "src/vendor/celer/IMessageBus.sol";
+import { IMessageReceiver } from "src/vendor/celer/IMessageReceiver.sol";
+import { Error } from "src/utils/Error.sol";
+import { AMBMessage } from "src/types/DataTypes.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title CelerImplementation
 /// @author Zeropoint Labs
@@ -22,8 +22,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
     //////////////////////////////////////////////////////////////*/
     IMessageBus public messageBus;
     ISuperRegistry public immutable superRegistry;
-
-    uint64[] public broadcastChains;
 
     mapping(uint64 => uint64) public ambChainId;
     mapping(uint64 => uint64) public superChainId;
@@ -88,51 +86,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
         }
     }
 
-    /// @inheritdoc IAmbImplementation
-    function broadcastPayload(
-        address srcSender_,
-        bytes memory message_,
-        bytes memory extraData_
-    )
-        external
-        payable
-        virtual
-    {
-        if (!superRegistry.isValidStateRegistry(msg.sender)) {
-            revert Error.NOT_STATE_REGISTRY();
-        }
-
-        uint256 totalChains = broadcastChains.length;
-
-        BroadCastAMBExtraData memory d = abi.decode(extraData_, (BroadCastAMBExtraData));
-
-        if (d.gasPerDst.length != totalChains || d.extraDataPerDst.length != totalChains) {
-            revert Error.INVALID_EXTRA_DATA_LENGTHS();
-        }
-
-        /// @dev calculates the exact fee needed
-        uint256 feesReq = messageBus.calcFee(message_);
-        feesReq = feesReq * totalChains;
-
-        for (uint64 i; i < totalChains;) {
-            uint64 chainId = broadcastChains[i];
-
-            messageBus.sendMessage{ value: d.gasPerDst[i] }(authorizedImpl[chainId], chainId, message_);
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        /// Refund unused fees
-        /// NOTE: check security implications here
-        (bool success,) = payable(srcSender_).call{ value: msg.value - feesReq }("");
-
-        if (!success) {
-            revert Error.GAS_REFUND_FAILED();
-        }
-    }
-
     /// @dev allows protocol admin to configure new chain id
     /// @param superChainId_ is the identifier of the chain within superform protocol
     /// @param ambChainId_ is the identifier of the chain given by the AMB
@@ -144,8 +97,6 @@ contract CelerImplementation is IAmbImplementation, IMessageReceiver {
 
         ambChainId[superChainId_] = ambChainId_;
         superChainId[ambChainId_] = superChainId_;
-
-        broadcastChains.push(ambChainId_);
 
         emit ChainAdded(superChainId_);
     }

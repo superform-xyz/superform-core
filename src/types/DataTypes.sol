@@ -86,6 +86,7 @@ struct SingleDirectMultiVaultStateReq {
 
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitMultiVaultData {
+    uint8 superformRouterId;
     uint256 payloadId;
     uint256[] superformIds;
     uint256[] amounts;
@@ -96,6 +97,7 @@ struct InitMultiVaultData {
 
 /// @dev struct for SuperRouter with re-arranged data for the message (contains the payloadId)
 struct InitSingleVaultData {
+    uint8 superformRouterId;
     uint256 payloadId;
     uint256 superformId;
     uint256 amount;
@@ -104,21 +106,21 @@ struct InitSingleVaultData {
     bytes extraFormData;
 }
 
-/// @dev all statuses of the timeloc
-enum TimeLockStatus {
+/// @dev all statuses of the two steps payload
+enum TwoStepsStatus {
     UNAVAILABLE,
     PENDING,
     PROCESSED
 }
 
-/// @dev holds information about the timelock payload
+/// @dev holds information about the two-steps payload
 struct TwoStepsPayload {
     uint8 isXChain;
     address srcSender;
     uint64 srcChainId;
     uint256 lockedTill;
     InitSingleVaultData data;
-    TimeLockStatus status;
+    TwoStepsStatus status;
 }
 
 /// @dev struct that contains the type of transaction, callback flags and other identification, as well as the vaults
@@ -129,15 +131,16 @@ struct AMBMessage {
     bytes params; // decoding txInfo will point to the right datatype of params. Refer PayloadHelper.sol
 }
 
-/// @dev contains the message for factory payloads (pause updates)
-struct AMBFactoryMessage {
+/// @dev struct that contains the information required for broadcasting changes
+struct BroadcastMessage {
+    bytes target;
     bytes32 messageType;
-    /// keccak("ADD_FORM"), keccak("PAUSE_FORM")
     bytes message;
 }
 
 /// @dev struct that contains info on returned data from destination
 struct ReturnMultiData {
+    uint8 superformRouterId;
     uint256 payloadId;
     uint256[] superformIds;
     uint256[] amounts;
@@ -145,6 +148,7 @@ struct ReturnMultiData {
 
 /// @dev struct that contains info on returned data from destination
 struct ReturnSingleData {
+    uint8 superformRouterId;
     uint256 payloadId;
     uint256 superformId;
     uint256 amount;

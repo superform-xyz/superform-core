@@ -34,6 +34,8 @@ contract SDiMVW02NativeInputNoSlippageL2AMB12 is ProtocolActions {
         LIQ_BRIDGES[OP][0] = [2, 2, 2];
         LIQ_BRIDGES[OP][1] = [2, 2, 2];
 
+        FINAL_LIQ_DST_WITHDRAW[OP] = [OP, OP, OP];
+
         /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
