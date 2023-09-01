@@ -75,7 +75,8 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_) public {
-        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_ETH));
+        /// @dev bounding to 0.9 of ETH SUPPLY coz user account (with 120m ETH) runs short of ETH
+        amountOne_ = uint128(bound(amountOne_, 11, (TOTAL_SUPPLY_ETH * 9) / 10));
         AMOUNTS[ARBI][0] = [amountOne_];
 
         for (uint256 act = 0; act < actions.length; act++) {
