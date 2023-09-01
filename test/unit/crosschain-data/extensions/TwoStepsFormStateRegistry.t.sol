@@ -18,6 +18,24 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         uint256 superformId = _legacySuperformPackWithShift();
 
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "USDT"),
+            getContract(ETH, "USDT"),
+            getContract(ETH, "USDT"),
+            getContract(ETH, "ERC4626TimelockForm"),
+            ETH,
+            ETH,
+            ETH,
+            false,
+            deployer,
+            uint256(ETH),
+            420,
+            false,
+            /// @dev placeholder value, not used
+            0
+        );
+
         vm.prank(getContract(ETH, "ERC4626TimelockForm"));
         twoStepRegistry.receivePayload(
             0,
@@ -30,26 +48,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
                 superformId,
                 420,
                 0,
-                LiqRequest(
-                    1,
-                    _buildLiqBridgeTxData(
-                        1,
-                        getContract(ETH, "USDT"),
-                        getContract(ETH, "USDT"),
-                        getContract(ETH, "USDT"),
-                        getContract(ETH, "ERC4626TimelockForm"),
-                        ETH,
-                        false,
-                        deployer,
-                        uint256(ETH),
-                        420,
-                        false
-                    ),
-                    getContract(ETH, "USDT"),
-                    ETH,
-                    0,
-                    bytes("")
-                ),
+                LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0, bytes("")),
                 bytes("")
             )
         );

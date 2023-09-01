@@ -61,9 +61,9 @@ contract MDSVDKYC4626MultiTxTokenInputSlippageL2AMB13 is ProtocolActions {
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_USDT / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_USDT / 3));
-        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_USDT / 3));
+        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_USDT / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_USDT / 3));
+        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_USDT / 3));
         AMOUNTS[AVAX][0] = [amountOne_];
         AMOUNTS[BSC][0] = [amountTwo_];
         AMOUNTS[ETH][0] = [amountThree_];

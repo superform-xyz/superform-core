@@ -1018,20 +1018,26 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         maxSlippages[1] = 1000;
 
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
+
         liqReqs[0] = LiqRequest(
             1,
             _buildLiqBridgeTxData(
-                1,
-                getContract(ETH, "USDT"),
-                getContract(ETH, "USDT"),
-                getContract(ARBI, "USDT"),
-                address(superformRouterSERC20),
-                ARBI,
-                false,
-                getContract(ARBI, "CoreStateRegistry"),
-                uint256(ARBI),
-                1e18,
-                false
+                LiqBridgeTxDataArgs(
+                    1,
+                    getContract(ETH, "USDT"),
+                    getContract(ETH, "USDT"),
+                    getContract(ARBI, "USDT"),
+                    address(superformRouterSERC20),
+                    ETH,
+                    ARBI,
+                    ARBI,
+                    false,
+                    getContract(ARBI, "CoreStateRegistry"),
+                    uint256(ARBI),
+                    1e18,
+                    false,
+                    0
+                )
             ),
             getContract(ETH, "USDT"),
             ARBI,
@@ -1041,17 +1047,22 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         liqReqs[1] = LiqRequest(
             1,
             _buildLiqBridgeTxData(
-                1,
-                getContract(ETH, "WETH"),
-                getContract(ETH, "WETH"),
-                getContract(ARBI, "WETH"),
-                address(superformRouterSERC20),
-                ARBI,
-                false,
-                getContract(ARBI, "CoreStateRegistry"),
-                uint256(ARBI),
-                1e18,
-                false
+                LiqBridgeTxDataArgs(
+                    1,
+                    getContract(ETH, "WETH"),
+                    getContract(ETH, "WETH"),
+                    getContract(ARBI, "WETH"),
+                    address(superformRouterSERC20),
+                    ETH,
+                    ARBI,
+                    ARBI,
+                    false,
+                    getContract(ARBI, "CoreStateRegistry"),
+                    uint256(ARBI),
+                    1e18,
+                    false,
+                    0
+                )
             ),
             getContract(ETH, "WETH"),
             ARBI,

@@ -90,16 +90,11 @@ contract MDSVW70TokenInputSlippageL1AMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountOneWithdraw_, uint128 amountTwo_) public {
-        /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_WETH / 2));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_WETH / 2));
+        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_WETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_WETH / 2));
 
         AMOUNTS[OP][0] = [amountOne_];
-        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, amountOne_ - 1));
-        AMOUNTS[OP][1] = [amountOneWithdraw_];
-
         AMOUNTS[ETH][0] = [amountTwo_];
-        AMOUNTS[ETH][1] = [amountTwo_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -108,6 +103,26 @@ contract MDSVW70TokenInputSlippageL1AMB13 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    if (DST_CHAINS[i] == ETH) {
+                        AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
+                    } else if (DST_CHAINS[i] == OP) {
+                        /// @dev bounded to 1 less due to partial withdrawals
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                        AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_];
+                    }
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

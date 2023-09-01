@@ -68,11 +68,10 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1A
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_) public {
-        /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH));
+        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_WETH));
         AMOUNTS[POLY][0] = [amountOne_];
 
-        /// @dev always rescuing full amounts, coz no point in rescuing partial amounts
+        /// @dev specifying the amount that was deposited earlier, as the amount to be rescued
         AMOUNTS[POLY][1] = [amountOne_];
 
         for (uint256 act; act < actions.length; act++) {

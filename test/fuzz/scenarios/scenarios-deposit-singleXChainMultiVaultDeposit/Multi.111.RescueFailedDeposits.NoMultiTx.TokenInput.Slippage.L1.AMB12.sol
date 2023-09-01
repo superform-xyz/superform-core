@@ -69,12 +69,12 @@ contract SDMVDMulti111RescueFailedDepositsNoMultiTxTokenInputSlippageL1AMB12 is 
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_WETH / 3));
-        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_WETH / 3));
+        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_WETH / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_WETH / 3));
+        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_WETH / 3));
         AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
 
-        /// @dev always rescuing full amounts, coz no point in rescuing partial amounts
+        /// @dev specifying the amount that was deposited earlier, as the amount to be rescued
         AMOUNTS[AVAX][1] = [amountOne_, amountTwo_, amountThree_];
 
         for (uint256 act; act < actions.length; act++) {

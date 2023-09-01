@@ -116,7 +116,25 @@ contract MDMVW84002408NativeInputSlipapgeL1AMB14 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(
+        uint128 amountOne_,
+        uint128 amountOneWithdraw_,
+        uint128 amountTwo_,
+        uint128 amountThree_
+    )
+        public
+    {
+        /// @dev min amountOne_ needs to be 3 as its withdraw amount >= 2
+        amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_ETH / 7));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 7));
+        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 7));
+
+        /// @dev notice partial withdrawals in ETH->0 and POLY->2
+        AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];
+        AMOUNTS[POLY][0] = [amountTwo_, amountThree_, amountOne_];
+        /// @dev shuffled order of amounts to randomise
+        AMOUNTS[AVAX][0] = [amountThree_, amountTwo_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
@@ -124,6 +142,29 @@ contract MDMVW84002408NativeInputSlipapgeL1AMB14 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    /// @dev notice partial withdrawals in ETH->0 and POLY->2
+                    if (DST_CHAINS[i] == ETH) {
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                        AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], superPositions[2]];
+                    } else if (DST_CHAINS[i] == POLY) {
+                        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[2] - 1));
+                        AMOUNTS[POLY][1] = [superPositions[0], superPositions[1], amountOneWithdraw_];
+                    } else if (DST_CHAINS[i] == AVAX) {
+                        AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1]];
+                    }
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

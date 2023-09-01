@@ -134,32 +134,30 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).transfer(superform, 1e18);
         vm.stopPrank();
 
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "USDT"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            superform,
+            ETH,
+            ARBI,
+            ETH,
+            false,
+            superform,
+            uint256(ETH),
+            2e18,
+            false,
+            0
+        );
+
         InitSingleVaultData memory data = InitSingleVaultData(
             1,
             1,
             superformId,
             1e18,
             100,
-            LiqRequest(
-                1,
-                _buildLiqBridgeTxData(
-                    1,
-                    getContract(ETH, "USDT"),
-                    getContract(ETH, "DAI"),
-                    getContract(ETH, "DAI"),
-                    superform,
-                    ETH,
-                    false,
-                    deployer,
-                    uint256(ETH),
-                    2e18,
-                    false
-                ),
-                getContract(ETH, "USDT"),
-                ETH,
-                0,
-                ""
-            ),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0, ""),
             ""
         );
 

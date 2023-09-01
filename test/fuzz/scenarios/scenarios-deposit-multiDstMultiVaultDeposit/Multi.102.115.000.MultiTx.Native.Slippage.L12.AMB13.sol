@@ -61,10 +61,9 @@ contract MDMVDMulti102115000MultiTxNativeSlippageL12AMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
-        /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH / 9));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_WETH / 9));
-        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_WETH / 9));
+        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_WETH / 9));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_WETH / 9));
+        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_WETH / 9));
         AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_];
         AMOUNTS[ETH][0] = [amountThree_, amountOne_, amountTwo_];
         AMOUNTS[AVAX][0] = [amountTwo_, amountThree_, amountOne_];

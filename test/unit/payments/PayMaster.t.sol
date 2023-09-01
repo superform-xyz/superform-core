@@ -25,6 +25,9 @@ contract PayMasterTest is BaseSetup {
 
     address multiTxProcessorFraud;
 
+    /// out of 10000
+    int256 totalSlippage = 200;
+
     SuperRegistry superRegistry;
     SuperRegistry superRegistryARBI;
 
@@ -230,7 +233,8 @@ contract PayMasterTest is BaseSetup {
         assertEq(feeCollector.balance, 0);
 
         vm.selectFork(FORKS[ARBI]);
-        assertEq(multiTxSwapperARBI.balance, 1 ether);
+        /// @dev amount received will be bridge-slippage-adjusted
+        assertEq(multiTxSwapperARBI.balance, (1 ether * (10_000 - uint256(totalSlippage))) / 10_000);
     }
 
     function test_rebalanceToCoreStateRegistryTxProcessor() public {
@@ -280,7 +284,8 @@ contract PayMasterTest is BaseSetup {
         assertEq(feeCollector.balance, 0);
 
         vm.selectFork(FORKS[ARBI]);
-        assertEq(txProcessorARBI.balance, 1 ether);
+        /// @dev amount received will be bridge-slippage-adjusted
+        assertEq(txProcessorARBI.balance, (1 ether * (10_000 - uint256(totalSlippage))) / 10_000);
     }
 
     function test_rebalanceToCoreStateRegistryTxUpdater() public {
@@ -330,7 +335,8 @@ contract PayMasterTest is BaseSetup {
         assertEq(feeCollector.balance, 0);
 
         vm.selectFork(FORKS[ARBI]);
-        assertEq(txUpdaterARBI.balance, 1 ether);
+        /// @dev amount received will be bridge-slippage-adjusted
+        assertEq(txUpdaterARBI.balance, (1 ether * (10_000 - uint256(totalSlippage))) / 10_000);
     }
 
     function _successfulDeposit() internal {
@@ -384,7 +390,7 @@ contract PayMasterTest is BaseSetup {
                 /// request id
                 0,
                 underlyingToken_,
-                abi.encode(from_, FORKS[toChainId_], underlyingToken_)
+                abi.encode(from_, FORKS[toChainId_], underlyingToken_, totalSlippage, false, 0, false)
             );
 
             /// @dev empty bridge request
@@ -412,7 +418,7 @@ contract PayMasterTest is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingToken_),
+                abi.encode(from_, FORKS[toChainId_], underlyingToken_, totalSlippage, false, 0, false),
                 false // arbitrary
             );
 

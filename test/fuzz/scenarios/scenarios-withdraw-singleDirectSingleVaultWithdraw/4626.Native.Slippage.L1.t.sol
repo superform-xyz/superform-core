@@ -81,7 +81,6 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
         /// @dev note that current socket/lifi mocks simulate swapping by directly minting WETH
         /// and burning DAI with a 1:1 price ratio, with no mint-cap on WETH supply hence these work
         /// off the hook, but should consider the correct price ratio to make it more mainnet-like
-        AMOUNTS[OP][1] = [amountOne_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -90,6 +89,20 @@ contract SXSVWNormal4626NativeSlippageL1 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

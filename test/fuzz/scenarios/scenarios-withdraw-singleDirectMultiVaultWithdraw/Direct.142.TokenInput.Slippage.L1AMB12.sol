@@ -80,17 +80,10 @@ contract SDiMVW142TokenInputSlippageL1AMB12 is ProtocolActions {
         public
     {
         /// @dev min amountOne_ and amountThree_ need to be 3 as their withdraw amount >= 2
-        amountOne_ = uint128(bound(amountOne_, 3, TOTAL_SUPPLY_USDT / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_USDT / 3));
-        amountThree_ = uint128(bound(amountThree_, 3, TOTAL_SUPPLY_USDT / 3));
+        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_USDT / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_USDT / 3));
+        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_USDT / 3));
         AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
-
-        /// @dev bound to amountOne_ - 1 as partial is true for first vault
-        /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 2, amountOne_ - 1));
-        /// @dev bound to amountThree_ - 1 as partial is true for third vault
-        amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, amountThree_ - 1));
-        AMOUNTS[AVAX][1] = [amountOneWithdraw_, amountTwo_, amountThreeWithdraw_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -99,6 +92,22 @@ contract SDiMVW142TokenInputSlippageL1AMB12 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                    amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, superPositions[2] - 1));
+                    AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], amountThreeWithdraw_];
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

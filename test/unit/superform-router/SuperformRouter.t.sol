@@ -915,47 +915,46 @@ contract SuperformRouterTest is ProtocolActions {
         maxSlippages[0] = 1000;
         maxSlippages[1] = 1000;
 
-        LiqRequest[] memory liqReqs = new LiqRequest[](2);
-        liqReqs[0] = LiqRequest(
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            _buildLiqBridgeTxData(
-                1,
-                getContract(ETH, "USDT"),
-                getContract(ETH, "USDT"),
-                getContract(ARBI, "USDT"),
-                superformRouter,
-                ARBI,
-                false,
-                getContract(ARBI, "CoreStateRegistry"),
-                uint256(ARBI),
-                1e18,
-                false
-            ),
             getContract(ETH, "USDT"),
+            getContract(ETH, "USDT"),
+            getContract(ARBI, "USDT"),
+            superformRouter,
+            ETH,
             ARBI,
-            0,
-            ""
+            ARBI,
+            false,
+            getContract(ARBI, "CoreStateRegistry"),
+            uint256(ARBI),
+            1e18,
+            false,
+            /// @dev placeholder value, not used
+            0
         );
-        liqReqs[1] = LiqRequest(
+
+        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+        liqReqs[0] = LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ARBI, 0, "");
+
+        liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            _buildLiqBridgeTxData(
-                1,
-                getContract(ETH, "WETH"),
-                getContract(ETH, "WETH"),
-                getContract(ARBI, "WETH"),
-                superformRouter,
-                ARBI,
-                false,
-                getContract(ARBI, "CoreStateRegistry"),
-                uint256(ARBI),
-                1e18,
-                false
-            ),
             getContract(ETH, "WETH"),
+            getContract(ETH, "WETH"),
+            getContract(ARBI, "WETH"),
+            superformRouter,
+            ETH,
             ARBI,
-            0,
-            ""
+            ARBI,
+            false,
+            getContract(ARBI, "CoreStateRegistry"),
+            uint256(ARBI),
+            1e18,
+            false,
+            /// @dev placeholder value, not used
+            0
         );
+
+        liqReqs[1] = LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "WETH"), ARBI, 0, "");
 
         MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReqs, "");
         uint8[] memory ambIds = new uint8[](1);

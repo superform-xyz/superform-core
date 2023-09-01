@@ -353,30 +353,28 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "USDT"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            superform,
+            ETH,
+            ETH,
+            ETH,
+            false,
+            superform,
+            uint256(ETH),
+            1e18,
+            false,
+            0
+        );
+
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             2e18,
             100,
-            LiqRequest(
-                1,
-                _buildLiqBridgeTxData(
-                    1,
-                    getContract(ETH, "USDT"),
-                    getContract(ETH, "DAI"),
-                    getContract(ETH, "DAI"),
-                    superform,
-                    ETH,
-                    false,
-                    superform,
-                    uint256(ETH),
-                    1e18,
-                    false
-                ),
-                getContract(ETH, "USDT"),
-                ETH,
-                0,
-                ""
-            ),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0, ""),
             ""
         );
 

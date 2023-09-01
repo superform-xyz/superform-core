@@ -162,7 +162,17 @@ contract MultiTxProcessorTest is BaseSetup {
                 /// request id
                 0,
                 underlyingToken_,
-                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingToken_)
+                abi.encode(
+                    getContract(toChainId_, "MultiTxProcessor"),
+                    FORKS[toChainId_],
+                    underlyingToken_,
+                    /// @dev arbitrary total slippage
+                    200,
+                    true,
+                    /// @dev arbitrary multiTxSlippageShare
+                    40,
+                    false
+                )
             );
 
             /// @dev empty bridge request
@@ -195,7 +205,8 @@ contract MultiTxProcessorTest is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingToken_),
+                /// @dev arbitrary totalSlippage (200) and multiTxSlippageShare (40)
+                abi.encode(from_, FORKS[toChainId_], underlyingToken_, 200, true, 40, false),
                 false // arbitrary
             );
 
