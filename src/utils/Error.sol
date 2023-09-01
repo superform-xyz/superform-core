@@ -39,6 +39,9 @@ library Error {
     /// @dev thrown when msg.sender is not broadcast state registry
     error NOT_BROADCAST_REGISTRY();
 
+    /// @dev thrown if the broadcast payload is invalid
+    error INVALID_BROADCAST_PAYLOAD();
+
     /// @dev thrown when msg.sender is not two step state registry
     error NOT_TWO_STEP_STATE_REGISTRY();
 

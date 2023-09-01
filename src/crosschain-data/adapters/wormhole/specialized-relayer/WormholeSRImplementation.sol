@@ -92,14 +92,18 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     }
 
     function receiveMessage(bytes memory encodedMessage) public {
-        (IWormhole.VM memory wormholeMessage, bool valid, string memory reason) =
-            wormhole.parseAndVerifyVM(encodedMessage);
-        
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasWormholeVaaRole(msg.sender)) {
             revert Error.CALLER_NOT_RELAYER();
+        }
+
+        (IWormhole.VM memory wormholeMessage, bool valid, string memory reason) =
+            wormhole.parseAndVerifyVM(encodedMessage);
+
+        if (!valid) {
+            revert Error.INVALID_BROADCAST_PAYLOAD();
         }
 
         if (processedMessages[wormholeMessage.hash]) {
