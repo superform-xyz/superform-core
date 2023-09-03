@@ -400,6 +400,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256[] tAmounts;
         uint256[] tMaxSlippage;
         LiqRequest[] tLiqData;
+        uint256 finalAmount;
+        IBridgeValidator bridgeValidator;
     }
 
     /// @dev helper function to update multi vault withdraw payload
@@ -455,8 +457,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(lV.multiVaultData.liqData[lV.i]);
 
-                    IBridgeValidator(superRegistry.getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId))
-                        .validateTxData(
+                    lV.bridgeValidator =
+                        IBridgeValidator(superRegistry.getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId));
+
+                    lV.bridgeValidator.validateTxData(
                         txData_[lV.i],
                         v_.dstChainId,
                         v_.srcChainId,
@@ -465,6 +469,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         superform,
                         v_.srcSender,
                         lV.multiVaultData.liqData[lV.i].token
+                    );
+
+                    lV.finalAmount = lV.bridgeValidator.decodeAmount(txData_[lV.i]);
+
+                    PayloadUpdaterLib.validateSlippage(
+                        lV.finalAmount, lV.multiVaultData.amounts[lV.i], lV.multiVaultData.maxSlippage[lV.i]
                     );
 
                     lV.multiVaultData.liqData[lV.i].txData = txData_[lV.i];
