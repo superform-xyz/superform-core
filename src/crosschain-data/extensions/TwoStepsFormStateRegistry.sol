@@ -116,6 +116,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         onlyTwoStepsStateRegistryProcessor
     {
         TwoStepsPayload memory p = twoStepsPayload[timeLockPayloadId_];
+        IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
+        uint256 finalAmount;
 
         if (p.status != TwoStepsStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
@@ -134,7 +136,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             PayloadUpdaterLib.validateLiqReq(p.data.liqData);
 
             /// @dev validate the incoming tx data
-            IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId)).validateTxData(
+            bridgeValidator.validateTxData(
                 txData_,
                 superRegistry.chainId(),
                 p.srcChainId,
@@ -144,6 +146,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                 p.srcSender,
                 p.data.liqData.token
             );
+
+            finalAmount = bridgeValidator.decodeAmount(txData_);
+            PayloadUpdaterLib.validateSlippage(finalAmount, p.data.amount, p.data.maxSlippage);
 
             p.data.liqData.txData = txData_;
         }

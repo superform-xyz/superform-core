@@ -194,9 +194,8 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         txData = new bytes[](2);
 
-        address superform = getContract(
-            AVAX, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
@@ -208,10 +207,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             false,
-            users[0],
+            deployer,
             uint256(ETH),
-            /// @dev amount after slippage > 10% of 1e18
-            1e16,
+            /// @dev amount is 1 less than (1e18 * 0.9) => slippage > 10% => should revert
+            9e17 - 1,
             true,
             /// @dev currently testing with 0 bridge slippage
             0
@@ -413,9 +412,8 @@ contract CoreStateRegistryTest is ProtocolActions {
     function _successfulMultiWithdrawal(uint8[] memory ambIds) internal {
         vm.selectFork(FORKS[ETH]);
 
-        address superform = getContract(
-            AVAX, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
         address superformRouter = getContract(ETH, "SuperformRouter");
