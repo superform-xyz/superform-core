@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import "forge-std/console.sol";
+
 import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
 import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
@@ -343,6 +345,8 @@ contract PaymentHelper is IPaymentHelper {
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
+        console.log("TOTAL TOTAL TOTAL");
+        console.log(totalAmount);
     }
 
     /// @inheritdoc IPaymentHelper
@@ -382,6 +386,9 @@ contract PaymentHelper is IPaymentHelper {
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
+
+        console.log("TOTAL TOTAL TOTAL");
+        console.log(totalAmount);
     }
 
     /// @inheritdoc IPaymentHelper
@@ -484,20 +491,23 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 len = ambIds_.length;
         uint256 totalDstGasReqInWei = message_.length * gasPerKB[dstChainId_];
+        uint256 totalDstGasReqInWeiForProof = 32 * gasPerKB[dstChainId_];
 
         extraDataPerAMB = new bytes[](len);
 
         for (uint256 i; i < len;) {
+            uint256 gasReq = i != 0 ? totalDstGasReqInWeiForProof : totalDstGasReqInWei;
+
             if (ambIds_[i] == 1) {
-                extraDataPerAMB[i] = abi.encodePacked(uint16(2), totalDstGasReqInWei, uint256(0), address(0));
+                extraDataPerAMB[i] = abi.encodePacked(uint16(2), gasReq, uint256(0), address(0));
             }
 
             if (ambIds_[i] == 2) {
-                extraDataPerAMB[i] = abi.encode(totalDstGasReqInWei);
+                extraDataPerAMB[i] = abi.encode(gasReq);
             }
 
             if (ambIds_[i] == 4) {
-                extraDataPerAMB[i] = abi.encode(0, totalDstGasReqInWei);
+                extraDataPerAMB[i] = abi.encode(0, gasReq);
             }
 
             unchecked {
@@ -522,10 +532,13 @@ contract PaymentHelper is IPaymentHelper {
 
         feeSplitUp = new uint256[](len);
 
+        bytes memory proof = abi.encode(keccak256(message_));
+
         /// @dev just checks the estimate for sending message from src -> dst
+        /// @dev only ambIds_[0] = primary amb (rest of the ambs send only the proof)
         for (uint256 i; i < len;) {
             uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_, message_, extraDataPerAMB[i]
+                dstChainId_, i != 0 ? proof : message_, extraDataPerAMB[i]
             );
 
             totalFees += tempFee;
@@ -553,10 +566,12 @@ contract PaymentHelper is IPaymentHelper {
 
         feeSplitUp = new uint256[](len);
 
+        bytes memory proof = abi.encode(keccak256(message_));
+
         /// @dev just checks the estimate for sending message from src -> dst
         for (uint256 i; i < len;) {
             uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_, message_, extraDataPerAMB[i]
+                dstChainId_, i != 0 ? proof : message_, extraDataPerAMB[i]
             );
 
             totalFees += tempFee;
