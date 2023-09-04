@@ -191,6 +191,38 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         vm.expectRevert(Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
+
+        txData = new bytes[](2);
+
+        address superform = getContract(
+            AVAX, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(AVAX, "USDT"),
+            getContract(AVAX, "USDT"),
+            getContract(ETH, "USDT"),
+            superform,
+            AVAX,
+            ETH,
+            ETH,
+            false,
+            users[0],
+            uint256(ETH),
+            /// @dev amount after slippage > 10% of 1e18
+            1e16,
+            true,
+            /// @dev currently testing with 0 bridge slippage
+            0
+        );
+
+        txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
+        txData[1] = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
     }
 
     /// @dev test all revert cases with multi vault deposit payload update
@@ -403,7 +435,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), ETH, 0, bytes(""));
         liqReqArr[1] = liqReqArr[0];
 
-        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amountArr, new uint256[](2), liqReqArr, bytes(""));
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 1000;
+        maxSlippages[1] = 1000;
+
+        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amountArr, maxSlippages, liqReqArr, bytes(""));
 
         vm.recordLogs();
         vm.prank(deployer);

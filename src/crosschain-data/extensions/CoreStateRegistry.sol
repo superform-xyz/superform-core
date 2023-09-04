@@ -19,6 +19,7 @@ import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 
 import "../../types/DataTypes.sol";
+import "forge-std/console.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -449,16 +450,28 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             revert Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
         }
 
+        console.log("lV.len", lV.len);
         /// @dev validates if the incoming update is valid
         for (lV.i; lV.i < lV.len;) {
+            console.log("Hi");
+            console.log("txData_[lV.i].length", txData_[lV.i].length);
+            console.log("lV.multiVaultData.liqData[lV.i].txData.length", lV.multiVaultData.liqData[lV.i].txData.length);
+
             if (txData_[lV.i].length != 0 && lV.multiVaultData.liqData[lV.i].txData.length == 0) {
+                console.log("Bye");
                 (address superform,,) = lV.multiVaultData.superformIds[lV.i].getSuperform();
 
+                console.log("IBaseForm(superform).getStateRegistryId()", IBaseForm(superform).getStateRegistryId());
+                console.log(
+                    "superRegistry.getStateRegistryId(address(this))", superRegistry.getStateRegistryId(address(this))
+                );
                 if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(lV.multiVaultData.liqData[lV.i]);
 
                     lV.bridgeValidator =
                         IBridgeValidator(superRegistry.getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId));
+                    console.log("txData_[lV.i]:");
+                    console.logBytes(txData_[lV.i]);
 
                     lV.bridgeValidator.validateTxData(
                         txData_[lV.i],
@@ -472,6 +485,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     );
 
                     lV.finalAmount = lV.bridgeValidator.decodeAmount(txData_[lV.i]);
+
+                    console.log("lV.finalAmount:", lV.finalAmount);
+                    console.log("lV.multiVaultData.amounts[lV.i]:", lV.multiVaultData.amounts[lV.i]);
+                    console.log("lV.multiVaultData.maxSlippage[lV.i]:", lV.multiVaultData.maxSlippage[lV.i]);
 
                     PayloadUpdaterLib.validateSlippage(
                         lV.finalAmount, lV.multiVaultData.amounts[lV.i], lV.multiVaultData.maxSlippage[lV.i]
