@@ -137,7 +137,7 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
         /// @dev  reset old mappings
         uint64 oldSuperChainId = superChainId[ambChainId_];
 
-        uint64 oldAmbChainId = ambChainId[superChainId_];
+        uint16 oldAmbChainId = ambChainId[superChainId_];
 
         if (oldSuperChainId > 0) {
             ambChainId[oldSuperChainId] = 0;

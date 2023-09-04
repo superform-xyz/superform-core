@@ -69,7 +69,7 @@ abstract contract LiquidityHandler {
                 }
             }
             /// @dev approve bridge to spend tokens
-            token.safeApprove(bridge_, amount_);
+            token.safeIncreaseAllowance(bridge_, amount_);
 
             /// @dev call bridge with txData. Native amount here just contains liquidity bridge fees (if needed)
             unchecked {

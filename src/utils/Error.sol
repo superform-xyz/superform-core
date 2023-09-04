@@ -216,6 +216,9 @@ library Error {
     /// @dev thrown when same vault and beacon is used to create new superform
     error VAULT_BEACON_COMBNATION_EXISTS();
 
+    /// @dev thrown when formBeaconIds and vaults used to createSuperforms have different length
+    error ARRAY_LENGTH_MISMATCH();
+
     /*///////////////////////////////////////////////////////////////
                         SUPER ROUTER ERRORS
     //////////////////////////////////////////////////////////////*/

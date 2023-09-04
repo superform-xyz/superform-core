@@ -95,7 +95,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         /// @dev  reset old mappings
         uint64 oldSuperChainId = superChainId[ambChainId_];
 
-        uint64 oldAmbChainId = ambChainId[superChainId_];
+        uint32 oldAmbChainId = ambChainId[superChainId_];
 
         if (oldSuperChainId > 0) {
             ambChainId[oldSuperChainId] = 0;

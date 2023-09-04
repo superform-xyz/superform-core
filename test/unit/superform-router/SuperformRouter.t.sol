@@ -1061,7 +1061,7 @@ contract SuperformRouterTest is ProtocolActions {
 
         vm.recordLogs();
         SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 ether }(
-            formBeaconId, true, generateBroadcastParams(5, 1)
+            formBeaconId, 2, generateBroadcastParams(5, 1)
         );
 
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());
@@ -1070,15 +1070,15 @@ contract SuperformRouterTest is ProtocolActions {
             if (chainIds[i] != ARBI) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                bool statusBefore =
+                uint256 statusBefore =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
                 BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
-                bool statusAfter =
+                uint256 statusAfter =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 
                 /// @dev assert status update before and after processing the payload
-                assertEq(statusBefore, false);
-                assertEq(statusAfter, true);
+                assertEq(statusBefore, 1);
+                assertEq(statusAfter, 2);
             }
         }
     }

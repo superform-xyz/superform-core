@@ -659,9 +659,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         (, uint32 formBeaconId_,) = superformData_.superformId.getSuperform();
 
-        return !IFormBeacon(
+        return IFormBeacon(
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
-        ).paused();
+        ).paused() == 1;
     }
 
     function _validateSuperformsDepositData(
@@ -703,7 +703,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
                         formBeaconId_
                     )
-                ).paused()
+                ).paused() == 2
             ) return false;
 
             /// @dev amounts in liqRequests must match amounts in superformsData_
@@ -762,7 +762,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
                         formBeaconId_
                     )
-                ).paused()
+                ).paused() == 2
             ) return false;
 
             unchecked {
