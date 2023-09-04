@@ -79,7 +79,8 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
         override
         onlyRole(PROTOCOL_ADMIN_ROLE)
     {
-        revokeRole(role_, addressToRevoke_);
+        /// @dev revokeRoleSuperBroadcast cannot update the PROTOCOL_ADMIN_ROLE and EMERGENCY_ADMIN_ROLE
+        if (role_ != PROTOCOL_ADMIN_ROLE || role_ != EMERGENCY_ADMIN_ROLE) revokeRole(role_, addressToRevoke_);
 
         if (extraData_.length > 0) {
             BroadcastMessage memory rolesPayload =

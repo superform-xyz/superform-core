@@ -306,4 +306,14 @@ library Error {
 
     /// @dev thrown when the uri cannot be updated
     error DYNAMIC_URI_FROZEN();
+
+    /*///////////////////////////////////////////////////////////////
+                        PAYMENT HELPER ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when chainlink is reporting an improper price
+    error CHAINLINK_MALFUNCTION();
+
+    /// @dev thrown when chainlink is reporting an incomplete round
+    error CHAINLINK_INCOMPLETE_ROUND();
 }

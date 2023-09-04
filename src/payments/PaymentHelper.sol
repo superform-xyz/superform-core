@@ -729,7 +729,9 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev returns default set values if an oracle is not configured for the network
     function _getGasPrice(uint64 chainId_) internal view returns (uint256) {
         if (address(gasPriceOracle[chainId_]) != address(0)) {
-            (, int256 value,,,) = gasPriceOracle[chainId_].latestRoundData();
+            (, int256 value,, uint256 updatedAt,) = gasPriceOracle[chainId_].latestRoundData();
+            if (value <= 0) revert Error.CHAINLINK_MALFUNCTION();
+            if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
             return uint256(value);
         }
 
@@ -740,7 +742,9 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev returns `0` - if no oracle is set
     function _getNativeTokenPrice(uint64 chainId_) internal view returns (uint256) {
         if (address(nativeFeedOracle[chainId_]) != address(0)) {
-            (, int256 dstTokenPrice,,,) = nativeFeedOracle[chainId_].latestRoundData();
+            (, int256 dstTokenPrice,, uint256 updatedAt,) = nativeFeedOracle[chainId_].latestRoundData();
+            if (dstTokenPrice <= 0) revert Error.CHAINLINK_MALFUNCTION();
+            if (updatedAt == 0) revert Error.CHAINLINK_INCOMPLETE_ROUND();
             return uint256(dstTokenPrice);
         }
 
