@@ -382,9 +382,6 @@ contract PaymentHelper is IPaymentHelper {
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
-
-        console.log("TOTAL TOTAL TOTAL");
-        console.log(totalAmount);
     }
 
     /// @inheritdoc IPaymentHelper
