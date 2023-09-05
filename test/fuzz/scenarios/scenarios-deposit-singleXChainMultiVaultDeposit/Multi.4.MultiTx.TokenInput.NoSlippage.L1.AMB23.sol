@@ -27,7 +27,6 @@ contract SDMVDMulti4MultiTxTokenInputNoSlippageL1AMB23 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ETH][0] = [1];
 
         actions.push(

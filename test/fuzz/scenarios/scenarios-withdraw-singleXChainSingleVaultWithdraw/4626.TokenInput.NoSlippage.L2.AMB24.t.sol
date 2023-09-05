@@ -38,9 +38,8 @@ contract SXSVWNormal4626NativeSlippageL2AMB24 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[AVAX][0] = [2];
-        LIQ_BRIDGES[AVAX][1] = [2];
+        LIQ_BRIDGES[AVAX][0] = [1];
+        LIQ_BRIDGES[AVAX][1] = [1];
 
         FINAL_LIQ_DST_WITHDRAW[AVAX] = [ARBI];
 

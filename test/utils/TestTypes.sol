@@ -123,7 +123,6 @@ struct SetupVars {
     address wormholeBroadcastHelper;
     address wormholeImplementation;
     address wormholeSRImplementation;
-    address socketRouter;
     address lifiRouter;
     address erc4626Form;
     address erc4626TimelockForm;
@@ -148,7 +147,6 @@ struct SetupVars {
     address superRegistry;
     address superRBAC;
     address canonicalPermit2;
-    address socketValidator;
     address lifiValidator;
     Vm.Log[] logs;
     address superPositions;

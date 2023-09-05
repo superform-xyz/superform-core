@@ -17,7 +17,6 @@ import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { MultiTxProcessor } from "src/crosschain-liquidity/MultiTxProcessor.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
-import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
@@ -69,7 +68,6 @@ struct SetupVars {
     address superRegistry;
     address superPositions;
     address superRBAC;
-    address socketValidator;
     address lifiValidator;
     address kycDao4626Form;
     address PayloadHelper;
@@ -96,7 +94,6 @@ abstract contract AbstractDeploySingle is Script {
         "CelerImplementation",
         "WormholeImplementation",
         "WormholeSRImplementation",
-        "SocketValidator",
         "LiFiValidator",
         "SuperformFactory",
         "ERC4626Form",
@@ -151,8 +148,8 @@ abstract contract AbstractDeploySingle is Script {
     uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
-    /// @dev liquidity bridge ids. 1,2,3 belong to socket. 4 is lifi
-    uint8[] public bridgeIds = [uint8(1), 2, 3, 4];
+    /// @dev liquidity bridge ids 1 is lifi
+    uint8[] public bridgeIds = [1];
 
     mapping(uint64 chainId => address[] bridgeAddresses) public BRIDGE_ADDRESSES;
 
@@ -255,7 +252,6 @@ abstract contract AbstractDeploySingle is Script {
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
     uint64[] public celer_chainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
     uint16[] public wormhole_chainIds = [2, 6, 23, 5, 4, 24];
-    uint256[] public socketChainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
     uint256[] public lifiChainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
 
     uint256 public constant milionTokensE18 = 1 ether;
@@ -452,17 +448,12 @@ abstract contract AbstractDeploySingle is Script {
         vars.ambAddresses[3] = vars.wormholeImplementation;
         vars.ambAddresses[4] = vars.wormholeSRImplementation;
 
-        /// @dev 6- deploy socket validator
-        vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
+        /// @dev 6- deploy liquidity validators
 
         vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
-        for (uint256 j = 0; j < 3; j++) {
-            bridgeValidators[j] = vars.socketValidator;
-        }
-        bridgeValidators[3] = vars.lifiValidator;
+        bridgeValidators[0] = vars.lifiValidator;
 
         /// @dev 7 - Deploy SuperformFactory
         vars.factory = address(new SuperformFactory{salt: salt}(vars.superRegistry));
@@ -812,49 +803,14 @@ abstract contract AbstractDeploySingle is Script {
         }
 
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
-        bridgeAddresses[ETH] = [
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
-            0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
-            0x33BE2a7CF4Bb94d28131116F840d313Cab1eD2DA,
-            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
-        ];
-        bridgeAddresses[BSC] = [
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
-            0xd286595d2e3D879596FAB51f83A702D10a6db27b,
-            0x805696d6079ce9F347811f0Fe4D7e4c24C15dF5f,
-            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
-        ];
-        bridgeAddresses[AVAX] = [
-            0x2b42AFFD4b7C14d9B7C2579229495c052672Ccd3,
-            0xbDf50eAe568ECef74796ed6022a0d453e8432410,
-            0xdcABb6d7E88396498FFF4CD987F60e354BF2a44b,
-            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
-        ];
-        bridgeAddresses[POLY] = [
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
-            0x2ddf16BA6d0180e5357d5e170eF1917a01b41fc0,
-            0xAE3dd4C0E3cA6823Cdbe9641B1938551cCb25a2d,
-            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
-        ];
-        bridgeAddresses[ARBI] = [
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
-            0xaa3d9fA3aB930aE635b001d00C612aa5b14d750e,
-            address(0),
-            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
-        ];
-        bridgeAddresses[OP] = [
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
-            0xbDf50eAe568ECef74796ed6022a0d453e8432410,
-            0x2d7F2B4CEe097F08ed8d30D928A40eB1379071Fe,
-            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
-        ];
+        bridgeAddresses[ETH] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
+        bridgeAddresses[BSC] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
+        bridgeAddresses[AVAX] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
+        bridgeAddresses[POLY] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
+        bridgeAddresses[ARBI] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
+        bridgeAddresses[OP] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
 
-        bridgeAddresses[FTM] = [
-            0xc30141B657f4216252dc59Af2e7CdB9D8792e1B0,
-            address(0),
-            0xA7649aa944b7Dce781859C18913c2Dc8A97f03e4,
-            0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
-        ];
+        bridgeAddresses[FTM] = [0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE];
 
         /// price feeds on all chains
         mapping(uint64 => mapping(uint64 => address)) storage priceFeeds = PRICE_FEEDS;

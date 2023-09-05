@@ -30,7 +30,6 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoMultiTxTokenInputSlippageL1A
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [1];
         LIQ_BRIDGES[OP][1] = [1];
 

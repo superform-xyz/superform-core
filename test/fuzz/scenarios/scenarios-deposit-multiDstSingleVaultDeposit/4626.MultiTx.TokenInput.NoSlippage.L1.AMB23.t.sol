@@ -35,10 +35,9 @@ contract MDSVDNormal4626MultiTokenInputNoSlippageL1AMB23 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ETH][0] = [1];
-        LIQ_BRIDGES[OP][0] = [2];
-        LIQ_BRIDGES[POLY][0] = [2];
+        LIQ_BRIDGES[OP][0] = [1];
+        LIQ_BRIDGES[POLY][0] = [1];
 
         actions.push(
             TestAction({

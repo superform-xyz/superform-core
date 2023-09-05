@@ -18,7 +18,7 @@ abstract contract LiquidityHandler {
 
     /// @dev dispatches tokens via a liquidity bridge
     /// @param bridge_ Bridge address to pass tokens to
-    /// @param txData_ Socket data
+    /// @param txData_ liquidity bridge data
     /// @param token_ Token caller deposits into superform
     /// @param amount_ Amount of tokens to deposit
     /// @param owner_ Owner of tokens

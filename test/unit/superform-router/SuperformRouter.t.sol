@@ -991,34 +991,6 @@ contract SuperformRouterTest is ProtocolActions {
         returns (bytes memory txData)
     {
         if (liqBridgeKind_ == 1) {
-            ISocketRegistry.BridgeRequest memory bridgeRequest;
-            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-            ISocketRegistry.UserRequest memory userRequest;
-            /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
-            /// bridging request
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1,
-                /// request id
-                0,
-                underlyingToken_,
-                abi.encode(from_, FORKS[toChainId_])
-            );
-
-            /// @dev empty bridge request
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                0,
-                /// id
-                0,
-                address(0),
-                abi.encode(receiver_, FORKS[toChainId_])
-            );
-
-            userRequest =
-                ISocketRegistry.UserRequest(receiver_, uint256(toChainId_), amount_, middlewareRequest, bridgeRequest);
-
-            txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
-        } else if (liqBridgeKind_ == 2) {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 

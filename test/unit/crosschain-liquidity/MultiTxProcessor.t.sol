@@ -116,7 +116,7 @@ contract MultiTxProcessorTest is BaseSetup {
 
         uint8[] memory bridgeId = new uint8[](2);
         bridgeId[0] = 1;
-        bridgeId[1] = 2;
+        bridgeId[1] = 1;
 
         address[] memory approvalToken = new address[](2);
         approvalToken[0] = native;
@@ -124,7 +124,7 @@ contract MultiTxProcessorTest is BaseSetup {
 
         bytes[] memory txData = new bytes[](2);
         txData[0] = _buildTxData(1, native, multiTxProcessor, ETH, 1e18);
-        txData[1] = _buildTxData(2, native, multiTxProcessor, ETH, 1e18);
+        txData[1] = _buildTxData(1, native, multiTxProcessor, ETH, 1e18);
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
@@ -151,49 +151,6 @@ contract MultiTxProcessorTest is BaseSetup {
         returns (bytes memory txData)
     {
         if (liqBridgeKind_ == 1) {
-            ISocketRegistry.BridgeRequest memory bridgeRequest;
-            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-            ISocketRegistry.UserRequest memory userRequest;
-            /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
-            /// bridging request
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1,
-                /// request id
-                0,
-                underlyingToken_,
-                abi.encode(
-                    getContract(toChainId_, "MultiTxProcessor"),
-                    FORKS[toChainId_],
-                    underlyingToken_,
-                    /// @dev arbitrary total slippage
-                    200,
-                    true,
-                    /// @dev arbitrary multiTxSlippageShare
-                    40,
-                    false
-                )
-            );
-
-            /// @dev empty bridge request
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                0,
-                /// id
-                0,
-                underlyingToken_,
-                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingToken_)
-            );
-
-            userRequest = ISocketRegistry.UserRequest(
-                getContract(toChainId_, "CoreStateRegistry"),
-                uint256(toChainId_),
-                amount_,
-                middlewareRequest,
-                bridgeRequest
-            );
-
-            txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
-        } else if (liqBridgeKind_ == 2) {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 

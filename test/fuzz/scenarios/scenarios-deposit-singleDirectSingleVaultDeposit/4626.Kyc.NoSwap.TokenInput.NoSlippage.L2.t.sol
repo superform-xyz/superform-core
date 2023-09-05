@@ -26,7 +26,6 @@ contract SDSVD4626KycNoSwapTokenInputNoSlippageL2 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 0 for same chain same collateral, 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [0];
 
         actions.push(
