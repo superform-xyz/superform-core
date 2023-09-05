@@ -216,6 +216,8 @@ contract PaymentHelper is IPaymentHelper {
         override
         returns (uint256 liqAmount, uint256 srcAmount, uint256 dstAmount, uint256 totalAmount)
     {
+        uint256 dstNativeFeeExplicit;
+
         for (uint256 i; i < req_.dstChainIds.length;) {
             uint256 totalDstGas;
 
@@ -243,7 +245,7 @@ contract PaymentHelper is IPaymentHelper {
             }
 
             /// @dev step 6: estimate execution costs in dst (withdraw / deposit)
-            /// note: only execution cost (not acknowledgement messaging cost)
+            /// note: execution cost includes acknowledgement messaging cost
             totalDstGas +=
                 _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], req_.superformsData[i].superformIds.length);
 
@@ -293,7 +295,7 @@ contract PaymentHelper is IPaymentHelper {
             }
 
             /// @dev step 6: estimate execution costs in dst
-            /// note: only execution cost (not acknowledgement messaging cost)
+            /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], 1);
 
             /// @dev step 7: convert all dst gas estimates to src chain estimate
@@ -332,7 +334,7 @@ contract PaymentHelper is IPaymentHelper {
         if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, req_.superformsData.superformIds.length);
 
         /// @dev step 4: estimate execution costs in dst
-        /// note: only execution cost (not acknowledgement messaging cost)
+        /// note: execution cost includes acknowledgement messaging cost
         totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, req_.superformsData.superformIds.length);
 
         /// @dev step 5: estimation execution cost of acknowledgement
@@ -371,7 +373,7 @@ contract PaymentHelper is IPaymentHelper {
         if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
         /// @dev step 4: estimate execution costs in dst
-        /// note: only execution cost (not acknowledgement messaging cost)
+        /// note: execution cost includes acknowledgement messaging cost
         totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, 1);
 
         /// @dev step 5: estimation execution cost of acknowledgement
