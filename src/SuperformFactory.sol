@@ -246,8 +246,12 @@ contract SuperformFactory is ISuperformFactory {
         uint256 len = superformIds_.length;
         superforms_ = new address[](len);
 
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i; i < len;) {
             (superforms_[i],,) = superformIds_[i].getSuperform();
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -272,8 +276,11 @@ contract SuperformFactory is ISuperformFactory {
         uint256 len = superformIds_.length;
         superforms_ = new address[](len);
 
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i; i < len;) {
             (superforms_[i],,) = superformIds_[i].getSuperform();
+            unchecked {
+                ++i;
+            }
         }
     }
 

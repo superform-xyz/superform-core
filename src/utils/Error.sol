@@ -90,6 +90,9 @@ library Error {
     /// @dev thrown when the native tokens transfer has failed
     error NATIVE_TOKEN_TRANSFER_FAILURE();
 
+    /// @dev thrown when not possible to revoke last admin
+    error CANNOT_REVOKE_LAST_ADMIN();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -220,7 +223,7 @@ library Error {
     error ARRAY_LENGTH_MISMATCH();
 
     /*///////////////////////////////////////////////////////////////
-                        SUPER ROUTER ERRORS
+                        SUPERFORM ROUTER ERRORS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev thrown when form id is larger than max uint16

@@ -143,8 +143,13 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         override(IStateSyncer, StateSyncer)
         onlyMinter
     {
-        for (uint256 i = 0; i < ids_.length; i++) {
+        uint256 len = ids_.length;
+        for (uint256 i; i < len;) {
             sERC20(synthethicTokenId[ids_[i]]).mint(srcSender_, amounts_[i]);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -171,10 +176,16 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         override(IStateSyncer, StateSyncer)
         onlyBurner
     {
+        uint256 len = ids_.length;
+
         /// @dev note each allowance check in burn needs to pass. Since we burn atomically (on SuperformRouter level),
         /// if this loop fails, tx reverts right in the 1st stage
-        for (uint256 i = 0; i < ids_.length; i++) {
+        for (uint256 i; i < len;) {
             sERC20(synthethicTokenId[ids_[i]]).burn(srcSender_, amounts_[i]);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -217,8 +228,13 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
             (txType == uint256(TransactionType.DEPOSIT) && callbackType == uint256(CallbackType.RETURN))
                 || (txType == uint256(TransactionType.WITHDRAW) && callbackType == uint256(CallbackType.FAIL))
         ) {
-            for (uint256 i = 0; i < returnData.superformIds.length; i++) {
+            uint256 len = returnData.superformIds.length;
+            for (uint256 i; i < len;) {
                 sERC20(synthethicTokenId[returnData.superformIds[i]]).mint(srcSender, returnData.amounts[i]);
+
+                unchecked {
+                    ++i;
+                }
             }
         } else {
             revert Error.INVALID_PAYLOAD_STATUS();

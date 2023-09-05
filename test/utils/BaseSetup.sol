@@ -707,9 +707,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), deployer, vars.chainId);
 
-            /// FIXME: check if this is safe in all aspects
-            vars.superRBACC.grantRole(vars.superRBACC.PROTOCOL_ADMIN_ROLE(), vars.rolesStateRegistry);
-
             delete bridgeAddresses;
             delete bridgeValidators;
         }

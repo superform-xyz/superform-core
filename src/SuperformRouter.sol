@@ -38,8 +38,8 @@ contract SuperformRouter is BaseRouterImplementation {
     {
         uint256 chainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
-
-        for (uint256 i; i < req.dstChainIds.length;) {
+        uint256 len = req.dstChainIds.length;
+        for (uint256 i; i < len;) {
             if (chainId == req.dstChainIds[i]) {
                 _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq(req.superformsData[i]));
             } else {
@@ -63,14 +63,18 @@ contract SuperformRouter is BaseRouterImplementation {
     {
         uint64 srcChainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
+        uint256 len = req.dstChainIds.length;
 
-        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
+        for (uint256 i; i < len;) {
             if (srcChainId == req.dstChainIds[i]) {
                 _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainSingleVaultDeposit(
                     SingleXChainSingleVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superformsData[i])
                 );
+            }
+            unchecked {
+                ++i;
             }
         }
 
@@ -133,8 +137,9 @@ contract SuperformRouter is BaseRouterImplementation {
     {
         uint256 chainId = superRegistry.chainId();
         uint256 balanceBefore = address(this).balance - msg.value;
+        uint256 len = req.dstChainIds.length;
 
-        for (uint256 i; i < req.dstChainIds.length;) {
+        for (uint256 i; i < len;) {
             if (chainId == req.dstChainIds[i]) {
                 _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq(req.superformsData[i]));
             } else {
@@ -158,14 +163,18 @@ contract SuperformRouter is BaseRouterImplementation {
         override(BaseRouter, IBaseRouter)
     {
         uint256 balanceBefore = address(this).balance - msg.value;
+        uint256 len = req.dstChainIds.length;
 
-        for (uint256 i = 0; i < req.dstChainIds.length; i++) {
+        for (uint256 i; i < len;) {
             if (superRegistry.chainId() == req.dstChainIds[i]) {
                 _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(req.superformsData[i]));
             } else {
                 _singleXChainSingleVaultWithdraw(
                     SingleXChainSingleVaultStateReq(req.ambIds[i], req.dstChainIds[i], req.superformsData[i])
                 );
+            }
+            unchecked {
+                ++i;
             }
         }
 

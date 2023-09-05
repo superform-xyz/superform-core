@@ -152,7 +152,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         uint256 len = registryId_.length;
         if (len != registryAddress_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
-        for (uint256 i; i < registryId_.length;) {
+        for (uint256 i; i < len;) {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
@@ -180,7 +180,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         uint256 len = superformRouterIds_.length;
         if (len != stateSyncers_.length || len != routers_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
-        for (uint256 i; i < superformRouterIds_.length;) {
+        for (uint256 i; i < len;) {
             address stateSyncer = stateSyncers_[i];
             address router = routers_[i];
             uint8 superFormRouterId = superformRouterIds_[i];

@@ -128,8 +128,6 @@ struct SetupVars {
     address erc4626Form;
     address erc4626TimelockForm;
     address kycDao4626Form;
-    address rolesStateRegistry;
-    address factoryStateRegistry;
     address coreStateRegistry;
     address PayloadHelper;
     address paymentHelper;

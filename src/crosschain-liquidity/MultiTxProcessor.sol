@@ -103,7 +103,8 @@ contract MultiTxProcessor is IMultiTxProcessor {
         override
         onlySwapper
     {
-        for (uint256 i; i < txData_.length;) {
+        uint256 len = txData_.length;
+        for (uint256 i; i < len;) {
             processTx(bridgeIds_[i], txData_[i], approvalTokens_[i], amounts_[i]);
 
             unchecked {

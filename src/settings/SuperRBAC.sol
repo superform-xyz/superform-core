@@ -1,7 +1,7 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { AccessControl } from "openzeppelin-contracts/contracts/access/AccessControl.sol";
+import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access/AccessControlEnumerable.sol";
 import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
@@ -11,7 +11,7 @@ import { BroadcastMessage } from "../types/DataTypes.sol";
 /// @title SuperRBAC
 /// @author Zeropoint Labs.
 /// @dev Contract to manage roles in the entire superform protocol
-contract SuperRBAC is ISuperRBAC, AccessControl {
+contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
     bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
@@ -187,6 +187,16 @@ contract SuperRBAC is ISuperRBAC, AccessControl {
     /*///////////////////////////////////////////////////////////////
                         Internal Functions
     //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Overload {_revokeRole} to track enumerable memberships
+     */
+    function _revokeRole(bytes32 role, address account) internal override {
+        if (role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE) {
+            if (getRoleMemberCount(role) == 1) revert Error.CANNOT_REVOKE_LAST_ADMIN();
+        }
+        super._revokeRole(role, account);
+    }
 
     /// @dev interacts with role state registry to broadcasting state changes to all connected remote chains
     /// @param message_ is the crosschain message to be sent.

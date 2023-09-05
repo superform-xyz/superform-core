@@ -154,9 +154,9 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     {
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
         data.params = abi.encode(keccak256(message_));
-
+        uint256 len = ambIds_.length;
         /// @dev i starts from 1 since 0 is primary amb id which dispatches the message itself
-        for (uint8 i = 1; i < ambIds_.length;) {
+        for (uint8 i = 1; i < len;) {
             uint8 tempAmbId = ambIds_[i];
 
             if (tempAmbId == ambIds_[0]) {
