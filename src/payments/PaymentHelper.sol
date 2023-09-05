@@ -496,7 +496,7 @@ contract PaymentHelper is IPaymentHelper {
                 extraDataPerAMB[i] = abi.encode(totalDstGasReqInWei);
             }
 
-            if (ambIds_[i] == 4) {
+            if (ambIds_[i] == 3) {
                 extraDataPerAMB[i] = abi.encode(0, totalDstGasReqInWei);
             }
 

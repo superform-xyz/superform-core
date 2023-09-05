@@ -12,7 +12,7 @@ contract MDMVW84002408NativeInputSlipapgeL1AMB14 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
         /// @dev singleDestinationMultiVault, large test
 
-        AMBs = [1, 4];
+        AMBs = [1, 3];
         MultiDstAMBs = [AMBs, AMBs, AMBs];
 
         CHAIN_0 = ETH;

@@ -20,7 +20,6 @@ import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
-import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
 import { WormholeARImplementation } from
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
 import { WormholeSRImplementation } from
@@ -38,7 +37,6 @@ struct SetupVars {
     uint64 dstChainId;
     uint16 dstLzChainId;
     uint32 dstHypChainId;
-    uint64 dstCelerChainId;
     uint16 dstWormholeChainId;
     string fork;
     address[] ambAddresses;
@@ -47,7 +45,6 @@ struct SetupVars {
     address lzEndpoint;
     address lzImplementation;
     address hyperlaneImplementation;
-    address celerImplementation;
     address wormholeImplementation;
     address wormholeSRImplementation;
     address erc4626Form;
@@ -61,7 +58,6 @@ struct SetupVars {
     address superformRouter;
     address dstLzImplementation;
     address dstHyperlaneImplementation;
-    address dstCelerImplementation;
     address dstWormholeARImplementation;
     address dstWormholeSRImplementation;
     address dstStateRegistry;
@@ -93,7 +89,6 @@ abstract contract AbstractDeploySingle is Script {
         "BroadcastRegistry",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
-        "CelerImplementation",
         "WormholeImplementation",
         "WormholeSRImplementation",
         "SocketValidator",
@@ -159,9 +154,8 @@ abstract contract AbstractDeploySingle is Script {
     /// @dev setup amb bridges
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
-    /// @notice id 3 is celer
-    /// @notice id 4 is wormhole AR
-    /// @notice 5 is wormhole SR
+    /// @notice id 3 is wormhole AR
+    /// @notice 4 is wormhole SR
     uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
 
     /*//////////////////////////////////////////////////////////////
@@ -169,8 +163,6 @@ abstract contract AbstractDeploySingle is Script {
     //////////////////////////////////////////////////////////////*/
 
     mapping(uint64 => address) public LZ_ENDPOINTS;
-    mapping(uint64 => address) public CELER_BUSSES;
-    mapping(uint64 => uint64) public CELER_CHAIN_IDS;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
     address public constant BSC_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
@@ -215,16 +207,6 @@ abstract contract AbstractDeploySingle is Script {
         address(0)
     ];
 
-    address[] public celerMessageBusses = [
-        0x4066D196A423b2b3B8B054f4F40efB47a74E200C,
-        0x95714818fdd7a5454F73Da9c777B3ee6EbAEEa6B,
-        0x5a926eeeAFc4D217ADd17e9641e8cE23Cd01Ad57,
-        0xaFDb9C40C7144022811F034EE07Ce2E110093fe6,
-        0x3Ad9d0648CDAA2426331e894e980D0a5Ed16257f,
-        0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d,
-        0xFF4E183a0Ceb4Fa98E63BbF8077B929c8E5A2bA4
-    ];
-
     address[] public wormholeCore = [
         0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B,
         0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B,
@@ -253,7 +235,6 @@ abstract contract AbstractDeploySingle is Script {
     /// @dev vendor chain ids
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111, 112];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
-    uint64[] public celer_chainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
     uint16[] public wormhole_chainIds = [2, 6, 23, 5, 4, 24];
     uint256[] public socketChainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
     uint256[] public lifiChainIds = [1, 56, 43_114, 137, 42_161, 10, 250];
@@ -420,13 +401,7 @@ abstract contract AbstractDeploySingle is Script {
         );
         contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
-        /// @dev 5.3 - deploy Celer Implementation
-        vars.celerImplementation = address(new CelerImplementation{salt: salt}(vars.superRegistryC));
-        contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
-
-        CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[trueIndex]);
-
-        /// @dev 4.4- deploy Wormhole Automatic Relayer Implementation
+        /// @dev 5.3- deploy Wormhole Automatic Relayer Implementation
         vars.wormholeImplementation = address(
             new WormholeARImplementation{salt: salt}(
                     vars.superRegistryC
@@ -448,9 +423,8 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.ambAddresses[0] = vars.lzImplementation;
         vars.ambAddresses[1] = vars.hyperlaneImplementation;
-        vars.ambAddresses[2] = vars.celerImplementation;
-        vars.ambAddresses[3] = vars.wormholeImplementation;
-        vars.ambAddresses[4] = vars.wormholeSRImplementation;
+        vars.ambAddresses[2] = vars.wormholeImplementation;
+        vars.ambAddresses[3] = vars.wormholeSRImplementation;
 
         /// @dev 6- deploy socket validator
         vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
@@ -590,7 +564,6 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
-        vars.celerImplementation = _readContract(chainNames[trueIndex], vars.chainId, "CelerImplementation");
         vars.superRegistry = _readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC =
@@ -610,15 +583,12 @@ abstract contract AbstractDeploySingle is Script {
                 vars.dstChainId = s_superFormChainIds[j];
                 vars.dstLzChainId = lz_chainIds[dstTrueIndex];
                 vars.dstHypChainId = hyperlane_chainIds[dstTrueIndex];
-                vars.dstCelerChainId = celer_chainIds[dstTrueIndex];
                 vars.dstWormholeChainId = wormhole_chainIds[dstTrueIndex];
 
                 vars.dstLzImplementation =
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "LayerzeroImplementation");
                 vars.dstHyperlaneImplementation =
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "HyperlaneImplementation");
-                vars.dstCelerImplementation =
-                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "CelerImplementation");
                 vars.dstWormholeARImplementation =
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "WormholeARImplementation");
                 vars.dstWormholeSRImplementation =
@@ -646,11 +616,6 @@ abstract contract AbstractDeploySingle is Script {
                     vars.dstChainId, vars.dstHypChainId
                 );
 
-                CelerImplementation(payable(vars.celerImplementation)).setReceiver(
-                    vars.dstCelerChainId, vars.dstCelerImplementation
-                );
-
-                CelerImplementation(payable(vars.celerImplementation)).setChainId(vars.dstChainId, vars.dstCelerChainId);
                 WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
                     vars.dstWormholeChainId, vars.dstWormholeARImplementation
                 );
@@ -795,21 +760,6 @@ abstract contract AbstractDeploySingle is Script {
         lzEndpointsStorage[ARBI] = ARBI_lzEndpoint;
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         lzEndpointsStorage[FTM] = FTM_lzEndpoint;
-
-        mapping(uint64 => address) storage celerMessageBusStorage = CELER_BUSSES;
-        celerMessageBusStorage[ETH] = ETH_messageBus;
-        celerMessageBusStorage[BSC] = BSC_messageBus;
-        celerMessageBusStorage[AVAX] = AVAX_messageBus;
-        celerMessageBusStorage[POLY] = POLY_messageBus;
-        celerMessageBusStorage[ARBI] = ARBI_messageBus;
-        celerMessageBusStorage[OP] = OP_messageBus;
-        celerMessageBusStorage[FTM] = FTM_messageBus;
-
-        mapping(uint64 => uint64) storage celerChainIdsStorage = CELER_CHAIN_IDS;
-
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            celerChainIdsStorage[chainIds[i]] = celer_chainIds[i];
-        }
 
         mapping(uint64 chainId => address[] bridgeAddresses) storage bridgeAddresses = BRIDGE_ADDRESSES;
         bridgeAddresses[ETH] = [
