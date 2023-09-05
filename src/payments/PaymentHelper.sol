@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import "forge-std/console.sol";
-
 import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
 import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
@@ -345,8 +343,6 @@ contract PaymentHelper is IPaymentHelper {
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
-        console.log("TOTAL TOTAL TOTAL");
-        console.log(totalAmount);
     }
 
     /// @inheritdoc IPaymentHelper
