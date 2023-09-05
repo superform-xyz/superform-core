@@ -4,57 +4,41 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDSVWNormal4626NativeSlippageL1AMB24 is ProtocolActions {
+contract SXSVWNormal4626TokenInputSlippageAMB34 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 4];
-        MultiDstAMBs = [AMBs, AMBs];
+        AMBs = [3, 1];
 
-        CHAIN_0 = POLY;
-        DST_CHAINS = [OP, AVAX];
-
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [0];
-        TARGET_UNDERLYINGS[AVAX][0] = [1];
-
-        TARGET_VAULTS[OP][0] = [0];
-        TARGET_VAULTS[AVAX][0] = [0];
-
-        TARGET_FORM_KINDS[OP][0] = [0];
-        TARGET_FORM_KINDS[AVAX][0] = [0];
+        CHAIN_0 = ETH;
+        DST_CHAINS = [ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][1] = [0];
-        TARGET_UNDERLYINGS[AVAX][1] = [1];
+        TARGET_UNDERLYINGS[ETH][0] = [1];
 
-        TARGET_VAULTS[OP][1] = [0];
-        TARGET_VAULTS[AVAX][1] = [0];
+        TARGET_VAULTS[ETH][0] = [0];
 
-        TARGET_FORM_KINDS[OP][1] = [0];
-        TARGET_FORM_KINDS[AVAX][1] = [0];
+        /// @dev id 0 is normal 4626
 
-        AMOUNTS[OP][0] = [541_135];
-        AMOUNTS[OP][1] = [541_135];
+        TARGET_FORM_KINDS[ETH][0] = [0];
 
-        AMOUNTS[AVAX][0] = [11];
-        AMOUNTS[AVAX][1] = [10];
+        /// @dev define vaults amounts and slippage for every destination chain and for every action
+        TARGET_UNDERLYINGS[ETH][1] = [1];
 
-        PARTIAL[AVAX][1] = [true];
+        TARGET_VAULTS[ETH][1] = [0];
+
+        /// @dev id 0 is normal 4626
+
+        TARGET_FORM_KINDS[ETH][1] = [0];
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[OP][0] = [1];
-        LIQ_BRIDGES[OP][1] = [1];
+        LIQ_BRIDGES[ETH][0] = [1];
+        LIQ_BRIDGES[ETH][1] = [1];
 
-        LIQ_BRIDGES[AVAX][0] = [1];
-        LIQ_BRIDGES[AVAX][1] = [1];
-
-        FINAL_LIQ_DST_WITHDRAW[OP] = [POLY];
-        FINAL_LIQ_DST_WITHDRAW[AVAX] = [POLY];
+        FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH];
 
         actions.push(
             TestAction({
@@ -64,9 +48,9 @@ contract MDSVWNormal4626NativeSlippageL1AMB24 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
@@ -78,9 +62,9 @@ contract MDSVWNormal4626NativeSlippageL1AMB24 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 111, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -89,12 +73,10 @@ contract MDSVWNormal4626NativeSlippageL1AMB24 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountTwoWithdraw_) public {
-        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_ETH / 2));
-        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 2));
-
-        AMOUNTS[OP][0] = [amountOne_];
-        AMOUNTS[AVAX][0] = [amountTwo_];
+    function test_scenario(uint128 amountOne_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI));
+        AMOUNTS[ETH][0] = [amountOne_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -114,13 +96,7 @@ contract MDSVWNormal4626NativeSlippageL1AMB24 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    if (DST_CHAINS[i] == OP) {
-                        AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
-                    } else if (DST_CHAINS[i] == AVAX) {
-                        /// @dev bounded to 1 less due to partial withdrawals
-                        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, superPositions[0] - 1));
-                        AMOUNTS[DST_CHAINS[i]][1] = [amountTwoWithdraw_];
-                    }
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
                 }
             }
 

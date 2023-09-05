@@ -4,16 +4,16 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SDiMVW874NativeInputSlippageL2AMB34 is ProtocolActions {
+contract SDMVW874NativeInputSlippageL2AMB14 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
+        //////////////////////////////////////////////////////////////*/
 
-        AMBs = [3, 4];
+        AMBs = [3, 1];
 
-        CHAIN_0 = ARBI;
+        CHAIN_0 = ETH;
         DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
@@ -32,7 +32,7 @@ contract SDiMVW874NativeInputSlippageL2AMB34 is ProtocolActions {
         LIQ_BRIDGES[ARBI][0] = [1, 1, 1];
         LIQ_BRIDGES[ARBI][1] = [1, 1, 1];
 
-        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI, ARBI, ARBI];
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH, ETH, ETH];
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -69,9 +69,9 @@ contract SDiMVW874NativeInputSlippageL2AMB34 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 3));
-        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_ETH / 3));
+        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_ETH / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 3));
+        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 3));
         AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_];
 
         for (uint256 act = 0; act < actions.length; act++) {

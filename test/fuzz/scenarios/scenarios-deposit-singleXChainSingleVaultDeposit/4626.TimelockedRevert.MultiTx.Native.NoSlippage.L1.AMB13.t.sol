@@ -4,51 +4,43 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDMVDMulti111563NoMultiTxTokenInputSlippageL1AMB14 is ProtocolActions {
+contract SXSVDTimelockedRevert4626NoMultiTxTokenInputSlippageL2AMB24 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-        //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////*/
+        AMBs = [1, 3];
 
-        AMBs = [1, 4];
-        MultiDstAMBs = [AMBs, AMBs];
-
-        CHAIN_0 = ETH;
-        DST_CHAINS = [AVAX, OP];
+        CHAIN_0 = OP;
+        DST_CHAINS = [POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[AVAX][0] = [2, 2, 2];
-        TARGET_UNDERLYINGS[OP][0] = [2, 2, 2];
+        TARGET_UNDERLYINGS[POLY][0] = [2];
 
-        TARGET_VAULTS[AVAX][0] = [1, 1, 1];
+        TARGET_VAULTS[POLY][0] = [5];
 
         /// @dev id 0 is normal 4626
-        TARGET_VAULTS[OP][0] = [5, 6, 3];
-        /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
-        TARGET_FORM_KINDS[OP][0] = [1, 2, 0];
+        TARGET_FORM_KINDS[POLY][0] = [1];
 
-        AMOUNTS[AVAX][0] = [999, 9999, 99_999];
-        AMOUNTS[OP][0] = [5435, 5543, 5557];
+        AMOUNTS[POLY][0] = [2];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
-        LIQ_BRIDGES[OP][0] = [1, 1, 1];
+        LIQ_BRIDGES[POLY][0] = [1];
 
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
-                testType: TestType.Pass,
+                testType: TestType.RevertProcessPayload,
                 revertError: "",
                 revertRole: "",
-                slippage: 512, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                multiTx: false,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                multiTx: true,
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -58,7 +50,7 @@ contract MDMVDMulti111563NoMultiTxTokenInputSlippageL1AMB14 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        for (uint256 act; act < actions.length; act++) {
+        for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;

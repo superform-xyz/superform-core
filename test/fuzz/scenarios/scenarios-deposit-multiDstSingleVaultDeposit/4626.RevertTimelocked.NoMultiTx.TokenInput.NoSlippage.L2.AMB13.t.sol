@@ -4,44 +4,55 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SDiMVDMulti021NoMultiTxNativeSlippageL12AMB24 is ProtocolActions {
+contract MDSVD4626RevertTimelockedNoMultiTxTokenInputNoSlippageL2AMB24 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-        //////////////////////////////////////////////////////////////*/
+    //////////////////////////////////////////////////////////////*/
+        AMBs = [1, 3];
+        MultiDstAMBs = [AMBs, AMBs, AMBs];
 
-        AMBs = [2, 4];
-
-        CHAIN_0 = ETH;
-        DST_CHAINS = [ETH];
+        CHAIN_0 = OP;
+        DST_CHAINS = [ETH, ARBI, POLY];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][0] = [1, 1, 1];
+        TARGET_UNDERLYINGS[ETH][0] = [0];
+        TARGET_UNDERLYINGS[ARBI][0] = [1];
+        TARGET_UNDERLYINGS[POLY][0] = [2];
 
-        TARGET_VAULTS[ETH][0] = [0, 2, 1];
+        TARGET_VAULTS[ETH][0] = [0];
+        TARGET_VAULTS[ARBI][0] = [5];
+        TARGET_VAULTS[POLY][0] = [5];
 
-        /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[ETH][0] = [0];
+        TARGET_FORM_KINDS[ARBI][0] = [1];
+        TARGET_FORM_KINDS[POLY][0] = [1];
 
-        TARGET_FORM_KINDS[ETH][0] = [0, 2, 1];
-
-        AMOUNTS[ETH][0] = [4124, 144, 75];
+        AMOUNTS[ETH][0] = [421];
+        AMOUNTS[ARBI][0] = [666];
+        AMOUNTS[POLY][0] = [22];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ETH][0] = [1, 1, 1];
+        LIQ_BRIDGES[ETH][0] = [1];
+        LIQ_BRIDGES[ARBI][0] = [1];
+        LIQ_BRIDGES[POLY][0] = [1];
+
+        /// if testing a revert, do we test the revert on the whole destination?
+        /// to assert values, it is best to find the indexes that didn't revert
 
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: true, //!!WARNING turn on or off multi vaults
+                multiVaults: false, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 777, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH, 3 = NATIVE_TOKEN
              })
         );
     }
@@ -58,7 +69,6 @@ contract SDiMVDMulti021NoMultiTxNativeSlippageL12AMB24 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
-
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
     }

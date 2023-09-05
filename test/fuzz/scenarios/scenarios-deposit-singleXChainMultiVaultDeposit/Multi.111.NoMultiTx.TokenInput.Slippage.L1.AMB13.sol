@@ -11,7 +11,7 @@ contract SDMVDMulti111NoMultiTxTokenInputSlippageL1AMB14 is ProtocolActions {
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
 
-        AMBs = [1, 4];
+        AMBs = [1, 3];
 
         CHAIN_0 = ETH;
         DST_CHAINS = [AVAX];
