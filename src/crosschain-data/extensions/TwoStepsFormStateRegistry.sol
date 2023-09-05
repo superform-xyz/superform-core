@@ -116,6 +116,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         onlyTwoStepsStateRegistryProcessor
     {
         TwoStepsPayload memory p = twoStepsPayload[timeLockPayloadId_];
+        IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
+        uint256 finalAmount;
 
         if (p.status != TwoStepsStatus.PENDING) {
             revert Error.INVALID_PAYLOAD_STATUS();
@@ -134,7 +136,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             PayloadUpdaterLib.validateLiqReq(p.data.liqData);
 
             /// @dev validate the incoming tx data
-            IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId)).validateTxData(
+            bridgeValidator.validateTxData(
                 txData_,
                 superRegistry.chainId(),
                 p.srcChainId,
@@ -144,6 +146,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                 p.srcSender,
                 p.data.liqData.token
             );
+
+            finalAmount = bridgeValidator.decodeAmount(txData_);
+            PayloadUpdaterLib.validateSlippage(finalAmount, p.data.amount, p.data.maxSlippage);
 
             p.data.liqData.txData = txData_;
         }
@@ -176,12 +181,15 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         onlyTwoStepsStateRegistryProcessor
         isValidPayloadId(payloadId_)
     {
-        uint256 _payloadHeader = payloadHeader[payloadId_];
-        bytes memory _payloadBody = payloadBody[payloadId_];
-
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
             revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
+
+        /// @dev sets status as processed to prevent re-entrancy
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+        uint256 _payloadHeader = payloadHeader[payloadId_];
+        bytes memory _payloadBody = payloadBody[payloadId_];
 
         (, uint256 callbackType,,,, uint64 srcChainId) = _payloadHeader.decodeTxInfo();
         AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
@@ -197,10 +205,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
-
-        /// @dev sets status as processed
-        /// @dev check for re-entrancy & relocate if needed
-        payloadTracking[payloadId_] = PayloadState.PROCESSED;
     }
 
     /// @dev returns the required quorum for the src chain id from super registry

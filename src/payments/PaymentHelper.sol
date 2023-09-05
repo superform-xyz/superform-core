@@ -180,6 +180,8 @@ contract PaymentHelper is IPaymentHelper {
         if (configType_ == 11) {
             twoStepCost[chainId_] = abi.decode(config_, (uint256));
         }
+
+        emit ChainConfigUpdated(chainId_, configType_, config_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -294,7 +296,7 @@ contract PaymentHelper is IPaymentHelper {
             }
 
             /// @dev step 6: estimate execution costs in dst
-            /// note: only execution cost (not acknowledgement messaging cost)
+            /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], 1);
 
             /// @dev step 7: convert all dst gas estimates to src chain estimate
@@ -373,7 +375,7 @@ contract PaymentHelper is IPaymentHelper {
         if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
         /// @dev step 4: estimate execution costs in dst
-        /// note: only execution cost (not acknowledgement messaging cost)
+        /// note: execution cost includes acknowledgement messaging cost
         totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, 1);
 
         /// @dev step 5: estimation execution cost of acknowledgement

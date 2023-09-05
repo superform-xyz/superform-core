@@ -37,10 +37,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     mapping(uint256 => PayloadState) public payloadTracking;
 
     /// @dev maps payloads to the amb ids that delivered them
-    mapping(uint256 => uint8) public msgAMB;
+    mapping(uint256 => uint8) internal msgAMB;
 
     /// @dev maps payloads to the amb ids that delivered them
-    mapping(bytes32 => uint8[]) public proofAMB;
+    mapping(bytes32 => uint8[]) internal proofAMB;
 
     /// @dev sender varies based on functionality
     /// @notice inheriting contracts should override this function (else not safe)
@@ -161,6 +161,10 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
             if (tempAmbId == ambIds_[0]) {
                 revert Error.INVALID_PROOF_BRIDGE_ID();
+            }
+
+            if (i - 1 > 0 && tempAmbId <= ambIds_[i - 1]) {
+                revert Error.DUPLICATE_PROOF_BRIDGE_ID();
             }
 
             IAmbImplementation tempImpl = IAmbImplementation(superRegistry.getAmbAddress(tempAmbId));

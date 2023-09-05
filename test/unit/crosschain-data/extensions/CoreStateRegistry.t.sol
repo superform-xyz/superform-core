@@ -191,6 +191,37 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         vm.expectRevert(Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
+
+        txData = new bytes[](2);
+
+        address superform =
+            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(AVAX, "USDT"),
+            getContract(AVAX, "USDT"),
+            getContract(ETH, "USDT"),
+            superform,
+            AVAX,
+            ETH,
+            ETH,
+            false,
+            deployer,
+            uint256(ETH),
+            /// @dev amount is 1 less than (1e18 * 0.9) => slippage > 10% => should revert
+            9e17 - 1,
+            true,
+            /// @dev currently testing with 0 bridge slippage
+            0
+        );
+
+        txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
+        txData[1] = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
+        CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateWithdrawPayload(1, txData);
     }
 
     /// @dev test all revert cases with multi vault deposit payload update
@@ -213,6 +244,20 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.prank(deployer);
         vm.expectRevert(Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH.selector);
         CoreStateRegistry(payable(getContract(AVAX, "CoreStateRegistry"))).updateDepositPayload(1, finalAmounts);
+    }
+
+    /// @dev test revert cases for duplicate proof bridge id
+    function test_trySendingMessageThroughDuplicateAMBs() public {
+        uint8[] memory ambIds = new uint8[](4);
+        ambIds[0] = 1;
+        ambIds[1] = 2;
+        ambIds[2] = 3;
+        ambIds[3] = 2;
+        _failingMultiDeposit(ambIds, Error.DUPLICATE_PROOF_BRIDGE_ID.selector);
+
+        ambIds[2] = 2;
+        ambIds[3] = 3;
+        _failingMultiDeposit(ambIds, Error.DUPLICATE_PROOF_BRIDGE_ID.selector);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -378,12 +423,67 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
     }
 
+    function _failingMultiDeposit(uint8[] memory ambIds, bytes4 errorSelector) internal {
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address superform =
+            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId;
+        superformIds[1] = superformId;
+
+        uint256[] memory uint256MemArr = new uint256[](2);
+        uint256MemArr[0] = 420;
+        uint256MemArr[1] = 420;
+
+        LiqRequest[] memory liqReqArr = new LiqRequest[](2);
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "USDT"),
+            getContract(ETH, "USDT"),
+            getContract(AVAX, "USDT"),
+            superformRouter,
+            ETH,
+            AVAX,
+            AVAX,
+            false,
+            getContract(AVAX, "CoreStateRegistry"),
+            uint256(AVAX),
+            420,
+            false,
+            /// @dev placeholder value, not used
+            0
+        );
+
+        liqReqArr[0] =
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), AVAX, 0, bytes(""));
+        liqReqArr[1] = liqReqArr[0];
+
+        MultiVaultSFData memory data =
+            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""));
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+
+        vm.expectRevert(errorSelector);
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
+            SingleXChainMultiVaultStateReq(ambIds, AVAX, data)
+        );
+        vm.stopPrank();
+    }
+
     function _successfulMultiWithdrawal(uint8[] memory ambIds) internal {
         vm.selectFork(FORKS[ETH]);
 
-        address superform = getContract(
-            AVAX, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
+        address superform =
+            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
         address superformRouter = getContract(ETH, "SuperformRouter");
@@ -403,7 +503,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), ETH, 0, bytes(""));
         liqReqArr[1] = liqReqArr[0];
 
-        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amountArr, new uint256[](2), liqReqArr, bytes(""));
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 1000;
+        maxSlippages[1] = 1000;
+
+        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amountArr, maxSlippages, liqReqArr, bytes(""));
 
         vm.recordLogs();
         vm.prank(deployer);

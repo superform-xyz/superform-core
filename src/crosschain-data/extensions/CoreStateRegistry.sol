@@ -1,24 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
-import { LiquidityHandler } from "../../crosschain-liquidity/LiquidityHandler.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
-import { ICoreStateRegistry } from "../../interfaces/ICoreStateRegistry.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
-import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-import { LiqRequest } from "../../types/DataTypes.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
-
-import "../../types/DataTypes.sol";
+import "../../interfaces/ICoreStateRegistry.sol";
+import "../../crosschain-liquidity/LiquidityHandler.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -186,17 +180,19 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         onlyCoreStateRegistryProcessor
         isValidPayloadId(payloadId_)
     {
-        CoreProcessPayloadLocalVars memory v;
-
-        v._payloadBody = payloadBody[payloadId_];
-        v._payloadHeader = payloadHeader[payloadId_];
-
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
             revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
 
-        (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) = v._payloadHeader.decodeTxInfo();
+        CoreProcessPayloadLocalVars memory v;
+        v.initialState = payloadTracking[payloadId_];
 
+        /// @dev sets status as processed to prevent re-entrancy
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+        v._payloadBody = payloadBody[payloadId_];
+        v._payloadHeader = payloadHeader[payloadId_];
+        (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) = v._payloadHeader.decodeTxInfo();
         v._message = AMBMessage(v._payloadHeader, v._payloadBody);
 
         /// @dev validates quorum
@@ -228,6 +224,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             }
 
             if (v.txType == uint8(TransactionType.DEPOSIT)) {
+                if (v.initialState != PayloadState.UPDATED) {
+                    revert Error.PAYLOAD_NOT_UPDATED();
+                }
+
                 returnMessage = v.multi == 1
                     ? _processMultiDeposit(payloadId_, v._payloadBody, v.srcSender, v.srcChainId)
                     : _processSingleDeposit(payloadId_, v._payloadBody, v.srcSender, v.srcChainId);
@@ -253,10 +253,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
             _dispatchAcknowledgement(v.srcChainId, ambIds, returnMessage);
         }
-
-        /// @dev sets status as processed
-        /// @dev check for re-entrancy & relocate if needed
-        payloadTracking[payloadId_] = PayloadState.PROCESSED;
     }
 
     /// @dev local struct to avoid stack too deep errors
@@ -392,18 +388,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         newPayloadBody_ = abi.encode(singleVaultData);
     }
 
-    struct UpdateMultiVaultWithdrawPayloadLocalVars {
-        InitMultiVaultData multiVaultData;
-        InitSingleVaultData singleVaultData;
-        uint256 len;
-        uint256 i;
-        address superform;
-        uint256[] tSuperFormIds;
-        uint256[] tAmounts;
-        uint256[] tMaxSlippage;
-        LiqRequest[] tLiqData;
-    }
-
     /// @dev helper function to update multi vault withdraw payload
     function _updateWithdrawPayload(
         UpdateWithdrawPayloadVars memory v_,
@@ -457,8 +441,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(lV.multiVaultData.liqData[lV.i]);
 
-                    IBridgeValidator(superRegistry.getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId))
-                        .validateTxData(
+                    lV.bridgeValidator =
+                        IBridgeValidator(superRegistry.getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId));
+
+                    lV.bridgeValidator.validateTxData(
                         txData_[lV.i],
                         v_.dstChainId,
                         v_.srcChainId,
@@ -467,6 +453,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         superform,
                         v_.srcSender,
                         lV.multiVaultData.liqData[lV.i].token
+                    );
+
+                    lV.finalAmount = lV.bridgeValidator.decodeAmount(txData_[lV.i]);
+                    PayloadUpdaterLib.validateSlippage(
+                        lV.finalAmount, lV.multiVaultData.amounts[lV.i], lV.multiVaultData.maxSlippage[lV.i]
                     );
 
                     lV.multiVaultData.liqData[lV.i].txData = txData_[lV.i];
@@ -560,10 +551,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         internal
         returns (bytes memory)
     {
-        if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
-            revert Error.PAYLOAD_NOT_UPDATED();
-        }
-
         InitMultiVaultData memory multiVaultData = abi.decode(payload_, (InitMultiVaultData));
 
         (address[] memory superforms,,) = DataLib.getSuperforms(multiVaultData.superformIds);
@@ -579,7 +566,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             underlying = IERC20(IBaseForm(superforms[i]).getVaultAsset());
 
             if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
-                underlying.approve(superforms[i], multiVaultData.amounts[i]);
+                underlying.safeIncreaseAllowance(superforms[i], multiVaultData.amounts[i]);
                 LiqRequest memory emptyRequest;
 
                 /// @dev it is critical to validate that the action is being performed to the correct chainId coming
@@ -606,7 +593,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     dstAmounts[i] = dstAmount;
                 } catch {
                     /// @dev cleaning unused approval
-                    underlying.approve(superforms[i], 0);
+                    underlying.safeDecreaseAllowance(superforms[i], multiVaultData.amounts[i]);
 
                     /// @dev if any deposit fails, we mark errors as true and add it to failedDeposits mapping for
                     /// future rescuing
@@ -685,9 +672,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         returns (bytes memory)
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
-        if (payloadTracking[payloadId_] != PayloadState.UPDATED) {
-            revert Error.PAYLOAD_NOT_UPDATED();
-        }
 
         DataLib.validateSuperformChainId(singleVaultData.superformId, superRegistry.chainId());
 
@@ -696,7 +680,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
 
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
-            underlying.approve(superform_, singleVaultData.amount);
+            underlying.safeIncreaseAllowance(superform_, singleVaultData.amount);
 
             /// @dev deposit to superform
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
@@ -713,7 +697,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 );
             } catch {
                 /// @dev cleaning unused approval
-                underlying.approve(superform_, 0);
+                underlying.safeDecreaseAllowance(superform_, singleVaultData.amount);
                 /// @dev if any deposit fails, add it to failedDeposits mapping for future rescuing
                 failedDeposits[payloadId_].push(singleVaultData.superformId);
 

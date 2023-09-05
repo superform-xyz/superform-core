@@ -57,6 +57,56 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
         twoStepRegistry.finalizePayload(1, bytes(""), bytes(""));
     }
 
+    function test_updateTxDataBranch_WithSlippageReverts() external {
+        /// @dev mocks receive payload as a form
+        vm.selectFork(FORKS[ETH]);
+        uint256 superformId = _legacySuperformPackWithShift();
+
+        vm.prank(getContract(ETH, "ERC4626TimelockForm"));
+        twoStepRegistry.receivePayload(
+            0,
+            deployer,
+            ETH,
+            block.timestamp - 5 seconds,
+            InitSingleVaultData(
+                1,
+                1,
+                superformId,
+                420,
+                1000,
+                /// @dev note txData (2nd arg) is empty and token (3rd arg) is not address(0) to
+                /// indicate keeper to create and update txData using finalizePayload()
+                LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0, bytes("")),
+                bytes("")
+            )
+        );
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
+            1,
+            getContract(ETH, "USDT"),
+            getContract(ETH, "USDT"),
+            getContract(ETH, "USDT"),
+            getContract(ETH, "ERC4626TimelockForm"),
+            ETH,
+            ETH,
+            ETH,
+            false,
+            deployer,
+            uint256(ETH),
+            /// @dev amount is 1 less than 420 * 0.9 i.e. exceeding maxSlippage of 10% by 1
+            377,
+            false,
+            /// @dev currently testing with 0 bridge slippage
+            0
+        );
+
+        bytes memory txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
+        twoStepRegistry.finalizePayload(1, txData, bytes(""));
+    }
+
     function test_processPayloadMintPositionBranch() external {
         /// @dev mocks receive payload as a form
         vm.selectFork(FORKS[AVAX]);
