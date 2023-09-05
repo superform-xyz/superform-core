@@ -28,7 +28,6 @@ contract MDSVD4626RevertTimelockedMultiTxNativeNoSlippageL1AMB23 is ProtocolActi
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[ARBI][0] = [1];
 

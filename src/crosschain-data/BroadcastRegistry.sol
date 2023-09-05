@@ -166,7 +166,8 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
     )
         internal
     {
-        for (uint8 i = 1; i < ambIds_.length;) {
+        uint256 len = ambIds_.length;
+        for (uint8 i = 1; i < len;) {
             uint8 tempAmbId = ambIds_[i];
 
             /// @dev the loaded ambId cannot be the same as the ambId used for messaging

@@ -30,8 +30,8 @@ contract SDiMVW0000TokenInputNoSlipapgeL12AMB23 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ARBI][0] = [1, 2, 1, 2];
-        LIQ_BRIDGES[ARBI][1] = [1, 1, 2, 2];
+        LIQ_BRIDGES[ARBI][0] = [1, 1, 1, 1];
+        LIQ_BRIDGES[ARBI][1] = [1, 1, 1, 1];
 
         FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI, ARBI, ARBI, ARBI];
 

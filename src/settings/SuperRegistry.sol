@@ -102,7 +102,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         override
         onlyProtocolAdmin
     {
-        for (uint256 i = 0; i < bridgeId_.length; i++) {
+        uint256 len = bridgeId_.length;
+        if (len != bridgeAddress_.length || len != bridgeValidator_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < bridgeId_.length;) {
             uint8 bridgeId = bridgeId_[i];
             address bridgeAddress = bridgeAddress_[i];
             address bridgeValidatorT = bridgeValidator_[i];
@@ -111,18 +114,29 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             bridgeValidator[bridgeId] = bridgeValidatorT;
             emit SetBridgeAddress(bridgeId, bridgeAddress);
             emit SetBridgeValidator(bridgeId, bridgeValidatorT);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
     /// @inheritdoc ISuperRegistry
     function setAmbAddress(uint8[] memory ambId_, address[] memory ambAddress_) external override onlyProtocolAdmin {
-        for (uint256 i; i < ambId_.length; i++) {
+        uint256 len = ambId_.length;
+        if (len != ambAddress_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < ambId_.length;) {
             address ambAddress = ambAddress_[i];
             uint8 ambId = ambId_[i];
 
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
             emit SetAmbAddress(ambId, ambAddress);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -135,7 +149,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         override
         onlyProtocolAdmin
     {
-        for (uint256 i; i < registryId_.length; i++) {
+        uint256 len = registryId_.length;
+        if (len != registryAddress_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < len;) {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
@@ -143,6 +160,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             registryAddresses[registryId] = registryAddress;
             stateRegistryIds[registryAddress] = registryId;
             emit SetStateRegistryAddress(registryId, registryAddress);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -156,7 +177,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
         override
         onlyProtocolAdmin
     {
-        for (uint256 i; i < superformRouterIds_.length; i++) {
+        uint256 len = superformRouterIds_.length;
+        if (len != stateSyncers_.length || len != routers_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        for (uint256 i; i < len;) {
             address stateSyncer = stateSyncers_[i];
             address router = routers_[i];
             uint8 superFormRouterId = superformRouterIds_[i];
@@ -165,6 +189,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             routers[superFormRouterId] = router;
             superformRouterIds[router] = superFormRouterId;
             emit SetRouterInfo(superFormRouterId, stateSyncer, router);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 

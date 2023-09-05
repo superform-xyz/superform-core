@@ -3,10 +3,8 @@ pragma solidity 0.8.19;
 
 import "./BaseSetup.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
-import { ISocketRegistry } from "src/vendor/socket/ISocketRegistry.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
-import { SocketRouterMock } from "../mocks/SocketRouterMock.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { ITwoStepsFormStateRegistry } from "src/interfaces/ITwoStepsFormStateRegistry.sol";
@@ -14,6 +12,7 @@ import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     using DataLib for uint256;
@@ -97,7 +96,6 @@ abstract contract ProtocolActions is BaseSetup {
     /// @dev holds txData for destination updates
     mapping(uint64 chainId => bytes[] generatedTxData) public TX_DATA_TO_UPDATE_ON_DST;
 
-    /// @dev 1 for socket, 2 for lifi
     mapping(uint64 chainId => mapping(uint256 index => uint8[] liqBridgeId)) public LIQ_BRIDGES;
 
     mapping(uint64 chainId => uint64[] liqDstChainId) public FINAL_LIQ_DST_WITHDRAW;
@@ -1418,83 +1416,7 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     function _buildLiqBridgeTxData(LiqBridgeTxDataArgs memory args) internal returns (bytes memory txData) {
-        /// @dev for socket
         if (args.liqBridgeKind == 1) {
-            ISocketRegistry.BridgeRequest memory bridgeRequest;
-            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-            ISocketRegistry.UserRequest memory userRequest;
-            /// @dev middlware request is used if there is a swap involved before the bridging action (external !=
-            /// underlying)
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
-            /// bridging request
-            if (args.externalToken != args.underlyingToken) {
-                middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                    1,
-                    /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
-                    0,
-                    /// @dev unused in tests
-                    args.externalToken,
-                    abi.encode(args.from)
-                );
-                /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
-                /// mainnet
-
-                bridgeRequest = ISocketRegistry.BridgeRequest(
-                    1,
-                    /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
-                    0,
-                    /// @dev unused in tests
-                    args.withdraw ? args.externalToken : args.underlyingToken,
-                    /// @dev initial token to extract will be externalToken in args, which is the actual
-                    /// underlyingTokenDst for withdraws (check how the call is made in
-                    /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(
-                        args.from,
-                        FORKS[args.liqDstChainId],
-                        args.underlyingTokenDst,
-                        args.slippage,
-                        false,
-                        MULTI_TX_SLIPPAGE_SHARE,
-                        args.srcChainId == args.toChainId
-                    )
-                );
-                /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
-                /// mainnet
-            } else {
-                bridgeRequest = ISocketRegistry.BridgeRequest(
-                    1,
-                    /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
-                    0,
-                    args.withdraw ? args.externalToken : args.underlyingToken,
-                    /// @dev initial token to extract will be externalToken in args, which is the actual
-                    /// underlyingTokenDst for withdraws (check how the call is made in
-                    /// _buildSingleVaultWithdrawCallData )
-                    abi.encode(
-                        args.from,
-                        FORKS[args.liqDstChainId],
-                        args.underlyingTokenDst,
-                        args.slippage,
-                        false,
-                        MULTI_TX_SLIPPAGE_SHARE,
-                        args.srcChainId == args.toChainId
-                    )
-                );
-                /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not resemble
-                /// mainnet
-            }
-
-            userRequest = ISocketRegistry.UserRequest(
-                args.multiTx && CHAIN_0 != args.toChainId ? getContract(args.toChainId, "MultiTxProcessor") : args.toDst,
-                /// @dev for cross-chain multiTx actions, 1st liquidity dst is MultiTxProcessor
-                args.liqBridgeToChainId,
-                args.amount,
-                middlewareRequest,
-                bridgeRequest
-            );
-
-            txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
-            /// @dev for lifi
-        } else if (args.liqBridgeKind == 2) {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
@@ -1674,8 +1596,6 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     struct SingleVaultWithdrawLocalVars {
-        ISocketRegistry.MiddlewareRequest middlewareRequest;
-        ISocketRegistry.BridgeRequest bridgeRequest;
         address superformRouter;
         address stateRegistry;
         IERC1155A superPositions;
@@ -2162,51 +2082,6 @@ abstract contract ProtocolActions is BaseSetup {
         amount_ = (amount_ * uint256(10_000 - bridgeSlippage)) / 10_000;
 
         if (liqBridgeKind_ == 1) {
-            /// @dev for socket
-            ISocketRegistry.BridgeRequest memory bridgeRequest;
-            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-            ISocketRegistry.UserRequest memory userRequest;
-
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1,
-                /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
-                0,
-                /// @dev unused in tests
-                underlyingTokenDst_,
-                abi.encode(
-                    getContract(toChainId_, "MultiTxProcessor"),
-                    FORKS[toChainId_],
-                    underlyingTokenDst_,
-                    slippage_,
-                    /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
-                    true,
-                    MULTI_TX_SLIPPAGE_SHARE,
-                    /// @dev multiTx means cross-chain
-                    false
-                )
-            );
-
-            /// @dev empty bridge request
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                0,
-                /// @dev request id, arbitrary number, but using 0 or 1 for mocking purposes
-                0,
-                /// @dev unused in tests
-                address(0),
-                abi.encode(getContract(toChainId_, "MultiTxProcessor"), FORKS[toChainId_], underlyingTokenDst_)
-            );
-
-            userRequest = ISocketRegistry.UserRequest(
-                getContract(toChainId_, "CoreStateRegistry"),
-                /// @dev next token destination is coreStateRegistry
-                uint256(toChainId_),
-                amount_,
-                middlewareRequest,
-                bridgeRequest
-            );
-
-            txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
-        } else if (liqBridgeKind_ == 2) {
             /// @dev for lifi
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);

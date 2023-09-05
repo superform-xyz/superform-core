@@ -36,7 +36,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for SOCKET, 2 for LI.FI
         LIQ_BRIDGES[POLY][0] = [1, 1];
         LIQ_BRIDGES[POLY][1] = [1, 1];
 

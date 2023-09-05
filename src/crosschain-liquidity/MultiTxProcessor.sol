@@ -80,7 +80,8 @@ contract MultiTxProcessor is IMultiTxProcessor {
         address to = superRegistry.getBridgeAddress(bridgeId_);
         if (approvalToken_ != NATIVE) {
             /// @dev approve the bridge to spend the approvalToken_.
-            IERC20(approvalToken_).approve(to, amount_);
+            IERC20(approvalToken_).safeIncreaseAllowance(to, amount_);
+
             /// @dev execute the txData_.
             (bool success,) = payable(to).call(txData_);
             if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
@@ -102,7 +103,8 @@ contract MultiTxProcessor is IMultiTxProcessor {
         override
         onlySwapper
     {
-        for (uint256 i; i < txData_.length;) {
+        uint256 len = txData_.length;
+        for (uint256 i; i < len;) {
             processTx(bridgeIds_[i], txData_[i], approvalTokens_[i], amounts_[i]);
 
             unchecked {

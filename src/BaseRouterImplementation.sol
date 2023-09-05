@@ -74,10 +74,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         address permit2 = superRegistry.PERMIT2();
         address superform;
+        uint256 len = req.superformsData.superformIds.length;
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
-        for (uint256 j = 0; j < req.superformsData.liqRequests.length;) {
+        for (uint256 j; j < len;) {
             vars.liqRequest = req.superformsData.liqRequests[j];
 
             (superform,,) = req.superformsData.superformIds[j].getSuperform();
@@ -584,8 +585,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _directMultiWithdraw(InitMultiVaultData memory vaultData_, address srcSender_) internal virtual {
         /// @dev decode superforms
         (address[] memory superforms,,) = DataLib.getSuperforms(vaultData_.superformIds);
+        uint256 len = superforms.length;
 
-        for (uint256 i; i < superforms.length;) {
+        for (uint256 i; i < len;) {
             /// @dev deposits collateral to a given vault and mint vault positions.
             _directWithdraw(
                 superforms[i],
@@ -659,9 +661,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         (, uint32 formBeaconId_,) = superformData_.superformId.getSuperform();
 
-        return !IFormBeacon(
+        return IFormBeacon(
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
-        ).paused();
+        ).paused() == 1;
     }
 
     function _validateSuperformsDepositData(
@@ -692,7 +694,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev slippage, amounts and paused status validation
         bool txDataAmountValid;
-        for (uint256 i = 0; i < len;) {
+        for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
             (, uint32 formBeaconId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
@@ -703,7 +705,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
                         formBeaconId_
                     )
-                ).paused()
+                ).paused() == 2
             ) return false;
 
             /// @dev amounts in liqRequests must match amounts in superformsData_
@@ -762,7 +764,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
                         formBeaconId_
                     )
-                ).paused()
+                ).paused() == 2
             ) return false;
 
             unchecked {

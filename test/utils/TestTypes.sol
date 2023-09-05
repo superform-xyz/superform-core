@@ -120,13 +120,10 @@ struct SetupVars {
     address wormholeBroadcastHelper;
     address wormholeImplementation;
     address wormholeSRImplementation;
-    address socketRouter;
     address lifiRouter;
     address erc4626Form;
     address erc4626TimelockForm;
     address kycDao4626Form;
-    address rolesStateRegistry;
-    address factoryStateRegistry;
     address coreStateRegistry;
     address PayloadHelper;
     address paymentHelper;
@@ -146,7 +143,6 @@ struct SetupVars {
     address superRegistry;
     address superRBAC;
     address canonicalPermit2;
-    address socketValidator;
     address lifiValidator;
     Vm.Log[] logs;
     address superPositions;

@@ -26,7 +26,6 @@ contract SXSVDTimelockedRevert4626NoMultiTxTokenInputSlippageL2AMB13 is Protocol
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[POLY][0] = [1];
 
         actions.push(

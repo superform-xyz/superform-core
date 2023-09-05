@@ -151,10 +151,14 @@ contract SuperformFactory is ISuperformFactory {
         override
         returns (uint256[] memory superformIds_, address[] memory superforms_)
     {
-        superformIds_ = new uint256[](formBeaconIds_.length);
-        superforms_ = new address[](formBeaconIds_.length);
+        uint256 len = formBeaconIds_.length;
 
-        for (uint256 i = 0; i < formBeaconIds_.length;) {
+        if (len != vaults_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+
+        superformIds_ = new uint256[](len);
+        superforms_ = new address[](len);
+
+        for (uint256 i; i < len;) {
             (superformIds_[i], superforms_[i]) = createSuperform(formBeaconIds_[i], vaults_[i]);
 
             unchecked {
@@ -179,7 +183,7 @@ contract SuperformFactory is ISuperformFactory {
     /// @inheritdoc ISuperformFactory
     function changeFormBeaconPauseStatus(
         uint32 formBeaconId_,
-        bool paused_,
+        uint256 paused_,
         bytes memory extraData_
     )
         external
@@ -227,7 +231,7 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
-    function isFormBeaconPaused(uint32 formBeaconId_) external view override returns (bool paused_) {
+    function isFormBeaconPaused(uint32 formBeaconId_) external view override returns (uint256 paused_) {
         paused_ = FormBeacon(formBeacon[formBeaconId_]).paused();
     }
 
@@ -242,8 +246,12 @@ contract SuperformFactory is ISuperformFactory {
         uint256 len = superformIds_.length;
         superforms_ = new address[](len);
 
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i; i < len;) {
             (superforms_[i],,) = superformIds_[i].getSuperform();
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -268,8 +276,11 @@ contract SuperformFactory is ISuperformFactory {
         uint256 len = superformIds_.length;
         superforms_ = new address[](len);
 
-        for (uint256 i = 0; i < len; i++) {
+        for (uint256 i; i < len;) {
             (superforms_[i],,) = superformIds_[i].getSuperform();
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -304,7 +315,7 @@ contract SuperformFactory is ISuperformFactory {
     /// @notice is a part of broadcasting / dispatching through factory state registry
     /// @param message_ is the crosschain message received.
     function _syncBeaconStatus(bytes memory message_) internal {
-        (,, uint32 formBeaconId, bool status) = abi.decode(message_, (uint64, uint256, uint32, bool));
+        (,, uint32 formBeaconId, uint256 status) = abi.decode(message_, (uint64, uint256, uint32, uint256));
 
         if (formBeacon[formBeaconId] == address(0)) revert Error.INVALID_FORM_ID();
 

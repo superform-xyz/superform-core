@@ -36,10 +36,9 @@ contract MDMVDMulti102115000MultiTxNativeSlippageL12AMB13 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[ARBI][0] = [2, 2, 1];
-        LIQ_BRIDGES[ETH][0] = [2, 1, 2];
-        LIQ_BRIDGES[AVAX][0] = [1, 2, 1];
+        LIQ_BRIDGES[ARBI][0] = [1, 1, 1];
+        LIQ_BRIDGES[ETH][0] = [1, 1, 1];
+        LIQ_BRIDGES[AVAX][0] = [1, 1, 1];
 
         actions.push(
             TestAction({

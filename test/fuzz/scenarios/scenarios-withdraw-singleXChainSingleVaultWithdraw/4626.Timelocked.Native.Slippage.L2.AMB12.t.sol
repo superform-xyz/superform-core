@@ -35,9 +35,8 @@ contract SXSVWTimelockedNativeSlippageL2AMB12 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[ARBI][0] = [2];
-        LIQ_BRIDGES[ARBI][1] = [2];
+        LIQ_BRIDGES[ARBI][0] = [1];
+        LIQ_BRIDGES[ARBI][1] = [1];
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 

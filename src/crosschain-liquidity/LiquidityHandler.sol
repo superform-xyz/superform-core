@@ -18,7 +18,7 @@ abstract contract LiquidityHandler {
 
     /// @dev dispatches tokens via a liquidity bridge
     /// @param bridge_ Bridge address to pass tokens to
-    /// @param txData_ Socket data
+    /// @param txData_ liquidity bridge data
     /// @param token_ Token caller deposits into superform
     /// @param amount_ Amount of tokens to deposit
     /// @param owner_ Owner of tokens
@@ -69,7 +69,7 @@ abstract contract LiquidityHandler {
                 }
             }
             /// @dev approve bridge to spend tokens
-            token.safeApprove(bridge_, amount_);
+            token.safeIncreaseAllowance(bridge_, amount_);
 
             /// @dev call bridge with txData. Native amount here just contains liquidity bridge fees (if needed)
             unchecked {

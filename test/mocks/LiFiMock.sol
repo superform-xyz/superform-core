@@ -8,6 +8,7 @@ import "./MockERC20.sol";
 
 /// @title Socket Router Mock
 /// @dev eventually replace this by using a fork of the real registry contract
+
 contract LiFiMock is Test {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
@@ -84,6 +85,7 @@ contract LiFiMock is Test {
             MockERC20(outputToken).mint(receiver_, amountOut);
         } else {
             if (prevForkId != toForkId) vm.deal(address(this), amountOut);
+
             (bool success,) = payable(receiver_).call{ value: amountOut }("");
             require(success);
         }

@@ -31,10 +31,9 @@ contract MDSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[POLY][0] = [2];
-        LIQ_BRIDGES[AVAX][0] = [2];
-        LIQ_BRIDGES[OP][0] = [2];
+        LIQ_BRIDGES[POLY][0] = [1];
+        LIQ_BRIDGES[AVAX][0] = [1];
+        LIQ_BRIDGES[OP][0] = [1];
 
         /// @dev define the test type for every destination chain and for every action
         /// should allow us to revert on specific destination calls, such as specific updatePayloads, specific

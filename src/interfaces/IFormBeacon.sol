@@ -12,7 +12,7 @@ interface IFormBeacon {
     event FormLogicUpdated(address indexed oldLogic, address indexed newLogic);
 
     /// @dev emited when form beacon status is changed
-    event FormBeaconPaused(bool paused);
+    event FormBeaconPaused(uint256 paused);
 
     /*///////////////////////////////////////////////////////////////
                         External Functions
@@ -24,7 +24,7 @@ interface IFormBeacon {
 
     /// @dev changes the paused status of the form
     /// @param newStatus_ is the new status
-    function changePauseStatus(bool newStatus_) external;
+    function changePauseStatus(uint256 newStatus_) external;
 
     /*///////////////////////////////////////////////////////////////
                         External View Functions
@@ -34,5 +34,5 @@ interface IFormBeacon {
     function implementation() external view returns (address);
 
     /// @dev returns true if the form is paused
-    function paused() external view returns (bool);
+    function paused() external view returns (uint256);
 }

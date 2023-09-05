@@ -12,8 +12,7 @@ struct LiqRequest {
     /// @dev dstChainId = liqDstchainId for deposits. For withdraws it is the target chain id for where the underlying
     /// is to be delivered
     uint64 liqDstChainId;
-    /// @dev currently this amount is used as msg.value in the txData call. For socket this should be at least amount +
-    /// optionalNative(middlewareRequest) + optionalNative(bridgeRequest)
+    /// @dev currently this amount is used as msg.value in the txData call.
     uint256 nativeAmount;
     bytes permit2data;
 }

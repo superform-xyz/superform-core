@@ -90,6 +90,9 @@ library Error {
     /// @dev thrown when the native tokens transfer has failed
     error NATIVE_TOKEN_TRANSFER_FAILURE();
 
+    /// @dev thrown when not possible to revoke last admin
+    error CANNOT_REVOKE_LAST_ADMIN();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -216,8 +219,11 @@ library Error {
     /// @dev thrown when same vault and beacon is used to create new superform
     error VAULT_BEACON_COMBNATION_EXISTS();
 
+    /// @dev thrown when formBeaconIds and vaults used to createSuperforms have different length
+    error ARRAY_LENGTH_MISMATCH();
+
     /*///////////////////////////////////////////////////////////////
-                        SUPER ROUTER ERRORS
+                        SUPERFORM ROUTER ERRORS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev thrown when form id is larger than max uint16
@@ -306,4 +312,14 @@ library Error {
 
     /// @dev thrown when the uri cannot be updated
     error DYNAMIC_URI_FROZEN();
+
+    /*///////////////////////////////////////////////////////////////
+                        PAYMENT HELPER ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when chainlink is reporting an improper price
+    error CHAINLINK_MALFUNCTION();
+
+    /// @dev thrown when chainlink is reporting an incomplete round
+    error CHAINLINK_INCOMPLETE_ROUND();
 }

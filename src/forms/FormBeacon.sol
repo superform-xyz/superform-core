@@ -21,7 +21,7 @@ contract FormBeacon is IFormBeacon {
 
     address public formLogic;
 
-    bool public paused;
+    uint256 public paused = 1;
 
     modifier onlySuperformFactory() {
         if (superRegistry.getAddress(keccak256("SUPERFORM_FACTORY")) != msg.sender) {
@@ -48,7 +48,7 @@ contract FormBeacon is IFormBeacon {
     }
 
     /// @inheritdoc IFormBeacon
-    function changePauseStatus(bool paused_) external override onlySuperformFactory {
+    function changePauseStatus(uint256 paused_) external override onlySuperformFactory {
         paused = paused_;
         emit FormBeaconPaused(paused_);
     }

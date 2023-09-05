@@ -12,7 +12,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
 
     function test_lifi_validator() public {
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            _buildTxData(2, address(0), deployer, BSC, uint256(100), "CoreStateRegistry"),
+            _buildTxData(1, address(0), deployer, BSC, uint256(100), "CoreStateRegistry"),
             ETH,
             BSC,
             BSC,
@@ -27,7 +27,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            _buildTxData(2, address(0), deployer, BSC, uint256(100), "PayMaster"),
+            _buildTxData(1, address(0), deployer, BSC, uint256(100), "PayMaster"),
             ETH,
             BSC,
             BSC,
@@ -42,7 +42,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            _buildTxData(2, address(0), deployer, BSC, uint256(100), "CoreStateRegistry"),
+            _buildTxData(1, address(0), deployer, BSC, uint256(100), "CoreStateRegistry"),
             ETH,
             ARBI,
             ARBI,
@@ -57,7 +57,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            _buildTxData(2, address(0), deployer, ETH, uint256(100), "PayMaster"),
+            _buildTxData(1, address(0), deployer, ETH, uint256(100), "PayMaster"),
             ETH,
             ETH,
             ETH,
@@ -72,7 +72,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            _buildTxData(2, address(0), deployer, OP, uint256(100), "PayMaster"),
+            _buildTxData(1, address(0), deployer, OP, uint256(100), "PayMaster"),
             ETH,
             ARBI,
             OP,
@@ -87,7 +87,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            _buildTxData(2, address(0), deployer, OP, uint256(100), "PayMaster"),
+            _buildTxData(1, address(0), deployer, OP, uint256(100), "PayMaster"),
             ETH,
             ARBI,
             ARBI,
@@ -102,7 +102,7 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            _buildTxData(2, address(0), deployer, ARBI, uint256(100), "CoreStateRegistry"),
+            _buildTxData(1, address(0), deployer, ARBI, uint256(100), "CoreStateRegistry"),
             ETH,
             ARBI,
             ARBI,
@@ -110,96 +110,6 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
             address(0),
             deployer,
             address(420)
-        );
-    }
-
-    function test_socket_invalid_receiver() public {
-        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-
-        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            _buildTxData(1, address(0), deployer, BSC, uint256(100), "PayMaster"),
-            ETH,
-            BSC,
-            BSC,
-            true,
-            address(0),
-            deployer,
-            address(0)
-        );
-    }
-
-    function test_socket_invalid_tx_data_chain_id() public {
-        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
-
-        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            _buildTxData(1, address(0), deployer, OP, uint256(100), "PayMaster"),
-            ETH,
-            ARBI,
-            BSC,
-            true,
-            address(0),
-            deployer,
-            address(0)
-        );
-    }
-
-    function test_socket_invalid_deposit_liq_dst_chain_id() public {
-        vm.expectRevert(Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID.selector);
-
-        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            _buildTxData(1, address(0), deployer, BSC, uint256(100), "PayMaster"),
-            ETH,
-            ARBI,
-            BSC,
-            true,
-            address(0),
-            deployer,
-            address(0)
-        );
-    }
-
-    function test_socket_invalid_token() public {
-        vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
-
-        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            _buildTxData(1, address(1), deployer, BSC, uint256(100), "CoreStateRegistry"),
-            ETH,
-            BSC,
-            BSC,
-            true,
-            address(0),
-            deployer,
-            address(0)
-        );
-    }
-
-    function test_socket_invalid_receiver_same_chain() public {
-        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-
-        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            _buildTxData(1, address(1), deployer, ETH, uint256(100), "CoreStateRegistry"),
-            ETH,
-            ETH,
-            ETH,
-            true,
-            address(0),
-            deployer,
-            address(0)
-        );
-    }
-
-    function test_socket_invalid_receiver_xchain_withdraw() public {
-        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-
-        SocketValidator(getContract(ETH, "SocketValidator")).validateTxData(
-            _buildTxData(1, address(1), deployer, BSC, uint256(100), "CoreStateRegistry"),
-            ETH,
-            BSC,
-            BSC,
-            false,
-            address(0),
-            deployer,
-            address(0)
         );
     }
 
@@ -215,35 +125,6 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
         returns (bytes memory txData)
     {
         if (liqBridgeKind_ == 1) {
-            ISocketRegistry.BridgeRequest memory bridgeRequest;
-            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-            ISocketRegistry.UserRequest memory userRequest;
-            /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
-            /// bridging request
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1,
-                /// request id
-                0,
-                underlyingToken_,
-                abi.encode(getContract(toChainId_, receiver_), FORKS[toChainId_])
-            );
-
-            /// @dev empty bridge request
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                0,
-                /// id
-                0,
-                address(0),
-                abi.encode(getContract(toChainId_, receiver_), FORKS[toChainId_])
-            );
-
-            userRequest = ISocketRegistry.UserRequest(
-                getContract(toChainId_, receiver_), uint256(toChainId_), amount_, middlewareRequest, bridgeRequest
-            );
-
-            txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
-        } else if (liqBridgeKind_ == 2) {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 

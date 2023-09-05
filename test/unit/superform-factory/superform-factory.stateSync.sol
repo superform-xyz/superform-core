@@ -18,7 +18,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
 
         vm.recordLogs();
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus(
-            formBeaconId, true, generateBroadcastParams(5, 1)
+            formBeaconId, 2, generateBroadcastParams(5, 1)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
@@ -27,7 +27,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
             if (chainIds[i] != ETH) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                bool statusBefore =
+                uint256 statusBefore =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 
                 vm.expectRevert(Error.NOT_BROADCAST_REGISTRY.selector);
@@ -35,12 +35,12 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
                 SuperformFactory(getContract(chainIds[i], "SuperformFactory")).stateSyncBroadcast(data_);
 
                 BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
-                bool statusAfter =
+                uint256 statusAfter =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 
                 /// @dev assert status update before and after processing the payload
-                assertEq(statusBefore, false);
-                assertEq(statusAfter, true);
+                assertEq(statusBefore, 1);
+                assertEq(statusAfter, 2);
             }
         }
 
@@ -70,7 +70,7 @@ contract SuperformFactoryStateSyncTest is BaseSetup {
         /// @dev checks if proof for this next one is diff
         vm.recordLogs();
         SuperformFactory(getContract(ETH, "SuperformFactory")).changeFormBeaconPauseStatus(
-            formBeaconId, true, generateBroadcastParams(5, 1)
+            formBeaconId, 2, generateBroadcastParams(5, 1)
         );
 
         _broadcastPayloadHelper(ETH, vm.getRecordedLogs());
