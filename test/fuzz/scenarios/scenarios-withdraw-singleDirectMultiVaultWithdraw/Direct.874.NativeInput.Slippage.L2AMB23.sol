@@ -4,68 +4,62 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVWNormal4626TokenInputSlippageAMB34 is ProtocolActions {
+contract SDiMVW874NativeInputSlippageL2AMB34 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [3, 4];
 
-        CHAIN_0 = ETH;
-        DST_CHAINS = [ETH];
+        AMBs = [2, 3];
 
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][0] = [1];
-
-        TARGET_VAULTS[ETH][0] = [0];
-
-        /// @dev id 0 is normal 4626
-
-        TARGET_FORM_KINDS[ETH][0] = [0];
+        CHAIN_0 = ARBI;
+        DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ETH][1] = [1];
-
-        TARGET_VAULTS[ETH][1] = [0];
-
+        TARGET_UNDERLYINGS[ARBI][0] = [0, 0, 1];
+        TARGET_VAULTS[ARBI][0] = [8, 7, 4];
         /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[ARBI][0] = [0, 2, 1];
 
-        TARGET_FORM_KINDS[ETH][1] = [0];
+        TARGET_UNDERLYINGS[ARBI][1] = [0, 0, 1];
+        TARGET_VAULTS[ARBI][1] = [8, 7, 4];
+        /// @dev id 0 is normal 4626
+        TARGET_FORM_KINDS[ARBI][1] = [0, 2, 1];
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[ETH][0] = [2];
-        LIQ_BRIDGES[ETH][1] = [2];
+        LIQ_BRIDGES[ARBI][0] = [2, 2, 2];
+        LIQ_BRIDGES[ARBI][1] = [2, 2, 2];
 
-        FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH];
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ARBI, ARBI, ARBI];
 
+        /// @dev push in order the actions should be executed
         actions.push(
             TestAction({
                 action: Actions.Deposit,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
+                multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 555, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
-                multiVaults: false, //!!WARNING turn on or off multi vaults
+                multiVaults: true, //!!WARNING turn on or off multi vaults
                 user: 0,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 555, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -74,10 +68,11 @@ contract SXSVWNormal4626TokenInputSlippageAMB34 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_) public {
-        /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI));
-        AMOUNTS[ETH][0] = [amountOne_];
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 3));
+        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_ETH / 3));
+        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -97,7 +92,7 @@ contract SXSVWNormal4626TokenInputSlippageAMB34 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1], superPositions[2]];
                 }
             }
 
