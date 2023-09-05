@@ -1,6 +1,6 @@
 # State Registry
 
-This directory contains the components to enable crosschain communication functionality to Superform Protocol. It also includes the wrapper contracts for different arbitrary message bridges (AMBs) leveraged by Superform. Layerzero, Hyperlane & Celer have completed wrapper implementation.
+This directory contains the components to enable crosschain communication functionality to Superform Protocol. It also includes the wrapper contracts for different arbitrary message bridges (AMBs) leveraged by Superform. Layerzero, Hyperlane & Wormhole have completed wrapper implementation.
 
 ## Components Overview
 
@@ -14,8 +14,6 @@ The following components are a key part of superform's robust crosschain communi
 - **Two Steps Form State Registry [TwoStepsFormStateRegistry.sol](./extensions/TwoStepsFormStateRegistry.sol)**: Special state registry implementation contract, specifically designed to process withdrawal request for two step forms, such as timelocked. Inherits base state registry to send acknowledgement on failure withdrawals for two steps' forms.
 
 Each individual AMB wrapper will be placed inside a folder named after the Arbitrary Message Bridge (AMB).
-
-- **[CelerImplementation.sol](./adapters/celer/Implementation.sol)**: Wrapper for Celer AMB
 
 - **[LayerzeroImplementation.sol](./adapters/layerzero/Implementation.sol)**: Wrapper for Layerzero AMB
 

@@ -10,7 +10,7 @@ contract MDSVWNormal4626NativeSlippageL1AMB24 is ProtocolActions {
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [2, 4];
+        AMBs = [1, 3];
         MultiDstAMBs = [AMBs, AMBs];
 
         CHAIN_0 = POLY;

@@ -82,7 +82,7 @@ contract HyperlaneImplementationTest is BaseSetup {
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         hyperlaneImplementation.setChainId(superChainId, 0);
 
-        uint64 ambChainId = celer_chainIds[ambChainIdSeed_ % hyperlane_chainIds.length];
+        uint64 ambChainId = hyperlane_chainIds[ambChainIdSeed_ % hyperlane_chainIds.length];
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         hyperlaneImplementation.setChainId(0, uint32(ambChainId));
 
