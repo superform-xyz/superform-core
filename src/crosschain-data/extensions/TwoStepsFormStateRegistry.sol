@@ -176,12 +176,15 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         onlyTwoStepsStateRegistryProcessor
         isValidPayloadId(payloadId_)
     {
-        uint256 _payloadHeader = payloadHeader[payloadId_];
-        bytes memory _payloadBody = payloadBody[payloadId_];
-
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
             revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
+
+        /// @dev sets status as processed to prevent re-entrancy
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
+        uint256 _payloadHeader = payloadHeader[payloadId_];
+        bytes memory _payloadBody = payloadBody[payloadId_];
 
         (, uint256 callbackType,,,, uint64 srcChainId) = _payloadHeader.decodeTxInfo();
         AMBMessage memory _message = AMBMessage(_payloadHeader, _payloadBody);
@@ -197,10 +200,6 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
-
-        /// @dev sets status as processed
-        /// @dev check for re-entrancy & relocate if needed
-        payloadTracking[payloadId_] = PayloadState.PROCESSED;
     }
 
     /// @dev returns the required quorum for the src chain id from super registry

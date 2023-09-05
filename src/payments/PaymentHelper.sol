@@ -180,6 +180,8 @@ contract PaymentHelper is IPaymentHelper {
         if (configType_ == 11) {
             twoStepCost[chainId_] = abi.decode(config_, (uint256));
         }
+
+        emit ChainConfigUpdated(chainId_, configType_, config_);
     }
 
     /*///////////////////////////////////////////////////////////////

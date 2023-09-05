@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { LiqRequest, AMBMessage } from "../types/DataTypes.sol";
+import { LiqRequest, AMBMessage, PayloadState } from "../types/DataTypes.sol";
 
 /// @title ICoreStateRegistry
 /// @author ZeroPoint Labs
@@ -14,6 +14,7 @@ interface ICoreStateRegistry {
     struct CoreProcessPayloadLocalVars {
         bytes _payloadBody;
         uint256 _payloadHeader;
+        PayloadState initialState;
         uint8 txType;
         uint8 callbackType;
         uint8 multi;

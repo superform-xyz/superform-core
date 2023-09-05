@@ -170,8 +170,14 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
             uint8 tempAmbId = ambIds_[i];
 
             /// @dev the loaded ambId cannot be the same as the ambId used for messaging
+            /// @notice proof ambs (ambIds after first index) should be arranged in ascending order
+            /// @notice ascending ordering of proof ambs will help prevent duplicates
             if (tempAmbId == ambIds_[0]) {
                 revert Error.INVALID_PROOF_BRIDGE_ID();
+            }
+
+            if (ambIds_[i] <= ambIds_[i - 1]) {
+                revert Error.DUPLICATE_PROOF_BRIDGE_ID();
             }
 
             IBroadcastAmbImplementation tempImpl = IBroadcastAmbImplementation(superRegistry.getAmbAddress(tempAmbId));

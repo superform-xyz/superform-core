@@ -39,8 +39,9 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     mapping(uint16 => bytes) public trustedRemoteLookup;
     mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32))) public failedMessages;
 
-    event MessageFailed(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload);
-    event SetTrustedRemote(uint16 _srcChainId, bytes _srcAddress);
+    event EndpointUpdated(address oldEndpoint_, address newEndpoint_);
+    event MessageFailed(uint16 srcChainId_, bytes srcAddress_, uint64 nonce_, bytes payload_);
+    event SetTrustedRemote(uint16 srcChainId_, bytes srcAddress_);
 
     /*///////////////////////////////////////////////////////////////
                                 Modifiers
@@ -142,7 +143,11 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
         isValid[srcChainId_][nonce_] = true;
 
         bytes memory trustedRemote = trustedRemoteLookup[srcChainId_];
-        if (srcAddress_.length != trustedRemote.length && keccak256(srcAddress_) != keccak256(trustedRemote)) {
+
+        if (
+            srcAddress_.length != trustedRemote.length || keccak256(srcAddress_) != keccak256(trustedRemote)
+                || trustedRemote.length == 0
+        ) {
             revert Error.INVALID_SRC_SENDER();
         }
 
@@ -235,8 +240,10 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     /// @param endpoint_ is the layerzero endpoint on the deployed network
     function setLzEndpoint(address endpoint_) external onlyProtocolAdmin {
         if (endpoint_ == address(0)) revert Error.ZERO_ADDRESS();
+
         if (address(lzEndpoint) == address(0)) {
             lzEndpoint = ILayerZeroEndpoint(endpoint_);
+            emit EndpointUpdated(address(0), endpoint_);
         }
     }
 

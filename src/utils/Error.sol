@@ -188,8 +188,11 @@ library Error {
     /// @dev thrown if gas refunds failed
     error GAS_REFUND_FAILED();
 
-    /// @dev thrown if any of the ambs in indexes +1 are repeated  (index 0)
+    /// @dev thrown if message amb and proof amb are the same
     error INVALID_PROOF_BRIDGE_ID();
+
+    /// @dev thrown if a duplicate proof amb is found
+    error DUPLICATE_PROOF_BRIDGE_ID();
 
     /// @dev thrown if the gas per dst doesn't match chain ids in broadcasting
     error INVALID_EXTRA_DATA_LENGTHS();
