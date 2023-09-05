@@ -505,7 +505,7 @@ contract PaymentHelper is IPaymentHelper {
             }
 
             if (ambIds_[i] == 3) {
-                extraDataPerAMB[i] = abi.encode(0, totalDstGasReqInWei);
+                extraDataPerAMB[i] = abi.encode(0, gasReq);
             }
 
             unchecked {
@@ -530,13 +530,13 @@ contract PaymentHelper is IPaymentHelper {
 
         feeSplitUp = new uint256[](len);
 
-        bytes memory proof = abi.encode(keccak256(message_));
+        bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
         /// @dev only ambIds_[0] = primary amb (rest of the ambs send only the proof)
         for (uint256 i; i < len;) {
             uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_, i != 0 ? proof : message_, extraDataPerAMB[i]
+                dstChainId_, i != 0 ? proof_ : message_, extraDataPerAMB[i]
             );
 
             totalFees += tempFee;
@@ -564,12 +564,12 @@ contract PaymentHelper is IPaymentHelper {
 
         feeSplitUp = new uint256[](len);
 
-        bytes memory proof = abi.encode(keccak256(message_));
+        bytes memory proof_ = abi.encode(AMBMessage(type(uint256).max, abi.encode(keccak256(message_))));
 
         /// @dev just checks the estimate for sending message from src -> dst
         for (uint256 i; i < len;) {
             uint256 tempFee = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i])).estimateFees(
-                dstChainId_, i != 0 ? proof : message_, extraDataPerAMB[i]
+                dstChainId_, i != 0 ? proof_ : message_, extraDataPerAMB[i]
             );
 
             totalFees += tempFee;
@@ -681,7 +681,7 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.extraFormData
             )
         );
-        message_ = abi.encode(AMBMessage(2 * 256 - 1, ambData));
+        message_ = abi.encode(AMBMessage(type(uint256).max, ambData));
     }
 
     /// @dev generates the amb message for multi vault data
@@ -702,7 +702,7 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.extraFormData
             )
         );
-        message_ = abi.encode(AMBMessage(2 * 256 - 1, ambData));
+        message_ = abi.encode(AMBMessage(type(uint256).max, ambData));
     }
 
     /// @dev helps convert the dst gas fee into src chain native fee
