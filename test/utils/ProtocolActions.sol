@@ -700,10 +700,8 @@ abstract contract ProtocolActions is BaseSetup {
         uint32[] expDstDomains;
         address[] endpoints;
         uint16[] lzChainIds;
-        uint64[] celerChainIds;
         address[] wormholeRelayers;
         address[] expDstChainAddresses;
-        address[] celerBusses;
         uint256[] forkIds;
         uint256 k;
     }
@@ -743,9 +741,6 @@ abstract contract ProtocolActions is BaseSetup {
         internalVars.endpoints = new address[](vars.nUniqueDsts);
         internalVars.lzChainIds = new uint16[](vars.nUniqueDsts);
 
-        internalVars.celerBusses = new address[](vars.nUniqueDsts);
-        internalVars.celerChainIds = new uint64[](vars.nUniqueDsts);
-
         internalVars.wormholeRelayers = new address[](vars.nUniqueDsts);
         internalVars.expDstChainAddresses = new address[](vars.nUniqueDsts);
 
@@ -760,9 +755,6 @@ abstract contract ProtocolActions is BaseSetup {
 
                     internalVars.endpoints[internalVars.k] = lzEndpoints[i];
                     internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
-
-                    internalVars.celerChainIds[internalVars.k] = celer_chainIds[i];
-                    internalVars.celerBusses[internalVars.k] = celerMessageBusses[i];
 
                     internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
 
@@ -801,17 +793,6 @@ abstract contract ProtocolActions is BaseSetup {
             }
 
             if (AMBs[index] == 3) {
-                CelerHelper(getContract(CHAIN_0, "CelerHelper")).help(
-                    CELER_CHAIN_IDS[CHAIN_0],
-                    CELER_BUSSES[CHAIN_0],
-                    internalVars.celerBusses,
-                    internalVars.celerChainIds,
-                    internalVars.forkIds,
-                    vars.logs
-                );
-            }
-
-            if (AMBs[index] == 4) {
                 WormholeHelper(getContract(CHAIN_0, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[CHAIN_0],
                     internalVars.forkIds,
@@ -2361,20 +2342,8 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             }
 
-            /// @notice ID: 3 Celer
+            /// @notice ID: 3 Wormhole
             if (AMBs[i] == 3) {
-                CelerHelper(getContract(TO_CHAIN, "CelerHelper")).help(
-                    CELER_CHAIN_IDS[TO_CHAIN],
-                    CELER_BUSSES[TO_CHAIN],
-                    CELER_BUSSES[FROM_CHAIN],
-                    CELER_CHAIN_IDS[FROM_CHAIN],
-                    FORKS[FROM_CHAIN],
-                    logs
-                );
-            }
-
-            /// @notice ID: 4 Wormhole
-            if (AMBs[i] == 4) {
                 WormholeHelper(getContract(TO_CHAIN, "WormholeHelper")).help(
                     WORMHOLE_CHAIN_IDS[TO_CHAIN], FORKS[FROM_CHAIN], wormholeRelayer, logs
                 );

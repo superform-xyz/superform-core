@@ -6,7 +6,6 @@ import "forge-std/Test.sol";
 import "ds-test/test.sol";
 import { LayerZeroHelper } from "pigeon/src/layerzero/LayerZeroHelper.sol";
 import { HyperlaneHelper } from "pigeon/src/hyperlane/HyperlaneHelper.sol";
-import { CelerHelper } from "pigeon/src/celer/CelerHelper.sol";
 
 import { WormholeHelper } from "pigeon/src/wormhole/automatic-relayer/WormholeHelper.sol";
 import "pigeon/src/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
@@ -49,7 +48,6 @@ import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
-import { CelerImplementation } from "src/crosschain-data/adapters/celer/CelerImplementation.sol";
 import { WormholeARImplementation } from
     "src/crosschain-data/adapters/wormhole/automatic-relayer/WormholeARImplementation.sol";
 import { WormholeSRImplementation } from
@@ -141,19 +139,16 @@ abstract contract BaseSetup is DSTest, Test {
     /// @dev setup amb bridges
     /// @notice id 1 is layerzero
     /// @notice id 2 is hyperlane
-    /// @notice id 3 is celer
-    /// @notice id 4 is wormhole (Automatic Relayer)
-    /// @notice id 5 is wormhole (Specialized Relayer)
+    /// @notice id 3 is wormhole (Automatic Relayer)
+    /// @notice id 4 is wormhole (Specialized Relayer)
 
-    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
+    uint8[] public ambIds = [uint8(1), 2, 3, 4];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
     //////////////////////////////////////////////////////////////*/
 
     mapping(uint64 => address) public LZ_ENDPOINTS;
-    mapping(uint64 => address) public CELER_BUSSES;
-    mapping(uint64 => uint64) public CELER_CHAIN_IDS;
     mapping(uint64 => uint16) public WORMHOLE_CHAIN_IDS;
 
     address public constant ETH_lzEndpoint = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
@@ -181,15 +176,6 @@ abstract contract BaseSetup is DSTest, Test {
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70,
         0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70
-    ];
-
-    address[] public celerMessageBusses = [
-        0x4066D196A423b2b3B8B054f4F40efB47a74E200C,
-        0x95714818fdd7a5454F73Da9c777B3ee6EbAEEa6B,
-        0x5a926eeeAFc4D217ADd17e9641e8cE23Cd01Ad57,
-        0xaFDb9C40C7144022811F034EE07Ce2E110093fe6,
-        0x3Ad9d0648CDAA2426331e894e980D0a5Ed16257f,
-        0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d
     ];
 
     address[] public wormholeCore = [
@@ -221,17 +207,6 @@ abstract contract BaseSetup is DSTest, Test {
     IInterchainGasPaymaster public constant HyperlaneGasPaymaster =
         IInterchainGasPaymaster(0x6cA0B6D22da47f091B7613223cD4BB03a2d77918);
 
-    /*//////////////////////////////////////////////////////////////
-                        CELER VARIABLES
-    //////////////////////////////////////////////////////////////*/
-    address public constant ETH_messageBus = 0x4066D196A423b2b3B8B054f4F40efB47a74E200C;
-    address public constant BSC_messageBus = 0x95714818fdd7a5454F73Da9c777B3ee6EbAEEa6B;
-    address public constant AVAX_messageBus = 0x5a926eeeAFc4D217ADd17e9641e8cE23Cd01Ad57;
-    address public constant POLY_messageBus = 0xaFDb9C40C7144022811F034EE07Ce2E110093fe6;
-    address public constant ARBI_messageBus = 0x3Ad9d0648CDAA2426331e894e980D0a5Ed16257f;
-    address public constant OP_messageBus = 0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d;
-    address public constant FTM_messageBus = 0xFF4E183a0Ceb4Fa98E63BbF8077B929c8E5A2bA4;
-
     uint64 public constant ETH = 1;
     uint64 public constant BSC = 56;
     uint64 public constant AVAX = 43_114;
@@ -253,7 +228,6 @@ abstract contract BaseSetup is DSTest, Test {
 
     uint16[] public lz_chainIds = [101, 102, 106, 109, 110, 111];
     uint32[] public hyperlane_chainIds = [1, 56, 43_114, 137, 42_161, 10];
-    uint64[] public celer_chainIds = [1, 56, 43_114, 137, 42_161, 10];
     uint16[] public wormhole_chainIds = [2, 6, 23, 5, 4, 24];
 
     /// @dev minting enough tokens to be able to fuzz with bigger amounts (DAI's 3.6B supply etc)
@@ -353,19 +327,13 @@ abstract contract BaseSetup is DSTest, Test {
 
             contracts[vars.chainId][bytes32(bytes("HyperlaneHelper"))] = vars.hyperlaneHelper;
 
-            /// @dev 1.3- deploy Celer Helper from Pigeon
-            vars.celerHelper = address(new CelerHelper{salt: salt}());
-            vm.allowCheatcodes(vars.celerHelper);
-
-            contracts[vars.chainId][bytes32(bytes("CelerHelper"))] = vars.celerHelper;
-
-            /// @dev 1.4- deploy Wormhole Automatic Relayer Helper from Pigeon
+            /// @dev 1.3- deploy Wormhole Automatic Relayer Helper from Pigeon
             vars.wormholeHelper = address(new WormholeHelper{salt: salt}());
             vm.allowCheatcodes(vars.wormholeHelper);
 
             contracts[vars.chainId][bytes32(bytes("WormholeHelper"))] = vars.wormholeHelper;
 
-            /// @dev 1.5- deploy Wormhole Specialized Relayer Helper from Pigeon
+            /// @dev 1.4- deploy Wormhole Specialized Relayer Helper from Pigeon
             vars.wormholeBroadcastHelper = address(new WormholeBroadcastHelper.WormholeHelper{salt: salt}());
             vm.allowCheatcodes(vars.wormholeBroadcastHelper);
 
@@ -481,13 +449,7 @@ abstract contract BaseSetup is DSTest, Test {
             );
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
-            /// @dev 6.3- deploy Celer Implementation
-            vars.celerImplementation = address(new CelerImplementation{salt: salt}(vars.superRegistryC));
-            contracts[vars.chainId][bytes32(bytes("CelerImplementation"))] = vars.celerImplementation;
-
-            CelerImplementation(payable(vars.celerImplementation)).setCelerBus(celerMessageBusses[i]);
-
-            /// @dev 6.4- deploy Wormhole Automatic Relayer Implementation
+            /// @dev 6.3- deploy Wormhole Automatic Relayer Implementation
             vars.wormholeImplementation = address(
                 new WormholeARImplementation{salt: salt}(
                     vars.superRegistryC
@@ -509,9 +471,8 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.ambAddresses[0] = vars.lzImplementation;
             vars.ambAddresses[1] = vars.hyperlaneImplementation;
-            vars.ambAddresses[2] = vars.celerImplementation;
-            vars.ambAddresses[3] = vars.wormholeImplementation;
-            vars.ambAddresses[4] = vars.wormholeSRImplementation;
+            vars.ambAddresses[2] = vars.wormholeImplementation;
+            vars.ambAddresses[3] = vars.wormholeSRImplementation;
 
             /// @dev 7.1 deploy SocketRouterMock and LiFiRouterMock. These mocks are very minimal versions to allow
             /// liquidity bridge testing
@@ -722,7 +683,6 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
-            vars.celerImplementation = getContract(vars.chainId, "CelerImplementation");
             vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
             vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
             vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
@@ -740,12 +700,10 @@ abstract contract BaseSetup is DSTest, Test {
 
                     vars.dstLzChainId = lz_chainIds[j];
                     vars.dstHypChainId = hyperlane_chainIds[j];
-                    vars.dstCelerChainId = celer_chainIds[j];
                     vars.dstWormholeChainId = wormhole_chainIds[j];
 
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
-                    vars.dstCelerImplementation = getContract(vars.dstChainId, "CelerImplementation");
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
                     vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
                     vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
@@ -763,14 +721,6 @@ abstract contract BaseSetup is DSTest, Test {
 
                     HyperlaneImplementation(payable(vars.hyperlaneImplementation)).setChainId(
                         vars.dstChainId, vars.dstHypChainId
-                    );
-
-                    CelerImplementation(payable(vars.celerImplementation)).setReceiver(
-                        vars.dstCelerChainId, vars.dstCelerImplementation
-                    );
-
-                    CelerImplementation(payable(vars.celerImplementation)).setChainId(
-                        vars.dstChainId, vars.dstCelerChainId
                     );
 
                     WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
@@ -985,20 +935,9 @@ abstract contract BaseSetup is DSTest, Test {
         lzEndpointsStorage[OP] = OP_lzEndpoint;
         //lzEndpointsStorage[FTM] = FTM_lzEndpoint;
 
-        mapping(uint64 => address) storage celerMessageBusStorage = CELER_BUSSES;
-        celerMessageBusStorage[ETH] = ETH_messageBus;
-        celerMessageBusStorage[BSC] = BSC_messageBus;
-        celerMessageBusStorage[AVAX] = AVAX_messageBus;
-        celerMessageBusStorage[POLY] = POLY_messageBus;
-        celerMessageBusStorage[ARBI] = ARBI_messageBus;
-        celerMessageBusStorage[OP] = OP_messageBus;
-
-        mapping(uint64 => uint64) storage celerChainIdsStorage = CELER_CHAIN_IDS;
-
         mapping(uint64 => uint16) storage wormholeChainIdsStorage = WORMHOLE_CHAIN_IDS;
 
         for (uint256 i = 0; i < chainIds.length; i++) {
-            celerChainIdsStorage[chainIds[i]] = celer_chainIds[i];
             wormholeChainIdsStorage[chainIds[i]] = wormhole_chainIds[i];
         }
 
@@ -1252,70 +1191,6 @@ abstract contract BaseSetup is DSTest, Test {
                 GAS ESTIMATION & PAYLOAD HELPERS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev Estimates the gas fees and gas params
-    /// @dev TODO - Sujith to comment further
-    function _getAmbParamsAndFees(
-        uint64[] memory dstChainIds,
-        uint8[] memory selectedAmbIds,
-        address user,
-        MultiVaultSFData[] memory multiSuperformsData,
-        SingleVaultSFData[] memory singleSuperformsData
-    )
-        internal
-        view
-        returns (bytes[] memory)
-    {
-        uint256 dstCount = dstChainIds.length;
-
-        bytes[] memory ambParams = new bytes[](dstCount);
-
-        require(dstCount == multiSuperformsData.length + singleSuperformsData.length, "Invalid Lengths");
-
-        bytes[] memory messages = new bytes[](dstCount);
-
-        for (uint256 i; i < singleSuperformsData.length; i++) {
-            bytes memory ambData = abi.encode(
-                InitSingleVaultData(
-                    2 ** 8 - 1,
-                    2 ** 256 - 1,
-                    /// @dev uses max payload id
-                    singleSuperformsData[i].superformId,
-                    singleSuperformsData[i].amount,
-                    singleSuperformsData[i].maxSlippage,
-                    singleSuperformsData[i].liqRequest,
-                    singleSuperformsData[i].extraFormData
-                )
-            );
-            messages[i] = abi.encode(AMBMessage(2 * 256 - 1, ambData));
-        }
-
-        for (uint256 i; i < multiSuperformsData.length; i++) {
-            bytes memory ambData = abi.encode(
-                InitMultiVaultData(
-                    2 ** 8 - 1,
-                    2 ** 256 - 1,
-                    /// @dev uses max payload id
-                    multiSuperformsData[i].superformIds,
-                    multiSuperformsData[i].amounts,
-                    multiSuperformsData[i].maxSlippages,
-                    multiSuperformsData[i].liqRequests,
-                    multiSuperformsData[i].extraFormData
-                )
-            );
-
-            messages[i] = abi.encode(AMBMessage(2 * 256 - 1, ambData));
-        }
-
-        for (uint256 i; i < dstCount; i++) {
-            (uint256 tempFees, bytes memory tempParams) =
-                _generateAmbParamsAndFeesPerDst(dstChainIds[i], selectedAmbIds, messages[i]);
-
-            ambParams[i] = tempParams;
-        }
-
-        return ambParams;
-    }
-
     /// @dev Generates the extraData for each amb
     /// @dev TODO - Sujith to comment further
     function _generateExtraData(uint8[] memory selectedAmbIds) internal pure returns (bytes[] memory) {
@@ -1332,41 +1207,13 @@ abstract contract BaseSetup is DSTest, Test {
                 ambParams[i] = abi.encode(500_000);
             }
 
-            /// @dev 4 = Wormhole
-            if (selectedAmbIds[i] == 4) {
+            /// @dev 3 = Wormhole
+            if (selectedAmbIds[i] == 3) {
                 ambParams[i] = abi.encode(0, 500_000);
             }
         }
 
         return ambParams;
-    }
-
-    /// @dev Generates the amb params for the entire action
-    /// @dev TODO - Sujith to comment further
-    function _generateAmbParamsAndFeesPerDst(
-        uint64 dstChainId,
-        uint8[] memory selectedAmbIds,
-        bytes memory message
-    )
-        internal
-        view
-        returns (uint256, bytes memory)
-    {
-        uint256 ambCount = selectedAmbIds.length;
-
-        address _PaymentHelper = contracts[dstChainId][bytes32(bytes("PaymentHelper"))];
-        PaymentHelper paymentHelper = PaymentHelper(_PaymentHelper);
-
-        bytes[] memory paramsPerAMB = new bytes[](ambCount);
-        paramsPerAMB = _generateExtraData(selectedAmbIds);
-
-        uint256 totalFees;
-        uint256[] memory gasPerAMB = new uint256[](ambCount);
-        (totalFees, gasPerAMB) = paymentHelper.estimateAMBFees(selectedAmbIds, dstChainId, message, paramsPerAMB);
-
-        AMBExtraData memory extraData = AMBExtraData(gasPerAMB, paramsPerAMB);
-
-        return (totalFees, abi.encode(SingleDstAMBParams(totalFees, abi.encode(extraData))));
     }
 
     struct LocalAckVars {
