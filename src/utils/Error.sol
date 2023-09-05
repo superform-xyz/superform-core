@@ -113,9 +113,6 @@ library Error {
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev celer adapter specific error, when caller not celer message bus
-    error CALLER_NOT_MESSAGE_BUS();
-
     /// @dev hyperlane adapter specific error, when caller not hyperlane mailbox
     error CALLER_NOT_MAILBOX();
 
