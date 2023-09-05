@@ -5,8 +5,6 @@ import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract MultiTxProcessorTest is BaseSetup {
-    uint256 MULTI_TX_SLIPPAGE_SHARE = 0;
-
     function setUp() public override {
         super.setUp();
     }
@@ -85,13 +83,13 @@ contract MultiTxProcessorTest is BaseSetup {
 
         (bool success,) = payable(multiTxProcessor).call{ value: 1e18 }("");
         MultiTxProcessor(multiTxProcessor).processTx(
-            1, _buildTxData(1, native, native, multiTxProcessor, ETH, 1e18, 100), native, 1e18
+            1, _buildTxData(1, native, multiTxProcessor, ETH, 1e18), native, 1e18
         );
 
         /// @dev no funds in multi-tx processor at this point; should revert
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
         MultiTxProcessor(multiTxProcessor).processTx(
-            1, _buildTxData(1, native, native, multiTxProcessor, ETH, 1e18, 100), native, 1e18
+            1, _buildTxData(1, native, multiTxProcessor, ETH, 1e18), native, 1e18
         );
     }
 
@@ -104,10 +102,7 @@ contract MultiTxProcessorTest is BaseSetup {
         /// @dev no funds in multi-tx processor at this point; should revert
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
         MultiTxProcessor(multiTxProcessor).processTx(
-            1,
-            _buildTxData(1, getContract(ETH, "USDT"), getContract(ETH, "USDT"), multiTxProcessor, ETH, 1e18, 100),
-            getContract(ETH, "USDT"),
-            1e18
+            1, _buildTxData(1, getContract(ETH, "USDT"), multiTxProcessor, ETH, 1e18), getContract(ETH, "USDT"), 1e18
         );
     }
 
@@ -128,8 +123,8 @@ contract MultiTxProcessorTest is BaseSetup {
         approvalToken[1] = native;
 
         bytes[] memory txData = new bytes[](2);
-        txData[0] = _buildTxData(1, native, native, multiTxProcessor, ETH, 1e18, 100);
-        txData[1] = _buildTxData(1, native, native, multiTxProcessor, ETH, 1e18, 100);
+        txData[0] = _buildTxData(1, native, multiTxProcessor, ETH, 1e18);
+        txData[1] = _buildTxData(1, native, multiTxProcessor, ETH, 1e18);
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
@@ -148,60 +143,43 @@ contract MultiTxProcessorTest is BaseSetup {
     function _buildTxData(
         uint8 liqBridgeKind_,
         address underlyingToken_,
-        address underlyingTokenDst_,
         address from_,
         uint64 toChainId_,
-        uint256 amount_,
-        int256 slippage_
+        uint256 amount_
     )
         internal
         returns (bytes memory txData)
     {
-        /// @dev amount_ adjusted after bridge slippage
-        int256 bridgeSlippage = (slippage_ * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        amount_ = (amount_ * uint256(10_000 - bridgeSlippage)) / 10_000;
-
         if (liqBridgeKind_ == 1) {
-            /// @dev for lifi
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
             swapData[0] = ILiFi.SwapData(
                 address(0),
-                ///  @dev  callTo (arbitrary)
+                /// callTo (arbitrary)
                 address(0),
-                ///  @dev  callTo (approveTo)
+                /// callTo (approveTo)
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
-                /// @dev and multiTx means cross-chain (last arg)
-                abi.encode(
-                    from_, FORKS[toChainId_], underlyingTokenDst_, slippage_, true, MULTI_TX_SLIPPAGE_SHARE, false
-                ),
+                /// @dev arbitrary totalSlippage (200) and multiTxSlippageShare (40)
+                abi.encode(from_, FORKS[toChainId_], underlyingToken_, 200, true, 40, false),
                 false // arbitrary
             );
 
             bridgeData = ILiFi.BridgeData(
                 bytes32("1"),
-                /// @dev request id, arbitrary number
+                /// request id
                 "",
-                /// @dev unused in tests
                 "",
-                /// @dev unused in tests
                 address(0),
-                underlyingTokenDst_,
+                underlyingToken_,
                 getContract(toChainId_, "CoreStateRegistry"),
-                /// @dev next destination
                 amount_,
                 uint256(toChainId_),
                 false,
-                /// @dev false in the case of multiTxProcessor to only perform _bridge call (assumes tokens are already
-                /// swapped)
                 true
             );
-            /// @dev true in the case of multiTxProcessor to only perform _bridge call (assumes tokens are already
-            /// swapped)
 
             txData = abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
         }

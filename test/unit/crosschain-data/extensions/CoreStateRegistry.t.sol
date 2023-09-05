@@ -251,20 +251,12 @@ contract CoreStateRegistryTest is ProtocolActions {
         uint8[] memory ambIds = new uint8[](4);
         ambIds[0] = 1;
         ambIds[1] = 2;
-        ambIds[2] = 4;
+        ambIds[2] = 3;
         ambIds[3] = 2;
         _failingMultiDeposit(ambIds, Error.DUPLICATE_PROOF_BRIDGE_ID.selector);
 
         ambIds[2] = 2;
-        ambIds[3] = 4;
-        _failingMultiDeposit(ambIds, Error.DUPLICATE_PROOF_BRIDGE_ID.selector);
-
-        uint8[] memory manyAmbIds = new uint8[](5);
-        manyAmbIds[0] = 1;
-        manyAmbIds[1] = 2;
-        manyAmbIds[2] = 3;
-        manyAmbIds[3] = 4;
-        manyAmbIds[4] = 3;
+        ambIds[3] = 3;
         _failingMultiDeposit(ambIds, Error.DUPLICATE_PROOF_BRIDGE_ID.selector);
     }
 
