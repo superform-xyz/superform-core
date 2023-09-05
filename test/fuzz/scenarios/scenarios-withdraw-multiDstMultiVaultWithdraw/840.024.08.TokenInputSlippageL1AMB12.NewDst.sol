@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
+contract MDMVW84002408NativeInputSlipapgeL1AMB12NewDst is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -20,10 +20,10 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         /// first 3 superforms are equal
-        TARGET_UNDERLYINGS[ETH][0] = [2, 2];
-        TARGET_VAULTS[ETH][0] = [0, 1];
+        TARGET_UNDERLYINGS[ETH][0] = [2, 2, 1];
+        TARGET_VAULTS[ETH][0] = [8, 4, 0];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ETH][0] = [0, 1];
+        TARGET_FORM_KINDS[ETH][0] = [0, 1, 0];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
@@ -37,10 +37,10 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[AVAX][0] = [0, 0];
 
-        TARGET_UNDERLYINGS[ETH][1] = [2, 2];
-        TARGET_VAULTS[ETH][1] = [0, 1];
+        TARGET_UNDERLYINGS[ETH][1] = [2, 2, 1];
+        TARGET_VAULTS[ETH][1] = [8, 4, 0];
         /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ETH][1] = [0, 1];
+        TARGET_FORM_KINDS[ETH][1] = [0, 1, 0];
 
         /// all superforms are different
         TARGET_UNDERLYINGS[POLY][1] = [0, 1, 2];
@@ -54,7 +54,7 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[AVAX][1] = [0, 0];
 
-        PARTIAL[ETH][1] = [true, false];
+        PARTIAL[ETH][1] = [true, false, false];
 
         PARTIAL[POLY][1] = [false, false, true];
 
@@ -69,9 +69,9 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
         LIQ_BRIDGES[AVAX][0] = [1, 1, 1, 1];
         LIQ_BRIDGES[AVAX][1] = [1, 1, 1, 1];
 
-        FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH, ETH, ETH, ETH];
-        FINAL_LIQ_DST_WITHDRAW[POLY] = [ETH, ETH, ETH, ETH];
-        FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH, ARBI, OP, POLY];
+        FINAL_LIQ_DST_WITHDRAW[POLY] = [POLY, ETH, ETH, ETH];
+        FINAL_LIQ_DST_WITHDRAW[AVAX] = [ETH, AVAX, AVAX, ETH];
 
         /// @dev push in order the actions should be executed
         actions.push(
@@ -115,11 +115,13 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
     )
         public
     {
+        /// @dev min amountOne_ needs to be 3 as its withdraw amount >= 2
         amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_ETH / 7));
         amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 7));
         amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 7));
 
-        AMOUNTS[ETH][0] = [amountOne_, amountTwo_];
+        /// @dev notice partial withdrawals in ETH->0 and POLY->2
+        AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];
         AMOUNTS[POLY][0] = [amountTwo_, amountThree_, amountOne_];
         /// @dev shuffled order of amounts to randomise
         AMOUNTS[AVAX][0] = [amountThree_, amountTwo_];
@@ -145,7 +147,7 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB12 is ProtocolActions {
                     /// @dev notice partial withdrawals in ETH->0 and POLY->2
                     if (DST_CHAINS[i] == ETH) {
                         amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
-                        AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1]];
+                        AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], superPositions[2]];
                     } else if (DST_CHAINS[i] == POLY) {
                         amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[2] - 1));
                         AMOUNTS[POLY][1] = [superPositions[0], superPositions[1], amountOneWithdraw_];

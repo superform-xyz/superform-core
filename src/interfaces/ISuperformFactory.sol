@@ -83,7 +83,7 @@ interface ISuperformFactory {
     /// @param extraData_ is optional & passed when broadcasting of status is needed
     function changeFormBeaconPauseStatus(
         uint32 formBeaconId_,
-        bool status_,
+        uint256 status_,
         bytes memory extraData_
     )
         external
@@ -101,7 +101,7 @@ interface ISuperformFactory {
     /// @dev returns the paused status of form beacon
     /// @param formBeaconId_ is the id of the beacon form
     /// @return paused_ is the current paused status of the form beacon
-    function isFormBeaconPaused(uint32 formBeaconId_) external view returns (bool paused_);
+    function isFormBeaconPaused(uint32 formBeaconId_) external view returns (uint256 paused_);
 
     /// @dev returns the address of a superform
     /// @param superformId_ is the id of the superform

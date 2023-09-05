@@ -31,7 +31,6 @@ contract MDSVDNormal4626RevertNoMultiTxTokenInputSlippageL1AMB1 is ProtocolActio
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[OP][0] = [1];
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[POLY][0] = [1];

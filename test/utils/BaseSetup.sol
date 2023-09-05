@@ -14,7 +14,6 @@ import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 
 /// @dev test utils & mocks
-import { SocketRouterMock } from "../mocks/SocketRouterMock.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { MockERC20 } from "../mocks/MockERC20.sol";
 import { VaultMock } from "../mocks/VaultMock.sol";
@@ -45,7 +44,6 @@ import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
 import { MultiTxProcessor } from "src/crosschain-liquidity/MultiTxProcessor.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
-import { SocketValidator } from "src/crosschain-liquidity/socket/SocketValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
 import { WormholeARImplementation } from
@@ -61,7 +59,6 @@ import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
-import { DataLib } from "src/libraries/DataLib.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
@@ -474,20 +471,14 @@ abstract contract BaseSetup is DSTest, Test {
             vars.ambAddresses[2] = vars.wormholeImplementation;
             vars.ambAddresses[3] = vars.wormholeSRImplementation;
 
-            /// @dev 7.1 deploy SocketRouterMock and LiFiRouterMock. These mocks are very minimal versions to allow
+            /// @dev 7.1 deploy  LiFiRouterMock. This mock is a very minimal versions to allow
             /// liquidity bridge testing
-            /// @dev they do not resemble near mainnet conditions
-            vars.socketRouter = address(new SocketRouterMock{salt: salt}());
-            contracts[vars.chainId][bytes32(bytes("SocketRouterMock"))] = vars.socketRouter;
-            vm.allowCheatcodes(vars.socketRouter);
 
             vars.lifiRouter = address(new LiFiMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("LiFiMock"))] = vars.lifiRouter;
             vm.allowCheatcodes(vars.lifiRouter);
 
-            /// @dev 7.2- deploy socket and lifi validator
-            vars.socketValidator = address(new SocketValidator{salt: salt}(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("SocketValidator"))] = vars.socketValidator;
+            /// @dev 7.2- deploy  lifi validator
 
             vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
@@ -496,8 +487,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.kycDAOMock = address(new KYCDaoNFTMock{salt: salt}());
             contracts[vars.chainId][bytes32(bytes("KYCDAOMock"))] = vars.kycDAOMock;
 
-            bridgeAddresses.push(vars.socketRouter);
-            bridgeValidators.push(vars.socketValidator);
             bridgeAddresses.push(vars.lifiRouter);
             bridgeValidators.push(vars.lifiValidator);
 
@@ -667,9 +656,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), deployer, vars.chainId);
-
-            /// FIXME: check if this is safe in all aspects
-            vars.superRBACC.grantRole(vars.superRBACC.PROTOCOL_ADMIN_ROLE(), vars.rolesStateRegistry);
 
             delete bridgeAddresses;
             delete bridgeValidators;
@@ -992,9 +978,8 @@ abstract contract BaseSetup is DSTest, Test {
         priceFeeds[ARBI][BSC] = address(0);
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
 
-        /// @dev setup bridges. 1 is the socket mock
+        /// @dev setup bridges. 1 is lifi
         bridgeIds.push(1);
-        bridgeIds.push(2);
 
         /// @dev setup users
         userKeys.push(1);

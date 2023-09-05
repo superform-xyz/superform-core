@@ -31,12 +31,23 @@ contract SuperRBACTest is BaseSetup {
     function test_grantProtocolAdminRole() public {
         vm.startPrank(deployer);
         superRBAC.grantRole(superRBAC.PROTOCOL_ADMIN_ROLE(), address(0x1));
-        vm.stopPrank();
         assertEq(superRBAC.hasProtocolAdminRole(address(0x1)), true);
+        superRBAC.revokeRole(superRBAC.PROTOCOL_ADMIN_ROLE(), address(0x1));
+        vm.stopPrank();
+    }
+
+    function test_revokeProtocolAdminRole_CannotRevokeLastAdmin() public {
+        vm.startPrank(deployer);
+        bytes32 role = superRBAC.PROTOCOL_ADMIN_ROLE();
+        vm.expectRevert(Error.CANNOT_REVOKE_LAST_ADMIN.selector);
+        superRBAC.revokeRole(role, deployer);
+        vm.stopPrank();
     }
 
     function test_revokeProtocolAdminRole() public {
+        address test = address(1000);
         vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.PROTOCOL_ADMIN_ROLE(), test);
         superRBAC.revokeRole(superRBAC.PROTOCOL_ADMIN_ROLE(), deployer);
         vm.stopPrank();
 
@@ -72,11 +83,22 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function test_revokeEmergencyAdminRole() public {
+        address test = address(1000);
         vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.EMERGENCY_ADMIN_ROLE(), test);
         superRBAC.revokeRole(superRBAC.EMERGENCY_ADMIN_ROLE(), deployer);
         vm.stopPrank();
 
         assertEq(superRBAC.hasEmergencyAdminRole(deployer), false);
+    }
+
+    function test_revokeEmergencyAdminRole_CannotRevokeLastAdmin() public {
+        vm.startPrank(deployer);
+        bytes32 role = superRBAC.EMERGENCY_ADMIN_ROLE();
+
+        vm.expectRevert(Error.CANNOT_REVOKE_LAST_ADMIN.selector);
+        superRBAC.revokeRole(role, deployer);
+        vm.stopPrank();
     }
 
     function test_grantSwapperRole() public {

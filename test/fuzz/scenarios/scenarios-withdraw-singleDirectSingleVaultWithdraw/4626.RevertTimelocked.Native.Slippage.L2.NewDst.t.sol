@@ -4,41 +4,41 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
+contract SXSVWRevertTimelockedNativeSlippageNewDst is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
     //////////////////////////////////////////////////////////////*/
-        AMBs = [1, 3];
+        AMBs = [1, 2];
 
-        CHAIN_0 = OP;
-        DST_CHAINS = [AVAX];
+        CHAIN_0 = ARBI;
+        DST_CHAINS = [ARBI];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[AVAX][0] = [2];
+        TARGET_UNDERLYINGS[ARBI][0] = [0];
 
-        TARGET_VAULTS[AVAX][0] = [7];
+        TARGET_VAULTS[ARBI][0] = [4];
 
         /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[AVAX][0] = [2];
+        TARGET_FORM_KINDS[ARBI][0] = [1];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[AVAX][1] = [2];
+        TARGET_UNDERLYINGS[ARBI][1] = [0];
 
-        TARGET_VAULTS[AVAX][1] = [7];
+        TARGET_VAULTS[ARBI][1] = [4];
 
         /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[AVAX][1] = [2];
+        TARGET_FORM_KINDS[ARBI][1] = [1];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[AVAX][0] = [1];
-        LIQ_BRIDGES[AVAX][1] = [1];
+        LIQ_BRIDGES[ARBI][0] = [1];
+        LIQ_BRIDGES[ARBI][1] = [1];
 
-        FINAL_LIQ_DST_WITHDRAW[AVAX] = [OP];
+        FINAL_LIQ_DST_WITHDRAW[ARBI] = [ETH];
 
         actions.push(
             TestAction({
@@ -48,11 +48,12 @@ contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 224, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
+
         actions.push(
             TestAction({
                 action: Actions.Withdraw,
@@ -61,9 +62,9 @@ contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: 224, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 multiTx: false,
-                externalToken: 0 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
     }
@@ -73,9 +74,9 @@ contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_) public {
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI));
-        AMOUNTS[AVAX][0] = [amountOne_];
-        AMOUNTS[AVAX][1] = [amountOne_];
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH));
+        AMOUNTS[ARBI][0] = [amountOne_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -84,6 +85,20 @@ contract SXSVWRevertKycNativeNoSlippageL1AMB13 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

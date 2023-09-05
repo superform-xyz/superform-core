@@ -48,14 +48,14 @@ contract MDMVW0102408NativeInputSlipapgeL2AMB13 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[ETH][0] = [2, 2];
-        LIQ_BRIDGES[ETH][1] = [2, 2];
+        LIQ_BRIDGES[ETH][0] = [1, 1];
+        LIQ_BRIDGES[ETH][1] = [1, 1];
 
-        LIQ_BRIDGES[POLY][0] = [2, 2, 2];
-        LIQ_BRIDGES[POLY][1] = [2, 2, 2];
+        LIQ_BRIDGES[POLY][0] = [1, 1, 1];
+        LIQ_BRIDGES[POLY][1] = [1, 1, 1];
 
-        LIQ_BRIDGES[AVAX][0] = [2, 2];
-        LIQ_BRIDGES[AVAX][1] = [2, 2];
+        LIQ_BRIDGES[AVAX][0] = [1, 1];
+        LIQ_BRIDGES[AVAX][1] = [1, 1];
 
         GENERATE_WITHDRAW_TX_DATA_ON_DST = true;
 

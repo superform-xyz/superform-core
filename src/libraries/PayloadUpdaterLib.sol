@@ -30,7 +30,8 @@ library PayloadUpdaterLib {
         public
         pure
     {
-        for (uint256 i; i < newAmount.length;) {
+        uint256 len = newAmount.length;
+        for (uint256 i; i < len;) {
             validateSlippage(newAmount[i], maxAmount[i], slippage[i]);
 
             unchecked {

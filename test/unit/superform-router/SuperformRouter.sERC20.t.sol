@@ -1130,34 +1130,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         returns (bytes memory txData)
     {
         if (liqBridgeKind_ == 1) {
-            ISocketRegistry.BridgeRequest memory bridgeRequest;
-            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-            ISocketRegistry.UserRequest memory userRequest;
-            /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
-            /// bridging request
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1,
-                /// request id
-                0,
-                underlyingToken_,
-                abi.encode(from_, FORKS[toChainId_])
-            );
-
-            /// @dev empty bridge request
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                0,
-                /// id
-                0,
-                address(0),
-                abi.encode(receiver_, FORKS[toChainId_])
-            );
-
-            userRequest =
-                ISocketRegistry.UserRequest(receiver_, uint256(toChainId_), amount_, middlewareRequest, bridgeRequest);
-
-            txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
-        } else if (liqBridgeKind_ == 2) {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
@@ -1200,7 +1172,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.recordLogs();
         SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 ether }(
-            formBeaconId, true, generateBroadcastParams(5, 1)
+            formBeaconId, 2, generateBroadcastParams(5, 1)
         );
 
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());
@@ -1209,15 +1181,15 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             if (chainIds[i] != ARBI) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                bool statusBefore =
+                uint256 statusBefore =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
                 BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
-                bool statusAfter =
+                uint256 statusAfter =
                     SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
 
                 /// @dev assert status update before and after processing the payload
-                assertEq(statusBefore, false);
-                assertEq(statusAfter, true);
+                assertEq(statusBefore, 1);
+                assertEq(statusAfter, 2);
             }
         }
     }

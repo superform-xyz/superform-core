@@ -189,7 +189,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
 
         /// @dev the vault asset (collateral) is approved and deposited to the vault
-        IERC20(vars.collateral).approve(vault, singleVaultData_.amount);
+        IERC20(vars.collateral).safeIncreaseAllowance(vault, singleVaultData_.amount);
+
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
     }
 
@@ -279,7 +280,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC20(v.asset()).transferFrom(msg.sender, address(this), singleVaultData_.amount);
 
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
-        IERC20(v.asset()).approve(vaultLoc, singleVaultData_.amount);
+        IERC20(v.asset()).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
 
         /// @dev This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));

@@ -28,7 +28,6 @@ contract SDSVD4626NoSwapNativeSlippage14L1 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 0 for no bridge, 1 for socket, 2 for lifi
         LIQ_BRIDGES[AVAX][0] = [0];
 
         actions.push(

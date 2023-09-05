@@ -48,7 +48,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         if (
             IFormBeacon(
                 ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
-            ).paused()
+            ).paused() == 2
         ) revert Error.PAUSED();
         _;
     }
@@ -71,7 +71,6 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
-
         _disableInitializers();
     }
 

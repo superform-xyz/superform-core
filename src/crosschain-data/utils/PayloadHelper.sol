@@ -190,7 +190,9 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataNativeAmounts = new uint256[](v.imvd.liqData.length);
             v.permit2datas = new bytes[](v.imvd.liqData.length);
 
-            for (v.i; v.i < v.imvd.liqData.length; v.i++) {
+            uint256 len = v.imvd.liqData.length;
+
+            for (v.i; v.i < len;) {
                 v.bridgeIds[v.i] = v.imvd.liqData[v.i].bridgeId;
                 v.txDatas[v.i] = v.imvd.liqData[v.i].txData;
                 v.liqDataTokens[v.i] = v.imvd.liqData[v.i].token;
@@ -201,6 +203,10 @@ contract PayloadHelper is IPayloadHelper {
 
                 v.liqDataNativeAmounts[v.i] = v.imvd.liqData[v.i].nativeAmount;
                 v.permit2datas[v.i] = v.imvd.liqData[v.i].permit2data;
+
+                unchecked {
+                    ++v.i;
+                }
             }
         } else {
             v.isvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitSingleVaultData));

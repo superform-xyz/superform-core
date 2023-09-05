@@ -26,7 +26,6 @@ contract SDSVD4626RevertNoSwapNativeNoSlippageL2 is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
         LIQ_BRIDGES[ARBI][0] = [0];
 
         actions.push(

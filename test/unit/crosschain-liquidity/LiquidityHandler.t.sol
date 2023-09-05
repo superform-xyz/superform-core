@@ -37,13 +37,16 @@ contract LiquidityHandlerTest is BaseSetup {
         uint256 transferAmount = 1e18;
         /// 1 token
         address payable token = payable(getContract(ETH, "DAI"));
+        address tokenDst = getContract(ARBI, "DAI");
 
         vm.startPrank(deployer);
         MockERC20(token).transfer(address(liquidityHandler), transferAmount);
 
         liquidityHandler.dispatchTokensTest(
             SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1),
-            _buildTxData(1, address(token), address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
+            _buildTxData(
+                1, address(token), tokenDst, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)
+            ),
             token,
             transferAmount,
             address(liquidityHandler),
@@ -58,6 +61,7 @@ contract LiquidityHandlerTest is BaseSetup {
         uint256 transferAmount = 1e18;
         /// 1 token
         address payable token = payable(getContract(ETH, "DAI"));
+        address tokenDst = getContract(ARBI, "DAI");
 
         /// @dev giving approval
         vm.prank(deployer);
@@ -66,7 +70,9 @@ contract LiquidityHandlerTest is BaseSetup {
         vm.prank(deployer);
         liquidityHandler.dispatchTokensTest(
             SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1),
-            _buildTxData(1, address(token), address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
+            _buildTxData(
+                1, address(token), tokenDst, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)
+            ),
             token,
             transferAmount,
             deployer,
@@ -80,6 +86,7 @@ contract LiquidityHandlerTest is BaseSetup {
         uint256 transferAmount = 1e18;
         /// 1 token
         address payable token = payable(getContract(ETH, "USDT"));
+        address tokenDst = getContract(ARBI, "DAI");
 
         /// @dev giving approval
         IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
@@ -99,7 +106,9 @@ contract LiquidityHandlerTest is BaseSetup {
         vm.prank(deployer);
         liquidityHandler.dispatchTokensTest(
             SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1),
-            _buildTxData(1, address(token), address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
+            _buildTxData(
+                1, address(token), tokenDst, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)
+            ),
             address(token),
             transferAmount,
             deployer,
@@ -112,7 +121,9 @@ contract LiquidityHandlerTest is BaseSetup {
     function test_dispatchTokensUsingFailingTxData() public {
         uint256 transferAmount = 1e18; // 1 token
         address payable token = payable(getContract(ETH, "DAI"));
-        address bridgeAddress = SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(2);
+        address tokenDst = getContract(ARBI, "DAI");
+
+        address bridgeAddress = address(new LiquidityHandlerUser());
 
         vm.prank(deployer);
         MockERC20(token).approve(address(liquidityHandler), transferAmount);
@@ -121,7 +132,9 @@ contract LiquidityHandlerTest is BaseSetup {
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
         liquidityHandler.dispatchTokensTest(
             bridgeAddress,
-            _buildTxData(1, address(token), address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
+            _buildTxData(
+                1, address(token), tokenDst, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)
+            ),
             token,
             transferAmount,
             deployer,
@@ -134,13 +147,13 @@ contract LiquidityHandlerTest is BaseSetup {
     function test_dispatchNativeTokensWithInsufficientNativeAmount() public {
         uint256 transferAmount = 1e18; // 1 token
         address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-        address bridgeAddress = SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(2);
+        address bridgeAddress = SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1);
 
         vm.prank(deployer);
         vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
         liquidityHandler.dispatchTokensTest(
             bridgeAddress,
-            _buildTxData(1, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
+            _buildTxData(1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
             token,
             transferAmount,
             deployer,
@@ -153,13 +166,13 @@ contract LiquidityHandlerTest is BaseSetup {
     function test_dispatchNativeTokensWithInvalidTxData() public {
         uint256 transferAmount = 1e18; // 1 token
         address token = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-        address bridgeAddress = SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(2);
+        address bridgeAddress = address(new LiquidityHandlerUser());
 
         vm.prank(deployer);
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
         liquidityHandler.dispatchTokensTest{ value: 1e18 }(
             bridgeAddress,
-            _buildTxData(1, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
+            _buildTxData(1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
             token,
             transferAmount,
             deployer,
@@ -172,6 +185,7 @@ contract LiquidityHandlerTest is BaseSetup {
     function _buildTxData(
         uint8 liqBridgeKind_,
         address underlyingToken_,
+        address underlyingTokenDst_,
         address from_,
         uint64 toChainId_,
         uint256 amount_,
@@ -181,35 +195,6 @@ contract LiquidityHandlerTest is BaseSetup {
         returns (bytes memory txData)
     {
         if (liqBridgeKind_ == 1) {
-            ISocketRegistry.BridgeRequest memory bridgeRequest;
-            ISocketRegistry.MiddlewareRequest memory middlewareRequest;
-            ISocketRegistry.UserRequest memory userRequest;
-            /// @dev middlware request is used if there is a swap involved before the bridging action
-            /// @dev the input token should be the token the user deposits, which will be swapped to the input token of
-            /// bridging request
-            middlewareRequest = ISocketRegistry.MiddlewareRequest(
-                1,
-                /// request id
-                0,
-                underlyingToken_,
-                /// @dev arbitrary total slippage (200) and 0 multiTxSlippageShare as multiTx is false
-                abi.encode(from_, FORKS[toChainId_], getContract(ARBI, "DAI"), 200, false, 0, false)
-            );
-
-            /// @dev empty bridge request
-            bridgeRequest = ISocketRegistry.BridgeRequest(
-                0,
-                /// id
-                0,
-                address(0),
-                abi.encode(receiver_, FORKS[toChainId_], underlyingToken_)
-            );
-
-            userRequest =
-                ISocketRegistry.UserRequest(receiver_, uint256(toChainId_), amount_, middlewareRequest, bridgeRequest);
-
-            txData = abi.encodeWithSelector(SocketRouterMock.outboundTransferTo.selector, userRequest);
-        } else if (liqBridgeKind_ == 2) {
             ILiFi.BridgeData memory bridgeData;
             ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
 
@@ -222,7 +207,7 @@ contract LiquidityHandlerTest is BaseSetup {
                 underlyingToken_,
                 amount_,
                 /// @dev arbitrary totalSlippage (200) and 0 multiTxSlippageShare as multiTx is false
-                abi.encode(from_, FORKS[toChainId_], underlyingToken_, 200, false, 0, false),
+                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, 200, false, 0, false),
                 false // arbitrary
             );
 

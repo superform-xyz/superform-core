@@ -25,8 +25,7 @@ contract SXSVDNormal4626RevertMultiTxTokenInputSlippageL2AMB1 is ProtocolActions
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[AVAX][0] = [2];
+        LIQ_BRIDGES[AVAX][0] = [1];
 
         actions.push(
             TestAction({

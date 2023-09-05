@@ -32,9 +32,8 @@ contract MDMVDMulti0000NoMultiTxIncludingSingleDirectTokenInputSlippageL2AMB12 i
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[OP][0] = [2, 0];
-        LIQ_BRIDGES[ETH][0] = [2, 2];
+        LIQ_BRIDGES[OP][0] = [1, 1];
+        LIQ_BRIDGES[ETH][0] = [1, 1];
 
         actions.push(
             TestAction({

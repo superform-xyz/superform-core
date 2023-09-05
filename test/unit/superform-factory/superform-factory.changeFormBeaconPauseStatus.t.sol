@@ -32,13 +32,13 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         );
 
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus(
-            formBeaconId, true, generateBroadcastParams(5, 1)
+            formBeaconId, 2, generateBroadcastParams(5, 1)
         );
 
-        bool status =
+        uint256 status =
             SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormBeaconPaused(formBeaconId);
 
-        assertEq(status, true);
+        assertEq(status, 2);
     }
 
     function test_changeFormBeaconPauseStatusNoBroadcast() public {
@@ -58,13 +58,13 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         );
 
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 * 10 ** 18 }(
-            formBeaconId, true, ""
+            formBeaconId, 2, ""
         );
 
-        bool status =
+        uint256 status =
             SuperformFactory(payable(getContract(chainId, "SuperformFactory"))).isFormBeaconPaused(formBeaconId);
 
-        assertEq(status, true);
+        assertEq(status, 2);
     }
 
     function test_revert_changeFormBeaconPauseStatus_INVALID_FORM_ID() public {
@@ -87,7 +87,7 @@ contract SuperformFactoryChangePauseTest is BaseSetup {
         /// @dev Invalid Form Beacon For Pausing
         vm.expectRevert(Error.INVALID_FORM_ID.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 * 10 ** 18 }(
-            formBeaconId_invalid, true, generateBroadcastParams(5, 2)
+            formBeaconId_invalid, 2, generateBroadcastParams(5, 2)
         );
     }
 }

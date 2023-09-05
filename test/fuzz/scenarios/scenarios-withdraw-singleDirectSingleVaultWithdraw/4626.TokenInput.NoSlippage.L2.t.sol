@@ -35,9 +35,8 @@ contract SXSVWNormal4626TokenInputSlippage is ProtocolActions {
 
         MAX_SLIPPAGE = 1000;
 
-        /// @dev 1 for socket, 2 for lifi
-        LIQ_BRIDGES[ETH][0] = [2];
-        LIQ_BRIDGES[ETH][1] = [2];
+        LIQ_BRIDGES[ETH][0] = [1];
+        LIQ_BRIDGES[ETH][1] = [1];
 
         FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH];
 

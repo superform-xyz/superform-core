@@ -241,7 +241,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             uint8[] memory ambIds = new uint8[](proofIds.length + 1);
 
             ambIds[0] = msgAMB[payloadId_];
-            for (uint256 i; i < proofIds.length;) {
+
+            uint256 len = proofIds.length;
+            for (uint256 i; i < len;) {
                 ambIds[i + 1] = proofIds[i];
 
                 unchecked {
@@ -499,7 +501,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         InitSingleVaultData memory singleVaultData;
         bool errors;
 
-        for (uint256 i; i < multiVaultData.superformIds.length;) {
+        uint256 len = multiVaultData.superformIds.length;
+
+        for (uint256 i; i < len;) {
             /// @dev it is critical to validate that the action is being performed to the correct chainId coming from
             /// the superform
             DataLib.validateSuperformChainId(multiVaultData.superformIds[i], superRegistry.chainId());
