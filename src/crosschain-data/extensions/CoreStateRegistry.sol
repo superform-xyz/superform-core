@@ -1,24 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
-import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
-import { LiquidityHandler } from "../../crosschain-liquidity/LiquidityHandler.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
-import { ICoreStateRegistry } from "../../interfaces/ICoreStateRegistry.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
-import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-import { LiqRequest } from "../../types/DataTypes.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
-
-import "../../types/DataTypes.sol";
+import "../../interfaces/ICoreStateRegistry.sol";
+import "../../crosschain-liquidity/LiquidityHandler.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -392,20 +386,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         singleVaultData.amount = finalAmount_;
 
         newPayloadBody_ = abi.encode(singleVaultData);
-    }
-
-    struct UpdateMultiVaultWithdrawPayloadLocalVars {
-        InitMultiVaultData multiVaultData;
-        InitSingleVaultData singleVaultData;
-        uint256 len;
-        uint256 i;
-        address superform;
-        uint256[] tSuperFormIds;
-        uint256[] tAmounts;
-        uint256[] tMaxSlippage;
-        LiqRequest[] tLiqData;
-        uint256 finalAmount;
-        IBridgeValidator bridgeValidator;
     }
 
     /// @dev helper function to update multi vault withdraw payload

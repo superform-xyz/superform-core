@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { LiqRequest, AMBMessage, PayloadState } from "../types/DataTypes.sol";
+import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
+import "../types/DataTypes.sol";
 
 /// @title ICoreStateRegistry
 /// @author ZeroPoint Labs
@@ -43,6 +44,21 @@ interface ICoreStateRegistry {
         uint256 prevPayloadHeader;
         uint64 srcChainId;
         uint8 isMulti;
+    }
+
+    /// @dev local struct to avoid stack too deep errors in `updateWithdrawPayload`
+    struct UpdateMultiVaultWithdrawPayloadLocalVars {
+        InitMultiVaultData multiVaultData;
+        InitSingleVaultData singleVaultData;
+        uint256 len;
+        uint256 i;
+        address superform;
+        uint256[] tSuperFormIds;
+        uint256[] tAmounts;
+        uint256[] tMaxSlippage;
+        LiqRequest[] tLiqData;
+        uint256 finalAmount;
+        IBridgeValidator bridgeValidator;
     }
 
     /*///////////////////////////////////////////////////////////////
