@@ -148,9 +148,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
             if (p.isXChain == 1) {
-                (uint256 payloadId_,) = abi.decode(p.data.extraFormData, (uint256, uint256));
-                uint8[] memory ambIds_ = IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")))
-                    .getDeliveryAMB(payloadId_);
+                (,, uint8[] memory ambIds_) = abi.decode(p.data.extraFormData, (uint256, uint256, uint8[]));
 
                 _dispatchAcknowledgement(p.srcChainId, ambIds_, _constructSingleReturnData(p.srcSender, p.data));
             }
@@ -204,7 +202,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @dev returns the required quorum for the src chain id from super registry
     /// @param chainId is the src chain id
     /// @return the quorum configured for the chain id
-    function getRequiredMessagingQuorum(uint64 chainId) public view returns (uint256) {
+    function getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
     }
 

@@ -7,6 +7,7 @@ import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";
 import { PayloadState, AMBMessage, AMBExtraData } from "../types/DataTypes.sol";
+import { ProofLib } from "../libraries/ProofLib.sol";
 
 /// @title BaseStateRegistry
 /// @author Zeropoint Labs
@@ -15,6 +16,9 @@ import { PayloadState, AMBMessage, AMBExtraData } from "../types/DataTypes.sol";
 /// @dev payloads (messages). Inheriting children contracts have the flexibility to define their own processing
 /// mechanisms.
 abstract contract BaseStateRegistry is IBaseStateRegistry {
+    using ProofLib for AMBMessage;
+    using ProofLib for uint8[];
+
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -25,16 +29,17 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     //////////////////////////////////////////////////////////////*/
     uint256 public payloadsCount;
 
-    mapping(bytes32 => uint256) public messageQuorum;
-
     /// @dev stores received payload after assigning them an unique identifier upon receiving
     mapping(uint256 => bytes) public payloadBody;
 
     /// @dev stores received payload's header (txInfo)
     mapping(uint256 => uint256) public payloadHeader;
 
+    /// @dev stores a proof's quorum
+    mapping(bytes32 => uint256) internal messageQuorum;
+
     /// @dev maps payloads to their current status
-    mapping(uint256 => PayloadState) public payloadTracking;
+    mapping(uint256 => PayloadState) internal payloadTracking;
 
     /// @dev maps payloads to the amb ids that delivered them
     mapping(uint256 => uint8) internal msgAMB;
@@ -116,7 +121,12 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /// @inheritdoc IBaseStateRegistry
     function processPayload(uint256 payloadId_) external payable virtual override;
 
-    function getDeliveryAMB(uint256 payloadId_) external view override returns (uint8[] memory ambIds_) {
+    /*///////////////////////////////////////////////////////////////
+                            INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows users to read the ids of ambs that delivered a payload
+    function _getDeliveryAMB(uint256 payloadId_) internal view returns (uint8[] memory ambIds_) {
         bytes32 proof = keccak256(abi.encode(AMBMessage(payloadHeader[payloadId_], payloadBody[payloadId_])));
         uint8[] memory proofIds = proofAMB[proof];
 
@@ -132,10 +142,6 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             }
         }
     }
-
-    /*///////////////////////////////////////////////////////////////
-                            INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
 
     /// @dev dispatches the payload(message_) through individual message bridge implementations
     function _dispatchPayload(
@@ -169,22 +175,17 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     )
         internal
     {
+        /// @dev validates the input amb ids
+        ambIds_.validateProofAMBs();
+
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
-        data.params = abi.encode(keccak256(message_));
+        data.params = data.computeProofBytes();
+
         uint256 len = ambIds_.length;
+
         /// @dev i starts from 1 since 0 is primary amb id which dispatches the message itself
         for (uint8 i = 1; i < len;) {
-            uint8 tempAmbId = ambIds_[i];
-
-            if (tempAmbId == ambIds_[0]) {
-                revert Error.INVALID_PROOF_BRIDGE_ID();
-            }
-
-            if (i - 1 > 0 && tempAmbId <= ambIds_[i - 1]) {
-                revert Error.DUPLICATE_PROOF_BRIDGE_ID();
-            }
-
-            IAmbImplementation tempImpl = IAmbImplementation(superRegistry.getAmbAddress(tempAmbId));
+            IAmbImplementation tempImpl = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i]));
 
             if (address(tempImpl) == address(0)) {
                 revert Error.INVALID_BRIDGE_ID();
