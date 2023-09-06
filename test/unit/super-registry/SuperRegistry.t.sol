@@ -125,6 +125,7 @@ contract SuperRegistryTest is BaseSetup {
     function test_setAmbAddress_and_revert_zeroAddress_invalidCaller() public {
         uint8[] memory ambId = new uint8[](2);
         address[] memory ambAddress = new address[](2);
+        bool[] memory broadcastAMB = new bool[](2);
 
         ambId[0] = 1;
         ambAddress[0] = address(0x1);
@@ -132,13 +133,13 @@ contract SuperRegistryTest is BaseSetup {
         ambAddress[1] = address(0x3);
 
         vm.startPrank(deployer);
-        superRegistry.setAmbAddress(ambId, ambAddress);
+        superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
         assertEq(superRegistry.getAmbAddress(3), address(0x3));
         vm.stopPrank();
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
-        superRegistry.setAmbAddress(ambId, ambAddress);
+        superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
 
         assertEq(superRegistry.isValidAmbImpl(getContract(ETH, "LayerzeroImplementation")), true);
         assertEq(superRegistry.isValidAmbImpl(address(0x9)), false);

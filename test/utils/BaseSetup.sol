@@ -140,6 +140,7 @@ abstract contract BaseSetup is DSTest, Test {
     /// @notice id 4 is wormhole (Specialized Relayer)
 
     uint8[] public ambIds = [uint8(1), 2, 3, 4];
+    bool[] public isBroadcastAMB = [false, false, false, true];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -650,7 +651,7 @@ abstract contract BaseSetup is DSTest, Test {
             SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
 
             /// @dev configures lzImplementation and hyperlane to super registry
-            vars.superRegistryC.setAmbAddress(ambIds, vars.ambAddresses);
+            vars.superRegistryC.setAmbAddress(ambIds, vars.ambAddresses, isBroadcastAMB);
 
             /// @dev 17 setup setup srcChain keepers
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.chainId);

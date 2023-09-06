@@ -48,7 +48,7 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
     }
 
     /*///////////////////////////////////////////////////////////////
-                                CONSTRUCTOR
+                                MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
     /// @notice sender should be a valid configured contract
@@ -66,6 +66,21 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
         }
         _;
     }
+
+    modifier onlyProcessor() {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasBroadcastStateRegistryProcessorRole(
+                msg.sender
+            )
+        ) {
+            revert Error.NOT_PROCESSOR();
+        }
+        _;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                            EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc QuorumManager
     function setRequiredMessagingQuorum(uint64 srcChainId_, uint256 quorum_) external override onlyProtocolAdmin {
@@ -97,7 +112,10 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
 
     /// @inheritdoc IBroadcastRegistry
     function receiveBroadcastPayload(uint64 srcChainId_, bytes memory message_) external override {
-        /// FIXME: add sender validations
+        if (!superRegistry.isValidBroadcastAmbImpl(msg.sender)) {
+            revert Error.NOT_BROADCAST_AMB_IMPLEMENTATION();
+        }
+
         if (message_.length == 32) {
             ++messageQuorum[abi.decode(message_, (bytes32))];
         } else {
@@ -109,7 +127,7 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
     }
 
     /// @inheritdoc IBroadcastRegistry
-    function processPayload(uint256 payloadId) external override {
+    function processPayload(uint256 payloadId) external override onlyProcessor {
         if (payloadId > payloadsCount) {
             revert Error.INVALID_PAYLOAD_ID();
         }

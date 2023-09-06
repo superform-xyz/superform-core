@@ -154,6 +154,7 @@ abstract contract AbstractDeploySingle is Script {
     /// @notice id 3 is wormhole AR
     /// @notice 4 is wormhole SR
     uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
+    bool[] public broadcastAMB = [false, false, false, true];
 
     /*//////////////////////////////////////////////////////////////
                         AMB VARIABLES
@@ -515,7 +516,9 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setBridgeAddresses(bridgeIds, BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);
 
         /// @dev configures lzImplementation and hyperlane to super registry
-        SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(ambIds, vars.ambAddresses);
+        SuperRegistry(payable(getContract(vars.chainId, "SuperRegistry"))).setAmbAddress(
+            ambIds, vars.ambAddresses, broadcastAMB
+        );
 
         /// @dev 16 setup setup srcChain keepers
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.chainId);

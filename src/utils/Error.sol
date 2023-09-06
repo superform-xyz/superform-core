@@ -39,6 +39,9 @@ library Error {
     /// @dev thrown when msg.sender is not broadcast state registry
     error NOT_BROADCAST_REGISTRY();
 
+    /// @dev thrown when msg.sender is not broadcast amb implementation
+    error NOT_BROADCAST_AMB_IMPLEMENTATION();
+
     /// @dev thrown if the broadcast payload is invalid
     error INVALID_BROADCAST_PAYLOAD();
 
