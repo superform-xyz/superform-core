@@ -141,45 +141,25 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
-    // function test_grantBroadcastRegistryProcessorRole() public {
-    //     vm.startPrank(deployer);
-    //     superRBAC.grantRole(superRBAC.ROLES_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
-    //     vm.stopPrank();
+    function test_grantBroadacastStateRegistryProcessorRole() public {
+        vm.startPrank(deployer);
+        superRBAC.grantRole(superRBAC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
+        vm.stopPrank();
 
-    //     assertEq(superRBAC.hasBroadcastRegistryProcessorRole(address(0x1)), true);
-    // }
+        assertEq(superRBAC.hasBroadcastStateRegistryProcessorRole(address(0x1)), true);
+    }
 
-    // function test_revokeBroadcastRegistryProcessorRole() public {
-    //     _revokeAndCheck(
-    //         superRBAC.hasBroadcastRegistryProcessorRole.selector,
-    //         superRBAC.ROLES_STATE_REGISTRY_PROCESSOR_ROLE(),
-    //         superRegistry.ROLES_REGISTRY_PROCESSOR(),
-    //         deployer,
-    //         "",
-    //         generateBroadcastParams(5, 1),
-    //         0
-    //     );
-    // }
-
-    // function test_grantFactoryStateRegistryProcessorRole() public {
-    //     vm.startPrank(deployer);
-    //     superRBAC.grantRole(superRBAC.FACTORY_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
-    //     vm.stopPrank();
-
-    //     assertEq(superRBAC.hasFactoryStateRegistryProcessorRole(address(0x1)), true);
-    // }
-
-    // function test_revokeFactoryStateRegistryProcessorRole() public {
-    //     _revokeAndCheck(
-    //         superRBAC.hasFactoryStateRegistryProcessorRole.selector,
-    //         superRBAC.FACTORY_STATE_REGISTRY_PROCESSOR_ROLE(),
-    //         superRegistry.FACTORY_REGISTRY_PROCESSOR(),
-    //         deployer,
-    //         "",
-    //         generateBroadcastParams(5, 1),
-    //         0
-    //     );
-    // }
+    function test_revokeBroadcastStateRegistryProcessorRole() public {
+        _revokeAndCheck(
+            superRBAC.hasBroadcastStateRegistryProcessorRole.selector,
+            superRBAC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(),
+            superRegistry.BROADCAST_REGISTRY_PROCESSOR(),
+            deployer,
+            "",
+            generateBroadcastParams(5, 1),
+            0
+        );
+    }
 
     function test_grantTwoStepsStateRegistryProcessorRole() public {
         vm.startPrank(deployer);

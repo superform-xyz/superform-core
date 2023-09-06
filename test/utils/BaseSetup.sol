@@ -374,6 +374,10 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
             assert(vars.superRBACC.hasTwoStepsStateRegistryProcessorRole(deployer));
 
+            /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+            vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
+            assert(vars.superRBACC.hasTwoStepsStateRegistryProcessorRole(deployer));
+
             /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer);
             assert(vars.superRBACC.hasCoreStateRegistryUpdaterRole(deployer));
@@ -653,8 +657,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), deployer, vars.chainId);
+            vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), deployer, vars.chainId);
 
             delete bridgeAddresses;

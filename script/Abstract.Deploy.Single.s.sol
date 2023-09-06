@@ -342,6 +342,9 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev FIXME: in reality who should have the TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
+        /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+        vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
+
         /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
 
@@ -519,8 +522,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), ownerAddress, vars.chainId);
-        vars.superRegistryC.setAddress(vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
-        vars.superRegistryC.setAddress(vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
+        vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
 
         vm.stopBroadcast();
@@ -717,10 +719,7 @@ abstract contract AbstractDeploySingle is Script {
                     vars.superRegistryC.CORE_REGISTRY_UPDATER(), ownerAddress, vars.dstChainId
                 );
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.FACTORY_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
-                );
-                vars.superRegistryC.setAddress(
-                    vars.superRegistryC.ROLES_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
+                    vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
                 );
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId

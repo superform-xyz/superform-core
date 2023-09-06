@@ -23,6 +23,8 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE");
+    bytes32 public constant override BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE =
+        keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
     bytes32 public constant override SUPERPOSITIONS_MINTER_ROLE = keccak256("SUPERPOSITIONS_MINTER_ROLE");
     bytes32 public constant override SUPERPOSITIONS_BURNER_ROLE = keccak256("SUPERPOSITIONS_BURNER_ROLE");
@@ -43,6 +45,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         _setRoleAdmin(MULTI_TX_SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_UPDATER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SUPERPOSITIONS_MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SUPERPOSITIONS_BURNER_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -147,6 +150,16 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @inheritdoc ISuperRBAC
     function hasTwoStepsStateRegistryProcessorRole(address twoStepsProcessor_) external view override returns (bool) {
         return hasRole(TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE, twoStepsProcessor_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasBroadcastStateRegistryProcessorRole(address broadcastProcessor_)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return hasRole(BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE, broadcastProcessor_);
     }
 
     /// @inheritdoc ISuperRBAC

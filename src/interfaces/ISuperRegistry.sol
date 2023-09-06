@@ -139,11 +139,8 @@ interface ISuperRegistry {
     /// @dev returns the id of the core state registry processor keeper
     function CORE_REGISTRY_PROCESSOR() external view returns (bytes32);
 
-    /// @dev returns the id of the factory state registry processor keeper
-    function FACTORY_REGISTRY_PROCESSOR() external view returns (bytes32);
-
-    /// @dev returns the id of the factory state registry processor keeper
-    function ROLES_REGISTRY_PROCESSOR() external view returns (bytes32);
+    /// @dev returns the id of the broadcast registry processor keeper
+    function BROADCAST_REGISTRY_PROCESSOR() external view returns (bytes32);
 
     /// @dev returns the id of the two steps form state registry processor keeper
     function TWO_STEPS_REGISTRY_PROCESSOR() external view returns (bytes32);

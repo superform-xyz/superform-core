@@ -60,6 +60,9 @@ interface ISuperRBAC {
     /// @dev returns the id of the two steps state registry processor role
     function TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of the broadcast state registry processor role
+    function BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
+
     /// @dev returns the id of the core state registry updater role
     function CORE_STATE_REGISTRY_UPDATER_ROLE() external view returns (bytes32);
 
@@ -108,6 +111,10 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the two steps processor role
     /// @param twoStepsProcessor_ the address to check
     function hasTwoStepsStateRegistryProcessorRole(address twoStepsProcessor_) external view returns (bool);
+
+    /// @dev returns whether the given address has the broadcast processor role
+    /// @param broadcastProcessor_ the address to check
+    function hasBroadcastStateRegistryProcessorRole(address broadcastProcessor_) external view returns (bool);
 
     /// @dev returns whether the given address has the updater role
     /// @param updater_ the address to check
