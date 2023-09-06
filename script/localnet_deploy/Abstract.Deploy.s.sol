@@ -16,7 +16,6 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
-import { MultiTxProcessor } from "src/crosschain-liquidity/MultiTxProcessor.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
@@ -82,7 +81,7 @@ abstract contract AbstractDeploy is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[23] public contractNames = [
+    string[22] public contractNames = [
         "CoreStateRegistry",
         "TwoStepsFormStateRegistry",
         "BroadcastRegistry",
@@ -97,7 +96,6 @@ abstract contract AbstractDeploy is Script {
         "ERC4626KYCDaoForm",
         "SuperformRouter",
         "SuperPositions",
-        "MultiTxProcessor",
         "SuperRegistry",
         "SuperRBAC",
         "SuperTransmuter",
@@ -330,9 +328,6 @@ abstract contract AbstractDeploy is Script {
         /// @dev FIXME: in reality who should have the PAYMENT_ADMIN_ROLE?
         vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the MULTI_TX_SWAPPER_ROLE for multiTxProcessor?
-        vars.superRBACC.grantRole(vars.superRBACC.MULTI_TX_SWAPPER_ROLE(), ownerAddress);
-
         /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
@@ -499,19 +494,13 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
 
-        /// @dev 13 - Deploy MultiTx Processor
-        vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
-        contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars.multiTxProcessor;
-
-        vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_PROCESSOR(), vars.multiTxProcessor, vars.chainId);
-
-        /// @dev 14 - Deploy PayMaster
+        /// @dev 13 - Deploy PayMaster
         vars.payMaster = address(new PayMaster{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYMASTER(), vars.payMaster, vars.chainId);
 
-        /// @dev 15 - Super Registry extra setters
+        /// @dev 14 - Super Registry extra setters
         vars.superRegistryC.setBridgeAddresses(bridgeIds, BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);
 
         /// @dev configures lzImplementation and hyperlane to super registry
@@ -519,9 +508,8 @@ abstract contract AbstractDeploy is Script {
             ambIds, vars.ambAddresses, broadcastAMB
         );
 
-        /// @dev 16 setup setup srcChain keepers
+        /// @dev 15 setup setup srcChain keepers
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.chainId);
-        vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
@@ -614,7 +602,6 @@ abstract contract AbstractDeploy is Script {
                     vars.dstChainId,
                     PRICE_FEEDS[vars.chainId][vars.dstChainId],
                     address(0),
-                    50_000,
                     40_000,
                     70_000,
                     80_000,
@@ -673,18 +660,11 @@ abstract contract AbstractDeploy is Script {
                 );
 
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.MULTI_TX_PROCESSOR(),
-                    getContract(vars.dstChainId, "MultiTxProcessor"),
-                    vars.dstChainId
-                );
-
-                vars.superRegistryC.setAddress(
                     vars.superRegistryC.PAYLOAD_HELPER(), getContract(vars.dstChainId, "PayloadHelper"), vars.dstChainId
                 );
 
                 /// @dev FIXME - in mainnet who is this?
                 vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.dstChainId);
-                vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), ownerAddress, vars.dstChainId);
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.dstChainId
                 );
@@ -704,10 +684,10 @@ abstract contract AbstractDeploy is Script {
                 PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
                     vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                 );
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(40_000));
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 11, abi.encode(50_000));
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 9, abi.encode(40_000));
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(50_000));
                 PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
-                    vars.chainId, 8, abi.encode(50 * 10 ** 9 wei)
+                    vars.chainId, 7, abi.encode(50 * 10 ** 9 wei)
                 );
             }
         }

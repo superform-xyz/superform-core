@@ -206,8 +206,8 @@ contract LiquidityHandlerTest is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                /// @dev arbitrary totalSlippage (200) and 0 multiTxSlippageShare as multiTx is false
-                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, 200, false, 0, false),
+                /// @dev arbitrary totalSlippage (200)
+                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, 200, false),
                 false // arbitrary
             );
 

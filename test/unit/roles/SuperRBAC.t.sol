@@ -101,26 +101,6 @@ contract SuperRBACTest is BaseSetup {
         vm.stopPrank();
     }
 
-    function test_grantSwapperRole() public {
-        vm.startPrank(deployer);
-        superRBAC.grantRole(superRBAC.MULTI_TX_SWAPPER_ROLE(), address(0x1));
-        vm.stopPrank();
-
-        assertEq(superRBAC.hasMultiTxProcessorSwapperRole(address(0x1)), true);
-    }
-
-    function test_revokeMultiTxSwapperRole() public {
-        _revokeAndCheck(
-            superRBAC.hasMultiTxProcessorSwapperRole.selector,
-            superRBAC.MULTI_TX_SWAPPER_ROLE(),
-            superRegistry.MULTI_TX_SWAPPER(),
-            deployer,
-            "",
-            generateBroadcastParams(5, 1),
-            0
-        );
-    }
-
     function test_grantCoreStateRegistryProcessorRole() public {
         vm.startPrank(deployer);
         superRBAC.grantRole(superRBAC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));

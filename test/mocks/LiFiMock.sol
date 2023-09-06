@@ -36,7 +36,7 @@ contract LiFiMock is Test {
             _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, true);
         } else if (!bridgeData.hasSourceSwaps && bridgeData.hasDestinationCall) {
             /// @dev assume, for mocking purposes that cases with just swap is for the same token
-            /// @dev this is for direct actions and multiTx swap of destination
+            /// @dev this is for direct actions
             /// @dev bridge is used here to mint tokens in a new contract, but actually it's just a swap (chain id is
             /// the same)
             _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
@@ -53,15 +53,8 @@ contract LiFiMock is Test {
         internal
     {
         /// @dev encapsulating from
-        (
-            address from,
-            uint256 toForkId,
-            address outputToken,
-            int256 slippage,
-            bool isMultiTx,
-            uint256 multiTxSlippageShare,
-            bool isDirect
-        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool));
+        (address from, uint256 toForkId, address outputToken, int256 slippage, bool isDirect) =
+            abi.decode(data_, (address, uint256, address, int256, bool));
 
         if (inputToken_ != NATIVE) {
             if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
@@ -76,8 +69,6 @@ contract LiFiMock is Test {
 
         uint256 amountOut;
         if (isDirect) slippage = 0;
-        else if (isMultiTx) slippage = (slippage * int256(multiTxSlippageShare)) / 100;
-        else slippage = (slippage * int256(100 - multiTxSlippageShare)) / 100;
 
         amountOut = (amount_ * uint256(10_000 - slippage)) / 10_000;
 

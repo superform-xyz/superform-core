@@ -127,17 +127,11 @@ interface ISuperRegistry {
     /// @dev returns the id of the super rbac module
     function SUPER_RBAC() external view returns (bytes32);
 
-    /// @dev returns the id of the multi tx processor module
-    function MULTI_TX_PROCESSOR() external view returns (bytes32);
-
     /// @dev returns the id of the payload helper module
     function PAYLOAD_HELPER() external view returns (bytes32);
 
     /// @dev returns the id of the payment admin keeper
     function PAYMENT_ADMIN() external view returns (bytes32);
-
-    /// @dev returns the id of the multi tx swapper keeper
-    function MULTI_TX_SWAPPER() external view returns (bytes32);
 
     /// @dev returns the id of the core state registry updater keeper
     function CORE_REGISTRY_UPDATER() external view returns (bytes32);

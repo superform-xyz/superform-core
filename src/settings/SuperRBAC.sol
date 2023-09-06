@@ -17,7 +17,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
     bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE");
-    bytes32 public constant override MULTI_TX_SWAPPER_ROLE = keccak256("MULTI_TX_SWAPPER_ROLE");
     bytes32 public constant override BROADCASTER_ROLE = keccak256("BROADCASTER_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
@@ -42,7 +41,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         _setRoleAdmin(PAYMENT_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
-        _setRoleAdmin(MULTI_TX_SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -135,11 +133,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @inheritdoc ISuperRBAC
     function hasPaymentAdminRole(address admin_) external view override returns (bool) {
         return hasRole(PAYMENT_ADMIN_ROLE, admin_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasMultiTxProcessorSwapperRole(address swapper_) external view override returns (bool) {
-        return hasRole(MULTI_TX_SWAPPER_ROLE, swapper_);
     }
 
     /// @inheritdoc ISuperRBAC

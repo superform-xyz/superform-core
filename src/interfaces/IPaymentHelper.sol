@@ -20,7 +20,6 @@ interface IPaymentHelper {
     /// @param chainId_ is the identifier of new chain id
     /// @param nativeFeedOracle_ is the native price feed oracle
     /// @param gasPriceOracle_ is the gas price oracle
-    /// @param swapGasUsed_ is the swap gas params
     /// @param updateGasUsed_ is the update gas params
     /// @param depositGasUsed_ is the deposit per vault gas on the chain
     /// @param withdrawGasUsed_ is the withdraw per vault gas on the chain
@@ -31,7 +30,6 @@ interface IPaymentHelper {
         uint64 chainId_,
         address nativeFeedOracle_,
         address gasPriceOracle_,
-        uint256 swapGasUsed_,
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
         uint256 withdrawGasUsed_,
