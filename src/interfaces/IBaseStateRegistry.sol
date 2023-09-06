@@ -59,6 +59,9 @@ interface IBaseStateRegistry {
     /// (or) can implement scenario based reverting like in coreStateRegistry
     function processPayload(uint256 payloadId_) external payable;
 
+    /// @dev allows users to read the total payloads received by the registry
+    function payloadsCount() external view returns (uint256);
+
     /// @dev allows users to read the bytes payload_ stored per payloadId_
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
     /// @return payloadBody_ the crosschain data received
@@ -68,4 +71,14 @@ interface IBaseStateRegistry {
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
     /// @return payloadHeader_ the crosschain header received
     function payloadHeader(uint256 payloadId_) external view returns (uint256 payloadHeader_);
+
+    /// @dev allows users to read the amb that delivered the payload
+    /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
+    /// @return ambId_ is the amb that delivered the payload
+    function msgAMB(uint256 payloadId_) external view returns (uint8 ambId_);
+
+    /// @dev allows users to read the amb that delivered the proof
+    /// @param proof_ is the bytes32 proof
+    /// @return ambIds_ is the identifier of ambs that delivered the proof
+    function getProofAMB(bytes32 proof_) external view returns (uint8[] memory ambIds_);
 }

@@ -54,7 +54,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
         );
 
         vm.prank(deployer);
-        twoStepRegistry.finalizePayload(1, bytes(""), bytes(""));
+        twoStepRegistry.finalizePayload(1, bytes(""));
     }
 
     function test_updateTxDataBranch_WithSlippageReverts() external {
@@ -104,7 +104,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
-        twoStepRegistry.finalizePayload(1, txData, bytes(""));
+        twoStepRegistry.finalizePayload(1, txData);
     }
 
     function test_processPayloadMintPositionBranch() external {
