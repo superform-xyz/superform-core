@@ -27,7 +27,7 @@ interface ISuperRegistry {
     event SetBridgeValidator(uint256 indexed bridgeId, address indexed bridgeValidator);
 
     /// @dev is emitted when a new amb is configured.
-    event SetAmbAddress(uint8 ambId_, address ambAddress_);
+    event SetAmbAddress(uint8 ambId_, address ambAddress_, bool isBroadcastAMB_);
 
     /// @dev is emitted when a new state registry is configured.
     event SetStateRegistryAddress(uint8 registryId_, address registryAddress_);
@@ -63,7 +63,13 @@ interface ISuperRegistry {
     /// @dev allows admin to set the amb address for an amb id.
     /// @param ambId_         represents the bridge unqiue identifier.
     /// @param ambAddress_    represents the bridge address.
-    function setAmbAddress(uint8[] memory ambId_, address[] memory ambAddress_) external;
+    /// @param isBroadcastAMB_ represents whether the amb implementation supports broadcasting
+    function setAmbAddress(
+        uint8[] memory ambId_,
+        address[] memory ambAddress_,
+        bool[] memory isBroadcastAMB_
+    )
+        external;
 
     /// @dev allows admin to set the state registry address for an state registry id.
     /// @param registryId_    represents the state registry's unqiue identifier.
@@ -139,11 +145,8 @@ interface ISuperRegistry {
     /// @dev returns the id of the core state registry processor keeper
     function CORE_REGISTRY_PROCESSOR() external view returns (bytes32);
 
-    /// @dev returns the id of the factory state registry processor keeper
-    function FACTORY_REGISTRY_PROCESSOR() external view returns (bytes32);
-
-    /// @dev returns the id of the factory state registry processor keeper
-    function ROLES_REGISTRY_PROCESSOR() external view returns (bytes32);
+    /// @dev returns the id of the broadcast registry processor keeper
+    function BROADCAST_REGISTRY_PROCESSOR() external view returns (bytes32);
 
     /// @dev returns the id of the two steps form state registry processor keeper
     function TWO_STEPS_REGISTRY_PROCESSOR() external view returns (bytes32);
@@ -202,6 +205,11 @@ interface ISuperRegistry {
     /// @param ambAddress_ is the address of the amb implementation
     /// @return valid_ a flag indicating if its valid.
     function isValidAmbImpl(address ambAddress_) external view returns (bool valid_);
+
+    /// @dev helps validate if an address is a valid broadcast amb implementation
+    /// @param ambAddress_ is the address of the broadcast amb implementation
+    /// @return valid_ a flag indicating if its valid.
+    function isValidBroadcastAmbImpl(address ambAddress_) external view returns (bool valid_);
 
     /// @dev gets the address of a bridge validator
     /// @param bridgeId_ is the id of a bridge

@@ -21,6 +21,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
     mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
     mapping(uint8 bridgeId => address ambAddresses) public ambAddresses;
+    mapping(uint8 bridgeId => bool isBroadcastAMB) public isBroadcastAMB;
+
     mapping(uint8 superformRouterId => address stateSyncer) public stateSyncers;
     mapping(uint8 superformRouterId => address router) public routers;
     mapping(uint8 registryId => address registryAddress) public registryAddresses;
@@ -50,8 +52,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override MULTI_TX_SWAPPER = keccak256("MULTI_TX_SWAPPER");
     bytes32 public constant override CORE_REGISTRY_UPDATER = keccak256("CORE_REGISTRY_UPDATER");
     bytes32 public constant override CORE_REGISTRY_PROCESSOR = keccak256("CORE_REGISTRY_PROCESSOR");
-    bytes32 public constant override FACTORY_REGISTRY_PROCESSOR = keccak256("FACTORY_REGISTRY_PROCESSOR");
-    bytes32 public constant override ROLES_REGISTRY_PROCESSOR = keccak256("ROLES_REGISTRY_PROCESSOR");
+    bytes32 public constant override BROADCAST_REGISTRY_PROCESSOR = keccak256("BROADCAST_REGISTRY_PROCESSOR");
     bytes32 public constant override TWO_STEPS_REGISTRY_PROCESSOR = keccak256("TWO_STEPS_REGISTRY_PROCESSOR");
 
     modifier onlyProtocolAdmin() {
@@ -122,17 +123,27 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     }
 
     /// @inheritdoc ISuperRegistry
-    function setAmbAddress(uint8[] memory ambId_, address[] memory ambAddress_) external override onlyProtocolAdmin {
+    function setAmbAddress(
+        uint8[] memory ambId_,
+        address[] memory ambAddress_,
+        bool[] memory isBroadcastAMB_
+    )
+        external
+        override
+        onlyProtocolAdmin
+    {
         uint256 len = ambId_.length;
-        if (len != ambAddress_.length) revert Error.ARRAY_LENGTH_MISMATCH();
+        if (len != ambAddress_.length || len != isBroadcastAMB_.length) revert Error.ARRAY_LENGTH_MISMATCH();
 
         for (uint256 i; i < ambId_.length;) {
             address ambAddress = ambAddress_[i];
             uint8 ambId = ambId_[i];
+            bool broadcastAMB = isBroadcastAMB_[i];
 
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
-            emit SetAmbAddress(ambId, ambAddress);
+            isBroadcastAMB[ambId] = broadcastAMB;
+            emit SetAmbAddress(ambId, ambAddress, broadcastAMB);
 
             unchecked {
                 ++i;
@@ -269,7 +280,16 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc ISuperRegistry
     function isValidAmbImpl(address ambAddress_) external view override returns (bool valid_) {
-        if (ambIds[ambAddress_] != 0) return true;
+        uint8 ambId = ambIds[ambAddress_];
+        if (ambId != 0 && !isBroadcastAMB[ambId]) return true;
+
+        return false;
+    }
+
+    /// @inheritdoc ISuperRegistry
+    function isValidBroadcastAmbImpl(address ambAddress_) external view override returns (bool valid_) {
+        uint8 ambId = ambIds[ambAddress_];
+        if (ambId != 0 && isBroadcastAMB[ambId]) return true;
 
         return false;
     }

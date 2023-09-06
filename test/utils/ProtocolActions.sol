@@ -1160,8 +1160,7 @@ abstract contract ProtocolActions is BaseSetup {
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
-                                : bytes(""),
-                            ackAmbParams
+                                : bytes("")
                         );
                     }
 
@@ -1180,8 +1179,7 @@ abstract contract ProtocolActions is BaseSetup {
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
-                                : bytes(""),
-                            ackAmbParams
+                                : bytes("")
                         );
 
                         /// @dev tries to process already finalized payload
@@ -1191,8 +1189,7 @@ abstract contract ProtocolActions is BaseSetup {
                             currentUnlockId - j + 1,
                             GENERATE_WITHDRAW_TX_DATA_ON_DST
                                 ? TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]][timeLockedIndexes[DST_CHAINS[i]][j]]
-                                : bytes(""),
-                            ackAmbParams
+                                : bytes("")
                         );
                     }
                     /// @dev deliver the message for the given destination
