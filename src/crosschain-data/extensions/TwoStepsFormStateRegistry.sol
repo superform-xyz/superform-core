@@ -131,6 +131,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         p.status = TwoStepsStatus.PROCESSED;
         (address superform,,) = p.data.superformId.getSuperform();
 
+        IERC4626TimelockForm form = IERC4626TimelockForm(superform);
+
         /// @dev this step is used to re-feed txData to avoid using old txData that would have expired by now
         if (txData_.length > 0) {
             PayloadUpdaterLib.validateLiqReq(p.data.liqData);
@@ -148,12 +150,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             );
 
             finalAmount = bridgeValidator.decodeAmountIn(txData_);
-            PayloadUpdaterLib.validateSlippage(finalAmount, p.data.amount, p.data.maxSlippage);
+            PayloadUpdaterLib.validateSlippage(finalAmount, form.previewWithdrawFrom(p.data.amount), p.data.maxSlippage);
 
             p.data.liqData.txData = txData_;
         }
 
-        IERC4626TimelockForm form = IERC4626TimelockForm(superform);
         try form.withdrawAfterCoolDown(p.data.amount, p) { }
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure

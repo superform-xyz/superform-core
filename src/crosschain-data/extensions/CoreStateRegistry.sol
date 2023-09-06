@@ -460,7 +460,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
                     lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i]);
                     PayloadUpdaterLib.validateSlippage(
-                        lV.finalAmount, lV.multiVaultData.amounts[lV.i], lV.multiVaultData.maxSlippage[lV.i]
+                        lV.finalAmount,
+                        IBaseForm(superform).previewWithdrawFrom(lV.multiVaultData.amounts[lV.i]),
+                        lV.multiVaultData.maxSlippage[lV.i]
                     );
 
                     lV.multiVaultData.liqData[lV.i].txData = txData_[lV.i];
