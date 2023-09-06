@@ -13,6 +13,7 @@ import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { Error } from "../../utils/Error.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
+import { ProofLib } from "../../libraries/ProofLib.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import "../../types/DataTypes.sol";
@@ -22,6 +23,7 @@ import "../../types/DataTypes.sol";
 /// @notice handles communication in two stepped forms
 contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegistry {
     using DataLib for uint256;
+    using ProofLib for AMBMessage;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -148,9 +150,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
             if (p.isXChain == 1) {
-                (,, uint8[] memory ambIds_) = abi.decode(p.data.extraFormData, (uint256, uint256, uint8[]));
+                (uint256 payloadId,) = abi.decode(p.data.extraFormData, (uint256, uint256));
 
-                _dispatchAcknowledgement(p.srcChainId, ambIds_, _constructSingleReturnData(p.srcSender, p.data));
+                _dispatchAcknowledgement(
+                    p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.srcSender, p.data)
+                );
             }
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
@@ -192,7 +196,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         }
 
         /// @dev validates quorum
-        bytes32 _proof = keccak256(abi.encode(_message));
+        bytes32 _proof = _message.computeProof();
 
         if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
@@ -214,6 +218,30 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows users to read the ids of ambs that delivered a payload
+    function _getDeliveryAMB(uint256 payloadId_) internal view returns (uint8[] memory ambIds_) {
+        IBaseStateRegistry coreStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
+
+        uint256 payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
+        bytes memory payloadBody = coreStateRegistry.payloadBody(payloadId_);
+
+        bytes32 proof = AMBMessage(payloadHeader, payloadBody).computeProof();
+        uint8[] memory proofIds = coreStateRegistry.getProofAMB(proof);
+
+        uint256 len = proofIds.length;
+        ambIds_ = new uint8[](len + 1);
+        ambIds_[0] = coreStateRegistry.msgAMB(payloadId_);
+
+        for (uint256 i; i < len;) {
+            ambIds_[i + 1] = proofIds[i];
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
 
     /// @notice CoreStateRegistry-like function for build message back to the source. In regular flow called after
     /// xChainWithdraw succeds.

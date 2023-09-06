@@ -17,7 +17,7 @@ import { ProofLib } from "../libraries/ProofLib.sol";
 /// mechanisms.
 abstract contract BaseStateRegistry is IBaseStateRegistry {
     using ProofLib for AMBMessage;
-    using ProofLib for uint8[];
+    using ProofLib for bytes;
 
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
@@ -36,13 +36,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     mapping(uint256 => uint256) public payloadHeader;
 
     /// @dev stores a proof's quorum
-    mapping(bytes32 => uint256) internal messageQuorum;
+    mapping(bytes32 => uint256) public messageQuorum;
 
     /// @dev maps payloads to their current status
-    mapping(uint256 => PayloadState) internal payloadTracking;
+    mapping(uint256 => PayloadState) public payloadTracking;
 
     /// @dev maps payloads to the amb ids that delivered them
-    mapping(uint256 => uint8) internal msgAMB;
+    mapping(uint256 => uint8) public msgAMB;
 
     /// @dev maps payloads to the amb ids that delivered them
     mapping(bytes32 => uint8[]) internal proofAMB;
@@ -121,27 +121,14 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /// @inheritdoc IBaseStateRegistry
     function processPayload(uint256 payloadId_) external payable virtual override;
 
+    /// @inheritdoc IBaseStateRegistry
+    function getProofAMB(bytes32 proof) external view override returns (uint8[] memory) {
+        return proofAMB[proof];
+    }
+
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev allows users to read the ids of ambs that delivered a payload
-    function _getDeliveryAMB(uint256 payloadId_) internal view returns (uint8[] memory ambIds_) {
-        bytes32 proof = keccak256(abi.encode(AMBMessage(payloadHeader[payloadId_], payloadBody[payloadId_])));
-        uint8[] memory proofIds = proofAMB[proof];
-
-        uint256 len = proofIds.length;
-        ambIds_ = new uint8[](len + 1);
-        ambIds_[0] = msgAMB[payloadId_];
-
-        for (uint256 i; i < len;) {
-            ambIds_[i + 1] = proofIds[i];
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
 
     /// @dev dispatches the payload(message_) through individual message bridge implementations
     function _dispatchPayload(
@@ -175,17 +162,23 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     )
         internal
     {
-        /// @dev validates the input amb ids
-        ambIds_.validateProofAMBs();
-
         AMBMessage memory data = abi.decode(message_, (AMBMessage));
-        data.params = data.computeProofBytes();
+        data.params = message_.computeProofBytes();
 
         uint256 len = ambIds_.length;
-
         /// @dev i starts from 1 since 0 is primary amb id which dispatches the message itself
         for (uint8 i = 1; i < len;) {
-            IAmbImplementation tempImpl = IAmbImplementation(superRegistry.getAmbAddress(ambIds_[i]));
+            uint8 tempAmbId = ambIds_[i];
+
+            if (tempAmbId == ambIds_[0]) {
+                revert Error.INVALID_PROOF_BRIDGE_ID();
+            }
+
+            if (i - 1 > 0 && tempAmbId <= ambIds_[i - 1]) {
+                revert Error.DUPLICATE_PROOF_BRIDGE_ID();
+            }
+
+            IAmbImplementation tempImpl = IAmbImplementation(superRegistry.getAmbAddress(tempAmbId));
 
             if (address(tempImpl) == address(0)) {
                 revert Error.INVALID_BRIDGE_ID();

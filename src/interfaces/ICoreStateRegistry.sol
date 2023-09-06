@@ -61,6 +61,20 @@ interface ICoreStateRegistry {
         IBridgeValidator bridgeValidator;
     }
 
+    /// @dev local struct to avoid stack too deep errors in `rescueFailedDeposits`
+    struct RescueFailedDepositsLocalVars {
+        uint64 dstChainId;
+        address srcSender;
+        uint64 srcChainId;
+        address superform;
+        IBridgeValidator bridgeValidator;
+        uint256 i;
+        uint256 l1;
+        uint256 l2;
+        uint256 _payloadHeader;
+        uint256[] superformIds;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -71,6 +85,11 @@ interface ICoreStateRegistry {
     /*///////////////////////////////////////////////////////////////
                           EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows users to read the superformIds that failed in a specific payloadId_
+    /// @param payloadId_ is the identifier of the cross-chain payload.
+    /// @return superformIds_ is the identifiers of superforms in the payloadId that got failed.
+    function getFailedDeposits(uint256 payloadId_) external view returns (uint256[] memory superformIds_);
 
     /// @dev allows accounts with {CORE_STATE_REGISTRY_UPDATER_ROLE} to modify a received cross-chain deposit payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.

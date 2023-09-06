@@ -34,15 +34,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyCoreStateRegistryProcessor() {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasCoreStateRegistryProcessorRole(msg.sender)
-        ) revert Error.NOT_PROCESSOR();
+        if (!ISuperRBAC(_getSuperRBAC()).hasCoreStateRegistryProcessorRole(msg.sender)) revert Error.NOT_PROCESSOR();
         _;
     }
 
     modifier onlyCoreStateRegistryUpdater() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasCoreStateRegistryUpdaterRole(msg.sender))
-        {
+        if (!ISuperRBAC(_getSuperRBAC()).hasCoreStateRegistryUpdaterRole(msg.sender)) {
             revert Error.NOT_UPDATER();
         }
         _;
@@ -89,7 +86,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         (,, v.isMulti,,, v.srcChainId) = v.prevPayloadHeader.decodeTxInfo();
 
-        if (messageQuorum[v.prevPayloadProof] < getRequiredMessagingQuorum(v.srcChainId)) {
+        if (messageQuorum[v.prevPayloadProof] < _getRequiredMessagingQuorum(v.srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
@@ -142,7 +139,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         v.prevPayloadProof = AMBMessage(v.prevPayloadHeader, v.prevPayloadBody).computeProof();
         (,, v.isMulti,, v.srcSender, v.srcChainId) = v.prevPayloadHeader.decodeTxInfo();
 
-        if (messageQuorum[v.prevPayloadProof] < getRequiredMessagingQuorum(v.srcChainId)) {
+        if (messageQuorum[v.prevPayloadProof] < _getRequiredMessagingQuorum(v.srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
@@ -198,10 +195,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         v._message = AMBMessage(v._payloadHeader, v._payloadBody);
 
         /// @dev validates quorum
-        v._proof = keccak256(abi.encode(v._message));
+        v._proof = v._message.computeProof();
 
         /// @dev The number of valid proofs (quorum) must be equal to the required messaging quorum
-        if (messageQuorum[v._proof] < getRequiredMessagingQuorum(v.srcChainId)) {
+        if (messageQuorum[v._proof] < _getRequiredMessagingQuorum(v.srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
@@ -236,24 +233,25 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             }
         }
 
+        uint8[] memory proofIds = proofAMB[v._proof];
+
         /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
         if (returnMessage.length > 0) {
-            _dispatchAcknowledgement(v.srcChainId, _getDeliveryAMB(payloadId_), returnMessage);
-        }
-    }
+            uint8[] memory ambIds = new uint8[](proofIds.length + 1);
 
-    /// @dev local struct to avoid stack too deep errors
-    struct RescueFailedDepositsLocalVars {
-        uint64 dstChainId;
-        address srcSender;
-        uint64 srcChainId;
-        address superform;
-        address bridgeValidator;
-        uint256 i;
-        uint256 l1;
-        uint256 l2;
-        uint256 _payloadHeader;
-        uint256[] superformIds;
+            ambIds[0] = msgAMB[payloadId_];
+
+            uint256 len = proofIds.length;
+            for (uint256 i; i < len;) {
+                ambIds[i + 1] = proofIds[i];
+
+                unchecked {
+                    ++i;
+                }
+            }
+
+            _dispatchAcknowledgement(v.srcChainId, ambIds, returnMessage);
+        }
     }
 
     /// @inheritdoc ICoreStateRegistry
@@ -286,9 +284,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         for (v.i; v.i < v.l1;) {
             (v.superform,,) = v.superformIds[v.i].getSuperform();
-            v.bridgeValidator = superRegistry.getBridgeValidator(liqData_[v.i].bridgeId);
+            v.bridgeValidator = _getBridgeValidator(liqData_[v.i].bridgeId);
 
-            IBridgeValidator(v.bridgeValidator).validateTxData(
+            v.bridgeValidator.validateTxData(
                 liqData_[v.i].txData,
                 v.dstChainId,
                 v.srcChainId,
@@ -318,21 +316,33 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         }
     }
 
-    /// @dev returns the required quorum for the src chain id from super registry
-    /// @param chainId is the src chain id
-    /// @return the quorum configured for the chain id
-    function getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
-        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
-    }
-
-    /// @dev returns array of superformIds whose deposits need to be rescued, for a given payloadId
-    function getFailedDeposits(uint256 payloadId) external view returns (uint256[] memory) {
+    /// @inheritdoc ICoreStateRegistry
+    function getFailedDeposits(uint256 payloadId) external view override returns (uint256[] memory) {
         return failedDeposits[payloadId];
     }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev returns the superRBAC address
+    function _getSuperRBAC() internal view returns (address) {
+        return superRegistry.getAddress(keccak256("SUPER_RBAC"));
+    }
+
+    /// @dev returns the required quorum for the src chain id from super registry
+    /// @param chainId is the src chain id
+    /// @return the quorum configured for the chain id
+    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
+        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
+    }
+
+    /// @dev returns the required quorum for the src chain id from super registry
+    /// @param bridgeId is the bridge id
+    /// @return validator_ is the address of the validator contract
+    function _getBridgeValidator(uint8 bridgeId) internal view returns (IBridgeValidator validator_) {
+        return IBridgeValidator(superRegistry.getBridgeValidator(bridgeId));
+    }
 
     /// @dev helper function to update multi vault deposit payload
     function _updateMultiVaultDepositPayload(
@@ -428,8 +438,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(lV.multiVaultData.liqData[lV.i]);
 
-                    lV.bridgeValidator =
-                        IBridgeValidator(superRegistry.getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId));
+                    lV.bridgeValidator = _getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId);
 
                     lV.bridgeValidator.validateTxData(
                         txData_[lV.i],
@@ -480,7 +489,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         bool errors;
 
         uint256 len = multiVaultData.superformIds.length;
-        uint8[] memory ambIds = _getDeliveryAMB(payloadId_);
 
         for (uint256 i; i < len;) {
             /// @dev it is critical to validate that the action is being performed to the correct chainId coming from
@@ -494,7 +502,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 amount: multiVaultData.amounts[i],
                 maxSlippage: multiVaultData.maxSlippage[i],
                 liqData: multiVaultData.liqData[i],
-                extraFormData: abi.encode(payloadId_, i, ambIds)
+                extraFormData: abi.encode(payloadId_, i)
             });
 
             /// @dev Store destination payloadId_ & index in extraFormData (tbd: 1-step flow doesnt need this)
@@ -626,10 +634,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         internal
         returns (bytes memory)
     {
-        uint8[] memory ambIds = _getDeliveryAMB(payloadId_);
-
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
-        singleVaultData.extraFormData = abi.encode(payloadId_, 0, ambIds);
+        singleVaultData.extraFormData = abi.encode(payloadId_, 0);
 
         DataLib.validateSuperformChainId(singleVaultData.superformId, superRegistry.chainId());
 

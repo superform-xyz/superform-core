@@ -10,6 +10,7 @@ import { IQuorumManager } from "src/interfaces/IQuorumManager.sol";
 import { BroadcastMessage, AMBExtraData, PayloadState } from "src/types/DataTypes.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { ProofLib } from "../libraries/ProofLib.sol";
 
 interface Target {
     function stateSyncBroadcast(bytes memory data_) external;
@@ -19,6 +20,8 @@ interface Target {
 /// @author ZeroPoint Labs
 /// @notice helps core contract communicate with multiple dst chains through supported AMBs
 contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
+    using ProofLib for bytes;
+
     /*///////////////////////////////////////////////////////////////
                               STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -106,7 +109,8 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
         _broadcastPayload(srcSender_, ambIds_[0], d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
 
         if (ambIds_.length > 1) {
-            _broadcastProof(srcSender_, ambIds_, d.gasPerAMB, message_, d.extraDataPerAMB);
+            bytes memory proof = message_.computeProofBytes();
+            _broadcastProof(srcSender_, ambIds_, d.gasPerAMB, proof, d.extraDataPerAMB);
         }
     }
 
@@ -139,7 +143,7 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
         bytes memory payload_ = payload[payloadId];
 
         /// @dev The number of valid proofs (quorum) must be equal to the required messaging quorum
-        if (messageQuorum[keccak256(payload_)] < getRequiredMessagingQuorum(srcChainId[payloadId])) {
+        if (messageQuorum[payload_.computeProof()] < getRequiredMessagingQuorum(srcChainId[payloadId])) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
@@ -185,6 +189,7 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
         internal
     {
         uint256 len = ambIds_.length;
+
         for (uint8 i = 1; i < len;) {
             uint8 tempAmbId = ambIds_[i];
 
@@ -205,7 +210,7 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
                 revert Error.INVALID_BRIDGE_ID();
             }
 
-            tempImpl.broadcastPayload{ value: gasToPay_[i] }(srcSender_, abi.encode(keccak256(message_)), extraData_[i]);
+            tempImpl.broadcastPayload{ value: gasToPay_[i] }(srcSender_, message_, extraData_[i]);
 
             unchecked {
                 ++i;
