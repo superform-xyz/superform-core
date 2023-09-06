@@ -21,9 +21,22 @@ contract LiFiValidator is BridgeValidator {
 
     /// @inheritdoc BridgeValidator
     function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external pure override returns (bool) {
+        return decodeMinAmountOut(txData_) == amount_;
+    }
+
+    /// @inheritdoc BridgeValidator
+    function validateLiqDstChainId(
+        bytes calldata txData_,
+        uint64 liqDstChainId_
+    )
+        external
+        pure
+        override
+        returns (bool)
+    {
         (ILiFi.BridgeData memory bridgeData,) = _decodeCallData(txData_);
 
-        return bridgeData.minAmount == amount_;
+        return (uint256(liqDstChainId_) == bridgeData.destinationChainId);
     }
 
     /// @inheritdoc BridgeValidator
@@ -88,10 +101,23 @@ contract LiFiValidator is BridgeValidator {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeAmount(bytes calldata txData_) external pure override returns (uint256 amount_) {
+    function decodeMinAmountOut(bytes calldata txData_) public pure override returns (uint256 amount_) {
         (ILiFi.BridgeData memory bridgeData,) = _decodeCallData(txData_);
 
         return bridgeData.minAmount;
+    }
+
+    /// @inheritdoc BridgeValidator
+    function decodeAmountIn(bytes calldata txData_) public pure override returns (uint256 amount_) {
+        (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData) = _decodeCallData(txData_);
+
+        if (bridgeData.hasSourceSwaps) {
+            amount_ = swapData[0].fromAmount;
+        } else {
+            /// @dev if no source swaps, the minAmount corresponds to the same asset, therefore we can use minAmount as
+            /// an approximation
+            amount_ = bridgeData.minAmount;
+        }
     }
 
     /// @notice Decode lifi's calldata
@@ -105,7 +131,7 @@ contract LiFiValidator is BridgeValidator {
         (bridgeData) = abi.decode(data[4:], (ILiFi.BridgeData));
 
         if (bridgeData.hasSourceSwaps) {
-            (, swapData) = abi.decode(data[4:], (ILiFi.BridgeData, ILiFi.SwapData[]));
+            (bridgeData, swapData) = abi.decode(data[4:], (ILiFi.BridgeData, ILiFi.SwapData[]));
         }
     }
 }

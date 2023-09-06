@@ -78,7 +78,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmount(vars.liqData.txData);
+            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (vars.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();

@@ -147,7 +147,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                 p.data.liqData.token
             );
 
-            finalAmount = bridgeValidator.decodeAmount(txData_);
+            finalAmount = bridgeValidator.decodeAmountIn(txData_);
             PayloadUpdaterLib.validateSlippage(finalAmount, p.data.amount, p.data.maxSlippage);
 
             p.data.liqData.txData = txData_;

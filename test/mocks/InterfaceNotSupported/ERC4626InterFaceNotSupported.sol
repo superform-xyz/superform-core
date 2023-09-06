@@ -2,16 +2,16 @@
 pragma solidity 0.8.19;
 
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
-import { ERC4626FormImplementation } from "./ERC4626ImplementationInterfaceNotSupported.sol";
+import { ERC4626FormImplementationInterfaceNotSupported } from "./ERC4626ImplementationInterfaceNotSupported.sol";
 import { BaseForm } from "./BaseFormInterfaceNotSupported.sol";
 
 /// @title ERC4626Form
 /// @notice The Form implementation for IERC4626 vaults
-contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementation {
+contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementationInterfaceNotSupported {
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
-    constructor(address superRegistry_) ERC4626FormImplementation(superRegistry_, 1) { }
+    constructor(address superRegistry_) ERC4626FormImplementationInterfaceNotSupported(superRegistry_, 1) { }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES

@@ -13,6 +13,11 @@ interface IBridgeValidator {
     /// @param amount_ the amount of the deposit
     function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external view returns (bool);
 
+    /// @dev validates the destination chainId of the liquidity request
+    /// @param txData_ the txData of the deposit
+    /// @param liqDstChainId_ the chainId of the destination chain for liquidity
+    function validateLiqDstChainId(bytes calldata txData_, uint64 liqDstChainId_) external pure returns (bool);
+
     /// @dev validates the txData of a cross chain deposit
     /// @param txData_ the txData of the cross chain deposit
     /// @param srcChainId_ the chainId of the source chain
@@ -41,8 +46,13 @@ interface IBridgeValidator {
     /// @return valid_ if the address is valid
     function validateReceiver(bytes calldata txData_, address receiver_) external pure returns (bool valid_);
 
-    /// @dev decodes the txData and returns the amount
+    /// @dev decodes the txData and returns the minimum amount expected to receive on the destination
     /// @param txData_ is the txData of the cross chain deposit
-    /// @return amount_ the amount of the deposit
-    function decodeAmount(bytes calldata txData_) external pure returns (uint256 amount_);
+    /// @return amount_ the amount expected
+    function decodeMinAmountOut(bytes calldata txData_) external pure returns (uint256 amount_);
+
+    /// @dev decodes the txData and returns the amount of external token on source
+    /// @param txData_ is the txData of the cross chain deposit
+    /// @return amount_ the amount expected
+    function decodeAmountIn(bytes calldata txData_) external pure returns (uint256 amount_);
 }

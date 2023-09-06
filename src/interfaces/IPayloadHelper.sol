@@ -38,7 +38,8 @@ interface IPayloadHelper {
     /// @return tokens is the tokens to be used in the liqData
     /// @return liqDstChainIds are the final destination chain id for the underlying token (can be arbitrary on
     /// withdraws)
-    /// @return amounts is the amounts to be used in the liqData
+    /// @return amountsIn are the from amounts to the liquidity bridge
+    /// @return amountsOut are the minimum amounts to be bridged through the liquidity bridge
     /// @return nativeAmounts is the native amounts to be used in the liqData
     /// @return permit2datas is the permit2 datas to be used in the liqData
     function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
@@ -49,12 +50,13 @@ interface IPayloadHelper {
             bytes[] memory txDatas,
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
-            uint256[] memory amounts,
+            uint256[] memory amountsIn,
+            uint256[] memory amountsOut,
             uint256[] memory nativeAmounts,
             bytes[] memory permit2datas
         );
 
-    /// @dev reads the payload from the core state registry and decodes it in a more detailed manner.
+    /// @dev reads the payload header from a state syncer and decodes it.
     /// @param srcPayloadId_ is the unique identifier of the payload allocated by super router
     /// @param superformRouterId_ is the unique identifier of the superform router
     /// @return txType is the type of transaction. check {TransactionType} enum in DataTypes.sol

@@ -409,13 +409,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             args.liqRequest.token
         );
 
-        /// @dev dispatches tokens through the selected liquidity bridge to the destnation contract (CoreStateRegistry
-        /// or MultiTxProcessor)
+        /// @dev dispatches tokens through the selected liquidity bridge to the destnation contract
         dispatchTokens(
             superRegistry.getBridgeAddress(args.liqRequest.bridgeId),
             args.liqRequest.txData,
             args.liqRequest.token,
-            IBridgeValidator(bridgeValidator).decodeAmount(args.liqRequest.txData),
+            IBridgeValidator(bridgeValidator).decodeAmountIn(args.liqRequest.txData),
             args.srcSender,
             args.liqRequest.nativeAmount,
             args.liqRequest.permit2data,

@@ -318,7 +318,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 superRegistry.getBridgeAddress(liqData_[v.i].bridgeId),
                 liqData_[v.i].txData,
                 liqData_[v.i].token,
-                IBridgeValidator(v.bridgeValidator).decodeAmount(liqData_[v.i].txData),
+                IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData),
                 address(this),
                 liqData_[v.i].nativeAmount,
                 liqData_[v.i].permit2data,
@@ -454,8 +454,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         v_.srcSender,
                         lV.multiVaultData.liqData[lV.i].token
                     );
+                    /// payload with 1000 USDC SP being withdrawn (amounts)
+                    /// finalAmount (that will be dispatched) is amount in
+                    /// how can we compare an amount of underlying against superPositions? This seems invalid
 
-                    lV.finalAmount = lV.bridgeValidator.decodeAmount(txData_[lV.i]);
+                    lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i]);
                     PayloadUpdaterLib.validateSlippage(
                         lV.finalAmount, lV.multiVaultData.amounts[lV.i], lV.multiVaultData.maxSlippage[lV.i]
                     );
