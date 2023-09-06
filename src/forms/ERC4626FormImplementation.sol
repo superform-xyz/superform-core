@@ -96,7 +96,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint256 dstAmount;
         uint256 balanceBefore;
         uint256 balanceAfter;
-        uint256 amount;
         uint256 nonce;
         uint256 deadline;
         bytes signature;
@@ -154,7 +153,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         } else {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmount(singleVaultData_.liqData.txData);
             /// @dev in this case, a swap is needed, first the txData is validated and then the final asset is obtained
             vars.chainId = superRegistry.chainId();
 
@@ -173,7 +171,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
-                vars.amount,
+                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData),
                 srcSender_,
                 singleVaultData_.liqData.nativeAmount,
                 singleVaultData_.liqData.permit2data,
@@ -229,7 +227,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         if (v.len1 != 0) {
             v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-            v.amount = IBridgeValidator(v.bridgeValidator).decodeAmount(singleVaultData_.liqData.txData);
+            v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData);
 
             /// @dev this check here might be too much already, but can't hurt
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
@@ -332,7 +330,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         if (len != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmount(singleVaultData_.liqData.txData);
+            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (vars.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();

@@ -622,7 +622,7 @@ contract PaymentHelper is IPaymentHelper {
         for (uint256 i; i < req_.length;) {
             if (req_[i].token == NATIVE) {
                 liqAmount +=
-                    IBridgeValidator(superRegistry.getBridgeValidator(req_[i].bridgeId)).decodeAmount(req_[i].txData);
+                    IBridgeValidator(superRegistry.getBridgeValidator(req_[i].bridgeId)).decodeAmountIn(req_[i].txData);
             }
 
             unchecked {

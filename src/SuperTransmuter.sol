@@ -80,13 +80,13 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     }
 
     /// @inheritdoc ISuperTransmuter
-    function registerTransmuter(uint256 superformId, bytes memory extraData_) external override returns (address) {
-        (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId);
+    function registerTransmuter(uint256 superformId_, bytes memory extraData_) external override returns (address) {
+        (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId_);
 
         if (superRegistry.chainId() != chainId) revert Error.INVALID_CHAIN_ID();
         if (superform == address(0)) revert Error.NOT_SUPERFORM();
         if (formBeaconId == 0) revert Error.FORM_DOES_NOT_EXIST();
-        if (synthethicTokenId[superformId] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
+        if (synthethicTokenId[superformId_] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
 
         string memory name =
             string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
@@ -104,20 +104,20 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
             )
         );
 
-        synthethicTokenId[superformId] = syntheticToken;
+        synthethicTokenId[superformId_] = syntheticToken;
 
         /// @dev broadcast and deploy to the other destination chains
         if (extraData_.length > 0) {
             BroadcastMessage memory transmuterPayload = BroadcastMessage(
                 "SUPER_TRANSMUTER",
                 DEPLOY_NEW_TRANSMUTER,
-                abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, superformId, name, symbol, decimal)
+                abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, superformId_, name, symbol, decimal)
             );
 
             _broadcast(abi.encode(transmuterPayload), extraData_);
         }
 
-        return synthethicTokenId[superformId];
+        return synthethicTokenId[superformId_];
     }
 
     /// @inheritdoc IStateSyncer

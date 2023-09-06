@@ -53,7 +53,8 @@ contract PayloadHelper is IPayloadHelper {
         bytes[] txDatas;
         address[] liqDataTokens;
         uint64[] liqDataChainIds;
-        uint256[] liqDataAmounts;
+        uint256[] liqDataAmountsIn;
+        uint256[] liqDataAmountsOut;
         uint256[] liqDataNativeAmounts;
         bytes[] permit2datas;
         InitMultiVaultData imvd;
@@ -170,7 +171,8 @@ contract PayloadHelper is IPayloadHelper {
             bytes[] memory txDatas,
             address[] memory tokens,
             uint64[] memory liqDstChainIds,
-            uint256[] memory amounts,
+            uint256[] memory amountsIn,
+            uint256[] memory amountsOut,
             uint256[] memory nativeAmounts,
             bytes[] memory permit2datas
         )
@@ -186,7 +188,8 @@ contract PayloadHelper is IPayloadHelper {
             v.txDatas = new bytes[](v.imvd.liqData.length);
             v.liqDataTokens = new address[](v.imvd.liqData.length);
             v.liqDataChainIds = new uint64[](v.imvd.liqData.length);
-            v.liqDataAmounts = new uint256[](v.imvd.liqData.length);
+            v.liqDataAmountsIn = new uint256[](v.imvd.liqData.length);
+            v.liqDataAmountsOut = new uint256[](v.imvd.liqData.length);
             v.liqDataNativeAmounts = new uint256[](v.imvd.liqData.length);
             v.permit2datas = new bytes[](v.imvd.liqData.length);
 
@@ -198,9 +201,11 @@ contract PayloadHelper is IPayloadHelper {
                 v.liqDataTokens[v.i] = v.imvd.liqData[v.i].token;
                 v.liqDataChainIds[v.i] = v.imvd.liqData[v.i].liqDstChainId;
 
-                v.liqDataAmounts[v.i] =
-                    IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i])).decodeAmount(v.txDatas[v.i]);
+                v.liqDataAmountsIn[v.i] =
+                    IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i])).decodeAmountIn(v.txDatas[v.i]);
 
+                v.liqDataAmountsOut[v.i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i]))
+                    .decodeMinAmountOut(v.txDatas[v.i]);
                 v.liqDataNativeAmounts[v.i] = v.imvd.liqData[v.i].nativeAmount;
                 v.permit2datas[v.i] = v.imvd.liqData[v.i].permit2data;
 
@@ -223,9 +228,13 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataChainIds = new uint64[](1);
             v.liqDataChainIds[0] = v.isvd.liqData.liqDstChainId;
 
-            v.liqDataAmounts = new uint256[](1);
-            v.liqDataAmounts[0] =
-                IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0])).decodeAmount(v.txDatas[0]);
+            v.liqDataAmountsIn = new uint256[](1);
+            v.liqDataAmountsIn[0] =
+                IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0])).decodeAmountIn(v.txDatas[0]);
+
+            v.liqDataAmountsOut = new uint256[](1);
+            v.liqDataAmountsOut[0] =
+                IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0])).decodeMinAmountOut(v.txDatas[0]);
 
             v.liqDataNativeAmounts = new uint256[](1);
             v.liqDataNativeAmounts[0] = v.isvd.liqData.nativeAmount;
@@ -239,7 +248,8 @@ contract PayloadHelper is IPayloadHelper {
             v.txDatas,
             v.liqDataTokens,
             v.liqDataChainIds,
-            v.liqDataAmounts,
+            v.liqDataAmountsIn,
+            v.liqDataAmountsOut,
             v.liqDataNativeAmounts,
             v.permit2datas
         );

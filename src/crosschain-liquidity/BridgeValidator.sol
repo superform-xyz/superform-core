@@ -39,6 +39,17 @@ abstract contract BridgeValidator is IBridgeValidator {
         returns (bool);
 
     /// @inheritdoc IBridgeValidator
+    function validateLiqDstChainId(
+        bytes calldata txData_,
+        uint64 liqDstChainId_
+    )
+        external
+        pure
+        virtual
+        override
+        returns (bool);
+
+    /// @inheritdoc IBridgeValidator
     function validateTxData(
         bytes calldata txData_,
         uint64 srcChainId_,
@@ -66,5 +77,8 @@ abstract contract BridgeValidator is IBridgeValidator {
         returns (bool valid_);
 
     /// @inheritdoc IBridgeValidator
-    function decodeAmount(bytes calldata txData_) external pure virtual override returns (uint256 amount_);
+    function decodeMinAmountOut(bytes calldata txData_) external pure virtual override returns (uint256 amount_);
+
+    /// @inheritdoc IBridgeValidator
+    function decodeAmountIn(bytes calldata txData_) external pure virtual override returns (uint256 amount_);
 }

@@ -60,9 +60,13 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
     function test_updateTxDataBranch_WithSlippageReverts() external {
         /// @dev mocks receive payload as a form
         vm.selectFork(FORKS[ETH]);
-        uint256 superformId = _legacySuperformPackWithShift();
 
-        vm.prank(getContract(ETH, "ERC4626TimelockForm"));
+        address superform = getContract(
+            ETH, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+        );
+        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
+
+        vm.prank(superform);
         twoStepRegistry.receivePayload(
             0,
             deployer,
