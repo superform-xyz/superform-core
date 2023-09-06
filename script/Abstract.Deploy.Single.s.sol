@@ -153,7 +153,7 @@ abstract contract AbstractDeploySingle is Script {
     /// @notice id 2 is hyperlane
     /// @notice id 3 is wormhole AR
     /// @notice 4 is wormhole SR
-    uint8[] public ambIds = [uint8(1), 2, 3, 4, 5];
+    uint8[] public ambIds = [uint8(1), 2, 3, 4];
     bool[] public broadcastAMB = [false, false, false, true];
 
     /*//////////////////////////////////////////////////////////////
