@@ -25,8 +25,7 @@ interface ITwoStepsFormStateRegistry {
     /// @notice Form Keeper finalizes payload to process two steps withdraw fully
     /// @param payloadId_ is the id of the payload to finalize
     /// @param txData_ is the off-chain generated transaction data
-    /// @param ackExtraData_ is the AMBMessage data to send back to the source stateSync with request to re-mint shares
-    function finalizePayload(uint256 payloadId_, bytes memory txData_, bytes memory ackExtraData_) external payable;
+    function finalizePayload(uint256 payloadId_, bytes memory txData_) external payable;
 
     /// @dev allows users to read the timeLockPayload_ stored per payloadId_
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain

@@ -192,6 +192,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         v._payloadBody = payloadBody[payloadId_];
         v._payloadHeader = payloadHeader[payloadId_];
+
         (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) = v._payloadHeader.decodeTxInfo();
         v._message = AMBMessage(v._payloadHeader, v._payloadBody);
 
@@ -220,7 +221,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             if (v.txType == uint8(TransactionType.WITHDRAW)) {
                 returnMessage = v.multi == 1
                     ? _processMultiWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId)
-                    : _processSingleWithdrawal(v._payloadBody, v.srcSender, v.srcChainId);
+                    : _processSingleWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId);
             }
 
             if (v.txType == uint8(TransactionType.DEPOSIT)) {
@@ -630,6 +631,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     }
 
     function _processSingleWithdrawal(
+        uint256 payloadId_,
         bytes memory payload_,
         address srcSender_,
         uint64 srcChainId_
@@ -638,6 +640,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         returns (bytes memory)
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
+        singleVaultData.extraFormData = abi.encode(payloadId_, 0);
 
         DataLib.validateSuperformChainId(singleVaultData.superformId, superRegistry.chainId());
 

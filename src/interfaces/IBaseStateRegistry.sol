@@ -59,6 +59,11 @@ interface IBaseStateRegistry {
     /// (or) can implement scenario based reverting like in coreStateRegistry
     function processPayload(uint256 payloadId_) external payable;
 
+    /// @dev allows users to read the ids of ambs that delivered a payload
+    /// @param payloadId_ is the unique payload identifier allocated on the destination chain
+    /// @return ambIds_ the ids that delivered a message
+    function getDeliveryAMB(uint256 payloadId_) external view returns (uint8[] memory ambIds_);
+
     /// @dev allows users to read the bytes payload_ stored per payloadId_
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
     /// @return payloadBody_ the crosschain data received

@@ -8,23 +8,14 @@ import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { IERC4626TimelockForm } from "../../forms/interfaces/IERC4626TimelockForm.sol";
 import { ITwoStepsFormStateRegistry } from "../../interfaces/ITwoStepsFormStateRegistry.sol";
+import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
+import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { Error } from "../../utils/Error.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
-import {
-    AckAMBData,
-    AMBExtraData,
-    TransactionType,
-    CallbackType,
-    InitSingleVaultData,
-    AMBMessage,
-    ReturnSingleData,
-    PayloadState,
-    TwoStepsStatus,
-    TwoStepsPayload
-} from "../../types/DataTypes.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
+import "../../types/DataTypes.sol";
 
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
@@ -107,8 +98,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     /// @inheritdoc ITwoStepsFormStateRegistry
     function finalizePayload(
         uint256 timeLockPayloadId_,
-        bytes memory txData_,
-        bytes memory ambOverride_
+        bytes memory txData_
     )
         external
         payable
@@ -158,7 +148,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         catch {
             /// @dev dispatch acknowledgement to mint superPositions back because of failure
             if (p.isXChain == 1) {
-                _dispatchAcknowledgement(p.srcChainId, _constructSingleReturnData(p.srcSender, p.data), ambOverride_);
+                (uint256 payloadId_,) = abi.decode(p.data.extraFormData, (uint256, uint256));
+                uint8[] memory ambIds_ = IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")))
+                    .getDeliveryAMB(payloadId_);
+
+                _dispatchAcknowledgement(p.srcChainId, ambIds_, _constructSingleReturnData(p.srcSender, p.data));
             }
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
@@ -259,11 +253,11 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
     /// @notice In regular flow, BaseStateRegistry function for messaging back to the source
     /// @notice Use constructed earlier return message to send acknowledgment (msg) back to the source
-    function _dispatchAcknowledgement(uint64 dstChainId_, bytes memory message_, bytes memory ackExtraData_) internal {
-        AckAMBData memory ackData = abi.decode(ackExtraData_, (AckAMBData));
-        uint8[] memory ambIds_ = ackData.ambIds;
-        AMBExtraData memory d = abi.decode(ackData.extraData, (AMBExtraData));
+    function _dispatchAcknowledgement(uint64 dstChainId_, uint8[] memory ambIds_, bytes memory message_) internal {
+        (, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
+            .calculateAMBData(dstChainId_, ambIds_, message_);
 
+        AMBExtraData memory d = abi.decode(extraData, (AMBExtraData));
         _dispatchPayload(msg.sender, ambIds_[0], dstChainId_, d.gasPerAMB[0], message_, d.extraDataPerAMB[0]);
 
         if (ambIds_.length > 1) {

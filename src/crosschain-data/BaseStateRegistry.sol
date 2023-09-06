@@ -116,6 +116,23 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     /// @inheritdoc IBaseStateRegistry
     function processPayload(uint256 payloadId_) external payable virtual override;
 
+    function getDeliveryAMB(uint256 payloadId_) external view override returns (uint8[] memory ambIds_) {
+        bytes32 proof = keccak256(abi.encode(AMBMessage(payloadHeader[payloadId_], payloadBody[payloadId_])));
+        uint8[] memory proofIds = proofAMB[proof];
+
+        uint256 len = proofIds.length;
+        ambIds_ = new uint8[](len + 1);
+        ambIds_[0] = msgAMB[payloadId_];
+
+        for (uint256 i; i < len;) {
+            ambIds_[i + 1] = proofIds[i];
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
