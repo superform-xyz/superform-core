@@ -43,7 +43,6 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev xchain params
     mapping(uint64 chainId => AggregatorV3Interface) public nativeFeedOracle;
     mapping(uint64 chainId => AggregatorV3Interface) public gasPriceOracle;
-    mapping(uint64 chainId => uint256 gasForSwap) public swapGasUsed;
     mapping(uint64 chainId => uint256 gasForUpdate) public updateGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public depositGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
@@ -87,7 +86,6 @@ contract PaymentHelper is IPaymentHelper {
         uint64 chainId_,
         address nativeFeedOracle_,
         address gasPriceOracle_,
-        uint256 swapGasUsed_,
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
         uint256 withdrawGasUsed_,
@@ -107,7 +105,6 @@ contract PaymentHelper is IPaymentHelper {
             gasPriceOracle[chainId_] = AggregatorV3Interface(gasPriceOracle_);
         }
 
-        swapGasUsed[chainId_] = swapGasUsed_;
         updateGasUsed[chainId_] = updateGasUsed_;
         depositGasUsed[chainId_] = depositGasUsed_;
         withdrawGasUsed[chainId_] = withdrawGasUsed_;
@@ -136,48 +133,43 @@ contract PaymentHelper is IPaymentHelper {
             gasPriceOracle[chainId_] = AggregatorV3Interface(abi.decode(config_, (address)));
         }
 
-        /// @dev Type 3: SWAP GAS COST PER TX FOR MULTI-TX
+        /// @dev Type 3: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
         if (configType_ == 3) {
-            swapGasUsed[chainId_] = abi.decode(config_, (uint256));
-        }
-
-        /// @dev Type 4: PAYLOAD UPDATE GAS COST PER TX FOR DEPOSIT
-        if (configType_ == 4) {
             updateGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 5: DEPOSIT GAS COST PER TX
-        if (configType_ == 5) {
+        /// @dev Type 4: DEPOSIT GAS COST PER TX
+        if (configType_ == 4) {
             depositGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 6: WITHDRAW GAS COST PER TX
-        if (configType_ == 6) {
+        /// @dev Type 5: WITHDRAW GAS COST PER TX
+        if (configType_ == 5) {
             withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 7: NATIVE PRICE
-        if (configType_ == 7) {
+        /// @dev Type 6: NATIVE PRICE
+        if (configType_ == 6) {
             nativePrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 8: GAS PRICE
-        if (configType_ == 8) {
+        /// @dev Type 7: GAS PRICE
+        if (configType_ == 7) {
             gasPrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 9: GAS PRICE PER KB of Message
-        if (configType_ == 9) {
+        /// @dev Type 8: GAS PRICE PER KB of Message
+        if (configType_ == 8) {
             gasPerKB[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 10: ACK GAS COST
-        if (configType_ == 10) {
+        /// @dev Type 9: ACK GAS COST
+        if (configType_ == 9) {
             ackGasCost[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 11: TWO STEP PROCESSING COST
-        if (configType_ == 11) {
+        /// @dev Type 10: TWO STEP PROCESSING COST
+        if (configType_ == 10) {
             twoStepCost[chainId_] = abi.decode(config_, (uint256));
         }
 

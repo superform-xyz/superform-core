@@ -624,7 +624,6 @@ abstract contract AbstractDeploySingle is Script {
                     vars.dstChainId,
                     PRICE_FEEDS[vars.chainId][vars.dstChainId],
                     address(0),
-                    50_000,
                     40_000,
                     70_000,
                     80_000,
@@ -715,10 +714,10 @@ abstract contract AbstractDeploySingle is Script {
                 PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
                     vars.chainId, 1, abi.encode(PRICE_FEEDS[vars.chainId][vars.chainId])
                 );
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(40_000));
-                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 11, abi.encode(50_000));
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 9, abi.encode(40_000));
+                PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(vars.chainId, 10, abi.encode(50_000));
                 PaymentHelper(payable(vars.paymentHelper)).updateChainConfig(
-                    vars.chainId, 8, abi.encode(50 * 10 ** 9 wei)
+                    vars.chainId, 7, abi.encode(50 * 10 ** 9 wei)
                 );
             }
         }
