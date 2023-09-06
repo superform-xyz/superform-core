@@ -16,14 +16,10 @@ contract KeeperMockThatWontAcceptEth {
 
 contract PayMasterTest is BaseSetup {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address multiTxSwapperETH;
     address txProcessorETH;
     address txUpdaterETH;
-    address multiTxSwapperARBI;
     address txProcessorARBI;
     address txUpdaterARBI;
-
-    address multiTxProcessorFraud;
 
     /// out of 10000
     int256 totalSlippage = 200;
@@ -35,8 +31,6 @@ contract PayMasterTest is BaseSetup {
         super.setUp();
 
         vm.selectFork(FORKS[ETH]);
-        multiTxSwapperETH = address(new KeeperMock());
-        multiTxProcessorFraud = address(new KeeperMockThatWontAcceptEth());
 
         txProcessorETH = address(new KeeperMock());
         txUpdaterETH = address(new KeeperMock());
@@ -44,7 +38,6 @@ contract PayMasterTest is BaseSetup {
         superRegistry = SuperRegistry(getContract(ETH, "SuperRegistry"));
 
         vm.selectFork(FORKS[ARBI]);
-        multiTxSwapperARBI = address(new KeeperMock());
         txProcessorARBI = address(new KeeperMock());
         txUpdaterARBI = address(new KeeperMock());
 
@@ -52,7 +45,6 @@ contract PayMasterTest is BaseSetup {
 
         /// @dev setting these here as overrides just to test with receive function
         vm.startPrank(deployer);
-        superRegistry.setAddress(keccak256("MULTI_TX_SWAPPER"), multiTxSwapperARBI, ARBI);
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), txProcessorARBI, ARBI);
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), txUpdaterARBI, ARBI);
         vm.stopPrank();
@@ -83,51 +75,6 @@ contract PayMasterTest is BaseSetup {
         /// @dev try to make payment for zero address
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(getContract(ETH, "PayMaster")).makePayment{ value: 1 wei }(address(0));
-    }
-
-    function test_withdrawNativeToMultiTxProcessorFraud() public {
-        vm.selectFork(FORKS[ETH]);
-        vm.startPrank(deployer);
-
-        address feeCollector = getContract(ETH, "PayMaster");
-
-        /// @dev makes payment of 1 wei
-        PayMaster(feeCollector).makePayment{ value: 1 wei }(deployer);
-        assertEq(feeCollector.balance, 1 wei);
-
-        superRegistry.setAddress(keccak256("MULTI_TX_SWAPPER"), multiTxProcessorFraud, ETH);
-
-        /// @dev admin tries withdraw more than balance (check if handled gracefully)
-        vm.expectRevert(Error.FAILED_WITHDRAW.selector);
-        PayMaster(feeCollector).withdrawTo(keccak256("MULTI_TX_SWAPPER"), 1 wei);
-    }
-
-    function test_withdrawNativeToMultiTxProcessor() public {
-        vm.selectFork(FORKS[ETH]);
-        vm.startPrank(deployer);
-
-        address feeCollector = getContract(ETH, "PayMaster");
-
-        /// @dev makes payment of 1 wei
-        PayMaster(feeCollector).makePayment{ value: 1 wei }(deployer);
-        assertEq(feeCollector.balance, 1 wei);
-
-        /// @dev admin tries withdraw more than balance (check if handled gracefully)
-        vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
-        PayMaster(feeCollector).withdrawTo(keccak256("MULTI_TX_SWAPPER"), 2 wei);
-
-        /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
-        superRegistry.setAddress(keccak256("MULTI_TX_SWAPPER"), address(0), ETH);
-
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(feeCollector).withdrawTo(keccak256("MULTI_TX_SWAPPER"), 1 wei);
-
-        superRegistry.setAddress(keccak256("MULTI_TX_SWAPPER"), multiTxSwapperETH, ETH);
-
-        /// @dev admin moves the payment from fee collector to multi tx processor
-        PayMaster(feeCollector).withdrawTo(keccak256("MULTI_TX_SWAPPER"), 1 wei);
-        assertEq(feeCollector.balance, 0);
-        assertEq(multiTxSwapperETH.balance, 1 wei);
     }
 
     function test_withdrawNativeToTxProcessor() public {
@@ -184,57 +131,6 @@ contract PayMasterTest is BaseSetup {
         PayMaster(feeCollector).withdrawTo(keccak256("CORE_REGISTRY_UPDATER"), 1 wei);
         assertEq(feeCollector.balance, 0);
         assertEq(txUpdaterETH.balance, 1 wei);
-    }
-
-    function test_rebalanceToMultiTxSwapper() public {
-        vm.selectFork(FORKS[ETH]);
-        vm.startPrank(deployer);
-
-        address feeCollector = getContract(ETH, "PayMaster");
-        address feeCollectorDst = getContract(ARBI, "PayMaster");
-
-        /// @dev makes payment of 1 ether
-        PayMaster(feeCollector).makePayment{ value: 1 ether }(deployer);
-        assertEq(feeCollector.balance, 1 ether);
-
-        /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
-        superRegistry.setAddress(keccak256("MULTI_TX_SWAPPER"), address(0), ETH);
-
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
-        PayMaster(feeCollector).rebalanceTo(
-            keccak256("MULTI_TX_SWAPPER"),
-            LiqRequest(
-                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether, ""
-            ),
-            420
-        );
-
-        superRegistry.setAddress(keccak256("MULTI_TX_SWAPPER"), multiTxSwapperETH, ETH);
-
-        /// @dev admin moves the payment from fee collector to different address on another chain
-        vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
-        PayMaster(feeCollector).rebalanceTo(
-            keccak256("MULTI_TX_SWAPPER"),
-            LiqRequest(
-                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether, ""
-            ),
-            ARBI
-        );
-
-        /// @dev admin moves the payment from fee collector (ideal conditions)
-        PayMaster(feeCollector).rebalanceTo(
-            keccak256("MULTI_TX_SWAPPER"),
-            LiqRequest(
-                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, multiTxSwapperARBI), NATIVE, ARBI, 1 ether, ""
-            ),
-            ARBI
-        );
-
-        assertEq(feeCollector.balance, 0);
-
-        vm.selectFork(FORKS[ARBI]);
-        /// @dev amount received will be bridge-slippage-adjusted
-        assertEq(multiTxSwapperARBI.balance, (1 ether * (10_000 - uint256(totalSlippage))) / 10_000);
     }
 
     function test_rebalanceToCoreStateRegistryTxProcessor() public {
@@ -390,7 +286,7 @@ contract PayMasterTest is BaseSetup {
                 underlyingToken_,
                 underlyingToken_,
                 amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingToken_, totalSlippage, false, 0, false),
+                abi.encode(from_, FORKS[toChainId_], underlyingToken_, totalSlippage, 0, false),
                 false // arbitrary
             );
 

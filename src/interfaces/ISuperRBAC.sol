@@ -48,9 +48,6 @@ interface ISuperRBAC {
     /// @dev returns the id of the payment admin role
     function PAYMENT_ADMIN_ROLE() external view returns (bytes32);
 
-    /// @dev returns the id of the multi tx swapper role
-    function MULTI_TX_SWAPPER_ROLE() external view returns (bytes32);
-
     /// @dev returns the id of the broadcaster role
     function BROADCASTER_ROLE() external view returns (bytes32);
 
@@ -99,10 +96,6 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the payment admin role
     /// @param admin_ the address to check
     function hasPaymentAdminRole(address admin_) external view returns (bool);
-
-    /// @dev returns whether the given address has the swapper role
-    /// @param swapper_ the address to check
-    function hasMultiTxProcessorSwapperRole(address swapper_) external view returns (bool);
 
     /// @dev returns whether the given address has the processor role
     /// @param processor_ the address to check

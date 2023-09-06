@@ -83,7 +83,6 @@ struct TestAction {
     bytes4 revertError;
     bytes32 revertRole; // temporary until errors are added to RBAC libraries
     int256 slippage;
-    bool multiTx;
     uint256 externalToken;
 }
 /// @dev must be 3 if external token is native (for deposits). For withdrawals, externalToken is the output token and
@@ -138,7 +137,6 @@ struct SetupVars {
     address dstWormholeARImplementation;
     address dstWormholeSRImplementation;
     address dstwormholeBroadcastHelper;
-    address multiTxProcessor;
     address payMaster;
     address superRegistry;
     address superRBAC;
@@ -179,7 +177,6 @@ struct SingleVaultCallDataArgs {
     uint64 liqDstChainId;
     uint256 liquidityBridgeSrcChainId;
     uint256 liquidityBridgeToChainId;
-    bool multiTx;
     bool partialWithdrawVault;
     int256 slippage;
 }
@@ -201,7 +198,6 @@ struct MultiVaultCallDataArgs {
     uint256 liquidityBridgeSrcChainId;
     uint256 index;
     uint256 chainDstIndex;
-    bool multiTx;
     Actions action;
     int256 slippage;
     bool[] partialWithdrawVaults;
@@ -218,7 +214,6 @@ struct BuildDepositCallDataArgs {
     uint256 maxSlippage;
     uint64 srcChainId;
     uint64 toChainId;
-    bool multiTx;
 }
 
 struct BuildWithdrawCallDataArgs {
@@ -243,7 +238,6 @@ struct updateMultiVaultDepositPayloadArgs {
     TestType testType;
     bytes4 revertError;
     bytes32 revertRole;
-    bool isMultiTx;
 }
 
 struct updateSingleVaultDepositPayloadArgs {
@@ -254,7 +248,6 @@ struct updateSingleVaultDepositPayloadArgs {
     TestType testType;
     bytes4 revertError;
     bytes32 revertRole;
-    bool isMultiTx;
 }
 
 /*//////////////////////////////////////////////////////////////

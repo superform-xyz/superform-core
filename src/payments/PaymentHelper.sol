@@ -231,25 +231,22 @@ contract PaymentHelper is IPaymentHelper {
             srcAmount += ambFees;
 
             if (isDeposit) {
-                /// @dev step 2: estimate if swap costs are involved
-                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequests);
-
-                /// @dev step 3: estimate update cost (only for deposit)
+                /// @dev step 2: estimate update cost (only for deposit)
                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], superformIdsLen);
 
-                /// @dev step 4: estimation processing cost of acknowledgement
+                /// @dev step 3: estimation processing cost of acknowledgement
                 /// @notice optimistically estimating. (Ideal case scenario: no failed deposits / withdrawals)
                 srcAmount += _estimateAckProcessingCost(req_.dstChainIds.length, superformIdsLen);
 
-                /// @dev step 5: estimate liq amount
+                /// @dev step 4: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
             }
 
-            /// @dev step 6: estimate execution costs in dst (withdraw / deposit)
+            /// @dev step 5: estimate execution costs in dst (withdraw / deposit)
             /// note: only execution cost (not acknowledgement messaging cost)
             totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], superformIdsLen);
 
-            /// @dev step 7: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
+            /// @dev step 6: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
             unchecked {
@@ -282,24 +279,21 @@ contract PaymentHelper is IPaymentHelper {
             srcAmount += ambFees;
 
             if (isDeposit) {
-                /// @dev step 2: estimate if swap costs are involved
-                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequest.castToArray());
-
-                /// @dev step 3: estimate update cost (only for deposit)
+                /// @dev step 2: estimate update cost (only for deposit)
                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
-                /// @dev step 4: estimation execution cost of acknowledgement
+                /// @dev step 3: estimation execution cost of acknowledgement
                 srcAmount += _estimateAckProcessingCost(len, 1);
 
-                /// @dev step 5: estimate the liqAmount
+                /// @dev step 4: estimate the liqAmount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castToArray());
             }
 
-            /// @dev step 6: estimate execution costs in dst
+            /// @dev step 5: estimate execution costs in dst
             /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], 1);
 
-            /// @dev step 7: convert all dst gas estimates to src chain estimate
+            /// @dev step 6: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
             unchecked {
@@ -329,23 +323,20 @@ contract PaymentHelper is IPaymentHelper {
 
         srcAmount += ambFees;
 
-        /// @dev step 2: estimate if swap costs are involved
-        if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.liqRequests);
-
-        /// @dev step 3: estimate update cost (only for deposit)
+        /// @dev step 2: estimate update cost (only for deposit)
         if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
 
-        /// @dev step 4: estimate execution costs in dst
+        /// @dev step 3: estimate execution costs in dst
         /// note: only execution cost (not acknowledgement messaging cost)
         totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, superformIdsLen);
 
-        /// @dev step 5: estimation execution cost of acknowledgement
+        /// @dev step 4: estimation execution cost of acknowledgement
         if (isDeposit) srcAmount += _estimateAckProcessingCost(1, superformIdsLen);
 
-        /// @dev step 6: estimate liq amount
+        /// @dev step 5: estimate liq amount
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
 
-        /// @dev step 7: convert all dst gas estimates to src chain estimate
+        /// @dev step 6: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -368,23 +359,20 @@ contract PaymentHelper is IPaymentHelper {
 
         srcAmount += ambFees;
 
-        /// @dev step 2: estimate if swap costs are involved
-        if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.liqRequest.castToArray());
-
-        /// @dev step 3: estimate update cost (only for deposit)
+        /// @dev step 2: estimate update cost (only for deposit)
         if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
-        /// @dev step 4: estimate execution costs in dst
+        /// @dev step 3: estimate execution costs in dst
         /// note: execution cost includes acknowledgement messaging cost
         totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, 1);
 
-        /// @dev step 5: estimation execution cost of acknowledgement
+        /// @dev step 4: estimation execution cost of acknowledgement
         if (isDeposit) srcAmount += _estimateAckProcessingCost(1, 1);
 
-        /// @dev step 6: estimate the liq amount
+        /// @dev step 5: estimate the liq amount
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
 
-        /// @dev step 7: convert all dst gas estimates to src chain estimate
+        /// @dev step 6: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -581,40 +569,6 @@ contract PaymentHelper is IPaymentHelper {
                 ++i;
             }
         }
-    }
-
-    /// @dev helps estimate the dst chain swap gas limit (if multi-tx is involved)
-    function _estimateSwapFees(
-        uint64 dstChainId_,
-        LiqRequest[] memory liqReq_
-    )
-        internal
-        view
-        returns (uint256 gasUsed)
-    {
-        uint256 totalSwaps;
-
-        for (uint256 i; i < liqReq_.length;) {
-            /// @dev checks if tx_data receiver is multiTxProcessor
-            if (
-                liqReq_[i].bridgeId != 0
-                    && IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).validateReceiver(
-                        liqReq_[i].txData, superRegistry.getAddress(keccak256("MULTI_TX_PROCESSOR"))
-                    )
-            ) {
-                ++totalSwaps;
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        if (totalSwaps == 0) {
-            return 0;
-        }
-
-        return totalSwaps * swapGasUsed[dstChainId_];
     }
 
     /// @dev helps estimate the liq amount involved in the tx

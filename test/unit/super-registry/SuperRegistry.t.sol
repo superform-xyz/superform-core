@@ -85,10 +85,6 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.SUPER_RBAC(), address(0x1));
     }
 
-    function test_setMultiTxProcessor_and_revert_invalidCaller() public {
-        _setAndAssert(superRegistry.MULTI_TX_PROCESSOR(), address(0x1));
-    }
-
     function test_setTxProcessor_and_revert_invalidCaller() public {
         _setAndAssert(superRegistry.CORE_REGISTRY_PROCESSOR(), address(0x1));
     }

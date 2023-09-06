@@ -42,7 +42,6 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
-import { MultiTxProcessor } from "src/crosschain-liquidity/MultiTxProcessor.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
@@ -363,10 +362,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), deployer);
             assert(vars.superRBACC.hasPaymentAdminRole(deployer));
 
-            /// @dev FIXME: in reality who should have the MULTI_TX_SWAPPER_ROLE for multiTxProcessor?
-            vars.superRBACC.grantRole(vars.superRBACC.MULTI_TX_SWAPPER_ROLE(), deployer);
-            assert(vars.superRBACC.hasMultiTxProcessorSwapperRole(deployer));
-
             /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
             assert(vars.superRBACC.hasCoreStateRegistryProcessorRole(deployer));
@@ -633,29 +628,20 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
 
-            /// @dev 14 - Deploy MultiTx Processor
-            vars.multiTxProcessor = address(new MultiTxProcessor{salt: salt}(vars.superRegistry));
-            contracts[vars.chainId][bytes32(bytes("MultiTxProcessor"))] = vars.multiTxProcessor;
-
-            vars.superRegistryC.setAddress(
-                vars.superRegistryC.MULTI_TX_PROCESSOR(), vars.multiTxProcessor, vars.chainId
-            );
-
-            /// @dev 15 - Deploy PayMaster
+            /// @dev 14 - Deploy PayMaster
             vars.payMaster = address(new PayMaster{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMASTER(), vars.payMaster, vars.chainId);
 
-            /// @dev 16 - Super Registry extra setters
+            /// @dev 15 - Super Registry extra setters
             SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
 
             /// @dev configures lzImplementation and hyperlane to super registry
             vars.superRegistryC.setAmbAddress(ambIds, vars.ambAddresses, isBroadcastAMB);
 
-            /// @dev 17 setup setup srcChain keepers
+            /// @dev 16 setup setup srcChain keepers
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.chainId);
-            vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.chainId);
@@ -808,12 +794,6 @@ abstract contract BaseSetup is DSTest, Test {
                     );
 
                     vars.superRegistryC.setAddress(
-                        vars.superRegistryC.MULTI_TX_PROCESSOR(),
-                        getContract(vars.dstChainId, "MultiTxProcessor"),
-                        vars.dstChainId
-                    );
-
-                    vars.superRegistryC.setAddress(
                         vars.superRegistryC.PAYLOAD_HELPER(),
                         getContract(vars.dstChainId, "PayloadHelper"),
                         vars.dstChainId
@@ -821,7 +801,6 @@ abstract contract BaseSetup is DSTest, Test {
 
                     /// @dev FIXME - in mainnet who is this?
                     vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), deployer, vars.dstChainId);
-                    vars.superRegistryC.setAddress(vars.superRegistryC.MULTI_TX_SWAPPER(), deployer, vars.dstChainId);
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
                     );
