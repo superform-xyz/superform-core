@@ -125,6 +125,17 @@ jobs:
         key: "foundry-build-${{ github.sha }}"
         path: "out"
 
+    - name: "Set up Python 3.11"
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: "Install solc 0.8.19"
+      run: |
+          pip3 install solc-select
+          solc-select install 0.8.19
+          solc-select use 0.8.19
+
     - name: "Run Slither"
       uses: crytic/slither-action@v0.3.0
       id: slither
