@@ -114,5 +114,6 @@ jobs:
        uses: crytic/slither-action@v0.3.0
        id: slither
        with:
-         slither-args: '"src/" --no-fail-pedantic --exclude-optimization'
-         fail-on: none
+         slither-args: '--no-fail-pedantic --exclude-optimization'
+         target: 'src/'
+         fail-on: high
