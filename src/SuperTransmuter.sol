@@ -93,18 +93,13 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
 
-        /// @dev if we call this on the chain where the superform is, it works
-        /// @dev however we need this to be called on certain chains where the superform is not deployed
-        /// @dev with broadcasting this could be forwarded to all the other chains
-        address syntheticToken = address(
+        synthethicTokenId[superformId_] = address(
             new sERC20(
                 name,
                 symbol,
                 decimal
             )
         );
-
-        synthethicTokenId[superformId_] = syntheticToken;
 
         /// @dev broadcast and deploy to the other destination chains
         if (extraData_.length > 0) {
