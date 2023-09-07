@@ -1,10 +1,5 @@
 {
-    "filter_paths": "(lib|test)",
     "detectors_to_exclude": "solc-version,timestamp,naming-convention",
-    "exclude_informational": true,
-    "exclude_low": true,
-    "exclude_medium": false,
-    "exclude_high": false,
     "solc_remaps": [
         "forge-std/=lib/forge-std/src/",
         "ds-test/=lib/ds-test/src/",

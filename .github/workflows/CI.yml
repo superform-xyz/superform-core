@@ -131,5 +131,5 @@ jobs:
       uses: crytic/slither-action@v0.3.0
       id: slither
       with:
-        slither-args: '--exclude-low --no-fail-pedantic --exclude-optimization --exclude-informational --json-types console,detectors'
+        slither-args: '--exclude-low --no-fail-pedantic --exclude-optimization --exclude-informational --json-types console,detectors --filter-paths mock,test,script,lib'
         fail-on: high
