@@ -97,16 +97,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                 vars.liqData.token
             );
 
+            address bridge = superRegistry.getBridgeAddress(vars.liqData.bridgeId);
+
+            IERC20(vars.liqData.token).approve(bridge, vars.amount);
             dispatchTokens(
-                superRegistry.getBridgeAddress(vars.liqData.bridgeId),
-                vars.liqData.txData,
-                vars.liqData.token,
-                vars.amount,
-                address(this),
-                vars.liqData.nativeAmount,
-                /// @dev be careful over here
-                "",
-                superRegistry.PERMIT2()
+                bridge, vars.liqData.txData, vars.liqData.token, vars.amount, address(this), vars.liqData.nativeAmount
             );
         }
     }

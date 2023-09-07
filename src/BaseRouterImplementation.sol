@@ -68,13 +68,26 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.superformIds,
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
-            new LiqRequest[](0),
+            req.superformsData.liqRequests,
+            req.superformsData.permit2data,
             req.superformsData.extraFormData
         );
 
         address permit2 = superRegistry.PERMIT2();
         address superform;
         uint256 len = req.superformsData.superformIds.length;
+
+        address[] memory targets = new address[](len);
+
+        for (uint256 i; i < len;) {
+            targets[i] = superRegistry.getBridgeAddress(req.superformsData.liqRequests[i].bridgeId);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        _multiVaultTokenForward(msg.sender, targets, ambData);
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
@@ -93,6 +106,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 ++j;
             }
         }
+
+        ambData.liqData = new LiqRequest[](len);
 
         /// @dev dispatch message information, notice multiVaults is set to 1
         _dispatchAmbMessage(
@@ -128,6 +143,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         vars.liqRequest = req.superformData.liqRequest;
         (address superform,,) = req.superformData.superformId.getSuperform();
+
+        _singleVaultTokenForward(msg.sender, superRegistry.getBridgeAddress(vars.liqRequest.bridgeId), ambData);
+
+        LiqRequest memory emptyRequest;
+        ambData.liqData = emptyRequest;
 
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
@@ -170,6 +190,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.amount,
             req.superformData.maxSlippage,
             req.superformData.liqRequest,
+            req.superformData.permit2data,
             req.superformData.extraFormData
         );
 
@@ -191,6 +212,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.amounts,
             req.superformData.maxSlippages,
             req.superformData.liqRequests,
+            req.superformData.permit2data,
             req.superformData.extraFormData
         );
 
@@ -224,6 +246,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
             req.superformsData.liqRequests,
+            req.superformsData.permit2data,
             req.superformsData.extraFormData
         );
 
@@ -310,6 +333,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.amounts,
             req.superformData.maxSlippages,
             req.superformData.liqRequests,
+            req.superformData.permit2data,
             req.superformData.extraFormData
         );
 
@@ -341,7 +365,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ) revert Error.INVALID_TXDATA_AMOUNTS();
 
         currentPayloadId = ++payloadIds;
-        LiqRequest memory emptyRequest;
 
         ambData = InitSingleVaultData(
             ROUTER_TYPE,
@@ -349,7 +372,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.superformId,
             superformData_.amount,
             superformData_.maxSlippage,
-            emptyRequest,
+            superformData_.liqRequest,
+            superformData_.permit2data,
             superformData_.extraFormData
         );
     }
@@ -381,6 +405,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.amount,
             superformData_.maxSlippage,
             superformData_.liqRequest,
+            superformData_.permit2data,
             superformData_.extraFormData
         );
     }
@@ -416,9 +441,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             args.liqRequest.token,
             IBridgeValidator(bridgeValidator).decodeAmountIn(args.liqRequest.txData),
             args.srcSender,
-            args.liqRequest.nativeAmount,
-            args.liqRequest.permit2data,
-            args.permit2
+            args.liqRequest.nativeAmount
         );
     }
 
@@ -554,8 +577,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev deposits collateral to a given vault and mint vault positions directly through the form
         dstAmount = IBaseForm(superform).directDepositIntoVault{ value: msgValue_ }(
             InitSingleVaultData(
-                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
+                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, "", extraFormData_
             ),
+            /// FIXME: come later
             srcSender_
         );
     }
@@ -636,8 +660,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev in direct withdraws, form is called directly
         IBaseForm(superform).directWithdrawFromVault(
             InitSingleVaultData(
-                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
+                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, "", extraFormData_
             ),
+            /// FIXME: come later
             srcSender_
         );
     }
@@ -817,11 +842,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 amount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData.txData);
             }
 
-            if (vaultData_.liqData.permit2data.length != 0) {
+            if (vaultData_.permit2data.length != 0) {
                 address permit2 = superRegistry.PERMIT2();
 
                 (uint256 nonce, uint256 deadline, bytes memory signature) =
-                    abi.decode(vaultData_.liqData.permit2data, (uint256, uint256, bytes));
+                    abi.decode(vaultData_.permit2data, (uint256, uint256, bytes));
 
                 IPermit2(permit2).permitTransferFrom(
                     // The permit message.
@@ -856,8 +881,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     struct MultiTokenForwardLocalVars {
         IERC20 token;
-        uint256 approvalAmount;
         uint256 totalAmount;
+        uint256 permit2dataLen;
         address permit2;
     }
 
@@ -873,9 +898,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             MultiTokenForwardLocalVars memory v;
             v.token = IERC20(vaultData_.liqData[0].token);
 
-            v.approvalAmount;
             v.totalAmount;
             v.permit2 = superRegistry.PERMIT2();
+            v.permit2dataLen = vaultData_.permit2data.length;
 
             for (uint256 i; i < vaultData_.liqData.length;) {
                 /// FIXME: add revert message
@@ -884,31 +909,33 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
 
                 uint256 len = vaultData_.liqData[i].txData.length;
-                uint256 len2 = vaultData_.liqData[i].permit2data.length;
-                uint256 thisAmount;
 
                 if (len == 0) {
-                    thisAmount = vaultData_.amounts[i];
+                    v.totalAmount += vaultData_.amounts[i];
                 } else {
                     address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId);
-                    thisAmount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData);
+                    v.totalAmount += IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData);
                 }
 
-                v.totalAmount += thisAmount;
+                unchecked {
+                    ++i;
+                }
+            }
 
-                if (len2 != 0) {
+            if (v.totalAmount > 0) {
+                if (v.permit2dataLen > 0) {
                     (uint256 nonce, uint256 deadline, bytes memory signature) =
-                        abi.decode(vaultData_.liqData[i].permit2data, (uint256, uint256, bytes));
+                        abi.decode(vaultData_.permit2data, (uint256, uint256, bytes));
 
                     IPermit2(v.permit2).permitTransferFrom(
                         // The permit message.
                         IPermit2.PermitTransferFrom({
-                            permitted: IPermit2.TokenPermissions({ token: v.token, amount: thisAmount }),
+                            permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.totalAmount }),
                             nonce: nonce,
                             deadline: deadline
                         }),
                         // The transfer recipient and amount.
-                        IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: thisAmount }),
+                        IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: v.totalAmount }),
                         // The owner of the tokens, which must also be
                         // the signer of the message, otherwise this call
                         // will fail.
@@ -918,21 +945,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                         signature
                     );
                 } else {
-                    v.approvalAmount += thisAmount;
-                }
+                    if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
+                        revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                    }
 
-                unchecked {
-                    ++i;
+                    /// @dev moves the tokens from the user and approves the form
+                    v.token.safeTransferFrom(srcSender_, address(this), v.totalAmount);
                 }
-            }
-
-            if (v.approvalAmount > 0) {
-                if (v.token.allowance(srcSender_, address(this)) < v.approvalAmount) {
-                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
-                }
-
-                /// @dev moves the tokens from the user and approves the form
-                v.token.safeTransferFrom(srcSender_, address(this), v.approvalAmount);
             }
 
             /// FIXME: this is hacky

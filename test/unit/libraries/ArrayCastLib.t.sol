@@ -21,7 +21,7 @@ contract ArrayCastLibTest is Test {
     }
 
     function test_castLiqRequestToArray() external {
-        LiqRequest memory req = LiqRequest(1, "", address(0), 1, 1 wei, "");
+        LiqRequest memory req = LiqRequest(1, "", address(0), 1, 1 wei);
 
         LiqRequest[] memory castedReq = arrayCastLib.castToArray(req);
         assertEq(castedReq.length, 1);

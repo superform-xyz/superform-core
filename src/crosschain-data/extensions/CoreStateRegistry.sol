@@ -299,15 +299,13 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 liqData_[v.i].token
             );
 
+            address bridge = superRegistry.getBridgeAddress(liqData_[v.i].bridgeId);
+            uint256 amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData);
+            
+            IERC20(liqData_[v.i].token).approve(bridge, amount);
+
             dispatchTokens(
-                superRegistry.getBridgeAddress(liqData_[v.i].bridgeId),
-                liqData_[v.i].txData,
-                liqData_[v.i].token,
-                IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData),
-                address(this),
-                liqData_[v.i].nativeAmount,
-                liqData_[v.i].permit2data,
-                superRegistry.PERMIT2()
+                bridge, liqData_[v.i].txData, liqData_[v.i].token, amount, address(this), liqData_[v.i].nativeAmount
             );
 
             unchecked {
@@ -420,6 +418,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 lV.tAmounts,
                 lV.tMaxSlippage,
                 lV.tLiqData,
+                "",
+                /// FIXME: come later
                 lV.singleVaultData.extraFormData
             );
         }
@@ -507,6 +507,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 amount: multiVaultData.amounts[i],
                 maxSlippage: multiVaultData.maxSlippage[i],
                 liqData: multiVaultData.liqData[i],
+                permit2data: "",
+                /// FIXME: come later
                 extraFormData: abi.encode(payloadId_, i)
             });
 
@@ -584,6 +586,8 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         amount: multiVaultData.amounts[i],
                         maxSlippage: multiVaultData.maxSlippage[i],
                         liqData: emptyRequest,
+                        permit2data: "",
+                        /// FIXME: come later
                         extraFormData: multiVaultData.extraFormData
                     }),
                     srcSender_,
