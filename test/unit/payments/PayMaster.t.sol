@@ -250,10 +250,10 @@ contract PayMasterTest is BaseSetup {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
         (,,, uint256 msgFees) =
             PaymentHelper(getContract(ETH, "PaymentHelper")).estimateSingleDirectSingleVault(req, true);
         msgFees = msgFees + 2 ether;

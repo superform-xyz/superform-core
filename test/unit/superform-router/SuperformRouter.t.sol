@@ -25,10 +25,10 @@ contract SuperformRouterTest is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
 
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
@@ -90,10 +90,10 @@ contract SuperformRouterTest is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
@@ -600,10 +600,10 @@ contract SuperformRouterTest is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
 
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
@@ -630,8 +630,6 @@ contract SuperformRouterTest is ProtocolActions {
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
-
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
         /// @dev no point approving 0 tokens
         // MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 0);

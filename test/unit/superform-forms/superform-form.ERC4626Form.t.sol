@@ -377,12 +377,14 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
+        address router = getContract(ETH, "SuperformRouter");
+
         /// @dev make sure the beacon proxy has enough usdc for the user to hack it
         MockERC20(getContract(ETH, "DAI")).transfer(superform, 3e18);
-        MockERC20(getContract(ETH, "DAI")).approve(superform, 1e18);
-        MockERC20(getContract(ETH, "USDT")).approve(superform, 1e18);
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
 
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INVALID_DATA.selector);
+        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
@@ -584,10 +586,10 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 

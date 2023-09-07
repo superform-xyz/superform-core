@@ -1471,9 +1471,8 @@ abstract contract ProtocolActions is BaseSetup {
                 nonce: _randomUint256(),
                 deadline: block.timestamp
             });
-            v.sig = _signPermit(v.permit, v.from, userKeys[args.user], args.srcChainId);
-            /// @dev from is either SuperformRouter (xchain) or the form (direct deposit)
-
+            /// @dev from is always SuperformRouter
+            v.sig = _signPermit(v.permit, args.fromSrc, userKeys[args.user], args.srcChainId);
             v.permit2Calldata = abi.encode(v.permit.nonce, v.permit.deadline, v.sig);
         }
 
@@ -1498,7 +1497,7 @@ abstract contract ProtocolActions is BaseSetup {
                 /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts
                 /// are ordered from lowest to highest,
                 /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
-                MockERC20(liqRequestToken).increaseAllowance(v.from, args.amount);
+                MockERC20(liqRequestToken).increaseAllowance(args.fromSrc, args.amount);
             }
         }
         vm.selectFork(v.initialFork);

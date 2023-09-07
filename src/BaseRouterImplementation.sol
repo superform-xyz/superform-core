@@ -13,9 +13,9 @@ import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { IFormBeacon } from "./interfaces/IFormBeacon.sol";
 import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
-import { LiquidityHandler } from "./crosschain-liquidity/LiquidityHandler.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 import { Error } from "./utils/Error.sol";
+import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
 
 /// @title BaseRouterImplementation
@@ -461,6 +461,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev decode superforms
         (superform,,) = vaultData_.superformId.getSuperform();
 
+        _singleVaultTokenForward(srcSender_, superform, vaultData_);
+
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = _directDeposit(
             superform,
@@ -491,6 +493,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev decode superforms
         (superforms,,) = DataLib.getSuperforms(vaultData_.superformIds);
+
+        _multiVaultTokenForward(srcSender_, superforms, vaultData_);
 
         for (uint256 i; i < len;) {
             /// @dev deposits collateral to a given vault and mint vault positions.
@@ -787,6 +791,159 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             IPayMaster(superRegistry.getAddress(keccak256("PAYMASTER"))).makePayment{ value: residualPayment }(
                 msg.sender
             );
+        }
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                    SAME CHAIN TOKEN SETTLEMENT HELPERS
+    //////////////////////////////////////////////////////////////*/
+    function _singleVaultTokenForward(
+        address srcSender_,
+        address superform_,
+        InitSingleVaultData memory vaultData_
+    )
+        internal
+        virtual
+    {
+        if (vaultData_.liqData.token != NATIVE) {
+            IERC20 token = IERC20(vaultData_.liqData.token);
+            uint256 len = vaultData_.liqData.txData.length;
+            uint256 amount;
+
+            if (len == 0) {
+                amount = vaultData_.amount;
+            } else {
+                address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData.bridgeId);
+                amount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData.txData);
+            }
+
+            if (vaultData_.liqData.permit2data.length != 0) {
+                address permit2 = superRegistry.PERMIT2();
+
+                (uint256 nonce, uint256 deadline, bytes memory signature) =
+                    abi.decode(vaultData_.liqData.permit2data, (uint256, uint256, bytes));
+
+                IPermit2(permit2).permitTransferFrom(
+                    // The permit message.
+                    IPermit2.PermitTransferFrom({
+                        permitted: IPermit2.TokenPermissions({ token: token, amount: amount }),
+                        nonce: nonce,
+                        deadline: deadline
+                    }),
+                    // The transfer recipient and amount.
+                    IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: amount }),
+                    // The owner of the tokens, which must also be
+                    // the signer of the message, otherwise this call
+                    // will fail.
+                    srcSender_,
+                    // The packed signature that was the result of signing
+                    // the EIP712 hash of `permit`.
+                    signature
+                );
+            } else {
+                if (token.allowance(srcSender_, address(this)) < amount) {
+                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                }
+
+                /// @dev moves the tokens from the user and approves the form
+                token.safeTransferFrom(srcSender_, address(this), amount);
+            }
+
+            /// @dev approves the superform
+            token.approve(superform_, amount);
+        }
+    }
+
+    struct MultiTokenForwardLocalVars {
+        IERC20 token;
+        uint256 approvalAmount;
+        uint256 totalAmount;
+        address permit2;
+    }
+
+    function _multiVaultTokenForward(
+        address srcSender_,
+        address[] memory superforms_,
+        InitMultiVaultData memory vaultData_
+    )
+        internal
+        virtual
+    {
+        if (vaultData_.liqData[0].token != NATIVE) {
+            MultiTokenForwardLocalVars memory v;
+            v.token = IERC20(vaultData_.liqData[0].token);
+
+            v.approvalAmount;
+            v.totalAmount;
+            v.permit2 = superRegistry.PERMIT2();
+
+            for (uint256 i; i < vaultData_.liqData.length;) {
+                /// FIXME: add revert message
+                if (vaultData_.liqData[i].token != address(v.token)) {
+                    revert();
+                }
+
+                uint256 len = vaultData_.liqData[i].txData.length;
+                uint256 len2 = vaultData_.liqData[i].permit2data.length;
+                uint256 thisAmount;
+
+                if (len == 0) {
+                    thisAmount = vaultData_.amounts[i];
+                } else {
+                    address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId);
+                    thisAmount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData);
+                }
+
+                v.totalAmount += thisAmount;
+
+                if (len2 != 0) {
+                    (uint256 nonce, uint256 deadline, bytes memory signature) =
+                        abi.decode(vaultData_.liqData[i].permit2data, (uint256, uint256, bytes));
+
+                    IPermit2(v.permit2).permitTransferFrom(
+                        // The permit message.
+                        IPermit2.PermitTransferFrom({
+                            permitted: IPermit2.TokenPermissions({ token: v.token, amount: thisAmount }),
+                            nonce: nonce,
+                            deadline: deadline
+                        }),
+                        // The transfer recipient and amount.
+                        IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: thisAmount }),
+                        // The owner of the tokens, which must also be
+                        // the signer of the message, otherwise this call
+                        // will fail.
+                        srcSender_,
+                        // The packed signature that was the result of signing
+                        // the EIP712 hash of `permit`.
+                        signature
+                    );
+                } else {
+                    v.approvalAmount += thisAmount;
+                }
+
+                unchecked {
+                    ++i;
+                }
+            }
+
+            if (v.approvalAmount > 0) {
+                if (v.token.allowance(srcSender_, address(this)) < v.approvalAmount) {
+                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                }
+
+                /// @dev moves the tokens from the user and approves the form
+                v.token.safeTransferFrom(srcSender_, address(this), v.approvalAmount);
+            }
+
+            /// FIXME: this is hacky
+            for (uint256 j; j < superforms_.length;) {
+                /// @dev approves the superform
+                v.token.approve(superforms_[j], v.totalAmount);
+
+                unchecked {
+                    ++j;
+                }
+            }
         }
     }
 }

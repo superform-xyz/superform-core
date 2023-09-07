@@ -98,10 +98,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
@@ -124,10 +122,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
         superformRouterSERC20.singleDirectSingleVaultWithdraw(req);
@@ -674,10 +670,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
