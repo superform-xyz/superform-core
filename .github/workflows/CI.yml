@@ -129,7 +129,7 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-        
+
     - name: "Install solc 0.8.19"
       run: |
           pip3 install solc-select
@@ -145,3 +145,4 @@ jobs:
         fail-on: high
         slither-config: './slither.config.json'
         ignore-compile: true
+        solc-version: 0.8.19

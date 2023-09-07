@@ -6,14 +6,14 @@ import { sERC20 } from "ERC1155A/transmuter/sERC20.sol";
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
-import { SuperTransmuterMock } from "test/mocks/SuperTransmuterMock.sol";
+import { SuperTransmuter } from "src/SuperTransmuter.sol";
 
 contract SuperformRouterSERC20Test is ProtocolActions {
     SuperformRouter superformRouterSERC20;
     SuperformRouter superformRouterSERC20Arbi;
 
-    SuperTransmuterMock superTransmuterSyncer;
-    SuperTransmuterMock superTransmuterSyncerArbi;
+    SuperTransmuter superTransmuterSyncer;
+    SuperTransmuter superTransmuterSyncerArbi;
 
     function setUp() public override {
         super.setUp();
@@ -22,15 +22,13 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         superformRouterSERC20 = new SuperformRouter(getContract(ETH, "SuperRegistry"), 1, 2);
 
-        superTransmuterSyncer =
-            new SuperTransmuterMock(IERC1155A(getContract(ETH, "SuperPositions")), getContract(ETH, "SuperRegistry"), 2);
+        superTransmuterSyncer = SuperTransmuter(getContract(ETH, "SuperTransmuter"));
 
         vm.selectFork(FORKS[ARBI]);
 
         superformRouterSERC20Arbi = new SuperformRouter(getContract(ARBI, "SuperRegistry"), 1, 2);
 
-        superTransmuterSyncerArbi =
-        new SuperTransmuterMock(IERC1155A(getContract(ARBI, "SuperPositions")), getContract(ARBI, "SuperRegistry"), 2);
+        superTransmuterSyncerArbi = SuperTransmuter(getContract(ARBI, "SuperTransmuter"));
 
         vm.selectFork(FORKS[ETH]);
 
@@ -115,7 +113,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        superTransmuterSyncer.registerTransmuter(superformId, "");
+        _registerTransmuter(ETH, superformId, 1);
         vm.startPrank(address(superformRouterSERC20));
         superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
 
@@ -145,17 +143,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.selectFork(FORKS[ARBI]);
 
-        superTransmuterSyncerArbi.registerTransmuter(superformId, "");
-
-        string memory tokenName =
-            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
-        string memory tokenSymbol =
-            string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
-        uint8 decimals = uint8(IBaseForm(superform).getVaultDecimals());
+        _registerTransmuter(ARBI, superformId, 1);
 
         vm.selectFork(FORKS[ETH]);
-
-        superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
 
         vm.startPrank(address(superformRouterSERC20));
         superTransmuterSyncer.mintSingle(deployer, superformId, 1e18);
@@ -196,17 +186,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
         vm.selectFork(FORKS[ARBI]);
 
-        superTransmuterSyncerArbi.registerTransmuter(superformId, "");
-
-        string memory tokenName =
-            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
-        string memory tokenSymbol =
-            string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
-        uint8 decimals = uint8(IBaseForm(superform).getVaultDecimals());
+        _registerTransmuter(ARBI, superformId, 1);
 
         vm.selectFork(FORKS[ETH]);
-
-        superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
 
         vm.startPrank(address(superformRouterSERC20));
 
@@ -242,17 +224,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.selectFork(FORKS[ARBI]);
 
-        superTransmuterSyncerArbi.registerTransmuter(superformId, "");
-
-        string memory tokenName =
-            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
-        string memory tokenSymbol =
-            string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
-        uint8 decimals = uint8(IBaseForm(superform).getVaultDecimals());
+        _registerTransmuter(ARBI, superformId, 1);
 
         vm.selectFork(FORKS[ETH]);
-
-        superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
 
         vm.startPrank(address(superformRouterSERC20));
 
@@ -725,17 +699,10 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         vm.selectFork(FORKS[ARBI]);
 
-        superTransmuterSyncerArbi.registerTransmuter(superformId, "");
-
-        string memory tokenName =
-            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform).superformYieldTokenName()));
-        string memory tokenSymbol =
-            string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
-        uint8 decimals = uint8(IBaseForm(superform).getVaultDecimals());
+        /// @dev payloadId 1 already used in pauseFormBeacon
+        _registerTransmuter(ARBI, superformId, 2);
 
         vm.selectFork(FORKS[ETH]);
-
-        superTransmuterSyncer.mockStateSync(superformId, tokenName, tokenSymbol, decimals);
 
         vm.startPrank(address(superformRouterSERC20));
 
@@ -981,29 +948,10 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
 
         vm.selectFork(FORKS[ARBI]);
-
-        superTransmuterSyncerArbi.registerTransmuter(superformId1, "");
-        superTransmuterSyncerArbi.registerTransmuter(superformId2, "");
-
-        string memory tokenName =
-            string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform1).superformYieldTokenName()));
-        string memory tokenSymbol =
-            string(abi.encodePacked("sERC20-", IBaseForm(superform1).superformYieldTokenSymbol()));
-        uint8 decimals = uint8(IBaseForm(superform1).getVaultDecimals());
+        _registerTransmuter(ARBI, superformId1, 1);
+        _registerTransmuter(ARBI, superformId2, 2);
 
         vm.selectFork(FORKS[ETH]);
-
-        superTransmuterSyncer.mockStateSync(superformId1, tokenName, tokenSymbol, decimals);
-
-        vm.selectFork(FORKS[ARBI]);
-
-        tokenName = string(abi.encodePacked("Synthetic ERC20 ", IBaseForm(superform2).superformYieldTokenName()));
-        tokenSymbol = string(abi.encodePacked("sERC20-", IBaseForm(superform2).superformYieldTokenSymbol()));
-        decimals = uint8(IBaseForm(superform2).getVaultDecimals());
-
-        vm.selectFork(FORKS[ETH]);
-
-        superTransmuterSyncer.mockStateSync(superformId2, tokenName, tokenSymbol, decimals);
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
@@ -1190,5 +1138,36 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                 assertEq(statusAfter, 2);
             }
         }
+    }
+
+    function _registerTransmuter(uint64 srcChainId, uint256 superformId, uint256 payloadId) internal {
+        uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[srcChainId]);
+        vm.recordLogs();
+        SuperTransmuter(getContract(srcChainId, "SuperTransmuter")).registerTransmuter(
+            superformId, generateBroadcastParams(5, 1)
+        );
+
+        vm.startPrank(deployer);
+        _broadcastPayloadHelper(srcChainId, vm.getRecordedLogs());
+
+        for (uint256 i; i < chainIds.length; i++) {
+            if (chainIds[i] != srcChainId) {
+                vm.selectFork(FORKS[chainIds[i]]);
+                BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(payloadId);
+
+                assertGt(
+                    uint256(
+                        uint160(
+                            SuperTransmuter(getContract(chainIds[i], "SuperTransmuter")).synthethicTokenId(superformId)
+                        )
+                    ),
+                    uint256(0)
+                );
+            }
+        }
+
+        vm.selectFork(initialFork);
     }
 }
