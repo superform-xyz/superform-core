@@ -106,13 +106,13 @@ jobs:
           echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
 
-  #slither:
-  #  runs-on: ubuntu-latest
-  # steps:
-  #   - uses: actions/checkout@v3
-  #   - name: Run Slither
-  #     uses: crytic/slither-action@v0.3.0
-  #     id: slither
-  #     with:
-  #       slither-args: '--exclude-low --exclude-medium --no-fail-pedantic --exclude-optimization --exclude-informational --filter-paths mock,interfaces,lib,tests --json-types console,detectors'
-  #       fail-on: none
+  slither:
+   runs-on: ubuntu-latest
+   steps:
+     - uses: actions/checkout@v3
+     - name: Run Slither
+       uses: crytic/slither-action@v0.3.0
+       id: slither
+       with:
+         slither-args: '"src/" --no-fail-pedantic --exclude-optimization'
+         fail-on: none
