@@ -115,6 +115,9 @@ library Error {
     /// @dev thrown when in deposits, the liqDstChainId doesn't match the stateReq dstChainId
     error INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
 
+    /// @dev when a certain action of the user is not allowed given the txData provided
+    error INVALID_ACTION();
+
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/

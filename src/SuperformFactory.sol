@@ -128,7 +128,7 @@ contract SuperformFactory is ISuperformFactory {
         );
 
         /// @dev this will always be unique because all chainIds are unique
-        superformId_ = DataLib.packSuperform(superform_, formBeaconId_, superRegistry.chainId());
+        superformId_ = DataLib.packSuperform(superform_, formBeaconId_, uint64(block.chainid));
 
         vaultToSuperforms[vault_].push(superformId_);
 
@@ -200,7 +200,7 @@ contract SuperformFactory is ISuperformFactory {
             BroadcastMessage memory factoryPayload = BroadcastMessage(
                 "SUPERFORM_FACTORY",
                 SYNC_BEACON_STATUS,
-                abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, formBeaconId_, paused_)
+                abi.encode(uint64(block.chainid), ++xChainPayloadCounter, formBeaconId_, paused_)
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);

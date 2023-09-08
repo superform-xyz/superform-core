@@ -145,7 +145,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         /// @dev validate payload update
         PayloadUpdaterLib.validateWithdrawPayloadUpdate(v.prevPayloadHeader, payloadTracking[payloadId_], v.isMulti);
-        v.dstChainId = superRegistry.chainId();
+        v.dstChainId = uint64(block.chainid);
 
         bytes memory newPayloadBody = _updateWithdrawPayload(v, txData_, v.isMulti);
 
@@ -280,7 +280,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         delete failedDeposits[payloadId_];
 
-        v.dstChainId = superRegistry.chainId();
+        v.dstChainId = uint64(block.chainid);
 
         for (v.i; v.i < v.l1;) {
             (v.superform,,) = v.superformIds[v.i].getSuperform();
@@ -303,7 +303,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 superRegistry.getBridgeAddress(liqData_[v.i].bridgeId),
                 liqData_[v.i].txData,
                 liqData_[v.i].token,
-                IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData),
+                IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData, true),
                 address(this),
                 liqData_[v.i].nativeAmount,
                 liqData_[v.i].permit2data,
@@ -454,7 +454,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     /// finalAmount (that will be dispatched) is amount in
                     /// how can we compare an amount of underlying against superPositions? This seems invalid
 
-                    lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i]);
+                    lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i], false);
                     PayloadUpdaterLib.validateSlippage(
                         lV.finalAmount,
                         IBaseForm(superform).previewWithdrawFrom(lV.multiVaultData.amounts[lV.i]),
@@ -498,7 +498,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         for (uint256 i; i < len;) {
             /// @dev it is critical to validate that the action is being performed to the correct chainId coming from
             /// the superform
-            DataLib.validateSuperformChainId(multiVaultData.superformIds[i], superRegistry.chainId());
+            DataLib.validateSuperformChainId(multiVaultData.superformIds[i], uint64(block.chainid));
 
             singleVaultData = InitSingleVaultData({
                 superformRouterId: multiVaultData.superformRouterId,
@@ -572,7 +572,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
                 /// @dev it is critical to validate that the action is being performed to the correct chainId coming
                 /// from the superform
-                DataLib.validateSuperformChainId(multiVaultData.superformIds[i], superRegistry.chainId());
+                DataLib.validateSuperformChainId(multiVaultData.superformIds[i], uint64(block.chainid));
 
                 /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0
                 /// SPs back on source (slight gas waste)
@@ -642,7 +642,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
         singleVaultData.extraFormData = abi.encode(payloadId_, 0);
 
-        DataLib.validateSuperformChainId(singleVaultData.superformId, superRegistry.chainId());
+        DataLib.validateSuperformChainId(singleVaultData.superformId, uint64(block.chainid));
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();
         /// @dev Withdraw from superform
@@ -676,7 +676,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        DataLib.validateSuperformChainId(singleVaultData.superformId, superRegistry.chainId());
+        DataLib.validateSuperformChainId(singleVaultData.superformId, uint64(block.chainid));
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();
 
@@ -736,7 +736,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     1,
                     superRegistry.getStateRegistryId(address(this)),
                     srcSender_,
-                    superRegistry.chainId()
+                    uint64(block.chainid)
                 ),
                 abi.encode(ReturnMultiData(superformRouterId_, payloadId_, superformIds_, amounts))
             )
@@ -766,7 +766,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     0,
                     superRegistry.getStateRegistryId(address(this)),
                     srcSender_,
-                    superRegistry.chainId()
+                    uint64(block.chainid)
                 ),
                 abi.encode(ReturnSingleData(superformRouterId_, payloadId_, superformId_, amount))
             )

@@ -14,7 +14,7 @@ verbosity = 0
 ffi = false
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
-remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/"]
+remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/", "test/=test/"]
 
 [profile.localdev]
 solc-version = "0.8.19"
@@ -32,6 +32,7 @@ verbosity = 0
 ffi = false
 libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
+remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/", "test/=test/"]
 
 [profile.coverage]
 fuzz = { runs = 1, max_test_rejects = 350_000 }    

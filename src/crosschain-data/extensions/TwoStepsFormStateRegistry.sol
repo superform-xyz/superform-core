@@ -132,7 +132,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             /// @dev validate the incoming tx data
             bridgeValidator.validateTxData(
                 txData_,
-                superRegistry.chainId(),
+                uint64(block.chainid),
                 p.srcChainId,
                 p.data.liqData.liqDstChainId,
                 false,
@@ -141,7 +141,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                 p.data.liqData.token
             );
 
-            finalAmount = bridgeValidator.decodeAmountIn(txData_);
+            finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
             PayloadUpdaterLib.validateSlippage(finalAmount, form.previewWithdrawFrom(p.data.amount), p.data.maxSlippage);
 
             p.data.liqData.txData = txData_;
@@ -264,7 +264,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                     0,
                     superRegistry.getStateRegistryId(address(this)),
                     srcSender_,
-                    superRegistry.chainId()
+                    uint64(block.chainid)
                 ),
                 abi.encode(
                     ReturnSingleData(

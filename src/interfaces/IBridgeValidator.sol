@@ -8,11 +8,6 @@ interface IBridgeValidator {
                             External Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev validates the amounts being sent in liqRequests
-    /// @param txData_ the txData of the deposit
-    /// @param amount_ the amount of the deposit
-    function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external view returns (bool);
-
     /// @dev validates the destination chainId of the liquidity request
     /// @param txData_ the txData of the deposit
     /// @param liqDstChainId_ the chainId of the destination chain for liquidity
@@ -48,11 +43,25 @@ interface IBridgeValidator {
 
     /// @dev decodes the txData and returns the minimum amount expected to receive on the destination
     /// @param txData_ is the txData of the cross chain deposit
+    /// @param genericSwapDisallowed_ true if generic swaps are disallowed
     /// @return amount_ the amount expected
-    function decodeMinAmountOut(bytes calldata txData_) external pure returns (uint256 amount_);
+    function decodeMinAmountOut(
+        bytes calldata txData_,
+        bool genericSwapDisallowed_
+    )
+        external
+        pure
+        returns (uint256 amount_);
 
     /// @dev decodes the txData and returns the amount of external token on source
     /// @param txData_ is the txData of the cross chain deposit
+    /// @param genericSwapDisallowed_ true if generic swaps are disallowed
     /// @return amount_ the amount expected
-    function decodeAmountIn(bytes calldata txData_) external pure returns (uint256 amount_);
+    function decodeAmountIn(
+        bytes calldata txData_,
+        bool genericSwapDisallowed_
+    )
+        external
+        pure
+        returns (uint256 amount_);
 }

@@ -114,7 +114,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
             msgAMB[payloadsCount] = superRegistry.getAmbId(msg.sender);
 
-            emit PayloadReceived(srcChainId_, superRegistry.chainId(), payloadsCount);
+            emit PayloadReceived(srcChainId_, uint64(block.chainid), payloadsCount);
         }
     }
 
