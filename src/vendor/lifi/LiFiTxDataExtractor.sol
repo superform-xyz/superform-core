@@ -5,12 +5,15 @@ import { ILiFi } from "./ILiFi.sol";
 
 /// @title LiFiTxDataExtractor
 /// @author LI.FI (https://li.fi)
-/// @notice Provides functionality for verifying calldata
+/// @notice Provides functionality for extracting calldata
 /// @notice upgraded to solidity 0.8.19 and adapted from CalldataVerificationFacet and LibBytes without any changes to
 /// used functions (just stripped down functionality and renamed contract name)
 /// @notice taken from LiFi contracts https://github.com/lifinance/contracts
 /// @custom:version 1.1.0
 contract LiFiTxDataExtractor {
+    error SliceOverflow();
+    error SliceOutOfBounds();
+
     /// @notice Extracts the bridge data from the calldata
     /// @param data The calldata to extract the bridge data from
     /// @return bridgeData The bridge data extracted from the calldata
@@ -39,9 +42,6 @@ contract LiFiTxDataExtractor {
         // normal call
         (, swapData) = abi.decode(data[4:], (ILiFi.BridgeData, ILiFi.SwapData[]));
     }
-
-    error SliceOverflow();
-    error SliceOutOfBounds();
 
     function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
         if (_length + 31 < _length) revert SliceOverflow();

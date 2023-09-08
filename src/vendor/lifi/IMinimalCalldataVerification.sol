@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-/// @title Minimal Calldata Verification
+/// @title Minimal Calldata Verification Interface (to access Facet)
 /// @author LI.FI (https://li.fi)
 /// @notice Provides functionality for verifying calldata
-/// @notice upgraded to solidity 0.8.19 and adapted from CalldataVerificationFacet and LibBytes without any changes to
-/// used functions
+/// @notice upgraded to solidity 0.8.19
 /// @notice taken from LiFi contracts https://github.com/lifinance/contracts
 /// @custom:version 1.1.0
 interface IMinimalCalldataVerification {
