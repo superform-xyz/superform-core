@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
-import { BridgeValidator } from "../BridgeValidator.sol";
-import { ILiFi } from "../../vendor/lifi/ILiFi.sol";
-import { Error } from "../../utils/Error.sol";
+import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
+import { ILiFi } from "lifi/Interfaces/ILiFi.sol";
+import { Error } from "src/utils/Error.sol";
+import { MinimalCalldataVerification } from "src/vendor/lifi/MinimalCalldataVerification.sol";
 
 /// @title LiFiValidator
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
-contract LiFiValidator is BridgeValidator {
+contract LiFiValidator is BridgeValidator, MinimalCalldataVerification {
     /*///////////////////////////////////////////////////////////////
                                 Constructor
     //////////////////////////////////////////////////////////////*/
@@ -124,10 +125,11 @@ contract LiFiValidator is BridgeValidator {
         pure
         returns (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData)
     {
-        (bridgeData) = abi.decode(data[4:], (ILiFi.BridgeData));
+        bridgeData = _extractBridgeData(data);
 
         if (bridgeData.hasSourceSwaps) {
-            (bridgeData, swapData) = abi.decode(data[4:], (ILiFi.BridgeData, ILiFi.SwapData[]));
+            swapData = _extractSwapData(data);
         }
     }
+
 }
