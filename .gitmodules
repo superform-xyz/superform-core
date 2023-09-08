@@ -19,6 +19,3 @@
 [submodule "lib/pigeon"]
 	path = lib/pigeon
 	url = https://github.com/exp-table/pigeon
-[submodule "lib/contracts"]
-	path = lib/contracts
-	url = https://github.com/lifinance/contracts
