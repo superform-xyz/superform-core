@@ -13,6 +13,12 @@ interface IBridgeValidator {
     /// @param liqDstChainId_ the chainId of the destination chain for liquidity
     function validateLiqDstChainId(bytes calldata txData_, uint64 liqDstChainId_) external pure returns (bool);
 
+    /// @dev decoded txData and returns the receiver address
+    /// @param txData_ is the txData of the cross chain deposit
+    /// @param receiver_ is the address of the receiver to validate
+    /// @return valid_ if the address is valid
+    function validateReceiver(bytes calldata txData_, address receiver_) external pure returns (bool valid_);
+
     /// @dev validates the txData of a cross chain deposit
     /// @param txData_ the txData of the cross chain deposit
     /// @param srcChainId_ the chainId of the source chain
@@ -35,12 +41,6 @@ interface IBridgeValidator {
         external
         view;
 
-    /// @dev decoded txData and returns the receiver address
-    /// @param txData_ is the txData of the cross chain deposit
-    /// @param receiver_ is the address of the receiver to validate
-    /// @return valid_ if the address is valid
-    function validateReceiver(bytes calldata txData_, address receiver_) external pure returns (bool valid_);
-
     /// @dev decodes the txData and returns the minimum amount expected to receive on the destination
     /// @param txData_ is the txData of the cross chain deposit
     /// @param genericSwapDisallowed_ true if generic swaps are disallowed
@@ -50,7 +50,7 @@ interface IBridgeValidator {
         bool genericSwapDisallowed_
     )
         external
-        pure
+        view
         returns (uint256 amount_);
 
     /// @dev decodes the txData and returns the amount of external token on source
@@ -62,6 +62,6 @@ interface IBridgeValidator {
         bool genericSwapDisallowed_
     )
         external
-        pure
+        view
         returns (uint256 amount_);
 }

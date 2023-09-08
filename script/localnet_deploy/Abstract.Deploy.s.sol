@@ -183,6 +183,16 @@ abstract contract AbstractDeploy is Script {
     address public constant OP_messageBus = 0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d;
     address public constant FTM_messageBus = 0xFF4E183a0Ceb4Fa98E63BbF8077B929c8E5A2bA4;
 
+    address[] public LiFiCallDataVerificationFacets = [
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0x16d7Cff1992F17E46fa98284CCaAC1A19788B6B9,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567
+    ];
+
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -421,7 +431,8 @@ abstract contract AbstractDeploy is Script {
 
         /// @dev 6- deploy liquidity validators
 
-        vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
+        vars.lifiValidator =
+            address(new LiFiValidator{salt: salt}(vars.superRegistry, LiFiCallDataVerificationFacets[i]));
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
         bridgeValidators[0] = vars.lifiValidator;

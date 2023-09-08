@@ -155,8 +155,17 @@ abstract contract BaseSetup is DSTest, Test {
     address public constant ARBI_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant FTM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
-
     /// @dev removed FTM temporarily
+
+    address[] public LiFiCallDataVerificationFacets = [
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0x16d7Cff1992F17E46fa98284CCaAC1A19788B6B9
+    ];
+
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -479,8 +488,9 @@ abstract contract BaseSetup is DSTest, Test {
             vm.allowCheatcodes(vars.lifiRouter);
 
             /// @dev 7.2- deploy  lifi validator
-
-            vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
+            vm.makePersistent(LiFiCallDataVerificationFacets[i]);
+            vars.lifiValidator =
+                address(new LiFiValidator{salt: salt}(vars.superRegistry, LiFiCallDataVerificationFacets[i]));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
@@ -877,12 +887,12 @@ abstract contract BaseSetup is DSTest, Test {
     function _preDeploymentSetup() private {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
-        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 17_984_296);
-        forks[BSC] = vm.createFork(BSC_RPC_URL, 31_131_747);
-        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 34_317_974);
-        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 46_695_352);
-        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 124_493_242);
-        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 108_639_543);
+        forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 18_092_097);
+        forks[BSC] = vm.createFork(BSC_RPC_URL, 31_564_343);
+        forks[AVAX] = vm.createFork(AVALANCHE_RPC_URL, 34_923_446);
+        forks[POLY] = vm.createFork(POLYGON_RPC_URL, 47_296_382);
+        forks[ARBI] = vm.createFork(ARBITRUM_RPC_URL, 129_217_926);
+        forks[OP] = vm.createFork(OPTIMISM_RPC_URL, 109_291_345);
         //forks[FTM] = vm.createFork(FANTOM_RPC_URL, 56806404);
 
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
@@ -1070,16 +1080,6 @@ abstract contract BaseSetup is DSTest, Test {
 
         vm.startPrank(deployer);
     }
-
-    /// @dev will sync the broadcasted factory payloads
-    // function _processFactoryPayloads(uint256 superformsToProcess_) private {
-    //     for (uint256 j = 0; j < chainIds.length; j++) {
-    //         vm.selectFork(FORKS[chainIds[j]]);
-    //         for (uint256 k = 1; k < superformsToProcess_; k++) {
-    //             FactoryStateRegistry(payable(getContract(chainIds[j], "FactoryStateRegistry"))).processPayload(k);
-    //         }
-    //     }
-    // }
 
     function _deployWithCreate2(bytes memory bytecode_, uint256 salt_) internal returns (address addr) {
         /// @solidity memory-safe-assembly

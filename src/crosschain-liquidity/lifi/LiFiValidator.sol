@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
-import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { Error } from "src/utils/Error.sol";
 import { LiFiTxDataExtractor } from "src/vendor/lifi/LiFiTxDataExtractor.sol";
 import { IMinimalCalldataVerification } from "src/vendor/lifi/IMinimalCalldataVerification.sol";
@@ -11,18 +11,40 @@ import { IMinimalCalldataVerification } from "src/vendor/lifi/IMinimalCalldataVe
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
 contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
-    IMinimalCalldataVerification private immutable minimalCalldataVerification;
+    IMinimalCalldataVerification public minimalCalldataVerification;
+
+    /// @notice Emitted when the minimalCalldataVerification contract is set
+    event CalldataVerificationSet(address minimalCalldataVerification);
+
+    /*///////////////////////////////////////////////////////////////
+                              Modifiers
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyProtocolAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
+            revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 Constructor
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_, address minimalCalldataVerification_) BridgeValidator(superRegistry_) {
         minimalCalldataVerification = IMinimalCalldataVerification(minimalCalldataVerification_);
+        emit CalldataVerificationSet(minimalCalldataVerification_);
     }
 
     /*///////////////////////////////////////////////////////////////
                             External Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows the protocol admin to set the minimalCalldataVerification contract
+    function setCalldataVerification(address minimalCalldataVerification_) external onlyProtocolAdmin {
+        minimalCalldataVerification = IMinimalCalldataVerification(minimalCalldataVerification_);
+        emit CalldataVerificationSet(minimalCalldataVerification_);
+    }
 
     /// @inheritdoc BridgeValidator
     function validateLiqDstChainId(
@@ -35,6 +57,11 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         returns (bool)
     {
         return (uint256(liqDstChainId_) == _extractBridgeData(txData_).destinationChainId);
+    }
+
+    /// @inheritdoc BridgeValidator
+    function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
+        return _extractBridgeData(txData_).receiver == receiver_;
     }
 
     /// @inheritdoc BridgeValidator
@@ -117,17 +144,12 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     }
 
     /// @inheritdoc BridgeValidator
-    function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
-        return _extractBridgeData(txData_).receiver == receiver_;
-    }
-
-    /// @inheritdoc BridgeValidator
     function decodeMinAmountOut(
         bytes calldata txData_,
         bool genericSwapDisallowed_
     )
         external
-        pure
+        view
         override
         returns (uint256 amount_)
     {
@@ -156,7 +178,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         bool genericSwapDisallowed_
     )
         external
-        pure
+        view
         override
         returns (uint256 amount_)
     {
@@ -174,21 +196,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
 
             (, amount_,,,) = minimalCalldataVerification.extractGenericSwapParameters(txData_);
-        }
-    }
-
-    /// @notice Decode lifi's calldata
-    /// @param txData_ LiFi call data
-    /// @return bridgeData LiFi BridgeData
-    function _decodeCallData(bytes calldata txData_)
-        internal
-        pure
-        returns (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData)
-    {
-        bridgeData = _extractBridgeData(txData_);
-
-        if (bridgeData.hasSourceSwaps) {
-            swapData = _extractSwapData(txData_);
         }
     }
 }
