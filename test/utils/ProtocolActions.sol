@@ -1514,6 +1514,8 @@ abstract contract ProtocolActions is BaseSetup {
         IERC1155A superPositions;
         bytes txData;
         LiqRequest liqReq;
+        address superform;
+        uint256 actualWithdrawAmount;
     }
 
     function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
@@ -1536,6 +1538,11 @@ abstract contract ProtocolActions is BaseSetup {
         /// approving all superPositions at once
         vars.superPositions.setApprovalForOne(vars.superformRouter, args.superformId, args.amount);
 
+        vm.selectFork(FORKS[args.toChainId]);
+        (vars.superform,,) = args.superformId.getSuperform();
+        vars.actualWithdrawAmount = IBaseForm(vars.superform).previewWithdrawFrom(args.amount);
+        console.log("actualWithdrawAmount", vars.actualWithdrawAmount, "args.amount", args.amount);
+
         vm.selectFork(initialFork);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
@@ -1553,6 +1560,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.liqDstChainId,
             users[args.user],
             args.liquidityBridgeSrcChainId,
+            // vars.actualWithdrawAmount,
             args.amount,
             true,
             /// @dev putting a placeholder value for now (not really used)
@@ -1638,6 +1646,7 @@ abstract contract ProtocolActions is BaseSetup {
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             underlyingDstTokensMem[i] = getContract(chain1, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
+            console.log("vaultMocksMem[i]", i, vaultMocksMem[i]);
             if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
                 revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
             }

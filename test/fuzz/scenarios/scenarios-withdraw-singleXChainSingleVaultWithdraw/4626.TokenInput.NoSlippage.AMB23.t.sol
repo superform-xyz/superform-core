@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SXSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
+contract SXSVWNormal4626NativeNoSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -71,11 +71,13 @@ contract SXSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
     /*///////////////////////////////////////////////////////////////
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
-
-    function test_scenario(uint128 amountOne_) public {
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI));
-        AMOUNTS[AVAX][0] = [amountOne_];
-        AMOUNTS[AVAX][1] = [amountOne_];
+    /// uint128 amountOne_
+    function test_scenario() public {
+        // amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI));
+        // AMOUNTS[AVAX][0] = [amountOne_];
+        // AMOUNTS[AVAX][1] = [amountOne_];
+        AMOUNTS[AVAX][0] = [5e6];
+        AMOUNTS[AVAX][1] = [5e6];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -84,6 +86,18 @@ contract SXSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                vm.selectFork(FORKS[AVAX]);
+                /// @dev simulating 10 target underlying tokens as yield in target vault
+                address vaultAddress =
+                    getContract(AVAX, VAULT_NAMES[TARGET_VAULTS[AVAX][1][0]][TARGET_UNDERLYINGS[AVAX][1][0]]);
+                address token = getContract(AVAX, UNDERLYING_TOKENS[1]);
+                deal(token, vaultAddress, 10e6);
+                console.log("vaultAddress", vaultAddress);
+                console.log("token", token);
+                console.log("balanceOf", IERC20(token).balanceOf(vaultAddress));
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
