@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.19;
 
+import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
@@ -457,7 +458,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i]);
                     PayloadUpdaterLib.validateSlippage(
                         lV.finalAmount,
-                        IBaseForm(superform).previewWithdrawFrom(lV.multiVaultData.amounts[lV.i]),
+                        IBaseForm(superform).previewWithdrawFrom(
+                            IERC4626(IBaseForm(superform).getVaultAddress()).previewRedeem(
+                                lV.multiVaultData.amounts[lV.i]
+                            )
+                        ),
                         lV.multiVaultData.maxSlippage[lV.i]
                     );
 

@@ -73,7 +73,6 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
         amountThree_ = uint128(bound(amountThree_, 1, TOTAL_SUPPLY_WETH / 4));
         amountFour_ = uint128(bound(amountFour_, 1, TOTAL_SUPPLY_WETH / 4));
         AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountFour_];
-        AMOUNTS[ARBI][1] = [amountOne_, amountTwo_, amountThree_, amountFour_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -82,6 +81,21 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] =
+                        [superPositions[0] / 3, superPositions[0] / 3, superPositions[0] / 3, superPositions[3]];
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

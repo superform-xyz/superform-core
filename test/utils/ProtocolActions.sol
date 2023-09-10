@@ -142,6 +142,25 @@ abstract contract ProtocolActions is BaseSetup {
                 deal(token, users[action.user], TOTAL_SUPPLY_WETH);
             }
         }
+
+        /// @dev depositing AMOUNTS[DST_CHAINS[i]][0][j] underlying tokens in underlying vault to simulate yield after
+        /// deposit
+        if (action.action == Actions.Withdraw) {
+            for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
+                vm.selectFork(FORKS[DST_CHAINS[i]]);
+                vars.superformIds = _superformIds(
+                    TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                    TARGET_VAULTS[DST_CHAINS[i]][1],
+                    TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                    DST_CHAINS[i]
+                );
+                for (uint256 j = 0; j < TARGET_UNDERLYINGS[DST_CHAINS[i]][1].length; ++j) {
+                    token = getContract(DST_CHAINS[i], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[i]][1][j]]);
+                    (vars.superformT,,) = vars.superformIds[j].getSuperform();
+                    deal(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
+                }
+            }
+        }
         vm.selectFork(initialFork);
 
         /// @dev builds superformRouter request data
@@ -904,6 +923,18 @@ abstract contract ProtocolActions is BaseSetup {
                             vars.logs = vm.getRecordedLogs();
 
                             _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
+
+                            // vm.selectFork(FORKS[AVAX]);
+                            // /// @dev simulating 10 target underlying tokens as yield in target vault
+                            // address vaultAddress = getContract(AVAX, VAULT_NAMES[0][1]);
+                            // address token = getContract(AVAX, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[AVAX][1][0]]);
+                            // deal(token, vaultAddress, 10e6);
+                            // console.log("WHOPS");
+                            // console.log("vaultAddress", vaultAddress);
+                            // console.log("token", token);
+                            // console.log("balanceOf", IERC20(token).balanceOf(vaultAddress));
+                            // console.log("balanceOfDAI", IERC20(getContract(AVAX, "DAI")).balanceOf(vaultAddress));
+                            // console.log("asset()", IERC4626(vaultAddress).asset());
                         } else if (action.testType == TestType.RevertProcessPayload) {
                             /// @dev this logic is essentially repeated from above
                             if (action.multiVaults) {
@@ -1540,7 +1571,9 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[args.toChainId]);
         (vars.superform,,) = args.superformId.getSuperform();
-        vars.actualWithdrawAmount = IBaseForm(vars.superform).previewWithdrawFrom(args.amount);
+        vars.actualWithdrawAmount = IBaseForm(vars.superform).previewWithdrawFrom(
+            IERC4626(IBaseForm(vars.superform).getVaultAddress()).previewRedeem(args.amount)
+        );
         console.log("actualWithdrawAmount", vars.actualWithdrawAmount, "args.amount", args.amount);
 
         vm.selectFork(initialFork);
@@ -1560,8 +1593,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.liqDstChainId,
             users[args.user],
             args.liquidityBridgeSrcChainId,
-            // vars.actualWithdrawAmount,
-            args.amount,
+            vars.actualWithdrawAmount,
             true,
             /// @dev putting a placeholder value for now (not really used)
             args.slippage
@@ -1646,11 +1678,12 @@ abstract contract ProtocolActions is BaseSetup {
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             underlyingDstTokensMem[i] = getContract(chain1, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
-            console.log("vaultMocksMem[i]", i, vaultMocksMem[i]);
+
             if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
                 revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
             }
             if (vars.vaultIds[i] == 4) {
+                console.log("vars.superformIdsTemp[i]", vars.superformIdsTemp[i]);
                 revertingWithdrawTimelockedSFsPerDst.push(vars.superformIdsTemp[i]);
             }
             if (vars.vaultIds[i] == 7 || vars.vaultIds[i] == 8) {
@@ -2234,6 +2267,7 @@ abstract contract ProtocolActions is BaseSetup {
                         if (v.foundRevertingDeposit) break;
                     }
                 }
+                console.log("v.foundRevertingDeposit", v.foundRevertingDeposit);
                 /// @dev if a superform is repeated but not reverting
                 if (
                     args.multiSuperformsData.superformIds[v.i] == args.multiSuperformsData.superformIds[v.j]
@@ -2249,11 +2283,14 @@ abstract contract ProtocolActions is BaseSetup {
                     v.finalAmount = v.finalAmount * args.repetitions;
 
                     spAmountSummed[v.i] += v.finalAmount;
+                    console.log("HERE");
                 }
             }
             vm.selectFork(FORKS[DST_CHAINS[args.dstIndex]]);
             /// @dev calculate the final amount summed on the basis of previewDeposit
-            spAmountSummed[v.i] = IBaseForm(v.superforms[v.i]).previewDepositTo(spAmountSummed[v.i]);
+            spAmountSummed[v.i] = IBaseForm(v.superforms[v.i]).previewDepositTo(
+                IERC4626(IBaseForm(v.superforms[v.i]).getVaultAddress()).previewRedeem(spAmountSummed[v.i])
+            );
         }
     }
 
@@ -2273,6 +2310,7 @@ abstract contract ProtocolActions is BaseSetup {
     {
         uint256 lenSuperforms = multiSuperformsData.superformIds.length;
         spAmountFinal = new uint256[](lenSuperforms);
+        console.log("lenRevertWithdraw", lenRevertWithdraw);
 
         if (sameDst && lenRevertWithdraw > 0) {
             spAmountFinal = multiSuperformsData.amounts;
@@ -2295,6 +2333,11 @@ abstract contract ProtocolActions is BaseSetup {
                             if (foundRevertingWithdraw) break;
                         }
                     }
+                    console.log("lenRevertWithdrawTimelocked", lenRevertWithdrawTimelocked);
+                    // console.log(
+                    //     "revertingWithdrawTimelockedSFs[dstIndex][k]", revertingWithdrawTimelockedSFs[dstIndex][0]
+                    // );
+                    console.log("multiSuperformsData.superformIds[i]", multiSuperformsData.superformIds[i]);
                     if (lenRevertWithdrawTimelocked > 0) {
                         for (uint256 k = 0; k < lenRevertWithdrawTimelocked; k++) {
                             foundRevertingWithdrawTimelocked =
@@ -2305,10 +2348,16 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev if superForm is repeated and NOT (reverting and same destination) amount is decreated
                     /// @dev if it was reverting we should not decrease (amount is reminted)
                     /// @dev if same destination it should not be asserted here
+                    console.log("YO");
+                    console.log("sameDst", sameDst);
+                    console.log("foundRevertingWithdraw", foundRevertingWithdraw);
+                    console.log("foundRevertingWithdrawTimelocked", foundRevertingWithdrawTimelocked);
                     if (
                         multiSuperformsData.superformIds[i] == multiSuperformsData.superformIds[j]
                             && !(sameDst && foundRevertingWithdraw)
                     ) {
+                        console.log("spAmountFinal[i] before", spAmountFinal[i]);
+                        console.log("multiSuperformsData.amounts[j]", multiSuperformsData.amounts[j]);
                         spAmountFinal[i] -= multiSuperformsData.amounts[j];
                     }
                 }
@@ -2473,9 +2522,14 @@ abstract contract ProtocolActions is BaseSetup {
                 v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
-                spAmountBeforeWithdrawPerDestination[i] =
-                    IBaseForm(v.superform).previewDepositTo(singleSuperformsData[i].amount);
-
+                /// @dev for withdraw singleSuperformsData[i].amount is the number of superpositions the
+                /// user holds, fetched in test_scenario() right after deposit action
+                if (action.action == Actions.Deposit) {
+                    spAmountBeforeWithdrawPerDestination[i] =
+                        IBaseForm(v.superform).previewDepositTo(singleSuperformsData[i].amount);
+                } else if (action.action == Actions.Withdraw) {
+                    spAmountBeforeWithdrawPerDestination[i] = singleSuperformsData[i].amount;
+                }
                 if (!v.partialWithdrawVault) {
                     _assertSingleVaultBalance(
                         action.user,
@@ -2668,6 +2722,8 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous
                     /// deposit
                     /// @dev notice the amount sent for non (same DSt and reverting) is amount after burn
+                    console.log("spAmountBeforeWithdrawPerDst[i]", spAmountBeforeWithdrawPerDst[i]);
+                    console.log("singleSuperformsData[i].amount", singleSuperformsData[i].amount);
                     _assertSingleVaultBalance(
                         action.user,
                         singleSuperformsData[i].superformId,

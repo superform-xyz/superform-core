@@ -85,12 +85,6 @@ contract SXSVWNormal4626TokenInputSlippageAMB34 is ProtocolActions {
             bool success;
 
             if (act == 1) {
-                /// @dev simulating 10 target underlying tokens as yield in target vault
-                address vaultAddress =
-                    getContract(ETH, VAULT_NAMES[TARGET_VAULTS[ETH][1][0]][TARGET_UNDERLYINGS[ETH][1][0]]);
-                address token = getContract(ETH, UNDERLYING_TOKENS[1]);
-                deal(token, vaultAddress, 10e6);
-
                 for (uint256 i = 0; i < DST_CHAINS.length; i++) {
                     uint256[] memory superPositions = _getSuperpositionsForDstChain(
                         actions[1].user,
