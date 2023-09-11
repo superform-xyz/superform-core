@@ -38,6 +38,7 @@ abstract contract LiquidityHandler {
             IERC20 token = IERC20(token_);
 
             /// @dev call bridge with txData. Native amount here just contains liquidity bridge fees (if needed)
+            token.safeIncreaseAllowance(bridge_, amount_);
             unchecked {
                 (bool success,) = payable(bridge_).call{ value: nativeAmount_ }(txData_);
                 if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();

@@ -146,18 +146,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 address(token)
             );
 
-            address bridge = superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId);
-            uint256 amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData);
-
-            if (address(token) != NATIVE) {
-                token.approve(bridge, amount);
-            }
-
             dispatchTokens(
-                bridge,
+                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
-                amount,
+                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData),
                 address(this),
                 /// tokens are already moved in above step
                 singleVaultData_.liqData.nativeAmount
@@ -234,11 +227,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// @dev FIXME: notice that in direct withdraws we withdraw v.amount (coming from txData), but not what was
             /// actually redeemed? Why? xChainWithdraw operates differently here
 
-            address bridge = superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId);
-            IERC20(v.collateral).approve(bridge, v.amount);
-
             dispatchTokens(
-                bridge,
+                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
                 v.amount,
@@ -333,11 +323,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.token
             );
 
-            address bridge = superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId);
-            IERC20(vars.collateral).approve(bridge, vars.amount);
-
             dispatchTokens(
-                bridge,
+                superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
                 dstAmount,

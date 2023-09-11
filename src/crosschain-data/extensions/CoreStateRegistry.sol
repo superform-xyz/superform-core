@@ -299,13 +299,13 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 liqData_[v.i].token
             );
 
-            address bridge = superRegistry.getBridgeAddress(liqData_[v.i].bridgeId);
-            uint256 amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData);
-            
-            IERC20(liqData_[v.i].token).approve(bridge, amount);
-
             dispatchTokens(
-                bridge, liqData_[v.i].txData, liqData_[v.i].token, amount, address(this), liqData_[v.i].nativeAmount
+                superRegistry.getBridgeAddress(liqData_[v.i].bridgeId),
+                liqData_[v.i].txData,
+                liqData_[v.i].token,
+                IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData),
+                address(this),
+                liqData_[v.i].nativeAmount
             );
 
             unchecked {

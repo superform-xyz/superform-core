@@ -17,10 +17,6 @@ contract LiquidityHandlerUser is LiquidityHandler {
         external
         payable
     {
-        if (token_ != NATIVE) {
-            IERC20(token_).approve(bridge_, amount_);
-        }
-
         dispatchTokens(bridge_, txData_, token_, amount_, owner_, nativeAmount_);
     }
 }
