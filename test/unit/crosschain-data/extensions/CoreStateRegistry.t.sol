@@ -198,7 +198,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         /// @dev number of superpositions to be burned per withdraw is 1e18, specified in _successfulMultiWithdrawal()
-        uint256 actualWithdrawAmount = IBaseForm(superform).previewWithdrawFrom(1e18);
+        uint256 actualWithdrawAmount = IBaseForm(superform).previewWithdrawFrom(
+            IERC4626(IBaseForm(superform).getVaultAddress()).previewRedeem(1e18)
+        );
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,

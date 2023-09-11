@@ -12,7 +12,6 @@ import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { Error } from "../utils/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import { IPermit2 } from "../vendor/dragonfly-xyz/IPermit2.sol";
-import "forge-std/console.sol";
 
 /// @title ERC4626FormImplementation
 /// @notice Has common internal functions that can be re-used by actual form implementations
@@ -283,10 +282,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         /// @dev This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
-
-        console.log("dstAmount", dstAmount);
-        console.log("VAULT_USDT", IERC20(v.asset()).balanceOf(vaultLoc));
-        console.log("vaultLoc", vaultLoc);
 
         emit Processed(srcChainId, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }

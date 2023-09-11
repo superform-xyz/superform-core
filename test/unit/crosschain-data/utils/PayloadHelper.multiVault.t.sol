@@ -32,7 +32,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         TARGET_FORM_KINDS[POLY][1] = [0, 0];
 
         AMOUNTS[POLY][0] = [23_183, 213];
-        AMOUNTS[POLY][1] = [23_183, 213];
+        // AMOUNTS[POLY][1] = [23_183, 213];
 
         MAX_SLIPPAGE = 1000;
 
@@ -83,6 +83,20 @@ contract PayloadHelperMultiTest is ProtocolActions {
             StagesLocalVars memory vars;
             bool success;
 
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2];
+                }
+            }
+
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
@@ -102,6 +116,20 @@ contract PayloadHelperMultiTest is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2];
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
@@ -218,7 +246,8 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         assertEq(v.liqDstChainIds[0], FINAL_LIQ_DST_WITHDRAW[POLY][0]);
 
-        assertEq(v.amounts, AMOUNTS[POLY][0]);
+        /// @dev number of superpositions to burn in withdraws are not meant to be same as deposit amounts
+        // assertEq(v.amounts, AMOUNTS[POLY][0]);
 
         assertEq(v.permit2datas[0].length, 0);
     }

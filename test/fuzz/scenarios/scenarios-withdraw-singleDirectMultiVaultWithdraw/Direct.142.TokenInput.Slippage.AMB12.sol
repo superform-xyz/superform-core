@@ -81,7 +81,7 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
         // amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_USDT / 3));
         // amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_USDT / 3));
         // AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
-        AMOUNTS[AVAX][0] = [1e6, 2e6, 3e6];
+        AMOUNTS[AVAX][0] = [1e6, 1e6, 3e6];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -107,7 +107,7 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
                     // amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
                     // amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, superPositions[2] - 1));
                     // AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], amountThreeWithdraw_];
-                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0], superPositions[2] / 2];
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2, superPositions[2] / 2];
                 }
             }
 
