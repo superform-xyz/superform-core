@@ -76,17 +76,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address superform;
         uint256 len = req.superformsData.superformIds.length;
 
-        address[] memory targets = new address[](len);
-
-        for (uint256 i; i < len;) {
-            targets[i] = superRegistry.getBridgeAddress(req.superformsData.liqRequests[i].bridgeId);
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        _multiVaultTokenForward(msg.sender, targets, req.superformsData.permit2data, ambData);
+        _multiVaultTokenForward(msg.sender, new address[](0), req.superformsData.permit2data, ambData);
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
@@ -905,7 +895,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     function _multiVaultTokenForward(
         address srcSender_,
-        address[] memory superforms_,
+        address[] memory targets_,
         bytes memory permit2data_,
         InitMultiVaultData memory vaultData_
     )
@@ -975,10 +965,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
             }
 
-            /// @dev approves individual final targets (either superforms / bridges)
-            for (uint256 j; j < v.len;) {
+            /// @dev approves individual final targets if needed here
+            for (uint256 j; j < targets_.length;) {
                 /// @dev approves the superform
-                v.token.safeIncreaseAllowance(superforms_[j], v.approvalAmounts[j]);
+                v.token.safeIncreaseAllowance(targets_[j], v.approvalAmounts[j]);
 
                 unchecked {
                     ++j;
