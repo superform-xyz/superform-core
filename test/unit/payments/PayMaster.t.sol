@@ -150,9 +150,7 @@ contract PayMasterTest is BaseSetup {
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
-            LiqRequest(
-                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether, ""
-            ),
+            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether),
             420
         );
 
@@ -162,18 +160,14 @@ contract PayMasterTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
-            LiqRequest(
-                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether, ""
-            ),
+            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether),
             ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
-            LiqRequest(
-                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI), NATIVE, ARBI, 1 ether, ""
-            ),
+            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI), NATIVE, ARBI, 1 ether),
             ARBI
         );
 
@@ -201,9 +195,7 @@ contract PayMasterTest is BaseSetup {
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
-            LiqRequest(
-                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether, ""
-            ),
+            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether),
             420
         );
 
@@ -213,18 +205,14 @@ contract PayMasterTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
-            LiqRequest(
-                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether, ""
-            ),
+            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether),
             ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
-            LiqRequest(
-                1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txUpdaterARBI), NATIVE, ARBI, 1 ether, ""
-            ),
+            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txUpdaterARBI), NATIVE, ARBI, 1 ether),
             ARBI
         );
 
@@ -246,7 +234,7 @@ contract PayMasterTest is BaseSetup {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
         SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, ""), "");
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 

@@ -128,9 +128,7 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             liqRequest_.token,
             IBridgeValidator(bridgeValidator).decodeAmountIn(liqRequest_.txData),
             msg.sender,
-            liqRequest_.nativeAmount,
-            liqRequest_.permit2data,
-            superRegistry.PERMIT2()
+            liqRequest_.nativeAmount
         );
     }
 }

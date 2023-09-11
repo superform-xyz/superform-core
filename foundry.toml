@@ -34,8 +34,8 @@ libs = ["lib"]
 fs_permissions = [{ access = "read-write", path = "./script/" }]
 
 [profile.coverage]
-fuzz = { runs = 1, max_test_rejects = 350_000 }    
-invariant = { runs = 5_000 }         
+fuzz = { runs = 1, max_test_rejects = 350_000 }
+invariant = { runs = 5_000 }
 
 [rpc_endpoints]
 ethereum = "${ETHEREUM_RPC_URL}"

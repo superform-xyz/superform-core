@@ -153,10 +153,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData),
                 address(this),
                 /// tokens are already moved in above step
-                singleVaultData_.liqData.nativeAmount,
-                bytes(""),
-                /// permit2 is useless here since the tokens are already available
-                address(0)
+                singleVaultData_.liqData.nativeAmount
             );
         }
 
@@ -236,9 +233,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.token,
                 v.amount,
                 address(this),
-                singleVaultData_.liqData.nativeAmount,
-                "",
-                superRegistry.PERMIT2()
+                singleVaultData_.liqData.nativeAmount
             );
         }
     }
@@ -334,9 +329,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 singleVaultData_.liqData.token,
                 dstAmount,
                 address(this),
-                singleVaultData_.liqData.nativeAmount,
-                "",
-                superRegistry.PERMIT2()
+                singleVaultData_.liqData.nativeAmount
             );
         }
 

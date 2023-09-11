@@ -38,7 +38,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0, ""), ""
+            1, 1, superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0), ""
         );
 
         /// @dev simulating withdrawals with malicious tx data
@@ -73,7 +73,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         bytes memory invalidNonEmptyTxData = abi.encode(1);
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, superformId, 1e18, 100, LiqRequest(1, invalidNonEmptyTxData, address(0), ETH, 0, ""), ""
+            1, 1, superformId, 1e18, 100, LiqRequest(1, invalidNonEmptyTxData, address(0), ETH, 0), ""
         );
 
         /// @dev simulating withdrawals with malicious tx data
@@ -106,7 +106,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.stopPrank();
 
         InitSingleVaultData memory data =
-            InitSingleVaultData(1, 1, superformId, 1e18, 100, LiqRequest(1, "", address(0), ETH, 0, ""), "");
+            InitSingleVaultData(1, 1, superformId, 1e18, 100, LiqRequest(1, "", address(0), ETH, 0), "");
 
         vm.prank(getContract(ETH, "CoreStateRegistry"));
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
@@ -156,7 +156,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0, ""),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0),
             ""
         );
 
@@ -185,8 +185,9 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
 
-        SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, ""), "");
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0), bytes(""), bytes("")
+        );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 

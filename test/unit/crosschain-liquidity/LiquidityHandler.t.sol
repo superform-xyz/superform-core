@@ -12,14 +12,12 @@ contract LiquidityHandlerUser is LiquidityHandler {
         address token_,
         uint256 amount_,
         address owner_,
-        uint256 nativeAmount_,
-        bytes memory permit2Data_,
-        address permit2_
+        uint256 nativeAmount_
     )
         external
         payable
     {
-        dispatchTokens(bridge_, txData_, token_, amount_, owner_, nativeAmount_, permit2Data_, permit2_);
+        dispatchTokens(bridge_, txData_, token_, amount_, owner_, nativeAmount_);
     }
 }
 
@@ -50,72 +48,9 @@ contract LiquidityHandlerTest is BaseSetup {
             token,
             transferAmount,
             address(liquidityHandler),
-            0,
-            bytes(""),
-            address(0)
+            0
         );
         vm.stopPrank();
-    }
-
-    function test_dispatchTokensUsingApprovals() public {
-        uint256 transferAmount = 1e18;
-        /// 1 token
-        address payable token = payable(getContract(ETH, "DAI"));
-        address tokenDst = getContract(ARBI, "DAI");
-
-        /// @dev giving approval
-        vm.prank(deployer);
-        MockERC20(token).approve(address(liquidityHandler), transferAmount);
-
-        vm.prank(deployer);
-        liquidityHandler.dispatchTokensTest(
-            SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1),
-            _buildTxData(
-                1, address(token), tokenDst, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)
-            ),
-            token,
-            transferAmount,
-            deployer,
-            0,
-            bytes(""),
-            address(0)
-        );
-    }
-
-    function test_dispatchTokensWithPermit2() public {
-        uint256 transferAmount = 1e18;
-        /// 1 token
-        address payable token = payable(getContract(ETH, "USDT"));
-        address tokenDst = getContract(ARBI, "DAI");
-
-        /// @dev giving approval
-        IPermit2.PermitTransferFrom memory permit = IPermit2.PermitTransferFrom({
-            permitted: IPermit2.TokenPermissions({ token: IERC20(token), amount: transferAmount }),
-            nonce: _randomUint256(),
-            deadline: block.timestamp
-        });
-
-        bytes memory sig = _signPermit(permit, address(liquidityHandler), 777, ETH);
-        bytes memory permit2Calldata = abi.encode(permit.nonce, permit.deadline, sig);
-
-        address permit2 = SuperRegistry(getContract(ETH, "SuperRegistry")).PERMIT2();
-
-        vm.prank(deployer);
-        MockERC20(token).approve(getContract(ETH, "CanonicalPermit2"), type(uint256).max);
-
-        vm.prank(deployer);
-        liquidityHandler.dispatchTokensTest(
-            SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1),
-            _buildTxData(
-                1, address(token), tokenDst, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)
-            ),
-            address(token),
-            transferAmount,
-            deployer,
-            0,
-            permit2Calldata,
-            permit2
-        );
     }
 
     function test_dispatchTokensUsingFailingTxData() public {
@@ -138,9 +73,7 @@ contract LiquidityHandlerTest is BaseSetup {
             token,
             transferAmount,
             deployer,
-            0,
-            bytes(""),
-            address(0)
+            0
         );
     }
 
@@ -157,9 +90,7 @@ contract LiquidityHandlerTest is BaseSetup {
             token,
             transferAmount,
             deployer,
-            0,
-            bytes(""),
-            address(0)
+            0
         );
     }
 
@@ -176,9 +107,7 @@ contract LiquidityHandlerTest is BaseSetup {
             token,
             transferAmount,
             deployer,
-            transferAmount,
-            bytes(""),
-            address(0)
+            transferAmount
         );
     }
 

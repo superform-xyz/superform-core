@@ -41,7 +41,6 @@ interface IPayloadHelper {
     /// @return amountsIn are the from amounts to the liquidity bridge
     /// @return amountsOut are the minimum amounts to be bridged through the liquidity bridge
     /// @return nativeAmounts is the native amounts to be used in the liqData
-    /// @return permit2datas is the permit2 datas to be used in the liqData
     function decodeCoreStateRegistryPayloadLiqData(uint256 dstPayloadId_)
         external
         view
@@ -52,8 +51,7 @@ interface IPayloadHelper {
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory amountsOut,
-            uint256[] memory nativeAmounts,
-            bytes[] memory permit2datas
+            uint256[] memory nativeAmounts
         );
 
     /// @dev reads the payload header from a state syncer and decodes it.
