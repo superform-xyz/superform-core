@@ -595,7 +595,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             InitSingleVaultData(
                 superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
             ),
-            /// FIXME: come later
             srcSender_
         );
     }
@@ -678,7 +677,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             InitSingleVaultData(
                 superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
             ),
-            /// FIXME: come later
             srcSender_
         );
     }
@@ -898,9 +896,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     struct MultiTokenForwardLocalVars {
         IERC20 token;
+        uint256 len;
         uint256 totalAmount;
         uint256 permit2dataLen;
         address permit2;
+        uint256[] approvalAmounts;
     }
 
     function _multiVaultTokenForward(
@@ -915,26 +915,29 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         if (vaultData_.liqData[0].token != NATIVE) {
             MultiTokenForwardLocalVars memory v;
             v.token = IERC20(vaultData_.liqData[0].token);
+            v.len = vaultData_.liqData.length;
 
             v.totalAmount;
             v.permit2 = superRegistry.PERMIT2();
             v.permit2dataLen = permit2data_.length;
+            v.approvalAmounts = new uint256[](v.len);
 
-            for (uint256 i; i < vaultData_.liqData.length;) {
-                /// FIXME: add revert message
+            for (uint256 i; i < v.len;) {
                 if (vaultData_.liqData[i].token != address(v.token)) {
-                    revert();
+                    revert Error.INVALID_DEPOSIT_TOKEN();
                 }
 
                 uint256 len = vaultData_.liqData[i].txData.length;
 
                 if (len == 0) {
-                    v.totalAmount += vaultData_.amounts[i];
+                    v.approvalAmounts[i] = vaultData_.amounts[i];
                 } else {
                     address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId);
-                    v.totalAmount += IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData);
+                    v.approvalAmounts[i] =
+                        IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData);
                 }
 
+                v.totalAmount += v.approvalAmounts[i];
                 unchecked {
                     ++i;
                 }
@@ -972,10 +975,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
             }
 
-            /// FIXME: this is hacky
-            for (uint256 j; j < superforms_.length;) {
+            /// @dev approves individual final targets (either superforms / bridges)
+            for (uint256 j; j < v.len;) {
                 /// @dev approves the superform
-                v.token.safeIncreaseAllowance(superforms_[j], v.totalAmount);
+                v.token.safeIncreaseAllowance(superforms_[j], v.approvalAmounts[j]);
 
                 unchecked {
                     ++j;

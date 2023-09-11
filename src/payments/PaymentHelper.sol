@@ -626,7 +626,6 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.amount,
                 sfData_.maxSlippage,
                 sfData_.liqRequest,
-                /// FIXME: come later
                 sfData_.extraFormData
             )
         );
@@ -648,7 +647,6 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.amounts,
                 sfData_.maxSlippages,
                 sfData_.liqRequests,
-                /// FIXME: come later
                 sfData_.extraFormData
             )
         );
