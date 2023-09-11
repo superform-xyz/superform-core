@@ -69,7 +69,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
             req.superformsData.liqRequests,
-            req.superformsData.permit2data,
             req.superformsData.extraFormData
         );
 
@@ -87,7 +86,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
         }
 
-        _multiVaultTokenForward(msg.sender, targets, ambData);
+        _multiVaultTokenForward(msg.sender, targets, req.superformsData.permit2data, ambData);
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
@@ -144,7 +143,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         vars.liqRequest = req.superformData.liqRequest;
         (address superform,,) = req.superformData.superformId.getSuperform();
 
-        _singleVaultTokenForward(msg.sender, superRegistry.getBridgeAddress(vars.liqRequest.bridgeId), ambData);
+        _singleVaultTokenForward(
+            msg.sender, superRegistry.getBridgeAddress(vars.liqRequest.bridgeId), req.superformData.permit2data, ambData
+        );
 
         LiqRequest memory emptyRequest;
         ambData.liqData = emptyRequest;
@@ -190,12 +191,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.amount,
             req.superformData.maxSlippage,
             req.superformData.liqRequest,
-            req.superformData.permit2data,
             req.superformData.extraFormData
         );
 
         /// @dev same chain action & forward residual payment to payment collector
-        _directSingleDeposit(msg.sender, vaultData);
+        _directSingleDeposit(msg.sender, req.superformData.permit2data, vaultData);
         emit Completed(vars.currentPayloadId);
     }
 
@@ -212,12 +212,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.amounts,
             req.superformData.maxSlippages,
             req.superformData.liqRequests,
-            req.superformData.permit2data,
             req.superformData.extraFormData
         );
 
         /// @dev same chain action & forward residual payment to payment collector
-        _directMultiDeposit(msg.sender, vaultData);
+        _directMultiDeposit(msg.sender, req.superformData.permit2data, vaultData);
         emit Completed(vars.currentPayloadId);
     }
 
@@ -246,7 +245,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
             req.superformsData.liqRequests,
-            req.superformsData.permit2data,
             req.superformsData.extraFormData
         );
 
@@ -333,7 +331,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.amounts,
             req.superformData.maxSlippages,
             req.superformData.liqRequests,
-            req.superformData.permit2data,
             req.superformData.extraFormData
         );
 
@@ -373,7 +370,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.amount,
             superformData_.maxSlippage,
             superformData_.liqRequest,
-            superformData_.permit2data,
             superformData_.extraFormData
         );
     }
@@ -405,7 +401,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.amount,
             superformData_.maxSlippage,
             superformData_.liqRequest,
-            superformData_.permit2data,
             superformData_.extraFormData
         );
     }
@@ -477,14 +472,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @notice deposits to single vault on the same chain
     /// @dev calls `_directDeposit`
-    function _directSingleDeposit(address srcSender_, InitSingleVaultData memory vaultData_) internal virtual {
+    function _directSingleDeposit(
+        address srcSender_,
+        bytes memory permit2data_,
+        InitSingleVaultData memory vaultData_
+    )
+        internal
+        virtual
+    {
         address superform;
         uint256 dstAmount;
 
         /// @dev decode superforms
         (superform,,) = vaultData_.superformId.getSuperform();
 
-        _singleVaultTokenForward(srcSender_, superform, vaultData_);
+        _singleVaultTokenForward(srcSender_, superform, permit2data_, vaultData_);
 
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = _directDeposit(
@@ -506,23 +508,37 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
+    struct MultiDepositLocalVars {
+        uint256 len;
+        address[] superforms;
+        uint256[] dstAmounts;
+    }
+
     /// @notice deposits to multiple vaults on the same chain
     /// @dev loops and call `_directDeposit`
-    function _directMultiDeposit(address srcSender_, InitMultiVaultData memory vaultData_) internal virtual {
-        uint256 len = vaultData_.superformIds.length;
+    function _directMultiDeposit(
+        address srcSender_,
+        bytes memory permit2data_,
+        InitMultiVaultData memory vaultData_
+    )
+        internal
+        virtual
+    {
+        MultiDepositLocalVars memory v;
+        v.len = vaultData_.superformIds.length;
 
-        address[] memory superforms = new address[](len);
-        uint256[] memory dstAmounts = new uint256[](len);
+        v.superforms = new address[](v.len);
+        v.dstAmounts = new uint256[](v.len);
 
         /// @dev decode superforms
-        (superforms,,) = DataLib.getSuperforms(vaultData_.superformIds);
+        (v.superforms,,) = DataLib.getSuperforms(vaultData_.superformIds);
 
-        _multiVaultTokenForward(srcSender_, superforms, vaultData_);
+        _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_);
 
-        for (uint256 i; i < len;) {
+        for (uint256 i; i < v.len;) {
             /// @dev deposits collateral to a given vault and mint vault positions.
-            dstAmounts[i] = _directDeposit(
-                superforms[i],
+            v.dstAmounts[i] = _directDeposit(
+                v.superforms[i],
                 vaultData_.superformRouterId,
                 vaultData_.payloadId,
                 vaultData_.superformIds[i],
@@ -541,7 +557,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintBatch(
-            srcSender_, vaultData_.superformIds, dstAmounts
+            srcSender_, vaultData_.superformIds, v.dstAmounts
         );
     }
 
@@ -577,7 +593,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev deposits collateral to a given vault and mint vault positions directly through the form
         dstAmount = IBaseForm(superform).directDepositIntoVault{ value: msgValue_ }(
             InitSingleVaultData(
-                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, "", extraFormData_
+                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
             ),
             /// FIXME: come later
             srcSender_
@@ -660,7 +676,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev in direct withdraws, form is called directly
         IBaseForm(superform).directWithdrawFromVault(
             InitSingleVaultData(
-                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, "", extraFormData_
+                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
             ),
             /// FIXME: come later
             srcSender_
@@ -825,6 +841,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _singleVaultTokenForward(
         address srcSender_,
         address superform_,
+        bytes memory permit2data_,
         InitSingleVaultData memory vaultData_
     )
         internal
@@ -842,11 +859,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 amount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData.txData);
             }
 
-            if (vaultData_.permit2data.length != 0) {
+            if (permit2data_.length != 0) {
                 address permit2 = superRegistry.PERMIT2();
 
                 (uint256 nonce, uint256 deadline, bytes memory signature) =
-                    abi.decode(vaultData_.permit2data, (uint256, uint256, bytes));
+                    abi.decode(permit2data_, (uint256, uint256, bytes));
 
                 IPermit2(permit2).permitTransferFrom(
                     // The permit message.
@@ -889,6 +906,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _multiVaultTokenForward(
         address srcSender_,
         address[] memory superforms_,
+        bytes memory permit2data_,
         InitMultiVaultData memory vaultData_
     )
         internal
@@ -900,7 +918,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
             v.totalAmount;
             v.permit2 = superRegistry.PERMIT2();
-            v.permit2dataLen = vaultData_.permit2data.length;
+            v.permit2dataLen = permit2data_.length;
 
             for (uint256 i; i < vaultData_.liqData.length;) {
                 /// FIXME: add revert message
@@ -925,7 +943,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (v.totalAmount > 0) {
                 if (v.permit2dataLen > 0) {
                     (uint256 nonce, uint256 deadline, bytes memory signature) =
-                        abi.decode(vaultData_.permit2data, (uint256, uint256, bytes));
+                        abi.decode(permit2data_, (uint256, uint256, bytes));
 
                     IPermit2(v.permit2).permitTransferFrom(
                         // The permit message.

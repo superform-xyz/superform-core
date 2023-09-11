@@ -94,7 +94,6 @@ struct InitMultiVaultData {
     uint256[] amounts;
     uint256[] maxSlippage;
     LiqRequest[] liqData;
-    bytes permit2data;
     bytes extraFormData;
 }
 
@@ -106,7 +105,6 @@ struct InitSingleVaultData {
     uint256 amount;
     uint256 maxSlippage;
     LiqRequest liqData;
-    bytes permit2data;
     bytes extraFormData;
 }
 

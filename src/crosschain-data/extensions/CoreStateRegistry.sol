@@ -418,7 +418,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 lV.tAmounts,
                 lV.tMaxSlippage,
                 lV.tLiqData,
-                "",
                 /// FIXME: come later
                 lV.singleVaultData.extraFormData
             );
@@ -507,7 +506,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 amount: multiVaultData.amounts[i],
                 maxSlippage: multiVaultData.maxSlippage[i],
                 liqData: multiVaultData.liqData[i],
-                permit2data: "",
                 /// FIXME: come later
                 extraFormData: abi.encode(payloadId_, i)
             });
@@ -586,7 +584,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         amount: multiVaultData.amounts[i],
                         maxSlippage: multiVaultData.maxSlippage[i],
                         liqData: emptyRequest,
-                        permit2data: "",
                         /// FIXME: come later
                         extraFormData: multiVaultData.extraFormData
                     }),

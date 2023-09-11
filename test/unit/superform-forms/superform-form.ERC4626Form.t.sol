@@ -439,7 +439,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(getContract(ETH, "CoreStateRegistry"));
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0), "", ""
+            1, 1, superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0), ""
         );
 
         vm.expectRevert(Error.WITHDRAW_TX_DATA_NOT_UPDATED.selector);
@@ -479,7 +479,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
                 ARBI,
                 0
             ),
-            "",
             ""
         );
 
@@ -533,7 +532,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         bytes memory invalidTxData = abi.encode(1);
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, superformId, 1e18, 100, LiqRequest(1, invalidTxData, getContract(ETH, "WETH"), ARBI, 0), "", ""
+            1, 1, superformId, 1e18, 100, LiqRequest(1, invalidTxData, getContract(ETH, "WETH"), ARBI, 0), ""
         );
 
         vm.startPrank(getContract(ETH, "CoreStateRegistry"));
