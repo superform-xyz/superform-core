@@ -875,7 +875,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             }
 
             /// @dev approves the superform
-            token.approve(superform_, amount);
+            token.safeIncreaseAllowance(superform_, amount);
         }
     }
 
@@ -957,7 +957,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             /// FIXME: this is hacky
             for (uint256 j; j < superforms_.length;) {
                 /// @dev approves the superform
-                v.token.approve(superforms_[j], v.totalAmount);
+                v.token.safeIncreaseAllowance(superforms_[j], v.totalAmount);
 
                 unchecked {
                     ++j;
