@@ -121,6 +121,9 @@ library Error {
     /// @dev when a certain action of the user is not allowed given the txData provided
     error INVALID_ACTION();
 
+    /// @dev thrown when the validation of bridge txData fails due to a destination call present
+    error INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
+
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/

@@ -18,6 +18,9 @@ import { DataLib } from "src/libraries/DataLib.sol";
 abstract contract ProtocolActions is BaseSetup {
     using DataLib for uint256;
 
+    /// out of 10000
+    int256 totalSlippage = 200;
+
     event FailedXChainDeposits(uint256 indexed payloadId);
 
     /// @dev counts for each chain in each testAction the number of timelocked superforms
@@ -1484,6 +1487,73 @@ abstract contract ProtocolActions is BaseSetup {
                     LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", args.toDst, 0, swapData
                 );
             }
+        }
+    }
+
+    function _buildDummyTxDataUnitTests(
+        uint8 liqBridgeKind_,
+        address underlyingToken_,
+        address underlyingTokenDst_,
+        address from_,
+        uint64 toChainId_,
+        uint256 amount_,
+        address receiver_,
+        bool sameChain_
+    )
+        internal
+        returns (bytes memory txData)
+    {
+        if (!sameChain_) {
+            if (liqBridgeKind_ == 1) {
+                ILiFi.BridgeData memory bridgeData;
+                LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
+
+                swapData[0] = LibSwap.SwapData(
+                    address(0),
+                    /// callTo (arbitrary)
+                    address(0),
+                    /// callTo (approveTo)
+                    underlyingToken_,
+                    underlyingToken_,
+                    amount_,
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false),
+                    false // arbitrary
+                );
+
+                bridgeData = ILiFi.BridgeData(
+                    bytes32("1"),
+                    /// request id
+                    "",
+                    "",
+                    address(0),
+                    underlyingToken_,
+                    receiver_,
+                    amount_,
+                    uint256(toChainId_),
+                    false,
+                    false
+                );
+
+                txData =
+                    abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
+            }
+        } else {
+            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
+
+            swapData[0] = LibSwap.SwapData(
+                address(0),
+                /// callTo (arbitrary)
+                address(0),
+                /// callTo (approveTo)
+                underlyingToken_,
+                underlyingToken_,
+                amount_,
+                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false),
+                false // arbitrary
+            );
+
+            txData =
+                abi.encodeWithSelector(LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", receiver_, 0, swapData);
         }
     }
 

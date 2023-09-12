@@ -93,6 +93,9 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             bool hasSourceSwaps,
             bool hasDestinationCall
         ) {
+            /// @dev 0. Destination call validation
+            if (hasDestinationCall) revert Error.INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
+
             /// @dev 1. chainId validation
             /// @dev for deposits, liqDstChainId/toChainId will be the normal destination (where the target superform
             /// is)
@@ -162,8 +165,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             bool hasSourceSwaps,
             bool hasDestinationCall
         ) {
-            /// @dev this assumes no dst chain swap!!!? otherwise how can we get that value?
-
             amount_ = amount;
         } catch {
             if (genericSwapDisallowed_) revert Error.INVALID_ACTION();

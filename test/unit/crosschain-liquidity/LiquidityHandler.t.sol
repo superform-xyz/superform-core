@@ -21,7 +21,7 @@ contract LiquidityHandlerUser is LiquidityHandler {
     }
 }
 
-contract LiquidityHandlerTest is BaseSetup {
+contract LiquidityHandlerTest is ProtocolActions {
     LiquidityHandlerUser public liquidityHandler;
 
     function setUp() public override {
@@ -42,8 +42,15 @@ contract LiquidityHandlerTest is BaseSetup {
 
         liquidityHandler.dispatchTokensTest(
             SuperRegistry(getContract(ETH, "SuperRegistry")).getBridgeAddress(1),
-            _buildTxData(
-                1, address(token), tokenDst, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)
+            _buildDummyTxDataUnitTests(
+                1,
+                address(token),
+                tokenDst,
+                address(liquidityHandler),
+                ARBI,
+                transferAmount,
+                address(liquidityHandler),
+                false
             ),
             token,
             transferAmount,
@@ -67,8 +74,15 @@ contract LiquidityHandlerTest is BaseSetup {
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA.selector);
         liquidityHandler.dispatchTokensTest(
             bridgeAddress,
-            _buildTxData(
-                1, address(token), tokenDst, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)
+            _buildDummyTxDataUnitTests(
+                1,
+                address(token),
+                tokenDst,
+                address(liquidityHandler),
+                ARBI,
+                transferAmount,
+                address(liquidityHandler),
+                false
             ),
             token,
             transferAmount,
@@ -86,7 +100,9 @@ contract LiquidityHandlerTest is BaseSetup {
         vm.expectRevert(Error.INSUFFICIENT_NATIVE_AMOUNT.selector);
         liquidityHandler.dispatchTokensTest(
             bridgeAddress,
-            _buildTxData(1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
+            _buildDummyTxDataUnitTests(
+                1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler), false
+            ),
             token,
             transferAmount,
             deployer,
@@ -103,58 +119,13 @@ contract LiquidityHandlerTest is BaseSetup {
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
         liquidityHandler.dispatchTokensTest{ value: 1e18 }(
             bridgeAddress,
-            _buildTxData(1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler)),
+            _buildDummyTxDataUnitTests(
+                1, token, token, address(liquidityHandler), ARBI, transferAmount, address(liquidityHandler), false
+            ),
             token,
             transferAmount,
             deployer,
             transferAmount
         );
-    }
-
-    function _buildTxData(
-        uint8 liqBridgeKind_,
-        address underlyingToken_,
-        address underlyingTokenDst_,
-        address from_,
-        uint64 toChainId_,
-        uint256 amount_,
-        address receiver_
-    )
-        internal
-        returns (bytes memory txData)
-    {
-        if (liqBridgeKind_ == 1) {
-            ILiFi.BridgeData memory bridgeData;
-            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
-            swapData[0] = LibSwap.SwapData(
-                address(0),
-                /// callTo (arbitrary)
-                address(0),
-                /// callTo (approveTo)
-                underlyingToken_,
-                underlyingToken_,
-                amount_,
-                /// @dev arbitrary totalSlippage (200)
-                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, 200, false),
-                false // arbitrary
-            );
-
-            bridgeData = ILiFi.BridgeData(
-                bytes32("1"),
-                /// request id
-                "",
-                "",
-                address(0),
-                underlyingToken_,
-                receiver_,
-                amount_,
-                uint256(toChainId_),
-                false,
-                true
-            );
-
-            txData = abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
-        }
     }
 }

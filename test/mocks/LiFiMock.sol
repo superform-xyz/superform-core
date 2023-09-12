@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 /// Types Imports
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
-
+import "forge-std/console.sol";
 import "./MockERC20.sol";
 
 /// @title Socket Router Mock
@@ -67,17 +67,22 @@ contract LiFiMock is Test {
     )
         internal
     {
+        console.log("11111");
+
         /// @dev encapsulating from
         (address from, uint256 toForkId, address outputToken, int256 slippage, bool isDirect) =
             abi.decode(data_, (address, uint256, address, int256, bool));
-
+        console.log("ASDF");
         if (inputToken_ != NATIVE) {
             if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
 
             MockERC20(inputToken_).burn(address(this), amount_);
         } else {
+            console.log("B");
+
             require(msg.value == amount_);
         }
+        console.log("C");
 
         uint256 prevForkId = vm.activeFork();
         vm.selectFork(toForkId);
@@ -90,6 +95,8 @@ contract LiFiMock is Test {
         if (outputToken != NATIVE) {
             MockERC20(outputToken).mint(receiver_, amountOut);
         } else {
+            console.log("D");
+
             if (prevForkId != toForkId) vm.deal(address(this), amountOut);
 
             (bool success,) = payable(receiver_).call{ value: amountOut }("");

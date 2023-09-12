@@ -905,8 +905,15 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             100,
             LiqRequest(
                 1,
-                _buildMaliciousTxData(
-                    1, getContract(ETH, "USDT"), formBeacon, ETH, 1e18, getContract(ETH, "CoreStateRegistry")
+                _buildDummyTxDataUnitTests(
+                    1,
+                    getContract(ETH, "USDT"),
+                    getContract(ETH, "USDT"),
+                    formBeacon,
+                    ETH,
+                    1e18,
+                    getContract(ETH, "CoreStateRegistry"),
+                    false
                 ),
                 getContract(ETH, "USDT"),
                 ETH,
@@ -921,7 +928,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
 
-        vm.expectRevert(Error.INVALID_CHAIN_IDS.selector);
+        vm.expectRevert(Error.INVALID_ACTION.selector);
         superformRouterSERC20.singleXChainSingleVaultDeposit(req);
     }
 
