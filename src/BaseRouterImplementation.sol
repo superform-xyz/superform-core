@@ -694,7 +694,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         }
 
         /// @dev slippage, amounts and paused status validation
-        bool txDataAmountValid;
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
@@ -710,11 +709,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             ) return false;
 
             /// @dev amounts in liqRequests must match amounts in superformsData_
-            txDataAmountValid = IBridgeValidator(
-                superRegistry.getBridgeValidator(superformsData_.liqRequests[i].bridgeId)
-            ).decodeMinAmountOut(superformsData_.liqRequests[i].txData, true) != superformsData_.amounts[i];
 
-            if (!txDataAmountValid) return false;
+            if (
+                IBridgeValidator(superRegistry.getBridgeValidator(superformsData_.liqRequests[i].bridgeId))
+                    .decodeMinAmountOut(superformsData_.liqRequests[i].txData, true) != superformsData_.amounts[i]
+            ) return false;
 
             unchecked {
                 ++i;
