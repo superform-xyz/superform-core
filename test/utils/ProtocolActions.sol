@@ -1252,6 +1252,13 @@ abstract contract ProtocolActions is BaseSetup {
         }
     }
 
+    struct MultiVaultCallDataVars {
+        IPermit2.PermitTransferFrom permit;
+        bytes sig;
+        bytes permit2data;
+        uint256 totalAmount;
+    }
+
     /// @dev this internal function just loops over _buildSingleVaultDepositCallData or
     /// _buildSingleVaultWithdrawCallData to build MultiVaultSFData
     function _buildMultiVaultCallData(
@@ -1261,10 +1268,15 @@ abstract contract ProtocolActions is BaseSetup {
         internal
         returns (MultiVaultSFData memory superformsData)
     {
+        MultiVaultCallDataVars memory v;
+
         SingleVaultSFData memory superformData;
         uint256 len = args.superformIds.length;
+
         LiqRequest[] memory liqRequests = new LiqRequest[](len);
         SingleVaultCallDataArgs memory callDataArgs;
+
+        v.totalAmount;
 
         if (len == 0) revert LEN_MISMATCH();
         uint256[] memory finalAmounts = new uint256[](len);
@@ -1315,9 +1327,27 @@ abstract contract ProtocolActions is BaseSetup {
             }
             liqRequests[i] = superformData.liqRequest;
             maxSlippageTemp[i] = args.maxSlippage;
+            v.totalAmount += finalAmounts[i];
         }
+
+        if (action == Actions.DepositPermit2) {
+            v.permit = IPermit2.PermitTransferFrom({
+                permitted: IPermit2.TokenPermissions({ token: IERC20(address(args.externalToken)), amount: v.totalAmount }),
+                nonce: _randomUint256(),
+                deadline: block.timestamp
+            });
+            /// @dev from is always SuperformRouter
+            v.sig = _signPermit(v.permit, args.fromSrc, userKeys[args.user], args.srcChainId);
+            v.permit2data = abi.encode(v.permit.nonce, v.permit.deadline, v.sig);
+        }
+
         superformsData = MultiVaultSFData(
-            args.superformIds, finalAmounts, maxSlippageTemp, liqRequests, abi.encode(args.partialWithdrawVaults)
+            args.superformIds,
+            finalAmounts,
+            maxSlippageTemp,
+            liqRequests,
+            v.permit2data,
+            abi.encode(args.partialWithdrawVaults)
         );
     }
 
@@ -1471,21 +1501,14 @@ abstract contract ProtocolActions is BaseSetup {
                 nonce: _randomUint256(),
                 deadline: block.timestamp
             });
-            v.sig = _signPermit(v.permit, v.from, userKeys[args.user], args.srcChainId);
-            /// @dev from is either SuperformRouter (xchain) or the form (direct deposit)
-
+            /// @dev from is always SuperformRouter
+            v.sig = _signPermit(v.permit, args.fromSrc, userKeys[args.user], args.srcChainId);
             v.permit2Calldata = abi.encode(v.permit.nonce, v.permit.deadline, v.sig);
         }
 
         /// @dev the actual liq request struct inscription
         v.liqReq = LiqRequest(
-            args.liqBridge,
-            v.txData,
-            liqRequestToken,
-            args.toChainId,
-            liqRequestToken == NATIVE_TOKEN ? args.amount : 0,
-            /// @dev for native actions amount is also here
-            v.permit2Calldata
+            args.liqBridge, v.txData, liqRequestToken, args.toChainId, liqRequestToken == NATIVE_TOKEN ? args.amount : 0
         );
 
         if (liqRequestToken != NATIVE_TOKEN) {
@@ -1498,14 +1521,16 @@ abstract contract ProtocolActions is BaseSetup {
                 /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts
                 /// are ordered from lowest to highest,
                 /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
-                MockERC20(liqRequestToken).increaseAllowance(v.from, args.amount);
+                MockERC20(liqRequestToken).increaseAllowance(args.fromSrc, args.amount);
             }
         }
         vm.selectFork(v.initialFork);
 
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
-        superformData = SingleVaultSFData(args.superformId, args.amount, args.maxSlippage, v.liqReq, abi.encode(false));
+        superformData = SingleVaultSFData(
+            args.superformId, args.amount, args.maxSlippage, v.liqReq, v.permit2Calldata, abi.encode(false)
+        );
     }
 
     struct SingleVaultWithdrawLocalVars {
@@ -1572,14 +1597,13 @@ abstract contract ProtocolActions is BaseSetup {
             /// @dev for certain test cases, insert txData as null here
             args.underlyingTokenDst,
             args.liqDstChainId,
-            0,
-            ""
+            0
         );
 
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
-            args.superformId, args.amount, args.maxSlippage, vars.liqReq, abi.encode(args.partialWithdrawVault)
+            args.superformId, args.amount, args.maxSlippage, vars.liqReq, "", abi.encode(args.partialWithdrawVault)
         );
     }
 

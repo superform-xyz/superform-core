@@ -103,10 +103,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                 vars.liqData.token,
                 vars.amount,
                 address(this),
-                vars.liqData.nativeAmount,
-                /// @dev be careful over here
-                "",
-                superRegistry.PERMIT2()
+                vars.liqData.nativeAmount
             );
         }
     }
