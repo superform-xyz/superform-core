@@ -198,17 +198,15 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint64[] liqDstChainIds;
         uint256[] amounts;
         uint256[] nativeAmounts;
-        bytes[] permit2datas;
     }
 
     function _checkDstPayloadLiqData(TestAction memory action) internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadLiqDataInternalVars memory v;
 
-        (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts,, v.nativeAmounts, v.permit2datas) =
-        IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayloadLiqData(
-            2
-        );
+        (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts,, v.nativeAmounts) = IPayloadHelper(
+            contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
+        ).decodeCoreStateRegistryPayloadLiqData(2);
 
         assertEq(v.bridgeIds[0], 1);
 
@@ -219,8 +217,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertEq(v.liqDstChainIds[0], FINAL_LIQ_DST_WITHDRAW[POLY][0]);
 
         assertEq(v.amounts, AMOUNTS[POLY][0]);
-
-        assertEq(v.permit2datas[0].length, 0);
     }
 
     function _checkDstPayloadReturn() internal {

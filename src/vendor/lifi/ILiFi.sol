@@ -17,14 +17,4 @@ interface ILiFi {
         bool hasSourceSwaps;
         bool hasDestinationCall; // is there a destination call? we should disable this
     }
-
-    struct SwapData {
-        address callTo;
-        address approveTo;
-        address sendingAssetId;
-        address receivingAssetId;
-        uint256 fromAmount;
-        bytes callData;
-        bool requiresDeposit;
-    }
 }

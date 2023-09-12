@@ -14,5 +14,4 @@ struct LiqRequest {
     uint64 liqDstChainId;
     /// @dev currently this amount is used as msg.value in the txData call.
     uint256 nativeAmount;
-    bytes permit2data;
 }

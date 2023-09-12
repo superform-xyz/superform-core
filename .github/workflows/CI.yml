@@ -106,13 +106,30 @@ jobs:
           echo "## Coverage result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Uploaded to Codecov" >> $GITHUB_STEP_SUMMARY
 
-  #slither:
-  #  runs-on: ubuntu-latest
-  # steps:
-  #   - uses: actions/checkout@v3
-  #   - name: Run Slither
-  #     uses: crytic/slither-action@v0.3.0
-  #     id: slither
-  #     with:
-  #       slither-args: '--exclude-low --exclude-medium --no-fail-pedantic --exclude-optimization --exclude-informational --filter-paths mock,interfaces,lib,tests --json-types console,detectors'
-  #       fail-on: none
+  slither:
+   needs: ["build"]
+   runs-on: "SuperformCore"
+   env:
+    FOUNDRY_TEST: 'nonexisten'
+   steps:
+    - name: "Check out the repo"
+      uses: "actions/checkout@v3"
+      with:
+        submodules: "recursive"
+
+    - name: "Install Foundry"
+      uses: "foundry-rs/foundry-toolchain@v1"
+
+    - name: "Restore the cached build"
+      uses: "actions/cache/restore@v3"
+      with:
+        fail-on-cache-miss: true
+        key: "foundry-build-${{ github.sha }}"
+        path: "out"
+
+    - name: "Run Slither"
+      uses: crytic/slither-action@v0.3.0
+      id: slither
+      with:
+        slither-args: '--exclude-low --exclude-optimization --exclude-informational --json-types console,detectors --filter-paths mock,test,script,lib'
+        fail-on: high

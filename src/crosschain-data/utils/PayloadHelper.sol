@@ -56,7 +56,6 @@ contract PayloadHelper is IPayloadHelper {
         uint256[] liqDataAmountsIn;
         uint256[] liqDataAmountsOut;
         uint256[] liqDataNativeAmounts;
-        bytes[] permit2datas;
         InitMultiVaultData imvd;
         InitSingleVaultData isvd;
         uint256 i;
@@ -173,8 +172,7 @@ contract PayloadHelper is IPayloadHelper {
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory amountsOut,
-            uint256[] memory nativeAmounts,
-            bytes[] memory permit2datas
+            uint256[] memory nativeAmounts
         )
     {
         DecodeDstPayloadLiqDataInternalVars memory v;
@@ -190,7 +188,6 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataAmountsIn = new uint256[](v.imvd.liqData.length);
             v.liqDataAmountsOut = new uint256[](v.imvd.liqData.length);
             v.liqDataNativeAmounts = new uint256[](v.imvd.liqData.length);
-            v.permit2datas = new bytes[](v.imvd.liqData.length);
 
             uint256 len = v.imvd.liqData.length;
 
@@ -206,7 +203,6 @@ contract PayloadHelper is IPayloadHelper {
                 v.liqDataAmountsOut[v.i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i]))
                     .decodeMinAmountOut(v.txDatas[v.i], false);
                 v.liqDataNativeAmounts[v.i] = v.imvd.liqData[v.i].nativeAmount;
-                v.permit2datas[v.i] = v.imvd.liqData[v.i].permit2data;
 
                 unchecked {
                     ++v.i;
@@ -237,9 +233,6 @@ contract PayloadHelper is IPayloadHelper {
 
             v.liqDataNativeAmounts = new uint256[](1);
             v.liqDataNativeAmounts[0] = v.isvd.liqData.nativeAmount;
-
-            v.permit2datas = new bytes[](1);
-            v.permit2datas[0] = v.isvd.liqData.permit2data;
         }
 
         return (
@@ -249,8 +242,7 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataChainIds,
             v.liqDataAmountsIn,
             v.liqDataAmountsOut,
-            v.liqDataNativeAmounts,
-            v.permit2datas
+            v.liqDataNativeAmounts
         );
     }
 

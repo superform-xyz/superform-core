@@ -47,7 +47,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
                 superformId,
                 420,
                 0,
-                LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0, bytes("")),
+                LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "USDT"), ETH, 0),
                 bytes("")
             )
         );
@@ -79,7 +79,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
                 1000,
                 /// @dev note txData (2nd arg) is empty and token (3rd arg) is not address(0) to
                 /// indicate keeper to create and update txData using finalizePayload()
-                LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0, bytes("")),
+                LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
                 bytes("")
             )
         );
@@ -102,7 +102,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
             0
         );
 
-        bytes memory txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
+        bytes memory txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, true);
 
         vm.prank(deployer);
         vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);

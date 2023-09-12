@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import { ILiFi } from "./ILiFi.sol";
-
+import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
+import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 /// @title LiFiTxDataExtractor
 /// @author LI.FI (https://li.fi)
 /// @notice Provides functionality for extracting calldata
@@ -10,6 +10,7 @@ import { ILiFi } from "./ILiFi.sol";
 /// used functions (just stripped down functionality and renamed contract name)
 /// @notice taken from LiFi contracts https://github.com/lifinance/contracts
 /// @custom:version 1.1.0
+
 contract LiFiTxDataExtractor {
     error SliceOverflow();
     error SliceOutOfBounds();
@@ -31,16 +32,16 @@ contract LiFiTxDataExtractor {
     /// @notice Extracts the swap data from the calldata
     /// @param data The calldata to extract the swap data from
     /// @return swapData The swap data extracted from the calldata
-    function _extractSwapData(bytes calldata data) internal pure returns (ILiFi.SwapData[] memory swapData) {
+    function _extractSwapData(bytes calldata data) internal pure returns (LibSwap.SwapData[] memory swapData) {
         if (abi.decode(data, (bytes4)) == 0xd6a4bc50) {
             // standardizedCall
             bytes memory unwrappedData = abi.decode(data[4:], (bytes));
             (, swapData) =
-                abi.decode(slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData, ILiFi.SwapData[]));
+                abi.decode(slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData, LibSwap.SwapData[]));
             return swapData;
         }
         // normal call
-        (, swapData) = abi.decode(data[4:], (ILiFi.BridgeData, ILiFi.SwapData[]));
+        (, swapData) = abi.decode(data[4:], (ILiFi.BridgeData, LibSwap.SwapData[]));
     }
 
     function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {

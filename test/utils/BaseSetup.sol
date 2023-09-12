@@ -163,7 +163,7 @@ abstract contract BaseSetup is DSTest, Test {
         0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
         0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
         0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0x16d7Cff1992F17E46fa98284CCaAC1A19788B6B9
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567
     ];
 
     address[] public lzEndpoints = [

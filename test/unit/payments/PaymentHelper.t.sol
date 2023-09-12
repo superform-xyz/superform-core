@@ -39,7 +39,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -55,7 +56,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -71,7 +73,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -92,7 +95,7 @@ contract PaymentHelperTest is BaseSetup {
         uint256MemoryArray[0] = 420;
 
         LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
-        liqRequestMemoryArray[0] = LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes);
+        liqRequestMemoryArray[0] = LiqRequest(1, emptyBytes, address(0), ETH, 420);
 
         (,,, uint256 fees) = paymentHelper.estimateSingleDirectMultiVault(
             SingleDirectMultiVaultStateReq(
@@ -102,6 +105,7 @@ contract PaymentHelperTest is BaseSetup {
                     uint256MemoryArray,
                     uint256MemoryArray,
                     liqRequestMemoryArray,
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -118,6 +122,7 @@ contract PaymentHelperTest is BaseSetup {
                     uint256MemoryArray,
                     uint256MemoryArray,
                     liqRequestMemoryArray,
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -151,7 +156,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, txData, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, txData, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -184,7 +190,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, txData, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, txData, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -217,7 +224,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, txData, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, txData, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -370,9 +378,9 @@ contract PaymentHelperTest is BaseSetup {
     {
         if (liqBridgeKind_ == 1) {
             ILiFi.BridgeData memory bridgeData;
-            ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
+            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
 
-            swapData[0] = ILiFi.SwapData(
+            swapData[0] = LibSwap.SwapData(
                 address(0),
                 /// callTo (arbitrary)
                 address(0),

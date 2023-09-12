@@ -14,25 +14,25 @@ contract MDMVDMulti0000NoIncludingSingleDirectTokenInputSlippageAMB12 is Protoco
         AMBs = [1, 2];
         MultiDstAMBs = [AMBs, AMBs];
 
-        CHAIN_0 = OP;
-        DST_CHAINS = [OP, ETH];
+        CHAIN_0 = ARBI;
+        DST_CHAINS = [ARBI, ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [0, 1];
+        TARGET_UNDERLYINGS[ARBI][0] = [0, 1];
         TARGET_UNDERLYINGS[ETH][0] = [1, 0];
 
-        TARGET_VAULTS[OP][0] = [0, 0];
+        TARGET_VAULTS[ARBI][0] = [0, 0];
 
         /// @dev id 0 is normal 4626
         TARGET_VAULTS[ETH][0] = [1, 1];
         /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[OP][0] = [0, 0];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0];
         TARGET_FORM_KINDS[ETH][0] = [1, 1];
 
         MAX_SLIPPAGE = 1000;
 
-        LIQ_BRIDGES[OP][0] = [1, 1];
+        LIQ_BRIDGES[ARBI][0] = [1, 1];
         LIQ_BRIDGES[ETH][0] = [1, 1];
 
         actions.push(
@@ -57,7 +57,7 @@ contract MDMVDMulti0000NoIncludingSingleDirectTokenInputSlippageAMB12 is Protoco
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
         amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_USDT / 4));
         amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_USDT / 4));
-        AMOUNTS[OP][0] = [amountOne_, amountTwo_];
+        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_];
         AMOUNTS[ETH][0] = [amountTwo_, amountOne_];
 
         for (uint256 act; act < actions.length; act++) {

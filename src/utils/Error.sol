@@ -45,6 +45,9 @@ library Error {
     /// @dev thrown if the broadcast payload is invalid
     error INVALID_BROADCAST_PAYLOAD();
 
+    /// @dev thrown if the underlying collateral mismatches
+    error INVALID_DEPOSIT_TOKEN();
+
     /// @dev thrown when msg.sender is not two step state registry
     error NOT_TWO_STEP_STATE_REGISTRY();
 

@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { Error } from "src/utils/Error.sol";
-import { LiFiTxDataExtractor } from "src/vendor/lifi/LiFiTxDataExtractor.sol";
 import { IMinimalCalldataVerification } from "src/vendor/lifi/IMinimalCalldataVerification.sol";
+import { LiFiTxDataExtractor } from "src/vendor/lifi/LiFiTxDataExtractor.sol";
 
 /// @title LiFiValidator
 /// @author Zeropoint Labs

@@ -305,9 +305,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 liqData_[v.i].token,
                 IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData, true),
                 address(this),
-                liqData_[v.i].nativeAmount,
-                liqData_[v.i].permit2data,
-                superRegistry.PERMIT2()
+                liqData_[v.i].nativeAmount
             );
 
             unchecked {

@@ -126,9 +126,9 @@ contract BridgeValidatorInvalidReceiverTest is BaseSetup {
     {
         if (liqBridgeKind_ == 1) {
             ILiFi.BridgeData memory bridgeData;
-            ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
+            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
 
-            swapData[0] = ILiFi.SwapData(
+            swapData[0] = LibSwap.SwapData(
                 address(0),
                 /// callTo (arbitrary)
                 address(0),

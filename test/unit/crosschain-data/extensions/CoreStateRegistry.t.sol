@@ -215,8 +215,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0
         );
 
-        txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
-        txData[1] = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
+        txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs, false);
+        txData[1] = _buildLiqBridgeTxData(liqBridgeTxDataArgs, false);
 
         vm.prank(deployer);
         vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
@@ -296,7 +296,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), AVAX, 0, bytes("")),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0),
+            bytes(""),
             bytes("")
         );
         /// @dev approves before call
@@ -336,7 +337,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0, bytes("")), bytes("")
+            superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0), bytes(""), bytes("")
         );
 
         vm.recordLogs();
@@ -396,11 +397,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), AVAX, 0, bytes(""));
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""));
+            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""), bytes(""));
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
@@ -460,11 +461,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), AVAX, 0, bytes(""));
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""));
+            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""), bytes(""));
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
@@ -496,14 +497,15 @@ contract CoreStateRegistryTest is ProtocolActions {
         amountArr[1] = 1e18;
 
         LiqRequest[] memory liqReqArr = new LiqRequest[](2);
-        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), ETH, 0, bytes(""));
+        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), ETH, 0);
         liqReqArr[1] = liqReqArr[0];
 
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 1000;
         maxSlippages[1] = 1000;
 
-        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amountArr, maxSlippages, liqReqArr, bytes(""));
+        MultiVaultSFData memory data =
+            MultiVaultSFData(superformIds, amountArr, maxSlippages, liqReqArr, bytes(""), bytes(""));
 
         vm.recordLogs();
         vm.prank(deployer);

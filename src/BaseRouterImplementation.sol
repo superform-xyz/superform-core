@@ -13,9 +13,9 @@ import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { IFormBeacon } from "./interfaces/IFormBeacon.sol";
 import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
-import { LiquidityHandler } from "./crosschain-liquidity/LiquidityHandler.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 import { Error } from "./utils/Error.sol";
+import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
 
 /// @title BaseRouterImplementation
@@ -70,13 +70,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.superformIds,
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
-            new LiqRequest[](0),
+            req.superformsData.liqRequests,
             req.superformsData.extraFormData
         );
 
         address permit2 = superRegistry.PERMIT2();
         address superform;
         uint256 len = req.superformsData.superformIds.length;
+
+        _multiVaultTokenForward(msg.sender, new address[](0), req.superformsData.permit2data, ambData);
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
@@ -95,6 +97,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 ++j;
             }
         }
+
+        ambData.liqData = new LiqRequest[](len);
 
         /// @dev dispatch message information, notice multiVaults is set to 1
         _dispatchAmbMessage(
@@ -130,6 +134,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         vars.liqRequest = req.superformData.liqRequest;
         (address superform,,) = req.superformData.superformId.getSuperform();
+
+        _singleVaultTokenForward(
+            msg.sender, superRegistry.getBridgeAddress(vars.liqRequest.bridgeId), req.superformData.permit2data, ambData
+        );
+
+        LiqRequest memory emptyRequest;
+        ambData.liqData = emptyRequest;
 
         /// @dev dispatch liquidity data
         _validateAndDispatchTokens(
@@ -176,7 +187,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         /// @dev same chain action & forward residual payment to payment collector
-        _directSingleDeposit(msg.sender, vaultData);
+        _directSingleDeposit(msg.sender, req.superformData.permit2data, vaultData);
         emit Completed(vars.currentPayloadId);
     }
 
@@ -197,7 +208,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
 
         /// @dev same chain action & forward residual payment to payment collector
-        _directMultiDeposit(msg.sender, vaultData);
+        _directMultiDeposit(msg.sender, req.superformData.permit2data, vaultData);
         emit Completed(vars.currentPayloadId);
     }
 
@@ -343,7 +354,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ) revert Error.INVALID_TXDATA_AMOUNTS();
 
         currentPayloadId = ++payloadIds;
-        LiqRequest memory emptyRequest;
 
         ambData = InitSingleVaultData(
             ROUTER_TYPE,
@@ -351,7 +361,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.superformId,
             superformData_.amount,
             superformData_.maxSlippage,
-            emptyRequest,
+            superformData_.liqRequest,
             superformData_.extraFormData
         );
     }
@@ -418,9 +428,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             args.liqRequest.token,
             IBridgeValidator(bridgeValidator).decodeAmountIn(args.liqRequest.txData, true),
             args.srcSender,
-            args.liqRequest.nativeAmount,
-            args.liqRequest.permit2data,
-            args.permit2
+            args.liqRequest.nativeAmount
         );
     }
 
@@ -456,12 +464,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
     /// @notice deposits to single vault on the same chain
     /// @dev calls `_directDeposit`
-    function _directSingleDeposit(address srcSender_, InitSingleVaultData memory vaultData_) internal virtual {
+    function _directSingleDeposit(
+        address srcSender_,
+        bytes memory permit2data_,
+        InitSingleVaultData memory vaultData_
+    )
+        internal
+        virtual
+    {
         address superform;
         uint256 dstAmount;
 
         /// @dev decode superforms
         (superform,,) = vaultData_.superformId.getSuperform();
+
+        _singleVaultTokenForward(srcSender_, superform, permit2data_, vaultData_);
 
         /// @dev deposits collateral to a given vault and mint vault positions.
         dstAmount = _directDeposit(
@@ -483,21 +500,37 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         );
     }
 
+    struct MultiDepositLocalVars {
+        uint256 len;
+        address[] superforms;
+        uint256[] dstAmounts;
+    }
+
     /// @notice deposits to multiple vaults on the same chain
     /// @dev loops and call `_directDeposit`
-    function _directMultiDeposit(address srcSender_, InitMultiVaultData memory vaultData_) internal virtual {
-        uint256 len = vaultData_.superformIds.length;
+    function _directMultiDeposit(
+        address srcSender_,
+        bytes memory permit2data_,
+        InitMultiVaultData memory vaultData_
+    )
+        internal
+        virtual
+    {
+        MultiDepositLocalVars memory v;
+        v.len = vaultData_.superformIds.length;
 
-        address[] memory superforms = new address[](len);
-        uint256[] memory dstAmounts = new uint256[](len);
+        v.superforms = new address[](v.len);
+        v.dstAmounts = new uint256[](v.len);
 
         /// @dev decode superforms
-        (superforms,,) = DataLib.getSuperforms(vaultData_.superformIds);
+        (v.superforms,,) = DataLib.getSuperforms(vaultData_.superformIds);
 
-        for (uint256 i; i < len;) {
+        _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_);
+
+        for (uint256 i; i < v.len;) {
             /// @dev deposits collateral to a given vault and mint vault positions.
-            dstAmounts[i] = _directDeposit(
-                superforms[i],
+            v.dstAmounts[i] = _directDeposit(
+                v.superforms[i],
                 vaultData_.superformRouterId,
                 vaultData_.payloadId,
                 vaultData_.superformIds[i],
@@ -516,7 +549,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
         IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintBatch(
-            srcSender_, vaultData_.superformIds, dstAmounts
+            srcSender_, vaultData_.superformIds, v.dstAmounts
         );
     }
 
@@ -788,6 +821,160 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             IPayMaster(superRegistry.getAddress(keccak256("PAYMASTER"))).makePayment{ value: residualPayment }(
                 msg.sender
             );
+        }
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                    SAME CHAIN TOKEN SETTLEMENT HELPERS
+    //////////////////////////////////////////////////////////////*/
+    function _singleVaultTokenForward(
+        address srcSender_,
+        address superform_,
+        bytes memory permit2data_,
+        InitSingleVaultData memory vaultData_
+    )
+        internal
+        virtual
+    {
+        if (vaultData_.liqData.token != NATIVE) {
+            IERC20 token = IERC20(vaultData_.liqData.token);
+            uint256 len = vaultData_.liqData.txData.length;
+            uint256 amount;
+
+            if (len == 0) {
+                amount = vaultData_.amount;
+            } else {
+                address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData.bridgeId);
+                amount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData.txData, false);
+            }
+
+            if (permit2data_.length != 0) {
+                address permit2 = superRegistry.PERMIT2();
+
+                (uint256 nonce, uint256 deadline, bytes memory signature) =
+                    abi.decode(permit2data_, (uint256, uint256, bytes));
+
+                IPermit2(permit2).permitTransferFrom(
+                    // The permit message.
+                    IPermit2.PermitTransferFrom({
+                        permitted: IPermit2.TokenPermissions({ token: token, amount: amount }),
+                        nonce: nonce,
+                        deadline: deadline
+                    }),
+                    // The transfer recipient and amount.
+                    IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: amount }),
+                    // The owner of the tokens, which must also be
+                    // the signer of the message, otherwise this call
+                    // will fail.
+                    srcSender_,
+                    // The packed signature that was the result of signing
+                    // the EIP712 hash of `permit`.
+                    signature
+                );
+            } else {
+                if (token.allowance(srcSender_, address(this)) < amount) {
+                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                }
+
+                /// @dev moves the tokens from the user and approves the form
+                token.safeTransferFrom(srcSender_, address(this), amount);
+            }
+
+            /// @dev approves the superform
+            token.safeIncreaseAllowance(superform_, amount);
+        }
+    }
+
+    struct MultiTokenForwardLocalVars {
+        IERC20 token;
+        uint256 len;
+        uint256 totalAmount;
+        uint256 permit2dataLen;
+        address permit2;
+        uint256[] approvalAmounts;
+    }
+
+    function _multiVaultTokenForward(
+        address srcSender_,
+        address[] memory targets_,
+        bytes memory permit2data_,
+        InitMultiVaultData memory vaultData_
+    )
+        internal
+        virtual
+    {
+        if (vaultData_.liqData[0].token != NATIVE) {
+            MultiTokenForwardLocalVars memory v;
+            v.token = IERC20(vaultData_.liqData[0].token);
+            v.len = vaultData_.liqData.length;
+
+            v.totalAmount;
+            v.permit2 = superRegistry.PERMIT2();
+            v.permit2dataLen = permit2data_.length;
+            v.approvalAmounts = new uint256[](v.len);
+
+            for (uint256 i; i < v.len;) {
+                if (vaultData_.liqData[i].token != address(v.token)) {
+                    revert Error.INVALID_DEPOSIT_TOKEN();
+                }
+
+                uint256 len = vaultData_.liqData[i].txData.length;
+
+                if (len == 0) {
+                    v.approvalAmounts[i] = vaultData_.amounts[i];
+                } else {
+                    address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId);
+                    v.approvalAmounts[i] =
+                        IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData, false);
+                }
+
+                v.totalAmount += v.approvalAmounts[i];
+                unchecked {
+                    ++i;
+                }
+            }
+
+            if (v.totalAmount > 0) {
+                if (v.permit2dataLen > 0) {
+                    (uint256 nonce, uint256 deadline, bytes memory signature) =
+                        abi.decode(permit2data_, (uint256, uint256, bytes));
+
+                    IPermit2(v.permit2).permitTransferFrom(
+                        // The permit message.
+                        IPermit2.PermitTransferFrom({
+                            permitted: IPermit2.TokenPermissions({ token: v.token, amount: v.totalAmount }),
+                            nonce: nonce,
+                            deadline: deadline
+                        }),
+                        // The transfer recipient and amount.
+                        IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: v.totalAmount }),
+                        // The owner of the tokens, which must also be
+                        // the signer of the message, otherwise this call
+                        // will fail.
+                        srcSender_,
+                        // The packed signature that was the result of signing
+                        // the EIP712 hash of `permit`.
+                        signature
+                    );
+                } else {
+                    if (v.token.allowance(srcSender_, address(this)) < v.totalAmount) {
+                        revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                    }
+
+                    /// @dev moves the tokens from the user and approves the form
+                    v.token.safeTransferFrom(srcSender_, address(this), v.totalAmount);
+                }
+            }
+
+            /// @dev approves individual final targets if needed here
+            for (uint256 j; j < targets_.length;) {
+                /// @dev approves the superform
+                v.token.safeIncreaseAllowance(targets_[j], v.approvalAmounts[j]);
+
+                unchecked {
+                    ++j;
+                }
+            }
         }
     }
 }
