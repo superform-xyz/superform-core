@@ -4,11 +4,11 @@ pragma solidity 0.8.21;
 /// @dev lib imports
 import "forge-std/Test.sol";
 import "ds-test/test.sol";
-import { LayerZeroHelper } from "pigeon/src/layerzero/LayerZeroHelper.sol";
-import { HyperlaneHelper } from "pigeon/src/hyperlane/HyperlaneHelper.sol";
+import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
+import { HyperlaneHelper } from "pigeon/hyperlane/HyperlaneHelper.sol";
 
-import { WormholeHelper } from "pigeon/src/wormhole/automatic-relayer/WormholeHelper.sol";
-import "pigeon/src/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
+import { WormholeHelper } from "pigeon/wormhole/automatic-relayer/WormholeHelper.sol";
+import "pigeon/wormhole/specialized-relayer/WormholeHelper.sol" as WormholeBroadcastHelper;
 
 import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";

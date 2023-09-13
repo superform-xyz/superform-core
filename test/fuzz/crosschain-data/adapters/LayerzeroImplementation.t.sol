@@ -2,8 +2,8 @@
 pragma solidity 0.8.21;
 
 import "../../../utils/BaseSetup.sol";
-import "pigeon/src/layerzero/lib/LZPacket.sol";
 
+import "pigeon/layerzero/lib/LZPacket.sol";
 import { TransactionType, CallbackType, AMBMessage } from "src/types/DataTypes.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
