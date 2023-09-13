@@ -56,18 +56,6 @@ interface ISuperformFactory {
         external
         returns (uint256 superformId_, address superform_);
 
-    /// @dev To add new vaults to Form implementations, fusing them together into Superforms
-    /// @param formBeaconIds_ are the form beacon ids we want to attach the vaults to
-    /// @param vaults_ are the addresses of the vaults
-    /// @return superformIds_ are the id of the created superforms
-    /// @return superforms_ are the addresses of the created superforms
-    function createSuperforms(
-        uint32[] memory formBeaconIds_,
-        address[] memory vaults_
-    )
-        external
-        returns (uint256[] memory superformIds_, address[] memory superforms_);
-
     /// @dev to synchronize superforms added to different chains using broadcast registry
     /// @param data_ is the cross-chain superform id
     function stateSyncBroadcast(bytes memory data_) external payable;

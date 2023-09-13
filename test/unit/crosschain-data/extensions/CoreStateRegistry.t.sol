@@ -340,9 +340,13 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0), bytes(""), bytes("")
         );
 
-        vm.recordLogs();
+        vm.prank(deployer);
+
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(superformRouter, superformId, 1e18);
 
         vm.prank(deployer);
+        vm.recordLogs();
+
         SuperformRouter(payable(superformRouter)).singleXChainSingleVaultWithdraw{ value: 2 ether }(
             SingleXChainSingleVaultStateReq(ambIds, AVAX, data)
         );
@@ -507,8 +511,12 @@ contract CoreStateRegistryTest is ProtocolActions {
         MultiVaultSFData memory data =
             MultiVaultSFData(superformIds, amountArr, maxSlippages, liqReqArr, bytes(""), bytes(""));
 
-        vm.recordLogs();
         vm.prank(deployer);
+
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(superformRouter, superformId, 2e18);
+        vm.prank(deployer);
+        vm.recordLogs();
+
         SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{ value: 2 ether }(
             SingleXChainMultiVaultStateReq(ambIds, AVAX, data)
         );

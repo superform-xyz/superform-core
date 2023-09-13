@@ -1673,7 +1673,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         /// @dev singleId approvals from ERC1155A are used here https://github.com/superform-xyz/ERC1155A, avoiding
         /// approving all superPositions at once
-        vars.superPositions.setApprovalForOne(vars.superformRouter, args.superformId, args.amount);
+        vars.superPositions.increaseAllowance(vars.superformRouter, args.superformId, args.amount);
 
         vm.selectFork(initialFork);
 

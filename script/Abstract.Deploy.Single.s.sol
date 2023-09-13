@@ -375,12 +375,12 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry, vars.chainId);
 
-        address[] memory registryAddresses = new address[](2);
+        address[] memory registryAddresses = new address[](3);
         registryAddresses[0] = vars.coreStateRegistry;
         registryAddresses[1] = vars.twoStepsFormStateRegistry;
         registryAddresses[2] = vars.broadcastRegistry;
 
-        uint8[] memory registryIds = new uint8[](2);
+        uint8[] memory registryIds = new uint8[](3);
         registryIds[0] = 1;
         registryIds[1] = 2;
         registryIds[2] = 3;
@@ -559,6 +559,8 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
+        vars.wormholeImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
+        vars.wormholeSRImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
         vars.superRegistry = _readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC =

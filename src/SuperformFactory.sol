@@ -143,31 +143,6 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
-    function createSuperforms(
-        uint32[] memory formBeaconIds_,
-        address[] memory vaults_
-    )
-        external
-        override
-        returns (uint256[] memory superformIds_, address[] memory superforms_)
-    {
-        uint256 len = formBeaconIds_.length;
-
-        if (len != vaults_.length) revert Error.ARRAY_LENGTH_MISMATCH();
-
-        superformIds_ = new uint256[](len);
-        superforms_ = new address[](len);
-
-        for (uint256 i; i < len;) {
-            (superformIds_[i], superforms_[i]) = createSuperform(formBeaconIds_[i], vaults_[i]);
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /// @inheritdoc ISuperformFactory
     function updateFormBeaconLogic(uint32 formBeaconId_, address newFormLogic_) external override onlyProtocolAdmin {
         if (newFormLogic_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(newFormLogic_)) revert Error.ERC165_UNSUPPORTED();

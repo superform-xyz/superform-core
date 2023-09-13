@@ -10,6 +10,7 @@ import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { ProtocolActions } from "test/utils/ProtocolActions.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
+import { SuperPositions } from "src/SuperPositions.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
@@ -414,6 +415,10 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(
+            getContract(ETH, "SuperformRouter"), superformId, 1e18
+        );
+
         /// @dev approves before call
         vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
@@ -508,6 +513,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(
+            getContract(ETH, "SuperformRouter"), superformId, 1e18
+        );
         vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_COLLATERAL.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
 

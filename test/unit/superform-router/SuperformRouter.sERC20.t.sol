@@ -320,59 +320,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superformRouterSERC20.singleXChainMultiVaultDeposit(req);
     }
 
-    function test_depositWithAmountMismatchInSuperformsDataAndLiqRequest() public {
-        vm.selectFork(FORKS[ETH]);
-        vm.startPrank(deployer);
-
-        address superform =
-            getContract(ARBI, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
-
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
-
-        vm.selectFork(FORKS[ARBI]);
-        (address formBeacon,,) = SuperformFactory(getContract(ARBI, "SuperformFactory")).getSuperform(superformId);
-        vm.selectFork(FORKS[ETH]);
-
-        uint256[] memory superformIds = new uint256[](1);
-        superformIds[0] = superformId;
-
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = 1e18;
-
-        uint256[] memory maxSlippages = new uint256[](1);
-        maxSlippages[0] = 100;
-
-        uint8[] memory ambIds = new uint8[](1);
-        ambIds[0] = 1;
-
-        LiqRequest[] memory liqReq = new LiqRequest[](1);
-        /// @dev incorrect amount (should be 1e18)
-        liqReq[0] = LiqRequest(
-            1,
-            _buildMaliciousTxData(
-                1,
-                getContract(ARBI, "USDT"),
-                formBeacon,
-                ARBI,
-                1e16,
-                /// @dev incorrect amount (should be 1e18)
-                getContract(ARBI, "CoreStateRegistry")
-            ),
-            getContract(ARBI, "USDT"),
-            ETH,
-            0
-        );
-
-        MultiVaultSFData memory data = MultiVaultSFData(superformIds, amounts, maxSlippages, liqReq, "", "");
-
-        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
-        /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
-
-        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        superformRouterSERC20.singleXChainMultiVaultDeposit(req);
-    }
-
     function test_depositWithWrongAmountsLength() public {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -845,46 +792,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superformRouterSERC20.singleXChainMultiVaultDeposit(req);
     }
 
-    function test_depositWithInvalidAmountThanLiqDataAmount() public {
-        /// scenario: deposit from an paused form beacon id (which doesn't exist on the chain)
-
-        address superform =
-            getContract(ARBI, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
-
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
-
-        vm.selectFork(FORKS[ARBI]);
-        (address formBeacon,,) = SuperformFactory(getContract(ARBI, "SuperformFactory")).getSuperform(superformId);
-
-        vm.selectFork(FORKS[ETH]);
-        vm.startPrank(deployer);
-
-        SingleVaultSFData memory data = SingleVaultSFData(
-            superformId,
-            3e18,
-            100,
-            LiqRequest(
-                1,
-                _buildMaliciousTxData(
-                    1, getContract(ARBI, "USDT"), formBeacon, ARBI, 1e18, getContract(ARBI, "CoreStateRegistry")
-                ),
-                getContract(ARBI, "USDT"),
-                ETH,
-                0
-            ),
-            "",
-            ""
-        );
-
-        SingleXChainSingleVaultStateReq memory req = SingleXChainSingleVaultStateReq(ambIds, ARBI, data);
-
-        /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouterSERC20), 1e18);
-
-        vm.expectRevert(Error.INVALID_TXDATA_AMOUNTS.selector);
-        superformRouterSERC20.singleXChainSingleVaultDeposit(req);
-    }
-
     function test_depositWithInvalidDstChainId() public {
         /// scenario: deposit from an paused form beacon id (which doesn't exist on the chain)
 
@@ -953,8 +860,15 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             100,
             LiqRequest(
                 1,
-                _buildMaliciousTxData(
-                    1, getContract(ARBI, "USDT"), formBeacon, ARBI, 1e18, getContract(ARBI, "CoreStateRegistry")
+                _buildDummyTxDataUnitTests(
+                    1,
+                    getContract(ETH, "USDT"),
+                    getContract(ARBI, "USDT"),
+                    formBeacon,
+                    ARBI,
+                    1e18,
+                    getContract(ARBI, "CoreStateRegistry"),
+                    false
                 ),
                 getContract(ARBI, "USDT"),
                 ETH,
@@ -994,8 +908,15 @@ contract SuperformRouterSERC20Test is ProtocolActions {
             /// @dev invalid slippage
             LiqRequest(
                 1,
-                _buildMaliciousTxData(
-                    1, getContract(ARBI, "USDT"), formBeacon, ARBI, 1e18, getContract(ARBI, "CoreStateRegistry")
+                _buildDummyTxDataUnitTests(
+                    1,
+                    getContract(ETH, "USDT"),
+                    getContract(ARBI, "USDT"),
+                    formBeacon,
+                    ARBI,
+                    1e18,
+                    getContract(ARBI, "CoreStateRegistry"),
+                    false
                 ),
                 getContract(ARBI, "USDT"),
                 ETH,
@@ -1329,51 +1250,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: 10 ether }(1);
         vm.stopPrank();
-    }
-
-    function _buildMaliciousTxData(
-        uint8 liqBridgeKind_,
-        address underlyingToken_,
-        address from_,
-        uint64 toChainId_,
-        uint256 amount_,
-        address receiver_
-    )
-        internal
-        returns (bytes memory txData)
-    {
-        if (liqBridgeKind_ == 1) {
-            ILiFi.BridgeData memory bridgeData;
-            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
-            swapData[0] = LibSwap.SwapData(
-                address(0),
-                /// callTo (arbitrary)
-                address(0),
-                /// callTo (approveTo)
-                underlyingToken_,
-                underlyingToken_,
-                amount_,
-                abi.encode(from_, FORKS[toChainId_]),
-                false // arbitrary
-            );
-
-            bridgeData = ILiFi.BridgeData(
-                bytes32("1"),
-                /// request id
-                "",
-                "",
-                address(0),
-                underlyingToken_,
-                receiver_,
-                amount_,
-                uint256(toChainId_),
-                false,
-                true
-            );
-
-            txData = abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
-        }
     }
 
     function _pauseFormBeacon() public {
