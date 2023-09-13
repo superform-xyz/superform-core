@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { BaseRouter } from "./BaseRouter.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
@@ -346,12 +346,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     {
         /// @dev validate superformsData
         if (!_validateSuperformData(dstChainId_, superformData_)) revert Error.INVALID_SUPERFORMS_DATA();
-
-        if (
-            IBridgeValidator(superRegistry.getBridgeValidator(superformData_.liqRequest.bridgeId)).decodeMinAmountOut(
-                superformData_.liqRequest.txData, true
-            ) != superformData_.amount
-        ) revert Error.INVALID_TXDATA_AMOUNTS();
 
         currentPayloadId = ++payloadIds;
 
@@ -726,7 +720,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             return false;
         }
 
-        /// @dev slippage, amounts and paused status validation
+        /// @dev slippage and paused status validation
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
@@ -739,13 +733,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                         formBeaconId_
                     )
                 ).paused() == 2
-            ) return false;
-
-            /// @dev amounts in liqRequests must match amounts in superformsData_
-
-            if (
-                IBridgeValidator(superRegistry.getBridgeValidator(superformsData_.liqRequests[i].bridgeId))
-                    .decodeMinAmountOut(superformsData_.liqRequests[i].txData, true) != superformsData_.amounts[i]
             ) return false;
 
             unchecked {

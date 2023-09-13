@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
@@ -156,19 +156,12 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         override
         returns (uint256 amount_)
     {
-        try minimalCalldataVerification.extractMainParameters(txData_) returns (
-            string memory bridge,
-            address sendingAssetId,
-            address receiver,
-            uint256 amount,
-            uint256 destinationChainId,
-            bool hasSourceSwaps,
-            bool hasDestinationCall
-        ) {
-            amount_ = amount;
+        try minimalCalldataVerification.extractMainParameters(txData_) {
+            /// @dev try is just used here to validate the txData. We need to always extract minAmount from bridge data
+            amount_ = _extractBridgeData(txData_).minAmount;
         } catch {
             if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
-
+            /// @dev in the case of a generic swap, minAmountOut is considered to be the receivedAmount
             (,,,, amount_) = minimalCalldataVerification.extractGenericSwapParameters(txData_);
         }
     }
@@ -192,9 +185,12 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             bool hasSourceSwaps,
             bool hasDestinationCall
         ) {
+            /// @dev if there isn't a source swap, amountIn is minAmountOut from bridge data?
+
             amount_ = amount;
         } catch {
             if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
+            /// @dev in the case of a generic swap, amountIn is the from amount
 
             (, amount_,,,) = minimalCalldataVerification.extractGenericSwapParameters(txData_);
         }

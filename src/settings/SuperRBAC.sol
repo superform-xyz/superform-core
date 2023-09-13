@@ -1,7 +1,7 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
-import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access/AccessControlEnumerable.sol";
+import { AccessControlEnumerable } from "openzeppelin-contracts/contracts/access/extensions/AccessControlEnumerable.sol";
 import { IBroadcastRegistry } from "../interfaces/IBroadcastRegistry.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
@@ -35,7 +35,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     ISuperRegistry public superRegistry;
 
     constructor(address admin_) {
-        _setupRole(PROTOCOL_ADMIN_ROLE, admin_);
+        _grantRole(PROTOCOL_ADMIN_ROLE, admin_);
 
         /// @dev manually set role admin to PROTOCOL_ADMIN_ROLE on all roles
         _setRoleAdmin(PAYMENT_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -197,11 +197,11 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /**
      * @dev Overload {_revokeRole} to track enumerable memberships
      */
-    function _revokeRole(bytes32 role, address account) internal override {
+    function _revokeRole(bytes32 role, address account) internal override returns (bool) {
         if (role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE) {
             if (getRoleMemberCount(role) == 1) revert Error.CANNOT_REVOKE_LAST_ADMIN();
         }
-        super._revokeRole(role, account);
+        return super._revokeRole(role, account);
     }
 
     /// @dev interacts with role state registry to broadcasting state changes to all connected remote chains

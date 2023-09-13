@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { QuorumManager } from "./utils/QuorumManager.sol";
 import { Error } from "src/utils/Error.sol";

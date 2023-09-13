@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 interface IKycValidity {
     /// @dev Check whether a given address has a valid kycNFT token
