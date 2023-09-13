@@ -10,3 +10,6 @@
 [submodule "lib/pigeon"]
 	path = lib/pigeon
 	url = https://github.com/exp-table/pigeon
+[submodule "lib/ERC1155A"]
+	path = lib/ERC1155A
+	url = https://github.com/superform-xyz/ERC1155A
