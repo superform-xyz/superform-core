@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { Error } from "src/utils/Error.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
@@ -156,7 +156,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), ETH, 0),
             ""
         );
 

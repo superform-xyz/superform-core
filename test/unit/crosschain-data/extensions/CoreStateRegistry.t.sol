@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
@@ -215,8 +215,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0
         );
 
-        txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
-        txData[1] = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
+        txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs, false);
+        txData[1] = _buildLiqBridgeTxData(liqBridgeTxDataArgs, false);
 
         vm.prank(deployer);
         vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
@@ -296,7 +296,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             1e18,
             100,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), AVAX, 0),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0),
             bytes(""),
             bytes("")
         );
@@ -340,9 +340,13 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0), bytes(""), bytes("")
         );
 
-        vm.recordLogs();
+        vm.prank(deployer);
+
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(superformRouter, superformId, 1e18);
 
         vm.prank(deployer);
+        vm.recordLogs();
+
         SuperformRouter(payable(superformRouter)).singleXChainSingleVaultWithdraw{ value: 2 ether }(
             SingleXChainSingleVaultStateReq(ambIds, AVAX, data)
         );
@@ -396,7 +400,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0
         );
 
-        liqReqArr[0] = LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), AVAX, 0);
+        liqReqArr[0] =
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data =
@@ -459,7 +464,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             0
         );
 
-        liqReqArr[0] = LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), AVAX, 0);
+        liqReqArr[0] =
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data =
@@ -505,8 +511,12 @@ contract CoreStateRegistryTest is ProtocolActions {
         MultiVaultSFData memory data =
             MultiVaultSFData(superformIds, amountArr, maxSlippages, liqReqArr, bytes(""), bytes(""));
 
-        vm.recordLogs();
         vm.prank(deployer);
+
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(superformRouter, superformId, 2e18);
+        vm.prank(deployer);
+        vm.recordLogs();
+
         SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{ value: 2 ether }(
             SingleXChainMultiVaultStateReq(ambIds, AVAX, data)
         );

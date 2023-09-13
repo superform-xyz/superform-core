@@ -1,5 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
 import { BeaconProxy } from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
@@ -128,7 +128,7 @@ contract SuperformFactory is ISuperformFactory {
         );
 
         /// @dev this will always be unique because all chainIds are unique
-        superformId_ = DataLib.packSuperform(superform_, formBeaconId_, superRegistry.chainId());
+        superformId_ = DataLib.packSuperform(superform_, formBeaconId_, uint64(block.chainid));
 
         vaultToSuperforms[vault_].push(superformId_);
 
@@ -140,31 +140,6 @@ contract SuperformFactory is ISuperformFactory {
         superforms.push(superformId_);
 
         emit SuperformCreated(formBeaconId_, vault_, superformId_, superform_);
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function createSuperforms(
-        uint32[] memory formBeaconIds_,
-        address[] memory vaults_
-    )
-        external
-        override
-        returns (uint256[] memory superformIds_, address[] memory superforms_)
-    {
-        uint256 len = formBeaconIds_.length;
-
-        if (len != vaults_.length) revert Error.ARRAY_LENGTH_MISMATCH();
-
-        superformIds_ = new uint256[](len);
-        superforms_ = new address[](len);
-
-        for (uint256 i; i < len;) {
-            (superformIds_[i], superforms_[i]) = createSuperform(formBeaconIds_[i], vaults_[i]);
-
-            unchecked {
-                ++i;
-            }
-        }
     }
 
     /// @inheritdoc ISuperformFactory
@@ -200,7 +175,7 @@ contract SuperformFactory is ISuperformFactory {
             BroadcastMessage memory factoryPayload = BroadcastMessage(
                 "SUPERFORM_FACTORY",
                 SYNC_BEACON_STATUS,
-                abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, formBeaconId_, paused_)
+                abi.encode(uint64(block.chainid), ++xChainPayloadCounter, formBeaconId_, paused_)
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);

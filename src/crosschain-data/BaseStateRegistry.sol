@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { Error } from "../utils/Error.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
@@ -114,7 +114,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
             msgAMB[payloadsCount] = superRegistry.getAmbId(msg.sender);
 
-            emit PayloadReceived(srcChainId_, superRegistry.chainId(), payloadsCount);
+            emit PayloadReceived(srcChainId_, uint64(block.chainid), payloadsCount);
         }
     }
 

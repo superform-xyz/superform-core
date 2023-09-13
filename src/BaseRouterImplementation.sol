@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { BaseRouter } from "./BaseRouter.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
@@ -59,7 +59,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
 
-        vars.srcChainId = superRegistry.chainId();
+        vars.srcChainId = uint64(block.chainid);
+        if (vars.srcChainId == req.dstChainId) revert Error.INVALID_ACTION();
+
         vars.currentPayloadId = ++payloadIds;
 
         ambData = InitMultiVaultData(
@@ -120,10 +122,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req) internal virtual {
         ActionLocalVars memory vars;
 
-        vars.srcChainId = superRegistry.chainId();
+        vars.srcChainId = uint64(block.chainid);
 
         /// @dev disallow direct chain actions
-        if (vars.srcChainId == req.dstChainId) revert Error.INVALID_CHAIN_IDS();
+        if (vars.srcChainId == req.dstChainId) revert Error.INVALID_ACTION();
 
         InitSingleVaultData memory ambData;
 
@@ -171,7 +173,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain single vault deposit
     function _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = superRegistry.chainId();
+        vars.srcChainId = uint64(block.chainid);
         vars.currentPayloadId = ++payloadIds;
 
         InitSingleVaultData memory vaultData = InitSingleVaultData(
@@ -192,7 +194,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain multi vault deposit
     function _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = superRegistry.chainId();
+        vars.srcChainId = uint64(block.chainid);
         vars.currentPayloadId = ++payloadIds;
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
@@ -224,7 +226,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
 
-        vars.srcChainId = superRegistry.chainId();
+        vars.srcChainId = uint64(block.chainid);
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev write packed txData
@@ -260,7 +262,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req) internal virtual {
         ActionLocalVars memory vars;
 
-        vars.srcChainId = superRegistry.chainId();
+        vars.srcChainId = uint64(block.chainid);
         if (vars.srcChainId == req.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
@@ -292,7 +294,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain single vault withdraw
     function _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = superRegistry.chainId();
+        vars.srcChainId = uint64(block.chainid);
 
         InitSingleVaultData memory ambData;
 
@@ -306,7 +308,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain multi vault withdraw
     function _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = superRegistry.chainId();
+        vars.srcChainId = uint64(block.chainid);
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev SuperPositions are burnt optimistically here
@@ -344,12 +346,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     {
         /// @dev validate superformsData
         if (!_validateSuperformData(dstChainId_, superformData_)) revert Error.INVALID_SUPERFORMS_DATA();
-
-        if (
-            !IBridgeValidator(superRegistry.getBridgeValidator(superformData_.liqRequest.bridgeId)).validateTxDataAmount(
-                superformData_.liqRequest.txData, superformData_.amount
-            )
-        ) revert Error.INVALID_TXDATA_AMOUNTS();
 
         currentPayloadId = ++payloadIds;
 
@@ -419,12 +415,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             args.liqRequest.token
         );
 
-        /// @dev dispatches tokens through the selected liquidity bridge to the destnation contract
+        /// @dev dispatches tokens through the selected liquidity bridge to the destination contract
         dispatchTokens(
             superRegistry.getBridgeAddress(args.liqRequest.bridgeId),
             args.liqRequest.txData,
             args.liqRequest.token,
-            IBridgeValidator(bridgeValidator).decodeAmountIn(args.liqRequest.txData),
+            IBridgeValidator(bridgeValidator).decodeAmountIn(args.liqRequest.txData, true),
             args.srcSender,
             args.liqRequest.nativeAmount
         );
@@ -576,7 +572,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.ZERO_AMOUNT();
         }
 
-        if (chainId != superRegistry.chainId()) {
+        if (chainId != uint64(block.chainid)) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -658,7 +654,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (,, uint64 chainId) =
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
 
-        if (chainId != superRegistry.chainId()) {
+        if (chainId != uint64(block.chainid)) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -724,8 +720,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             return false;
         }
 
-        /// @dev slippage, amounts and paused status validation
-        bool txDataAmountValid;
+        /// @dev slippage and paused status validation
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
@@ -739,13 +734,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     )
                 ).paused() == 2
             ) return false;
-
-            /// @dev amounts in liqRequests must match amounts in superformsData_
-            txDataAmountValid = IBridgeValidator(
-                superRegistry.getBridgeValidator(superformsData_.liqRequests[i].bridgeId)
-            ).validateTxDataAmount(superformsData_.liqRequests[i].txData, superformsData_.amounts[i]);
-
-            if (!txDataAmountValid) return false;
 
             unchecked {
                 ++i;
@@ -844,7 +832,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 amount = vaultData_.amount;
             } else {
                 address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData.bridgeId);
-                amount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData.txData);
+                amount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData.txData, false);
             }
 
             if (permit2data_.length != 0) {
@@ -924,7 +912,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 } else {
                     address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId);
                     v.approvalAmounts[i] =
-                        IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData);
+                        IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData[i].txData, false);
                 }
 
                 v.totalAmount += v.approvalAmounts[i];

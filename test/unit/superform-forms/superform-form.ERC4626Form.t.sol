@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { Error } from "src/utils/Error.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
@@ -10,8 +10,10 @@ import { Strings } from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import { ProtocolActions } from "test/utils/ProtocolActions.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
+import { SuperPositions } from "src/SuperPositions.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
+import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { LiFiMock } from "test/mocks/LiFiMock.sol";
 import "src/types/DataTypes.sol";
 
@@ -371,7 +373,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             2e18,
             100,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "USDT"), ETH, 0),
             "",
             ""
         );
@@ -412,6 +414,10 @@ contract SuperformERC4626FormTest is ProtocolActions {
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
+
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(
+            getContract(ETH, "SuperformRouter"), superformId, 1e18
+        );
 
         /// @dev approves before call
         vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST.selector);
@@ -507,6 +513,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(
+            getContract(ETH, "SuperformRouter"), superformId, 1e18
+        );
         vm.expectRevert(Error.DIRECT_WITHDRAW_INVALID_COLLATERAL.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultWithdraw(req);
 
@@ -607,9 +616,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
     {
         if (liqBridgeKind_ == 1) {
             ILiFi.BridgeData memory bridgeData;
-            ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
+            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
 
-            swapData[0] = ILiFi.SwapData(
+            swapData[0] = LibSwap.SwapData(
                 address(0),
                 /// callTo (arbitrary)
                 address(0),

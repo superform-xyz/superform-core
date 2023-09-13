@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -113,7 +113,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC4626 v = IERC4626(vault);
         vars.collateral = address(v.asset());
         vars.balanceBefore = IERC20(vars.collateral).balanceOf(address(this));
-
         IERC20 token = IERC20(singleVaultData_.liqData.token);
 
         if (address(token) != NATIVE) {
@@ -133,7 +132,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
             /// @dev in this case, a swap is needed, first the txData is validated and then the final asset is obtained
-            vars.chainId = superRegistry.chainId();
+            vars.chainId = uint64(block.chainid);
+            /// @dev e.g
+            /// @dev 1010 min amountReceived by generic swap
+            /// @dev 1012 amount inscribed in singleVaultData_.amount
+            /// @dev true amount received 1011 (is this possible? to be different than amountReceived in txData)
+            /// @dev we are trying to deposit 1012 below, when we should be depositing 1010, otherwise it will revert
 
             IBridgeValidator(vars.bridgeValidator).validateTxData(
                 singleVaultData_.liqData.txData,
@@ -150,9 +154,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
-                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData),
+                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false),
                 address(this),
-                /// tokens are already moved in above step
                 singleVaultData_.liqData.nativeAmount
             );
         }
@@ -205,12 +208,12 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         if (v.len1 != 0) {
             v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-            v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData);
+            v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev this check here might be too much already, but can't hurt
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            v.chainId = superRegistry.chainId();
+            v.chainId = uint64(block.chainid);
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(v.bridgeValidator).validateTxData(
@@ -306,7 +309,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
         if (len != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData);
+            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (vars.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();

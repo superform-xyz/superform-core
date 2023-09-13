@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
@@ -47,7 +47,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
                 superformId,
                 420,
                 0,
-                LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs), getContract(ETH, "USDT"), ETH, 0),
+                LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "USDT"), ETH, 0),
                 bytes("")
             )
         );
@@ -102,7 +102,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
             0
         );
 
-        bytes memory txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs);
+        bytes memory txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, true);
 
         vm.prank(deployer);
         vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);

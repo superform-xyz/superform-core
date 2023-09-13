@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 library Error {
     /*///////////////////////////////////////////////////////////////
@@ -103,9 +103,6 @@ library Error {
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev thrown when the validation of bridge txData fails due to wrong amount
-    error INVALID_TXDATA_AMOUNTS();
-
     /// @dev is emitted when the chain id in the txdata is invalid
     error INVALID_TXDATA_CHAIN_ID();
 
@@ -117,6 +114,12 @@ library Error {
 
     /// @dev thrown when in deposits, the liqDstChainId doesn't match the stateReq dstChainId
     error INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
+
+    /// @dev when a certain action of the user is not allowed given the txData provided
+    error INVALID_ACTION();
+
+    /// @dev thrown when the validation of bridge txData fails due to a destination call present
+    error INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
 
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
@@ -225,7 +228,7 @@ library Error {
     /// @dev thrown when same vault and beacon is used to create new superform
     error VAULT_BEACON_COMBNATION_EXISTS();
 
-    /// @dev thrown when formBeaconIds and vaults used to createSuperforms have different length
+    /// @dev thrown when there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
 
     /*///////////////////////////////////////////////////////////////

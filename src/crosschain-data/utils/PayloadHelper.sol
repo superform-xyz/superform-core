@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
@@ -178,7 +178,6 @@ contract PayloadHelper is IPayloadHelper {
         DecodeDstPayloadLiqDataInternalVars memory v;
 
         (, v.callbackType, v.multi,,,) = coreStateRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
-
         if (v.multi == 1) {
             v.imvd = abi.decode(coreStateRegistry.payloadBody(dstPayloadId_), (InitMultiVaultData));
 
@@ -198,11 +197,11 @@ contract PayloadHelper is IPayloadHelper {
                 v.liqDataTokens[v.i] = v.imvd.liqData[v.i].token;
                 v.liqDataChainIds[v.i] = v.imvd.liqData[v.i].liqDstChainId;
 
-                v.liqDataAmountsIn[v.i] =
-                    IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i])).decodeAmountIn(v.txDatas[v.i]);
+                v.liqDataAmountsIn[v.i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i]))
+                    .decodeAmountIn(v.txDatas[v.i], false);
 
                 v.liqDataAmountsOut[v.i] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[v.i]))
-                    .decodeMinAmountOut(v.txDatas[v.i]);
+                    .decodeMinAmountOut(v.txDatas[v.i], false);
                 v.liqDataNativeAmounts[v.i] = v.imvd.liqData[v.i].nativeAmount;
 
                 unchecked {
@@ -226,11 +225,11 @@ contract PayloadHelper is IPayloadHelper {
 
             v.liqDataAmountsIn = new uint256[](1);
             v.liqDataAmountsIn[0] =
-                IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0])).decodeAmountIn(v.txDatas[0]);
+                IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0])).decodeAmountIn(v.txDatas[0], false);
 
             v.liqDataAmountsOut = new uint256[](1);
-            v.liqDataAmountsOut[0] =
-                IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0])).decodeMinAmountOut(v.txDatas[0]);
+            v.liqDataAmountsOut[0] = IBridgeValidator(superRegistry.getBridgeValidator(v.bridgeIds[0]))
+                .decodeMinAmountOut(v.txDatas[0], false);
 
             v.liqDataNativeAmounts = new uint256[](1);
             v.liqDataNativeAmounts[0] = v.isvd.liqData.nativeAmount;

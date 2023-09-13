@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -78,12 +78,12 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev validate and dispatches the tokens
         if (vars.len1 != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(vars.liqData.bridgeId);
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData);
+            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(vars.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (vars.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            vars.chainId = superRegistry.chainId();
+            vars.chainId = uint64(block.chainid);
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
@@ -142,7 +142,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two
         /// step
         /// @dev state registry for re-processing at a later date
-        _storePayload(0, srcSender_, superRegistry.chainId(), lockedTill, singleVaultData_);
+        _storePayload(0, srcSender_, uint64(block.chainid), lockedTill, singleVaultData_);
 
         return 0;
     }

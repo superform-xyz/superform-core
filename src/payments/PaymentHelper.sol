@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { AggregatorV3Interface } from "../vendor/chainlink/AggregatorV3Interface.sol";
 import { IPaymentHelper } from "../interfaces/IPaymentHelper.sol";
@@ -383,7 +383,7 @@ contract PaymentHelper is IPaymentHelper {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
         if (!isDeposit && formId == TIMELOCK_FORM_ID) {
-            srcAmount += twoStepCost[superRegistry.chainId()] * _getGasPrice(superRegistry.chainId());
+            srcAmount += twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
         }
 
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
@@ -409,7 +409,7 @@ contract PaymentHelper is IPaymentHelper {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit && formId == TIMELOCK_FORM_ID) {
-                srcAmount += twoStepCost[superRegistry.chainId()] * _getGasPrice(superRegistry.chainId());
+                srcAmount += twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             }
 
             unchecked {
@@ -567,8 +567,9 @@ contract PaymentHelper is IPaymentHelper {
     function _estimateLiqAmount(LiqRequest[] memory req_) internal view returns (uint256 liqAmount) {
         for (uint256 i; i < req_.length;) {
             if (req_[i].token == NATIVE) {
-                liqAmount +=
-                    IBridgeValidator(superRegistry.getBridgeValidator(req_[i].bridgeId)).decodeAmountIn(req_[i].txData);
+                liqAmount += IBridgeValidator(superRegistry.getBridgeValidator(req_[i].bridgeId)).decodeAmountIn(
+                    req_[i].txData, false
+                );
             }
 
             unchecked {
@@ -606,9 +607,9 @@ contract PaymentHelper is IPaymentHelper {
         view
         returns (uint256 nativeFee)
     {
-        uint256 gasCost = dstChainCount_ * vaultsCount_ * ackGasCost[superRegistry.chainId()];
+        uint256 gasCost = dstChainCount_ * vaultsCount_ * ackGasCost[uint64(block.chainid)];
 
-        return gasCost * _getGasPrice(superRegistry.chainId());
+        return gasCost * _getGasPrice(uint64(block.chainid));
     }
 
     /// @dev generates the amb message for single vault data
@@ -676,7 +677,7 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev converts the usd value to source chain's native token
         /// @dev native token price is 8 decimal which cancels the 8 decimal multiplied in previous step
-        nativeFee = (dstUsdValue) / _getNativeTokenPrice(superRegistry.chainId());
+        nativeFee = (dstUsdValue) / _getNativeTokenPrice(uint64(block.chainid));
     }
 
     /// @dev helps generate the new payload id

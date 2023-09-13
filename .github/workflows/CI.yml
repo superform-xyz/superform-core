@@ -21,7 +21,7 @@ env:
 
 jobs:
   build:
-    runs-on: "SuperformCore"
+    runs-on: "SuperformCore2"
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -50,7 +50,7 @@ jobs:
 
   test:
     needs: ["build"]
-    runs-on: "SuperformCore"
+    runs-on: "SuperformCore2"
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -81,7 +81,7 @@ jobs:
 
   coverage:
     needs: ["build"]
-    runs-on: "SuperformCore"
+    runs-on: "SuperformCore2"
     steps:
       - name: "Check out the repo"
         uses: "actions/checkout@v3"
@@ -108,7 +108,7 @@ jobs:
 
   slither:
    needs: ["build"]
-   runs-on: "SuperformCore"
+   runs-on: "SuperformCore2"
    env:
     FOUNDRY_TEST: 'nonexisten'
    steps:
@@ -131,5 +131,5 @@ jobs:
       uses: crytic/slither-action@v0.3.0
       id: slither
       with:
-        slither-args: '--exclude-low --exclude-optimization --exclude-informational --json-types console,detectors --filter-paths mock,test,script,lib'
         fail-on: high
+        slither-args: '--exclude-low --exclude-optimization --exclude-informational --json-types console,detectors --filter-paths mock,test,script,lib'

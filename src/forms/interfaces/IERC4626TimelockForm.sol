@@ -1,5 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { IERC4626Form } from "./IERC4626Form.sol";
 import { InitSingleVaultData, TwoStepsPayload } from "../../types/DataTypes.sol";

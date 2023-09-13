@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
@@ -14,15 +14,12 @@ contract KeeperMockThatWontAcceptEth {
     }
 }
 
-contract PayMasterTest is BaseSetup {
+contract PayMasterTest is ProtocolActions {
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address txProcessorETH;
     address txUpdaterETH;
     address txProcessorARBI;
     address txUpdaterARBI;
-
-    /// out of 10000
-    int256 totalSlippage = 200;
 
     SuperRegistry superRegistry;
     SuperRegistry superRegistryARBI;
@@ -150,7 +147,13 @@ contract PayMasterTest is BaseSetup {
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
-            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether),
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
+                NATIVE,
+                ARBI,
+                1 ether
+            ),
             420
         );
 
@@ -160,14 +163,26 @@ contract PayMasterTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
-            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether),
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
+                NATIVE,
+                ARBI,
+                1 ether
+            ),
             ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_PROCESSOR"),
-            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI), NATIVE, ARBI, 1 ether),
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI, false),
+                NATIVE,
+                ARBI,
+                1 ether
+            ),
             ARBI
         );
 
@@ -195,7 +210,13 @@ contract PayMasterTest is BaseSetup {
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
-            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether),
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
+                NATIVE,
+                ARBI,
+                1 ether
+            ),
             420
         );
 
@@ -205,14 +226,26 @@ contract PayMasterTest is BaseSetup {
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
-            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst), NATIVE, ARBI, 1 ether),
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
+                NATIVE,
+                ARBI,
+                1 ether
+            ),
             ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
         PayMaster(feeCollector).rebalanceTo(
             keccak256("CORE_REGISTRY_UPDATER"),
-            LiqRequest(1, _buildTxData(1, NATIVE, feeCollector, ARBI, 1 ether, txUpdaterARBI), NATIVE, ARBI, 1 ether),
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, txUpdaterARBI, false),
+                NATIVE,
+                ARBI,
+                1 ether
+            ),
             ARBI
         );
 
@@ -249,50 +282,5 @@ contract PayMasterTest is BaseSetup {
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit{ value: msgFees }(
             req
         );
-    }
-
-    function _buildTxData(
-        uint8 liqBridgeKind_,
-        address underlyingToken_,
-        address from_,
-        uint64 toChainId_,
-        uint256 amount_,
-        address receiver_
-    )
-        internal
-        returns (bytes memory txData)
-    {
-        if (liqBridgeKind_ == 1) {
-            ILiFi.BridgeData memory bridgeData;
-            ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
-
-            swapData[0] = ILiFi.SwapData(
-                address(0),
-                /// callTo (arbitrary)
-                address(0),
-                /// callTo (approveTo)
-                underlyingToken_,
-                underlyingToken_,
-                amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingToken_, totalSlippage, 0, false),
-                false // arbitrary
-            );
-
-            bridgeData = ILiFi.BridgeData(
-                bytes32("1"),
-                /// request id
-                "",
-                "",
-                address(0),
-                underlyingToken_,
-                receiver_,
-                amount_,
-                uint256(toChainId_),
-                false,
-                true
-            );
-
-            txData = abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
-        }
     }
 }

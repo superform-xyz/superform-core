@@ -1,27 +1,49 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
-import { BridgeValidator } from "../BridgeValidator.sol";
-import { ILiFi } from "../../vendor/lifi/ILiFi.sol";
-import { Error } from "../../utils/Error.sol";
+import { BridgeValidator } from "src/crosschain-liquidity/BridgeValidator.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
+import { Error } from "src/utils/Error.sol";
+import { IMinimalCalldataVerification } from "src/vendor/lifi/IMinimalCalldataVerification.sol";
+import { LiFiTxDataExtractor } from "src/vendor/lifi/LiFiTxDataExtractor.sol";
 
 /// @title LiFiValidator
 /// @author Zeropoint Labs
 /// @dev To assert input txData is valid
-contract LiFiValidator is BridgeValidator {
+contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
+    IMinimalCalldataVerification public minimalCalldataVerification;
+
+    /// @notice Emitted when the minimalCalldataVerification contract is set
+    event CalldataVerificationSet(address minimalCalldataVerification);
+
+    /*///////////////////////////////////////////////////////////////
+                              Modifiers
+    //////////////////////////////////////////////////////////////*/
+
+    modifier onlyProtocolAdmin() {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
+            revert Error.NOT_PROTOCOL_ADMIN();
+        }
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                 Constructor
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address superRegistry_) BridgeValidator(superRegistry_) { }
+    constructor(address superRegistry_, address minimalCalldataVerification_) BridgeValidator(superRegistry_) {
+        minimalCalldataVerification = IMinimalCalldataVerification(minimalCalldataVerification_);
+        emit CalldataVerificationSet(minimalCalldataVerification_);
+    }
 
     /*///////////////////////////////////////////////////////////////
                             External Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc BridgeValidator
-    function validateTxDataAmount(bytes calldata txData_, uint256 amount_) external pure override returns (bool) {
-        return decodeMinAmountOut(txData_) == amount_;
+    /// @dev allows the protocol admin to set the minimalCalldataVerification contract
+    function setCalldataVerification(address minimalCalldataVerification_) external onlyProtocolAdmin {
+        minimalCalldataVerification = IMinimalCalldataVerification(minimalCalldataVerification_);
+        emit CalldataVerificationSet(minimalCalldataVerification_);
     }
 
     /// @inheritdoc BridgeValidator
@@ -34,9 +56,12 @@ contract LiFiValidator is BridgeValidator {
         override
         returns (bool)
     {
-        (ILiFi.BridgeData memory bridgeData,) = _decodeCallData(txData_);
+        return (uint256(liqDstChainId_) == _extractBridgeData(txData_).destinationChainId);
+    }
 
-        return (uint256(liqDstChainId_) == bridgeData.destinationChainId);
+    /// @inheritdoc BridgeValidator
+    function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
+        return _extractBridgeData(txData_).receiver == receiver_;
     }
 
     /// @inheritdoc BridgeValidator
@@ -54,80 +79,120 @@ contract LiFiValidator is BridgeValidator {
         view
         override
     {
-        (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData) = _decodeCallData(txData_);
+        /// @dev xchain actions can have bridgeData or bridgeData + swapData
+        /// @dev direct actions with deposit, cannot have bridge data - goes into catch block
+        /// @dev withdraw actions may have bridge data after withdrawing - goes into try block
+        /// @dev withdraw actions without bridge data (just swap) - goes into catch block
 
-        address sendingAssetId = bridgeData.hasSourceSwaps ? swapData[0].sendingAssetId : bridgeData.sendingAssetId;
+        try minimalCalldataVerification.extractMainParameters(txData_) returns (
+            string memory bridge,
+            address sendingAssetId,
+            address receiver,
+            uint256 amount,
+            uint256 destinationChainId,
+            bool hasSourceSwaps,
+            bool hasDestinationCall
+        ) {
+            /// @dev 0. Destination call validation
+            if (hasDestinationCall) revert Error.INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
 
-        /// @dev 1. chainId validation
-        /// @dev for deposits, liqDstChainId/toChainId will be the normal destination (where the target superform is)
-        /// @dev for withdraws, liqDstChainId/toChainId will be the desired chain to where the underlying must be sent
-        /// @dev to after vault redemption
+            /// @dev 1. chainId validation
+            /// @dev for deposits, liqDstChainId/toChainId will be the normal destination (where the target superform
+            /// is)
+            /// @dev for withdraws, liqDstChainId/toChainId will be the desired chain to where the underlying must be
+            /// sent
+            /// @dev to after vault redemption
 
-        if (uint256(liqDstChainId_) != bridgeData.destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
+            if (uint256(liqDstChainId_) != destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
 
-        /// @dev 2. receiver address validation
+            /// @dev 2. receiver address validation
 
-        if (deposit_) {
-            if (srcChainId_ == dstChainId_) {
-                if (dstChainId_ != liqDstChainId_) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
-
-                /// @dev If same chain deposits then receiver address must be the superform
-                if (bridgeData.receiver != superform_) revert Error.INVALID_TXDATA_RECEIVER();
+            if (deposit_) {
+                if (srcChainId_ == dstChainId_) {
+                    revert Error.INVALID_ACTION();
+                } else {
+                    /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry
+                    if (receiver != superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), dstChainId_)) {
+                        revert Error.INVALID_TXDATA_RECEIVER();
+                    }
+                }
             } else {
-                /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry
-                if (
-                    bridgeData.receiver
-                        != superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), dstChainId_)
-                ) revert Error.INVALID_TXDATA_RECEIVER();
+                /// @dev if withdraws, then receiver address must be the srcSender
+                if (receiver != srcSender_) revert Error.INVALID_TXDATA_RECEIVER();
             }
-        } else {
-            /// @dev if withdraws, then receiver address must be the srcSender
-            if (bridgeData.receiver != srcSender_) revert Error.INVALID_TXDATA_RECEIVER();
-        }
 
-        /// @dev 3. token validations
-        if (liqDataToken_ != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
-    }
+            /// @dev 3. token validations
+            if (liqDataToken_ != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
+        } catch {
+            (address sendingAssetId,, address receiver,,) =
+                minimalCalldataVerification.extractGenericSwapParameters(txData_);
 
-    /// @inheritdoc BridgeValidator
-    function validateReceiver(bytes calldata txData_, address receiver_) external pure override returns (bool valid_) {
-        (ILiFi.BridgeData memory bridgeData,) = _decodeCallData(txData_);
+            /// @dev 1. chainId validation
 
-        return bridgeData.receiver == receiver_;
-    }
+            if (srcChainId_ != dstChainId_) revert Error.INVALID_ACTION();
 
-    /// @inheritdoc BridgeValidator
-    function decodeMinAmountOut(bytes calldata txData_) public pure override returns (uint256 amount_) {
-        (ILiFi.BridgeData memory bridgeData,) = _decodeCallData(txData_);
+            /// @dev 2. receiver address validation
+            if (deposit_) {
+                if (dstChainId_ != liqDstChainId_) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
+                /// @dev If same chain deposits then receiver address must be the superform
+                if (receiver != superform_) revert Error.INVALID_TXDATA_RECEIVER();
+            } else {
+                /// @dev if withdraws, then receiver address must be the srcSender
+                if (receiver != srcSender_) revert Error.INVALID_TXDATA_RECEIVER();
+            }
 
-        return bridgeData.minAmount;
-    }
-
-    /// @inheritdoc BridgeValidator
-    function decodeAmountIn(bytes calldata txData_) public pure override returns (uint256 amount_) {
-        (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData) = _decodeCallData(txData_);
-
-        if (bridgeData.hasSourceSwaps) {
-            amount_ = swapData[0].fromAmount;
-        } else {
-            /// @dev if no source swaps, the minAmount corresponds to the same asset, therefore we can use minAmount as
-            /// an approximation
-            amount_ = bridgeData.minAmount;
+            /// @dev 3. token validations
+            if (liqDataToken_ != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
         }
     }
 
-    /// @notice Decode lifi's calldata
-    /// @param data LiFi call data
-    /// @return bridgeData LiFi BridgeData
-    function _decodeCallData(bytes calldata data)
-        internal
-        pure
-        returns (ILiFi.BridgeData memory bridgeData, ILiFi.SwapData[] memory swapData)
+    /// @inheritdoc BridgeValidator
+    function decodeMinAmountOut(
+        bytes calldata txData_,
+        bool genericSwapDisallowed_
+    )
+        external
+        view
+        override
+        returns (uint256 amount_)
     {
-        (bridgeData) = abi.decode(data[4:], (ILiFi.BridgeData));
+        try minimalCalldataVerification.extractMainParameters(txData_) {
+            /// @dev try is just used here to validate the txData. We need to always extract minAmount from bridge data
+            amount_ = _extractBridgeData(txData_).minAmount;
+        } catch {
+            if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
+            /// @dev in the case of a generic swap, minAmountOut is considered to be the receivedAmount
+            (,,,, amount_) = minimalCalldataVerification.extractGenericSwapParameters(txData_);
+        }
+    }
 
-        if (bridgeData.hasSourceSwaps) {
-            (bridgeData, swapData) = abi.decode(data[4:], (ILiFi.BridgeData, ILiFi.SwapData[]));
+    /// @inheritdoc BridgeValidator
+    function decodeAmountIn(
+        bytes calldata txData_,
+        bool genericSwapDisallowed_
+    )
+        external
+        view
+        override
+        returns (uint256 amount_)
+    {
+        try minimalCalldataVerification.extractMainParameters(txData_) returns (
+            string memory bridge,
+            address sendingAssetId,
+            address receiver,
+            uint256 amount,
+            uint256 destinationChainId,
+            bool hasSourceSwaps,
+            bool hasDestinationCall
+        ) {
+            /// @dev if there isn't a source swap, amountIn is minAmountOut from bridge data?
+
+            amount_ = amount;
+        } catch {
+            if (genericSwapDisallowed_) revert Error.INVALID_ACTION();
+            /// @dev in the case of a generic swap, amountIn is the from amount
+
+            (, amount_,,,) = minimalCalldataVerification.extractGenericSwapParameters(txData_);
         }
     }
 }
