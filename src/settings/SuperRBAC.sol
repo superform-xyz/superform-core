@@ -31,6 +31,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant override SERC20_BURNER_ROLE = keccak256("SERC20_BURNER_ROLE");
     bytes32 public constant override MINTER_STATE_REGISTRY_ROLE = keccak256("MINTER_STATE_REGISTRY_ROLE");
     bytes32 public constant override WORMHOLE_VAA_RELAYER_ROLE = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
+    bytes32 public constant override DST_SWAPPER_ROLE = keccak256("DST_SWAPPER_ROLE");
 
     ISuperRegistry public superRegistry;
 
@@ -163,6 +164,11 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /// @inheritdoc ISuperRBAC
     function hasSuperPositionsMinterRole(address minter_) external view override returns (bool) {
         return hasRole(SUPERPOSITIONS_MINTER_ROLE, minter_);
+    }
+
+    /// @inheritdoc ISuperRBAC
+    function hasDstSwapperRole(address swapper_) external view returns (bool) {
+        return hasRole(DST_SWAPPER_ROLE, swapper_);
     }
 
     /// @inheritdoc ISuperRBAC

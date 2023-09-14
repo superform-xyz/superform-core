@@ -111,8 +111,11 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 if (srcChainId_ == dstChainId_) {
                     revert Error.INVALID_ACTION();
                 } else {
-                    /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry
-                    if (receiver != superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), dstChainId_)) {
+                    /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
+                    if (
+                        receiver != superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), dstChainId_)
+                            || receiver != superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), dstChainId_)
+                    ) {
                         revert Error.INVALID_TXDATA_RECEIVER();
                     }
                 }

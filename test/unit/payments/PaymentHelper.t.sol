@@ -309,7 +309,7 @@ contract PaymentHelperTest is ProtocolActions {
 
     function test_addChain() public {
         vm.prank(deployer);
-        paymentHelper.addChain(420, address(420), address(421), 423, 424, 425, 426, 427, 428);
+        paymentHelper.addChain(420, address(420), address(421), 321, 423, 424, 425, 426, 427, 428);
     }
 
     function test_updateChainConfig() public {

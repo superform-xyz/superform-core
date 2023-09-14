@@ -52,6 +52,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override CORE_REGISTRY_PROCESSOR = keccak256("CORE_REGISTRY_PROCESSOR");
     bytes32 public constant override BROADCAST_REGISTRY_PROCESSOR = keccak256("BROADCAST_REGISTRY_PROCESSOR");
     bytes32 public constant override TWO_STEPS_REGISTRY_PROCESSOR = keccak256("TWO_STEPS_REGISTRY_PROCESSOR");
+    bytes32 public constant override DST_SWAPPER = keccak256("DST_SWAPPER");
 
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(registry[SUPER_RBAC][chainId]).hasProtocolAdminRole(msg.sender)) {

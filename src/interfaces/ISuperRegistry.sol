@@ -145,6 +145,9 @@ interface ISuperRegistry {
     /// @dev returns the id of the two steps form state registry processor keeper
     function TWO_STEPS_REGISTRY_PROCESSOR() external view returns (bytes32);
 
+    /// @dev returns the id of the dst swapper keeper
+    function DST_SWAPPER() external view returns (bytes32);
+
     /// @dev gets the address of a contract on current chain
     /// @param id_ is the id of the contract
     function getAddress(bytes32 id_) external view returns (address);

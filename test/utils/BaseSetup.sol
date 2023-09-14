@@ -737,6 +737,7 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstChainId,
                         PRICE_FEEDS[vars.chainId][vars.dstChainId],
                         address(0),
+                        50_000,
                         40_000,
                         70_000,
                         80_000,

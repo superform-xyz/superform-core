@@ -43,6 +43,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev xchain params
     mapping(uint64 chainId => AggregatorV3Interface) public nativeFeedOracle;
     mapping(uint64 chainId => AggregatorV3Interface) public gasPriceOracle;
+    mapping(uint64 chainId => uint256 gasForSwap) public swapGasUsed;
     mapping(uint64 chainId => uint256 gasForUpdate) public updateGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public depositGasUsed;
     mapping(uint64 chainId => uint256 gasForOps) public withdrawGasUsed;
@@ -86,6 +87,7 @@ contract PaymentHelper is IPaymentHelper {
         uint64 chainId_,
         address nativeFeedOracle_,
         address gasPriceOracle_,
+        uint256 swapGasUsed_,
         uint256 updateGasUsed_,
         uint256 depositGasUsed_,
         uint256 withdrawGasUsed_,
@@ -105,6 +107,7 @@ contract PaymentHelper is IPaymentHelper {
             gasPriceOracle[chainId_] = AggregatorV3Interface(gasPriceOracle_);
         }
 
+        swapGasUsed[chainId_] = swapGasUsed_;
         updateGasUsed[chainId_] = updateGasUsed_;
         depositGasUsed[chainId_] = depositGasUsed_;
         withdrawGasUsed[chainId_] = withdrawGasUsed_;
@@ -173,6 +176,11 @@ contract PaymentHelper is IPaymentHelper {
             twoStepCost[chainId_] = abi.decode(config_, (uint256));
         }
 
+        /// @dev Type 11: SWAP GAS USED
+        if (configType_ == 11) {
+            swapGasUsed[chainId_] = abi.decode(config_, (uint256));
+        }
+
         emit ChainConfigUpdated(chainId_, configType_, config_);
     }
 
@@ -232,6 +240,9 @@ contract PaymentHelper is IPaymentHelper {
 
                 /// @dev step 4: estimate liq amount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequests);
+
+                /// @dev step 5: estimate dst swap cost if it exists
+                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequests);
             }
 
             /// @dev step 5: estimate execution costs in dst (withdraw / deposit)
@@ -279,6 +290,9 @@ contract PaymentHelper is IPaymentHelper {
 
                 /// @dev step 4: estimate the liqAmount
                 liqAmount += _estimateLiqAmount(req_.superformsData[i].liqRequest.castToArray());
+
+                /// @dev step 5: estimate if swap costs are involved
+                totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequest.castToArray());
             }
 
             /// @dev step 5: estimate execution costs in dst
@@ -328,7 +342,10 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev step 5: estimate liq amount
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
 
-        /// @dev step 6: convert all dst gas estimates to src chain estimate
+        /// @dev step 6: estimate if swap costs are involved
+        if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.liqRequests);
+
+        /// @dev step 7: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -364,7 +381,10 @@ contract PaymentHelper is IPaymentHelper {
         /// @dev step 5: estimate the liq amount
         if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
 
-        /// @dev step 6: convert all dst gas estimates to src chain estimate
+        /// @dev step 6: estimate if swap costs are involved
+        if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.liqRequest.castToArray());
+
+        /// @dev step 7: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
 
         totalAmount = srcAmount + dstAmount + liqAmount;
@@ -576,6 +596,44 @@ contract PaymentHelper is IPaymentHelper {
                 ++i;
             }
         }
+    }
+
+    /// @dev helps estimate the dst chain swap gas limit (if multi-tx is involved)
+    function _estimateSwapFees(
+        uint64 dstChainId_,
+        LiqRequest[] memory liqReq_
+    )
+        internal
+        view
+        returns (uint256 gasUsed)
+    {
+        uint256 totalSwaps;
+
+        if (uint64(block.chainid) == dstChainId_) {
+            return 0;
+        }
+
+        for (uint256 i; i < liqReq_.length;) {
+            /// @dev checks if tx_data receiver is multiTxProcessor
+            if (
+                liqReq_[i].bridgeId != 0
+                    && IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).validateReceiver(
+                        liqReq_[i].txData, superRegistry.getAddress(keccak256("DST_SWAPPER"))
+                    )
+            ) {
+                ++totalSwaps;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        if (totalSwaps == 0) {
+            return 0;
+        }
+
+        return totalSwaps * swapGasUsed[dstChainId_];
     }
 
     /// @dev helps estimate the dst chain update payload gas limit

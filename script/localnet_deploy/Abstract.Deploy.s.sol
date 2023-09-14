@@ -60,7 +60,7 @@ struct SetupVars {
     address dstWormholeARImplementation;
     address dstWormholeSRImplementation;
     address dstStateRegistry;
-    address multiTxProcessor;
+    address dstSwapper;
     address superRegistry;
     address superPositions;
     address superRBAC;
@@ -614,6 +614,7 @@ abstract contract AbstractDeploy is Script {
                     vars.dstChainId,
                     PRICE_FEEDS[vars.chainId][vars.dstChainId],
                     address(0),
+                    50_000,
                     40_000,
                     70_000,
                     80_000,

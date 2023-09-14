@@ -1,11 +1,11 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
-/// @title IMultiTxProcessor
+/// @title IDstSwapper
 /// @author Zeropoint Labs
 /// @dev handles all destination chain swaps.
 /// @notice all write functions can only be accessed by superform keepers.
-interface IMultiTxProcessor {
+interface IDstSwapper {
     /*///////////////////////////////////////////////////////////////
                                 Events
     //////////////////////////////////////////////////////////////*/
