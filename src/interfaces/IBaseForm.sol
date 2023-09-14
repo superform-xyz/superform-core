@@ -122,7 +122,7 @@ interface IBaseForm is IERC165Upgradeable {
     function previewDepositTo(uint256 assets_) external view returns (uint256);
 
     /// @dev API may need to know state of user redemption
-    function previewRedeemFrom(uint256 shares) external view returns (uint256);
+    function previewRedeemFrom(uint256 shares_) external view returns (uint256);
 
     /// @notice positionBalance() -> .vaultIds&destAmounts
     /// @return how much of an asset + interest (accrued) is to withdraw from the Vault
