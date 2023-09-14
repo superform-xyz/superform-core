@@ -787,6 +787,10 @@ abstract contract BaseSetup is DSTest, Test {
                     );
 
                     vars.superRegistryC.setAddress(
+                        vars.superRegistryC.DST_SWAPPER(), getContract(vars.dstChainId, "DstSwapper"), vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
                         vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(),
                         getContract(vars.dstChainId, "TwoStepsFormStateRegistry"),
                         vars.dstChainId

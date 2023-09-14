@@ -368,7 +368,9 @@ abstract contract ProtocolActions is BaseSetup {
                     (vars.superformT,,) = vars.targetSuperformIds[k].getSuperform();
                     vars.toDst[k] = payable(vars.superformT);
                 } else {
-                    vars.toDst[k] = payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
+                    vars.toDst[k] = action.dstSwap
+                        ? payable(getContract(DST_CHAINS[i], "DstSwapper"))
+                        : payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
                 }
             }
 
@@ -897,6 +899,38 @@ abstract contract ProtocolActions is BaseSetup {
                         );
 
                         if (action.testType == TestType.Pass) {
+                            if (action.dstSwap) {
+                                /// @dev calling state variables again to obtain fresh memory values corresponding to
+                                /// DST
+                                (, vars.underlyingSrcToken, vars.underlyingDstToken,,) =
+                                    _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                                vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
+
+                                /// @dev dst swap is performed to ensure tokens reach CoreStateRegistry on deposits
+                                if (action.multiVaults) {
+                                    vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
+                                    _batchProcessDstSwap(
+                                        vars.liqBridges,
+                                        CHAIN_0,
+                                        aV[i].toChainId,
+                                        vars.underlyingSrcToken,
+                                        vars.underlyingDstToken,
+                                        vars.amounts,
+                                        action.slippage
+                                    );
+                                } else {
+                                    _processDstSwap(
+                                        vars.liqBridges[0],
+                                        CHAIN_0,
+                                        aV[i].toChainId,
+                                        vars.underlyingSrcToken[0],
+                                        vars.underlyingDstToken[0],
+                                        singleSuperformsData[i].amount,
+                                        action.slippage
+                                    );
+                                }
+                            }
+
                             /// @dev this is the step where the amounts are updated taking into account the final
                             /// slippage
                             if (action.multiVaults) {
@@ -1196,8 +1230,9 @@ abstract contract ProtocolActions is BaseSetup {
             vm.selectFork(FORKS[DST_CHAINS[0]]);
 
             address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
-            uint256[] memory rescueSuperformIds;
+            address payable dstSwapper = payable(getContract(DST_CHAINS[0], "DstSwapper"));
 
+            uint256[] memory rescueSuperformIds;
             rescueSuperformIds = CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
 
             LiqRequest[] memory liqRequests = new LiqRequest[](
@@ -1220,7 +1255,7 @@ abstract contract ProtocolActions is BaseSetup {
                 coreStateRegistryDst,
                 getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][1][0]]),
                 /// @dev needs to correspond to `underlyingTokenDst_` in _buildLiqBridgeTxData()
-                coreStateRegistryDst,
+                action.dstSwap ? dstSwapper : coreStateRegistryDst,
                 action.externalToken == 3
                     /// @dev needs to correspond to `underlyingToken` in _buildLiqBridgeTxData()
                     ? NATIVE_TOKEN
@@ -2130,70 +2165,8 @@ abstract contract ProtocolActions is BaseSetup {
         return true;
     }
 
-    function _buildLiqBridgeTxDatadstSwap(
-        uint8 liqBridgeKind_,
-        address underlyingToken_,
-        address underlyingTokenDst_,
-        address from_,
-        uint64 toChainId_,
-        uint256 amount_,
-        int256 slippage_
-    )
-        internal
-        returns (bytes memory txData)
-    {
-        /// @dev amount_ adjusted after bridge slippage
-        int256 bridgeSlippage = (slippage_ * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        amount_ = (amount_ * uint256(10_000 - bridgeSlippage)) / 10_000;
-
-        if (liqBridgeKind_ == 1) {
-            /// @dev for lifi
-            ILiFi.BridgeData memory bridgeData;
-            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
-            swapData[0] = LibSwap.SwapData(
-                address(0),
-                ///  @dev  callTo (arbitrary)
-                address(0),
-                ///  @dev  callTo (approveTo)
-                underlyingToken_,
-                underlyingToken_,
-                amount_,
-                /// @dev _buildLiqBridgeTxDatadstSwap() will only be called when dstSwap is true
-                /// @dev and dstSwap means cross-chain (last arg)
-                abi.encode(
-                    from_, FORKS[toChainId_], underlyingTokenDst_, slippage_, true, MULTI_TX_SLIPPAGE_SHARE, false
-                ),
-                false // arbitrary
-            );
-
-            bridgeData = ILiFi.BridgeData(
-                bytes32("1"),
-                /// @dev request id, arbitrary number
-                "",
-                /// @dev unused in tests
-                "",
-                /// @dev unused in tests
-                address(0),
-                underlyingTokenDst_,
-                getContract(toChainId_, "CoreStateRegistry"),
-                /// @dev next destination
-                amount_,
-                uint256(toChainId_),
-                false,
-                /// @dev false in the case of dstSwapProcessor to only perform _bridge call (assumes tokens are already
-                /// swapped)
-                true
-            );
-            /// @dev true in the case of dstSwapProcessor to only perform _bridge call (assumes tokens are already
-            /// swapped)
-
-            txData = abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
-        }
-    }
-
     /// @dev - assumption to only use dstSwapProcessor for destination chain swaps (middleware requests)
-    function _processdstSwap(
+    function _processDstSwap(
         uint8 liqBridgeKind_,
         uint64 srcChainId_,
         uint64 targetChainId_,
@@ -2207,26 +2180,37 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
 
-        /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
-        bytes memory txData = _buildLiqBridgeTxDatadstSwap(
+        int256 swapSlippage = (slippage_ * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+
+        LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             liqBridgeKind_,
             underlyingToken_,
+            underlyingToken_,
             underlyingTokenDst_,
-            getContract(targetChainId_, "dstSwapProcessor"),
+            getContract(targetChainId_, "DstSwapper"),
+            srcChainId_,
             targetChainId_,
+            targetChainId_,
+            false,
+            getContract(targetChainId_, "CoreStateRegistry"),
+            uint256(targetChainId_),
             amount_,
-            slippage_
+            false,
+            swapSlippage
         );
+
+        /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
+        bytes memory txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, true);
 
         vm.prank(deployer);
 
-        DstSwapper(payable(getContract(targetChainId_, "DstSwap"))).processTx(
-            liqBridgeKind_, txData, underlyingTokenDst_, amount_
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(
+            liqBridgeKind_, txData, underlyingToken_, amount_
         );
         vm.selectFork(initialFork);
     }
 
-    function _batchProcessdstSwap(
+    function _batchProcessDstSwap(
         uint8[] memory liqBridgeKinds_,
         uint64 srcChainId_,
         uint64 targetChainId_,
@@ -2241,22 +2225,39 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[targetChainId_]);
         bytes[] memory txDatas = new bytes[](underlyingTokens_.length);
 
+        /// @dev amount_ adjusted after bridge slippage
+        /// FIXME
+        int256 swapSlippage = (slippage_ * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        console.log(uint256(swapSlippage), "Swap Slippage");
+
         /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
         for (uint256 i = 0; i < underlyingTokens_.length; i++) {
-            txDatas[i] = _buildLiqBridgeTxDatadstSwap(
+            amounts_[i] = (amounts_[i] * uint256(10_000 - swapSlippage)) / 10_000;
+            console.log(amounts_[i], "Amounts i");
+
+            LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
                 liqBridgeKinds_[i],
-                underlyingTokens_[i],
                 underlyingTokensDst_[i],
-                getContract(targetChainId_, "dstSwapProcessor"),
+                underlyingTokensDst_[i],
+                underlyingTokensDst_[i],
+                getContract(targetChainId_, "DstSwapper"),
+                srcChainId_,
                 targetChainId_,
+                targetChainId_,
+                false,
+                getContract(targetChainId_, "CoreStateRegistry"),
+                uint256(targetChainId_),
                 amounts_[i],
-                slippage_
+                false,
+                swapSlippage
             );
+
+            txDatas[i] = _buildLiqBridgeTxData(liqBridgeTxDataArgs, true);
         }
 
         vm.prank(deployer);
 
-        DstSwapper(payable(getContract(targetChainId_, "DstSwap"))).batchProcessTx(
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).batchProcessTx(
             liqBridgeKinds_, txDatas, underlyingTokensDst_, amounts_
         );
         vm.selectFork(initialFork);
