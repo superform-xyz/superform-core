@@ -19,3 +19,6 @@
 [submodule "lib/ERC1155A"]
 	path = lib/ERC1155A
 	url = https://github.com/superform-xyz/ERC1155A
+[submodule "lib/solpretty"]
+	path = lib/solpretty
+	url = https://github.com/devtooligan/solpretty
