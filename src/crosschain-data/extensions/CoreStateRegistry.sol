@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
-import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
@@ -14,6 +13,8 @@ import { ProofLib } from "../../libraries/ProofLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
 import "../../crosschain-liquidity/LiquidityHandler.sol";
+
+import "forge-std/console.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -454,9 +455,16 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     /// how can we compare an amount of underlying against superPositions? This seems invalid
 
                     lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i], false);
+                    console.log("finalAmount", lV.finalAmount);
+                    console.log(
+                        "previewRedeem ", IBaseForm(superform).previewRedeemFrom(lV.multiVaultData.amounts[lV.i])
+                    );
+
+                    /// @dev if finalAmount is > previewRedeem now this will always fail. Vault can suffer variations in
+                    /// between off-chain and onchain call
                     PayloadUpdaterLib.validateSlippage(
                         lV.finalAmount,
-                        IERC4626(IBaseForm(superform).getVaultAddress()).previewRedeem(lV.multiVaultData.amounts[lV.i]),
+                        IBaseForm(superform).previewRedeemFrom(lV.multiVaultData.amounts[lV.i]),
                         lV.multiVaultData.maxSlippage[lV.i]
                     );
 

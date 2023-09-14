@@ -18,9 +18,11 @@ import { DataLib } from "../../libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import "../../types/DataTypes.sol";
 
+import "forge-std/console.sol";
 /// @title TwoStepsFormStateRegistry
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
+
 contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegistry {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
@@ -142,7 +144,10 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             );
 
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
-            PayloadUpdaterLib.validateSlippage(finalAmount, form.previewWithdrawFrom(p.data.amount), p.data.maxSlippage);
+            console.log("finalAmount", finalAmount);
+            console.log("previewRedeem ", form.previewRedeemFrom(p.data.amount));
+
+            PayloadUpdaterLib.validateSlippage(finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage);
 
             p.data.liqData.txData = txData_;
         }

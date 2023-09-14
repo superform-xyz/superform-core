@@ -1698,7 +1698,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[args.toChainId]);
         (vars.superform,,) = args.superformId.getSuperform();
-        vars.actualWithdrawAmount = IERC4626(IBaseForm(vars.superform).getVaultAddress()).previewRedeem(args.amount);
+        vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(args.amount);
         console.log("actualWithdrawAmount", vars.actualWithdrawAmount, "args.amount", args.amount);
 
         vm.selectFork(initialFork);
