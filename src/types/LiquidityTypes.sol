@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 /// @dev contains all the common struct used for interchain token transfers.
 struct LiqRequest {
@@ -14,5 +14,4 @@ struct LiqRequest {
     uint64 liqDstChainId;
     /// @dev currently this amount is used as msg.value in the txData call.
     uint256 nativeAmount;
-    bytes permit2data;
 }

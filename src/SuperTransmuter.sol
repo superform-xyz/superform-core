@@ -1,5 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { Transmuter } from "ERC1155A/transmuter/Transmuter.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
@@ -83,7 +83,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     function registerTransmuter(uint256 superformId_, bytes memory extraData_) external override returns (address) {
         (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId_);
 
-        if (superRegistry.chainId() != chainId) revert Error.INVALID_CHAIN_ID();
+        if (uint64(block.chainid) != chainId) revert Error.INVALID_CHAIN_ID();
         if (superform == address(0)) revert Error.NOT_SUPERFORM();
         if (formBeaconId == 0) revert Error.FORM_DOES_NOT_EXIST();
         if (synthethicTokenId[superformId_] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
@@ -93,10 +93,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         string memory symbol = string(abi.encodePacked("sERC20-", IBaseForm(superform).superformYieldTokenSymbol()));
         uint8 decimal = uint8(IBaseForm(superform).getVaultDecimals());
 
-        /// @dev if we call this on the chain where the superform is, it works
-        /// @dev however we need this to be called on certain chains where the superform is not deployed
-        /// @dev with broadcasting this could be forwarded to all the other chains
-        address syntheticToken = address(
+        synthethicTokenId[superformId_] = address(
             new sERC20(
                 name,
                 symbol,
@@ -104,14 +101,12 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
             )
         );
 
-        synthethicTokenId[superformId_] = syntheticToken;
-
         /// @dev broadcast and deploy to the other destination chains
         if (extraData_.length > 0) {
             BroadcastMessage memory transmuterPayload = BroadcastMessage(
                 "SUPER_TRANSMUTER",
                 DEPLOY_NEW_TRANSMUTER,
-                abi.encode(superRegistry.chainId(), ++xChainPayloadCounter, superformId_, name, symbol, decimal)
+                abi.encode(uint64(block.chainid), ++xChainPayloadCounter, superformId_, name, symbol, decimal)
             );
 
             _broadcast(abi.encode(transmuterPayload), extraData_);

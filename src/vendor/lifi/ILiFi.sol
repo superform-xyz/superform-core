@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 /// @title ILiFi
 /// @notice Interface containing useful structs when using LiFi as a bridge
@@ -16,15 +16,5 @@ interface ILiFi {
         uint256 destinationChainId;
         bool hasSourceSwaps;
         bool hasDestinationCall; // is there a destination call? we should disable this
-    }
-
-    struct SwapData {
-        address callTo;
-        address approveTo;
-        address sendingAssetId;
-        address receivingAssetId;
-        uint256 fromAmount;
-        bytes callData;
-        bool requiresDeposit;
     }
 }

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
 /// Types Imports
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
+import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import "./MockERC20.sol";
 
 /// @title Socket Router Mock
@@ -16,31 +17,44 @@ contract LiFiMock is Test {
 
     function swapAndStartBridgeTokensViaBridge(
         ILiFi.BridgeData calldata bridgeData,
-        ILiFi.SwapData[] calldata swapData
+        LibSwap.SwapData[] calldata swapData
     )
         external
         payable
     {
-        /// @dev for the purpose of this mock, encapsulating mock data in swap data, regardless if we are doing a swap
-        /// or not
-        if (!bridgeData.hasSourceSwaps && !bridgeData.hasDestinationCall) {
-            /// @dev just mock bridge
+        if (!bridgeData.hasSourceSwaps) {
             _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
-        } else if (bridgeData.hasSourceSwaps && !bridgeData.hasDestinationCall) {
-            /// @dev else, assume according to socket a swap and bridge is involved
-            /// @dev assume from amount = minAmount
+        } else {
             _swap(
-                swapData[0].fromAmount, swapData[0].sendingAssetId, swapData[0].receivingAssetId, swapData[0].callData
+                swapData[0].fromAmount,
+                swapData[0].sendingAssetId,
+                swapData[0].receivingAssetId,
+                swapData[0].callData,
+                address(this)
             );
 
             _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, true);
-        } else if (!bridgeData.hasSourceSwaps && bridgeData.hasDestinationCall) {
-            /// @dev assume, for mocking purposes that cases with just swap is for the same token
-            /// @dev this is for direct actions
-            /// @dev bridge is used here to mint tokens in a new contract, but actually it's just a swap (chain id is
-            /// the same)
-            _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
         }
+    }
+
+    function swapTokensGeneric(
+        bytes32 _transactionId,
+        string calldata _integrator,
+        string calldata _referrer,
+        address payable _receiver,
+        uint256 _minAmount,
+        LibSwap.SwapData[] calldata _swapData
+    )
+        external
+        payable
+    {
+        _swap(
+            _swapData[0].fromAmount,
+            _swapData[0].sendingAssetId,
+            _swapData[0].receivingAssetId,
+            _swapData[0].callData,
+            _receiver
+        );
     }
 
     function _bridge(
@@ -55,7 +69,6 @@ contract LiFiMock is Test {
         /// @dev encapsulating from
         (address from, uint256 toForkId, address outputToken, int256 slippage, bool isDirect) =
             abi.decode(data_, (address, uint256, address, int256, bool));
-
         if (inputToken_ != NATIVE) {
             if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
 
@@ -83,7 +96,15 @@ contract LiFiMock is Test {
         vm.selectFork(prevForkId);
     }
 
-    function _swap(uint256 amount_, address inputToken_, address bridgeToken_, bytes memory data_) internal {
+    function _swap(
+        uint256 amount_,
+        address inputToken_,
+        address outputToken_,
+        bytes memory data_,
+        address receiver_
+    )
+        internal
+    {
         /// @dev encapsulating from
         address from = abi.decode(data_, (address));
         if (inputToken_ != NATIVE) {
@@ -91,6 +112,6 @@ contract LiFiMock is Test {
             MockERC20(inputToken_).burn(address(this), amount_);
         }
         /// @dev assume no swap slippage
-        MockERC20(bridgeToken_).mint(address(this), amount_);
+        MockERC20(outputToken_).mint(receiver_, amount_);
     }
 }

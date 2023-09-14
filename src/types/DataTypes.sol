@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import "./LiquidityTypes.sol";
 
@@ -32,7 +32,8 @@ struct MultiVaultSFData {
     uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippages;
-    LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
+    LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts) | else  amounts must match the amounts being sent
+    bytes permit2data;
     bytes extraFormData; // extraFormData
 }
 
@@ -43,6 +44,7 @@ struct SingleVaultSFData {
     uint256 amount;
     uint256 maxSlippage;
     LiqRequest liqRequest; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
+    bytes permit2data;
     bytes extraFormData; // extraFormData
 }
 

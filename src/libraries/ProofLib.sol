@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { Error } from "../utils/Error.sol";
 import { AMBMessage, BroadcastMessage } from "../types/DataTypes.sol";

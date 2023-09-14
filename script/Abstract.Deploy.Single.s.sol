@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.19;
+pragma solidity 0.8.21;
 
 import { Script } from "forge-std/Script.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
@@ -181,6 +181,16 @@ abstract contract AbstractDeploySingle is Script {
     address public constant ARBI_messageBus = 0x3Ad9d0648CDAA2426331e894e980D0a5Ed16257f;
     address public constant OP_messageBus = 0x0D71D18126E03646eb09FEc929e2ae87b7CAE69d;
     address public constant FTM_messageBus = 0xFF4E183a0Ceb4Fa98E63BbF8077B929c8E5A2bA4;
+
+    address[] public LiFiCallDataVerificationFacets = [
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
+        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567
+    ];
 
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -365,12 +375,12 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY(), vars.broadcastRegistry, vars.chainId);
 
-        address[] memory registryAddresses = new address[](2);
+        address[] memory registryAddresses = new address[](3);
         registryAddresses[0] = vars.coreStateRegistry;
         registryAddresses[1] = vars.twoStepsFormStateRegistry;
         registryAddresses[2] = vars.broadcastRegistry;
 
-        uint8[] memory registryIds = new uint8[](2);
+        uint8[] memory registryIds = new uint8[](3);
         registryIds[0] = 1;
         registryIds[1] = 2;
         registryIds[2] = 3;
@@ -423,7 +433,8 @@ abstract contract AbstractDeploySingle is Script {
 
         /// @dev 6- deploy liquidity validators
 
-        vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
+        vars.lifiValidator =
+            address(new LiFiValidator{salt: salt}(vars.superRegistry, LiFiCallDataVerificationFacets[i]));
         contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
         bridgeValidators[0] = vars.lifiValidator;
@@ -548,6 +559,8 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.lzImplementation = _readContract(chainNames[trueIndex], vars.chainId, "LayerzeroImplementation");
         vars.hyperlaneImplementation = _readContract(chainNames[trueIndex], vars.chainId, "HyperlaneImplementation");
+        vars.wormholeImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeARImplementation");
+        vars.wormholeSRImplementation = _readContract(chainNames[trueIndex], vars.chainId, "WormholeSRImplementation");
         vars.superRegistry = _readContract(chainNames[trueIndex], vars.chainId, "SuperRegistry");
         vars.paymentHelper = _readContract(chainNames[trueIndex], vars.chainId, "PaymentHelper");
         vars.superRegistryC =

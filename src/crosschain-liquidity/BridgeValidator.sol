@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
@@ -28,17 +28,6 @@ abstract contract BridgeValidator is IBridgeValidator {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IBridgeValidator
-    function validateTxDataAmount(
-        bytes calldata txData_,
-        uint256 amount_
-    )
-        external
-        view
-        virtual
-        override
-        returns (bool);
-
-    /// @inheritdoc IBridgeValidator
     function validateLiqDstChainId(
         bytes calldata txData_,
         uint64 liqDstChainId_
@@ -48,6 +37,17 @@ abstract contract BridgeValidator is IBridgeValidator {
         virtual
         override
         returns (bool);
+
+    /// @inheritdoc IBridgeValidator
+    function validateReceiver(
+        bytes calldata txData_,
+        address _receiver
+    )
+        external
+        pure
+        virtual
+        override
+        returns (bool valid_);
 
     /// @inheritdoc IBridgeValidator
     function validateTxData(
@@ -66,19 +66,24 @@ abstract contract BridgeValidator is IBridgeValidator {
         override;
 
     /// @inheritdoc IBridgeValidator
-    function validateReceiver(
+    function decodeMinAmountOut(
         bytes calldata txData_,
-        address _receiver
+        bool genericSwapDisallowed_
     )
         external
-        pure
+        view
         virtual
         override
-        returns (bool valid_);
+        returns (uint256 amount_);
 
     /// @inheritdoc IBridgeValidator
-    function decodeMinAmountOut(bytes calldata txData_) external pure virtual override returns (uint256 amount_);
-
-    /// @inheritdoc IBridgeValidator
-    function decodeAmountIn(bytes calldata txData_) external pure virtual override returns (uint256 amount_);
+    function decodeAmountIn(
+        bytes calldata txData_,
+        bool genericSwapDisallowed_
+    )
+        external
+        view
+        virtual
+        override
+        returns (uint256 amount_);
 }

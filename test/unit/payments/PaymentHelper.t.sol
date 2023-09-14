@@ -1,7 +1,6 @@
-// SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.19;
+/// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.21;
 
-import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract MockGasPriceOracle {
@@ -14,7 +13,7 @@ contract MockGasPriceOracle {
     }
 }
 
-contract PaymentHelperTest is BaseSetup {
+contract PaymentHelperTest is ProtocolActions {
     PaymentHelper public paymentHelper;
     MockGasPriceOracle public mockGasPriceOracle;
 
@@ -39,7 +38,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -55,7 +55,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -71,7 +72,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -92,7 +94,7 @@ contract PaymentHelperTest is BaseSetup {
         uint256MemoryArray[0] = 420;
 
         LiqRequest[] memory liqRequestMemoryArray = new LiqRequest[](1);
-        liqRequestMemoryArray[0] = LiqRequest(1, emptyBytes, address(0), ETH, 420, emptyBytes);
+        liqRequestMemoryArray[0] = LiqRequest(1, emptyBytes, address(0), ETH, 420);
 
         (,,, uint256 fees) = paymentHelper.estimateSingleDirectMultiVault(
             SingleDirectMultiVaultStateReq(
@@ -102,6 +104,7 @@ contract PaymentHelperTest is BaseSetup {
                     uint256MemoryArray,
                     uint256MemoryArray,
                     liqRequestMemoryArray,
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -118,6 +121,7 @@ contract PaymentHelperTest is BaseSetup {
                     uint256MemoryArray,
                     uint256MemoryArray,
                     liqRequestMemoryArray,
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -137,7 +141,16 @@ contract PaymentHelperTest is BaseSetup {
         paymentHelper.updateChainConfig(137, 6, abi.encode(0));
 
         bytes memory emptyBytes;
-        bytes memory txData = _buildTxData(1, native, getContract(ETH, "CoreStateRegistry"), ETH, 1e18);
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1,
+            native,
+            address(0),
+            getContract(ETH, "CoreStateRegistry"),
+            ETH,
+            1e18,
+            getContract(ETH, "CoreStateRegistry"),
+            false
+        );
 
         uint8[] memory ambIds = new uint8[](1);
         ambIds[0] = 1;
@@ -151,7 +164,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, txData, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, txData, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -170,7 +184,16 @@ contract PaymentHelperTest is BaseSetup {
         paymentHelper.updateChainConfig(1, 6, abi.encode(1e8));
 
         bytes memory emptyBytes;
-        bytes memory txData = _buildTxData(1, native, getContract(ETH, "CoreStateRegistry"), ETH, 1e18);
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1,
+            native,
+            address(0),
+            getContract(ETH, "CoreStateRegistry"),
+            ETH,
+            1e18,
+            getContract(ETH, "CoreStateRegistry"),
+            false
+        );
 
         uint8[] memory ambIds = new uint8[](1);
         ambIds[0] = 1;
@@ -184,7 +207,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, txData, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, txData, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -203,7 +227,16 @@ contract PaymentHelperTest is BaseSetup {
         paymentHelper.updateChainConfig(137, 2, abi.encode(address(mockGasPriceOracle)));
 
         bytes memory emptyBytes;
-        bytes memory txData = _buildTxData(1, native, getContract(ETH, "CoreStateRegistry"), ETH, 1e18);
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1,
+            native,
+            address(0),
+            getContract(ETH, "CoreStateRegistry"),
+            ETH,
+            1e18,
+            getContract(ETH, "CoreStateRegistry"),
+            false
+        );
 
         uint8[] memory ambIds = new uint8[](1);
         ambIds[0] = 1;
@@ -217,7 +250,8 @@ contract PaymentHelperTest is BaseSetup {
                     /// timelock
                     420,
                     420,
-                    LiqRequest(1, txData, address(0), ETH, 420, emptyBytes),
+                    LiqRequest(1, txData, address(0), ETH, 420),
+                    emptyBytes,
                     emptyBytes
                 )
             ),
@@ -356,49 +390,5 @@ contract PaymentHelperTest is BaseSetup {
         superformId_ = uint256(uint160(superform_));
         superformId_ |= uint256(formBeaconId_) << 160;
         superformId_ |= uint256(chainId_) << 192;
-    }
-
-    function _buildTxData(
-        uint8 liqBridgeKind_,
-        address underlyingToken_,
-        address from_,
-        uint64 toChainId_,
-        uint256 amount_
-    )
-        internal
-        returns (bytes memory txData)
-    {
-        if (liqBridgeKind_ == 1) {
-            ILiFi.BridgeData memory bridgeData;
-            ILiFi.SwapData[] memory swapData = new ILiFi.SwapData[](1);
-
-            swapData[0] = ILiFi.SwapData(
-                address(0),
-                /// callTo (arbitrary)
-                address(0),
-                /// callTo (approveTo)
-                underlyingToken_,
-                underlyingToken_,
-                amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingToken_),
-                false // arbitrary
-            );
-
-            bridgeData = ILiFi.BridgeData(
-                bytes32("1"),
-                /// request id
-                "",
-                "",
-                address(0),
-                underlyingToken_,
-                getContract(toChainId_, "CoreStateRegistry"),
-                amount_,
-                uint256(toChainId_),
-                false,
-                true
-            );
-
-            txData = abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
-        }
     }
 }

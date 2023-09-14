@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
 
@@ -126,7 +126,7 @@ contract PayloadUpdaterLibTest is Test {
         bytes memory bytesTxData = abi.encode(420);
         /// @dev checks for liquidity request validation
         vm.expectRevert(Error.CANNOT_UPDATE_WITHDRAW_TX_DATA.selector);
-        payloadUpdateLib.validateLiqReq(LiqRequest(1, bytesTxData, address(420), 1, 1e18, bytesTxData));
+        payloadUpdateLib.validateLiqReq(LiqRequest(1, bytesTxData, address(420), 1, 1e18));
     }
 
     /// WITHDRAW PAYLAOD UPDATER TESTS

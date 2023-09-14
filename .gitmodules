@@ -4,18 +4,18 @@
 [submodule "lib/ds-test"]
 	path = lib/ds-test
 	url = https://github.com/dapphub/ds-test
-[submodule "lib/openzeppelin-contracts-upgradeable"]
-	path = lib/openzeppelin-contracts-upgradeable
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
-[submodule "lib/super-vaults"]
-	path = lib/super-vaults
-	url = https://github.com/superform-xyz/super-vaults
-[submodule "lib/ERC1155A"]
-	path = lib/ERC1155A
-	url = https://github.com/superform-xyz/ERC1155A
 [submodule "lib/wormhole-solidity-sdk"]
 	path = lib/wormhole-solidity-sdk
 	url = https://github.com/wormhole-foundation/wormhole-solidity-sdk
 [submodule "lib/pigeon"]
 	path = lib/pigeon
 	url = https://github.com/exp-table/pigeon
+[submodule "lib/ERC1155A"]
+	path = lib/ERC1155A
+	url = https://github.com/superform-xyz/ERC1155A
+[submodule "lib/super-vaults"]
+	path = lib/super-vaults
+	url = https://github.com/superform-xyz/super-vaults
+[submodule "lib/openzeppelin-contracts-upgradeable"]
+	path = lib/openzeppelin-contracts-upgradeable
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable

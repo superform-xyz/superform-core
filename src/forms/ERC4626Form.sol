@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { InitSingleVaultData } from "../types/DataTypes.sol";
 import { ERC4626FormImplementation } from "./ERC4626FormImplementation.sol";

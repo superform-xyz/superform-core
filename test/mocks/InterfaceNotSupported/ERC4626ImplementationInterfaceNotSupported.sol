@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { IERC20Metadata } from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -116,41 +116,20 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
 
         IERC20 token = IERC20(singleVaultData_.liqData.token);
 
+        if (address(token) != NATIVE) {
+            /// @dev handles the collateral token transfers.
+            if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
+                revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+            }
+
+            /// @dev transfers input token, which is the same as vault asset, to the form
+            token.safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
+        }
+
         /// @dev if we don't have txData (no swap) then the full amount in the stateReq is used
         /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault
         /// asset)
-        if (!(singleVaultData_.liqData.txData.length > 0)) {
-            /// @dev handles the collateral token transfers.
-            /// @dev if the input asset was approved with permit2
-            if (!(singleVaultData_.liqData.permit2data.length > 0)) {
-                if (token.allowance(srcSender_, address(this)) < singleVaultData_.amount) {
-                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
-                }
-                /// @dev transfers input token, which is the same as vault asset, to the form
-                token.safeTransferFrom(srcSender_, address(this), singleVaultData_.amount);
-            } else {
-                (vars.nonce, vars.deadline, vars.signature) =
-                    abi.decode(singleVaultData_.liqData.permit2data, (uint256, uint256, bytes));
-                /// @dev does a permit2 transfer to this contract
-                IPermit2(superRegistry.PERMIT2()).permitTransferFrom(
-                    // The permit message.
-                    IPermit2.PermitTransferFrom({
-                        permitted: IPermit2.TokenPermissions(token, singleVaultData_.amount),
-                        nonce: vars.nonce,
-                        deadline: vars.deadline
-                    }),
-                    // The transfer recipient and amount.
-                    IPermit2.SignatureTransferDetails({ to: address(this), requestedAmount: singleVaultData_.amount }),
-                    // The owner of the tokens, which must also be
-                    // the signer of the message, otherwise this call
-                    // will fail.
-                    srcSender_,
-                    // The packed signature that was the result of signing
-                    // the EIP712 hash of `permit`.
-                    vars.signature
-                );
-            }
-        } else {
+        if (singleVaultData_.liqData.txData.length > 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
             /// @dev in this case, a swap is needed, first the txData is validated and then the final asset is obtained
@@ -163,7 +142,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 singleVaultData_.liqData.liqDstChainId,
                 true,
                 address(this),
-                srcSender_,
+                msg.sender,
                 address(token)
             );
 
@@ -171,11 +150,9 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
-                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData),
-                srcSender_,
-                singleVaultData_.liqData.nativeAmount,
-                singleVaultData_.liqData.permit2data,
-                superRegistry.PERMIT2()
+                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false),
+                address(this),
+                singleVaultData_.liqData.nativeAmount
             );
         }
 
@@ -227,7 +204,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
 
         if (v.len1 != 0) {
             v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-            v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData);
+            v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev this check here might be too much already, but can't hurt
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
@@ -255,9 +232,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 singleVaultData_.liqData.token,
                 v.amount,
                 address(this),
-                singleVaultData_.liqData.nativeAmount,
-                "",
-                superRegistry.PERMIT2()
+                singleVaultData_.liqData.nativeAmount
             );
         }
     }
@@ -330,7 +305,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
 
         if (len != 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
-            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData);
+            vars.amount = IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (vars.amount > dstAmount) revert Error.XCHAIN_WITHDRAW_INVALID_LIQ_REQUEST();
@@ -353,9 +328,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 singleVaultData_.liqData.token,
                 dstAmount,
                 address(this),
-                singleVaultData_.liqData.nativeAmount,
-                "",
-                superRegistry.PERMIT2()
+                singleVaultData_.liqData.nativeAmount
             );
         }
 

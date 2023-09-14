@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import { Error } from "src/utils/Error.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
@@ -25,14 +25,14 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[2], ETH);
 
         SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0, ""), "");
+            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", "");
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
         vm.expectRevert(ERC4626KYCDaoForm.NO_VALID_KYC_TOKEN.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
 

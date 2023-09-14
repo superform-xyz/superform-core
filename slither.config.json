@@ -1,0 +1,14 @@
+{
+    "detectors_to_exclude": "solc-version,timestamp,naming-convention",
+    "solc_remaps": [
+        "forge-std/=lib/forge-std/src/",
+        "ds-test/=lib/ds-test/src/",
+        "ERC1155A/=lib/ERC1155A/src/",
+        "openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/",
+        "pigeon/=lib/pigeon/src/",
+        "super-vaults/=lib/super-vaults/src/",
+        "wormhole-solidity-sdk/=lib/wormhole-solidity-sdk/src/",
+        "solmate/=lib/ERC1155A/lib/solmate/src/",
+        "openzeppelin-contracts/=lib/ERC1155A/lib/openzeppelin-contracts/"
+    ]
+}
