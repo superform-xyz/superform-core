@@ -25,6 +25,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     /// @dev counts for each chain in each testAction the number of timelocked superforms
     mapping(uint256 chainIdIndex => uint256) countTimelocked;
+    uint256[][] actualAmountWithdrawnPerDst;
 
     /// @dev array of ambIds
     uint8[] public AMBs;
@@ -153,18 +154,24 @@ abstract contract ProtocolActions is BaseSetup {
             for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
                 vars.superformIds = _superformIds(
-                    TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
-                    TARGET_VAULTS[DST_CHAINS[i]][1],
-                    TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                    TARGET_UNDERLYINGS[DST_CHAINS[i]][act],
+                    TARGET_VAULTS[DST_CHAINS[i]][act],
+                    TARGET_FORM_KINDS[DST_CHAINS[i]][act],
                     DST_CHAINS[i]
                 );
-                for (uint256 j = 0; j < TARGET_UNDERLYINGS[DST_CHAINS[i]][1].length; ++j) {
-                    token = getContract(DST_CHAINS[i], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[i]][1][j]]);
+                for (uint256 j = 0; j < TARGET_UNDERLYINGS[DST_CHAINS[i]][act].length; ++j) {
+                    token = getContract(DST_CHAINS[i], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[i]][act][j]]);
                     (vars.superformT,,) = vars.superformIds[j].getSuperform();
+                    /// @dev grabs amounts in deposits (assumes deposit is action 0)
                     deal(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
                 }
+
+                actualAmountWithdrawnPerDst.push(
+                    _getPreviewRedeemAmountsMaxBalance(action.user, vars.superformIds, DST_CHAINS[i])
+                );
             }
         }
+
         vm.selectFork(initialFork);
 
         /// @dev builds superformRouter request data
@@ -1874,17 +1881,16 @@ abstract contract ProtocolActions is BaseSetup {
         uint256[] memory underlyingTokens_,
         uint256[] memory vaultIds_,
         uint32[] memory formKinds_,
-        uint64 chainId_
+        uint64 dstChain
     )
         internal
         returns (uint256[] memory superPositionBalances)
     {
-        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, chainId_);
+        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain);
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
         superPositionBalances = new uint256[](superformIds.length);
-
         address superPositionsAddress =
             ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
 
@@ -1892,6 +1898,41 @@ abstract contract ProtocolActions is BaseSetup {
 
         for (uint256 i = 0; i < superformIds.length; i++) {
             superPositionBalances[i] = superPositions.balanceOf(users[user], superformIds[i]);
+        }
+    }
+
+    function _getPreviewRedeemAmountsMaxBalance(
+        uint256 user,
+        uint256[] memory superformIds,
+        uint64 dstChain
+    )
+        internal
+        returns (uint256[] memory previewRedeemAmounts)
+    {
+        vm.selectFork(FORKS[CHAIN_0]);
+        uint256[] memory superPositionBalances = new uint256[] (superformIds.length);
+        previewRedeemAmounts = new uint256[] (superformIds.length);
+        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+
+        address superPositionsAddress =
+            ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
+
+        IERC1155A superPositions = IERC1155A(superPositionsAddress);
+
+        for (uint256 i = 0; i < superformIds.length; i++) {
+            vm.selectFork(FORKS[CHAIN_0]);
+            uint256 nRepetitions;
+
+            for (uint256 j = 0; j < superformIds.length; j++) {
+                if (superformIds[i] == superformIds[j]) {
+                    ++nRepetitions;
+                }
+            }
+            superPositionBalances[i] = superPositions.balanceOf(users[user], superformIds[i]);
+
+            (address superform,,) = superformIds[i].getSuperform();
+            vm.selectFork(FORKS[dstChain]);
+            previewRedeemAmounts[i] = IBaseForm(superform).previewRedeemFrom(superPositionBalances[i]) / nRepetitions;
         }
     }
 
