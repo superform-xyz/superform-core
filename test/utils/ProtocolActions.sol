@@ -66,6 +66,9 @@ abstract contract ProtocolActions is BaseSetup {
     uint256 SLIPPAGE;
     uint256 MAX_SLIPPAGE;
 
+    /// @dev percentage of total slippage that is used for multiTx
+    uint256 MULTI_TX_SLIPPAGE_SHARE;
+
     /// @dev bool to flag if scenario should have txData fullfiled on destination for a withdraw (used to test cases
     /// where txData expires in mainnet)
     bool GENERATE_WITHDRAW_TX_DATA_ON_DST;
@@ -146,7 +149,9 @@ abstract contract ProtocolActions is BaseSetup {
                 deal(token, users[action.user], TOTAL_SUPPLY_WETH);
             }
         }
+
         vm.selectFork(initialFork);
+        // if (action.multiTx) MULTI_TX_SLIPPAGE_SHARE = 40;
 
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);

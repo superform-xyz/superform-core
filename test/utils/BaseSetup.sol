@@ -42,6 +42,7 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
+import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
@@ -387,6 +388,10 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer);
             assert(vars.superRBACC.hasCoreStateRegistryUpdaterRole(deployer));
 
+            /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for dst swapper?
+            vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer);
+            assert(vars.superRBACC.hasDstSwapperRole(deployer));
+
             vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC);
             assert(vars.superRBACC.hasBroadcasterRole(vars.superRBAC));
 
@@ -643,6 +648,12 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes32("PayMaster"))] = vars.payMaster;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMASTER(), vars.payMaster, vars.chainId);
+
+            /// @dev 15 - Deploy Dst Swapper
+            vars.dstSwapper = address(new DstSwapper{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes32("DstSwapper"))] = vars.dstSwapper;
+
+            vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
 
             /// @dev 15 - Super Registry extra setters
             SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);

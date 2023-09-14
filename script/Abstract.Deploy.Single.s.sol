@@ -15,6 +15,7 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
+import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
@@ -80,7 +81,7 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[22] public contractNames = [
+    string[23] public contractNames = [
         "CoreStateRegistry",
         "TwoStepsFormStateRegistry",
         "BroadcastRegistry",
@@ -89,6 +90,7 @@ abstract contract AbstractDeploySingle is Script {
         "WormholeImplementation",
         "WormholeSRImplementation",
         "LiFiValidator",
+        "DstSwapper",
         "SuperformFactory",
         "ERC4626Form",
         "ERC4626TimelockForm",
@@ -351,6 +353,9 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
+        /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for multiTxProcessor?
+        vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), ownerAddress);
+
         /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
 
@@ -512,7 +517,13 @@ abstract contract AbstractDeploySingle is Script {
 
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYMASTER(), vars.payMaster, vars.chainId);
 
-        /// @dev 14 - Super Registry extra setters
+        /// @dev 14 - Deploy Dst Swapper
+        vars.dstSwapper = address(new DstSwapper{salt: salt}(vars.superRegistry));
+        contracts[vars.chainId][bytes32(bytes("DstSwapper"))] = vars.dstSwapper;
+
+        vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
+
+        /// @dev 15 - Super Registry extra setters
         vars.superRegistryC.setBridgeAddresses(bridgeIds, BRIDGE_ADDRESSES[vars.chainId], bridgeValidators);
 
         /// @dev configures lzImplementation and hyperlane to super registry
@@ -520,7 +531,7 @@ abstract contract AbstractDeploySingle is Script {
             ambIds, vars.ambAddresses, broadcastAMB
         );
 
-        /// @dev 15 setup setup srcChain keepers
+        /// @dev 16 setup setup srcChain keepers
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYMENT_ADMIN(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_PROCESSOR(), ownerAddress, vars.chainId);
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), ownerAddress, vars.chainId);

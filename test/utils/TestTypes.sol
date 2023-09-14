@@ -119,6 +119,7 @@ struct SetupVars {
     address wormholeBroadcastHelper;
     address wormholeImplementation;
     address wormholeSRImplementation;
+    address dstSwapper;
     address lifiRouter;
     address erc4626Form;
     address erc4626TimelockForm;
