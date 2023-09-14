@@ -80,9 +80,15 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     }
 
     /// @inheritdoc BaseForm
+    function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256) {
+        return IERC4626(vault).previewRedeem(shares_);
+    }
+
+    /// @inheritdoc BaseForm
     function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256) {
         return IERC4626(vault).previewWithdraw(assets_);
     }
+
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES

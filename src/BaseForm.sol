@@ -202,7 +202,12 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     function previewDepositTo(uint256 assets_) public view virtual override returns (uint256);
 
     /// @inheritdoc IBaseForm
+    function previewRedeemFrom(uint256 shares) public view virtual override returns (uint256);
+
+    /// @inheritdoc IBaseForm
     function previewWithdrawFrom(uint256 assets_) public view virtual override returns (uint256);
+
+
 
     /*///////////////////////////////////////////////////////////////
                 INTERNAL STATE CHANGING VIRTUAL FUNCTIONS
