@@ -37,6 +37,7 @@ contract SDSVD4626RevertNoSwapNativeNoSlippage is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 0
             })
         );

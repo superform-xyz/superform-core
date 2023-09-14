@@ -349,7 +349,7 @@ abstract contract AbstractDeploy is Script {
         /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for multiTxProcessor?
+        /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for dstSwapProcessor?
         vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), ownerAddress);
 
         /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE for state registry?

@@ -44,6 +44,7 @@ contract MDMVDMulti0026NativeSlippageAMB23 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );

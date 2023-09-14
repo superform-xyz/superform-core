@@ -65,6 +65,7 @@ contract MDSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 743, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
@@ -78,6 +79,7 @@ contract MDSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 743, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );

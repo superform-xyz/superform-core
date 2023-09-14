@@ -83,6 +83,7 @@ contract MDMVW0102408NativeInputSlippageAMB12 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 643, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
@@ -96,6 +97,7 @@ contract MDMVW0102408NativeInputSlippageAMB12 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 643, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );

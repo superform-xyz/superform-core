@@ -38,6 +38,7 @@ contract SDSVD4626TimelockedSwapTokenInputSlippage is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );

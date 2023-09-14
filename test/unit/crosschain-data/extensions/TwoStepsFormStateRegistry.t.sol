@@ -27,6 +27,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             ETH,
+            false,
             deployer,
             uint256(ETH),
             420,
@@ -93,6 +94,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             ETH,
+            false,
             deployer,
             uint256(ETH),
             /// @dev amount is 1 less than 420 * 0.9 i.e. exceeding maxSlippage of 10% by 1

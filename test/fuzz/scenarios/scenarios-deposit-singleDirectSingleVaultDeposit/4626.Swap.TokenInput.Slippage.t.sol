@@ -37,6 +37,7 @@ contract SDSVD4626SwapTokenInputSlippage is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 852, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 0
             })
         );

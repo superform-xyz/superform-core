@@ -614,7 +614,7 @@ contract PaymentHelper is IPaymentHelper {
         }
 
         for (uint256 i; i < liqReq_.length;) {
-            /// @dev checks if tx_data receiver is multiTxProcessor
+            /// @dev checks if tx_data receiver is dstSwapProcessor
             if (
                 liqReq_[i].bridgeId != 0
                     && IBridgeValidator(superRegistry.getBridgeValidator(liqReq_[i].bridgeId)).validateReceiver(

@@ -44,6 +44,7 @@ contract MDMVDMulti0000NoIncludingSingleDirectTokenInputSlippageAMB12 is Protoco
                 revertError: "",
                 revertRole: "",
                 slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
