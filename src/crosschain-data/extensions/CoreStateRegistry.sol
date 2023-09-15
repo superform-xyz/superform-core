@@ -453,9 +453,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     /// how can we compare an amount of underlying against superPositions? This seems invalid
 
                     lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i], false);
+
+                    /// @dev if finalAmount is > previewRedeem now this will always fail. Vault can suffer variations in
+                    /// between off-chain and onchain call
                     PayloadUpdaterLib.validateSlippage(
                         lV.finalAmount,
-                        IBaseForm(superform).previewWithdrawFrom(lV.multiVaultData.amounts[lV.i]),
+                        IBaseForm(superform).previewRedeemFrom(lV.multiVaultData.amounts[lV.i]),
                         lV.multiVaultData.maxSlippage[lV.i]
                     );
 

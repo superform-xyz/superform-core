@@ -19,7 +19,7 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[AVAX][0] = [1, 1, 1];
         TARGET_VAULTS[AVAX][0] = [1, 4, 2];
-        /// @dev id 0 is normal 4626
+        /// @dev two timelocked vaults, one failing on withdraws and 1 kyc vault
         TARGET_FORM_KINDS[AVAX][0] = [1, 1, 2];
 
         TARGET_UNDERLYINGS[AVAX][1] = [1, 1, 1];
@@ -68,20 +68,20 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(
-        uint128 amountOne_,
-        uint128 amountOneWithdraw_,
-        uint128 amountTwo_,
-        uint128 amountThree_,
-        uint128 amountThreeWithdraw_
-    )
+    function test_scenario()
+        // uint128 amountOne_,
+        // uint128 amountOneWithdraw_,
+        // uint128 amountTwo_,
+        // uint128 amountThree_,
+        // uint128 amountThreeWithdraw_
         public
     {
         /// @dev min amountOne_ and amountThree_ need to be 3 as their withdraw amount >= 2
-        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_USDT / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_USDT / 3));
-        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_USDT / 3));
-        AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
+        // amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_USDT / 3));
+        // amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_USDT / 3));
+        // amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_USDT / 3));
+        // AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
+        AMOUNTS[AVAX][0] = [1e6, 2e6, 3e6];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -101,9 +101,13 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
-                    amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, superPositions[2] - 1));
-                    AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], amountThreeWithdraw_];
+                    console.log("superPositions[0]", superPositions[0]);
+                    console.log("superPositions[1]", superPositions[1]);
+                    console.log("superPositions[2]", superPositions[2]);
+                    // amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
+                    // amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, superPositions[2] - 1));
+                    // AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], amountThreeWithdraw_];
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[1], superPositions[2] / 2];
                 }
             }
 

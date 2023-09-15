@@ -7,7 +7,7 @@ import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { IERC4626TimelockForm } from "../../forms/interfaces/IERC4626TimelockForm.sol";
-import { ITwoStepsFormStateRegistry } from "../../interfaces/ITwoStepsFormStateRegistry.sol";
+import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
 import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
@@ -18,10 +18,11 @@ import { DataLib } from "../../libraries/DataLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import "../../types/DataTypes.sol";
 
-/// @title TwoStepsFormStateRegistry
+/// @title TimelockStateRegistry
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
-contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegistry {
+
+contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
@@ -29,9 +30,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                                 MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
-    modifier onlyTwoStepsStateRegistryProcessor() {
+    modifier onlyTimelockStateRegistryProcessor() {
         if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasTwoStepsStateRegistryProcessorRole(
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasTimelockStateRegistryProcessorRole(
                 msg.sender
             )
         ) revert Error.NOT_PROCESSOR();
@@ -48,10 +49,10 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
     //////////////////////////////////////////////////////////////*/
 
     /// @dev tracks the total time lock payloads
-    uint256 public timeLockPayloadCounter;
+    uint256 public timelockPayloadCounter;
 
     /// @dev stores the timelock payloads
-    mapping(uint256 timeLockPayloadId => TwoStepsPayload) public twoStepsPayload;
+    mapping(uint256 timeLockPayloadId => TimelockPayload) public timelockPayload;
 
     /// @dev allows only form to write to the receive paylod
     modifier onlyForm(uint256 superformId) {
@@ -79,7 +80,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
                             EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @inheritdoc ITwoStepsFormStateRegistry
+    /// @inheritdoc ITimelockStateRegistry
     function receivePayload(
         uint8 type_,
         address srcSender_,
@@ -91,13 +92,13 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         override
         onlyForm(data_.superformId)
     {
-        ++timeLockPayloadCounter;
+        ++timelockPayloadCounter;
 
-        twoStepsPayload[timeLockPayloadCounter] =
-            TwoStepsPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING);
+        timelockPayload[timelockPayloadCounter] =
+            TimelockPayload(type_, srcSender_, srcChainId_, lockedTill_, data_, TwoStepsStatus.PENDING);
     }
 
-    /// @inheritdoc ITwoStepsFormStateRegistry
+    /// @inheritdoc ITimelockStateRegistry
     function finalizePayload(
         uint256 timeLockPayloadId_,
         bytes memory txData_
@@ -105,9 +106,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         external
         payable
         override
-        onlyTwoStepsStateRegistryProcessor
+        onlyTimelockStateRegistryProcessor
     {
-        TwoStepsPayload memory p = twoStepsPayload[timeLockPayloadId_];
+        TimelockPayload memory p = timelockPayload[timeLockPayloadId_];
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
         uint256 finalAmount;
 
@@ -142,7 +143,8 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             );
 
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
-            PayloadUpdaterLib.validateSlippage(finalAmount, form.previewWithdrawFrom(p.data.amount), p.data.maxSlippage);
+
+            PayloadUpdaterLib.validateSlippage(finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage);
 
             p.data.liqData.txData = txData_;
         }
@@ -166,7 +168,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         }
 
         /// @dev restoring state for gas saving
-        delete twoStepsPayload[timeLockPayloadId_];
+        delete timelockPayload[timeLockPayloadId_];
     }
 
     /// @inheritdoc BaseStateRegistry
@@ -175,7 +177,7 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         payable
         virtual
         override
-        onlyTwoStepsStateRegistryProcessor
+        onlyTimelockStateRegistryProcessor
         isValidPayloadId(payloadId_)
     {
         if (payloadTracking[payloadId_] == PayloadState.PROCESSED) {
@@ -211,9 +213,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
     }
 
-    /// @inheritdoc ITwoStepsFormStateRegistry
-    function getTwoStepsPayload(uint256 payloadId_) external view returns (TwoStepsPayload memory twoStepsPayload_) {
-        return twoStepsPayload[payloadId_];
+    /// @inheritdoc ITimelockStateRegistry
+    function getTimelockPayload(uint256 payloadId_) external view returns (TimelockPayload memory timelockPayload_) {
+        return timelockPayload[payloadId_];
     }
 
     /*///////////////////////////////////////////////////////////////

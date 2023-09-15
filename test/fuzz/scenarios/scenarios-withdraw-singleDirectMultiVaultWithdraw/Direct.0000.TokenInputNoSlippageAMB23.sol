@@ -17,16 +17,14 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
         CHAIN_0 = ARBI;
         DST_CHAINS = [ARBI];
 
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ARBI][0] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0];
-        /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0];
+        /// @dev 3 vaults normal deposit equal, 1 normal
+        TARGET_UNDERLYINGS[ARBI][0] = [1, 2, 0, 0];
+        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 2];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 2];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0];
-        /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
+        TARGET_UNDERLYINGS[ARBI][1] = [1, 2, 0, 0];
+        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 2];
+        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 2];
 
         MAX_SLIPPAGE = 1000;
 
@@ -73,7 +71,6 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
         amountThree_ = uint128(bound(amountThree_, 1, TOTAL_SUPPLY_WETH / 4));
         amountFour_ = uint128(bound(amountFour_, 1, TOTAL_SUPPLY_WETH / 4));
         AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountFour_];
-        AMOUNTS[ARBI][1] = [amountOne_, amountTwo_, amountThree_, amountFour_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -82,6 +79,22 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    /// @dev original super position amounts
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] =
+                        [superPositions[0], superPositions[1], superPositions[2], superPositions[3]];
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

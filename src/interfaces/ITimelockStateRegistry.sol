@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
-import { InitSingleVaultData, TwoStepsPayload } from "../types/DataTypes.sol";
+import { InitSingleVaultData, TimelockPayload } from "../types/DataTypes.sol";
 
-/// @title ITwoStepsFormStateRegistry
+/// @title ITimelockStateRegistry
 /// @author ZeroPoint Labs
 /// @notice Interface for Two Steps Form State Registry
-interface ITwoStepsFormStateRegistry {
+interface ITimelockStateRegistry {
     /// @notice Receives request (payload) from two steps form to process later
     /// @param type_ is the nature of transaction (xChain: 1 or same chain: 0)
     /// @param srcSender_ is the address of the source chain caller
@@ -30,8 +30,8 @@ interface ITwoStepsFormStateRegistry {
     /// @dev allows users to read the timeLockPayload_ stored per payloadId_
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain
     /// @return timeLockPayload_ the timelock payload stored
-    function getTwoStepsPayload(uint256 payloadId_) external view returns (TwoStepsPayload memory timeLockPayload_);
+    function getTimelockPayload(uint256 payloadId_) external view returns (TimelockPayload memory timeLockPayload_);
 
-    /// @dev allows users to read the timeLockPayloadCounter
-    function timeLockPayloadCounter() external view returns (uint256);
+    /// @dev allows users to read the timelockPayloadCounter
+    function timelockPayloadCounter() external view returns (uint256);
 }

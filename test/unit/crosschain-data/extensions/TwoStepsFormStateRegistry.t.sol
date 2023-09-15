@@ -4,13 +4,13 @@ pragma solidity 0.8.21;
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
-contract TwoStepsStateRegistryTest is ProtocolActions {
-    TwoStepsFormStateRegistry public twoStepRegistry;
+contract TimelockStateRegistryTest is ProtocolActions {
+    TimelockStateRegistry public twoStepRegistry;
 
     function setUp() public override {
         super.setUp();
 
-        twoStepRegistry = TwoStepsFormStateRegistry(payable(getContract(ETH, "TwoStepsFormStateRegistry")));
+        twoStepRegistry = TimelockStateRegistry(payable(getContract(ETH, "TimelockStateRegistry")));
     }
 
     function test_updateTxDataBranch() external {

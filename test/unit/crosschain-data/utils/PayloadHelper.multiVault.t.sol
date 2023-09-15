@@ -4,12 +4,14 @@ pragma solidity 0.8.21;
 /// Interfaces
 import { IPayloadHelper } from "src/interfaces/IPayloadHelper.sol";
 import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { DataLib } from "src/libraries/DataLib.sol";
 
 // Test Utils
 import "test/utils/ProtocolActions.sol";
 
 contract PayloadHelperMultiTest is ProtocolActions {
     /// @dev Access SuperformRouter interface
+    using DataLib for uint256;
 
     function setUp() public override {
         super.setUp();
@@ -32,7 +34,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         TARGET_FORM_KINDS[POLY][1] = [0, 0];
 
         AMOUNTS[POLY][0] = [23_183, 213];
-        AMOUNTS[POLY][1] = [23_183, 213];
+        // AMOUNTS[POLY][1] = [23_183, 213];
 
         MAX_SLIPPAGE = 1000;
 
@@ -83,6 +85,20 @@ contract PayloadHelperMultiTest is ProtocolActions {
             StagesLocalVars memory vars;
             bool success;
 
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2];
+                }
+            }
+
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
@@ -102,6 +118,20 @@ contract PayloadHelperMultiTest is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[0] / 2];
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
@@ -207,6 +237,8 @@ contract PayloadHelperMultiTest is ProtocolActions {
         (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts,, v.nativeAmounts) = IPayloadHelper(
             contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
         ).decodeCoreStateRegistryPayloadLiqData(2);
+        (,,,,,, uint256[] memory superformids,,) =
+            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(2);
 
         assertEq(v.bridgeIds[0], 1);
 
@@ -216,7 +248,9 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         assertEq(v.liqDstChainIds[0], FINAL_LIQ_DST_WITHDRAW[POLY][0]);
 
-        assertEq(v.amounts, AMOUNTS[POLY][0]);
+        /// @dev number of superpositions to burn in withdraws are not meant to be same as deposit amounts
+
+        assertEq(v.amounts, actualAmountWithdrawnPerDst[0]);
     }
 
     function _checkDstPayloadReturn() internal {

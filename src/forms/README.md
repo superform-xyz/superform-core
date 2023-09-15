@@ -12,6 +12,6 @@ Here's what's included in this directory:
 
 **ERC4626KYCDAOForm.sol:** The standard implementation of a Form contract integrated with KYCDao's whitelist NFT. This Form interacts with a corresponding ERC4626 compliant vault.
 
-**ERC4626TimelockForm.sol:** A variant of the standard Form contract that includes timelock functionality. This Form contract is used when time-based conditions need to be met during the deposit or withdrawal process. This Form requires a [TwoStepsFormRegistry](../crosschain-data/TwoStepsFormStateRegistry.sol) _(also known as FormStateRegistry)_ to execute redemption at a later time through the processUnlock() function.
+**ERC4626TimelockForm.sol:** A variant of the standard Form contract that includes timelock functionality. This Form contract is used when time-based conditions need to be met during the deposit or withdrawal process. This Form requires a [TwoStepsFormRegistry](../crosschain-data/TimelockStateRegistry.sol) _(also known as FormStateRegistry)_ to execute redemption at a later time through the processUnlock() function.
 
 **FormBeacon.sol:** Implements a Beacon Proxy pattern for each Form for improved management. Each Form is deployed as part of Beacon Proxy logic through the SuperformFactory.
