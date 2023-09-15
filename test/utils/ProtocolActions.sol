@@ -14,7 +14,7 @@ import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
-import { pp, SolPretty } from "solpretty/solpretty.sol";
+import { SolPretty } from "solpretty/SolPretty.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract ProtocolActions is BaseSetup {
