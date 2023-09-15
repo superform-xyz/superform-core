@@ -24,7 +24,7 @@ import { WormholeSRImplementation } from
     "src/crosschain-data/adapters/wormhole/specialized-relayer/WormholeSRImplementation.sol";
 import { IMailbox } from "src/vendor/hyperlane/IMailbox.sol";
 import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaymaster.sol";
-import { TwoStepsFormStateRegistry } from "src/crosschain-data/extensions/TwoStepsFormStateRegistry.sol";
+import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
@@ -82,7 +82,7 @@ abstract contract AbstractDeploySingle is Script {
 
     string[22] public contractNames = [
         "CoreStateRegistry",
-        "TwoStepsFormStateRegistry",
+        "TimelockStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
@@ -345,8 +345,8 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
-        vars.superRBACC.grantRole(vars.superRBACC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
+        /// @dev FIXME: in reality who should have the TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+        vars.superRBACC.grantRole(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
         /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
         vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
@@ -361,11 +361,11 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRegistryC.setAddress(vars.superRegistryC.CORE_STATE_REGISTRY(), vars.coreStateRegistry, vars.chainId);
 
         /// @dev 3.2 - deploy Form State Registry
-        vars.twoStepsFormStateRegistry = address(new TwoStepsFormStateRegistry{salt: salt}(vars.superRegistryC));
-        contracts[vars.chainId][bytes32(bytes("TwoStepsFormStateRegistry"))] = vars.twoStepsFormStateRegistry;
+        vars.twoStepsFormStateRegistry = address(new TimelockStateRegistry{salt: salt}(vars.superRegistryC));
+        contracts[vars.chainId][bytes32(bytes("TimelockStateRegistry"))] = vars.twoStepsFormStateRegistry;
 
         vars.superRegistryC.setAddress(
-            vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
+            vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
         );
         vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
@@ -677,8 +677,8 @@ abstract contract AbstractDeploySingle is Script {
                 );
 
                 vars.superRegistryC.setAddress(
-                    vars.superRegistryC.TWO_STEPS_FORM_STATE_REGISTRY(),
-                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "TwoStepsFormStateRegistry"),
+                    vars.superRegistryC.TIMELOCK_STATE_REGISTRY(),
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "TimelockStateRegistry"),
                     vars.dstChainId
                 );
 

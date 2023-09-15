@@ -8,15 +8,19 @@ import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { ITwoStepsFormStateRegistry } from "src/interfaces/ITwoStepsFormStateRegistry.sol";
+import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { pp, SolPretty } from "solpretty/solpretty.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     using DataLib for uint256;
+    using SolPretty for string;
+    using Math for uint256;
 
     /// out of 10000
     int256 totalSlippage = 200;
@@ -131,7 +135,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
         address token;
-
         /// @dev assumption here is DAI has total supply of TOTAL_SUPPLY_DAI on all chains
         /// and similarly for USDT, WETH and ETH
         if (action.externalToken == 3) {
@@ -153,6 +156,7 @@ abstract contract ProtocolActions is BaseSetup {
         if (action.action == Actions.Withdraw) {
             for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
+
                 vars.superformIds = _superformIds(
                     TARGET_UNDERLYINGS[DST_CHAINS[i]][act],
                     TARGET_VAULTS[DST_CHAINS[i]][act],
@@ -1101,10 +1105,10 @@ abstract contract ProtocolActions is BaseSetup {
 
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
-                ITwoStepsFormStateRegistry twoStepsFormStateRegistry =
-                    ITwoStepsFormStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]);
+                ITimelockStateRegistry twoStepsFormStateRegistry =
+                    ITimelockStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("TimelockStateRegistry"))]);
 
-                currentUnlockId = twoStepsFormStateRegistry.timeLockPayloadCounter();
+                currentUnlockId = twoStepsFormStateRegistry.timelockPayloadCounter();
                 if (currentUnlockId > 0) {
                     vm.recordLogs();
 
@@ -1177,7 +1181,7 @@ abstract contract ProtocolActions is BaseSetup {
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             if (CHAIN_0 != DST_CHAINS[i] && revertingWithdrawTimelockedSFs[i].length > 0) {
                 IBaseStateRegistry twoStepsFormStateRegistry =
-                    IBaseStateRegistry(contracts[CHAIN_0][bytes32(bytes("TwoStepsFormStateRegistry"))]);
+                    IBaseStateRegistry(contracts[CHAIN_0][bytes32(bytes("TimelockStateRegistry"))]);
 
                 /// @dev if a payload exists to be processed, process it
                 if (_payload(address(twoStepsFormStateRegistry), CHAIN_0, TWO_STEP_PAYLOAD_ID[CHAIN_0] + 1).length > 0)
@@ -1706,7 +1710,6 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[args.toChainId]);
         (vars.superform,,) = args.superformId.getSuperform();
         vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(args.amount);
-        console.log("actualWithdrawAmount", vars.actualWithdrawAmount, "args.amount", args.amount);
 
         vm.selectFork(initialFork);
 
@@ -1814,7 +1817,6 @@ abstract contract ProtocolActions is BaseSetup {
                 revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
             }
             if (vars.vaultIds[i] == 4) {
-                console.log("vars.superformIdsTemp[i]", vars.superformIdsTemp[i]);
                 revertingWithdrawTimelockedSFsPerDst.push(vars.superformIdsTemp[i]);
             }
             if (vars.vaultIds[i] == 7 || vars.vaultIds[i] == 8) {
@@ -2145,7 +2147,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
-        TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
+        TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);
 
@@ -2154,14 +2156,14 @@ abstract contract ProtocolActions is BaseSetup {
         SuperRegistry(getContract(targetChainId_, "SuperRegistry")).setRequiredMessagingQuorum(srcChainId_, 1);
 
         vm.prank(deployer);
-        TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
+        TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);
 
         /// @dev maliciously tries to process the payload again
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
-        TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
+        TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);
 
@@ -2344,7 +2346,8 @@ abstract contract ProtocolActions is BaseSetup {
             if (!partialWithdraw) {
                 /// @dev <= 1 due to off by one issues with vault.previewRedeem(), leading to
                 /// currentBalanceOfSp being 1 more than expected
-                assertLe(currentBalanceOfSp - amountsToAssert[i], 1);
+                //assertLe(currentBalanceOfSp - amountsToAssert[i], 1);
+                assertEq(currentBalanceOfSp, amountsToAssert[i]);
             } else {
                 assertGt(currentBalanceOfSp, amountsToAssert[i]);
             }
@@ -2418,10 +2421,8 @@ abstract contract ProtocolActions is BaseSetup {
         emptyAmount = new uint256[](v.lenSuperforms);
         spAmountSummed = new uint256[](v.lenSuperforms);
         int256 bridgeSlippage;
-
         /// @dev create an array of amounts summing the amounts of the same superform ids
         (v.superforms,,) = DataLib.getSuperforms(args.multiSuperformsData.superformIds);
-
         for (v.i = 0; v.i < v.lenSuperforms; v.i++) {
             totalSpAmount += args.multiSuperformsData.amounts[v.i];
             for (v.j = 0; v.j < v.lenSuperforms; v.j++) {
@@ -2434,9 +2435,6 @@ abstract contract ProtocolActions is BaseSetup {
                         if (v.foundRevertingDeposit) break;
                     }
                 }
-                console.log("v.foundRevertingDeposit", v.foundRevertingDeposit);
-                console.log("args.multiSuperformsData.superformIds[v.i]", args.multiSuperformsData.superformIds[v.i]);
-                console.log("args.multiSuperformsData.superformIds[v.j]", args.multiSuperformsData.superformIds[v.j]);
                 /// @dev if a superform is repeated but not reverting
                 if (
                     args.multiSuperformsData.superformIds[v.i] == args.multiSuperformsData.superformIds[v.j]
@@ -2444,6 +2442,7 @@ abstract contract ProtocolActions is BaseSetup {
                 ) {
                     /// @dev calculate amounts with slippage if needed for assertions
                     v.finalAmount = args.multiSuperformsData.amounts[v.j];
+
                     if (args.assertWithSlippage && args.slippage != 0 && !args.sameChain) {
                         /// @dev applying bridge slippage
                         v.finalAmount = (v.finalAmount * uint256(10_000 - args.slippage)) / 10_000;
@@ -2452,15 +2451,8 @@ abstract contract ProtocolActions is BaseSetup {
                     v.finalAmount = v.finalAmount * args.repetitions;
 
                     spAmountSummed[v.i] += v.finalAmount;
-                    console.log("HERE");
                 }
             }
-            // vm.selectFork(FORKS[DST_CHAINS[args.dstIndex]]);
-            /// @dev calculate the final amount summed on the basis of previewDeposit
-            // spAmountSummed[v.i] = IBaseForm(v.superforms[v.i]).previewDepositTo(
-            //     spAmountSummed[v.i]
-            // );
-            // spAmountSummed[v.i] =
         }
     }
 
@@ -2480,7 +2472,6 @@ abstract contract ProtocolActions is BaseSetup {
     {
         uint256 lenSuperforms = multiSuperformsData.superformIds.length;
         spAmountFinal = new uint256[](lenSuperforms);
-        console.log("lenRevertWithdraw", lenRevertWithdraw);
 
         if (sameDst && lenRevertWithdraw > 0) {
             spAmountFinal = multiSuperformsData.amounts;
@@ -2503,11 +2494,7 @@ abstract contract ProtocolActions is BaseSetup {
                             if (foundRevertingWithdraw) break;
                         }
                     }
-                    console.log("lenRevertWithdrawTimelocked", lenRevertWithdrawTimelocked);
-                    // console.log(
-                    //     "revertingWithdrawTimelockedSFs[dstIndex][k]", revertingWithdrawTimelockedSFs[dstIndex][0]
-                    // );
-                    console.log("multiSuperformsData.superformIds[i]", multiSuperformsData.superformIds[i]);
+
                     if (lenRevertWithdrawTimelocked > 0) {
                         for (uint256 k = 0; k < lenRevertWithdrawTimelocked; k++) {
                             foundRevertingWithdrawTimelocked =
@@ -2518,16 +2505,10 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev if superForm is repeated and NOT (reverting and same destination) amount is decreated
                     /// @dev if it was reverting we should not decrease (amount is reminted)
                     /// @dev if same destination it should not be asserted here
-                    console.log("YO");
-                    console.log("sameDst", sameDst);
-                    console.log("foundRevertingWithdraw", foundRevertingWithdraw);
-                    console.log("foundRevertingWithdrawTimelocked", foundRevertingWithdrawTimelocked);
                     if (
                         multiSuperformsData.superformIds[i] == multiSuperformsData.superformIds[j]
                             && !(sameDst && foundRevertingWithdraw)
                     ) {
-                        console.log("spAmountFinal[i] before", spAmountFinal[i]);
-                        console.log("multiSuperformsData.amounts[j]", multiSuperformsData.amounts[j]);
                         spAmountFinal[i] -= multiSuperformsData.amounts[j];
                     }
                 }
@@ -2677,7 +2658,6 @@ abstract contract ProtocolActions is BaseSetup {
                 );
                 spAmountSummed[i] = spAmountSummedPerDst;
             }
-            console.log("Asserted b4 action multi");
         } else {
             v.token = singleSuperformsData[0].liqRequest.token;
             if (action.action != Actions.Withdraw) {
@@ -2712,7 +2692,6 @@ abstract contract ProtocolActions is BaseSetup {
                     );
                 }
             }
-            console.log("Asserted b4 action");
         }
     }
 
@@ -2892,8 +2871,7 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous
                     /// deposit
                     /// @dev notice the amount sent for non (same DSt and reverting) is amount after burn
-                    console.log("spAmountBeforeWithdrawPerDst[i]", spAmountBeforeWithdrawPerDst[i]);
-                    console.log("singleSuperformsData[i].amount", singleSuperformsData[i].amount);
+
                     _assertSingleVaultBalance(
                         action.user,
                         singleSuperformsData[i].superformId,

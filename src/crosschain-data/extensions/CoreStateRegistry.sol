@@ -14,8 +14,6 @@ import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
 import "../../crosschain-liquidity/LiquidityHandler.sol";
 
-import "forge-std/console.sol";
-
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks
@@ -455,10 +453,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     /// how can we compare an amount of underlying against superPositions? This seems invalid
 
                     lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i], false);
-                    console.log("finalAmount", lV.finalAmount);
-                    console.log(
-                        "previewRedeem ", IBaseForm(superform).previewRedeemFrom(lV.multiVaultData.amounts[lV.i])
-                    );
 
                     /// @dev if finalAmount is > previewRedeem now this will always fail. Vault can suffer variations in
                     /// between off-chain and onchain call

@@ -17,16 +17,14 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
         CHAIN_0 = ARBI;
         DST_CHAINS = [ARBI];
 
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[ARBI][0] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0];
-        /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0];
+        /// @dev 3 vaults normal deposit equal, 1 normal
+        TARGET_UNDERLYINGS[ARBI][0] = [1, 2, 0, 0];
+        TARGET_VAULTS[ARBI][0] = [0, 0, 0, 2];
+        TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 2];
 
-        TARGET_UNDERLYINGS[ARBI][1] = [1, 1, 1, 0];
-        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 0];
-        /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 0];
+        TARGET_UNDERLYINGS[ARBI][1] = [1, 2, 0, 0];
+        TARGET_VAULTS[ARBI][1] = [0, 0, 0, 2];
+        TARGET_FORM_KINDS[ARBI][1] = [0, 0, 0, 2];
 
         MAX_SLIPPAGE = 1000;
 
@@ -84,6 +82,7 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
 
             if (act == 1) {
                 for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    /// @dev original super position amounts
                     uint256[] memory superPositions = _getSuperpositionsForDstChain(
                         actions[1].user,
                         TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
@@ -93,7 +92,7 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
                     );
 
                     AMOUNTS[DST_CHAINS[i]][1] =
-                        [superPositions[0] / 3, superPositions[0] / 3, superPositions[0] / 3, superPositions[3]];
+                        [superPositions[0], superPositions[1], superPositions[2], superPositions[3]];
                 }
             }
 

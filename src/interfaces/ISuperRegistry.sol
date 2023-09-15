@@ -116,7 +116,7 @@ interface ISuperRegistry {
     function CORE_STATE_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the two steps form state registry module
-    function TWO_STEPS_FORM_STATE_REGISTRY() external view returns (bytes32);
+    function TIMELOCK_STATE_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the broadcast state registry module
     function BROADCAST_REGISTRY() external view returns (bytes32);
