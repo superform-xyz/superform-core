@@ -5,6 +5,7 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 
 /// @title IERC4626Form
 /// @author Zeropoint Labs
+// FIXME: these variables should be in every form regardless of 4626
 interface IERC4626Form is IERC20 {
     function vaultSharesIsERC20() external pure returns (bool);
 

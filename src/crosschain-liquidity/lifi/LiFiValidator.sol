@@ -199,4 +199,9 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             (, amount_,,,) = minimalCalldataVerification.extractGenericSwapParameters(txData_);
         }
     }
+
+    /// @inheritdoc BridgeValidator
+    function decodeDstSwap(bytes calldata txData_) external view override returns (address token_, uint256 amount_) {
+        (token_, amount_,,,) = minimalCalldataVerification.extractGenericSwapParameters(txData_);
+    }
 }

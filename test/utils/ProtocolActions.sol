@@ -2267,9 +2267,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.prank(deployer);
 
-        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(
-            liqBridgeKind_, txData, underlyingTokenDst_, amount_
-        );
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData);
         vm.selectFork(initialFork);
     }
 
@@ -2302,8 +2300,14 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.prank(deployer);
 
+        uint256[] memory indices = new uint256[](amounts_.length);
+
+        for (uint256 i; i < amounts_.length; i++) {
+            indices[i] = i;
+        }
+
         DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).batchProcessTx(
-            liqBridgeKinds_, txDatas, underlyingTokensDst_, amounts_
+            1, indices, liqBridgeKinds_, txDatas
         );
         vm.selectFork(initialFork);
     }

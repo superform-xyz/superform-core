@@ -5,9 +5,14 @@ import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol"
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IDstSwapper } from "../interfaces/IDstSwapper.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
+import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
+import { ICoreStateRegistry } from "../interfaces/ICoreStateRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
+import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
 import { Error } from "../utils/Error.sol";
+import { DataLib } from "../libraries/DataLib.sol";
+import "../types/DataTypes.sol";
 
 /// @title DstSwapper
 /// @author Zeropoint Labs.
@@ -22,6 +27,7 @@ contract DstSwapper is IDstSwapper {
     //////////////////////////////////////////////////////////////*/
 
     ISuperRegistry public immutable superRegistry;
+    mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public swappedAmount;
 
     modifier onlySwapper() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasDstSwapperRole(msg.sender)) {
@@ -49,21 +55,32 @@ contract DstSwapper is IDstSwapper {
     /// @dev liquidity bridge fails without a native receive function.
     receive() external payable { }
 
+    struct ProcessTxVars {
+        address finalDst;
+        address to;
+        address underlying;
+        uint256 expAmount;
+    }
+
     /// @inheritdoc IDstSwapper
     function processTx(
+        uint256 payloadId_,
+        uint256 index_,
         uint8 bridgeId_,
-        bytes calldata txData_,
-        address approvalToken_,
-        uint256 amount_
+        bytes calldata txData_
     )
         public
         override
         onlySwapper
     {
+        ProcessTxVars memory v;
         uint64 chainId = superRegistry.chainId();
 
+        IBridgeValidator validator = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
+        (address approvalToken_, uint256 amount_) = validator.decodeDstSwap(txData_);
+        v.finalDst = superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"));
         /// @dev validates the bridge data
-        IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_)).validateTxData(
+        validator.validateTxData(
             txData_,
             chainId,
             chainId,
@@ -71,33 +88,44 @@ contract DstSwapper is IDstSwapper {
             false,
             /// to enter the if-else case of the bridge validator loop
             address(0),
-            superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")),
+            v.finalDst,
             approvalToken_
         );
 
         /// @dev get the address of the bridge to send the txData to.
+        v.to = superRegistry.getBridgeAddress(bridgeId_);
+        (v.underlying, v.expAmount) = _getPayloadInfo(payloadId_, index_);
 
-        address to = superRegistry.getBridgeAddress(bridgeId_);
+        uint256 balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
         if (approvalToken_ != NATIVE) {
             /// @dev approve the bridge to spend the approvalToken_.
-            IERC20(approvalToken_).safeIncreaseAllowance(to, amount_);
+            IERC20(approvalToken_).safeIncreaseAllowance(v.to, amount_);
 
             /// @dev execute the txData_.
-            (bool success,) = payable(to).call(txData_);
+            (bool success,) = payable(v.to).call(txData_);
             if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA();
         } else {
             /// @dev execute the txData_.
-            (bool success,) = payable(to).call{ value: amount_ }(txData_);
+            (bool success,) = payable(v.to).call{ value: amount_ }(txData_);
             if (!success) revert Error.FAILED_TO_EXECUTE_TXDATA_NATIVE();
         }
+        uint256 balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
+
+        if (balanceAfter <= balanceBefore || v.expAmount < balanceAfter - balanceBefore) {
+            /// FIXME: add revert message
+            revert();
+        }
+
+        /// @dev updates swapped amount
+        swappedAmount[payloadId_][index_] = balanceAfter - balanceBefore;
     }
 
     /// @inheritdoc IDstSwapper
     function batchProcessTx(
+        uint256 payloadId_,
+        uint256[] calldata indices,
         uint8[] calldata bridgeIds_,
-        bytes[] calldata txData_,
-        address[] calldata approvalTokens_,
-        uint256[] calldata amounts_
+        bytes[] calldata txData_
     )
         external
         override
@@ -105,11 +133,49 @@ contract DstSwapper is IDstSwapper {
     {
         uint256 len = txData_.length;
         for (uint256 i; i < len;) {
-            processTx(bridgeIds_[i], txData_[i], approvalTokens_[i], amounts_[i]);
+            processTx(payloadId_, indices[i], bridgeIds_[i], txData_[i]);
 
             unchecked {
                 ++i;
             }
+        }
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+    function _getPayloadInfo(
+        uint256 payloadId_,
+        uint256 index_
+    )
+        internal
+        view
+        returns (address underlying_, uint256 expAmt_)
+    {
+        IBaseStateRegistry coreStateRegistry = IBaseStateRegistry(superRegistry.getAddress("CORE_STATE_REGISTRY"));
+
+        PayloadState currState = coreStateRegistry.payloadTracking(payloadId_);
+
+        if (currState != PayloadState.STORED) {
+            /// FIXME: add revert message
+            revert();
+        }
+
+        uint256 payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
+        bytes memory payload = coreStateRegistry.payloadBody(payloadId_);
+
+        (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader);
+
+        if (multi == 1) {
+            InitMultiVaultData memory data = abi.decode(payload, (InitMultiVaultData));
+            (address form_,,) = DataLib.getSuperform(data.superformIds[index_]);
+            underlying_ = IERC4626Form(form_).getVaultAsset();
+            expAmt_ = data.amounts[index_];
+        } else {
+            InitSingleVaultData memory data = abi.decode(payload, (InitSingleVaultData));
+            (address form_,,) = DataLib.getSuperform(data.superformId);
+            underlying_ = IERC4626Form(form_).getVaultAsset();
+            expAmt_ = data.amount;
         }
     }
 
