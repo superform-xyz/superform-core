@@ -684,6 +684,7 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.superformId,
                 sfData_.amount,
                 sfData_.maxSlippage,
+                sfData_.hasDstSwap,
                 sfData_.liqRequest,
                 sfData_.extraFormData
             )
@@ -705,6 +706,7 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.superformIds,
                 sfData_.amounts,
                 sfData_.maxSlippages,
+                sfData_.hasDstSwap,
                 sfData_.liqRequests,
                 sfData_.extraFormData
             )

@@ -32,6 +32,7 @@ struct MultiVaultSFData {
     uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippages;
+    bool[] hasDstSwap;
     LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts) | else  amounts must match the amounts being sent
     bytes permit2data;
     bytes extraFormData; // extraFormData
@@ -43,6 +44,7 @@ struct SingleVaultSFData {
     uint256 superformId;
     uint256 amount;
     uint256 maxSlippage;
+    bool hasDstSwap;
     LiqRequest liqRequest; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
     bytes permit2data;
     bytes extraFormData; // extraFormData
@@ -93,6 +95,7 @@ struct InitMultiVaultData {
     uint256[] superformIds;
     uint256[] amounts;
     uint256[] maxSlippage;
+    bool[] hasDstSwap;
     LiqRequest[] liqData;
     bytes extraFormData;
 }
@@ -104,6 +107,7 @@ struct InitSingleVaultData {
     uint256 superformId;
     uint256 amount;
     uint256 maxSlippage;
+    bool hasDstSwap;
     LiqRequest liqData;
     bytes extraFormData;
 }

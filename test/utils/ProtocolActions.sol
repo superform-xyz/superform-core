@@ -1392,10 +1392,19 @@ abstract contract ProtocolActions is BaseSetup {
             v.permit2data = abi.encode(v.permit.nonce, v.permit.deadline, v.sig);
         }
 
+        bool[] memory hasDstSwap = new bool[](args.superformIds.length);
+
+        if (args.dstSwap) {
+            for (uint256 i; i < hasDstSwap.length; i++) {
+                hasDstSwap[i] = true;
+            }
+        }
+
         superformsData = MultiVaultSFData(
             args.superformIds,
             finalAmounts,
             maxSlippageTemp,
+            hasDstSwap,
             liqRequests,
             v.permit2data,
             abi.encode(args.partialWithdrawVaults)
@@ -1748,7 +1757,13 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
-            args.superformId, args.amount, args.maxSlippage, v.liqReq, v.permit2Calldata, abi.encode(false)
+            args.superformId,
+            args.amount,
+            args.maxSlippage,
+            args.dstSwap,
+            v.liqReq,
+            v.permit2Calldata,
+            abi.encode(false)
         );
     }
 
@@ -1823,7 +1838,13 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
-            args.superformId, args.amount, args.maxSlippage, vars.liqReq, "", abi.encode(args.partialWithdrawVault)
+            args.superformId,
+            args.amount,
+            args.maxSlippage,
+            args.dstSwap,
+            vars.liqReq,
+            "",
+            abi.encode(args.partialWithdrawVault)
         );
     }
 

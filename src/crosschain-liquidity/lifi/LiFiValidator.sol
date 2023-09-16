@@ -106,7 +106,6 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             if (uint256(liqDstChainId_) != destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
 
             /// @dev 2. receiver address validation
-
             if (deposit_) {
                 if (srcChainId_ == dstChainId_) {
                     revert Error.INVALID_ACTION();

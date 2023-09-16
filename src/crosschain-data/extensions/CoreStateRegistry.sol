@@ -71,6 +71,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
     )
+        /// FIXME: map the index of failure ones at this point
         external
         virtual
         override
@@ -262,7 +263,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         external
         payable
         override
-        onlyCoreStateRegistryProcessor
+        onlyCoreStateRegistryProcessor //// FIXME: should be a new role
     {
         RescueFailedDepositsLocalVars memory v;
 
@@ -304,6 +305,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 liqData_[v.i].txData,
                 liqData_[v.i].token,
                 IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData, true),
+                /// FIXME: should validate this to be equal to the updated underlying amount
                 address(this),
                 liqData_[v.i].nativeAmount
             );
@@ -417,6 +419,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 lV.tSuperFormIds,
                 lV.tAmounts,
                 lV.tMaxSlippage,
+                new bool[](lV.tSuperFormIds.length),
                 lV.tLiqData,
                 lV.singleVaultData.extraFormData
             );
@@ -504,6 +507,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 superformId: multiVaultData.superformIds[i],
                 amount: multiVaultData.amounts[i],
                 maxSlippage: multiVaultData.maxSlippage[i],
+                hasDstSwap: false,
                 liqData: multiVaultData.liqData[i],
                 extraFormData: abi.encode(payloadId_, i)
             });
@@ -582,6 +586,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         amount: multiVaultData.amounts[i],
                         maxSlippage: multiVaultData.maxSlippage[i],
                         liqData: emptyRequest,
+                        hasDstSwap: false,
                         extraFormData: multiVaultData.extraFormData
                     }),
                     srcSender_,
