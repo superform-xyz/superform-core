@@ -14,7 +14,7 @@ import { DataLib } from "src/libraries/DataLib.sol";
 
 /// @title LayerzeroImplementation
 /// @author Zeropoint Labs
-/// @dev allows state registries to use hyperlane for crosschain communication
+/// @dev allows state registries to use Layerzero for crosschain communication
 contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicationConfig, ILayerZeroReceiver {
     using DataLib for uint256;
 
