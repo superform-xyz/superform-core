@@ -124,6 +124,12 @@ library Error {
     /// @dev thrown when dst swap output is less than minimum expected
     error SWAP_OUTPUT_LESS_THAN_EXPECTED();
 
+    /// @dev thrown when try to process dst swap for same payload id
+    error DST_SWAP_ALREADY_PROCESSED();
+
+    /// @dev thrown if index is invalid
+    error INVALID_INDEX();
+
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/

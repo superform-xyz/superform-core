@@ -73,6 +73,10 @@ contract DstSwapper is IDstSwapper {
         override
         onlySwapper
     {
+        if (swappedAmount[payloadId_][index_] != 0) {
+            revert Error.DST_SWAP_ALREADY_PROCESSED();
+        }
+
         ProcessTxVars memory v;
         uint64 chainId = superRegistry.chainId();
 
@@ -167,10 +171,19 @@ contract DstSwapper is IDstSwapper {
 
         if (multi == 1) {
             InitMultiVaultData memory data = abi.decode(payload, (InitMultiVaultData));
+
+            if (data.superformIds.length < index_) {
+                revert Error.INVALID_INDEX();
+            }
+
             (address form_,,) = DataLib.getSuperform(data.superformIds[index_]);
             underlying_ = IERC4626Form(form_).getVaultAsset();
             expAmt_ = data.amounts[index_];
         } else {
+            if (index_ != 0) {
+                revert Error.INVALID_INDEX();
+            }
+
             InitSingleVaultData memory data = abi.decode(payload, (InitSingleVaultData));
             (address form_,,) = DataLib.getSuperform(data.superformId);
             underlying_ = IERC4626Form(form_).getVaultAsset();
