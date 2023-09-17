@@ -98,7 +98,7 @@ contract DstSwapper is IDstSwapper {
 
         /// @dev get the address of the bridge to send the txData to.
         v.to = superRegistry.getBridgeAddress(bridgeId_);
-        (v.underlying, v.expAmount) = _getPayloadInfo(payloadId_, index_);
+        v.underlying = _getPayloadInfo(payloadId_, index_);
 
         uint256 balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
         if (approvalToken_ != NATIVE) {
@@ -115,8 +115,8 @@ contract DstSwapper is IDstSwapper {
         }
         uint256 balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
 
-        if (balanceAfter <= balanceBefore || v.expAmount < balanceAfter - balanceBefore) {
-            revert Error.SWAP_OUTPUT_LESS_THAN_EXPECTED();
+        if (balanceAfter <= balanceBefore) {
+            revert Error.INVALID_SWAP_OUTPUT();
         }
 
         /// @dev updates swapped amount
@@ -147,14 +147,7 @@ contract DstSwapper is IDstSwapper {
     /*///////////////////////////////////////////////////////////////
                         INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function _getPayloadInfo(
-        uint256 payloadId_,
-        uint256 index_
-    )
-        internal
-        view
-        returns (address underlying_, uint256 expAmt_)
-    {
+    function _getPayloadInfo(uint256 payloadId_, uint256 index_) internal view returns (address underlying_) {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
@@ -178,7 +171,6 @@ contract DstSwapper is IDstSwapper {
 
             (address form_,,) = DataLib.getSuperform(data.superformIds[index_]);
             underlying_ = IERC4626Form(form_).getVaultAsset();
-            expAmt_ = data.amounts[index_];
         } else {
             if (index_ != 0) {
                 revert Error.INVALID_INDEX();
@@ -187,7 +179,6 @@ contract DstSwapper is IDstSwapper {
             InitSingleVaultData memory data = abi.decode(payload, (InitSingleVaultData));
             (address form_,,) = DataLib.getSuperform(data.superformId);
             underlying_ = IERC4626Form(form_).getVaultAsset();
-            expAmt_ = data.amount;
         }
     }
 

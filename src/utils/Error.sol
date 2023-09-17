@@ -122,7 +122,7 @@ library Error {
     error INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
 
     /// @dev thrown when dst swap output is less than minimum expected
-    error SWAP_OUTPUT_LESS_THAN_EXPECTED();
+    error INVALID_SWAP_OUTPUT();
 
     /// @dev thrown when try to process dst swap for same payload id
     error DST_SWAP_ALREADY_PROCESSED();
