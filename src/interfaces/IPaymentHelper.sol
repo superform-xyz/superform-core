@@ -26,7 +26,7 @@ interface IPaymentHelper {
     /// @param withdrawGasUsed_ is the withdraw per vault gas on the chain
     /// @param defaultNativePrice_ is the native price on the specified chain
     /// @param defaultGasPrice_ is the gas price on the specified chain
-    /// @param dstGasPerKB_ is the gas per size of data
+    /// @param dstGasPerKB_ is the gas per size of data on the specified chain
     function addChain(
         uint64 chainId_,
         address nativeFeedOracle_,

@@ -44,6 +44,7 @@ interface ICoreStateRegistry {
         uint256 prevPayloadHeader;
         uint64 srcChainId;
         uint8 isMulti;
+        PayloadState finalState;
     }
 
     /// @dev local struct to avoid stack too deep errors in `updateWithdrawPayload`
@@ -104,6 +105,6 @@ interface ICoreStateRegistry {
 
     /// @dev allows accounts with {CORE_STATE_REGISTRY_PROCESSOR_ROLE} to rescue tokens on failed deposits
     /// @param payloadId_ is the identifier of the cross-chain payload.
-    /// @param liqDatas_ is the array of liquidity data.
-    function rescueFailedDeposits(uint256 payloadId_, LiqRequest[] memory liqDatas_) external payable;
+    /// @param proposedAmounts_ is the array of proposed rescue amounts.
+    function proposeRescueFailedDeposits(uint256 payloadId_, uint256[] memory proposedAmounts_) external;
 }

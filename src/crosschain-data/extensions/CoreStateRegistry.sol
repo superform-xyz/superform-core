@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
+import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
@@ -11,6 +12,7 @@ import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
+import { IERC4626Form } from "../../forms/interfaces/IERC4626Form.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
 import "../../crosschain-liquidity/LiquidityHandler.sol";
@@ -27,8 +29,15 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
+    struct FailedDeposit {
+        uint256[] superformIds;
+        uint256[] amounts;
+        address refundAddress;
+        uint256 lastProposedTimestamp;
+    }
+
     /// @dev just stores the superformIds that failed in a specific payload id
-    mapping(uint256 payloadId => uint256[] superformIds) internal failedDeposits;
+    mapping(uint256 payloadId => FailedDeposit) internal failedDeposits;
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -68,11 +77,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ICoreStateRegistry
+    /// @dev finalAmounts_[index] should be passed in as zero to mark it as failed before processing
     function updateDepositPayload(
         uint256 payloadId_,
         uint256[] calldata finalAmounts_
     )
-        /// FIXME: map the index of failure ones at this point
         external
         virtual
         override
@@ -96,9 +105,11 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         bytes memory newPayloadBody;
         if (v.isMulti != 0) {
-            newPayloadBody = _updateMultiVaultDepositPayload(payloadId_, v.prevPayloadBody, finalAmounts_);
+            (newPayloadBody, v.finalState) =
+                _updateMultiVaultDepositPayload(payloadId_, v.prevPayloadBody, finalAmounts_);
         } else {
-            newPayloadBody = _updateSingleVaultDepositPayload(payloadId_, v.prevPayloadBody, finalAmounts_[0]);
+            (newPayloadBody, v.finalState) =
+                _updateSingleVaultDepositPayload(payloadId_, v.prevPayloadBody, finalAmounts_[0]);
         }
 
         /// @dev set the new payload body
@@ -115,9 +126,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             delete proofAMB[v.prevPayloadProof];
         }
 
-        /// @dev define the payload status as updated
-        payloadTracking[payloadId_] = PayloadState.UPDATED;
-
+        payloadTracking[payloadId_] = v.finalState;
         emit PayloadUpdated(payloadId_);
     }
 
@@ -257,69 +266,92 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function rescueFailedDeposits(
+    function proposeRescueFailedDeposits(
         uint256 payloadId_,
-        LiqRequest[] memory liqData_
+        uint256[] memory proposedAmounts_
     )
         external
-        payable
         override
         onlyCoreStateRegistryProcessor //// FIXME: should be a new role
     {
         RescueFailedDepositsLocalVars memory v;
-
-        v.superformIds = failedDeposits[payloadId_];
+        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
+        v.superformIds = failedDeposits_.superformIds;
 
         v.l1 = v.superformIds.length;
-        v.l2 = liqData_.length;
+        v.l2 = proposedAmounts_.length;
 
         if (v.l1 == 0 || v.l2 == 0 || v.l1 != v.l2) {
             revert Error.INVALID_RESCUE_DATA();
         }
-        v._payloadHeader = payloadHeader[payloadId_];
 
-        (,,,, v.srcSender, v.srcChainId) = v._payloadHeader.decodeTxInfo();
+        failedDeposits_.amounts = proposedAmounts_;
+        failedDeposits_.lastProposedTimestamp = block.timestamp;
 
+        (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
+
+        if (multi == 1) {
+            InitMultiVaultData memory data = abi.decode(payloadBody[payloadId_], (InitMultiVaultData));
+            failedDeposits_.refundAddress = data.dstRefundAddress;
+        } else {
+            InitSingleVaultData memory data = abi.decode(payloadBody[payloadId_], (InitSingleVaultData));
+            failedDeposits_.refundAddress = data.dstRefundAddress;
+        }
+    }
+
+    function disputeRescueFailedDeposits(uint256 payloadId_) external {
+        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
+
+        if (msg.sender != failedDeposits_.refundAddress) {
+            /// FIXME: add revert message here
+            revert();
+        }
+
+        /// @dev the timelock is already elapsed to dispute
+        if (
+            failedDeposits_.lastProposedTimestamp == 0
+                || block.timestamp > failedDeposits_.lastProposedTimestamp + 12 hours
+        ) {
+            /// FIXME: add revert message here
+            revert();
+        }
+
+        /// @dev just can reset last proposed time here, since amounts should be updated again to
+        /// pass the lastProposedTimestamp zero check in finalize
+        failedDeposits_.lastProposedTimestamp = 0;
+    }
+
+    function finalizeRescueFailedDeposits(uint256 payloadId_) external 
+    //// FIXME: should validate the sender to just be the final user
+    {
+        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
+
+        /// @dev the timelock is elapsed
+        if (
+            failedDeposits_.lastProposedTimestamp == 0
+                || block.timestamp < failedDeposits_.lastProposedTimestamp + 12 hours
+        ) {
+            /// FIXME: add revert message here
+            revert();
+        }
+
+        uint256[] memory superformIds = failedDeposits_.superformIds;
+        uint256[] memory amounts = failedDeposits_.amounts;
+        address refundAddress = failedDeposits_.refundAddress;
+
+        /// @dev deleted to prevent re-entrancy
         delete failedDeposits[payloadId_];
 
-        v.dstChainId = uint64(block.chainid);
-
-        for (v.i; v.i < v.l1;) {
-            (v.superform,,) = v.superformIds[v.i].getSuperform();
-            v.bridgeValidator = _getBridgeValidator(liqData_[v.i].bridgeId);
-
-            v.bridgeValidator.validateTxData(
-                liqData_[v.i].txData,
-                v.dstChainId,
-                v.srcChainId,
-                v.srcChainId,
-                /// @dev in rescuing tokens, the destination chain is the same as the source chain
-                false,
-                /// @dev - this acts like a withdraw where funds are bridged back to user
-                v.superform,
-                v.srcSender,
-                liqData_[v.i].token
-            );
-
-            dispatchTokens(
-                superRegistry.getBridgeAddress(liqData_[v.i].bridgeId),
-                liqData_[v.i].txData,
-                liqData_[v.i].token,
-                IBridgeValidator(v.bridgeValidator).decodeAmountIn(liqData_[v.i].txData, true),
-                /// FIXME: should validate this to be equal to the updated underlying amount
-                address(this),
-                liqData_[v.i].nativeAmount
-            );
-
-            unchecked {
-                ++v.i;
-            }
+        for (uint256 i; i < superformIds.length; ++i) {
+            (address form_,,) = DataLib.getSuperform(superformIds[i]);
+            /// @dev refunds the amount to user specified refund address
+            IERC20(IERC4626Form(form_).getVaultAsset()).transfer(refundAddress, amounts[i]);
         }
     }
 
     /// @inheritdoc ICoreStateRegistry
     function getFailedDeposits(uint256 payloadId) external view override returns (uint256[] memory) {
-        return failedDeposits[payloadId];
+        return failedDeposits[payloadId].superformIds;
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -352,8 +384,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256[] calldata finalAmounts_
     )
         internal
-        view
-        returns (bytes memory newPayloadBody_)
+        returns (bytes memory newPayloadBody_, PayloadState finalState_)
     {
         InitMultiVaultData memory multiVaultData = abi.decode(prevPayloadBody_, (InitMultiVaultData));
         IDstSwapper dstSwapper = IDstSwapper(superRegistry.getAddress(keccak256("DST_SWAPPER")));
@@ -363,11 +394,28 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
         }
 
-        for (uint256 i; i < finalAmounts_.length;) {
+        uint256 validLen;
+        uint256 arrLen = finalAmounts_.length;
+        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
+
+        for (uint256 i; i < arrLen;) {
             if (multiVaultData.hasDstSwaps[i]) {
                 if (dstSwapper.swappedAmount(payloadId_, i) != finalAmounts_[i]) {
                     revert Error.INVALID_DST_SWAP_AMOUNT();
                 }
+            }
+
+            /// @dev validate payload update
+            if (
+                PayloadUpdaterLib.validateSlippage(
+                    finalAmounts_[i], multiVaultData.amounts[i], multiVaultData.maxSlippage[i]
+                )
+            ) {
+                multiVaultData.amounts[i] = finalAmounts_[i];
+                validLen++;
+            } else {
+                multiVaultData.amounts[i] = 0;
+                failedDeposits_.superformIds.push(multiVaultData.superformIds[i]);
             }
 
             unchecked {
@@ -375,9 +423,34 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             }
         }
 
-        /// @dev validate payload update
-        PayloadUpdaterLib.validateSlippageArray(finalAmounts_, multiVaultData.amounts, multiVaultData.maxSlippage);
-        multiVaultData.amounts = finalAmounts_;
+        if (validLen > 0) {
+            uint256[] memory finalSuperformIds = new uint256[](validLen);
+            uint256[] memory finalAmounts = new uint256[](validLen);
+            uint256[] memory maxSlippage = new uint256[](validLen);
+            bool[] memory hasDstSwaps = new bool[](validLen);
+
+            uint256 currLen;
+            for (uint256 i; i < arrLen;) {
+                if (multiVaultData.amounts[i] != 0) {
+                    finalSuperformIds[currLen] = multiVaultData.superformIds[i];
+                    finalAmounts[currLen] = multiVaultData.amounts[i];
+                    maxSlippage[currLen] = multiVaultData.maxSlippage[i];
+                    hasDstSwaps[currLen] = multiVaultData.hasDstSwaps[i];
+                    ++currLen;
+                }
+                unchecked {
+                    ++i;
+                }
+            }
+
+            multiVaultData.amounts = finalAmounts;
+            multiVaultData.superformIds = finalSuperformIds;
+            multiVaultData.maxSlippage = maxSlippage;
+            multiVaultData.hasDstSwaps = hasDstSwaps;
+            finalState_ = PayloadState.UPDATED;
+        } else {
+            finalState_ = PayloadState.PROCESSED;
+        }
 
         newPayloadBody_ = abi.encode(multiVaultData);
     }
@@ -389,8 +462,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         uint256 finalAmount_
     )
         internal
-        view
-        returns (bytes memory newPayloadBody_)
+        returns (bytes memory newPayloadBody_, PayloadState finalState_)
     {
         InitSingleVaultData memory singleVaultData = abi.decode(prevPayloadBody_, (InitSingleVaultData));
         IDstSwapper dstSwapper = IDstSwapper(superRegistry.getAddress(keccak256("DST_SWAPPER")));
@@ -402,8 +474,18 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
         }
 
         /// @dev validate payload update
-        PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage);
-        singleVaultData.amount = finalAmount_;
+        if (PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage)) {
+            /// @dev sets amount to zero and will mark the payload as UPDATED
+            singleVaultData.amount = finalAmount_;
+            finalState_ = PayloadState.UPDATED;
+        } else {
+            FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
+            failedDeposits_.superformIds.push(singleVaultData.superformId);
+
+            /// @dev sets amount to zero and will mark the payload as PROCESSED
+            singleVaultData.amount = 0;
+            finalState_ = PayloadState.PROCESSED;
+        }
 
         newPayloadBody_ = abi.encode(singleVaultData);
     }
@@ -444,6 +526,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 lV.tMaxSlippage,
                 new bool[](lV.tSuperFormIds.length),
                 lV.tLiqData,
+                lV.singleVaultData.dstRefundAddress,
                 lV.singleVaultData.extraFormData
             );
         }
@@ -496,7 +579,6 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         if (multi == 0) {
             lV.singleVaultData.liqData.txData = txData_[0];
-
             return abi.encode(lV.singleVaultData);
         }
 
@@ -532,6 +614,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                 maxSlippage: multiVaultData.maxSlippage[i],
                 hasDstSwap: false,
                 liqData: multiVaultData.liqData[i],
+                dstRefundAddress: multiVaultData.dstRefundAddress,
                 extraFormData: abi.encode(payloadId_, i)
             });
 
@@ -610,6 +693,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                         maxSlippage: multiVaultData.maxSlippage[i],
                         liqData: emptyRequest,
                         hasDstSwap: false,
+                        dstRefundAddress: multiVaultData.dstRefundAddress,
                         extraFormData: multiVaultData.extraFormData
                     }),
                     srcSender_,
@@ -622,11 +706,12 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
                     /// @dev cleaning unused approval
                     underlying.safeDecreaseAllowance(superforms[i], multiVaultData.amounts[i]);
 
-                    /// @dev if any deposit fails, we mark errors as true and add it to failedDeposits mapping for
+                    /// @dev if any deposit fails, we mark errors as true and add it to failedDepositSuperformIds
+                    /// mapping for
                     /// future rescuing
                     if (!errors) errors = true;
 
-                    failedDeposits[payloadId_].push(multiVaultData.superformIds[i]);
+                    failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
                 }
             } else {
                 revert Error.BRIDGE_TOKENS_PENDING();
@@ -727,8 +812,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             } catch {
                 /// @dev cleaning unused approval
                 underlying.safeDecreaseAllowance(superform_, singleVaultData.amount);
-                /// @dev if any deposit fails, add it to failedDeposits mapping for future rescuing
-                failedDeposits[payloadId_].push(singleVaultData.superformId);
+
+                /// @dev if any deposit fails, add it to failedDepositSuperformIds mapping for future rescuing
+                failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
 
                 emit FailedXChainDeposits(payloadId_);
             }

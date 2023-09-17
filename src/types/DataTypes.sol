@@ -35,6 +35,7 @@ struct MultiVaultSFData {
     bool[] hasDstSwaps;
     LiqRequest[] liqRequests; // if length = 1; amount = sum(amounts) | else  amounts must match the amounts being sent
     bytes permit2data;
+    address dstRefundAddress;
     bytes extraFormData; // extraFormData
 }
 
@@ -47,6 +48,7 @@ struct SingleVaultSFData {
     bool hasDstSwap;
     LiqRequest liqRequest; // if length = 1; amount = sum(amounts)| else  amounts must match the amounts being sent
     bytes permit2data;
+    address dstRefundAddress;
     bytes extraFormData; // extraFormData
 }
 
@@ -97,6 +99,7 @@ struct InitMultiVaultData {
     uint256[] maxSlippage;
     bool[] hasDstSwaps;
     LiqRequest[] liqData;
+    address dstRefundAddress;
     bytes extraFormData;
 }
 
@@ -109,6 +112,7 @@ struct InitSingleVaultData {
     uint256 maxSlippage;
     bool hasDstSwap;
     LiqRequest liqData;
+    address dstRefundAddress;
     bytes extraFormData;
 }
 
