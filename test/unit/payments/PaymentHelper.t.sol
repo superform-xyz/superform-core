@@ -38,6 +38,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, emptyBytes, address(0), ETH, 420),
                     emptyBytes,
                     emptyBytes
@@ -55,6 +56,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, emptyBytes, address(0), ETH, 420),
                     emptyBytes,
                     emptyBytes
@@ -72,6 +74,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, emptyBytes, address(0), ETH, 420),
                     emptyBytes,
                     emptyBytes
@@ -103,6 +106,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
+                    new bool[](1),
                     liqRequestMemoryArray,
                     emptyBytes,
                     emptyBytes
@@ -120,6 +124,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
+                    new bool[](1),
                     liqRequestMemoryArray,
                     emptyBytes,
                     emptyBytes
@@ -164,6 +169,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, txData, address(0), ETH, 420),
                     emptyBytes,
                     emptyBytes
@@ -207,6 +213,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, txData, address(0), ETH, 420),
                     emptyBytes,
                     emptyBytes
@@ -250,6 +257,7 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, txData, address(0), ETH, 420),
                     emptyBytes,
                     emptyBytes

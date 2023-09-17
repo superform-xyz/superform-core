@@ -298,6 +298,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             1e18,
             100,
+            false,
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0),
             bytes(""),
             bytes("")
@@ -339,7 +340,13 @@ contract CoreStateRegistryTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0), bytes(""), bytes("")
+            superformId,
+            1e18,
+            100,
+            false,
+            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
+            bytes(""),
+            bytes("")
         );
 
         vm.prank(deployer);
@@ -408,7 +415,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""), bytes(""));
+            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), bytes(""));
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
@@ -473,7 +480,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""), bytes(""));
+            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), bytes(""));
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
@@ -513,7 +520,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         maxSlippages[1] = 1000;
 
         MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, amountArr, maxSlippages, liqReqArr, bytes(""), bytes(""));
+            MultiVaultSFData(superformIds, amountArr, maxSlippages, new bool[](2), liqReqArr, bytes(""), bytes(""));
 
         vm.prank(deployer);
 

@@ -157,7 +157,7 @@ contract DstSwapper is IDstSwapper {
         PayloadState currState = coreStateRegistry.payloadTracking(payloadId_);
 
         if (currState != PayloadState.STORED) {
-            revert Error.INVALID_PAYLOAD_STATUS;
+            revert Error.INVALID_PAYLOAD_STATUS();
         }
 
         uint256 payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
