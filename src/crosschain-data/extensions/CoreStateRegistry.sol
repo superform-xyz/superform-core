@@ -363,12 +363,10 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
             revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
         }
 
-        /// FIXME: hard revert if amount don't match
         for (uint256 i; i < finalAmounts_.length;) {
             if (multiVaultData.hasDstSwaps[i]) {
                 if (dstSwapper.swappedAmount(payloadId_, i) != finalAmounts_[i]) {
-                    /// FIXME: add revert message
-                    revert();
+                    revert Error.INVALID_DST_SWAP_AMOUNT();
                 }
             }
 
@@ -399,8 +397,7 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         if (singleVaultData.hasDstSwap) {
             if (dstSwapper.swappedAmount(payloadId_, 0) != finalAmount_) {
-                /// FIXME: add revert message
-                revert();
+                revert Error.INVALID_DST_SWAP_AMOUNT();
             }
         }
 

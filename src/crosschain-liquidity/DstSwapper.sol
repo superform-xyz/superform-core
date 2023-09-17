@@ -112,8 +112,7 @@ contract DstSwapper is IDstSwapper {
         uint256 balanceAfter = IERC20(v.underlying).balanceOf(v.finalDst);
 
         if (balanceAfter <= balanceBefore || v.expAmount < balanceAfter - balanceBefore) {
-            /// FIXME: add revert message
-            revert();
+            revert Error.SWAP_OUTPUT_LESS_THAN_EXPECTED();
         }
 
         /// @dev updates swapped amount
@@ -158,8 +157,7 @@ contract DstSwapper is IDstSwapper {
         PayloadState currState = coreStateRegistry.payloadTracking(payloadId_);
 
         if (currState != PayloadState.STORED) {
-            /// FIXME: add revert message
-            revert();
+            revert Error.INVALID_PAYLOAD_STATUS;
         }
 
         uint256 payloadHeader = coreStateRegistry.payloadHeader(payloadId_);

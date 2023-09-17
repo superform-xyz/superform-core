@@ -121,6 +121,9 @@ library Error {
     /// @dev thrown when the validation of bridge txData fails due to a destination call present
     error INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
 
+    /// @dev thrown when dst swap output is less than minimum expected
+    error SWAP_OUTPUT_LESS_THAN_EXPECTED();
+
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -169,6 +172,9 @@ library Error {
 
     /// @dev thrown if update payload function was called on a wrong payload
     error INVALID_PAYLOAD_UPDATE_REQUEST();
+
+    /// @dev thrown if payload update amount mismatch with dst swapper amount
+    error INVALID_DST_SWAP_AMOUNT();
 
     /// @dev thrown if payload is being updated with final amounts length different than amounts length
     error DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
