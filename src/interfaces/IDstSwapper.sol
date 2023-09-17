@@ -36,4 +36,7 @@ interface IDstSwapper {
         bytes[] calldata txDatas_
     )
         external;
+
+    /// FIMXE: add natspec
+    function swappedAmount(uint256 payloadId_, uint256 index_) external view returns (uint256 amount_);
 }

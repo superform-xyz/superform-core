@@ -8,6 +8,7 @@ import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
+import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
@@ -95,9 +96,9 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
         bytes memory newPayloadBody;
         if (v.isMulti != 0) {
-            newPayloadBody = _updateMultiVaultDepositPayload(v.prevPayloadBody, finalAmounts_);
+            newPayloadBody = _updateMultiVaultDepositPayload(payloadId_, v.prevPayloadBody, finalAmounts_);
         } else {
-            newPayloadBody = _updateSingleVaultDepositPayload(v.prevPayloadBody, finalAmounts_[0]);
+            newPayloadBody = _updateSingleVaultDepositPayload(payloadId_, v.prevPayloadBody, finalAmounts_[0]);
         }
 
         /// @dev set the new payload body
@@ -346,18 +347,34 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
     /// @dev helper function to update multi vault deposit payload
     function _updateMultiVaultDepositPayload(
+        uint256 payloadId_,
         bytes memory prevPayloadBody_,
         uint256[] calldata finalAmounts_
     )
         internal
-        pure
+        view
         returns (bytes memory newPayloadBody_)
     {
         InitMultiVaultData memory multiVaultData = abi.decode(prevPayloadBody_, (InitMultiVaultData));
+        IDstSwapper dstSwapper = IDstSwapper(superRegistry.getAddress(keccak256("DST_SWAPPER")));
 
         /// @dev compare number of vaults to update with provided finalAmounts length
         if (multiVaultData.amounts.length != finalAmounts_.length) {
             revert Error.DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
+        }
+
+        /// FIXME: hard revert if amount don't match
+        for (uint256 i; i < finalAmounts_.length;) {
+            if (multiVaultData.hasDstSwaps[i]) {
+                if (dstSwapper.swappedAmount(payloadId_, i) != finalAmounts_[i]) {
+                    /// FIXME: add revert message
+                    revert();
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
         }
 
         /// @dev validate payload update
@@ -369,14 +386,23 @@ contract CoreStateRegistry is LiquidityHandler, BaseStateRegistry, ICoreStateReg
 
     /// @dev helper function to update single vault deposit payload
     function _updateSingleVaultDepositPayload(
+        uint256 payloadId_,
         bytes memory prevPayloadBody_,
         uint256 finalAmount_
     )
         internal
-        pure
+        view
         returns (bytes memory newPayloadBody_)
     {
         InitSingleVaultData memory singleVaultData = abi.decode(prevPayloadBody_, (InitSingleVaultData));
+        IDstSwapper dstSwapper = IDstSwapper(superRegistry.getAddress(keccak256("DST_SWAPPER")));
+
+        if (singleVaultData.hasDstSwap) {
+            if (dstSwapper.swappedAmount(payloadId_, 0) != finalAmount_) {
+                /// FIXME: add revert message
+                revert();
+            }
+        }
 
         /// @dev validate payload update
         PayloadUpdaterLib.validateSlippage(finalAmount_, singleVaultData.amount, singleVaultData.maxSlippage);

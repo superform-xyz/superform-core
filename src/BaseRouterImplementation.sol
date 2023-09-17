@@ -70,7 +70,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.superformIds,
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
-            req.superformsData.hasDstSwap,
+            req.superformsData.hasDstSwaps,
             req.superformsData.liqRequests,
             req.superformsData.extraFormData
         );

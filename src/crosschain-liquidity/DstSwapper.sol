@@ -152,7 +152,8 @@ contract DstSwapper is IDstSwapper {
         view
         returns (address underlying_, uint256 expAmt_)
     {
-        IBaseStateRegistry coreStateRegistry = IBaseStateRegistry(superRegistry.getAddress("CORE_STATE_REGISTRY"));
+        IBaseStateRegistry coreStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
         PayloadState currState = coreStateRegistry.payloadTracking(payloadId_);
 

@@ -1566,8 +1566,12 @@ abstract contract ProtocolActions is BaseSetup {
         returns (bytes memory txData)
     {
         /// @dev amount_ adjusted after bridge slippage
-        int256 bridgeSlippage = (slippage_ * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        amount_ = (amount_ * uint256(10_000 - bridgeSlippage)) / 10_000;
+        amount_ = (amount_ * uint256(10_000 - slippage_)) / 10_000;
+
+        /// @dev amount_ adjusted after swap slippage
+        int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
+
         if (liqBridgeKind_ == 1) {
             /// @dev for lifi
             LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
@@ -2003,6 +2007,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         int256 bridgeSlippage;
         int256 dstSwapSlippage;
+
         /// @dev slippage calculation
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
