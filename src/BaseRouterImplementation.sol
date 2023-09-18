@@ -72,6 +72,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.maxSlippages,
             req.superformsData.hasDstSwaps,
             req.superformsData.liqRequests,
+            req.superformsData.dstRefundAddress,
             req.superformsData.extraFormData
         );
 
@@ -185,6 +186,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.maxSlippage,
             false,
             req.superformData.liqRequest,
+            req.superformData.dstRefundAddress,
             req.superformData.extraFormData
         );
 
@@ -207,6 +209,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.maxSlippages,
             new bool[](req.superformData.amounts.length),
             req.superformData.liqRequests,
+            req.superformData.dstRefundAddress,
             req.superformData.extraFormData
         );
 
@@ -241,6 +244,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.maxSlippages,
             new bool[](req.superformsData.amounts.length),
             req.superformsData.liqRequests,
+            req.superformsData.dstRefundAddress,
             req.superformsData.extraFormData
         );
 
@@ -328,6 +332,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.maxSlippages,
             new bool[](req.superformData.superformIds.length),
             req.superformData.liqRequests,
+            address(0),
+            /// there is no need for dst refund address
             req.superformData.extraFormData
         );
 
@@ -362,6 +368,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.maxSlippage,
             superformData_.hasDstSwap,
             superformData_.liqRequest,
+            superformData_.dstRefundAddress,
             superformData_.extraFormData
         );
     }
@@ -394,6 +401,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.maxSlippage,
             false,
             superformData_.liqRequest,
+            superformData_.dstRefundAddress,
             superformData_.extraFormData
         );
     }
@@ -586,7 +594,16 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev deposits collateral to a given vault and mint vault positions directly through the form
         dstAmount = IBaseForm(superform).directDepositIntoVault{ value: msgValue_ }(
             InitSingleVaultData(
-                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, false, liqData_, extraFormData_
+                superformRouterId_,
+                payloadId_,
+                superformId_,
+                amount_,
+                maxSlippage_,
+                false,
+                liqData_,
+                address(0),
+                /// no need for a refund address
+                extraFormData_
             ),
             srcSender_
         );
@@ -668,7 +685,16 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev in direct withdraws, form is called directly
         IBaseForm(superform).directWithdrawFromVault(
             InitSingleVaultData(
-                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, false, liqData_, extraFormData_
+                superformRouterId_,
+                payloadId_,
+                superformId_,
+                amount_,
+                maxSlippage_,
+                false,
+                liqData_,
+                address(0),
+                /// there is no need for refund address
+                extraFormData_
             ),
             srcSender_
         );
