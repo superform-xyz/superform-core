@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
-import { Error } from "../utils/Error.sol";
-import { AMBMessage, BroadcastMessage } from "../types/DataTypes.sol";
+import { AMBMessage } from "../types/DataTypes.sol";
 
 /// @dev generates proof for amb message and bytes encoded message
 library ProofLib {

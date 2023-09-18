@@ -35,9 +35,16 @@ interface ISuperRegistry {
     /// @dev is emitted when a new router/state syncer is configured.
     event SetRouterInfo(uint8 superFormRouterId_, address stateSyncer_, address router_);
 
+    /// @dev is emitted when a new delay is configured.
+    event SetDelay(uint256 oldDelay_, uint256 newDelay_);
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev sets the deposit rescue delay
+    /// @param delay_ the delay in seconds before the deposit rescue can be finalized
+    function setDelay(uint256 delay_) external;
 
     /// @dev sets the permit2 address
     /// @param permit2_ the address of the permit2 contract
@@ -90,6 +97,9 @@ interface ISuperRegistry {
     /*///////////////////////////////////////////////////////////////
                             View Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev gets the deposit rescue delay
+    function delay() external view returns (uint256);
 
     /// @dev gets the superform chainId of the protocol
     function chainId() external view returns (uint64);

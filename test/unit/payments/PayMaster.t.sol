@@ -21,6 +21,8 @@ contract PayMasterTest is ProtocolActions {
     address txProcessorARBI;
     address txUpdaterARBI;
 
+    address dstRefundAddress = address(444);
+
     SuperRegistry superRegistry;
     SuperRegistry superRegistryARBI;
 
@@ -266,8 +268,16 @@ contract PayMasterTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", "");
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId,
+            1e18,
+            100,
+            false,
+            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
+            bytes(""),
+            dstRefundAddress,
+            bytes("")
+        );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 

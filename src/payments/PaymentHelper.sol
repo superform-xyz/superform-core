@@ -12,7 +12,6 @@ import { Error } from "../utils/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
 import { ArrayCastLib } from "../libraries/ArrayCastLib.sol";
 import "../types/DataTypes.sol";
-
 import "../types/LiquidityTypes.sol";
 
 /// @dev interface to read public variable from state registry
@@ -93,7 +92,7 @@ contract PaymentHelper is IPaymentHelper {
         uint256 withdrawGasUsed_,
         uint256 defaultNativePrice_,
         uint256 defaultGasPrice_,
-        uint256 gasPerKB_
+        uint256 dstGasPerKB_
     )
         external
         override
@@ -113,7 +112,7 @@ contract PaymentHelper is IPaymentHelper {
         withdrawGasUsed[chainId_] = withdrawGasUsed_;
         nativePrice[chainId_] = defaultNativePrice_;
         gasPrice[chainId_] = defaultGasPrice_;
-        gasPerKB[chainId_] = gasPerKB_;
+        gasPerKB[chainId_] = dstGasPerKB_;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -246,7 +245,7 @@ contract PaymentHelper is IPaymentHelper {
             }
 
             /// @dev step 5: estimate execution costs in dst (withdraw / deposit)
-            /// note: only execution cost (not acknowledgement messaging cost)
+            /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], superformIdsLen);
 
             /// @dev step 6: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
@@ -333,7 +332,7 @@ contract PaymentHelper is IPaymentHelper {
         if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
 
         /// @dev step 3: estimate execution costs in dst
-        /// note: only execution cost (not acknowledgement messaging cost)
+        /// note: execution cost includes acknowledgement messaging cost
         totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, superformIdsLen);
 
         /// @dev step 4: estimation execution cost of acknowledgement
@@ -684,7 +683,9 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.superformId,
                 sfData_.amount,
                 sfData_.maxSlippage,
+                sfData_.hasDstSwap,
                 sfData_.liqRequest,
+                sfData_.dstRefundAddress,
                 sfData_.extraFormData
             )
         );
@@ -705,7 +706,9 @@ contract PaymentHelper is IPaymentHelper {
                 sfData_.superformIds,
                 sfData_.amounts,
                 sfData_.maxSlippages,
+                sfData_.hasDstSwaps,
                 sfData_.liqRequests,
+                sfData_.dstRefundAddress,
                 sfData_.extraFormData
             )
         );

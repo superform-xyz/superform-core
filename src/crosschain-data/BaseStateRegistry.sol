@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import { Error } from "../utils/Error.sol";
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
 import { IAmbImplementation } from "../interfaces/IAmbImplementation.sol";

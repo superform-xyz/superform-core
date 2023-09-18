@@ -8,7 +8,39 @@ import { PayloadState, TransactionType, CallbackType } from "../types/DataTypes.
 
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {
-    function validateSlippage(uint256 newAmount, uint256 maxAmount, uint256 slippage) internal pure {
+    function validateSlippage(
+        uint256 newAmount,
+        uint256 maxAmount,
+        uint256 slippage
+    )
+        internal
+        pure
+        returns (bool valid_)
+    {
+        /// @dev args validation
+        if (newAmount > maxAmount) {
+            revert Error.NEGATIVE_SLIPPAGE();
+        }
+
+        uint256 minAmount = (maxAmount * (10_000 - slippage)) / 10_000;
+
+        /// @dev amount must fall within the slippage bounds
+        if (newAmount < minAmount) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function strictValidateSlippage(
+        uint256 newAmount,
+        uint256 maxAmount,
+        uint256 slippage
+    )
+        internal
+        pure
+        returns (bool valid_)
+    {
         /// @dev args validation
         if (newAmount > maxAmount) {
             revert Error.NEGATIVE_SLIPPAGE();
@@ -20,24 +52,8 @@ library PayloadUpdaterLib {
         if (newAmount < minAmount) {
             revert Error.SLIPPAGE_OUT_OF_BOUNDS();
         }
-    }
 
-    function validateSlippageArray(
-        uint256[] memory newAmount,
-        uint256[] memory maxAmount,
-        uint256[] memory slippage
-    )
-        internal
-        pure
-    {
-        uint256 len = newAmount.length;
-        for (uint256 i; i < len;) {
-            validateSlippage(newAmount[i], maxAmount[i], slippage[i]);
-
-            unchecked {
-                ++i;
-            }
-        }
+        return true;
     }
 
     function validateLiqReq(LiqRequest memory req_) public pure {

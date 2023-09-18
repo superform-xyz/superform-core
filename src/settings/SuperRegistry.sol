@@ -10,11 +10,23 @@ import { Error } from "../utils/Error.sol";
 /// @author Zeropoint Labs.
 /// @dev Keeps information on all addresses used in the Superforms ecosystem.
 contract SuperRegistry is ISuperRegistry, QuorumManager {
+    /*///////////////////////////////////////////////////////////////
+                          Constants
+    //////////////////////////////////////////////////////////////*/
+    uint256 public constant MIN_DELAY = 1 hours;
+    uint256 public constant MAX_DELAY = 24 hours;
+
+    /*///////////////////////////////////////////////////////////////
+                        State Variables
+    //////////////////////////////////////////////////////////////*/
     /// @dev chainId represents the superform chain id.
     uint64 public chainId;
 
     /// @dev canonical permit2 contract
     address public PERMIT2;
+
+    /// @dev rescue timelock delay config
+    uint256 public delay;
 
     mapping(bytes32 id => mapping(uint64 chainId => address moduleAddress)) private registry;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
@@ -74,6 +86,18 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc ISuperRegistry
+    function setDelay(uint256 delay_) external override onlyProtocolAdmin {
+        if (delay_ < MIN_DELAY || delay_ > MAX_DELAY) {
+            revert Error.INVALID_TIMELOCK_DELAY();
+        }
+
+        uint256 oldDelay_ = delay;
+        delay = delay_;
+
+        emit SetDelay(oldDelay_, delay_);
+    }
 
     /// @inheritdoc ISuperRegistry
     function setPermit2(address permit2_) external override onlyProtocolAdmin {

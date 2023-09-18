@@ -15,6 +15,7 @@ import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 import { Error } from "./utils/Error.sol";
+import { IPermit2 } from "./vendor/dragonfly-xyz/IPermit2.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
 
@@ -70,7 +71,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.superformIds,
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
+            req.superformsData.hasDstSwaps,
             req.superformsData.liqRequests,
+            req.superformsData.dstRefundAddress,
             req.superformsData.extraFormData
         );
 
@@ -182,7 +185,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.superformId,
             req.superformData.amount,
             req.superformData.maxSlippage,
+            false,
             req.superformData.liqRequest,
+            req.superformData.dstRefundAddress,
             req.superformData.extraFormData
         );
 
@@ -203,7 +208,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.superformIds,
             req.superformData.amounts,
             req.superformData.maxSlippages,
+            new bool[](req.superformData.amounts.length),
             req.superformData.liqRequests,
+            req.superformData.dstRefundAddress,
             req.superformData.extraFormData
         );
 
@@ -236,7 +243,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformsData.superformIds,
             req.superformsData.amounts,
             req.superformsData.maxSlippages,
+            new bool[](req.superformsData.amounts.length),
             req.superformsData.liqRequests,
+            req.superformsData.dstRefundAddress,
             req.superformsData.extraFormData
         );
 
@@ -322,7 +331,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req.superformData.superformIds,
             req.superformData.amounts,
             req.superformData.maxSlippages,
+            new bool[](req.superformData.superformIds.length),
             req.superformData.liqRequests,
+            address(0),
             req.superformData.extraFormData
         );
 
@@ -355,7 +366,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.superformId,
             superformData_.amount,
             superformData_.maxSlippage,
+            superformData_.hasDstSwap,
             superformData_.liqRequest,
+            superformData_.dstRefundAddress,
             superformData_.extraFormData
         );
     }
@@ -386,7 +399,9 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.superformId,
             superformData_.amount,
             superformData_.maxSlippage,
+            false,
             superformData_.liqRequest,
+            superformData_.dstRefundAddress,
             superformData_.extraFormData
         );
     }
@@ -405,14 +420,16 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address bridgeValidator = superRegistry.getBridgeValidator(args.liqRequest.bridgeId);
         /// @dev validates remaining params of txData
         IBridgeValidator(bridgeValidator).validateTxData(
-            args.liqRequest.txData,
-            args.srcChainId,
-            args.dstChainId,
-            args.liqRequest.liqDstChainId,
-            args.deposit,
-            args.superform,
-            args.srcSender,
-            args.liqRequest.token
+            IBridgeValidator.ValidateTxDataArgs(
+                args.liqRequest.txData,
+                args.srcChainId,
+                args.dstChainId,
+                args.liqRequest.liqDstChainId,
+                args.deposit,
+                args.superform,
+                args.srcSender,
+                args.liqRequest.token
+            )
         );
 
         /// @dev dispatches tokens through the selected liquidity bridge to the destination contract
@@ -579,7 +596,16 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev deposits collateral to a given vault and mint vault positions directly through the form
         dstAmount = IBaseForm(superform).directDepositIntoVault{ value: msgValue_ }(
             InitSingleVaultData(
-                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
+                superformRouterId_,
+                payloadId_,
+                superformId_,
+                amount_,
+                maxSlippage_,
+                false,
+                liqData_,
+                address(0),
+                /// no need for a refund address
+                extraFormData_
             ),
             srcSender_
         );
@@ -661,7 +687,15 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev in direct withdraws, form is called directly
         IBaseForm(superform).directWithdrawFromVault(
             InitSingleVaultData(
-                superformRouterId_, payloadId_, superformId_, amount_, maxSlippage_, liqData_, extraFormData_
+                superformRouterId_,
+                payloadId_,
+                superformId_,
+                amount_,
+                maxSlippage_,
+                false,
+                liqData_,
+                address(0),
+                extraFormData_
             ),
             srcSender_
         );

@@ -6,6 +6,7 @@ import "test/utils/ProtocolActions.sol";
 
 contract TwoStepsStateRegistryTest is ProtocolActions {
     TwoStepsFormStateRegistry public twoStepRegistry;
+    address dstRefundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -48,7 +49,9 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
                 superformId,
                 420,
                 0,
+                false,
                 LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "USDT"), ETH, 0),
+                dstRefundAddress,
                 bytes("")
             )
         );
@@ -78,9 +81,11 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
                 superformId,
                 420,
                 1000,
+                false,
                 /// @dev note txData (2nd arg) is empty and token (3rd arg) is not address(0) to
                 /// indicate keeper to create and update txData using finalizePayload()
                 LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
+                dstRefundAddress,
                 bytes("")
             )
         );

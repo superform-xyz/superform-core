@@ -1222,83 +1222,45 @@ abstract contract ProtocolActions is BaseSetup {
             /// @dev currently testing rescuing deposits with dstSwap false
             MULTI_TX_SLIPPAGE_SHARE = 0;
 
-            vm.selectFork(FORKS[CHAIN_0]);
-            uint256 userWethBalanceBefore = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
-
             vm.selectFork(FORKS[DST_CHAINS[0]]);
-
+            uint256 userWethBalanceBefore =
+                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[0]);
             address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
-            address payable dstSwapper = payable(getContract(DST_CHAINS[0], "DstSwapper"));
 
             uint256[] memory rescueSuperformIds;
-            rescueSuperformIds = CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
+            (rescueSuperformIds,,,) =
+                CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
 
-            LiqRequest[] memory liqRequests = new LiqRequest[](
-                rescueSuperformIds.length
-            );
+            uint256[] memory amounts = new uint256[](rescueSuperformIds.length);
 
             uint256 stuckAmount;
-            uint256 finalAmount;
             /// @dev simulating slippage from bridges
             for (uint256 i; i < AMOUNTS[DST_CHAINS[0]][actionIndex].length; ++i) {
                 /// @dev this is the amount that is stuck in CoreStateRegistry
-                stuckAmount = (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
-                /// @dev this is the amount that will be received by the user on src chain. The slippage experienced is
-                /// the bridge slippage while sending tokens back to src chain
-                finalAmount += (stuckAmount * (10_000 - uint256(action.slippage))) / 10_000;
+                stuckAmount += (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
             }
 
-            SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
-                action.user,
-                coreStateRegistryDst,
-                getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][1][0]]),
-                /// @dev needs to correspond to `underlyingTokenDst_` in _buildLiqBridgeTxData()
-                action.dstSwap ? dstSwapper : coreStateRegistryDst,
-                action.externalToken == 3
-                    /// @dev needs to correspond to `underlyingToken` in _buildLiqBridgeTxData()
-                    ? NATIVE_TOKEN
-                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
-                getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]),
-                rescueSuperformIds[0],
-                /// @dev initiating with first rescueSuperformId
-                (AMOUNTS[DST_CHAINS[0]][actionIndex][0] * (10_000 - uint256(action.slippage))) / 10_000,
-                /// @dev initiating with slippage adjusted amount of first vault
-                LIQ_BRIDGES[CHAIN_0][actionIndex][0],
-                MAX_SLIPPAGE,
-                action.externalToken == 3
-                    ? NATIVE_TOKEN
-                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
-                CHAIN_0,
-                DST_CHAINS[0],
-                CHAIN_0,
-                /// @dev liqBridgeSrcChainId set as liqBridgeToChainId_ in _buildLiqBridgeTxData() i.e.
-                /// the chain to which tokens will flow to, on rescue
-                CHAIN_0,
-                DST_CHAINS[0],
-                action.dstSwap,
-                false,
-                action.slippage
-            );
-
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
-                singleVaultCallDataArgs.superformId = rescueSuperformIds[i];
                 /// @dev slippage adjusted amount that'll be withdrawn i.e. amount stuck in CoreStateRegistry
-                singleVaultCallDataArgs.amount =
-                    (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
-                liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
+                amounts[i] = (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
             }
 
             vm.prank(deployer);
             vm.expectRevert(Error.INVALID_RESCUE_DATA.selector);
-            CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], new LiqRequest[](0));
+            CoreStateRegistry(coreStateRegistryDst).proposeRescueFailedDeposits(
+                PAYLOAD_ID[DST_CHAINS[0]], new uint256[](0)
+            );
 
             vm.prank(deployer);
-            CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
 
-            vm.selectFork(FORKS[CHAIN_0]);
-            uint256 userWethBalanceAfter = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+            CoreStateRegistry(coreStateRegistryDst).proposeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], amounts);
 
-            assertEq(userWethBalanceAfter, userWethBalanceBefore + finalAmount);
+            vm.warp(block.timestamp + 12 hours);
+            CoreStateRegistry(coreStateRegistryDst).finalizeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
+
+            uint256 userWethBalanceAfter =
+                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+            assertEq(userWethBalanceAfter, userWethBalanceBefore + stuckAmount);
         }
     }
 
@@ -1392,12 +1354,22 @@ abstract contract ProtocolActions is BaseSetup {
             v.permit2data = abi.encode(v.permit.nonce, v.permit.deadline, v.sig);
         }
 
+        bool[] memory hasDstSwap = new bool[](args.superformIds.length);
+
+        if (args.dstSwap) {
+            for (uint256 i; i < hasDstSwap.length; i++) {
+                hasDstSwap[i] = true;
+            }
+        }
+
         superformsData = MultiVaultSFData(
             args.superformIds,
             finalAmounts,
             maxSlippageTemp,
+            hasDstSwap,
             liqRequests,
             v.permit2data,
+            users[args.user],
             abi.encode(args.partialWithdrawVaults)
         );
     }
@@ -1557,8 +1529,12 @@ abstract contract ProtocolActions is BaseSetup {
         returns (bytes memory txData)
     {
         /// @dev amount_ adjusted after bridge slippage
-        int256 bridgeSlippage = (slippage_ * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        amount_ = (amount_ * uint256(10_000 - bridgeSlippage)) / 10_000;
+        amount_ = (amount_ * uint256(10_000 - slippage_)) / 10_000;
+
+        /// @dev amount_ adjusted after swap slippage
+        int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
+
         if (liqBridgeKind_ == 1) {
             /// @dev for lifi
             LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
@@ -1748,7 +1724,14 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
-            args.superformId, args.amount, args.maxSlippage, v.liqReq, v.permit2Calldata, abi.encode(false)
+            args.superformId,
+            args.amount,
+            args.maxSlippage,
+            args.dstSwap,
+            v.liqReq,
+            v.permit2Calldata,
+            users[args.user],
+            abi.encode(false)
         );
     }
 
@@ -1823,7 +1806,14 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
-            args.superformId, args.amount, args.maxSlippage, vars.liqReq, "", abi.encode(args.partialWithdrawVault)
+            args.superformId,
+            args.amount,
+            args.maxSlippage,
+            args.dstSwap,
+            vars.liqReq,
+            "",
+            users[args.user],
+            abi.encode(args.partialWithdrawVault)
         );
     }
 
@@ -1982,6 +1972,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         int256 bridgeSlippage;
         int256 dstSwapSlippage;
+
         /// @dev slippage calculation
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
@@ -2246,9 +2237,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.prank(deployer);
 
-        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(
-            liqBridgeKind_, txData, underlyingTokenDst_, amount_
-        );
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData);
         vm.selectFork(initialFork);
     }
 
@@ -2281,8 +2270,14 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.prank(deployer);
 
+        uint256[] memory indices = new uint256[](amounts_.length);
+
+        for (uint256 i; i < amounts_.length; i++) {
+            indices[i] = i;
+        }
+
         DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).batchProcessTx(
-            liqBridgeKinds_, txDatas, underlyingTokensDst_, amounts_
+            1, indices, liqBridgeKinds_, txDatas
         );
         vm.selectFork(initialFork);
     }
