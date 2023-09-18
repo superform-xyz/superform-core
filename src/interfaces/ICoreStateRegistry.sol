@@ -70,10 +70,7 @@ interface ICoreStateRegistry {
         address superform;
         IBridgeValidator bridgeValidator;
         uint256 i;
-        uint256 l1;
-        uint256 l2;
         uint256 _payloadHeader;
-        uint256[] superformIds;
     }
 
     struct FailedDeposit {

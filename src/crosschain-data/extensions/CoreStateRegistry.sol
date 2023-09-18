@@ -276,12 +276,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         RescueFailedDepositsLocalVars memory v;
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
-        v.superformIds = failedDeposits_.superformIds;
 
-        v.l1 = v.superformIds.length;
-        v.l2 = proposedAmounts_.length;
-
-        if (v.l1 == 0 || v.l2 == 0 || v.l1 != v.l2) {
+        if (
+            failedDeposits_.superformIds.length == 0 || proposedAmounts_.length == 0
+                || failedDeposits_.superformIds.length != proposedAmounts_.length
+        ) {
             revert Error.INVALID_RESCUE_DATA();
         }
 
@@ -306,7 +305,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function disputeRescueFailedDeposits(uint256 payloadId_) external {
+    function disputeRescueFailedDeposits(uint256 payloadId_) external override {
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         if (msg.sender != failedDeposits_.refundAddress) {
@@ -330,7 +329,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
-    function finalizeRescueFailedDeposits(uint256 payloadId_) external {
+    function finalizeRescueFailedDeposits(uint256 payloadId_) external override {
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the timelock is elapsed
@@ -348,10 +347,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev deleted to prevent re-entrancy
         delete failedDeposits[payloadId_];
 
-        for (uint256 i; i < superformIds.length; ++i) {
+        for (uint256 i; i < superformIds.length;) {
             (address form_,,) = DataLib.getSuperform(superformIds[i]);
             /// @dev refunds the amount to user specified refund address
             IERC20(IERC4626Form(form_).getVaultAsset()).transfer(refundAddress, amounts[i]);
+            unchecked {
+                ++i;
+            }
         }
 
         emit RescueFinalized(payloadId_);
@@ -364,9 +366,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         override
         returns (uint256[] memory superformIds, uint256[] memory amounts)
     {
-        FailedDeposit memory failedDeposit = failedDeposits[payloadId_];
-        superformIds = failedDeposit.superformIds;
-        amounts = failedDeposit.amounts;
+        superformIds = failedDeposits[payloadId_].superformIds;
+        amounts = failedDeposits[payloadId_].amounts;
     }
 
     /*///////////////////////////////////////////////////////////////
