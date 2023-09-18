@@ -146,7 +146,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
 
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
             PayloadUpdaterLib.strictValidateSlippage(
-                finalAmount, form.previewWithdrawFrom(p.data.amount), p.data.maxSlippage
+                finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage
             );
 
             p.data.liqData.txData = txData_;
