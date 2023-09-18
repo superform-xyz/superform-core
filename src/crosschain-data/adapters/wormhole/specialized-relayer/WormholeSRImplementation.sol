@@ -7,7 +7,6 @@ import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { AMBMessage, BroadCastAMBExtraData } from "src/types/DataTypes.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 

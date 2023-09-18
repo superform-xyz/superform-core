@@ -11,7 +11,6 @@ import { BaseForm } from "../BaseForm.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { Error } from "../utils/Error.sol";
 import { DataLib } from "../libraries/DataLib.sol";
-import { IPermit2 } from "../vendor/dragonfly-xyz/IPermit2.sol";
 
 /// @title ERC4626FormImplementation
 /// @notice Has common internal functions that can be re-used by actual form implementations
@@ -140,14 +139,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// @dev we are trying to deposit 1012 below, when we should be depositing 1010, otherwise it will revert
 
             IBridgeValidator(vars.bridgeValidator).validateTxData(
-                singleVaultData_.liqData.txData,
-                vars.chainId,
-                vars.chainId,
-                singleVaultData_.liqData.liqDstChainId,
-                true,
-                address(this),
-                msg.sender,
-                address(token)
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    vars.chainId,
+                    vars.chainId,
+                    singleVaultData_.liqData.liqDstChainId,
+                    true,
+                    address(this),
+                    msg.sender,
+                    address(token)
+                )
             );
 
             dispatchTokens(
@@ -217,14 +218,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(v.bridgeValidator).validateTxData(
-                singleVaultData_.liqData.txData,
-                v.chainId,
-                v.chainId,
-                singleVaultData_.liqData.liqDstChainId,
-                false,
-                address(this),
-                srcSender,
-                singleVaultData_.liqData.token
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    v.chainId,
+                    v.chainId,
+                    singleVaultData_.liqData.liqDstChainId,
+                    false,
+                    address(this),
+                    srcSender,
+                    singleVaultData_.liqData.token
+                )
             );
 
             /// @dev FIXME: notice that in direct withdraws we withdraw v.amount (coming from txData), but not what was
@@ -316,14 +319,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(vars.bridgeValidator).validateTxData(
-                singleVaultData_.liqData.txData,
-                vars.dstChainId,
-                srcChainId,
-                singleVaultData_.liqData.liqDstChainId,
-                false,
-                address(this),
-                srcSender,
-                singleVaultData_.liqData.token
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    vars.dstChainId,
+                    srcChainId,
+                    singleVaultData_.liqData.liqDstChainId,
+                    false,
+                    address(this),
+                    srcSender,
+                    singleVaultData_.liqData.token
+                )
             );
 
             dispatchTokens(

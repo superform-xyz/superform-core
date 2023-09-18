@@ -158,15 +158,6 @@ abstract contract BaseSetup is DSTest, Test {
     address public constant FTM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
     /// @dev removed FTM temporarily
 
-    address[] public LiFiCallDataVerificationFacets = [
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567
-    ];
-
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
         0x3c2269811836af69497E5F486A85D7316753cf62,
@@ -493,9 +484,7 @@ abstract contract BaseSetup is DSTest, Test {
             vm.allowCheatcodes(vars.lifiRouter);
 
             /// @dev 7.2- deploy  lifi validator
-            vm.makePersistent(LiFiCallDataVerificationFacets[i]);
-            vars.lifiValidator =
-                address(new LiFiValidator{salt: salt}(vars.superRegistry, LiFiCallDataVerificationFacets[i]));
+            vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults

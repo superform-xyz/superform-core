@@ -87,14 +87,16 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
-                vars.liqData.txData,
-                vars.chainId,
-                p_.isXChain == 1 ? p_.srcChainId : vars.chainId,
-                vars.liqData.liqDstChainId,
-                false,
-                address(this),
-                p_.srcSender,
-                vars.liqData.token
+                IBridgeValidator.ValidateTxDataArgs(
+                    vars.liqData.txData,
+                    vars.chainId,
+                    p_.isXChain == 1 ? p_.srcChainId : vars.chainId,
+                    vars.liqData.liqDstChainId,
+                    false,
+                    address(this),
+                    p_.srcSender,
+                    vars.liqData.token
+                )
             );
 
             dispatchTokens(

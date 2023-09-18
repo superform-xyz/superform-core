@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
-import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
-import { Error } from "../utils/Error.sol";
 
 /// @title BridgeValidator
 /// @author Zeropoint Labs
@@ -50,20 +48,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         returns (bool valid_);
 
     /// @inheritdoc IBridgeValidator
-    function validateTxData(
-        bytes calldata txData_,
-        uint64 srcChainId_,
-        uint64 dstChainId_,
-        uint64 liqDstChainId_,
-        bool deposit_,
-        address superform_,
-        address srcSender_,
-        address liqDataToken_
-    )
-        external
-        view
-        virtual
-        override;
+    function validateTxData(ValidateTxDataArgs calldata args) external view virtual override;
 
     /// @inheritdoc IBridgeValidator
     function decodeMinAmountOut(
