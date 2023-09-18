@@ -7,7 +7,6 @@
         "openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/",
         "pigeon/=lib/pigeon/src/",
         "super-vaults/=lib/super-vaults/src/",
-        "wormhole-solidity-sdk/=lib/wormhole-solidity-sdk/src/",
         "solmate/=lib/ERC1155A/lib/solmate/src/",
         "openzeppelin-contracts/=lib/ERC1155A/lib/openzeppelin-contracts/"
     ]
