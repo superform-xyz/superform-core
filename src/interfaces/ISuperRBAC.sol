@@ -54,6 +54,12 @@ interface ISuperRBAC {
     /// @dev returns the id of the core state registry processor role
     function CORE_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of the core state registry rescuer role
+    function CORE_STATE_REGISTRY_RESCUER_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry rescue disputer role
+    function CORE_STATE_REGISTRY_DISPUTER_ROLE() external view returns (bytes32);
+
     /// @dev returns the id of the two steps state registry processor role
     function TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 

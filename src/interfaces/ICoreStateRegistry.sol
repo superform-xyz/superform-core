@@ -62,17 +62,6 @@ interface ICoreStateRegistry {
         IBridgeValidator bridgeValidator;
     }
 
-    /// @dev local struct to avoid stack too deep errors in `rescueFailedDeposits`
-    struct RescueFailedDepositsLocalVars {
-        uint64 dstChainId;
-        address srcSender;
-        uint64 srcChainId;
-        address superform;
-        IBridgeValidator bridgeValidator;
-        uint256 i;
-        uint256 _payloadHeader;
-    }
-
     struct FailedDeposit {
         uint256[] superformIds;
         uint256[] amounts;

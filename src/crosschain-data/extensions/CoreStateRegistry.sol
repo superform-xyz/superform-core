@@ -49,6 +49,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         _;
     }
 
+    modifier onlyCoreStateRegistryRescuer() {
+        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE"), msg.sender)) {
+            revert Error.NOT_RESCUER();
+        }
+        _;
+    }
+
     modifier onlySender() override {
         if (superRegistry.getSuperformRouterId(msg.sender) == 0) revert Error.NOT_SUPER_ROUTER();
         _;
@@ -272,9 +279,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     )
         external
         override
-        onlyCoreStateRegistryProcessor //// FIXME: should be a new role
+        onlyCoreStateRegistryRescuer //// FIXME: should be a new role
     {
-        RescueFailedDepositsLocalVars memory v;
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         if (
@@ -308,7 +314,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     function disputeRescueFailedDeposits(uint256 payloadId_) external override {
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
-        if (msg.sender != failedDeposits_.refundAddress) {
+        /// @dev the msg sender should be the refund address (or) the disputer
+        if (
+            msg.sender != failedDeposits_.refundAddress
+                || !_hasRole(keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE"), msg.sender)
+        ) {
             revert Error.INVALID_DISUPTER();
         }
 

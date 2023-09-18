@@ -379,6 +379,14 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer);
             assert(vars.superRBACC.hasCoreStateRegistryUpdaterRole(deployer));
 
+            /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_RESCUER_ROLE for state registry?
+            vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), deployer);
+            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), deployer));
+
+            /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_DISPUTER_ROLE for state registry?
+            vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_DISPUTER_ROLE(), deployer);
+            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_DISPUTER_ROLE(), deployer));
+
             /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for dst swapper?
             vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer);
             assert(vars.superRBACC.hasDstSwapperRole(deployer));

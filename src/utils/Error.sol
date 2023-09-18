@@ -84,6 +84,9 @@ library Error {
     /// @dev thrown if the msg-sender does not have UPDATER role
     error NOT_UPDATER();
 
+    /// @dev thrown if the msg-sender does not have RESCUER role
+    error NOT_RESCUER();
+
     /// @dev thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
 
