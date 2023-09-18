@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
+import { ReentrancyGuard } from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
@@ -22,7 +23,7 @@ import "../../types/DataTypes.sol";
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
 
-contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
+contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, ReentrancyGuard {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
@@ -107,6 +108,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
         payable
         override
         onlyTimelockStateRegistryProcessor
+        nonReentrant
     {
         TimelockPayload memory p = timelockPayload[timeLockPayloadId_];
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));

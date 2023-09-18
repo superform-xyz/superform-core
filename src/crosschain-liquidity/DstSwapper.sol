@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { ReentrancyGuard } from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import { IDstSwapper } from "../interfaces/IDstSwapper.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
@@ -16,7 +17,7 @@ import "../types/DataTypes.sol";
 /// @title DstSwapper
 /// @author Zeropoint Labs.
 /// @dev handles all destination chain swaps.
-contract DstSwapper is IDstSwapper {
+contract DstSwapper is IDstSwapper, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -71,6 +72,7 @@ contract DstSwapper is IDstSwapper {
         public
         override
         onlySwapper
+        nonReentrant
     {
         if (swappedAmount[payloadId_][index_] != 0) {
             revert Error.DST_SWAP_ALREADY_PROCESSED();
