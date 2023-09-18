@@ -7,7 +7,7 @@ import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.s
 import { VaultMock } from "test/mocks/VaultMock.sol";
 import { ERC4626TimelockMock } from "test/mocks/ERC4626TimelockMock.sol";
 import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
-import { AggregatorV3Interface } from "test/utils/AggregatorV3Interface.sol";
+import { AggregatorV3Interface } from "src/vendor/chainlink/AggregatorV3Interface.sol";
 
 contract LocalDeploy is AbstractDeploy {
     /*//////////////////////////////////////////////////////////////

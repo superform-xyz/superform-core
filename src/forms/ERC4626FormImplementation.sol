@@ -83,6 +83,11 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         return IERC4626(vault).previewWithdraw(assets_);
     }
 
+    /// @inheritdoc BaseForm
+    function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256) {
+        return IERC4626(vault).previewRedeem(shares_);
+    }
+
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
@@ -193,6 +198,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     {
         ProcessDirectWithdawLocalVars memory v;
         v.len1 = singleVaultData_.liqData.txData.length;
+
         /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it
         /// is this contract (before swap)
         v.receiver = v.len1 == 0 ? srcSender : address(this);
@@ -211,7 +217,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             v.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
             v.amount = IBridgeValidator(v.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
-            /// @dev this check here might be too much already, but can't hurt
+            /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
             v.chainId = uint64(block.chainid);
@@ -229,9 +235,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                     singleVaultData_.liqData.token
                 )
             );
-
-            /// @dev FIXME: notice that in direct withdraws we withdraw v.amount (coming from txData), but not what was
-            /// actually redeemed? Why? xChainWithdraw operates differently here
 
             dispatchTokens(
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
@@ -335,7 +338,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
-                dstAmount,
+                vars.amount,
                 address(this),
                 singleVaultData_.liqData.nativeAmount
             );

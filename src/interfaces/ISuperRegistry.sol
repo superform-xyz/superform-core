@@ -9,9 +9,6 @@ interface ISuperRegistry {
                                 Events
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev emitted when chainId is set.
-    event SetChainId(uint64 indexed chainId);
-
     /// @dev emitted when permit2 is set.
     event SetPermit2(address indexed permit2);
 
@@ -101,9 +98,6 @@ interface ISuperRegistry {
     /// @dev gets the deposit rescue delay
     function delay() external view returns (uint256);
 
-    /// @dev gets the superform chainId of the protocol
-    function chainId() external view returns (uint64);
-
     /// @dev returns the permit2 address
     function PERMIT2() external view returns (address);
 
@@ -126,7 +120,7 @@ interface ISuperRegistry {
     function CORE_STATE_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the two steps form state registry module
-    function TWO_STEPS_FORM_STATE_REGISTRY() external view returns (bytes32);
+    function TIMELOCK_STATE_REGISTRY() external view returns (bytes32);
 
     /// @dev returns the id of the broadcast state registry module
     function BROADCAST_REGISTRY() external view returns (bytes32);

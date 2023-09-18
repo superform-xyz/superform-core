@@ -69,8 +69,8 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.CORE_STATE_REGISTRY(), address(0x1));
     }
 
-    function test_setTwoStepsFormStateRegistry_and_revert_invalidCaller() public {
-        _setAndAssert(superRegistry.TWO_STEPS_FORM_STATE_REGISTRY(), address(0x1));
+    function test_setTimelockStateRegistry_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.TIMELOCK_STATE_REGISTRY(), address(0x1));
     }
 
     function test_setBroadcastRegistry_and_revert_invalidCaller() public {

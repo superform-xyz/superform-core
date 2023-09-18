@@ -29,4 +29,6 @@ interface IERC4626Form is IERC20 {
     function previewDepositTo(uint256 assets_) external view returns (uint256);
 
     function previewWithdrawFrom(uint256 assets_) external view returns (uint256);
+
+    function previewRedeemFrom(uint256 shares_) external view returns (uint256);
 }

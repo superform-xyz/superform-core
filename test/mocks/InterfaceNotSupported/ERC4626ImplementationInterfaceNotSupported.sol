@@ -84,6 +84,10 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         return IERC4626(vault).previewWithdraw(assets_);
     }
 
+    /// @inheritdoc BaseForm
+    function previewRedeemFrom(uint256 shares_) public view virtual override returns (uint256) {
+        return IERC4626(vault).previewRedeem(shares_);
+    }
     /*///////////////////////////////////////////////////////////////
                             INTERNAL OVERRIDES
     //////////////////////////////////////////////////////////////*/
@@ -133,7 +137,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
             /// @dev in this case, a swap is needed, first the txData is validated and then the final asset is obtained
-            vars.chainId = superRegistry.chainId();
+            vars.chainId = uint64(block.chainid);
 
             IBridgeValidator(vars.bridgeValidator).validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
@@ -211,7 +215,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
             /// @dev this check here might be too much already, but can't hurt
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            v.chainId = superRegistry.chainId();
+            v.chainId = uint64(block.chainid);
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(v.bridgeValidator).validateTxData(

@@ -198,6 +198,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         address superform =
             getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
+        /// @dev number of superpositions to be burned per withdraw is 1e18, specified in _successfulMultiWithdrawal()
+        uint256 actualWithdrawAmount = IBaseForm(superform).previewWithdrawFrom(
+            IERC4626(IBaseForm(superform).getVaultAddress()).previewRedeem(1e18)
+        );
+
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
             getContract(AVAX, "USDT"),
@@ -210,8 +215,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             deployer,
             uint256(ETH),
-            /// @dev amount is 1 less than (1e18 * 0.9) => slippage > 10% => should revert
-            9e17 - 1,
+            /// @dev amount is 1 less than (actualWithdrawAmount * 0.9) => slippage > 10% => should revert
+            ((actualWithdrawAmount * 9) / 10) - 1,
             true,
             /// @dev currently testing with 0 bridge slippage
             0

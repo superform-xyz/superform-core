@@ -19,39 +19,31 @@ contract MDMVW84002408NativeInputSlipageAMB12NewDst is ProtocolActions {
         DST_CHAINS = [ETH, POLY, AVAX];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        /// first 3 superforms are equal
         TARGET_UNDERLYINGS[ETH][0] = [2, 2, 1];
         TARGET_VAULTS[ETH][0] = [8, 4, 0];
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ETH][0] = [0, 1, 0];
+        /// @dev normal vault failing on withdraw, timelocked vault failing on withdraw, normal vault
 
-        /// all superforms are different
         TARGET_UNDERLYINGS[POLY][0] = [0, 1, 2];
         TARGET_VAULTS[POLY][0] = [0, 2, 4];
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[POLY][0] = [0, 2, 1];
+        /// @dev normal vault, kyc vault, timelocked vault failing on withdraw
 
-        /// all superforms are different
         TARGET_UNDERLYINGS[AVAX][0] = [2, 2];
         TARGET_VAULTS[AVAX][0] = [0, 8];
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[AVAX][0] = [0, 0];
+        /// @dev normal vault, normal vault failing on withdraw
 
         TARGET_UNDERLYINGS[ETH][1] = [2, 2, 1];
         TARGET_VAULTS[ETH][1] = [8, 4, 0];
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ETH][1] = [0, 1, 0];
 
-        /// all superforms are different
         TARGET_UNDERLYINGS[POLY][1] = [0, 1, 2];
         TARGET_VAULTS[POLY][1] = [0, 2, 4];
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[POLY][1] = [0, 2, 1];
 
-        /// all superforms are different
         TARGET_UNDERLYINGS[AVAX][1] = [2, 2];
         TARGET_VAULTS[AVAX][1] = [0, 8];
-        /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[AVAX][1] = [0, 0];
 
         PARTIAL[ETH][1] = [true, false, false];

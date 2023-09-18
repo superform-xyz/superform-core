@@ -20,8 +20,8 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant override BROADCASTER_ROLE = keccak256("BROADCASTER_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
-    bytes32 public constant override TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE =
-        keccak256("TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE");
+    bytes32 public constant override TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE =
+        keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
@@ -43,7 +43,7 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         _setRoleAdmin(PROTOCOL_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(EMERGENCY_ADMIN_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
-        _setRoleAdmin(TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_UPDATER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(SUPERPOSITIONS_MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
@@ -143,8 +143,8 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     }
 
     /// @inheritdoc ISuperRBAC
-    function hasTwoStepsStateRegistryProcessorRole(address twoStepsProcessor_) external view override returns (bool) {
-        return hasRole(TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE, twoStepsProcessor_);
+    function hasTimelockStateRegistryProcessorRole(address twoStepsProcessor_) external view override returns (bool) {
+        return hasRole(TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE, twoStepsProcessor_);
     }
 
     /// @inheritdoc ISuperRBAC

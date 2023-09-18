@@ -141,18 +141,18 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
-    function test_grantTwoStepsStateRegistryProcessorRole() public {
+    function test_grantTimelockStateRegistryProcessorRole() public {
         vm.startPrank(deployer);
-        superRBAC.grantRole(superRBAC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
+        superRBAC.grantRole(superRBAC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
         vm.stopPrank();
 
-        assertEq(superRBAC.hasTwoStepsStateRegistryProcessorRole(address(0x1)), true);
+        assertEq(superRBAC.hasTimelockStateRegistryProcessorRole(address(0x1)), true);
     }
 
     function test_revokeTwoStepsStateRegistrvyProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.hasTwoStepsStateRegistryProcessorRole.selector,
-            superRBAC.TWOSTEPS_STATE_REGISTRY_PROCESSOR_ROLE(),
+            superRBAC.hasTimelockStateRegistryProcessorRole.selector,
+            superRBAC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(),
             superRegistry.TWO_STEPS_REGISTRY_PROCESSOR(),
             deployer,
             "",
@@ -193,9 +193,9 @@ contract SuperRBACTest is BaseSetup {
         _revokeAndCheck(
             superRBAC.hasSuperPositionsMinterRole.selector,
             superRBAC.SUPERPOSITIONS_MINTER_ROLE(),
-            superRegistry.TWO_STEPS_FORM_STATE_REGISTRY(),
+            superRegistry.TIMELOCK_STATE_REGISTRY(),
             deployer,
-            "TwoStepsFormStateRegistry",
+            "TimelockStateRegistry",
             generateBroadcastParams(5, 1),
             0
         );

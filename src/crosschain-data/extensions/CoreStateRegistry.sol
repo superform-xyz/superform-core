@@ -584,7 +584,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i], false);
                     PayloadUpdaterLib.strictValidateSlippage(
                         lV.finalAmount,
-                        IBaseForm(superform).previewWithdrawFrom(lV.multiVaultData.amounts[lV.i]),
+                        IBaseForm(superform).previewRedeemFrom(lV.multiVaultData.amounts[lV.i]),
                         lV.multiVaultData.maxSlippage[lV.i]
                     );
 

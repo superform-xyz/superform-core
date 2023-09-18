@@ -59,6 +59,7 @@ struct StagesLocalVars {
     uint256 nUniqueDsts;
     bool[] partialWithdrawVaults;
     int256 slippage;
+    uint256[] superformIds;
 }
 
 struct MessagingAssertVars {

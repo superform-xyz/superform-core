@@ -124,7 +124,7 @@ enum TwoStepsStatus {
 }
 
 /// @dev holds information about the two-steps payload
-struct TwoStepsPayload {
+struct TimelockPayload {
     uint8 isXChain;
     address srcSender;
     uint64 srcChainId;

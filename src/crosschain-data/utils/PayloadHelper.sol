@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
-import { ITwoStepsFormStateRegistry } from "../../interfaces/ITwoStepsFormStateRegistry.sol";
+import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
 import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
 
@@ -14,7 +14,7 @@ import {
     ReturnSingleData,
     InitMultiVaultData,
     InitSingleVaultData,
-    TwoStepsPayload,
+    TimelockPayload,
     LiqRequest
 } from "../../types/DataTypes.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
@@ -67,7 +67,7 @@ contract PayloadHelper is IPayloadHelper {
 
     IBaseStateRegistry public immutable coreStateRegistry;
     ISuperRegistry public immutable superRegistry;
-    ITwoStepsFormStateRegistry public immutable twoStepRegistry;
+    ITimelockStateRegistry public immutable twoStepRegistry;
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
@@ -76,7 +76,7 @@ contract PayloadHelper is IPayloadHelper {
     constructor(address dstPayloadRegistry_, address superRegistry_, address twoStepRegistry_) {
         coreStateRegistry = IBaseStateRegistry(dstPayloadRegistry_);
         superRegistry = ISuperRegistry(superRegistry_);
-        twoStepRegistry = ITwoStepsFormStateRegistry(twoStepRegistry_);
+        twoStepRegistry = ITimelockStateRegistry(twoStepRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -270,7 +270,7 @@ contract PayloadHelper is IPayloadHelper {
         override
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
-        TwoStepsPayload memory payload = twoStepRegistry.getTwoStepsPayload(timelockPayloadId_);
+        TimelockPayload memory payload = twoStepRegistry.getTimelockPayload(timelockPayloadId_);
 
         return (
             payload.srcSender, payload.srcChainId, payload.data.payloadId, payload.data.superformId, payload.data.amount

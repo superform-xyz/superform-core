@@ -4,14 +4,14 @@ pragma solidity 0.8.21;
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
-contract TwoStepsStateRegistryTest is ProtocolActions {
-    TwoStepsFormStateRegistry public twoStepRegistry;
+contract TimelockStateRegistryTest is ProtocolActions {
+    TimelockStateRegistry public timelockStateRegistry;
     address dstRefundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
 
-        twoStepRegistry = TwoStepsFormStateRegistry(payable(getContract(ETH, "TwoStepsFormStateRegistry")));
+        timelockStateRegistry = TimelockStateRegistry(payable(getContract(ETH, "TimelockStateRegistry")));
     }
 
     function test_updateTxDataBranch() external {
@@ -38,7 +38,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
         );
 
         vm.prank(getContract(ETH, "ERC4626TimelockForm"));
-        twoStepRegistry.receivePayload(
+        timelockStateRegistry.receivePayload(
             0,
             deployer,
             ETH,
@@ -57,7 +57,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
         );
 
         vm.prank(deployer);
-        twoStepRegistry.finalizePayload(1, bytes(""));
+        timelockStateRegistry.finalizePayload(1, bytes(""));
     }
 
     function test_updateTxDataBranch_WithSlippageReverts() external {
@@ -70,7 +70,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
 
         vm.prank(superform);
-        twoStepRegistry.receivePayload(
+        timelockStateRegistry.receivePayload(
             0,
             deployer,
             ETH,
@@ -113,7 +113,7 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
-        twoStepRegistry.finalizePayload(1, txData);
+        timelockStateRegistry.finalizePayload(1, txData);
     }
 
     function test_processPayloadMintPositionBranch() external {
@@ -133,13 +133,13 @@ contract TwoStepsStateRegistryTest is ProtocolActions {
         );
 
         vm.prank(getContract(AVAX, "HyperlaneImplementation"));
-        twoStepRegistry.receivePayload(ETH, _message);
+        timelockStateRegistry.receivePayload(ETH, _message);
 
         vm.prank(deployer);
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         vm.prank(deployer);
-        twoStepRegistry.processPayload(1);
+        timelockStateRegistry.processPayload(1);
     }
 
     function _legacySuperformPackWithShift() internal view returns (uint256 superformId_) {

@@ -8,15 +8,19 @@ import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { LiFiMock } from "../mocks/LiFiMock.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { ITwoStepsFormStateRegistry } from "src/interfaces/ITwoStepsFormStateRegistry.sol";
+import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { SolPretty } from "solpretty/SolPretty.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     using DataLib for uint256;
+    using SolPretty for string;
+    using Math for uint256;
 
     /// out of 10000
     int256 totalSlippage = 200;
@@ -25,6 +29,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     /// @dev counts for each chain in each testAction the number of timelocked superforms
     mapping(uint256 chainIdIndex => uint256) countTimelocked;
+    uint256[][] actualAmountWithdrawnPerDst;
 
     /// @dev array of ambIds
     uint8[] public AMBs;
@@ -133,7 +138,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
         address token;
-
         /// @dev assumption here is DAI has total supply of TOTAL_SUPPLY_DAI on all chains
         /// and similarly for USDT, WETH and ETH
         if (action.externalToken == 3) {
@@ -147,6 +151,31 @@ abstract contract ProtocolActions is BaseSetup {
                 deal(token, users[action.user], TOTAL_SUPPLY_USDT);
             } else if (action.externalToken == 2) {
                 deal(token, users[action.user], TOTAL_SUPPLY_WETH);
+            }
+        }
+
+        /// @dev depositing AMOUNTS[DST_CHAINS[i]][0][j] underlying tokens in underlying vault to simulate yield after
+        /// deposit
+        if (action.action == Actions.Withdraw) {
+            for (uint256 i = 0; i < DST_CHAINS.length; ++i) {
+                vm.selectFork(FORKS[DST_CHAINS[i]]);
+
+                vars.superformIds = _superformIds(
+                    TARGET_UNDERLYINGS[DST_CHAINS[i]][act],
+                    TARGET_VAULTS[DST_CHAINS[i]][act],
+                    TARGET_FORM_KINDS[DST_CHAINS[i]][act],
+                    DST_CHAINS[i]
+                );
+                for (uint256 j = 0; j < TARGET_UNDERLYINGS[DST_CHAINS[i]][act].length; ++j) {
+                    token = getContract(DST_CHAINS[i], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[i]][act][j]]);
+                    (vars.superformT,,) = vars.superformIds[j].getSuperform();
+                    /// @dev grabs amounts in deposits (assumes deposit is action 0)
+                    deal(token, IBaseForm(vars.superformT).getVaultAddress(), AMOUNTS[DST_CHAINS[i]][0][j]);
+                }
+
+                actualAmountWithdrawnPerDst.push(
+                    _getPreviewRedeemAmountsMaxBalance(action.user, vars.superformIds, DST_CHAINS[i])
+                );
             }
         }
 
@@ -1116,10 +1145,10 @@ abstract contract ProtocolActions is BaseSetup {
 
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
-                ITwoStepsFormStateRegistry twoStepsFormStateRegistry =
-                    ITwoStepsFormStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("TwoStepsFormStateRegistry"))]);
+                ITimelockStateRegistry twoStepsFormStateRegistry =
+                    ITimelockStateRegistry(contracts[DST_CHAINS[i]][bytes32(bytes("TimelockStateRegistry"))]);
 
-                currentUnlockId = twoStepsFormStateRegistry.timeLockPayloadCounter();
+                currentUnlockId = twoStepsFormStateRegistry.timelockPayloadCounter();
                 if (currentUnlockId > 0) {
                     vm.recordLogs();
 
@@ -1192,7 +1221,7 @@ abstract contract ProtocolActions is BaseSetup {
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             if (CHAIN_0 != DST_CHAINS[i] && revertingWithdrawTimelockedSFs[i].length > 0) {
                 IBaseStateRegistry twoStepsFormStateRegistry =
-                    IBaseStateRegistry(contracts[CHAIN_0][bytes32(bytes("TwoStepsFormStateRegistry"))]);
+                    IBaseStateRegistry(contracts[CHAIN_0][bytes32(bytes("TimelockStateRegistry"))]);
 
                 /// @dev if a payload exists to be processed, process it
                 if (_payload(address(twoStepsFormStateRegistry), CHAIN_0, TWO_STEP_PAYLOAD_ID[CHAIN_0] + 1).length > 0)
@@ -1741,6 +1770,8 @@ abstract contract ProtocolActions is BaseSetup {
         IERC1155A superPositions;
         bytes txData;
         LiqRequest liqReq;
+        address superform;
+        uint256 actualWithdrawAmount;
     }
 
     function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
@@ -1763,6 +1794,10 @@ abstract contract ProtocolActions is BaseSetup {
         /// approving all superPositions at once
         vars.superPositions.increaseAllowance(vars.superformRouter, args.superformId, args.amount);
 
+        vm.selectFork(FORKS[args.toChainId]);
+        (vars.superform,,) = args.superformId.getSuperform();
+        vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(args.amount);
+
         vm.selectFork(initialFork);
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
@@ -1781,7 +1816,7 @@ abstract contract ProtocolActions is BaseSetup {
             false,
             users[args.user],
             args.liquidityBridgeSrcChainId,
-            args.amount,
+            vars.actualWithdrawAmount,
             true,
             /// @dev putting a placeholder value for now (not really used)
             args.slippage
@@ -1872,6 +1907,7 @@ abstract contract ProtocolActions is BaseSetup {
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             underlyingDstTokensMem[i] = getContract(chain1, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[vars.vaultIds[i]][vars.underlyingTokens[i]]);
+
             if (vars.vaultIds[i] == 3 || vars.vaultIds[i] == 5 || vars.vaultIds[i] == 6) {
                 revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
             }
@@ -1942,17 +1978,16 @@ abstract contract ProtocolActions is BaseSetup {
         uint256[] memory underlyingTokens_,
         uint256[] memory vaultIds_,
         uint32[] memory formKinds_,
-        uint64 chainId_
+        uint64 dstChain
     )
         internal
         returns (uint256[] memory superPositionBalances)
     {
-        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, chainId_);
+        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain);
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
         superPositionBalances = new uint256[](superformIds.length);
-
         address superPositionsAddress =
             ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
 
@@ -1960,6 +1995,41 @@ abstract contract ProtocolActions is BaseSetup {
 
         for (uint256 i = 0; i < superformIds.length; i++) {
             superPositionBalances[i] = superPositions.balanceOf(users[user], superformIds[i]);
+        }
+    }
+
+    function _getPreviewRedeemAmountsMaxBalance(
+        uint256 user,
+        uint256[] memory superformIds,
+        uint64 dstChain
+    )
+        internal
+        returns (uint256[] memory previewRedeemAmounts)
+    {
+        vm.selectFork(FORKS[CHAIN_0]);
+        uint256[] memory superPositionBalances = new uint256[] (superformIds.length);
+        previewRedeemAmounts = new uint256[] (superformIds.length);
+        address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
+
+        address superPositionsAddress =
+            ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
+
+        IERC1155A superPositions = IERC1155A(superPositionsAddress);
+
+        for (uint256 i = 0; i < superformIds.length; i++) {
+            vm.selectFork(FORKS[CHAIN_0]);
+            uint256 nRepetitions;
+
+            for (uint256 j = 0; j < superformIds.length; j++) {
+                if (superformIds[i] == superformIds[j]) {
+                    ++nRepetitions;
+                }
+            }
+            superPositionBalances[i] = superPositions.balanceOf(users[user], superformIds[i]);
+
+            (address superform,,) = superformIds[i].getSuperform();
+            vm.selectFork(FORKS[dstChain]);
+            previewRedeemAmounts[i] = IBaseForm(superform).previewRedeemFrom(superPositionBalances[i]) / nRepetitions;
         }
     }
 
@@ -2186,7 +2256,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.prank(deployer);
         vm.expectRevert(Error.QUORUM_NOT_REACHED.selector);
-        TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
+        TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);
 
@@ -2195,14 +2265,14 @@ abstract contract ProtocolActions is BaseSetup {
         SuperRegistry(getContract(targetChainId_, "SuperRegistry")).setRequiredMessagingQuorum(srcChainId_, 1);
 
         vm.prank(deployer);
-        TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
+        TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);
 
         /// @dev maliciously tries to process the payload again
         vm.prank(deployer);
         vm.expectRevert(Error.PAYLOAD_ALREADY_PROCESSED.selector);
-        TwoStepsFormStateRegistry(payable(getContract(targetChainId_, "TwoStepsFormStateRegistry"))).processPayload{
+        TimelockStateRegistry(payable(getContract(targetChainId_, "TimelockStateRegistry"))).processPayload{
             value: msgValue
         }(payloadId_);
 
@@ -2455,6 +2525,9 @@ abstract contract ProtocolActions is BaseSetup {
             }
 
             if (!partialWithdraw) {
+                /// @dev <= 1 due to off by one issues with vault.previewRedeem(), leading to
+                /// currentBalanceOfSp being 1 more than expected
+                //assertLe(currentBalanceOfSp - amountsToAssert[i], 1);
                 assertEq(currentBalanceOfSp, amountsToAssert[i]);
             } else {
                 assertGt(currentBalanceOfSp, amountsToAssert[i]);
@@ -2532,9 +2605,9 @@ abstract contract ProtocolActions is BaseSetup {
 
         int256 bridgeSlippage;
         int256 dstSwapSlippage;
+
         /// @dev create an array of amounts summing the amounts of the same superform ids
         (v.superforms,,) = DataLib.getSuperforms(args.multiSuperformsData.superformIds);
-
         for (v.i = 0; v.i < v.lenSuperforms; v.i++) {
             totalSpAmount += args.multiSuperformsData.amounts[v.i];
             for (v.j = 0; v.j < v.lenSuperforms; v.j++) {
@@ -2554,6 +2627,7 @@ abstract contract ProtocolActions is BaseSetup {
                 ) {
                     /// @dev calculate amounts with slippage if needed for assertions
                     v.finalAmount = args.multiSuperformsData.amounts[v.j];
+
                     if (args.assertWithSlippage && args.slippage != 0 && !args.sameChain) {
                         /// @dev applying bridge slippage
                         v.finalAmount = (v.finalAmount * uint256(10_000 - args.slippage)) / 10_000;
@@ -2570,9 +2644,6 @@ abstract contract ProtocolActions is BaseSetup {
                     spAmountSummed[v.i] += v.finalAmount;
                 }
             }
-            vm.selectFork(FORKS[DST_CHAINS[args.dstIndex]]);
-            /// @dev calculate the final amount summed on the basis of previewDeposit
-            spAmountSummed[v.i] = IBaseForm(v.superforms[v.i]).previewDepositTo(spAmountSummed[v.i]);
         }
     }
 
@@ -2614,6 +2685,7 @@ abstract contract ProtocolActions is BaseSetup {
                             if (foundRevertingWithdraw) break;
                         }
                     }
+
                     if (lenRevertWithdrawTimelocked > 0) {
                         for (uint256 k = 0; k < lenRevertWithdrawTimelocked; k++) {
                             foundRevertingWithdrawTimelocked =
@@ -2777,7 +2849,6 @@ abstract contract ProtocolActions is BaseSetup {
                 );
                 spAmountSummed[i] = spAmountSummedPerDst;
             }
-            console.log("Asserted b4 action multi");
         } else {
             v.token = singleSuperformsData[0].liqRequest.token;
             if (action.action != Actions.Withdraw) {
@@ -2792,9 +2863,14 @@ abstract contract ProtocolActions is BaseSetup {
                 v.partialWithdrawVault = abi.decode(singleSuperformsData[i].extraFormData, (bool));
                 vm.selectFork(FORKS[DST_CHAINS[i]]);
 
-                spAmountBeforeWithdrawPerDestination[i] =
-                    IBaseForm(v.superform).previewDepositTo(singleSuperformsData[i].amount);
-
+                /// @dev for withdraw singleSuperformsData[i].amount is the number of superpositions the
+                /// user holds, fetched in test_scenario() right after deposit action
+                if (action.action == Actions.Deposit) {
+                    spAmountBeforeWithdrawPerDestination[i] =
+                        IBaseForm(v.superform).previewDepositTo(singleSuperformsData[i].amount);
+                } else if (action.action == Actions.Withdraw) {
+                    spAmountBeforeWithdrawPerDestination[i] = singleSuperformsData[i].amount;
+                }
                 if (!v.partialWithdrawVault) {
                     _assertSingleVaultBalance(
                         action.user,
@@ -2807,7 +2883,6 @@ abstract contract ProtocolActions is BaseSetup {
                     );
                 }
             }
-            console.log("Asserted b4 action");
         }
     }
 
@@ -2994,6 +3069,7 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev this assertion assumes the withdraw is happening on the same superformId as the previous
                     /// deposit
                     /// @dev notice the amount sent for non (same DSt and reverting) is amount after burn
+
                     _assertSingleVaultBalance(
                         action.user,
                         singleSuperformsData[i].superformId,
