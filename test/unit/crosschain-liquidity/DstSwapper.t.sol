@@ -5,6 +5,8 @@ import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract DstSwapperTest is ProtocolActions {
+    address dstRefundAddress = address(444);
+
     function setUp() public override {
         super.setUp();
     }
@@ -187,7 +189,12 @@ contract DstSwapperTest is ProtocolActions {
         vm.prank(getContract(ETH, "LayerzeroImplementation"));
         CoreStateRegistry(coreStateRegistry).receivePayload(
             137,
-            abi.encode(AMBMessage(0, abi.encode(InitSingleVaultData(1, 1, superformId, 1e18, 0, true, liq, bytes("")))))
+            abi.encode(
+                AMBMessage(
+                    0,
+                    abi.encode(InitSingleVaultData(1, 1, superformId, 1e18, 0, true, liq, dstRefundAddress, bytes("")))
+                )
+            )
         );
     }
 
@@ -218,7 +225,9 @@ contract DstSwapperTest is ProtocolActions {
                 AMBMessage(
                     DataLib.packTxInfo(1, 1, 1, 1, address(420), uint64(137)),
                     abi.encode(
-                        InitMultiVaultData(1, 1, superformIds, amounts, new uint256[](2), hasDstSwaps, liq, bytes(""))
+                        InitMultiVaultData(
+                            1, 1, superformIds, amounts, new uint256[](2), hasDstSwaps, liq, dstRefundAddress, bytes("")
+                        )
                     )
                 )
             )

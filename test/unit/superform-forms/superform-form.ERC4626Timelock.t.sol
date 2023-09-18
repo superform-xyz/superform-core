@@ -14,6 +14,7 @@ import "src/types/DataTypes.sol";
 
 contract SuperformERC4626TimelockFormTest is ProtocolActions {
     uint64 internal chainId = ETH;
+    address refundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -38,7 +39,15 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, superformId, 1e18, 100, false, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0), ""
+            1,
+            1,
+            superformId,
+            1e18,
+            100,
+            false,
+            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0),
+            refundAddress,
+            ""
         );
 
         /// @dev simulating withdrawals with malicious tx data
@@ -73,7 +82,15 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         bytes memory invalidNonEmptyTxData = abi.encode(1);
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, superformId, 1e18, 100, false, LiqRequest(1, invalidNonEmptyTxData, address(0), ETH, 0), ""
+            1,
+            1,
+            superformId,
+            1e18,
+            100,
+            false,
+            LiqRequest(1, invalidNonEmptyTxData, address(0), ETH, 0),
+            refundAddress,
+            ""
         );
 
         /// @dev simulating withdrawals with malicious tx data
@@ -105,8 +122,9 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
         vm.stopPrank();
 
-        InitSingleVaultData memory data =
-            InitSingleVaultData(1, 1, superformId, 1e18, 100, false, LiqRequest(1, "", address(0), ETH, 0), "");
+        InitSingleVaultData memory data = InitSingleVaultData(
+            1, 1, superformId, 1e18, 100, false, LiqRequest(1, "", address(0), ETH, 0), refundAddress, ""
+        );
 
         vm.prank(getContract(ETH, "CoreStateRegistry"));
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
@@ -159,6 +177,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             100,
             false,
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), ETH, 0),
+            refundAddress,
             ""
         );
 
@@ -194,6 +213,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             false,
             LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
             bytes(""),
+            refundAddress,
             bytes("")
         );
 

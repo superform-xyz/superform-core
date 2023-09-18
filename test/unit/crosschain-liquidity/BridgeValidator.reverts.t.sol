@@ -3,6 +3,7 @@ pragma solidity 0.8.21;
 
 import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
+import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 
 contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
     function setUp() public override {

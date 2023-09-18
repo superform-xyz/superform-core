@@ -96,6 +96,12 @@ library Error {
     /// @dev thrown when not possible to revoke last admin
     error CANNOT_REVOKE_LAST_ADMIN();
 
+    /// @dev thrown if the delay is invalid
+    error INVALID_TIMELOCK_DELAY();
+
+    /// @dev thrown if rescue is already proposed
+    error RESCUE_ALREADY_PROPOSED();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -126,6 +132,15 @@ library Error {
 
     /// @dev thrown if index is invalid
     error INVALID_INDEX();
+
+    /// @dev thrown if msg.sender is not the refund address to dispute
+    error INVALID_DISUPTER();
+
+    /// @dev thrown if the rescue passed dispute deadline
+    error DISPUTE_TIME_ELAPSED();
+
+    /// @dev thrown if the rescue is still in timelocked state
+    error RESCUE_TIMELOCKED();
 
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
@@ -230,6 +245,9 @@ library Error {
 
     /// @dev thrown when there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
+
+    /// @dev thrown slippage is outside of bounds
+    error SLIPPAGE_OUT_OF_BOUNDS();
 
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM ROUTER ERRORS

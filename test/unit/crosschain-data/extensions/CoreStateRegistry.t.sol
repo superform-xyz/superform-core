@@ -6,6 +6,7 @@ import "test/utils/ProtocolActions.sol";
 
 contract CoreStateRegistryTest is ProtocolActions {
     uint64 internal chainId = ETH;
+    address dstRefundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -301,6 +302,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0),
             bytes(""),
+            dstRefundAddress,
             bytes("")
         );
         /// @dev approves before call
@@ -346,6 +348,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
             bytes(""),
+            dstRefundAddress,
             bytes("")
         );
 
@@ -414,8 +417,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
-        MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), bytes(""));
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), dstRefundAddress, bytes("")
+        );
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
@@ -479,8 +483,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
-        MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), bytes(""));
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), dstRefundAddress, bytes("")
+        );
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
@@ -519,8 +524,9 @@ contract CoreStateRegistryTest is ProtocolActions {
         maxSlippages[0] = 1000;
         maxSlippages[1] = 1000;
 
-        MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, amountArr, maxSlippages, new bool[](2), liqReqArr, bytes(""), bytes(""));
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds, amountArr, maxSlippages, new bool[](2), liqReqArr, bytes(""), dstRefundAddress, bytes("")
+        );
 
         vm.prank(deployer);
 
