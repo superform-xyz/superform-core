@@ -15,6 +15,7 @@ import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 import { Error } from "./utils/Error.sol";
+import { IPermit2 } from "./vendor/dragonfly-xyz/IPermit2.sol";
 import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
 
@@ -419,14 +420,16 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address bridgeValidator = superRegistry.getBridgeValidator(args.liqRequest.bridgeId);
         /// @dev validates remaining params of txData
         IBridgeValidator(bridgeValidator).validateTxData(
-            args.liqRequest.txData,
-            args.srcChainId,
-            args.dstChainId,
-            args.liqRequest.liqDstChainId,
-            args.deposit,
-            args.superform,
-            args.srcSender,
-            args.liqRequest.token
+            IBridgeValidator.ValidateTxDataArgs(
+                args.liqRequest.txData,
+                args.srcChainId,
+                args.dstChainId,
+                args.liqRequest.liqDstChainId,
+                args.deposit,
+                args.superform,
+                args.srcSender,
+                args.liqRequest.token
+            )
         );
 
         /// @dev dispatches tokens through the selected liquidity bridge to the destination contract

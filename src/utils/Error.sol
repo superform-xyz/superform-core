@@ -75,9 +75,6 @@ library Error {
     /// @dev thrown if the msg-sender is not super registry
     error NOT_SUPER_REGISTRY();
 
-    /// @dev thrown if the msg-sender is not super rbac
-    error NOT_SUPER_RBAC();
-
     /// @dev thrown if the msg-sender does not have SWAPPER role
     error NOT_SWAPPER();
 
@@ -206,9 +203,6 @@ library Error {
     /// @dev thrown if the amounts being sent in update payload mean a negative slippage
     error NEGATIVE_SLIPPAGE();
 
-    /// @dev thrown if Slippage is out of bounds
-    error SLIPPAGE_OUT_OF_BOUNDS();
-
     /// @dev thrown if payload is not in UPDATED state
     error PAYLOAD_NOT_UPDATED();
 
@@ -221,17 +215,11 @@ library Error {
     /// @dev thrown if message hasn't reached the specified level of quorum needed
     error QUORUM_NOT_REACHED();
 
-    /// @dev thrown if gas refunds failed
-    error GAS_REFUND_FAILED();
-
     /// @dev thrown if message amb and proof amb are the same
     error INVALID_PROOF_BRIDGE_ID();
 
     /// @dev thrown if a duplicate proof amb is found
     error DUPLICATE_PROOF_BRIDGE_ID();
-
-    /// @dev thrown if the gas per dst doesn't match chain ids in broadcasting
-    error INVALID_EXTRA_DATA_LENGTHS();
 
     /// @dev thrown if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
@@ -257,6 +245,9 @@ library Error {
 
     /// @dev thrown when there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
+
+    /// @dev thrown slippage is outside of bounds
+    error SLIPPAGE_OUT_OF_BOUNDS();
 
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM ROUTER ERRORS
@@ -305,9 +296,6 @@ library Error {
 
     /// @dev thrown when the amount in direct deposit is not correct
     error DIRECT_DEPOSIT_INVALID_DATA();
-
-    /// @dev thrown when the collateral in direct deposit is not correct
-    error DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
     /// @dev thrown when the collateral in direct withdraw is not correct
     error DIRECT_WITHDRAW_INVALID_COLLATERAL();

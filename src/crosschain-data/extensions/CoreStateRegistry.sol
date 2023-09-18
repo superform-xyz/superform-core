@@ -566,14 +566,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     lV.bridgeValidator = _getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId);
 
                     lV.bridgeValidator.validateTxData(
-                        txData_[lV.i],
-                        v_.dstChainId,
-                        v_.srcChainId,
-                        lV.multiVaultData.liqData[lV.i].liqDstChainId,
-                        false,
-                        superform,
-                        v_.srcSender,
-                        lV.multiVaultData.liqData[lV.i].token
+                        IBridgeValidator.ValidateTxDataArgs(
+                            txData_[lV.i],
+                            v_.dstChainId,
+                            v_.srcChainId,
+                            lV.multiVaultData.liqData[lV.i].liqDstChainId,
+                            false,
+                            superform,
+                            v_.srcSender,
+                            lV.multiVaultData.liqData[lV.i].token
+                        )
                     );
                     /// payload with 1000 USDC SP being withdrawn (amounts)
                     /// finalAmount (that will be dispatched) is amount in

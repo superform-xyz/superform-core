@@ -6,7 +6,6 @@ import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/Sa
 import { IDstSwapper } from "../interfaces/IDstSwapper.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { IBaseStateRegistry } from "../interfaces/IBaseStateRegistry.sol";
-import { ICoreStateRegistry } from "../interfaces/ICoreStateRegistry.sol";
 import { IBridgeValidator } from "../interfaces/IBridgeValidator.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { IERC4626Form } from "../forms/interfaces/IERC4626Form.sol";
@@ -85,15 +84,17 @@ contract DstSwapper is IDstSwapper {
         v.finalDst = superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY"));
         /// @dev validates the bridge data
         validator.validateTxData(
-            txData_,
-            chainId,
-            chainId,
-            chainId,
-            false,
-            /// to enter the if-else case of the bridge validator loop
-            address(0),
-            v.finalDst,
-            approvalToken_
+            IBridgeValidator.ValidateTxDataArgs(
+                txData_,
+                chainId,
+                chainId,
+                chainId,
+                false,
+                /// to enter the if-else case of the bridge validator loop
+                address(0),
+                v.finalDst,
+                approvalToken_
+            )
         );
 
         /// @dev get the address of the bridge to send the txData to.

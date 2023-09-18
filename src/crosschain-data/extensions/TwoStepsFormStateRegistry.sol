@@ -131,14 +131,16 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
 
             /// @dev validate the incoming tx data
             bridgeValidator.validateTxData(
-                txData_,
-                uint64(block.chainid),
-                p.srcChainId,
-                p.data.liqData.liqDstChainId,
-                false,
-                superform,
-                p.srcSender,
-                p.data.liqData.token
+                IBridgeValidator.ValidateTxDataArgs(
+                    txData_,
+                    uint64(block.chainid),
+                    p.srcChainId,
+                    p.data.liqData.liqDstChainId,
+                    false,
+                    superform,
+                    p.srcSender,
+                    p.data.liqData.token
+                )
             );
 
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
