@@ -37,7 +37,7 @@ contract SXSVDNormal4626NoNativeNoSlippageAMB12 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: false,
+                dstSwap: true,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );

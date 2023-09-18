@@ -450,6 +450,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         for (uint256 i; i < arrLen;) {
+            if (finalAmounts_[i] == 0) {
+                revert Error.ZERO_AMOUNT();
+            }
+
             if (multiVaultData.hasDstSwaps[i]) {
                 if (dstSwapper.swappedAmount(payloadId_, i) != finalAmounts_[i]) {
                     revert Error.INVALID_DST_SWAP_AMOUNT();
@@ -517,6 +521,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitSingleVaultData memory singleVaultData = abi.decode(prevPayloadBody_, (InitSingleVaultData));
         IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
+
+        if (finalAmount_ == 0) {
+            revert Error.ZERO_AMOUNT();
+        }
 
         if (singleVaultData.hasDstSwap) {
             if (dstSwapper.swappedAmount(payloadId_, 0) != finalAmount_) {
