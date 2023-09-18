@@ -77,7 +77,7 @@ contract DstSwapper is IDstSwapper {
         }
 
         ProcessTxVars memory v;
-        uint64 chainId = superRegistry.chainId();
+        uint64 chainId = uint64(block.chainid);
 
         IBridgeValidator validator = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
         (address approvalToken_, uint256 amount_) = validator.decodeDstSwap(txData_);
