@@ -168,7 +168,7 @@ contract DstSwapper is IDstSwapper {
         if (multi == 1) {
             InitMultiVaultData memory data = abi.decode(payload, (InitMultiVaultData));
 
-            if (data.superformIds.length < index_) {
+            if (index_ >= data.superformIds.length) {
                 revert Error.INVALID_INDEX();
             }
 

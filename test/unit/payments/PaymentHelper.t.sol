@@ -18,6 +18,7 @@ contract PaymentHelperTest is ProtocolActions {
     MockGasPriceOracle public mockGasPriceOracle;
 
     address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address dstRefundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -41,6 +42,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     LiqRequest(1, emptyBytes, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -59,6 +61,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     LiqRequest(1, emptyBytes, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -77,6 +80,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     LiqRequest(1, emptyBytes, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -109,6 +113,7 @@ contract PaymentHelperTest is ProtocolActions {
                     new bool[](1),
                     liqRequestMemoryArray,
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -127,6 +132,7 @@ contract PaymentHelperTest is ProtocolActions {
                     new bool[](1),
                     liqRequestMemoryArray,
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -172,6 +178,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     LiqRequest(1, txData, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -216,6 +223,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     LiqRequest(1, txData, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -260,6 +268,7 @@ contract PaymentHelperTest is ProtocolActions {
                     false,
                     LiqRequest(1, txData, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
