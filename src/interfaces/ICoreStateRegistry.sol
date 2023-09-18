@@ -83,6 +83,17 @@ interface ICoreStateRegistry {
     /// @dev is emitted when any deposit fails
     event FailedXChainDeposits(uint256 indexed payloadId);
 
+    /// @dev is emitted when a rescue is proposed for failed deposits in a payload
+    event RescueProposed(
+        uint256 indexed payloadId, uint256[] superformIds, uint256[] proposedAmount, uint256 proposedTime
+    );
+
+    /// @dev is emitted when an user disputed his refund amounts
+    event RescueDisputed(uint256 indexed payloadId);
+
+    /// @dev is emitted when deposit rescue is finalized
+    event RescueFinalized(uint256 indexed payloadId);
+
     /*///////////////////////////////////////////////////////////////
                           EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -107,4 +118,13 @@ interface ICoreStateRegistry {
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// @param proposedAmounts_ is the array of proposed rescue amounts.
     function proposeRescueFailedDeposits(uint256 payloadId_, uint256[] memory proposedAmounts_) external;
+
+    /// @dev allows refund receivers to challenge their final receiving token amounts on failed deposits
+    /// @param payloadId_ is the identifier of the cross-chain payload
+    /// @notice should challenge within the delay window configured on SuperRegistry
+    function disputeRescueFailedDeposits(uint256 payloadId_) external;
+
+    /// @dev allows anyone to settle refunds for unprocessed/failed deposits past the challenge period
+    /// @param payloadId_ is the identifier of the cross-chain payload
+    function finalizeRescueFailedDeposits(uint256 payloadId_) external;
 }

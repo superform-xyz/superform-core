@@ -13,6 +13,9 @@ interface IDstSwapper {
     /// @dev is emitted when the super registry is updated.
     event SuperRegistryUpdated(address indexed superRegistry);
 
+    /// @dev is emitted when a dst swap transaction is processed
+    event SwapProcessed(uint256 payloadId, uint256 index, uint256 bridgeId, uint256 finalAmount);
+
     /// @dev would interact with liquidity bridge contract to process multi-tx transactions and move the funds into
     /// destination
     /// contract.

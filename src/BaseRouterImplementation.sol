@@ -333,7 +333,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             new bool[](req.superformData.superformIds.length),
             req.superformData.liqRequests,
             address(0),
-            /// there is no need for dst refund address
             req.superformData.extraFormData
         );
 
@@ -693,7 +692,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 false,
                 liqData_,
                 address(0),
-                /// there is no need for refund address
                 extraFormData_
             ),
             srcSender_

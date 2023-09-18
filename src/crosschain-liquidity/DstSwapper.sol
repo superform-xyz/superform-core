@@ -121,6 +121,9 @@ contract DstSwapper is IDstSwapper {
 
         /// @dev updates swapped amount
         swappedAmount[payloadId_][index_] = balanceAfter - balanceBefore;
+
+        /// @dev emits final event
+        emit SwapProcessed(payloadId_, index_, bridgeId_, balanceAfter - balanceBefore);
     }
 
     /// @inheritdoc IDstSwapper
