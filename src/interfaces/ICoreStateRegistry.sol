@@ -76,6 +76,13 @@ interface ICoreStateRegistry {
         uint256[] superformIds;
     }
 
+    struct FailedDeposit {
+        uint256[] superformIds;
+        uint256[] amounts;
+        address refundAddress;
+        uint256 lastProposedTimestamp;
+    }
+
     /*///////////////////////////////////////////////////////////////
                                EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -101,7 +108,10 @@ interface ICoreStateRegistry {
     /// @dev allows users to read the superformIds that failed in a specific payloadId_
     /// @param payloadId_ is the identifier of the cross-chain payload.
     /// @return superformIds_ is the identifiers of superforms in the payloadId that got failed.
-    function getFailedDeposits(uint256 payloadId_) external view returns (uint256[] memory superformIds_);
+    function getFailedDeposits(uint256 payloadId_)
+        external
+        view
+        returns (uint256[] memory superformIds_, uint256[] memory amounts, address refundAddress, uint256 proposedTime);
 
     /// @dev allows accounts with {CORE_STATE_REGISTRY_UPDATER_ROLE} to modify a received cross-chain deposit payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.

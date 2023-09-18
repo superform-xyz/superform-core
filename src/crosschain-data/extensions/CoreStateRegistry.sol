@@ -30,13 +30,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    struct FailedDeposit {
-        uint256[] superformIds;
-        uint256[] amounts;
-        address refundAddress;
-        uint256 lastProposedTimestamp;
-    }
-
     /// @dev just stores the superformIds that failed in a specific payload id
     mapping(uint256 payloadId => FailedDeposit) internal failedDeposits;
 
@@ -366,8 +359,17 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @inheritdoc ICoreStateRegistry
-    function getFailedDeposits(uint256 payloadId) external view override returns (uint256[] memory) {
-        return failedDeposits[payloadId].superformIds;
+    function getFailedDeposits(uint256 payloadId_)
+        external
+        view
+        override
+        returns (uint256[] memory superformIds, uint256[] memory amounts, address refundAddress, uint256 proposedTime)
+    {
+        FailedDeposit memory failedDeposit = failedDeposits[payloadId_];
+        superformIds = failedDeposit.superformIds;
+        amounts = failedDeposit.amounts;
+        refundAddress = failedDeposit.refundAddress;
+        proposedTime = failedDeposit.lastProposedTimestamp;
     }
 
     /*///////////////////////////////////////////////////////////////
