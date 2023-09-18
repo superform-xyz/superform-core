@@ -3,13 +3,13 @@ pragma solidity 0.8.21;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
 import { IPaymentHelper } from "../../interfaces/IPaymentHelper.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
-import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { IDstSwapper } from "../../interfaces/IDstSwapper.sol";
 import { DataLib } from "../../libraries/DataLib.sol";
 import { ProofLib } from "../../libraries/ProofLib.sol";
@@ -38,12 +38,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyCoreStateRegistryProcessor() {
-        if (!ISuperRBAC(_getSuperRBAC()).hasCoreStateRegistryProcessorRole(msg.sender)) revert Error.NOT_PROCESSOR();
+        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE"), msg.sender)) revert Error.NOT_PROCESSOR();
         _;
     }
 
     modifier onlyCoreStateRegistryUpdater() {
-        if (!ISuperRBAC(_getSuperRBAC()).hasCoreStateRegistryUpdaterRole(msg.sender)) {
+        if (!_hasRole(keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE"), msg.sender)) {
             revert Error.NOT_UPDATER();
         }
         _;
@@ -215,12 +215,11 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             v.multi == 1
-                ? IStateSyncer(
-                    superRegistry.getStateSyncer(abi.decode(v._payloadBody, (ReturnMultiData)).superformRouterId)
-                ).stateMultiSync(v._message)
-                : IStateSyncer(
-                    superRegistry.getStateSyncer(abi.decode(v._payloadBody, (ReturnSingleData)).superformRouterId)
-                ).stateSync(v._message);
+                ? IStateSyncer(_getStateSyncer(abi.decode(v._payloadBody, (ReturnMultiData)).superformRouterId))
+                    .stateMultiSync(v._message)
+                : IStateSyncer(_getStateSyncer(abi.decode(v._payloadBody, (ReturnSingleData)).superformRouterId)).stateSync(
+                    v._message
+                );
         }
 
         bytes memory returnMessage;
@@ -317,7 +316,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev the timelock is already elapsed to dispute
         if (
             failedDeposits_.lastProposedTimestamp == 0
-                || block.timestamp > failedDeposits_.lastProposedTimestamp + superRegistry.delay()
+                || block.timestamp > failedDeposits_.lastProposedTimestamp + _getDelay()
         ) {
             revert Error.DISPUTE_TIME_ELAPSED();
         }
@@ -337,7 +336,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         /// @dev the timelock is elapsed
         if (
             failedDeposits_.lastProposedTimestamp == 0
-                || block.timestamp < failedDeposits_.lastProposedTimestamp + superRegistry.delay()
+                || block.timestamp < failedDeposits_.lastProposedTimestamp + _getDelay()
         ) {
             revert Error.RESCUE_TIMELOCKED();
         }
@@ -363,22 +362,45 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         external
         view
         override
-        returns (uint256[] memory superformIds, uint256[] memory amounts, address refundAddress, uint256 proposedTime)
+        returns (uint256[] memory superformIds, uint256[] memory amounts)
     {
         FailedDeposit memory failedDeposit = failedDeposits[payloadId_];
         superformIds = failedDeposit.superformIds;
         amounts = failedDeposit.amounts;
-        refundAddress = failedDeposit.refundAddress;
-        proposedTime = failedDeposit.lastProposedTimestamp;
     }
 
     /*///////////////////////////////////////////////////////////////
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev returns if an address has a specific role
+    function _hasRole(bytes32 id, address addressToCheck) internal view returns (bool) {
+        return IAccessControl(_getSuperRBAC()).hasRole(id, addressToCheck);
+    }
+
+    /// @dev returns the state syncer address for id
+    function _getStateSyncer(uint8 id) internal view returns (address stateSyncer) {
+        return superRegistry.getStateSyncer(id);
+    }
+
+    /// @dev returns the registry address for id
+    function _getStateRegistryId(address registryAddress) internal view returns (uint8 id) {
+        return superRegistry.getStateRegistryId(registryAddress);
+    }
+
+    /// @dev returns the address from super registry
+    function _getAddress(bytes32 id) internal view returns (address) {
+        return superRegistry.getAddress(id);
+    }
+
+    /// @dev returns the current timelock delay
+    function _getDelay() internal view returns (uint256) {
+        return superRegistry.delay();
+    }
+
     /// @dev returns the superRBAC address
     function _getSuperRBAC() internal view returns (address) {
-        return superRegistry.getAddress(keccak256("SUPER_RBAC"));
+        return _getAddress(keccak256("SUPER_RBAC"));
     }
 
     /// @dev returns the required quorum for the src chain id from super registry
@@ -405,7 +427,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         returns (bytes memory newPayloadBody_, PayloadState finalState_)
     {
         InitMultiVaultData memory multiVaultData = abi.decode(prevPayloadBody_, (InitMultiVaultData));
-        IDstSwapper dstSwapper = IDstSwapper(superRegistry.getAddress(keccak256("DST_SWAPPER")));
+        IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
         /// @dev compare number of vaults to update with provided finalAmounts length
         if (multiVaultData.amounts.length != finalAmounts_.length) {
@@ -483,7 +505,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         returns (bytes memory newPayloadBody_, PayloadState finalState_)
     {
         InitSingleVaultData memory singleVaultData = abi.decode(prevPayloadBody_, (InitSingleVaultData));
-        IDstSwapper dstSwapper = IDstSwapper(superRegistry.getAddress(keccak256("DST_SWAPPER")));
+        IDstSwapper dstSwapper = IDstSwapper(_getAddress(keccak256("DST_SWAPPER")));
 
         if (singleVaultData.hasDstSwap) {
             if (dstSwapper.swappedAmount(payloadId_, 0) != finalAmount_) {
@@ -560,7 +582,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             if (txData_[lV.i].length != 0 && lV.multiVaultData.liqData[lV.i].txData.length == 0) {
                 (address superform,,) = lV.multiVaultData.superformIds[lV.i].getSuperform();
 
-                if (IBaseForm(superform).getStateRegistryId() == superRegistry.getStateRegistryId(address(this))) {
+                if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
                     PayloadUpdaterLib.validateLiqReq(lV.multiVaultData.liqData[lV.i]);
 
                     lV.bridgeValidator = _getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId);
@@ -865,7 +887,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     uint8(txType),
                     uint8(returnType),
                     1,
-                    superRegistry.getStateRegistryId(address(this)),
+                    _getStateRegistryId(address(this)),
                     srcSender_,
                     uint64(block.chainid)
                 ),
@@ -895,7 +917,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     uint8(txType),
                     uint8(returnType),
                     0,
-                    superRegistry.getStateRegistryId(address(this)),
+                    _getStateRegistryId(address(this)),
                     srcSender_,
                     uint64(block.chainid)
                 ),
@@ -906,8 +928,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @dev calls the appropriate dispatch function according to the ackExtraData the keeper fed initially
     function _dispatchAcknowledgement(uint64 dstChainId_, uint8[] memory ambIds_, bytes memory message_) internal {
-        (, bytes memory extraData) = IPaymentHelper(superRegistry.getAddress(keccak256("PAYMENT_HELPER")))
-            .calculateAMBData(dstChainId_, ambIds_, message_);
+        (, bytes memory extraData) =
+            IPaymentHelper(_getAddress(keccak256("PAYMENT_HELPER"))).calculateAMBData(dstChainId_, ambIds_, message_);
 
         AMBExtraData memory d = abi.decode(extraData, (AMBExtraData));
 

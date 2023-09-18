@@ -1257,8 +1257,7 @@ abstract contract ProtocolActions is BaseSetup {
             address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
 
             uint256[] memory rescueSuperformIds;
-            (rescueSuperformIds,,,) =
-                CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
+            (rescueSuperformIds,) = CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
 
             uint256[] memory amounts = new uint256[](rescueSuperformIds.length);
 

@@ -101,7 +101,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             bytes32 proofHash = abi.decode(data.params, (bytes32));
             ++messageQuorum[proofHash];
 
-            proofAMB[proofHash].push(superRegistry.getAmbId(msg.sender));
+            proofAMB[proofHash].push(_getAmbId(msg.sender));
 
             emit ProofReceived(data.params);
         } else {
@@ -111,7 +111,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
             payloadBody[payloadsCount] = data.params;
             payloadHeader[payloadsCount] = data.txInfo;
 
-            msgAMB[payloadsCount] = superRegistry.getAmbId(msg.sender);
+            msgAMB[payloadsCount] = _getAmbId(msg.sender);
 
             emit PayloadReceived(srcChainId_, uint64(block.chainid), payloadsCount);
         }
@@ -129,6 +129,16 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                             INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev returns the amb id for address
+    function _getAmbId(address amb) internal view returns (uint8 ambId) {
+        return superRegistry.getAmbId(amb);
+    }
+
+    /// @dev returns the amb id for address
+    function _getAmbAddress(uint8 id) internal view returns (address amb) {
+        return superRegistry.getAmbAddress(id);
+    }
+
     /// @dev dispatches the payload(message_) through individual message bridge implementations
     function _dispatchPayload(
         address srcSender_,
@@ -140,7 +150,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     )
         internal
     {
-        IAmbImplementation ambImplementation = IAmbImplementation(superRegistry.getAmbAddress(ambId_));
+        IAmbImplementation ambImplementation = IAmbImplementation(_getAmbAddress(ambId_));
 
         /// @dev revert if an unknown amb id is used
         if (address(ambImplementation) == address(0)) {
@@ -177,7 +187,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                 revert Error.DUPLICATE_PROOF_BRIDGE_ID();
             }
 
-            IAmbImplementation tempImpl = IAmbImplementation(superRegistry.getAmbAddress(tempAmbId));
+            IAmbImplementation tempImpl = IAmbImplementation(_getAmbAddress(tempAmbId));
 
             if (address(tempImpl) == address(0)) {
                 revert Error.INVALID_BRIDGE_ID();

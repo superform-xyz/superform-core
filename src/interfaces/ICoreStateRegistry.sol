@@ -111,7 +111,7 @@ interface ICoreStateRegistry {
     function getFailedDeposits(uint256 payloadId_)
         external
         view
-        returns (uint256[] memory superformIds_, uint256[] memory amounts, address refundAddress, uint256 proposedTime);
+        returns (uint256[] memory superformIds_, uint256[] memory amounts);
 
     /// @dev allows accounts with {CORE_STATE_REGISTRY_UPDATER_ROLE} to modify a received cross-chain deposit payload.
     /// @param payloadId_ is the identifier of the cross-chain payload to be updated.
