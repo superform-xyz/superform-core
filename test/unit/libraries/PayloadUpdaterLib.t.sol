@@ -14,6 +14,10 @@ contract PayloadUpdaterLibUser {
         return PayloadUpdaterLib.validateSlippage(a, b, c);
     }
 
+    function strictValidateSlippage(uint256 a, uint256 b, uint256 c) external pure {
+        PayloadUpdaterLib.strictValidateSlippage(a, b, c);
+    }
+
     function validateDepositPayloadUpdate(uint256 a, PayloadState b, uint8 c) external pure {
         PayloadUpdaterLib.validateDepositPayloadUpdate(a, b, c);
     }
@@ -49,6 +53,9 @@ contract PayloadUpdaterLibTest is Test {
         /// @dev payload updater goes rogue and tries to update new amount beyond slippage limit
         bool valid = payloadUpdateLib.validateSlippage(newAmountBeyondSlippage, maxAmount, slippage);
         assertFalse(valid);
+
+        vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
+        payloadUpdateLib.strictValidateSlippage(newAmountBeyondSlippage, maxAmount, slippage);
     }
 
     function test_validateDepositPayloadUpdate() public {

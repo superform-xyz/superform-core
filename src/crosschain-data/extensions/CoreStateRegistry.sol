@@ -578,7 +578,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     /// how can we compare an amount of underlying against superPositions? This seems invalid
 
                     lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i], false);
-                    PayloadUpdaterLib.validateSlippage(
+                    PayloadUpdaterLib.strictValidateSlippage(
                         lV.finalAmount,
                         IBaseForm(superform).previewWithdrawFrom(lV.multiVaultData.amounts[lV.i]),
                         lV.multiVaultData.maxSlippage[lV.i]

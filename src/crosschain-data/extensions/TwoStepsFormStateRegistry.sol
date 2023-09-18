@@ -142,7 +142,9 @@ contract TwoStepsFormStateRegistry is BaseStateRegistry, ITwoStepsFormStateRegis
             );
 
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
-            PayloadUpdaterLib.validateSlippage(finalAmount, form.previewWithdrawFrom(p.data.amount), p.data.maxSlippage);
+            PayloadUpdaterLib.strictValidateSlippage(
+                finalAmount, form.previewWithdrawFrom(p.data.amount), p.data.maxSlippage
+            );
 
             p.data.liqData.txData = txData_;
         }

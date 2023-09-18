@@ -8,6 +8,7 @@ import "test/utils/ProtocolActions.sol";
 
 contract SuperformERC4626KYCDaoFormTest is BaseSetup {
     uint64 internal chainId = ETH;
+    address refundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -25,7 +26,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[2], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", ""
+            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", refundAddress, ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);

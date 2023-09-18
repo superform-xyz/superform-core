@@ -98,7 +98,7 @@ contract DstSwapper is IDstSwapper {
 
         /// @dev get the address of the bridge to send the txData to.
         v.to = superRegistry.getBridgeAddress(bridgeId_);
-        v.underlying = _getPayloadInfo(payloadId_, index_);
+        v.underlying = _getFormUnderlyingFrom(payloadId_, index_);
 
         uint256 balanceBefore = IERC20(v.underlying).balanceOf(v.finalDst);
         if (approvalToken_ != NATIVE) {
@@ -150,7 +150,7 @@ contract DstSwapper is IDstSwapper {
     /*///////////////////////////////////////////////////////////////
                         INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function _getPayloadInfo(uint256 payloadId_, uint256 index_) internal view returns (address underlying_) {
+    function _getFormUnderlyingFrom(uint256 payloadId_, uint256 index_) internal view returns (address underlying_) {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
