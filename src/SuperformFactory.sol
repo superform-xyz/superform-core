@@ -231,13 +231,13 @@ contract SuperformFactory is ISuperformFactory {
     }
 
     /// @inheritdoc ISuperformFactory
-    function getSuperform(uint256 superformId)
+    function getSuperform(uint256 superformId_)
         external
         pure
         override
         returns (address superform_, uint32 formBeaconId_, uint64 chainId_)
     {
-        (superform_, formBeaconId_, chainId_) = superformId.getSuperform();
+        (superform_, formBeaconId_, chainId_) = superformId_.getSuperform();
     }
 
     /// @inheritdoc ISuperformFactory

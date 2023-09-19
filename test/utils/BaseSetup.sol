@@ -42,6 +42,7 @@ import { SuperformFactory } from "src/SuperformFactory.sol";
 import { ERC4626Form } from "src/forms/ERC4626Form.sol";
 import { ERC4626TimelockForm } from "src/forms/ERC4626TimelockForm.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";
+import { DstSwapper } from "src/crosschain-liquidity/DstSwapper.sol";
 import { LiFiValidator } from "src/crosschain-liquidity/lifi/LiFiValidator.sol";
 import { LayerzeroImplementation } from "src/crosschain-data/adapters/layerzero/LayerzeroImplementation.sol";
 import { HyperlaneImplementation } from "src/crosschain-data/adapters/hyperlane/HyperlaneImplementation.sol";
@@ -56,6 +57,7 @@ import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
 import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import "src/types/DataTypes.sol";
@@ -156,15 +158,6 @@ abstract contract BaseSetup is DSTest, Test {
     address public constant OP_lzEndpoint = 0x3c2269811836af69497E5F486A85D7316753cf62;
     address public constant FTM_lzEndpoint = 0xb6319cC6c8c27A8F5dAF0dD3DF91EA35C4720dd7;
     /// @dev removed FTM temporarily
-
-    address[] public LiFiCallDataVerificationFacets = [
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567,
-        0xaE77c9aD4af61fAec96f04bD6723F6F6A804a567
-    ];
 
     address[] public lzEndpoints = [
         0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675,
@@ -387,6 +380,18 @@ abstract contract BaseSetup is DSTest, Test {
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer);
             assert(vars.superRBACC.hasCoreStateRegistryUpdaterRole(deployer));
 
+            /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_RESCUER_ROLE for state registry?
+            vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), deployer);
+            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), deployer));
+
+            /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_DISPUTER_ROLE for state registry?
+            vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_DISPUTER_ROLE(), deployer);
+            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_DISPUTER_ROLE(), deployer));
+
+            /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for dst swapper?
+            vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer);
+            assert(vars.superRBACC.hasDstSwapperRole(deployer));
+
             vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC);
             assert(vars.superRBACC.hasBroadcasterRole(vars.superRBAC));
 
@@ -488,9 +493,7 @@ abstract contract BaseSetup is DSTest, Test {
             vm.allowCheatcodes(vars.lifiRouter);
 
             /// @dev 7.2- deploy  lifi validator
-            vm.makePersistent(LiFiCallDataVerificationFacets[i]);
-            vars.lifiValidator =
-                address(new LiFiValidator{salt: salt}(vars.superRegistry, LiFiCallDataVerificationFacets[i]));
+            vars.lifiValidator = address(new LiFiValidator{salt: salt}(vars.superRegistry));
             contracts[vars.chainId][bytes32(bytes("LiFiValidator"))] = vars.lifiValidator;
 
             /// @dev 7.3- kycDAO NFT used to test kycDAO vaults
@@ -644,6 +647,12 @@ abstract contract BaseSetup is DSTest, Test {
 
             vars.superRegistryC.setAddress(vars.superRegistryC.PAYMASTER(), vars.payMaster, vars.chainId);
 
+            /// @dev 15 - Deploy Dst Swapper
+            vars.dstSwapper = address(new DstSwapper{salt: salt}(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes32("DstSwapper"))] = vars.dstSwapper;
+
+            vars.superRegistryC.setAddress(vars.superRegistryC.DST_SWAPPER(), vars.dstSwapper, vars.chainId);
+
             /// @dev 15 - Super Registry extra setters
             SuperRegistry(vars.superRegistry).setBridgeAddresses(bridgeIds, bridgeAddresses, bridgeValidators);
 
@@ -735,15 +744,20 @@ abstract contract BaseSetup is DSTest, Test {
                     /// default gas price: 50 Gwei
                     PaymentHelper(payable(vars.paymentHelper)).addChain(
                         vars.dstChainId,
-                        PRICE_FEEDS[vars.chainId][vars.dstChainId],
-                        address(0),
-                        40_000,
-                        70_000,
-                        80_000,
-                        12e8,
-                        /// 12 usd
-                        28 gwei,
-                        10 wei
+                        IPaymentHelper.PaymentHelperConfig(
+                            PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                            address(0),
+                            40_000,
+                            70_000,
+                            80_000,
+                            12e8,
+                            /// 12 usd
+                            28 gwei,
+                            10 wei,
+                            10_000,
+                            10_000,
+                            50_000
+                        )
                     );
 
                     vars.superRegistryC.setAddress(
@@ -772,6 +786,10 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.superRegistryC.CORE_STATE_REGISTRY(),
                         getContract(vars.dstChainId, "CoreStateRegistry"),
                         vars.dstChainId
+                    );
+
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.DST_SWAPPER(), getContract(vars.dstChainId, "DstSwapper"), vars.dstChainId
                     );
 
                     vars.superRegistryC.setAddress(

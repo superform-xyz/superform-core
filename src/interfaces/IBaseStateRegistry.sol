@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
+import "../types/DataTypes.sol";
+
 /// @title IBaseStateRegistry
 /// @author ZeroPoint Labs
 /// @dev Is the crosschain interaction point. Send, store & process crosschain messages
@@ -61,6 +63,10 @@ interface IBaseStateRegistry {
 
     /// @dev allows users to read the total payloads received by the registry
     function payloadsCount() external view returns (uint256);
+
+    /// @dev allows user to read the payload state
+    /// uint256 payloadId_ is the unique payload identifier allocated on the destiantion chain
+    function payloadTracking(uint256 payloadId_) external view returns (PayloadState payloadState_);
 
     /// @dev allows users to read the bytes payload_ stored per payloadId_
     /// @param payloadId_ is the unqiue payload identifier allocated on the destination chain

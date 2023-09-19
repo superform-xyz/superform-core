@@ -10,13 +10,23 @@ import { Error } from "../utils/Error.sol";
 /// @author Zeropoint Labs.
 /// @dev Keeps information on all addresses used in the Superforms ecosystem.
 contract SuperRegistry is ISuperRegistry, QuorumManager {
-    /// @dev chainId represents the superform chain id.
-    uint64 public chainId;
+    /*///////////////////////////////////////////////////////////////
+                          Constants
+    //////////////////////////////////////////////////////////////*/
+    uint256 public constant MIN_DELAY = 1 hours;
+    uint256 public constant MAX_DELAY = 24 hours;
+
+    /*///////////////////////////////////////////////////////////////
+                        State Variables
+    //////////////////////////////////////////////////////////////*/
 
     /// @dev canonical permit2 contract
     address public PERMIT2;
 
-    mapping(bytes32 id => mapping(uint64 chainId => address moduleAddress)) private registry;
+    /// @dev rescue timelock delay config
+    uint256 public delay;
+
+    mapping(bytes32 id => mapping(uint64 chainid => address moduleAddress)) private registry;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
     mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
@@ -52,27 +62,36 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override CORE_REGISTRY_PROCESSOR = keccak256("CORE_REGISTRY_PROCESSOR");
     bytes32 public constant override BROADCAST_REGISTRY_PROCESSOR = keccak256("BROADCAST_REGISTRY_PROCESSOR");
     bytes32 public constant override TWO_STEPS_REGISTRY_PROCESSOR = keccak256("TWO_STEPS_REGISTRY_PROCESSOR");
+    bytes32 public constant override DST_SWAPPER = keccak256("DST_SWAPPER");
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(registry[SUPER_RBAC][chainId]).hasProtocolAdminRole(msg.sender)) {
+        if (!ISuperRBAC(registry[SUPER_RBAC][uint64(block.chainid)]).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
     }
 
     constructor(address superRBAC_) {
-        chainId = uint64(block.chainid);
+        registry[SUPER_RBAC][uint64(block.chainid)] = superRBAC_;
 
-        registry[SUPER_RBAC][chainId] = superRBAC_;
-
-        emit SetChainId(chainId);
-
-        emit AddressUpdated(SUPER_RBAC, chainId, address(0), superRBAC_);
+        emit AddressUpdated(SUPER_RBAC, uint64(block.chainid), address(0), superRBAC_);
     }
 
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc ISuperRegistry
+    function setDelay(uint256 delay_) external override onlyProtocolAdmin {
+        if (delay_ < MIN_DELAY || delay_ > MAX_DELAY) {
+            revert Error.INVALID_TIMELOCK_DELAY();
+        }
+
+        uint256 oldDelay_ = delay;
+        delay = delay_;
+
+        emit SetDelay(oldDelay_, delay_);
+    }
 
     /// @inheritdoc ISuperRegistry
     function setPermit2(address permit2_) external override onlyProtocolAdmin {
@@ -217,7 +236,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////*/
 
     function getAddress(bytes32 id_) external view override returns (address) {
-        return registry[id_][chainId];
+        return registry[id_][uint64(block.chainid)];
     }
 
     function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address) {

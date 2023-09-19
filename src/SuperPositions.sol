@@ -215,16 +215,16 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperPositions
-    function setDynamicURI(string memory dynamicURI_, bool freeze) external override onlyProtocolAdmin {
+    function setDynamicURI(string memory dynamicURI_, bool freeze_) external override onlyProtocolAdmin {
         if (dynamicURIFrozen) {
             revert Error.DYNAMIC_URI_FROZEN();
         }
 
         string memory oldURI = dynamicURI;
         dynamicURI = dynamicURI_;
-        dynamicURIFrozen = freeze;
+        dynamicURIFrozen = freeze_;
 
-        emit DynamicURIUpdated(oldURI, dynamicURI_, freeze);
+        emit DynamicURIUpdated(oldURI, dynamicURI_, freeze_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -232,8 +232,8 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ERC1155A
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155A) returns (bool) {
-        return super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC1155A) returns (bool) {
+        return super.supportsInterface(interfaceId_);
     }
 
     /// @notice Used to construct return url

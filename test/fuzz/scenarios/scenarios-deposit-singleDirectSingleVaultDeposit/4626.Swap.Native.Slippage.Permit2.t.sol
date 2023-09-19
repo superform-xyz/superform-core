@@ -37,6 +37,7 @@ contract SDSVD4626SwapNativeSlippagePermit2 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 11, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );

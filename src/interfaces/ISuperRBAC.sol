@@ -54,11 +54,20 @@ interface ISuperRBAC {
     /// @dev returns the id of the core state registry processor role
     function CORE_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
+    /// @dev returns the id of the core state registry rescuer role
+    function CORE_STATE_REGISTRY_RESCUER_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry rescue disputer role
+    function CORE_STATE_REGISTRY_DISPUTER_ROLE() external view returns (bytes32);
+
     /// @dev returns the id of the two steps state registry processor role
     function TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the broadcast state registry processor role
     function BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE() external view returns (bytes32);
+
+    /// @dev returns the id of the dst swapper role
+    function DST_SWAPPER_ROLE() external view returns (bytes32);
 
     /// @dev returns the id of the core state registry updater role
     function CORE_STATE_REGISTRY_UPDATER_ROLE() external view returns (bytes32);
@@ -116,6 +125,10 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the super positions minter role
     /// @param minter_ the address to check
     function hasSuperPositionsMinterRole(address minter_) external view returns (bool);
+
+    /// @dev returns whether the given address has the dst swapper role
+    /// @param swapper_ the address to check
+    function hasDstSwapperRole(address swapper_) external view returns (bool);
 
     /// @dev returns whether the given address has the super positions burner role
     /// @param burner_ the address to check

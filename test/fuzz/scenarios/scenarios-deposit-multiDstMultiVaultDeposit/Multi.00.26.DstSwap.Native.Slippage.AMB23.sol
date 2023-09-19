@@ -4,30 +4,36 @@ pragma solidity 0.8.21;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract SDMVDMulti26NativeNoSlippageAMB13 is ProtocolActions {
+contract MDMVDMulti0026NativeSlippageAMB23 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
         //////////////////////////////////////////////////////////////*/
 
-        AMBs = [1, 3];
+        AMBs = [2, 3];
+        MultiDstAMBs = [AMBs, AMBs];
 
         CHAIN_0 = OP;
-        DST_CHAINS = [POLY];
+        DST_CHAINS = [POLY, ETH];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[POLY][0] = [0, 0];
+        TARGET_UNDERLYINGS[POLY][0] = [0, 1];
+        TARGET_UNDERLYINGS[ETH][0] = [1, 1];
 
-        TARGET_VAULTS[POLY][0] = [2, 6];
+        TARGET_VAULTS[POLY][0] = [0, 0];
 
         /// @dev id 0 is normal 4626
+        TARGET_VAULTS[ETH][0] = [2, 6];
+        /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[POLY][0] = [2, 2];
+        TARGET_FORM_KINDS[POLY][0] = [0, 0];
+        TARGET_FORM_KINDS[ETH][0] = [2, 2];
 
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[POLY][0] = [1, 1];
+        LIQ_BRIDGES[ETH][0] = [1, 1];
 
         actions.push(
             TestAction({
@@ -37,8 +43,8 @@ contract SDMVDMulti26NativeNoSlippageAMB13 is ProtocolActions {
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
-                dstSwap: false,
+                slippage: 421, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: true,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
@@ -49,9 +55,11 @@ contract SDMVDMulti26NativeNoSlippageAMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
-        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_ETH / 2));
-        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_ETH / 2));
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_ETH / 4));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 4));
         AMOUNTS[POLY][0] = [amountOne_, amountTwo_];
+        AMOUNTS[ETH][0] = [amountTwo_, amountOne_];
 
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];

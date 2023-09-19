@@ -5,7 +5,6 @@ import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";
 import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { AMBMessage, BroadCastAMBExtraData } from "src/types/DataTypes.sol";
 import { Error } from "src/utils/Error.sol";
 import { IWormhole } from "src/vendor/wormhole/IWormhole.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
@@ -90,7 +89,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         );
     }
 
-    function receiveMessage(bytes memory encodedMessage) public {
+    function receiveMessage(bytes memory encodedMessage_) public {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
@@ -99,7 +98,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
 
         (IWormhole.VM memory wormholeMessage, bool valid, string memory reason) =
-            wormhole.parseAndVerifyVM(encodedMessage);
+            wormhole.parseAndVerifyVM(encodedMessage_);
 
         if (!valid) {
             revert Error.INVALID_BROADCAST_PAYLOAD();

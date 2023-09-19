@@ -48,6 +48,7 @@ contract MDSVDNormal4626MultiTokenInputNoSlippageAMB23 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );

@@ -88,11 +88,11 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
 
     /// @inheritdoc IWormholeReceiver
     function receiveWormholeMessages(
-        bytes memory payload,
+        bytes memory payload_,
         bytes[] memory,
-        bytes32 sourceAddress,
-        uint16 sourceChain,
-        bytes32 deliveryHash
+        bytes32 sourceAddress_,
+        uint16 sourceChain_,
+        bytes32 deliveryHash_
     )
         public
         payable
@@ -105,23 +105,23 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
             revert Error.CALLER_NOT_RELAYER();
         }
 
-        if (_bytes32ToAddress(sourceAddress) != authorizedImpl[sourceChain]) {
+        if (_bytes32ToAddress(sourceAddress_) != authorizedImpl[sourceChain_]) {
             revert Error.INVALID_SRC_SENDER();
         }
 
-        if (processedMessages[deliveryHash]) {
+        if (processedMessages[deliveryHash_]) {
             revert Error.DUPLICATE_PAYLOAD();
         }
 
-        processedMessages[deliveryHash] = true;
+        processedMessages[deliveryHash_] = true;
 
         /// @dev decoding payload
-        AMBMessage memory decoded = abi.decode(payload, (AMBMessage));
+        AMBMessage memory decoded = abi.decode(payload_, (AMBMessage));
         (,,, uint8 registryId,,) = decoded.txInfo.decodeTxInfo();
         address registryAddress = superRegistry.getStateRegistry(registryId);
         IBaseStateRegistry targetRegistry = IBaseStateRegistry(registryAddress);
 
-        targetRegistry.receivePayload(superChainId[sourceChain], payload);
+        targetRegistry.receivePayload(superChainId[sourceChain_], payload_);
     }
 
     /// @dev allows protocol admin to add new chain ids in future

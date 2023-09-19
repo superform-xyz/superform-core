@@ -75,6 +75,7 @@ contract MDMVW84002408NativeInputSlipageAMB12NewDst is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 643, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
@@ -88,6 +89,7 @@ contract MDMVW84002408NativeInputSlipageAMB12NewDst is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 643, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
@@ -105,10 +107,10 @@ contract MDMVW84002408NativeInputSlipageAMB12NewDst is ProtocolActions {
     )
         public
     {
-        /// @dev min amountOne_ needs to be 3 as its withdraw amount >= 2
-        amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_ETH / 7));
-        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 7));
-        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 7));
+        /// @dev TOTAL_SUPPLY_ETH / 8 because 2 * amountOne_ + 3 * amountTwo_ + 3 * amountThree_
+        amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_ETH / 8));
+        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 8));
+        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 8));
 
         /// @dev notice partial withdrawals in ETH->0 and POLY->2
         AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];

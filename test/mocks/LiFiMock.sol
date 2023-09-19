@@ -67,8 +67,16 @@ contract LiFiMock is Test {
         internal
     {
         /// @dev encapsulating from
-        (address from, uint256 toForkId, address outputToken, int256 slippage, bool isDirect) =
-            abi.decode(data_, (address, uint256, address, int256, bool));
+        (
+            address from,
+            uint256 toForkId,
+            address outputToken,
+            int256 slippage,
+            bool isMultiTx,
+            uint256 multiTxSlippageShare,
+            bool isDirect
+        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool));
+
         if (inputToken_ != NATIVE) {
             if (!prevSwap) MockERC20(inputToken_).transferFrom(from, address(this), amount_);
 
@@ -82,6 +90,8 @@ contract LiFiMock is Test {
 
         uint256 amountOut;
         if (isDirect) slippage = 0;
+        else if (isMultiTx) slippage = (slippage * int256(multiTxSlippageShare)) / 100;
+        else slippage = (slippage * int256(100 - multiTxSlippageShare)) / 100;
 
         amountOut = (amount_ * uint256(10_000 - slippage)) / 10_000;
 

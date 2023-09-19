@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDMVDMulti01NoTokenInputNoSlippageAMB13 is ProtocolActions {
+contract MDMVDMulti01NoDstSwapTokenInputNoSlippageL2AMB13 is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -44,6 +44,7 @@ contract MDMVDMulti01NoTokenInputNoSlippageAMB13 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );

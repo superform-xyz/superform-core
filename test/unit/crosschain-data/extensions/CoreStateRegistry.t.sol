@@ -6,6 +6,7 @@ import "test/utils/ProtocolActions.sol";
 
 contract CoreStateRegistryTest is ProtocolActions {
     uint64 internal chainId = ETH;
+    address dstRefundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -211,6 +212,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             AVAX,
             ETH,
             ETH,
+            false,
             deployer,
             uint256(ETH),
             /// @dev amount is 1 less than (actualWithdrawAmount * 0.9) => slippage > 10% => should revert
@@ -289,6 +291,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             ETH,
             AVAX,
             AVAX,
+            false,
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
             1e18,
@@ -301,8 +304,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             superformId,
             1e18,
             100,
+            false,
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0),
             bytes(""),
+            dstRefundAddress,
             bytes("")
         );
         /// @dev approves before call
@@ -342,7 +347,14 @@ contract CoreStateRegistryTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0), bytes(""), bytes("")
+            superformId,
+            1e18,
+            100,
+            false,
+            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
+            bytes(""),
+            dstRefundAddress,
+            bytes("")
         );
 
         vm.prank(deployer);
@@ -397,6 +409,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             ETH,
             AVAX,
             AVAX,
+            false,
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
             420,
@@ -409,8 +422,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
-        MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""), bytes(""));
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), dstRefundAddress, bytes("")
+        );
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
@@ -461,6 +475,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             ETH,
             AVAX,
             AVAX,
+            false,
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
             420,
@@ -473,8 +488,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
-        MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, uint256MemArr, uint256MemArr, liqReqArr, bytes(""), bytes(""));
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), dstRefundAddress, bytes("")
+        );
         /// @dev approves before call
         MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
 
@@ -513,8 +529,9 @@ contract CoreStateRegistryTest is ProtocolActions {
         maxSlippages[0] = 1000;
         maxSlippages[1] = 1000;
 
-        MultiVaultSFData memory data =
-            MultiVaultSFData(superformIds, amountArr, maxSlippages, liqReqArr, bytes(""), bytes(""));
+        MultiVaultSFData memory data = MultiVaultSFData(
+            superformIds, amountArr, maxSlippages, new bool[](2), liqReqArr, bytes(""), dstRefundAddress, bytes("")
+        );
 
         vm.prank(deployer);
 

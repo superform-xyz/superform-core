@@ -25,12 +25,15 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant override BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
+    bytes32 public constant override CORE_STATE_REGISTRY_RESCUER_ROLE = keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE");
+    bytes32 public constant override CORE_STATE_REGISTRY_DISPUTER_ROLE = keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE");
     bytes32 public constant override SUPERPOSITIONS_MINTER_ROLE = keccak256("SUPERPOSITIONS_MINTER_ROLE");
     bytes32 public constant override SUPERPOSITIONS_BURNER_ROLE = keccak256("SUPERPOSITIONS_BURNER_ROLE");
     bytes32 public constant override SERC20_MINTER_ROLE = keccak256("SERC20_MINTER_ROLE");
     bytes32 public constant override SERC20_BURNER_ROLE = keccak256("SERC20_BURNER_ROLE");
     bytes32 public constant override MINTER_STATE_REGISTRY_ROLE = keccak256("MINTER_STATE_REGISTRY_ROLE");
     bytes32 public constant override WORMHOLE_VAA_RELAYER_ROLE = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
+    bytes32 public constant override DST_SWAPPER_ROLE = keccak256("DST_SWAPPER_ROLE");
 
     ISuperRegistry public superRegistry;
 
@@ -52,6 +55,9 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         _setRoleAdmin(MINTER_STATE_REGISTRY_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(BROADCASTER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(WORMHOLE_VAA_RELAYER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(DST_SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(CORE_STATE_REGISTRY_RESCUER_ROLE, PROTOCOL_ADMIN_ROLE);
+        _setRoleAdmin(CORE_STATE_REGISTRY_DISPUTER_ROLE, PROTOCOL_ADMIN_ROLE);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -166,6 +172,11 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     }
 
     /// @inheritdoc ISuperRBAC
+    function hasDstSwapperRole(address swapper_) external view returns (bool) {
+        return hasRole(DST_SWAPPER_ROLE, swapper_);
+    }
+
+    /// @inheritdoc ISuperRBAC
     function hasSuperPositionsBurnerRole(address burner_) external view override returns (bool) {
         return hasRole(SUPERPOSITIONS_BURNER_ROLE, burner_);
     }
@@ -197,11 +208,11 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /**
      * @dev Overload {_revokeRole} to track enumerable memberships
      */
-    function _revokeRole(bytes32 role, address account) internal override {
-        if (role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE) {
-            if (getRoleMemberCount(role) == 1) revert Error.CANNOT_REVOKE_LAST_ADMIN();
+    function _revokeRole(bytes32 role_, address account_) internal override {
+        if (role_ == PROTOCOL_ADMIN_ROLE || role_ == EMERGENCY_ADMIN_ROLE) {
+            if (getRoleMemberCount(role_) == 1) revert Error.CANNOT_REVOKE_LAST_ADMIN();
         }
-        super._revokeRole(role, account);
+        super._revokeRole(role_, account_);
     }
 
     /// @dev interacts with role state registry to broadcasting state changes to all connected remote chains

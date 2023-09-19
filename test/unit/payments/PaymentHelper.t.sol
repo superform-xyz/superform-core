@@ -18,6 +18,7 @@ contract PaymentHelperTest is ProtocolActions {
     MockGasPriceOracle public mockGasPriceOracle;
 
     address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address dstRefundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -38,8 +39,10 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, emptyBytes, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -55,8 +58,10 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, emptyBytes, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -72,8 +77,10 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, emptyBytes, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -103,8 +110,10 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
+                    new bool[](1),
                     liqRequestMemoryArray,
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -120,8 +129,10 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     uint256MemoryArray,
                     uint256MemoryArray,
+                    new bool[](1),
                     liqRequestMemoryArray,
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -164,8 +175,10 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, txData, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -207,8 +220,10 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, txData, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -250,8 +265,10 @@ contract PaymentHelperTest is ProtocolActions {
                     /// timelock
                     420,
                     420,
+                    false,
                     LiqRequest(1, txData, address(0), ETH, 420),
                     emptyBytes,
+                    dstRefundAddress,
                     emptyBytes
                 )
             ),
@@ -309,7 +326,10 @@ contract PaymentHelperTest is ProtocolActions {
 
     function test_addChain() public {
         vm.prank(deployer);
-        paymentHelper.addChain(420, address(420), address(421), 423, 424, 425, 426, 427, 428);
+        paymentHelper.addChain(
+            420,
+            IPaymentHelper.PaymentHelperConfig(address(420), address(421), 321, 423, 424, 425, 426, 427, 428, 429, 430)
+        );
     }
 
     function test_updateChainConfig() public {

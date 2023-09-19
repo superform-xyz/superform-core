@@ -144,14 +144,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// @dev we are trying to deposit 1012 below, when we should be depositing 1010, otherwise it will revert
 
             IBridgeValidator(vars.bridgeValidator).validateTxData(
-                singleVaultData_.liqData.txData,
-                vars.chainId,
-                vars.chainId,
-                singleVaultData_.liqData.liqDstChainId,
-                true,
-                address(this),
-                msg.sender,
-                address(token)
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    vars.chainId,
+                    vars.chainId,
+                    singleVaultData_.liqData.liqDstChainId,
+                    true,
+                    address(this),
+                    msg.sender,
+                    address(token)
+                )
             );
 
             dispatchTokens(
@@ -189,7 +191,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processDirectWithdraw(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender
+        address srcSender_
     )
         internal
         returns (uint256 dstAmount)
@@ -197,9 +199,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         ProcessDirectWithdawLocalVars memory v;
         v.len1 = singleVaultData_.liqData.txData.length;
 
-        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it
+        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender_), otherwise it
         /// is this contract (before swap)
-        v.receiver = v.len1 == 0 ? srcSender : address(this);
+        v.receiver = v.len1 == 0 ? srcSender_ : address(this);
 
         v.v = IERC4626(vault);
         v.collateral = address(v.v.asset());
@@ -222,14 +224,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(v.bridgeValidator).validateTxData(
-                singleVaultData_.liqData.txData,
-                v.chainId,
-                v.chainId,
-                singleVaultData_.liqData.liqDstChainId,
-                false,
-                address(this),
-                srcSender,
-                singleVaultData_.liqData.token
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    v.chainId,
+                    v.chainId,
+                    singleVaultData_.liqData.liqDstChainId,
+                    false,
+                    address(this),
+                    srcSender_,
+                    singleVaultData_.liqData.token
+                )
             );
 
             dispatchTokens(
@@ -245,7 +249,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processXChainDeposit(
         InitSingleVaultData memory singleVaultData_,
-        uint64 srcChainId
+        uint64 srcChainId_
     )
         internal
         returns (uint256 dstAmount)
@@ -264,7 +268,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         /// @dev This makes ERC4626Form (address(this)) owner of v.shares
         dstAmount = v.deposit(singleVaultData_.amount, address(this));
 
-        emit Processed(srcChainId, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
+        emit Processed(srcChainId_, dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vaultLoc);
     }
 
     struct xChainWithdrawLocalVars {
@@ -279,8 +283,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
     function _processXChainWithdraw(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender,
-        uint64 srcChainId
+        address srcSender_,
+        uint64 srcChainId_
     )
         internal
         returns (uint256 dstAmount)
@@ -295,9 +299,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         xChainWithdrawLocalVars memory vars;
         (,, vars.dstChainId) = singleVaultData_.superformId.getSuperform();
 
-        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender), otherwise it
+        /// @dev if there is no txData, on withdraws the receiver is the original beneficiary (srcSender_), otherwise it
         /// is this contract (before swap)
-        vars.receiver = len == 0 ? srcSender : address(this);
+        vars.receiver = len == 0 ? srcSender_ : address(this);
 
         IERC4626 v = IERC4626(vault);
         vars.collateral = v.asset();
@@ -318,14 +322,16 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(vars.bridgeValidator).validateTxData(
-                singleVaultData_.liqData.txData,
-                vars.dstChainId,
-                srcChainId,
-                singleVaultData_.liqData.liqDstChainId,
-                false,
-                address(this),
-                srcSender,
-                singleVaultData_.liqData.token
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    vars.dstChainId,
+                    srcChainId_,
+                    singleVaultData_.liqData.liqDstChainId,
+                    false,
+                    address(this),
+                    srcSender_,
+                    singleVaultData_.liqData.token
+                )
             );
 
             dispatchTokens(
@@ -338,7 +344,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             );
         }
 
-        emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+        emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 
     /*///////////////////////////////////////////////////////////////

@@ -5,12 +5,13 @@ import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract TimelockStateRegistryTest is ProtocolActions {
-    TimelockStateRegistry public twoStepRegistry;
+    TimelockStateRegistry public timelockStateRegistry;
+    address dstRefundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
 
-        twoStepRegistry = TimelockStateRegistry(payable(getContract(ETH, "TimelockStateRegistry")));
+        timelockStateRegistry = TimelockStateRegistry(payable(getContract(ETH, "TimelockStateRegistry")));
     }
 
     function test_updateTxDataBranch() external {
@@ -27,6 +28,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             ETH,
+            false,
             deployer,
             uint256(ETH),
             420,
@@ -36,7 +38,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
         );
 
         vm.prank(getContract(ETH, "ERC4626TimelockForm"));
-        twoStepRegistry.receivePayload(
+        timelockStateRegistry.receivePayload(
             0,
             deployer,
             ETH,
@@ -47,13 +49,15 @@ contract TimelockStateRegistryTest is ProtocolActions {
                 superformId,
                 420,
                 0,
+                false,
                 LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "USDT"), ETH, 0),
+                dstRefundAddress,
                 bytes("")
             )
         );
 
         vm.prank(deployer);
-        twoStepRegistry.finalizePayload(1, bytes(""));
+        timelockStateRegistry.finalizePayload(1, bytes(""));
     }
 
     function test_updateTxDataBranch_WithSlippageReverts() external {
@@ -66,7 +70,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
 
         vm.prank(superform);
-        twoStepRegistry.receivePayload(
+        timelockStateRegistry.receivePayload(
             0,
             deployer,
             ETH,
@@ -77,9 +81,11 @@ contract TimelockStateRegistryTest is ProtocolActions {
                 superformId,
                 420,
                 1000,
+                false,
                 /// @dev note txData (2nd arg) is empty and token (3rd arg) is not address(0) to
                 /// indicate keeper to create and update txData using finalizePayload()
                 LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
+                dstRefundAddress,
                 bytes("")
             )
         );
@@ -93,6 +99,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
             ETH,
             ETH,
             ETH,
+            false,
             deployer,
             uint256(ETH),
             /// @dev amount is 1 less than 420 * 0.9 i.e. exceeding maxSlippage of 10% by 1
@@ -106,7 +113,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
         vm.prank(deployer);
         vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
-        twoStepRegistry.finalizePayload(1, txData);
+        timelockStateRegistry.finalizePayload(1, txData);
     }
 
     function test_processPayloadMintPositionBranch() external {
@@ -126,13 +133,13 @@ contract TimelockStateRegistryTest is ProtocolActions {
         );
 
         vm.prank(getContract(AVAX, "HyperlaneImplementation"));
-        twoStepRegistry.receivePayload(ETH, _message);
+        timelockStateRegistry.receivePayload(ETH, _message);
 
         vm.prank(deployer);
         SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(ETH, 0);
 
         vm.prank(deployer);
-        twoStepRegistry.processPayload(1);
+        timelockStateRegistry.processPayload(1);
     }
 
     function _legacySuperformPackWithShift() internal view returns (uint256 superformId_) {

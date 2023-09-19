@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
+import { ReentrancyGuard } from "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 import { IBaseForm } from "../../interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
@@ -22,7 +23,7 @@ import "../../types/DataTypes.sol";
 /// @author Zeropoint Labs
 /// @notice handles communication in two stepped forms
 
-contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
+contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, ReentrancyGuard {
     using DataLib for uint256;
     using ProofLib for AMBMessage;
 
@@ -52,7 +53,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
     uint256 public timelockPayloadCounter;
 
     /// @dev stores the timelock payloads
-    mapping(uint256 timeLockPayloadId => TimelockPayload) public timelockPayload;
+    mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
 
     /// @dev allows only form to write to the receive paylod
     modifier onlyForm(uint256 superformId) {
@@ -107,6 +108,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
         payable
         override
         onlyTimelockStateRegistryProcessor
+        nonReentrant
     {
         TimelockPayload memory p = timelockPayload[timeLockPayloadId_];
         IBridgeValidator bridgeValidator = IBridgeValidator(superRegistry.getBridgeValidator(p.data.liqData.bridgeId));
@@ -132,19 +134,22 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
 
             /// @dev validate the incoming tx data
             bridgeValidator.validateTxData(
-                txData_,
-                uint64(block.chainid),
-                p.srcChainId,
-                p.data.liqData.liqDstChainId,
-                false,
-                superform,
-                p.srcSender,
-                p.data.liqData.token
+                IBridgeValidator.ValidateTxDataArgs(
+                    txData_,
+                    uint64(block.chainid),
+                    p.srcChainId,
+                    p.data.liqData.liqDstChainId,
+                    false,
+                    superform,
+                    p.srcSender,
+                    p.data.liqData.token
+                )
             );
 
             finalAmount = bridgeValidator.decodeAmountIn(txData_, false);
-
-            PayloadUpdaterLib.validateSlippage(finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage);
+            PayloadUpdaterLib.strictValidateSlippage(
+                finalAmount, form.previewRedeemFrom(p.data.amount), p.data.maxSlippage
+            );
 
             p.data.liqData.txData = txData_;
         }
@@ -201,7 +206,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
         /// @dev validates quorum
         bytes32 _proof = _message.computeProof();
 
-        if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
+        if (messageQuorum[_proof] < _getRequiredMessagingQuorum(srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
     }
@@ -209,7 +214,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
     /// @dev returns the required quorum for the src chain id from super registry
     /// @param chainId is the src chain id
     /// @return the quorum configured for the chain id
-    function getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
+    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
     }
 
@@ -227,10 +232,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry {
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
-        uint256 payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
-        bytes memory payloadBody = coreStateRegistry.payloadBody(payloadId_);
+        uint256 payloadHeader_ = coreStateRegistry.payloadHeader(payloadId_);
+        bytes memory payloadBody_ = coreStateRegistry.payloadBody(payloadId_);
 
-        bytes32 proof = AMBMessage(payloadHeader, payloadBody).computeProof();
+        bytes32 proof = AMBMessage(payloadHeader_, payloadBody_).computeProof();
         uint8[] memory proofIds = coreStateRegistry.getProofAMB(proof);
 
         uint256 len = proofIds.length;

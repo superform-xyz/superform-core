@@ -12,5 +12,5 @@ interface IERC4626TimelockForm is IERC4626Form {
     /// @notice Process unlock request
     function withdrawAfterCoolDown(uint256 amount_, TimelockPayload memory p_) external;
 
-    function unlockId(uint256 unlockCounter) external view returns (InitSingleVaultData memory singleVaultData);
+    function unlockId(uint256 unlockCounter_) external view returns (InitSingleVaultData memory singleVaultData);
 }

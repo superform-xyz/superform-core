@@ -37,6 +37,7 @@ contract SXSVDKYC4626TokenInputSlippageAMB13 is ProtocolActions {
                 revertError: "",
                 revertRole: "",
                 slippage: 321, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                dstSwap: false,
                 externalToken: 3 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );

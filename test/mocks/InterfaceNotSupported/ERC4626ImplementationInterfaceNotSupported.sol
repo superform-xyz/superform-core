@@ -137,17 +137,19 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
             /// @dev in this case, a swap is needed, first the txData is validated and then the final asset is obtained
-            vars.chainId = superRegistry.chainId();
+            vars.chainId = uint64(block.chainid);
 
             IBridgeValidator(vars.bridgeValidator).validateTxData(
-                singleVaultData_.liqData.txData,
-                vars.chainId,
-                vars.chainId,
-                singleVaultData_.liqData.liqDstChainId,
-                true,
-                address(this),
-                msg.sender,
-                address(token)
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    vars.chainId,
+                    vars.chainId,
+                    singleVaultData_.liqData.liqDstChainId,
+                    true,
+                    address(this),
+                    msg.sender,
+                    address(token)
+                )
             );
 
             dispatchTokens(
@@ -213,18 +215,20 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
             /// @dev this check here might be too much already, but can't hurt
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            v.chainId = superRegistry.chainId();
+            v.chainId = uint64(block.chainid);
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(v.bridgeValidator).validateTxData(
-                singleVaultData_.liqData.txData,
-                v.chainId,
-                v.chainId,
-                singleVaultData_.liqData.liqDstChainId,
-                false,
-                address(this),
-                srcSender,
-                singleVaultData_.liqData.token
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    v.chainId,
+                    v.chainId,
+                    singleVaultData_.liqData.liqDstChainId,
+                    false,
+                    address(this),
+                    srcSender,
+                    singleVaultData_.liqData.token
+                )
             );
 
             /// @dev FIXME: notice that in direct withdraws we withdraw v.amount (coming from txData), but not what was
@@ -316,14 +320,16 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(vars.bridgeValidator).validateTxData(
-                singleVaultData_.liqData.txData,
-                vars.dstChainId,
-                srcChainId,
-                singleVaultData_.liqData.liqDstChainId,
-                false,
-                address(this),
-                srcSender,
-                singleVaultData_.liqData.token
+                IBridgeValidator.ValidateTxDataArgs(
+                    singleVaultData_.liqData.txData,
+                    vars.dstChainId,
+                    srcChainId,
+                    singleVaultData_.liqData.liqDstChainId,
+                    false,
+                    address(this),
+                    srcSender,
+                    singleVaultData_.liqData.token
+                )
             );
 
             dispatchTokens(

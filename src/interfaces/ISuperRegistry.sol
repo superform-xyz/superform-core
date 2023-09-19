@@ -9,9 +9,6 @@ interface ISuperRegistry {
                                 Events
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev emitted when chainId is set.
-    event SetChainId(uint64 indexed chainId);
-
     /// @dev emitted when permit2 is set.
     event SetPermit2(address indexed permit2);
 
@@ -35,9 +32,16 @@ interface ISuperRegistry {
     /// @dev is emitted when a new router/state syncer is configured.
     event SetRouterInfo(uint8 superFormRouterId_, address stateSyncer_, address router_);
 
+    /// @dev is emitted when a new delay is configured.
+    event SetDelay(uint256 oldDelay_, uint256 newDelay_);
+
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev sets the deposit rescue delay
+    /// @param delay_ the delay in seconds before the deposit rescue can be finalized
+    function setDelay(uint256 delay_) external;
 
     /// @dev sets the permit2 address
     /// @param permit2_ the address of the permit2 contract
@@ -91,8 +95,8 @@ interface ISuperRegistry {
                             View Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev gets the superform chainId of the protocol
-    function chainId() external view returns (uint64);
+    /// @dev gets the deposit rescue delay
+    function delay() external view returns (uint256);
 
     /// @dev returns the permit2 address
     function PERMIT2() external view returns (address);
@@ -144,6 +148,9 @@ interface ISuperRegistry {
 
     /// @dev returns the id of the two steps form state registry processor keeper
     function TWO_STEPS_REGISTRY_PROCESSOR() external view returns (bytes32);
+
+    /// @dev returns the id of the dst swapper keeper
+    function DST_SWAPPER() external view returns (bytes32);
 
     /// @dev gets the address of a contract on current chain
     /// @param id_ is the id of the contract

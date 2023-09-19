@@ -8,36 +8,52 @@ import { PayloadState, TransactionType, CallbackType } from "../types/DataTypes.
 
 /// @dev library to validate slippage updation
 library PayloadUpdaterLib {
-    function validateSlippage(uint256 newAmount, uint256 maxAmount, uint256 slippage) internal pure {
-        /// @dev args validation
-        if (newAmount > maxAmount) {
-            revert Error.NEGATIVE_SLIPPAGE();
-        }
-
-        uint256 minAmount = (maxAmount * (10_000 - slippage)) / 10_000;
-
-        /// @dev amount must fall within the slippage bounds
-        if (newAmount < minAmount) {
-            revert Error.SLIPPAGE_OUT_OF_BOUNDS();
-        }
-    }
-
-    function validateSlippageArray(
-        uint256[] memory newAmount,
-        uint256[] memory maxAmount,
-        uint256[] memory slippage
+    function validateSlippage(
+        uint256 newAmount_,
+        uint256 maxAmount_,
+        uint256 slippage_
     )
         internal
         pure
+        returns (bool valid_)
     {
-        uint256 len = newAmount.length;
-        for (uint256 i; i < len;) {
-            validateSlippage(newAmount[i], maxAmount[i], slippage[i]);
-
-            unchecked {
-                ++i;
-            }
+        /// @dev args validation
+        if (newAmount_ > maxAmount_) {
+            revert Error.NEGATIVE_SLIPPAGE();
         }
+
+        uint256 minAmount = (maxAmount_ * (10_000 - slippage_)) / 10_000;
+
+        /// @dev amount must fall within the slippage bounds
+        if (newAmount_ < minAmount) {
+            return false;
+        }
+
+        return true;
+    }
+
+    function strictValidateSlippage(
+        uint256 newAmount_,
+        uint256 maxAmount_,
+        uint256 slippage_
+    )
+        internal
+        pure
+        returns (bool valid_)
+    {
+        /// @dev args validation
+        if (newAmount_ > maxAmount_) {
+            revert Error.NEGATIVE_SLIPPAGE();
+        }
+
+        uint256 minAmount = (maxAmount_ * (10_000 - slippage_)) / 10_000;
+
+        /// @dev amount must fall within the slippage bounds
+        if (newAmount_ < minAmount) {
+            revert Error.SLIPPAGE_OUT_OF_BOUNDS();
+        }
+
+        return true;
     }
 
     function validateLiqReq(LiqRequest memory req_) public pure {
@@ -51,7 +67,7 @@ library PayloadUpdaterLib {
     function validateDepositPayloadUpdate(
         uint256 txInfo_,
         PayloadState currentPayloadState_,
-        uint8 isMulti
+        uint8 isMulti_
     )
         internal
         pure
@@ -66,7 +82,7 @@ library PayloadUpdaterLib {
             revert Error.PAYLOAD_ALREADY_UPDATED();
         }
 
-        if (multi != isMulti) {
+        if (multi != isMulti_) {
             revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
         }
     }
@@ -74,7 +90,7 @@ library PayloadUpdaterLib {
     function validateWithdrawPayloadUpdate(
         uint256 txInfo_,
         PayloadState currentPayloadState_,
-        uint8 isMulti
+        uint8 isMulti_
     )
         internal
         pure
@@ -89,7 +105,7 @@ library PayloadUpdaterLib {
             revert Error.PAYLOAD_ALREADY_UPDATED();
         }
 
-        if (multi != isMulti) {
+        if (multi != isMulti_) {
             revert Error.INVALID_PAYLOAD_UPDATE_REQUEST();
         }
     }

@@ -19,6 +19,7 @@ import "src/types/DataTypes.sol";
 
 contract SuperformERC4626FormTest is ProtocolActions {
     uint64 internal chainId = ETH;
+    address refundAddress = address(444);
 
     function setUp() public override {
         super.setUp();
@@ -306,8 +307,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", "");
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", refundAddress, ""
+        );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
@@ -330,8 +332,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 2e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", "");
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId, 2e18, 100, false, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", refundAddress, ""
+        );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
@@ -362,6 +365,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             ETH,
             ETH,
             ETH,
+            false,
             superform,
             uint256(ETH),
             1e18,
@@ -373,8 +377,10 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             2e18,
             100,
+            false,
             LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "USDT"), ETH, 0),
             "",
+            refundAddress,
             ""
         );
 
@@ -408,8 +414,10 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             1e18,
             100,
+            false,
             LiqRequest(1, _buildMaliciousTxData(1, USDT, formBeacon, ETH, 2e18, deployer), USDT, ETH, 0),
             "",
+            refundAddress,
             ""
         );
 
@@ -445,7 +453,15 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(getContract(ETH, "CoreStateRegistry"));
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, superformId, 1e18, 100, LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0), ""
+            1,
+            1,
+            superformId,
+            1e18,
+            100,
+            false,
+            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0),
+            refundAddress,
+            ""
         );
 
         vm.expectRevert(Error.WITHDRAW_TX_DATA_NOT_UPDATED.selector);
@@ -478,6 +494,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superformId,
             1e18,
             100,
+            false,
             LiqRequest(
                 1,
                 _buildMaliciousTxData(1, getContract(ETH, "USDT"), formBeacon, ARBI, 2e18, deployer),
@@ -485,6 +502,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
                 ARBI,
                 0
             ),
+            refundAddress,
             ""
         );
 
@@ -508,8 +526,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
 
-        SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0), "", "");
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0), "", refundAddress, ""
+        );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
@@ -541,7 +560,15 @@ contract SuperformERC4626FormTest is ProtocolActions {
         bytes memory invalidTxData = abi.encode(1);
 
         InitSingleVaultData memory data = InitSingleVaultData(
-            1, 1, superformId, 1e18, 100, LiqRequest(1, invalidTxData, getContract(ETH, "WETH"), ARBI, 0), ""
+            1,
+            1,
+            superformId,
+            1e18,
+            100,
+            false,
+            LiqRequest(1, invalidTxData, getContract(ETH, "WETH"), ARBI, 0),
+            refundAddress,
+            ""
         );
 
         vm.startPrank(getContract(ETH, "CoreStateRegistry"));
@@ -591,8 +618,9 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
-        SingleVaultSFData memory data =
-            SingleVaultSFData(superformId, 1e18, 100, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", "");
+        SingleVaultSFData memory data = SingleVaultSFData(
+            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", refundAddress, ""
+        );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 

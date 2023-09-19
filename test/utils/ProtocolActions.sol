@@ -71,6 +71,9 @@ abstract contract ProtocolActions is BaseSetup {
     uint256 SLIPPAGE;
     uint256 MAX_SLIPPAGE;
 
+    /// @dev percentage of total slippage that is used for dstSwap
+    uint256 MULTI_TX_SLIPPAGE_SHARE;
+
     /// @dev bool to flag if scenario should have txData fullfiled on destination for a withdraw (used to test cases
     /// where txData expires in mainnet)
     bool GENERATE_WITHDRAW_TX_DATA_ON_DST;
@@ -177,6 +180,7 @@ abstract contract ProtocolActions is BaseSetup {
         }
 
         vm.selectFork(initialFork);
+        if (action.dstSwap) MULTI_TX_SLIPPAGE_SHARE = 40;
 
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
@@ -310,6 +314,7 @@ abstract contract ProtocolActions is BaseSetup {
             delete countTimelocked[i];
             delete TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]];
         }
+        MULTI_TX_SLIPPAGE_SHARE = 0;
     }
 
     struct BuildReqDataVars {
@@ -393,7 +398,9 @@ abstract contract ProtocolActions is BaseSetup {
                     (vars.superformT,,) = vars.targetSuperformIds[k].getSuperform();
                     vars.toDst[k] = payable(vars.superformT);
                 } else {
-                    vars.toDst[k] = payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
+                    vars.toDst[k] = action.dstSwap
+                        ? payable(getContract(DST_CHAINS[i], "DstSwapper"))
+                        : payable(getContract(DST_CHAINS[i], "CoreStateRegistry"));
                 }
             }
 
@@ -422,6 +429,7 @@ abstract contract ProtocolActions is BaseSetup {
                         uint256(chainIds[vars.chain0Index]),
                         i,
                         vars.chainDstIndex,
+                        action.dstSwap,
                         action.action,
                         action.slippage,
                         vars.partialWithdrawVaults
@@ -472,6 +480,7 @@ abstract contract ProtocolActions is BaseSetup {
                     ),
                     /// @dev these are just the originating and dst chain ids casted to uint256 (the liquidity bridge
                     /// chain ids)
+                    action.dstSwap,
                     vars.partialWithdrawVaults.length > 0 ? vars.partialWithdrawVaults[0] : false,
                     action.slippage
                 );
@@ -904,7 +913,8 @@ abstract contract ProtocolActions is BaseSetup {
                             aV[i].toChainId,
                             action.testType,
                             action.revertError,
-                            action.revertRole
+                            action.revertRole,
+                            action.dstSwap
                         );
 
                         vars.singleVaultsPayloadArg = updateSingleVaultDepositPayloadArgs(
@@ -914,10 +924,40 @@ abstract contract ProtocolActions is BaseSetup {
                             aV[i].toChainId,
                             action.testType,
                             action.revertError,
-                            action.revertRole
+                            action.revertRole,
+                            action.dstSwap
                         );
 
                         if (action.testType == TestType.Pass) {
+                            if (action.dstSwap) {
+                                /// @dev calling state variables again to obtain fresh memory values corresponding to
+                                /// DST
+                                (,, vars.underlyingDstToken,,) = _targetVaults(CHAIN_0, DST_CHAINS[i], actionIndex, i);
+                                vars.liqBridges = LIQ_BRIDGES[DST_CHAINS[i]][actionIndex];
+
+                                /// @dev dst swap is performed to ensure tokens reach CoreStateRegistry on deposits
+                                if (action.multiVaults) {
+                                    vars.amounts = AMOUNTS[DST_CHAINS[i]][actionIndex];
+                                    _batchProcessDstSwap(
+                                        vars.liqBridges,
+                                        CHAIN_0,
+                                        aV[i].toChainId,
+                                        vars.underlyingDstToken,
+                                        vars.amounts,
+                                        action.slippage
+                                    );
+                                } else {
+                                    _processDstSwap(
+                                        vars.liqBridges[0],
+                                        CHAIN_0,
+                                        aV[i].toChainId,
+                                        vars.underlyingDstToken[0],
+                                        singleSuperformsData[i].amount,
+                                        action.slippage
+                                    );
+                                }
+                            }
+
                             /// @dev this is the step where the amounts are updated taking into account the final
                             /// slippage
                             if (action.multiVaults) {
@@ -1208,81 +1248,47 @@ abstract contract ProtocolActions is BaseSetup {
     /// @dev TODO - Smit to add better comments
     function _rescueFailedDeposits(TestAction memory action, uint256 actionIndex) internal {
         if (action.action == Actions.RescueFailedDeposit && action.testType == TestType.Pass) {
-            vm.selectFork(FORKS[CHAIN_0]);
-            uint256 userWethBalanceBefore = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+            /// @dev currently testing rescuing deposits with dstSwap false
+            MULTI_TX_SLIPPAGE_SHARE = 0;
 
             vm.selectFork(FORKS[DST_CHAINS[0]]);
-
+            uint256 userWethBalanceBefore =
+                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[0]);
             address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
+
             uint256[] memory rescueSuperformIds;
+            (rescueSuperformIds,) = CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
 
-            rescueSuperformIds = CoreStateRegistry(coreStateRegistryDst).getFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
-
-            LiqRequest[] memory liqRequests = new LiqRequest[](
-                rescueSuperformIds.length
-            );
+            uint256[] memory amounts = new uint256[](rescueSuperformIds.length);
 
             uint256 stuckAmount;
-            uint256 finalAmount;
             /// @dev simulating slippage from bridges
             for (uint256 i; i < AMOUNTS[DST_CHAINS[0]][actionIndex].length; ++i) {
                 /// @dev this is the amount that is stuck in CoreStateRegistry
-                stuckAmount = (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
-                /// @dev this is the amount that will be received by the user on src chain. The slippage experienced is
-                /// the bridge slippage while sending tokens back to src chain
-                finalAmount += (stuckAmount * (10_000 - uint256(action.slippage))) / 10_000;
+                stuckAmount += (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
             }
 
-            SingleVaultCallDataArgs memory singleVaultCallDataArgs = SingleVaultCallDataArgs(
-                action.user,
-                coreStateRegistryDst,
-                getContract(CHAIN_0, UNDERLYING_TOKENS[TARGET_UNDERLYINGS[CHAIN_0][1][0]]),
-                /// @dev needs to correspond to `underlyingTokenDst_` in _buildLiqBridgeTxData()
-                coreStateRegistryDst,
-                action.externalToken == 3
-                    /// @dev needs to correspond to `underlyingToken` in _buildLiqBridgeTxData()
-                    ? NATIVE_TOKEN
-                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
-                getContract(DST_CHAINS[0], UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]]),
-                rescueSuperformIds[0],
-                /// @dev initiating with first rescueSuperformId
-                (AMOUNTS[DST_CHAINS[0]][actionIndex][0] * (10_000 - uint256(action.slippage))) / 10_000,
-                /// @dev initiating with slippage adjusted amount of first vault
-                LIQ_BRIDGES[CHAIN_0][actionIndex][0],
-                MAX_SLIPPAGE,
-                action.externalToken == 3
-                    ? NATIVE_TOKEN
-                    : getContract(DST_CHAINS[0], UNDERLYING_TOKENS[action.externalToken]),
-                CHAIN_0,
-                DST_CHAINS[0],
-                CHAIN_0,
-                /// @dev liqBridgeSrcChainId set as liqBridgeToChainId_ in _buildLiqBridgeTxData() i.e.
-                /// the chain to which tokens will flow to, on rescue
-                CHAIN_0,
-                DST_CHAINS[0],
-                false,
-                action.slippage
-            );
-
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
-                singleVaultCallDataArgs.superformId = rescueSuperformIds[i];
                 /// @dev slippage adjusted amount that'll be withdrawn i.e. amount stuck in CoreStateRegistry
-                singleVaultCallDataArgs.amount =
-                    (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
-                liqRequests[i] = _buildSingleVaultWithdrawCallData(singleVaultCallDataArgs).liqRequest;
+                amounts[i] = (AMOUNTS[DST_CHAINS[0]][actionIndex][i] * (10_000 - uint256(action.slippage))) / 10_000;
             }
 
             vm.prank(deployer);
             vm.expectRevert(Error.INVALID_RESCUE_DATA.selector);
-            CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], new LiqRequest[](0));
+            CoreStateRegistry(coreStateRegistryDst).proposeRescueFailedDeposits(
+                PAYLOAD_ID[DST_CHAINS[0]], new uint256[](0)
+            );
 
             vm.prank(deployer);
-            CoreStateRegistry(coreStateRegistryDst).rescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], liqRequests);
 
-            vm.selectFork(FORKS[CHAIN_0]);
-            uint256 userWethBalanceAfter = MockERC20(getContract(CHAIN_0, UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+            CoreStateRegistry(coreStateRegistryDst).proposeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]], amounts);
 
-            assertEq(userWethBalanceAfter, userWethBalanceBefore + finalAmount);
+            vm.warp(block.timestamp + 12 hours);
+            CoreStateRegistry(coreStateRegistryDst).finalizeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
+
+            uint256 userWethBalanceAfter =
+                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+            assertEq(userWethBalanceAfter, userWethBalanceBefore + stuckAmount);
         }
     }
 
@@ -1351,6 +1357,7 @@ abstract contract ProtocolActions is BaseSetup {
                 liqDstChainId,
                 args.liquidityBridgeSrcChainId,
                 uint256(args.toChainId),
+                args.dstSwap,
                 args.partialWithdrawVaults.length > 0 ? args.partialWithdrawVaults[i] : false,
                 args.slippage
             );
@@ -1375,12 +1382,22 @@ abstract contract ProtocolActions is BaseSetup {
             v.permit2data = abi.encode(v.permit.nonce, v.permit.deadline, v.sig);
         }
 
+        bool[] memory hasDstSwap = new bool[](args.superformIds.length);
+
+        if (args.dstSwap) {
+            for (uint256 i; i < hasDstSwap.length; i++) {
+                hasDstSwap[i] = true;
+            }
+        }
+
         superformsData = MultiVaultSFData(
             args.superformIds,
             finalAmounts,
             maxSlippageTemp,
+            hasDstSwap,
             liqRequests,
             v.permit2data,
+            users[args.user],
             abi.encode(args.partialWithdrawVaults)
         );
     }
@@ -1394,6 +1411,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint64 srcChainId;
         uint64 toChainId;
         uint64 liqDstChainId;
+        bool dstSwap;
         address toDst;
         uint256 liqBridgeToChainId;
         uint256 amount;
@@ -1408,8 +1426,8 @@ abstract contract ProtocolActions is BaseSetup {
         internal
         returns (bytes memory txData)
     {
-        if (!sameChain) {
-            if (args.liqBridgeKind == 1) {
+        if (args.liqBridgeKind == 1) {
+            if (!sameChain) {
                 ILiFi.BridgeData memory bridgeData;
                 LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
 
@@ -1429,6 +1447,8 @@ abstract contract ProtocolActions is BaseSetup {
                         FORKS[args.liqDstChainId],
                         args.underlyingTokenDst,
                         args.slippage,
+                        false,
+                        MULTI_TX_SLIPPAGE_SHARE,
                         args.srcChainId == args.toChainId
                     ),
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
@@ -1452,7 +1472,9 @@ abstract contract ProtocolActions is BaseSetup {
                         /// @dev initial token to extract will be externalToken in args, which is the actual
                         /// underlyingTokenDst for withdraws (check how the call is made in
                         /// _buildSingleVaultWithdrawCallData )
-                        args.toDst,
+                        args.dstSwap && CHAIN_0 != args.toChainId
+                            ? getContract(args.toChainId, "DstSwapper")
+                            : args.toDst,
                         args.amount,
                         args.liqBridgeToChainId,
                         true,
@@ -1473,7 +1495,9 @@ abstract contract ProtocolActions is BaseSetup {
                         /// @dev initial token to extract will be externalToken in args, which is the actual
                         /// underlyingTokenDst for withdraws (check how the call is made in
                         /// _buildSingleVaultWithdrawCallData )
-                        args.toDst,
+                        args.dstSwap && CHAIN_0 != args.toChainId
+                            ? getContract(args.toChainId, "DstSwapper")
+                            : args.toDst,
                         args.amount,
                         args.liqBridgeToChainId,
                         false,
@@ -1484,9 +1508,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                 txData =
                     abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
-            }
-        } else {
-            if (args.liqBridgeKind == 1) {
+            } else {
                 LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
 
                 swapData[0] = LibSwap.SwapData(
@@ -1505,6 +1527,8 @@ abstract contract ProtocolActions is BaseSetup {
                         FORKS[args.liqDstChainId],
                         args.underlyingTokenDst,
                         args.slippage,
+                        false,
+                        MULTI_TX_SLIPPAGE_SHARE,
                         args.srcChainId == args.toChainId
                     ),
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
@@ -1517,6 +1541,59 @@ abstract contract ProtocolActions is BaseSetup {
                     LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", args.toDst, 0, swapData
                 );
             }
+        }
+    }
+
+    function _buildLiqBridgeTxDataDstSwap(
+        uint8 liqBridgeKind_,
+        address sendingTokenDst_,
+        address receivingTokenDst_,
+        address from_,
+        uint64 toChainId_,
+        uint256 amount_,
+        int256 slippage_
+    )
+        internal
+        returns (bytes memory txData)
+    {
+        /// @dev amount_ adjusted after bridge slippage
+        amount_ = (amount_ * uint256(10_000 - slippage_)) / 10_000;
+
+        /// @dev amount_ adjusted after swap slippage
+        int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
+
+        if (liqBridgeKind_ == 1) {
+            /// @dev for lifi
+            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
+
+            swapData[0] = LibSwap.SwapData(
+                address(0),
+                ///  @dev  callTo (arbitrary)
+                address(0),
+                ///  @dev  callTo (approveTo)
+                sendingTokenDst_,
+                /// @dev in dst swap, assumes a swap between same token - FIXME
+                receivingTokenDst_,
+                /// @dev in dst swap, assumes a swap between same token - FIXME
+                amount_,
+                /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
+                /// @dev and multiTx means cross-chain (last arg)
+                abi.encode(
+                    from_, FORKS[toChainId_], receivingTokenDst_, slippage_, true, MULTI_TX_SLIPPAGE_SHARE, false
+                ),
+                false // arbitrary
+            );
+
+            txData = abi.encodeWithSelector(
+                LiFiMock.swapTokensGeneric.selector,
+                bytes32(0),
+                "",
+                "",
+                getContract(toChainId_, "CoreStateRegistry"),
+                0,
+                swapData
+            );
         }
     }
 
@@ -1533,8 +1610,8 @@ abstract contract ProtocolActions is BaseSetup {
         internal
         returns (bytes memory txData)
     {
-        if (!sameChain_) {
-            if (liqBridgeKind_ == 1) {
+        if (liqBridgeKind_ == 1) {
+            if (!sameChain_) {
                 ILiFi.BridgeData memory bridgeData;
                 LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
 
@@ -1546,7 +1623,7 @@ abstract contract ProtocolActions is BaseSetup {
                     underlyingToken_,
                     underlyingToken_,
                     amount_,
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false),
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false, 0, false),
                     false // arbitrary
                 );
 
@@ -1566,24 +1643,25 @@ abstract contract ProtocolActions is BaseSetup {
 
                 txData =
                     abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
+            } else {
+                LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
+
+                swapData[0] = LibSwap.SwapData(
+                    address(0),
+                    /// callTo (arbitrary)
+                    address(0),
+                    /// callTo (approveTo)
+                    underlyingToken_,
+                    underlyingToken_,
+                    amount_,
+                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false, 0, false),
+                    false // arbitrary
+                );
+
+                txData = abi.encodeWithSelector(
+                    LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", receiver_, 0, swapData
+                );
             }
-        } else {
-            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
-            swapData[0] = LibSwap.SwapData(
-                address(0),
-                /// callTo (arbitrary)
-                address(0),
-                /// callTo (approveTo)
-                underlyingToken_,
-                underlyingToken_,
-                amount_,
-                abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false),
-                false // arbitrary
-            );
-
-            txData =
-                abi.encodeWithSelector(LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", receiver_, 0, swapData);
         }
     }
 
@@ -1623,6 +1701,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.srcChainId,
             args.toChainId,
             args.toChainId,
+            args.dstSwap,
             args.toDst,
             args.liquidityBridgeToChainId,
             args.amount,
@@ -1673,7 +1752,14 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
-            args.superformId, args.amount, args.maxSlippage, v.liqReq, v.permit2Calldata, abi.encode(false)
+            args.superformId,
+            args.amount,
+            args.maxSlippage,
+            args.dstSwap,
+            v.liqReq,
+            v.permit2Calldata,
+            users[args.user],
+            abi.encode(false)
         );
     }
 
@@ -1726,6 +1812,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.toChainId,
             args.srcChainId,
             args.liqDstChainId,
+            false,
             users[args.user],
             args.liquidityBridgeSrcChainId,
             vars.actualWithdrawAmount,
@@ -1753,7 +1840,14 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
         superformData = SingleVaultSFData(
-            args.superformId, args.amount, args.maxSlippage, vars.liqReq, "", abi.encode(args.partialWithdrawVault)
+            args.superformId,
+            args.amount,
+            args.maxSlippage,
+            args.dstSwap,
+            vars.liqReq,
+            "",
+            users[args.user],
+            abi.encode(args.partialWithdrawVault)
         );
     }
 
@@ -1946,11 +2040,18 @@ abstract contract ProtocolActions is BaseSetup {
         uint256[] memory finalAmounts = new uint256[](len);
 
         int256 bridgeSlippage;
+        int256 dstSwapSlippage;
+
         /// @dev slippage calculation
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
                 finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
+
+                if (args.isdstSwap) {
+                    dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                    finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - dstSwapSlippage)) / 10_000;
+                }
             }
         }
 
@@ -2002,7 +2103,14 @@ abstract contract ProtocolActions is BaseSetup {
         finalAmount = args.amount;
 
         int256 bridgeSlippage;
+        int256 dstSwapSlippage;
+
         finalAmount = (finalAmount * uint256(10_000 - args.slippage)) / 10_000;
+
+        if (args.isdstSwap) {
+            dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+            finalAmount = (finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
+        }
 
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
@@ -2169,6 +2277,78 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(initialFork);
         return true;
+    }
+
+    /// @dev - assumption to only use dstSwapProcessor for destination chain swaps (middleware requests)
+    function _processDstSwap(
+        uint8 liqBridgeKind_,
+        uint64 srcChainId_,
+        uint64 targetChainId_,
+        address underlyingTokenDst_,
+        uint256 amount_,
+        int256 slippage_
+    )
+        internal
+    {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[targetChainId_]);
+
+        /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
+        bytes memory txData = _buildLiqBridgeTxDataDstSwap(
+            liqBridgeKind_,
+            underlyingTokenDst_,
+            underlyingTokenDst_,
+            getContract(targetChainId_, "DstSwapper"),
+            targetChainId_,
+            amount_,
+            slippage_
+        );
+
+        vm.prank(deployer);
+
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).processTx(1, 0, liqBridgeKind_, txData);
+        vm.selectFork(initialFork);
+    }
+
+    function _batchProcessDstSwap(
+        uint8[] memory liqBridgeKinds_,
+        uint64 srcChainId_,
+        uint64 targetChainId_,
+        address[] memory underlyingTokensDst_,
+        uint256[] memory amounts_,
+        int256 slippage_
+    )
+        internal
+    {
+        uint256 initialFork = vm.activeFork();
+        vm.selectFork(FORKS[targetChainId_]);
+        bytes[] memory txDatas = new bytes[](underlyingTokensDst_.length);
+
+        /// @dev liqData is rebuilt here to perform to send the tokens from dstSwapProcessor to CoreStateRegistry
+        for (uint256 i = 0; i < underlyingTokensDst_.length; i++) {
+            txDatas[i] = _buildLiqBridgeTxDataDstSwap(
+                liqBridgeKinds_[i],
+                underlyingTokensDst_[i],
+                underlyingTokensDst_[i],
+                getContract(targetChainId_, "DstSwapper"),
+                targetChainId_,
+                amounts_[i],
+                slippage_
+            );
+        }
+
+        vm.prank(deployer);
+
+        uint256[] memory indices = new uint256[](amounts_.length);
+
+        for (uint256 i; i < amounts_.length; i++) {
+            indices[i] = i;
+        }
+
+        DstSwapper(payable(getContract(targetChainId_, "DstSwapper"))).batchProcessTx(
+            1, indices, liqBridgeKinds_, txDatas
+        );
+        vm.selectFork(initialFork);
     }
 
     function _payloadDeliveryHelper(uint64 FROM_CHAIN, uint64 TO_CHAIN, Vm.Log[] memory logs) internal {
@@ -2407,6 +2587,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 repetitions;
         uint256 lenRevertDeposit;
         uint256 dstIndex;
+        bool isdstSwap;
     }
 
     /// @dev function to calculate summed amounts per superForms (repeats the amount for the same superForm if repeated)
@@ -2420,7 +2601,10 @@ abstract contract ProtocolActions is BaseSetup {
         v.lenSuperforms = args.multiSuperformsData.superformIds.length;
         emptyAmount = new uint256[](v.lenSuperforms);
         spAmountSummed = new uint256[](v.lenSuperforms);
+
         int256 bridgeSlippage;
+        int256 dstSwapSlippage;
+
         /// @dev create an array of amounts summing the amounts of the same superform ids
         (v.superforms,,) = DataLib.getSuperforms(args.multiSuperformsData.superformIds);
         for (v.i = 0; v.i < v.lenSuperforms; v.i++) {
@@ -2446,6 +2630,12 @@ abstract contract ProtocolActions is BaseSetup {
                     if (args.assertWithSlippage && args.slippage != 0 && !args.sameChain) {
                         /// @dev applying bridge slippage
                         v.finalAmount = (v.finalAmount * uint256(10_000 - args.slippage)) / 10_000;
+
+                        /// @dev applying dstSwap slippage
+                        if (args.isdstSwap) {
+                            dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                            v.finalAmount = (v.finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
+                        }
                     }
                     /// @dev add number of repetitions to properly assert
                     v.finalAmount = v.finalAmount * args.repetitions;
@@ -2645,7 +2835,7 @@ abstract contract ProtocolActions is BaseSetup {
                 /// @dev obtain amounts to assert
                 (emptyAmount, spAmountSummedPerDst,) = _spAmountsMultiBeforeActionOrAfterSuccessDeposit(
                     SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs(
-                        multiSuperformsData[i], false, 0, false, 1, 0, i
+                        multiSuperformsData[i], false, 0, false, 1, 0, i, action.dstSwap
                     )
                 );
 
@@ -2730,7 +2920,8 @@ abstract contract ProtocolActions is BaseSetup {
                         CHAIN_0 == DST_CHAINS[i],
                         repetitions,
                         lenRevertDeposit,
-                        i
+                        i,
+                        action.dstSwap
                     )
                 );
                 totalSpAmountAllDestinations += totalSpAmount;
@@ -2773,6 +2964,12 @@ abstract contract ProtocolActions is BaseSetup {
                 if (action.slippage != 0 && CHAIN_0 != DST_CHAINS[i]) {
                     /// @dev applying bridge slippage
                     finalAmount = (finalAmount * uint256(10_000 - action.slippage)) / 10_000;
+
+                    /// @dev applying dst swap slippage
+                    if (action.dstSwap) {
+                        vars.slippage = (action.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                        finalAmount = (finalAmount * uint256(10_000 - vars.slippage)) / 10_000;
+                    }
                 }
 
                 finalAmount = repetitions * finalAmount;

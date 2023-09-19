@@ -91,7 +91,7 @@ $ forge test
 <img width="4245" alt="Superform v1 Smart Contract Architecture (4)" src="https://github.com/superform-xyz/superform-core/assets/33469661/0b057534-20ea-4871-8655-89454c366bf2">
 
 1. All external actions, except SuperForm creation, start in `SuperformRouter.sol`. The user has to provide a "StateRequest" containing the amounts being actioned into each vault in each chain, as well as liquidity information, about how the actual deposit/withdraw process will be handled
-2. Deposits/withdraws can be single or multiple destination, single or multi vault, cross-chain or direct chain. For deposit actions, the user can provide a different input token on a source chain and receive the actual underlying token (different than input token) on the destination chain, after swapping and bridging in a single call. Sometimes it is also needed to perform another extra swap at the destination for tokens with low bridge liquidity, through the usage of `MultiTxProcessor.sol`. For withdraw actions, user can choose to receive a different token than the one redeemed for from the vault, back at the source chain.
+2. Deposits/withdraws can be single or multiple destination, single or multi vault, cross-chain or direct chain. For deposit actions, the user can provide a different input token on a source chain and receive the actual underlying token (different than input token) on the destination chain, after swapping and bridging in a single call. Sometimes it is also needed to perform another extra swap at the destination for tokens with low bridge liquidity, through the usage of `DstSwapper.sol`. For withdraw actions, user can choose to receive a different token than the one redeemed for from the vault, back at the source chain.
 3. The vaults themselves are wrapped by Forms - code implementations that adapt to the needs of a given vault. This wrapping action leads to the creation of SuperForms (the triplet of superForm address, form id and chain id).
 4. Any user can wrap a vault into a SuperForm using the SuperForm Factory but only the protocol may add new Form implementations.
 5. Any individual tx must be of a specific kind, either all deposits or all withdraws, for all vaults and destinations
@@ -178,7 +178,7 @@ The typical flow for a withdraw xchain transaction is:
 | updateTxHistory                                | 23495           | 23850 | 23495  | 25495 | 107     |
 | uri                                            | 2332            | 2332  | 2332   | 2332  | 1       |
 
-| src/crosschain-liquidity/MultiTxProcessor.sol:MultiTxProcessor contract |                 |        |        |        |         |
+| src/crosschain-liquidity/DstSwapper.sol:DstSwapper contract |                 |        |        |        |         |
 | ----------------------------------------------------------------------- | --------------- | ------ | ------ | ------ | ------- |
 | Deployment Cost                                                         | Deployment Size |        |        |        |         |
 | 962913                                                                  | 5020            |        |        |        |         |

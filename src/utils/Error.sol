@@ -75,9 +75,6 @@ library Error {
     /// @dev thrown if the msg-sender is not super registry
     error NOT_SUPER_REGISTRY();
 
-    /// @dev thrown if the msg-sender is not super rbac
-    error NOT_SUPER_RBAC();
-
     /// @dev thrown if the msg-sender does not have SWAPPER role
     error NOT_SWAPPER();
 
@@ -86,6 +83,9 @@ library Error {
 
     /// @dev thrown if the msg-sender does not have UPDATER role
     error NOT_UPDATER();
+
+    /// @dev thrown if the msg-sender does not have RESCUER role
+    error NOT_RESCUER();
 
     /// @dev thrown when the bridge tokens haven't arrived to destination
     error BRIDGE_TOKENS_PENDING();
@@ -98,6 +98,12 @@ library Error {
 
     /// @dev thrown when not possible to revoke last admin
     error CANNOT_REVOKE_LAST_ADMIN();
+
+    /// @dev thrown if the delay is invalid
+    error INVALID_TIMELOCK_DELAY();
+
+    /// @dev thrown if rescue is already proposed
+    error RESCUE_ALREADY_PROPOSED();
 
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
@@ -120,6 +126,24 @@ library Error {
 
     /// @dev thrown when the validation of bridge txData fails due to a destination call present
     error INVALID_TXDATA_NO_DESTINATIONCALL_ALLOWED();
+
+    /// @dev thrown when dst swap output is less than minimum expected
+    error INVALID_SWAP_OUTPUT();
+
+    /// @dev thrown when try to process dst swap for same payload id
+    error DST_SWAP_ALREADY_PROCESSED();
+
+    /// @dev thrown if index is invalid
+    error INVALID_INDEX();
+
+    /// @dev thrown if msg.sender is not the refund address to dispute
+    error INVALID_DISUPTER();
+
+    /// @dev thrown if the rescue passed dispute deadline
+    error DISPUTE_TIME_ELAPSED();
+
+    /// @dev thrown if the rescue is still in timelocked state
+    error RESCUE_TIMELOCKED();
 
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
@@ -170,6 +194,9 @@ library Error {
     /// @dev thrown if update payload function was called on a wrong payload
     error INVALID_PAYLOAD_UPDATE_REQUEST();
 
+    /// @dev thrown if payload update amount mismatch with dst swapper amount
+    error INVALID_DST_SWAP_AMOUNT();
+
     /// @dev thrown if payload is being updated with final amounts length different than amounts length
     error DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();
 
@@ -178,9 +205,6 @@ library Error {
 
     /// @dev thrown if the amounts being sent in update payload mean a negative slippage
     error NEGATIVE_SLIPPAGE();
-
-    /// @dev thrown if Slippage is out of bounds
-    error SLIPPAGE_OUT_OF_BOUNDS();
 
     /// @dev thrown if payload is not in UPDATED state
     error PAYLOAD_NOT_UPDATED();
@@ -194,17 +218,11 @@ library Error {
     /// @dev thrown if message hasn't reached the specified level of quorum needed
     error QUORUM_NOT_REACHED();
 
-    /// @dev thrown if gas refunds failed
-    error GAS_REFUND_FAILED();
-
     /// @dev thrown if message amb and proof amb are the same
     error INVALID_PROOF_BRIDGE_ID();
 
     /// @dev thrown if a duplicate proof amb is found
     error DUPLICATE_PROOF_BRIDGE_ID();
-
-    /// @dev thrown if the gas per dst doesn't match chain ids in broadcasting
-    error INVALID_EXTRA_DATA_LENGTHS();
 
     /// @dev thrown if the rescue data lengths are invalid
     error INVALID_RESCUE_DATA();
@@ -230,6 +248,9 @@ library Error {
 
     /// @dev thrown when there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
+
+    /// @dev thrown slippage is outside of bounds
+    error SLIPPAGE_OUT_OF_BOUNDS();
 
     /*///////////////////////////////////////////////////////////////
                         SUPERFORM ROUTER ERRORS
@@ -278,9 +299,6 @@ library Error {
 
     /// @dev thrown when the amount in direct deposit is not correct
     error DIRECT_DEPOSIT_INVALID_DATA();
-
-    /// @dev thrown when the collateral in direct deposit is not correct
-    error DIRECT_DEPOSIT_INVALID_COLLATERAL();
 
     /// @dev thrown when the collateral in direct withdraw is not correct
     error DIRECT_WITHDRAW_INVALID_COLLATERAL();
