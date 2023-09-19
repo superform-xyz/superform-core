@@ -7,7 +7,6 @@ import { IBaseStateRegistry } from "../../interfaces/IBaseStateRegistry.sol";
 import { ITimelockStateRegistry } from "../../interfaces/ITimelockStateRegistry.sol";
 import { IPayloadHelper } from "../../interfaces/IPayloadHelper.sol";
 import { IBridgeValidator } from "../../interfaces/IBridgeValidator.sol";
-
 import {
     CallbackType,
     ReturnMultiData,

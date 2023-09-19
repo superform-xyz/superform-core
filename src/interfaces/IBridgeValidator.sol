@@ -34,8 +34,8 @@ interface IBridgeValidator {
     function validateReceiver(bytes calldata txData_, address receiver_) external pure returns (bool valid_);
 
     /// @dev validates the txData of a cross chain deposit
-    /// @param args the txData arguments to validate in txData
-    function validateTxData(ValidateTxDataArgs calldata args) external view;
+    /// @param args_ the txData arguments to validate in txData
+    function validateTxData(ValidateTxDataArgs calldata args_) external view;
 
     /// @dev decodes the txData and returns the minimum amount expected to receive on the destination
     /// @param txData_ is the txData of the cross chain deposit

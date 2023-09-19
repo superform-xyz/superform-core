@@ -53,7 +53,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     uint256 public timelockPayloadCounter;
 
     /// @dev stores the timelock payloads
-    mapping(uint256 timeLockPayloadId => TimelockPayload) public timelockPayload;
+    mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
 
     /// @dev allows only form to write to the receive paylod
     modifier onlyForm(uint256 superformId) {
@@ -206,7 +206,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         /// @dev validates quorum
         bytes32 _proof = _message.computeProof();
 
-        if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
+        if (messageQuorum[_proof] < _getRequiredMessagingQuorum(srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
     }
@@ -214,7 +214,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     /// @dev returns the required quorum for the src chain id from super registry
     /// @param chainId is the src chain id
     /// @return the quorum configured for the chain id
-    function getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
+    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
     }
 
@@ -232,10 +232,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
-        uint256 payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
-        bytes memory payloadBody = coreStateRegistry.payloadBody(payloadId_);
+        uint256 payloadHeader_ = coreStateRegistry.payloadHeader(payloadId_);
+        bytes memory payloadBody_ = coreStateRegistry.payloadBody(payloadId_);
 
-        bytes32 proof = AMBMessage(payloadHeader, payloadBody).computeProof();
+        bytes32 proof = AMBMessage(payloadHeader_, payloadBody_).computeProof();
         uint8[] memory proofIds = coreStateRegistry.getProofAMB(proof);
 
         uint256 len = proofIds.length;
