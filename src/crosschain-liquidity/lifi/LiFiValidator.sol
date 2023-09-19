@@ -259,7 +259,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             callData = abi.decode(data_[4:], (bytes));
         }
         (,,, receiver, receivingAmount, swapData) = abi.decode(
-            slice(callData, 4, callData.length - 4), (bytes32, string, string, address, uint256, LibSwap.SwapData[])
+            _slice(callData, 4, callData.length - 4), (bytes32, string, string, address, uint256, LibSwap.SwapData[])
         );
 
         sendingAssetId = swapData[0].sendingAssetId;

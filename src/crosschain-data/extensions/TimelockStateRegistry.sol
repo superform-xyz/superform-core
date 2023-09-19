@@ -206,7 +206,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         /// @dev validates quorum
         bytes32 _proof = _message.computeProof();
 
-        if (messageQuorum[_proof] < getRequiredMessagingQuorum(srcChainId)) {
+        if (messageQuorum[_proof] < _getRequiredMessagingQuorum(srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
     }
@@ -214,7 +214,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     /// @dev returns the required quorum for the src chain id from super registry
     /// @param chainId is the src chain id
     /// @return the quorum configured for the chain id
-    function getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
+    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
         return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
     }
 
