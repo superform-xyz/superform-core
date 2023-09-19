@@ -48,9 +48,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
     /// @dev sender varies based on functionality
     /// @notice inheriting contracts should override this function (else not safe)
-    /// @dev with general revert to protect dispatchPaylod in case of non override
     modifier onlySender() virtual {
-        revert Error.DISABLED();
         _;
     }
 

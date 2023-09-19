@@ -105,13 +105,7 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         bytes signature;
     }
 
-    function _processDirectDeposit(
-        InitSingleVaultData memory singleVaultData_,
-        address srcSender_
-    )
-        internal
-        returns (uint256 dstAmount)
-    {
+    function _processDirectDeposit(InitSingleVaultData memory singleVaultData_) internal returns (uint256 dstAmount) {
         directDepositLocalVars memory vars;
 
         IERC4626 v = IERC4626(vault);
@@ -157,7 +151,6 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 singleVaultData_.liqData.txData,
                 address(token),
                 IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false),
-                address(this),
                 singleVaultData_.liqData.nativeAmount
             );
         }
@@ -239,7 +232,6 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
                 v.amount,
-                address(this),
                 singleVaultData_.liqData.nativeAmount
             );
         }
@@ -337,7 +329,6 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
                 singleVaultData_.liqData.txData,
                 singleVaultData_.liqData.token,
                 dstAmount,
-                address(this),
                 singleVaultData_.liqData.nativeAmount
             );
         }

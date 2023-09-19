@@ -75,12 +75,13 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     /// @inheritdoc Transmuter
     /// @notice explicity revert on register transmuter
     function registerTransmuter(
-        uint256 id,
-        string memory name,
-        string memory symbol,
-        uint8 decimals
+        uint256, /*id*/
+        string memory, /*name*/
+        string memory, /*symbol*/
+        uint8 /*decimals*/
     )
         external
+        pure
         override
         returns (address)
     {

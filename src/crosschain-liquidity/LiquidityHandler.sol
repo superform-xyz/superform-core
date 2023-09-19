@@ -20,14 +20,12 @@ abstract contract LiquidityHandler {
     /// @param txData_ liquidity bridge data
     /// @param token_ Token caller deposits into superform
     /// @param amount_ Amount of tokens to deposit
-    /// @param srcSender_ Owner of tokens
     /// @param nativeAmount_ msg.value or msg.value + native tokens
     function dispatchTokens(
         address bridge_,
         bytes memory txData_,
         address token_,
         uint256 amount_,
-        address srcSender_,
         uint256 nativeAmount_
     )
         internal

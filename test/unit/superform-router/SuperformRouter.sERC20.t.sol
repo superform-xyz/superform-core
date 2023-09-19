@@ -720,8 +720,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-
         vm.expectRevert(Error.ZERO_AMOUNT.selector);
         superformRouterSERC20.singleDirectSingleVaultDeposit(req);
     }

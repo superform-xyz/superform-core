@@ -33,7 +33,6 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-        address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
         vm.stopPrank();
@@ -74,7 +73,6 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-        address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
         vm.stopPrank();
@@ -117,7 +115,6 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-        address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
         vm.stopPrank();
@@ -147,7 +144,6 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         );
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
-        address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(superform, 1e18);
         vm.stopPrank();

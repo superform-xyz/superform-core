@@ -40,6 +40,12 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         _;
     }
 
+    modifier onlySender() override {
+        if (msg.sender != address(0)) {
+            _;
+        }
+    }
+
     /*///////////////////////////////////////////////////////////////
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/

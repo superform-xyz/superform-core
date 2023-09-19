@@ -41,7 +41,7 @@ contract SuperformFactoryAddBeaconTest is BaseSetup {
             .getBytecodeFormBeacon(getContract(chainId, "SuperRegistry"), formImplementation);
         assertEq(byteCode, byteCodeSuperformFactory);
 
-        address superformMockBeacon2 = computeCreate2Address(
+        computeCreate2Address(
             salt,
             hashInitCode(
                 type(FormBeacon).creationCode, abi.encode(getContract(chainId, "SuperRegistry"), formImplementation)
@@ -54,9 +54,7 @@ contract SuperformFactoryAddBeaconTest is BaseSetup {
         vm.expectEmit(true, true, true, true);
         emit FormBeaconAdded(formImplementation, superformMockBeacon, formBeaconId);
 
-        address beacon_returned = SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(
-            formImplementation, formBeaconId, salt
-        );
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
     }
 
     /// @dev Testing adding two beacons with same formBeaconId

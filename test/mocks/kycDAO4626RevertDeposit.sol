@@ -7,7 +7,7 @@ import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
 contract kycDAO4626RevertDeposit is kycDAO4626 {
     constructor(ERC20 asset_, address kycValidity_) kycDAO4626(asset_, kycValidity_) { }
 
-    function deposit(uint256 assets, address receiver) public override returns (uint256) {
+    function deposit(uint256, /*assets*/ address /*receiver*/ ) public pure override returns (uint256) {
         revert();
     }
 }

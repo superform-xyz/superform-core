@@ -75,9 +75,9 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
 
     /// @inheritdoc IBroadcastAmbImplementation
     function broadcastPayload(
-        address srcSender_,
+        address, /*srcSender_*/
         bytes memory message_,
-        bytes memory extraData_
+        bytes memory /*extraData_*/
     )
         external
         payable
@@ -114,8 +114,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
             revert Error.CALLER_NOT_RELAYER();
         }
 
-        (IWormhole.VM memory wormholeMessage, bool valid, string memory reason) =
-            wormhole.parseAndVerifyVM(encodedMessage_);
+        (IWormhole.VM memory wormholeMessage, bool valid,) = wormhole.parseAndVerifyVM(encodedMessage_);
 
         if (!valid) {
             revert Error.INVALID_BROADCAST_PAYLOAD();
@@ -167,8 +166,8 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
 
     /// @inheritdoc IBroadcastAmbImplementation
     function estimateFees(
-        bytes memory message_,
-        bytes memory extraData_
+        bytes memory, /*message_*/
+        bytes memory /*extraData_*/
     )
         external
         view

@@ -833,7 +833,15 @@ abstract contract AbstractDeploySingle is Script {
         }
     }
 
-    function _readContract(string memory name, uint64 chainId, string memory contractName) internal returns (address) {
+    function _readContract(
+        string memory name,
+        uint64 chainId,
+        string memory contractName
+    )
+        internal
+        view
+        returns (address)
+    {
         string memory json;
         string memory root = vm.projectRoot();
         json =
