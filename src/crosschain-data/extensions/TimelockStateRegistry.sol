@@ -33,8 +33,8 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
 
     modifier onlyTimelockStateRegistryProcessor() {
         if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasTimelockStateRegistryProcessorRole(
-                msg.sender
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE"), msg.sender
             )
         ) revert Error.NOT_PROCESSOR();
         _;

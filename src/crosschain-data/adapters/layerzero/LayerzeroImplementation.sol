@@ -21,7 +21,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     uint256 private constant RECEIVER_OFFSET = 1;
 
     /*///////////////////////////////////////////////////////////////
-                            State Variables
+                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
     ILayerZeroEndpoint public lzEndpoint;
@@ -32,19 +32,19 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     mapping(uint64 => uint16) public ambChainId;
     mapping(uint16 => uint64) public superChainId;
 
-    /*///////////////////////////////////////////////////////////////
-                            LZ Variables & events
-    //////////////////////////////////////////////////////////////*/
-
     mapping(uint16 => bytes) public trustedRemoteLookup;
     mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32))) public failedMessages;
+
+    /*///////////////////////////////////////////////////////////////
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
 
     event EndpointUpdated(address oldEndpoint_, address newEndpoint_);
     event MessageFailed(uint16 srcChainId_, bytes srcAddress_, uint64 nonce_, bytes payload_);
     event SetTrustedRemote(uint16 srcChainId_, bytes srcAddress_);
 
     /*///////////////////////////////////////////////////////////////
-                                Modifiers
+                                MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyProtocolAdmin() {
@@ -55,7 +55,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                                Constructor
+                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
     /// @param superRegistry_ is the super registry address
@@ -64,12 +64,8 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                        Core External Functions
+                                EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice receive enables processing native token transfers into the smart contract.
-    /// @dev layerzero gas payments/refund fails without a native receive function.
-    receive() external payable { }
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
@@ -116,7 +112,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                        Core Internal Functions
+                        CORE INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     function _nonblockingLzReceive(uint16 _srcChainId, bytes memory, bytes memory _payload) internal {
         /// @dev decodes payload received
@@ -132,7 +128,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                        LZ External Functions
+                        LZ EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     /// @inheritdoc ILayerZeroReceiver
     function lzReceive(
@@ -204,7 +200,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                        LZ Internal Functions
+                        HELPER/INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     function _lzSend(
@@ -246,7 +242,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                            LZ Application config
+                           LZ APPLICATION CONFIG
     //////////////////////////////////////////////////////////////*/
 
     /// @dev allows protocol admin to configure layerzero endpoint
@@ -306,7 +302,7 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
     }
 
     /*///////////////////////////////////////////////////////////////
-                            View Functions
+                            READ-ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     function isTrustedRemote(uint16 srcChainId_, bytes calldata srcAddress_) external view returns (bool) {

@@ -49,9 +49,8 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
     }
 
     /*///////////////////////////////////////////////////////////////
-                                EXTERNAL FUNCTIONS
+                           WORMHOLE APPLICATION CONFIG
     //////////////////////////////////////////////////////////////*/
-
     /// @dev allows protocol admin to configure wormhole relayer contract
     /// @param relayer_ is the automatic relayer address for respective chain
     function setWormholeRelayer(address relayer_) external onlyProtocolAdmin {
@@ -60,6 +59,9 @@ contract WormholeARImplementation is IAmbImplementation, IWormholeReceiver {
             relayer = IWormholeRelayer(relayer_);
         }
     }
+    /*///////////////////////////////////////////////////////////////
+                                EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(

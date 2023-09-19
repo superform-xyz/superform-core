@@ -354,7 +354,7 @@ abstract contract BaseSetup is DSTest, Test {
             assert(vars.superRBACC.hasProtocolAdminRole(deployer));
 
             vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), vars.wormholeBroadcastHelper);
-            assert(vars.superRBACC.hasWormholeVaaRole(vars.wormholeBroadcastHelper));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), vars.wormholeBroadcastHelper));
 
             /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
             vars.superRBACC.grantRole(vars.superRBACC.EMERGENCY_ADMIN_ROLE(), deployer);
@@ -362,23 +362,23 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev FIXME: in reality who should have the PAYMENT_ADMIN_ROLE?
             vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), deployer);
-            assert(vars.superRBACC.hasPaymentAdminRole(deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), deployer));
 
             /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasCoreStateRegistryProcessorRole(deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), deployer));
 
             /// @dev FIXME: in reality who should have the TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasTimelockStateRegistryProcessorRole(deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), deployer));
 
             /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasTimelockStateRegistryProcessorRole(deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), deployer));
 
             /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer);
-            assert(vars.superRBACC.hasCoreStateRegistryUpdaterRole(deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer));
 
             /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_RESCUER_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), deployer);
@@ -390,10 +390,10 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for dst swapper?
             vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer);
-            assert(vars.superRBACC.hasDstSwapperRole(deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer));
 
             vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC);
-            assert(vars.superRBACC.hasBroadcasterRole(vars.superRBAC));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC));
 
             /// @dev 4.1 - deploy Core State Registry
             vars.coreStateRegistry = address(
@@ -453,10 +453,11 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 6.2 - deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation{salt: salt}(
-                    HyperlaneMailbox,
-                    HyperlaneGasPaymaster,
                     SuperRegistry(vars.superRegistry)
                 )
+            );
+            HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
+                HyperlaneMailbox, HyperlaneGasPaymaster
             );
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
