@@ -401,7 +401,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.maxSlippage,
             false,
             superformData_.liqRequest,
-            superformData_.dstRefundAddress,
+            address(0),
             superformData_.extraFormData
         );
     }
