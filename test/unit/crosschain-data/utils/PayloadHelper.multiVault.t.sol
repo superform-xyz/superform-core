@@ -77,8 +77,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_payloadHelperMulti() public {
-        address _superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
-
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
@@ -111,8 +109,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
     }
 
     function test_payloadHelperLiqMulti() public {
-        address _superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
-
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
@@ -138,7 +134,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
-        _checkDstPayloadLiqData(actions[1]);
+        _checkDstPayloadLiqData();
     }
 
     function _checkSrcPayload() internal {
@@ -146,9 +142,6 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         address _PayloadHelper = contracts[CHAIN_0][bytes32(bytes("PayloadHelper"))];
         IPayloadHelper helper = IPayloadHelper(_PayloadHelper);
-
-        address _PaymentHelper = contracts[CHAIN_0][bytes32(bytes("PaymentHelper"))];
-        IPaymentHelper paymentHelper = IPaymentHelper(_PaymentHelper);
 
         (uint8 txType, uint8 callbackType, uint8 multi, address srcSender, uint64 srcChainId) =
             helper.decodeStateSyncerPayloadHistory(1, 1);
@@ -232,15 +225,13 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint256[] nativeAmounts;
     }
 
-    function _checkDstPayloadLiqData(TestAction memory action) internal {
+    function _checkDstPayloadLiqData() internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadLiqDataInternalVars memory v;
 
         (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts,, v.nativeAmounts) = IPayloadHelper(
             contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
         ).decodeCoreStateRegistryPayloadLiqData(2);
-        (,,,,,, uint256[] memory superformids,,) =
-            IPayloadHelper(contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]).decodeCoreStateRegistryPayload(2);
 
         assertEq(v.bridgeIds[0], 1);
 

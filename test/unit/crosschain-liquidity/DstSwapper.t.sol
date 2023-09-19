@@ -41,13 +41,17 @@ contract DstSwapperTest is ProtocolActions {
 
         uint256 balanceBefore = dstSwapper.balance;
         (bool success,) = dstSwapper.call{ value: transferAmount }("");
-        uint256 balanceAfter = dstSwapper.balance;
-        assertEq(balanceBefore + transferAmount, balanceAfter);
+        if (success) {
+            uint256 balanceAfter = dstSwapper.balance;
+            assertEq(balanceBefore + transferAmount, balanceAfter);
 
-        balanceBefore = dstSwapper.balance;
-        DstSwapper(dstSwapper).emergencyWithdrawNativeToken(transferAmount);
-        balanceAfter = dstSwapper.balance;
-        assertEq(balanceBefore - transferAmount, balanceAfter);
+            balanceBefore = dstSwapper.balance;
+            DstSwapper(dstSwapper).emergencyWithdrawNativeToken(transferAmount);
+            balanceAfter = dstSwapper.balance;
+            assertEq(balanceBefore - transferAmount, balanceAfter);
+        } else {
+            revert();
+        }
     }
 
     function test_native_token_emergency_withdrawFailure() public {
@@ -61,18 +65,22 @@ contract DstSwapperTest is ProtocolActions {
 
         vm.startPrank(deployer);
         (bool success,) = dstSwapper.call{ value: transferAmount }("");
-        uint256 balanceAfter = dstSwapper.balance;
-        assertEq(balanceBefore + transferAmount, balanceAfter);
+        if (success) {
+            uint256 balanceAfter = dstSwapper.balance;
+            assertEq(balanceBefore + transferAmount, balanceAfter);
 
-        SuperRBAC(getContract(ETH, "SuperRBAC")).grantRole(
-            SuperRBAC(getContract(ETH, "SuperRBAC")).EMERGENCY_ADMIN_ROLE(), address(this)
-        );
-        vm.stopPrank();
-        balanceBefore = dstSwapper.balance;
-        vm.expectRevert(Error.NATIVE_TOKEN_TRANSFER_FAILURE.selector);
-        DstSwapper(dstSwapper).emergencyWithdrawNativeToken(transferAmount);
-        balanceAfter = dstSwapper.balance;
-        assertEq(balanceBefore, balanceAfter);
+            SuperRBAC(getContract(ETH, "SuperRBAC")).grantRole(
+                SuperRBAC(getContract(ETH, "SuperRBAC")).EMERGENCY_ADMIN_ROLE(), address(this)
+            );
+            vm.stopPrank();
+            balanceBefore = dstSwapper.balance;
+            vm.expectRevert(Error.NATIVE_TOKEN_TRANSFER_FAILURE.selector);
+            DstSwapper(dstSwapper).emergencyWithdrawNativeToken(transferAmount);
+            balanceAfter = dstSwapper.balance;
+            assertEq(balanceBefore, balanceAfter);
+        } else {
+            revert();
+        }
     }
 
     function test_failed_native_process_tx() public {
@@ -87,25 +95,30 @@ contract DstSwapperTest is ProtocolActions {
         address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
         (bool success,) = payable(dstSwapper).call{ value: 1e18 }("");
-        DstSwapper(dstSwapper).processTx(
-            1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
-        );
 
-        /// @dev try with a non-existent index
-        vm.expectRevert(Error.INVALID_INDEX.selector);
-        DstSwapper(dstSwapper).processTx(
-            1, 420, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
-        );
-        /// @dev retry the same payload id and indices
-        vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
-        DstSwapper(dstSwapper).processTx(
-            1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
-        );
-        /// @dev no funds in multi-tx processor at this point; should revert
-        vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
-        DstSwapper(dstSwapper).processTx(
-            2, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
-        );
+        if (success) {
+            DstSwapper(dstSwapper).processTx(
+                1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
+            );
+
+            /// @dev try with a non-existent index
+            vm.expectRevert(Error.INVALID_INDEX.selector);
+            DstSwapper(dstSwapper).processTx(
+                1, 420, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
+            );
+            /// @dev retry the same payload id and indices
+            vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
+            DstSwapper(dstSwapper).processTx(
+                1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
+            );
+            /// @dev no funds in multi-tx processor at this point; should revert
+            vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
+            DstSwapper(dstSwapper).processTx(
+                2, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
+            );
+        } else {
+            revert();
+        }
     }
 
     function test_failed_non_native_process_tx() public {

@@ -31,8 +31,7 @@ contract SuperTransmuterTest is BaseSetup {
     }
 
     function test_registerTransmuter_invalid_interface() public {
-        (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
         vm.expectRevert(Error.DISABLED.selector);
         superTransmuter.registerTransmuter(1, "", "", 1);
     }

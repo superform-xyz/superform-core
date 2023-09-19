@@ -184,7 +184,7 @@ contract SuperRegistryTest is BaseSetup {
         (bool success,) = address(superRegistry).call(
             abi.encodeWithSelector(superRegistry.setAddress.selector, id_, contractAddress, ETH)
         );
-
+        if (!success) revert();
         (, bytes memory isSet) =
             address(superRegistry).call(abi.encodeWithSelector(superRegistry.getAddress.selector, id_));
         assertEq(abi.decode(isSet, (bool)), true);
@@ -194,5 +194,6 @@ contract SuperRegistryTest is BaseSetup {
         (bool success_,) = address(superRegistry).call(
             abi.encodeWithSelector(superRegistry.setAddress.selector, id_, address(0x2), ETH)
         );
+        if (success_) revert();
     }
 }

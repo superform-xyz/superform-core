@@ -48,7 +48,7 @@ contract SDiMVDMulti4TokenInputNoSlippageAMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
+    function test_scenario(uint128 amountOne_, uint128 /*amountTwo*/ ) public {
         amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_WETH));
         AMOUNTS[ETH][0] = [amountOne_];
 

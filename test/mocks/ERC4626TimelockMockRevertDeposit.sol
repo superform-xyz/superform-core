@@ -27,7 +27,7 @@ contract ERC4626TimelockMockRevertDeposit is ERC4626 {
 
     constructor(IERC20 asset_, string memory name_, string memory symbol_) ERC4626(asset_) ERC20(name_, symbol_) { }
 
-    function deposit(uint256 assets, address receiver) public override returns (uint256) {
+    function deposit(uint256, /*assets*/ address /*receiver*/ ) public pure override returns (uint256) {
         revert();
     }
 

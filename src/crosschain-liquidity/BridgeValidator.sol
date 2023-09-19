@@ -75,7 +75,7 @@ abstract contract BridgeValidator is IBridgeValidator {
     /// @inheritdoc IBridgeValidator
     function decodeDstSwap(bytes calldata txData_)
         external
-        view
+        pure
         virtual
         override
         returns (address token_, uint256 amount_);

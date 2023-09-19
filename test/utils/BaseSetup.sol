@@ -510,7 +510,6 @@ abstract contract BaseSetup is DSTest, Test {
                 );
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
-            uint256 vaultId = 0;
             bytes memory bytecodeWithArgs;
 
             /// NOTE: This loop deploys all vaults on all chainIds with all of the UNDERLYING TOKENS (id x form) x
@@ -1128,6 +1127,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint64 chainId
     )
         internal
+        view
         returns (bytes memory sig)
     {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerKey, _getEIP712Hash(permit, spender, chainId));
@@ -1165,7 +1165,7 @@ abstract contract BaseSetup is DSTest, Test {
     }
 
     ///@dev Compute the address of the contract to be deployed
-    function getAddress(bytes memory bytecode_, bytes32 salt_, address deployer_) public view returns (address) {
+    function getAddress(bytes memory bytecode_, bytes32 salt_, address deployer_) public pure returns (address) {
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), deployer_, salt_, keccak256(bytecode_)));
 
         // NOTE: cast last 20 bytes of hash to address
@@ -1220,6 +1220,7 @@ abstract contract BaseSetup is DSTest, Test {
         uint256 payloadId
     )
         internal
+        view
         returns (uint256 msgValue, bytes memory ackData)
     {
         LocalAckVars memory vars;

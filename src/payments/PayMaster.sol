@@ -127,7 +127,6 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             liqRequest_.txData,
             liqRequest_.token,
             IBridgeValidator(bridgeValidator).decodeAmountIn(liqRequest_.txData, true),
-            msg.sender,
             liqRequest_.nativeAmount
         );
     }

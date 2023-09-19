@@ -444,7 +444,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-        address vault = IBaseForm(superform).getVaultAddress();
+        IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
         vm.stopPrank();
@@ -480,7 +480,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-        address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
         vm.stopPrank();
@@ -522,7 +521,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-        address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
 
@@ -553,7 +551,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
-        address vault = IBaseForm(superform).getVaultAddress();
 
         MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
         vm.stopPrank();
@@ -584,7 +581,6 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         vm.selectFork(FORKS[chainId]);
 
-        address superRegistry = getContract(chainId, "SuperRegistry");
         SuperformFactory superformFactory = SuperformFactory(getContract(chainId, "SuperformFactory"));
 
         /// @dev Deploying Form with incorrect SuperRegistry
@@ -640,6 +636,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address receiver_
     )
         internal
+        view
         returns (bytes memory txData)
     {
         if (liqBridgeKind_ == 1) {

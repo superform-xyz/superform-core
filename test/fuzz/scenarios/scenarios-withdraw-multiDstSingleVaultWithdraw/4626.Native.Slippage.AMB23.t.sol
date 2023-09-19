@@ -93,7 +93,7 @@ contract MDSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
         uint128 amountOne_,
         uint128 amountOneWithdraw_,
         uint128 amountTwo_,
-        uint128 amountTwoWithdraw_
+        uint128 /*amountTwoWithdraw_*/
     )
         public
     {

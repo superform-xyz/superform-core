@@ -11,7 +11,7 @@ contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
     }
 
-    function test_lifi_validator() public {
+    function test_lifi_validator() public view {
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 _buildDummyTxDataUnitTests(

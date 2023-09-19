@@ -74,7 +74,6 @@ contract SuperformRouterTest is ProtocolActions {
 
         SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
 
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
         SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(
             getContract(ETH, "SuperformRouter"), superformId, 1e18
         );
@@ -969,6 +968,7 @@ contract SuperformRouterTest is ProtocolActions {
         address receiver_
     )
         internal
+        view
         returns (bytes memory txData)
     {
         if (liqBridgeKind_ == 1) {

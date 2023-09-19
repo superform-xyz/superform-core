@@ -45,7 +45,7 @@ contract ERC4626KYCDaoForm is ERC4626FormImplementation {
     {
         _kycCheck(srcSender_);
 
-        dstAmount = _processDirectDeposit(singleVaultData_, srcSender_);
+        dstAmount = _processDirectDeposit(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm

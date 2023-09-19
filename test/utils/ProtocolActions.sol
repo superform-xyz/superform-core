@@ -268,7 +268,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         /// @dev stage 7 and 8 are only required for timelocked forms, but also including direct chain actions
         if (action.action == Actions.Withdraw) {
-            _stage7_finalize_timelocked_payload(action, vars);
+            _stage7_finalize_timelocked_payload(vars);
 
             console.log("Stage 7 complete");
 
@@ -972,9 +972,7 @@ abstract contract ProtocolActions is BaseSetup {
                             /// @dev payload processing. This performs the action down to the form level and builds any
                             /// acknowledgement data needed to bring it back to source
                             /// @dev hence the record logs before and after and payload delivery to source
-                            success = _processPayload(
-                                PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId, action.testType, action.revertError
-                            );
+                            success = _processPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId, action.testType);
                             vars.logs = vm.getRecordedLogs();
 
                             _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
@@ -986,9 +984,7 @@ abstract contract ProtocolActions is BaseSetup {
                                 _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
                             }
                             /// @dev process payload will revert in here
-                            success = _processPayload(
-                                PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId, action.testType, action.revertError
-                            );
+                            success = _processPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId, action.testType);
                             if (!success) {
                                 return success;
                             }
@@ -1032,9 +1028,7 @@ abstract contract ProtocolActions is BaseSetup {
                         /// @dev payload processing. This performs the action down to the form level and builds any
                         /// acknowledgement data needed to bring it back to source
                         /// @dev hence the record logs before and after and payload delivery to source
-                        success = _processPayload(
-                            PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId, action.testType, action.revertError
-                        );
+                        success = _processPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId, action.testType);
                         vars.logs = vm.getRecordedLogs();
 
                         _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
@@ -1083,7 +1077,7 @@ abstract contract ProtocolActions is BaseSetup {
                         PAYLOAD_ID[CHAIN_0]++;
                     }
 
-                    success = _processPayload(PAYLOAD_ID[CHAIN_0], CHAIN_0, action.testType, action.revertError);
+                    success = _processPayload(PAYLOAD_ID[CHAIN_0], CHAIN_0, action.testType);
                 }
             }
         }
@@ -1128,14 +1122,14 @@ abstract contract ProtocolActions is BaseSetup {
                         PAYLOAD_ID[CHAIN_0]++;
                     }
 
-                    _processPayload(PAYLOAD_ID[CHAIN_0], CHAIN_0, action.testType, action.revertError);
+                    _processPayload(PAYLOAD_ID[CHAIN_0], CHAIN_0, action.testType);
                 }
             }
         }
     }
 
     /// @dev STEP 7 DIRECT AND X-CHAIN: Finalize timelocked payload after time has passed
-    function _stage7_finalize_timelocked_payload(TestAction memory action, StagesLocalVars memory vars) internal {
+    function _stage7_finalize_timelocked_payload(StagesLocalVars memory vars) internal {
         uint256 initialFork;
         uint256 currentUnlockId;
 
@@ -1154,7 +1148,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     /// @dev performs unlock before the time ends
                     for (uint256 j = countTimelocked[i]; j > 0; j--) {
-                        (uint256 nativeFee, bytes memory ackAmbParams) = _generateAckGasFeesAndParamsForTimeLock(
+                        (uint256 nativeFee,) = _generateAckGasFeesAndParamsForTimeLock(
                             abi.encode(CHAIN_0, DST_CHAINS[i]), AMBs, currentUnlockId - j + 1
                         );
 
@@ -1171,7 +1165,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                     /// @dev perform the calls from beginning to last because of easiness in passing unlock id
                     for (uint256 j = countTimelocked[i]; j > 0; j--) {
-                        (uint256 nativeFee, bytes memory ackAmbParams) = _generateAckGasFeesAndParamsForTimeLock(
+                        (uint256 nativeFee,) = _generateAckGasFeesAndParamsForTimeLock(
                             abi.encode(CHAIN_0, DST_CHAINS[i]), AMBs, currentUnlockId - j + 1
                         );
 
@@ -1424,6 +1418,7 @@ abstract contract ProtocolActions is BaseSetup {
         bool sameChain
     )
         internal
+        view
         returns (bytes memory txData)
     {
         if (args.liqBridgeKind == 1) {
@@ -1554,6 +1549,7 @@ abstract contract ProtocolActions is BaseSetup {
         int256 slippage_
     )
         internal
+        view
         returns (bytes memory txData)
     {
         /// @dev amount_ adjusted after bridge slippage
@@ -1608,6 +1604,7 @@ abstract contract ProtocolActions is BaseSetup {
         bool sameChain_
     )
         internal
+        view
         returns (bytes memory txData)
     {
         if (liqBridgeKind_ == 1) {
@@ -2039,7 +2036,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 len = args.amounts.length;
         uint256[] memory finalAmounts = new uint256[](len);
 
-        int256 bridgeSlippage;
         int256 dstSwapSlippage;
 
         /// @dev slippage calculation
@@ -2102,7 +2098,6 @@ abstract contract ProtocolActions is BaseSetup {
 
         finalAmount = args.amount;
 
-        int256 bridgeSlippage;
         int256 dstSwapSlippage;
 
         finalAmount = (finalAmount * uint256(10_000 - args.slippage)) / 10_000;
@@ -2189,15 +2184,7 @@ abstract contract ProtocolActions is BaseSetup {
         return true;
     }
 
-    function _processPayload(
-        uint256 payloadId_,
-        uint64 targetChainId_,
-        TestType testType,
-        bytes4 revertError
-    )
-        internal
-        returns (bool)
-    {
+    function _processPayload(uint256 payloadId_, uint64 targetChainId_, TestType testType) internal returns (bool) {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[targetChainId_]);
 
@@ -2234,7 +2221,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 payloadId_,
         uint64 srcChainId_,
         uint64 targetChainId_,
-        TestType testType,
+        TestType, /*testType*/
         bytes4
     )
         internal
@@ -2243,9 +2230,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
 
         vm.selectFork(FORKS[targetChainId_]);
-
-        /// @dev no acknowledgement is needed;
-        bytes memory ackParams;
 
         /// @dev tries to increase quorum and check if quorum validations are good
         vm.prank(deployer);
@@ -2282,7 +2266,7 @@ abstract contract ProtocolActions is BaseSetup {
     /// @dev - assumption to only use dstSwapProcessor for destination chain swaps (middleware requests)
     function _processDstSwap(
         uint8 liqBridgeKind_,
-        uint64 srcChainId_,
+        uint64, /*srcChainId_*/
         uint64 targetChainId_,
         address underlyingTokenDst_,
         uint256 amount_,
@@ -2312,7 +2296,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     function _batchProcessDstSwap(
         uint8[] memory liqBridgeKinds_,
-        uint64 srcChainId_,
+        uint64, /*srcChainId_*/
         uint64 targetChainId_,
         address[] memory underlyingTokensDst_,
         uint256[] memory amounts_,
@@ -2387,6 +2371,7 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperformsData
     )
         internal
+        view
         returns (uint256[][] memory amountsToRemintPerDst)
     {
         amountsToRemintPerDst = new uint256[][](vars.nDestinations);
@@ -2450,6 +2435,7 @@ abstract contract ProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperformsData
     )
         internal
+        view
         returns (uint256[][] memory amountsToRemintPerDst)
     {
         amountsToRemintPerDst = new uint256[][](vars.nDestinations);
@@ -2595,6 +2581,7 @@ abstract contract ProtocolActions is BaseSetup {
         SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs memory args
     )
         internal
+        view
         returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 totalSpAmount)
     {
         DepositMultiSPCalculationVars memory v;
@@ -2602,11 +2589,9 @@ abstract contract ProtocolActions is BaseSetup {
         emptyAmount = new uint256[](v.lenSuperforms);
         spAmountSummed = new uint256[](v.lenSuperforms);
 
-        int256 bridgeSlippage;
         int256 dstSwapSlippage;
 
         /// @dev create an array of amounts summing the amounts of the same superform ids
-        (v.superforms,,) = DataLib.getSuperforms(args.multiSuperformsData.superformIds);
         for (v.i = 0; v.i < v.lenSuperforms; v.i++) {
             totalSpAmount += args.multiSuperformsData.amounts[v.i];
             for (v.j = 0; v.j < v.lenSuperforms; v.j++) {
@@ -2650,7 +2635,7 @@ abstract contract ProtocolActions is BaseSetup {
     /// a normal withdraw
     function _spAmountsMultiAfterWithdraw(
         MultiVaultSFData memory multiSuperformsData,
-        uint256 user,
+        uint256, /*user*/
         uint256[] memory currentSPBeforeWithdaw,
         uint256 lenRevertWithdraw,
         uint256 lenRevertWithdrawTimelocked,
@@ -2658,6 +2643,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 dstIndex
     )
         internal
+        view
         returns (uint256[] memory spAmountFinal)
     {
         uint256 lenSuperforms = multiSuperformsData.superformIds.length;
@@ -2667,7 +2653,6 @@ abstract contract ProtocolActions is BaseSetup {
             spAmountFinal = multiSuperformsData.amounts;
         } else {
             /// @dev create an array of amounts summing the amounts of the same superform ids
-            (address[] memory superforms,,) = DataLib.getSuperforms(multiSuperformsData.superformIds);
             bool foundRevertingWithdraw;
             bool foundRevertingWithdrawTimelocked;
             for (uint256 i = 0; i < lenSuperforms; i++) {
@@ -2710,7 +2695,7 @@ abstract contract ProtocolActions is BaseSetup {
     /// a timelocked withdraw
     function _spAmountsMultiAfterStage7Withdraw(
         MultiVaultSFData memory multiSuperformsData,
-        uint256 user,
+        uint256, /*user*/
         uint256[] memory currentSPBeforeWithdaw,
         uint256 lenRevertWithdraw,
         uint256 lenRevertWithdrawTimelocked,
@@ -2718,13 +2703,13 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 dstIndex
     )
         internal
+        view
         returns (uint256[] memory spAmountFinal)
     {
         uint256 lenSuperforms = multiSuperformsData.superformIds.length;
         spAmountFinal = new uint256[](lenSuperforms);
 
         /// @dev create an array of amounts summing the amounts of the same superform ids
-        (address[] memory superforms,,) = DataLib.getSuperforms(multiSuperformsData.superformIds);
         bool foundRevertingWithdraw;
         bool foundRevertingWithdrawTimelocked;
 
@@ -2771,18 +2756,18 @@ abstract contract ProtocolActions is BaseSetup {
     /// a failed normal withdraw
     function _spAmountsMultiAfterFailedWithdraw(
         MultiVaultSFData memory multiSuperformsData,
-        uint256 user,
+        uint256, /*user*/
         uint256[] memory currentSPBeforeWithdaw,
         uint256[] memory failedSPAmounts
     )
         internal
+        pure
         returns (uint256[] memory spAmountFinal)
     {
         uint256 lenSuperforms = multiSuperformsData.superformIds.length;
         spAmountFinal = new uint256[](lenSuperforms);
 
         /// @dev create an array of amounts summing the amounts of the same superform ids
-        (address[] memory superforms,,) = DataLib.getSuperforms(multiSuperformsData.superformIds);
 
         for (uint256 i = 0; i < lenSuperforms; i++) {
             spAmountFinal[i] = currentSPBeforeWithdaw[i];
