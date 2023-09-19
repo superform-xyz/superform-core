@@ -57,6 +57,7 @@ import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
 import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import "src/types/DataTypes.sol";
@@ -743,16 +744,20 @@ abstract contract BaseSetup is DSTest, Test {
                     /// default gas price: 50 Gwei
                     PaymentHelper(payable(vars.paymentHelper)).addChain(
                         vars.dstChainId,
-                        PRICE_FEEDS[vars.chainId][vars.dstChainId],
-                        address(0),
-                        50_000,
-                        40_000,
-                        70_000,
-                        80_000,
-                        12e8,
-                        /// 12 usd
-                        28 gwei,
-                        10 wei
+                        IPaymentHelper.PaymentHelperConfig(
+                            PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                            address(0),
+                            40_000,
+                            70_000,
+                            80_000,
+                            12e8,
+                            /// 12 usd
+                            28 gwei,
+                            10 wei,
+                            10_000,
+                            10_000,
+                            50_000
+                        )
                     );
 
                     vars.superRegistryC.setAddress(

@@ -8,6 +8,36 @@ import "../types/DataTypes.sol";
 /// @dev helps decoding the bytes payload and returns meaningful information
 interface IPaymentHelper {
     /*///////////////////////////////////////////////////////////////
+                                STRUCTS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @param nativeFeedOracle_ is the native price feed oracle
+    /// @param gasPriceOracle_ is the gas price oracle
+    /// @param swapGasUsed_ is the swap gas params
+    /// @param updateGasUsed_ is the update gas params
+    /// @param depositGasUsed_ is the deposit per vault gas on the chain
+    /// @param withdrawGasUsed_ is the withdraw per vault gas on the chain
+    /// @param defaultNativePrice_ is the native price on the specified chain
+    /// @param defaultGasPrice_ is the gas price on the specified chain
+    /// @param dstGasPerKB_ is the gas per size of data on the specified chain
+    /// @param ackGasCost_ is the gas cost for processing acknowledgements on src chain
+    /// @param twoStepCost_ is the extra cost for processing two-step/timelocked payloads
+    /// @param swapGasUsed_ is the cost for dst swap
+    struct PaymentHelperConfig {
+        address nativeFeedOracle;
+        address gasPriceOracle;
+        uint256 updateGasUsed;
+        uint256 depositGasUsed;
+        uint256 withdrawGasUsed;
+        uint256 defaultNativePrice;
+        uint256 defaultGasPrice;
+        uint256 dstGasPerKB;
+        uint256 ackGasCost;
+        uint256 twoStepCost;
+        uint256 swapGasUsed;
+    }
+
+    /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
     event ChainConfigUpdated(uint64 chainId_, uint256 configType_, bytes config_);
@@ -18,28 +48,8 @@ interface IPaymentHelper {
 
     /// @dev admin config destination chain config for estimation
     /// @param chainId_ is the identifier of new chain id
-    /// @param nativeFeedOracle_ is the native price feed oracle
-    /// @param gasPriceOracle_ is the gas price oracle
-    /// @param swapGasUsed_ is the swap gas params
-    /// @param updateGasUsed_ is the update gas params
-    /// @param depositGasUsed_ is the deposit per vault gas on the chain
-    /// @param withdrawGasUsed_ is the withdraw per vault gas on the chain
-    /// @param defaultNativePrice_ is the native price on the specified chain
-    /// @param defaultGasPrice_ is the gas price on the specified chain
-    /// @param dstGasPerKB_ is the gas per size of data on the specified chain
-    function addChain(
-        uint64 chainId_,
-        address nativeFeedOracle_,
-        address gasPriceOracle_,
-        uint256 swapGasUsed_,
-        uint256 updateGasUsed_,
-        uint256 depositGasUsed_,
-        uint256 withdrawGasUsed_,
-        uint256 defaultNativePrice_,
-        uint256 defaultGasPrice_,
-        uint256 dstGasPerKB_
-    )
-        external;
+    /// @param config_ is the chain config
+    function addChain(uint64 chainId_, PaymentHelperConfig calldata config_) external;
 
     /// @dev admin update remote chain config for estimation
     /// @param chainId_ is the remote chain's identifier

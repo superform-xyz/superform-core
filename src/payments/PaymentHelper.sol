@@ -82,37 +82,24 @@ contract PaymentHelper is IPaymentHelper {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IPaymentHelper
-    function addChain(
-        uint64 chainId_,
-        address nativeFeedOracle_,
-        address gasPriceOracle_,
-        uint256 swapGasUsed_,
-        uint256 updateGasUsed_,
-        uint256 depositGasUsed_,
-        uint256 withdrawGasUsed_,
-        uint256 defaultNativePrice_,
-        uint256 defaultGasPrice_,
-        uint256 dstGasPerKB_
-    )
-        external
-        override
-        onlyProtocolAdmin
-    {
-        if (nativeFeedOracle_ != address(0)) {
-            nativeFeedOracle[chainId_] = AggregatorV3Interface(nativeFeedOracle_);
+    function addChain(uint64 chainId_, PaymentHelperConfig calldata config_) external override onlyProtocolAdmin {
+        if (config_.nativeFeedOracle != address(0)) {
+            nativeFeedOracle[chainId_] = AggregatorV3Interface(config_.nativeFeedOracle);
         }
 
-        if (gasPriceOracle_ != address(0)) {
-            gasPriceOracle[chainId_] = AggregatorV3Interface(gasPriceOracle_);
+        if (config_.gasPriceOracle != address(0)) {
+            gasPriceOracle[chainId_] = AggregatorV3Interface(config_.gasPriceOracle);
         }
 
-        swapGasUsed[chainId_] = swapGasUsed_;
-        updateGasUsed[chainId_] = updateGasUsed_;
-        depositGasUsed[chainId_] = depositGasUsed_;
-        withdrawGasUsed[chainId_] = withdrawGasUsed_;
-        nativePrice[chainId_] = defaultNativePrice_;
-        gasPrice[chainId_] = defaultGasPrice_;
-        gasPerKB[chainId_] = dstGasPerKB_;
+        updateGasUsed[chainId_] = config_.updateGasUsed;
+        depositGasUsed[chainId_] = config_.depositGasUsed;
+        withdrawGasUsed[chainId_] = config_.withdrawGasUsed;
+        nativePrice[chainId_] = config_.defaultNativePrice;
+        gasPrice[chainId_] = config_.defaultGasPrice;
+        gasPerKB[chainId_] = config_.dstGasPerKB;
+        ackGasCost[chainId_] = config_.ackGasCost;
+        twoStepCost[chainId_] = config_.twoStepCost;
+        swapGasUsed[chainId_] = config_.swapGasUsed;
     }
 
     /// @inheritdoc IPaymentHelper
@@ -150,12 +137,12 @@ contract PaymentHelper is IPaymentHelper {
             withdrawGasUsed[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 6: NATIVE PRICE
+        /// @dev Type 6: DEFAULT NATIVE PRICE
         if (configType_ == 6) {
             nativePrice[chainId_] = abi.decode(config_, (uint256));
         }
 
-        /// @dev Type 7: GAS PRICE
+        /// @dev Type 7: DEFAULT GAS PRICE
         if (configType_ == 7) {
             gasPrice[chainId_] = abi.decode(config_, (uint256));
         }

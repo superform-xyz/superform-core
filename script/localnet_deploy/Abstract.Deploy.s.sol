@@ -29,6 +29,7 @@ import { IInterchainGasPaymaster } from "src/vendor/hyperlane/IInterchainGasPaym
 import { TimelockStateRegistry } from "src/crosschain-data/extensions/TimelockStateRegistry.sol";
 import { PayloadHelper } from "src/crosschain-data/utils/PayloadHelper.sol";
 import { PaymentHelper } from "src/payments/PaymentHelper.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
 import { SuperTransmuter } from "src/SuperTransmuter.sol";
 
@@ -612,16 +613,20 @@ abstract contract AbstractDeploy is Script {
                 /// default gas price: 50 Gwei
                 PaymentHelper(payable(vars.paymentHelper)).addChain(
                     vars.dstChainId,
-                    PRICE_FEEDS[vars.chainId][vars.dstChainId],
-                    address(0),
-                    50_000,
-                    40_000,
-                    70_000,
-                    80_000,
-                    12e8,
-                    /// 12 usd
-                    28 gwei,
-                    10 wei
+                    IPaymentHelper.PaymentHelperConfig(
+                        PRICE_FEEDS[vars.chainId][vars.dstChainId],
+                        address(0),
+                        50_000,
+                        40_000,
+                        70_000,
+                        80_000,
+                        12e8,
+                        /// 12 usd
+                        28 gwei,
+                        10 wei,
+                        30_000,
+                        10_000
+                    )
                 );
 
                 vars.superRegistryC.setAddress(
