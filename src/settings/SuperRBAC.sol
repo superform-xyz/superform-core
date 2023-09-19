@@ -151,56 +151,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         return hasRole(TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE, twoStepsProcessor_);
     }
 
-    /// @inheritdoc ISuperRBAC
-    function hasBroadcastStateRegistryProcessorRole(address broadcastProcessor_)
-        external
-        view
-        override
-        returns (bool)
-    {
-        return hasRole(BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE, broadcastProcessor_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasCoreStateRegistryUpdaterRole(address updater_) external view override returns (bool) {
-        return hasRole(CORE_STATE_REGISTRY_UPDATER_ROLE, updater_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasSuperPositionsMinterRole(address minter_) external view override returns (bool) {
-        return hasRole(SUPERPOSITIONS_MINTER_ROLE, minter_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasDstSwapperRole(address swapper_) external view returns (bool) {
-        return hasRole(DST_SWAPPER_ROLE, swapper_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasSuperPositionsBurnerRole(address burner_) external view override returns (bool) {
-        return hasRole(SUPERPOSITIONS_BURNER_ROLE, burner_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasSERC20MinterRole(address minter_) external view override returns (bool) {
-        return hasRole(SERC20_MINTER_ROLE, minter_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasSERC20BurnerRole(address burner_) external view override returns (bool) {
-        return hasRole(SERC20_BURNER_ROLE, burner_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasMinterStateRegistryRole(address stateRegistry_) external view override returns (bool) {
-        return hasRole(MINTER_STATE_REGISTRY_ROLE, stateRegistry_);
-    }
-
-    /// @inheritdoc ISuperRBAC
-    function hasWormholeVaaRole(address relayer_) external view override returns (bool) {
-        return hasRole(WORMHOLE_VAA_RELAYER_ROLE, relayer_);
-    }
-
     /*///////////////////////////////////////////////////////////////
                         Internal Functions
     //////////////////////////////////////////////////////////////*/

@@ -70,8 +70,8 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
 
     modifier onlyProcessor() {
         if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasBroadcastStateRegistryProcessorRole(
-                msg.sender
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE"), msg.sender
             )
         ) {
             revert Error.NOT_PROCESSOR();

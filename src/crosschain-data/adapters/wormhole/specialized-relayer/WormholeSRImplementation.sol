@@ -93,7 +93,11 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasWormholeVaaRole(msg.sender)) {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("WORMHOLE_VAA_RELAYER_ROLE"), msg.sender
+            )
+        ) {
             revert Error.CALLER_NOT_RELAYER();
         }
 

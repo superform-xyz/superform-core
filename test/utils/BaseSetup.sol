@@ -354,7 +354,7 @@ abstract contract BaseSetup is DSTest, Test {
             assert(vars.superRBACC.hasProtocolAdminRole(deployer));
 
             vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), vars.wormholeBroadcastHelper);
-            assert(vars.superRBACC.hasWormholeVaaRole(vars.wormholeBroadcastHelper));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), vars.wormholeBroadcastHelper));
 
             /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
             vars.superRBACC.grantRole(vars.superRBACC.EMERGENCY_ADMIN_ROLE(), deployer);
@@ -378,7 +378,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer);
-            assert(vars.superRBACC.hasCoreStateRegistryUpdaterRole(deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), deployer));
 
             /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_RESCUER_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), deployer);
@@ -390,7 +390,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for dst swapper?
             vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer);
-            assert(vars.superRBACC.hasDstSwapperRole(deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer));
 
             vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC);
             assert(vars.superRBACC.hasBroadcasterRole(vars.superRBAC));

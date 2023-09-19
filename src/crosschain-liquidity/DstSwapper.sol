@@ -30,7 +30,11 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
     mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public swappedAmount;
 
     modifier onlySwapper() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasDstSwapperRole(msg.sender)) {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("DST_SWAPPER_ROLE"), msg.sender
+            )
+        ) {
             revert Error.NOT_SWAPPER();
         }
         _;

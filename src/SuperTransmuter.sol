@@ -29,14 +29,22 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyMinter() override {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSERC20MinterRole(msg.sender)) {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("SERC20_MINTER_ROLE"), msg.sender
+            )
+        ) {
             revert Error.NOT_MINTER();
         }
         _;
     }
 
     modifier onlyBurner() override {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSERC20BurnerRole(msg.sender)) {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("SERC20_BURNER_ROLE"), msg.sender
+            )
+        ) {
             revert Error.NOT_BURNER();
         }
         _;

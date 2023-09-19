@@ -126,12 +126,12 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.grantRole(superRBAC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
         vm.stopPrank();
 
-        assertEq(superRBAC.hasBroadcastStateRegistryProcessorRole(address(0x1)), true);
+        assertEq(superRBAC.hasRole(superRBAC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1)), true);
     }
 
     function test_revokeBroadcastStateRegistryProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.hasBroadcastStateRegistryProcessorRole.selector,
+            superRBAC.hasRole.selector,
             superRBAC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(),
             superRegistry.BROADCAST_REGISTRY_PROCESSOR(),
             deployer,
@@ -166,12 +166,12 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.grantRole(superRBAC.CORE_STATE_REGISTRY_UPDATER_ROLE(), address(0x1));
         vm.stopPrank();
 
-        assertEq(superRBAC.hasCoreStateRegistryUpdaterRole(address(0x1)), true);
+        assertEq(superRBAC.hasRole(superRBAC.CORE_STATE_REGISTRY_UPDATER_ROLE(), address(0x1)), true);
     }
 
     function test_revokeCoreStateRegistryUpdaterRole() public {
         _revokeAndCheck(
-            superRBAC.hasCoreStateRegistryUpdaterRole.selector,
+            superRBAC.hasRole.selector,
             superRBAC.CORE_STATE_REGISTRY_UPDATER_ROLE(),
             superRegistry.CORE_REGISTRY_UPDATER(),
             deployer,
@@ -186,12 +186,12 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.grantRole(superRBAC.SUPERPOSITIONS_MINTER_ROLE(), address(0x1));
         vm.stopPrank();
 
-        assertEq(superRBAC.hasSuperPositionsMinterRole(address(0x1)), true);
+        assertEq(superRBAC.hasRole(superRBAC.SUPERPOSITIONS_MINTER_ROLE(), address(0x1)), true);
     }
 
     function test_revokeMinterRole() public {
         _revokeAndCheck(
-            superRBAC.hasSuperPositionsMinterRole.selector,
+            superRBAC.hasRole.selector,
             superRBAC.SUPERPOSITIONS_MINTER_ROLE(),
             superRegistry.TIMELOCK_STATE_REGISTRY(),
             deployer,
@@ -206,12 +206,12 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.grantRole(superRBAC.SUPERPOSITIONS_BURNER_ROLE(), address(0x1));
         vm.stopPrank();
 
-        assertEq(superRBAC.hasSuperPositionsBurnerRole(address(0x1)), true);
+        assertEq(superRBAC.hasRole(superRBAC.SUPERPOSITIONS_BURNER_ROLE(), address(0x1)), true);
     }
 
     function test_revokeBurnerRole() public {
         _revokeAndCheck(
-            superRBAC.hasSuperPositionsBurnerRole.selector,
+            superRBAC.hasRole.selector,
             superRBAC.SUPERPOSITIONS_BURNER_ROLE(),
             superRegistry.SUPERFORM_ROUTER(),
             deployer,
@@ -235,12 +235,12 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.grantRole(superRBAC.MINTER_STATE_REGISTRY_ROLE(), address(0x1));
         vm.stopPrank();
 
-        assertEq(superRBAC.hasMinterStateRegistryRole(address(0x1)), true);
+        assertEq(superRBAC.hasRole(superRBAC.MINTER_STATE_REGISTRY_ROLE(), address(0x1)), true);
     }
 
     function test_revokeStateRegistryMinterRole() public {
         _revokeAndCheck(
-            superRBAC.hasMinterStateRegistryRole.selector,
+            superRBAC.hasRole.selector,
             superRBAC.MINTER_STATE_REGISTRY_ROLE(),
             superRegistry.CORE_STATE_REGISTRY(),
             deployer,
