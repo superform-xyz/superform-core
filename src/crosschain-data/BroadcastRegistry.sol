@@ -14,7 +14,7 @@ interface Target {
     function stateSyncBroadcast(bytes memory data_) external;
 }
 
-/// @title BaseStateRegistry
+/// @title BroadcastRegistry
 /// @author ZeroPoint Labs
 /// @notice helps core contract communicate with multiple dst chains through supported AMBs
 contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
