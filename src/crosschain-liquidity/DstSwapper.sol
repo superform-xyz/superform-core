@@ -92,7 +92,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
                 chainId,
                 chainId,
                 false,
-                /// to enter the if-else case of the bridge validator loop
+                /// @dev to enter the if-else case of the bridge validator loop
                 address(0),
                 v.finalDst,
                 approvalToken_

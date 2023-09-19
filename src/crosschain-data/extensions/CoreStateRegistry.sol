@@ -279,7 +279,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         override
         onlyCoreStateRegistryRescuer
     {
-        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
+        FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
 
         if (
             failedDeposits_.superformIds.length == 0 || proposedAmounts_.length == 0
@@ -292,17 +292,17 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.RESCUE_ALREADY_PROPOSED();
         }
 
-        failedDeposits_.amounts = proposedAmounts_;
-        failedDeposits_.lastProposedTimestamp = block.timestamp;
+        failedDeposits[payloadId_].amounts = proposedAmounts_;
+        failedDeposits[payloadId_].lastProposedTimestamp = block.timestamp;
 
         (,, uint8 multi,,,) = DataLib.decodeTxInfo(payloadHeader[payloadId_]);
 
         if (multi == 1) {
             InitMultiVaultData memory data = abi.decode(payloadBody[payloadId_], (InitMultiVaultData));
-            failedDeposits_.refundAddress = data.dstRefundAddress;
+            failedDeposits[payloadId_].refundAddress = data.dstRefundAddress;
         } else {
             InitSingleVaultData memory data = abi.decode(payloadBody[payloadId_], (InitSingleVaultData));
-            failedDeposits_.refundAddress = data.dstRefundAddress;
+            failedDeposits[payloadId_].refundAddress = data.dstRefundAddress;
         }
 
         emit RescueProposed(payloadId_, failedDeposits_.superformIds, proposedAmounts_, block.timestamp);
@@ -310,7 +310,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @inheritdoc ICoreStateRegistry
     function disputeRescueFailedDeposits(uint256 payloadId_) external override {
-        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
+        FailedDeposit memory failedDeposits_ = failedDeposits[payloadId_];
 
         /// @dev the msg sender should be the refund address (or) the disputer
         if (
@@ -330,7 +330,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev just can reset last proposed time here, since amounts should be updated again to
         /// pass the lastProposedTimestamp zero check in finalize
-        failedDeposits_.lastProposedTimestamp = 0;
+        failedDeposits[payloadId_].lastProposedTimestamp = 0;
 
         emit RescueDisputed(payloadId_);
     }
@@ -338,19 +338,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     /// @inheritdoc ICoreStateRegistry
     /// @notice is an open function & can be executed by anyone
     function finalizeRescueFailedDeposits(uint256 payloadId_) external override {
-        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
+        uint256 lastProposedTimestamp = failedDeposits[payloadId_].lastProposedTimestamp;
 
         /// @dev the timelock is elapsed
-        if (
-            failedDeposits_.lastProposedTimestamp == 0
-                || block.timestamp < failedDeposits_.lastProposedTimestamp + _getDelay()
-        ) {
-            revert Error.RESCUE_TIMELOCKED();
+        if (lastProposedTimestamp == 0 || block.timestamp < lastProposedTimestamp + _getDelay()) {
+            revert Error.RESCUE_LOCKED();
         }
 
-        uint256[] memory superformIds = failedDeposits_.superformIds;
-        uint256[] memory amounts = failedDeposits_.amounts;
-        address refundAddress = failedDeposits_.refundAddress;
+        uint256[] memory superformIds = failedDeposits[payloadId_].superformIds;
+        uint256[] memory amounts = failedDeposits[payloadId_].amounts;
+        address refundAddress = failedDeposits[payloadId_].refundAddress;
 
         /// @dev deleted to prevent re-entrancy
         delete failedDeposits[payloadId_];
@@ -445,7 +442,6 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         uint256 validLen;
         uint256 arrLen = finalAmounts_.length;
-        FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
         for (uint256 i; i < arrLen;) {
             if (finalAmounts_[i] == 0) {
@@ -468,7 +464,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                 validLen++;
             } else {
                 multiVaultData.amounts[i] = 0;
-                failedDeposits_.superformIds.push(multiVaultData.superformIds[i]);
+                failedDeposits[payloadId_].superformIds.push(multiVaultData.superformIds[i]);
             }
 
             unchecked {
@@ -536,8 +532,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             singleVaultData.amount = finalAmount_;
             finalState_ = PayloadState.UPDATED;
         } else {
-            FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
-            failedDeposits_.superformIds.push(singleVaultData.superformId);
+            failedDeposits[payloadId_].superformIds.push(singleVaultData.superformId);
 
             /// @dev sets amount to zero and will mark the payload as PROCESSED
             singleVaultData.amount = 0;
