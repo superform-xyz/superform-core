@@ -109,8 +109,4 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the processor role
     /// @param processor_ the address to check
     function hasCoreStateRegistryProcessorRole(address processor_) external view returns (bool);
-
-    /// @dev returns whether the given address has the two steps processor role
-    /// @param twoStepsProcessor_ the address to check
-    function hasTimelockStateRegistryProcessorRole(address twoStepsProcessor_) external view returns (bool);
 }

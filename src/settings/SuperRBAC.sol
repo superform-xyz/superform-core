@@ -146,11 +146,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         return hasRole(CORE_STATE_REGISTRY_PROCESSOR_ROLE, processor_);
     }
 
-    /// @inheritdoc ISuperRBAC
-    function hasTimelockStateRegistryProcessorRole(address twoStepsProcessor_) external view override returns (bool) {
-        return hasRole(TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE, twoStepsProcessor_);
-    }
-
     /*///////////////////////////////////////////////////////////////
                         Internal Functions
     //////////////////////////////////////////////////////////////*/
