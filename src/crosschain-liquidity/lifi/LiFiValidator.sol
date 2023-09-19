@@ -48,13 +48,13 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     }
 
     /// @inheritdoc BridgeValidator
-    function validateTxData(ValidateTxDataArgs calldata args) external view override {
+    function validateTxData(ValidateTxDataArgs calldata args_) external view override {
         /// @dev xchain actions can have bridgeData or bridgeData + swapData
         /// @dev direct actions with deposit, cannot have bridge data - goes into catch block
         /// @dev withdraw actions may have bridge data after withdrawing - goes into try block
         /// @dev withdraw actions without bridge data (just swap) - goes into catch block
 
-        try this.extractMainParameters(args.txData) returns (
+        try this.extractMainParameters(args_.txData) returns (
             string memory bridge,
             address sendingAssetId,
             address receiver,
@@ -74,19 +74,19 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             /// sent
             /// @dev to after vault redemption
 
-            if (uint256(args.liqDstChainId) != destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
+            if (uint256(args_.liqDstChainId) != destinationChainId) revert Error.INVALID_TXDATA_CHAIN_ID();
 
             /// @dev 2. receiver address validation
-            if (args.deposit) {
-                if (args.srcChainId == args.dstChainId) {
+            if (args_.deposit) {
+                if (args_.srcChainId == args_.dstChainId) {
                     revert Error.INVALID_ACTION();
                 } else {
                     /// @dev if cross chain deposits, then receiver address must be CoreStateRegistry (or) Dst Swapper
                     if (
                         !(
                             receiver
-                                == superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), args.dstChainId)
-                                || receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args.dstChainId)
+                                == superRegistry.getAddressByChainId(keccak256("CORE_STATE_REGISTRY"), args_.dstChainId)
+                                || receiver == superRegistry.getAddressByChainId(keccak256("DST_SWAPPER"), args_.dstChainId)
                         )
                     ) {
                         revert Error.INVALID_TXDATA_RECEIVER();
@@ -94,30 +94,30 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 }
             } else {
                 /// @dev if withdraws, then receiver address must be the srcSender
-                if (receiver != args.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+                if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
             /// @dev 3. token validations
-            if (args.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
+            if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
         } catch {
-            (address sendingAssetId,, address receiver,,) = extractGenericSwapParameters(args.txData);
+            (address sendingAssetId,, address receiver,,) = extractGenericSwapParameters(args_.txData);
 
             /// @dev 1. chainId validation
 
-            if (args.srcChainId != args.dstChainId) revert Error.INVALID_ACTION();
+            if (args_.srcChainId != args_.dstChainId) revert Error.INVALID_ACTION();
 
             /// @dev 2. receiver address validation
-            if (args.deposit) {
-                if (args.dstChainId != args.liqDstChainId) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
+            if (args_.deposit) {
+                if (args_.dstChainId != args_.liqDstChainId) revert Error.INVALID_DEPOSIT_LIQ_DST_CHAIN_ID();
                 /// @dev If same chain deposits then receiver address must be the superform
-                if (receiver != args.superform) revert Error.INVALID_TXDATA_RECEIVER();
+                if (receiver != args_.superform) revert Error.INVALID_TXDATA_RECEIVER();
             } else {
                 /// @dev if withdraws, then receiver address must be the srcSender
-                if (receiver != args.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
+                if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
             /// @dev 3. token validations
-            if (args.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
+            if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
         }
     }
 
@@ -187,7 +187,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     }
 
     /// @notice Extracts the main parameters from the calldata
-    /// @param data The calldata to extract the main parameters from
+    /// @param data_ The calldata to extract the main parameters from
     /// @return bridge The bridge extracted from the calldata
     /// @return sendingAssetId The sending asset id extracted from the calldata
     /// @return receiver The receiver extracted from the calldata
@@ -196,7 +196,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     /// @return destinationChainId The destination chain id extracted from the calldata
     /// @return hasSourceSwaps Whether the calldata has source swaps
     /// @return hasDestinationCall Whether the calldata has a destination call
-    function extractMainParameters(bytes calldata data)
+    function extractMainParameters(bytes calldata data_)
         public
         pure
         returns (
@@ -210,10 +210,10 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
             bool hasDestinationCall
         )
     {
-        ILiFi.BridgeData memory bridgeData = _extractBridgeData(data);
+        ILiFi.BridgeData memory bridgeData = _extractBridgeData(data_);
 
         if (bridgeData.hasSourceSwaps) {
-            LibSwap.SwapData[] memory swapData = _extractSwapData(data);
+            LibSwap.SwapData[] memory swapData = _extractSwapData(data_);
             sendingAssetId = swapData[0].sendingAssetId;
             amount = swapData[0].fromAmount;
         } else {
@@ -234,13 +234,13 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     }
 
     /// @notice Extracts the generic swap parameters from the calldata
-    /// @param data The calldata to extract the generic swap parameters from
+    /// @param data_ The calldata to extract the generic swap parameters from
     /// @return sendingAssetId The sending asset id extracted from the calldata
     /// @return amount The amount extracted from the calldata
     /// @return receiver The receiver extracted from the calldata
     /// @return receivingAssetId The receiving asset id extracted from the calldata
     /// @return receivingAmount The receiving amount extracted from the calldata
-    function extractGenericSwapParameters(bytes calldata data)
+    function extractGenericSwapParameters(bytes calldata data_)
         public
         pure
         returns (
@@ -252,14 +252,14 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         )
     {
         LibSwap.SwapData[] memory swapData;
-        bytes memory callData = data;
+        bytes memory callData = data_;
 
-        if (abi.decode(data, (bytes4)) == 0xd6a4bc50) {
+        if (abi.decode(data_, (bytes4)) == 0xd6a4bc50) {
             // standardizedCall
-            callData = abi.decode(data[4:], (bytes));
+            callData = abi.decode(data_[4:], (bytes));
         }
         (,,, receiver, receivingAmount, swapData) = abi.decode(
-            slice(callData, 4, callData.length - 4), (bytes32, string, string, address, uint256, LibSwap.SwapData[])
+            _slice(callData, 4, callData.length - 4), (bytes32, string, string, address, uint256, LibSwap.SwapData[])
         );
 
         sendingAssetId = swapData[0].sendingAssetId;

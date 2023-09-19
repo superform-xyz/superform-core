@@ -76,7 +76,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         }
 
         uint32 domain = ambChainId[dstChainId_];
-        bytes32 messageId = mailbox.dispatch(domain, castAddr(authorizedImpl[domain]), message_);
+        bytes32 messageId = mailbox.dispatch(domain, _castAddr(authorizedImpl[domain]), message_);
 
         igp.payForGas{ value: msg.value }(
             messageId, domain, extraData_.length > 0 ? abi.decode(extraData_, (uint256)) : 0, srcSender_
@@ -136,7 +136,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.CALLER_NOT_MAILBOX();
         }
 
-        if (sender_ != castAddr(authorizedImpl[origin_])) {
+        if (sender_ != _castAddr(authorizedImpl[origin_])) {
             revert Error.INVALID_SRC_SENDER();
         }
 
@@ -188,7 +188,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @dev casts an address to bytes32
     /// @param addr_ is the address to be casted
     /// @return a bytes32 casted variable of the address passed in params
-    function castAddr(address addr_) internal pure returns (bytes32) {
+    function _castAddr(address addr_) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(addr_)));
     }
 }

@@ -22,7 +22,7 @@ contract LiFiTxDataExtractor {
         if (abi.decode(data, (bytes4)) == 0xd6a4bc50) {
             // StandardizedCall
             bytes memory unwrappedData = abi.decode(data[4:], (bytes));
-            bridgeData = abi.decode(slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData));
+            bridgeData = abi.decode(_slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData));
             return bridgeData;
         }
         // normal call
@@ -37,14 +37,14 @@ contract LiFiTxDataExtractor {
             // standardizedCall
             bytes memory unwrappedData = abi.decode(data[4:], (bytes));
             (, swapData) =
-                abi.decode(slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData, LibSwap.SwapData[]));
+                abi.decode(_slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData, LibSwap.SwapData[]));
             return swapData;
         }
         // normal call
         (, swapData) = abi.decode(data[4:], (ILiFi.BridgeData, LibSwap.SwapData[]));
     }
 
-    function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
+    function _slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
         if (_length + 31 < _length) revert SliceOverflow();
         if (_bytes.length < _start + _length) revert SliceOutOfBounds();
 

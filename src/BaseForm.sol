@@ -87,14 +87,14 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     //////////////////////////////////////////////////////////////*/
     receive() external payable { }
 
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(bytes4 interfaceId_)
         public
         view
         virtual
         override(ERC165Upgradeable, IERC165Upgradeable)
         returns (bool)
     {
-        return interfaceId == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
 
     /// @inheritdoc IBaseForm

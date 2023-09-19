@@ -195,7 +195,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function estimateMultiDstMultiVault(
         MultiDstMultiVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -216,7 +216,7 @@ contract PaymentHelper is IPaymentHelper {
 
             srcAmount += ambFees;
 
-            if (isDeposit) {
+            if (isDeposit_) {
                 /// @dev step 2: estimate update cost (only for deposit)
                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], superformIdsLen);
 
@@ -233,7 +233,7 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 5: estimate execution costs in dst (withdraw / deposit)
             /// note: execution cost includes acknowledgement messaging cost
-            totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], superformIdsLen);
+            totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen);
 
             /// @dev step 6: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -249,7 +249,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function estimateMultiDstSingleVault(
         MultiDstSingleVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -267,7 +267,7 @@ contract PaymentHelper is IPaymentHelper {
 
             srcAmount += ambFees;
 
-            if (isDeposit) {
+            if (isDeposit_) {
                 /// @dev step 2: estimate update cost (only for deposit)
                 totalDstGas += _estimateUpdateCost(req_.dstChainIds[i], 1);
 
@@ -283,7 +283,7 @@ contract PaymentHelper is IPaymentHelper {
 
             /// @dev step 5: estimate execution costs in dst
             /// note: execution cost includes acknowledgement messaging cost
-            totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainIds[i], 1);
+            totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], 1);
 
             /// @dev step 6: convert all dst gas estimates to src chain estimate
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
@@ -299,7 +299,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function estimateSingleXChainMultiVault(
         SingleXChainMultiVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -316,20 +316,20 @@ contract PaymentHelper is IPaymentHelper {
         srcAmount += ambFees;
 
         /// @dev step 2: estimate update cost (only for deposit)
-        if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
+        if (isDeposit_) totalDstGas += _estimateUpdateCost(req_.dstChainId, superformIdsLen);
 
         /// @dev step 3: estimate execution costs in dst
         /// note: execution cost includes acknowledgement messaging cost
-        totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, superformIdsLen);
+        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, superformIdsLen);
 
         /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit) srcAmount += _estimateAckProcessingCost(1, superformIdsLen);
+        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1, superformIdsLen);
 
         /// @dev step 5: estimate liq amount
-        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
+        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformsData.liqRequests);
 
         /// @dev step 6: estimate if swap costs are involved
-        if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.liqRequests);
+        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformsData.liqRequests);
 
         /// @dev step 7: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -340,7 +340,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function estimateSingleXChainSingleVault(
         SingleXChainSingleVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -355,20 +355,20 @@ contract PaymentHelper is IPaymentHelper {
         srcAmount += ambFees;
 
         /// @dev step 2: estimate update cost (only for deposit)
-        if (isDeposit) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
+        if (isDeposit_) totalDstGas += _estimateUpdateCost(req_.dstChainId, 1);
 
         /// @dev step 3: estimate execution costs in dst
         /// note: execution cost includes acknowledgement messaging cost
-        totalDstGas += _estimateDstExecutionCost(isDeposit, req_.dstChainId, 1);
+        totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainId, 1);
 
         /// @dev step 4: estimation execution cost of acknowledgement
-        if (isDeposit) srcAmount += _estimateAckProcessingCost(1, 1);
+        if (isDeposit_) srcAmount += _estimateAckProcessingCost(1, 1);
 
         /// @dev step 5: estimate the liq amount
-        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
+        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
 
         /// @dev step 6: estimate if swap costs are involved
-        if (isDeposit) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.liqRequest.castToArray());
+        if (isDeposit_) totalDstGas += _estimateSwapFees(req_.dstChainId, req_.superformData.liqRequest.castToArray());
 
         /// @dev step 7: convert all dst gas estimates to src chain estimate
         dstAmount += _convertToNativeFee(req_.dstChainId, totalDstGas);
@@ -379,7 +379,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function estimateSingleDirectSingleVault(
         SingleDirectSingleVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -388,11 +388,11 @@ contract PaymentHelper is IPaymentHelper {
     {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
-        if (!isDeposit && formId == TIMELOCK_FORM_ID) {
+        if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
             srcAmount += twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
         }
 
-        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
+        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
@@ -403,7 +403,7 @@ contract PaymentHelper is IPaymentHelper {
     /// @inheritdoc IPaymentHelper
     function estimateSingleDirectMultiVault(
         SingleDirectMultiVaultStateReq calldata req_,
-        bool isDeposit
+        bool isDeposit_
     )
         external
         view
@@ -414,7 +414,7 @@ contract PaymentHelper is IPaymentHelper {
         for (uint256 i; i < len;) {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
             /// @dev only if timelock form withdrawal is involved
-            if (!isDeposit && formId == TIMELOCK_FORM_ID) {
+            if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
                 srcAmount += twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
             }
 
@@ -423,7 +423,7 @@ contract PaymentHelper is IPaymentHelper {
             }
         }
 
-        if (isDeposit) liqAmount += _estimateLiqAmount(req_.superformData.liqRequests);
+        if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequests);
 
         /// @dev not adding dstAmount to save some GAS
         totalAmount = liqAmount + srcAmount;
@@ -705,11 +705,11 @@ contract PaymentHelper is IPaymentHelper {
     /// @dev helps convert the dst gas fee into src chain native fee
     /// @dev https://docs.soliditylang.org/en/v0.8.4/units-and-global-variables.html#ether-units
     /// @dev all native tokens should be 18 decimals across all EVMs
-    function _convertToNativeFee(uint64 dstChainId_, uint256 dstGas) internal view returns (uint256 nativeFee) {
+    function _convertToNativeFee(uint64 dstChainId_, uint256 dstGas_) internal view returns (uint256 nativeFee) {
         /// @dev gas fee * gas price (to get the gas amounts in dst chain's native token)
         /// @dev gas price is 9 decimal (in gwei)
         /// @dev assumption: all evm native tokens are 18 decimals
-        uint256 dstNativeFee = dstGas * _getGasPrice(dstChainId_);
+        uint256 dstNativeFee = dstGas_ * _getGasPrice(dstChainId_);
 
         if (dstNativeFee == 0) {
             return 0;
