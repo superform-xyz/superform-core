@@ -101,8 +101,4 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the broadcaster role
     /// @param broadcaster_ the address to check
     function hasBroadcasterRole(address broadcaster_) external view returns (bool);
-
-    /// @dev returns whether the given address has the payment admin role
-    /// @param admin_ the address to check
-    function hasPaymentAdminRole(address admin_) external view returns (bool);
 }

@@ -59,12 +59,12 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.grantRole(superRBAC.PAYMENT_ADMIN_ROLE(), address(0x1));
         vm.stopPrank();
 
-        assertEq(superRBAC.hasPaymentAdminRole(address(0x1)), true);
+        assertEq(superRBAC.hasRole(superRBAC.PAYMENT_ADMIN_ROLE(), address(0x1)), true);
     }
 
     function test_revokePaymentAdminRole() public {
         _revokeAndCheck(
-            superRBAC.hasPaymentAdminRole.selector,
+            superRBAC.hasRole.selector,
             superRBAC.PAYMENT_ADMIN_ROLE(),
             superRegistry.PAYMENT_ADMIN(),
             deployer,

@@ -136,11 +136,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         return hasRole(BROADCASTER_ROLE, broadcaster_);
     }
 
-    /// @inheritdoc ISuperRBAC
-    function hasPaymentAdminRole(address admin_) external view override returns (bool) {
-        return hasRole(PAYMENT_ADMIN_ROLE, admin_);
-    }
-
     /*///////////////////////////////////////////////////////////////
                         Internal Functions
     //////////////////////////////////////////////////////////////*/

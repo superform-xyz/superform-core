@@ -362,7 +362,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev FIXME: in reality who should have the PAYMENT_ADMIN_ROLE?
             vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), deployer);
-            assert(vars.superRBACC.hasPaymentAdminRole(deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), deployer));
 
             /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
