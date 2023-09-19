@@ -64,7 +64,6 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokePaymentAdminRole() public {
         _revokeAndCheck(
-            superRBAC.hasRole.selector,
             superRBAC.PAYMENT_ADMIN_ROLE(),
             superRegistry.PAYMENT_ADMIN(),
             deployer,
@@ -111,7 +110,6 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeCoreStateRegistryProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.hasRole.selector,
             superRBAC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(),
             superRegistry.CORE_REGISTRY_PROCESSOR(),
             deployer,
@@ -131,7 +129,6 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeBroadcastStateRegistryProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.hasRole.selector,
             superRBAC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(),
             superRegistry.BROADCAST_REGISTRY_PROCESSOR(),
             deployer,
@@ -151,7 +148,6 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeTwoStepsStateRegistrvyProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.hasRole.selector,
             superRBAC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(),
             superRegistry.TWO_STEPS_REGISTRY_PROCESSOR(),
             deployer,
@@ -171,7 +167,6 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeCoreStateRegistryUpdaterRole() public {
         _revokeAndCheck(
-            superRBAC.hasRole.selector,
             superRBAC.CORE_STATE_REGISTRY_UPDATER_ROLE(),
             superRegistry.CORE_REGISTRY_UPDATER(),
             deployer,
@@ -191,7 +186,6 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeMinterRole() public {
         _revokeAndCheck(
-            superRBAC.hasRole.selector,
             superRBAC.SUPERPOSITIONS_MINTER_ROLE(),
             superRegistry.TIMELOCK_STATE_REGISTRY(),
             deployer,
@@ -211,7 +205,6 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeBurnerRole() public {
         _revokeAndCheck(
-            superRBAC.hasRole.selector,
             superRBAC.SUPERPOSITIONS_BURNER_ROLE(),
             superRegistry.SUPERFORM_ROUTER(),
             deployer,
@@ -240,7 +233,6 @@ contract SuperRBACTest is BaseSetup {
 
     function test_revokeStateRegistryMinterRole() public {
         _revokeAndCheck(
-            superRBAC.hasRole.selector,
             superRBAC.MINTER_STATE_REGISTRY_ROLE(),
             superRegistry.CORE_STATE_REGISTRY(),
             deployer,
@@ -275,7 +267,6 @@ contract SuperRBACTest is BaseSetup {
     }
 
     function _revokeAndCheck(
-        bytes4 checkRole_,
         bytes32 superRBACRole_,
         bytes32 superRegistryAddressId_,
         address actor_,
@@ -307,8 +298,7 @@ contract SuperRBACTest is BaseSetup {
         vm.stopPrank();
 
         /// @dev role revoked on ETH
-        (, bytes memory isRevoked) = address(superRBAC).call(abi.encodeWithSelector(checkRole_, memberAddress));
-        assertEq(abi.decode(isRevoked, (bool)), false);
+        assertFalse(superRBAC.hasRole(superRBACRole_, memberAddress));
 
         /// @dev broadcasting revokes to other chains on hold
         SuperRBAC superRBAC_;
@@ -321,16 +311,10 @@ contract SuperRBACTest is BaseSetup {
                 vm.selectFork(FORKS[chainIds[i]]);
                 superRBAC_ = SuperRBAC(getContract(chainIds[i], "SuperRBAC"));
 
-                (, bytes memory statusBefore) =
-                    address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
+                assertTrue(superRBAC_.hasRole(superRBACRole_, memberAddress));
                 vm.prank(deployer);
                 BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
-                (, bytes memory statusAfter) =
-                    address(superRBAC_).call(abi.encodeWithSelector(checkRole_, memberAddress));
-
-                /// @dev assert status update before and after processing the payload
-                assertEq(abi.decode(statusBefore, (bool)), true);
-                assertEq(abi.decode(statusAfter, (bool)), false);
+                assertFalse(superRBAC_.hasRole(superRBACRole_, memberAddress));
             }
         }
 

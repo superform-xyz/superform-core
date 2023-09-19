@@ -55,7 +55,11 @@ contract BroadcastRegistry is IBroadcastRegistry, QuorumManager {
     /// @notice sender should be a valid configured contract
     /// @dev should be factory or roles contract
     modifier onlySender() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasBroadcasterRole(msg.sender)) {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("BROADCASTER_ROLE"), msg.sender
+            )
+        ) {
             revert Error.NOT_ALLOWED_BROADCASTER();
         }
         _;

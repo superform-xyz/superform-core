@@ -3,8 +3,8 @@ pragma solidity 0.8.21;
 
 import { IERC20 } from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
 import { BaseStateRegistry } from "../BaseStateRegistry.sol";
+import { ISuperRBAC } from "../../interfaces/ISuperRBAC.sol";
 import { IStateSyncer } from "../../interfaces/IStateSyncer.sol";
 import { ISuperRegistry } from "../../interfaces/ISuperRegistry.sol";
 import { IQuorumManager } from "../../interfaces/IQuorumManager.sol";
@@ -384,7 +384,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @dev returns if an address has a specific role
     function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
-        return IAccessControl(_getSuperRBAC()).hasRole(id_, addressToCheck_);
+        return ISuperRBAC(_getSuperRBAC()).hasRole(id_, addressToCheck_);
     }
 
     /// @dev returns the state syncer address for id

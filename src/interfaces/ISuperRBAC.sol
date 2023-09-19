@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
+import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
+
 /// @title ISuperRBAC
 /// @author Zeropoint Labs.
 /// @dev interface for Super RBAC
-interface ISuperRBAC {
+interface ISuperRBAC is IAccessControl {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
@@ -97,8 +99,4 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the emergency admin role
     /// @param admin_ the address to check
     function hasEmergencyAdminRole(address admin_) external view returns (bool);
-
-    /// @dev returns whether the given address has the broadcaster role
-    /// @param broadcaster_ the address to check
-    function hasBroadcasterRole(address broadcaster_) external view returns (bool);
 }

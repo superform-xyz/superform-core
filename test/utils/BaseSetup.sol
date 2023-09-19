@@ -370,7 +370,7 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev FIXME: in reality who should have the TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
-            assert(vars.superRBACC.hasRoke(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), deployer));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), deployer));
 
             /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
             vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), deployer);
@@ -393,7 +393,7 @@ abstract contract BaseSetup is DSTest, Test {
             assert(vars.superRBACC.hasRole(vars.superRBACC.DST_SWAPPER_ROLE(), deployer));
 
             vars.superRBACC.grantRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC);
-            assert(vars.superRBACC.hasBroadcasterRole(vars.superRBAC));
+            assert(vars.superRBACC.hasRole(vars.superRBACC.BROADCASTER_ROLE(), vars.superRBAC));
 
             /// @dev 4.1 - deploy Core State Registry
             vars.coreStateRegistry = address(
