@@ -22,7 +22,6 @@ interface ICoreStateRegistry {
         address srcSender;
         uint64 srcChainId;
         AMBMessage _message;
-        bytes returnMessage;
         bytes32 _proof;
     }
 
@@ -35,16 +34,6 @@ interface ICoreStateRegistry {
         uint64 srcChainId;
         uint64 dstChainId;
         address srcSender;
-    }
-
-    /// @dev local struct to avoid stack too deep errors in `updateDepositPayload`
-    struct UpdateDepositPayloadVars {
-        bytes32 prevPayloadProof;
-        bytes prevPayloadBody;
-        uint256 prevPayloadHeader;
-        uint64 srcChainId;
-        uint8 isMulti;
-        PayloadState finalState;
     }
 
     /// @dev local struct to avoid stack too deep errors in `updateWithdrawPayload`

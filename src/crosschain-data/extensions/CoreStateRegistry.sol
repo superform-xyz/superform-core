@@ -88,49 +88,47 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         onlyCoreStateRegistryUpdater
         isValidPayloadId(payloadId_)
     {
-        UpdateDepositPayloadVars memory v;
+        uint256 prevPayloadHeader = payloadHeader[payloadId_];
+        bytes memory prevPayloadBody = payloadBody[payloadId_];
 
-        v.prevPayloadHeader = payloadHeader[payloadId_];
-        v.prevPayloadBody = payloadBody[payloadId_];
+        bytes32 prevPayloadProof = AMBMessage(prevPayloadHeader, prevPayloadBody).computeProof();
 
-        v.prevPayloadProof = AMBMessage(v.prevPayloadHeader, v.prevPayloadBody).computeProof();
+        (,, uint8 isMulti,,, uint64 srcChainId) = prevPayloadHeader.decodeTxInfo();
 
-        (,, v.isMulti,,, v.srcChainId) = v.prevPayloadHeader.decodeTxInfo();
-
-        if (messageQuorum[v.prevPayloadProof] < _getRequiredMessagingQuorum(v.srcChainId)) {
+        if (messageQuorum[prevPayloadProof] < _getRequiredMessagingQuorum(srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
-        PayloadUpdaterLib.validateDepositPayloadUpdate(v.prevPayloadHeader, payloadTracking[payloadId_], v.isMulti);
+        PayloadUpdaterLib.validateDepositPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
 
         bytes memory newPayloadBody;
-        if (v.isMulti != 0) {
-            (newPayloadBody, v.finalState) =
-                _updateMultiVaultDepositPayload(payloadId_, v.prevPayloadBody, finalAmounts_);
+        PayloadState finalState;
+        if (isMulti != 0) {
+            (newPayloadBody, finalState) = _updateMultiVaultDepositPayload(payloadId_, prevPayloadBody, finalAmounts_);
         } else {
-            (newPayloadBody, v.finalState) =
-                _updateSingleVaultDepositPayload(payloadId_, v.prevPayloadBody, finalAmounts_[0]);
+            (newPayloadBody, finalState) =
+                _updateSingleVaultDepositPayload(payloadId_, prevPayloadBody, finalAmounts_[0]);
         }
 
         /// @dev set the new payload body
         payloadBody[payloadId_] = newPayloadBody;
-        bytes32 newPayloadProof = AMBMessage(v.prevPayloadHeader, newPayloadBody).computeProof();
+        bytes32 newPayloadProof = AMBMessage(prevPayloadHeader, newPayloadBody).computeProof();
 
-        if (newPayloadProof != v.prevPayloadProof) {
+        if (newPayloadProof != prevPayloadProof) {
             /// @dev set new message quorum
-            messageQuorum[newPayloadProof] = messageQuorum[v.prevPayloadProof];
-            proofAMB[newPayloadProof] = proofAMB[v.prevPayloadProof];
+            messageQuorum[newPayloadProof] = messageQuorum[prevPayloadProof];
+            proofAMB[newPayloadProof] = proofAMB[prevPayloadProof];
 
             /// @dev re-set previous message quorum to 0
-            delete messageQuorum[v.prevPayloadProof];
-            delete proofAMB[v.prevPayloadProof];
+            delete messageQuorum[prevPayloadProof];
+            delete proofAMB[prevPayloadProof];
         }
 
-        payloadTracking[payloadId_] = v.finalState;
+        payloadTracking[payloadId_] = finalState;
         emit PayloadUpdated(payloadId_);
 
         /// @dev if payload is processed at this stage then it is failing
-        if (v.finalState == PayloadState.PROCESSED) {
+        if (finalState == PayloadState.PROCESSED) {
             emit PayloadProcessed(payloadId_);
             emit FailedXChainDeposits(payloadId_);
         }
@@ -209,10 +207,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         v._payloadHeader = payloadHeader[payloadId_];
 
         (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) = v._payloadHeader.decodeTxInfo();
-        v._message = AMBMessage(v._payloadHeader, v._payloadBody);
+        AMBMessage memory _message = AMBMessage(v._payloadHeader, v._payloadBody);
 
         /// @dev validates quorum
-        v._proof = v._message.computeProof();
+        v._proof = _message.computeProof();
 
         /// @dev The number of valid proofs (quorum) must be equal to the required messaging quorum
         if (messageQuorum[v._proof] < _getRequiredMessagingQuorum(v.srcChainId)) {
@@ -223,9 +221,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             v.multi == 1
                 ? IStateSyncer(_getStateSyncer(abi.decode(v._payloadBody, (ReturnMultiData)).superformRouterId))
-                    .stateMultiSync(v._message)
+                    .stateMultiSync(_message)
                 : IStateSyncer(_getStateSyncer(abi.decode(v._payloadBody, (ReturnSingleData)).superformRouterId)).stateSync(
-                    v._message
+                    _message
                 );
         }
 
