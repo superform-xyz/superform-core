@@ -9,7 +9,6 @@ contract TestMainnetDeploySingle is AbstractDeploySingle {
     //////////////////////////////////////////////////////////////*/
 
     uint64[] SELECTED_CHAIN_IDS = [56, 137, 43_114];
-
     /// @dev BSC, POLY & AVAX
 
     /// @notice The main stage 1 script entrypoint

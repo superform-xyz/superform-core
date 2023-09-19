@@ -82,13 +82,13 @@ abstract contract AbstractDeploySingle is Script {
     address public constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[23] public contractNames = [
+    string[21] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
         "LayerzeroImplementation",
         "HyperlaneImplementation",
-        "WormholeImplementation",
+        "WormholeARImplementation",
         "WormholeSRImplementation",
         "LiFiValidator",
         "DstSwapper",
@@ -106,7 +106,7 @@ abstract contract AbstractDeploySingle is Script {
         "PayMaster"
     ];
 
-    bytes32 constant salt = "SUPERFORM_1ST_AUDIT_FREEZE_1";
+    bytes32 constant salt = "SUPERFORM_2ND_AUDIT_FREEZE";
 
     enum Chains {
         Ethereum,
@@ -329,25 +329,37 @@ abstract contract AbstractDeploySingle is Script {
         vars.superRBACC.setSuperRegistry(vars.superRegistry);
         vars.superRegistryC.setPermit2(CANONICAL_PERMIT2);
 
+        /// @dev FIXME: in reality who should have the WORMHOLE_VAA_RELAYER_ROLE?
+        vars.superRBACC.grantRole(vars.superRBACC.WORMHOLE_VAA_RELAYER_ROLE(), ownerAddress);
+
         /// @dev FIXME: in reality who should have the EMERGENCY_ADMIN_ROLE?
         vars.superRBACC.grantRole(vars.superRBACC.EMERGENCY_ADMIN_ROLE(), ownerAddress);
 
         /// @dev FIXME: in reality who should have the PAYMENT_ADMIN_ROLE?
         vars.superRBACC.grantRole(vars.superRBACC.PAYMENT_ADMIN_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_PROCESSOR_ROLE?
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+        /// @dev FIXME: in reality who should have the TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE?
         vars.superRBACC.grantRole(vars.superRBACC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE for state registry?
+        /// @dev FIXME: in reality who should have the BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE?
         vars.superRBACC.grantRole(vars.superRBACC.BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE for dstSwapProcessor?
+        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE?
+        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_RESCUER_ROLE?
+        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_RESCUER_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_DISPUTER_ROLE?
+        vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_DISPUTER_ROLE(), ownerAddress);
+
+        /// @dev FIXME: in reality who should have the DST_SWAPPER_ROLE?
         vars.superRBACC.grantRole(vars.superRBACC.DST_SWAPPER_ROLE(), ownerAddress);
 
-        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE for state registry?
+        /// @dev FIXME: in reality who should have the CORE_STATE_REGISTRY_UPDATER_ROLE?
         vars.superRBACC.grantRole(vars.superRBACC.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
 
         /// @dev 3.1 - deploy Core State Registry
@@ -421,7 +433,7 @@ abstract contract AbstractDeploySingle is Script {
         );
         contracts[vars.chainId][bytes32(bytes("WormholeSRImplementation"))] = vars.wormholeSRImplementation;
 
-        WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[i]);
+        WormholeSRImplementation(vars.wormholeSRImplementation).setWormholeCore(wormholeCore[trueIndex]);
 
         vars.ambAddresses[0] = vars.lzImplementation;
         vars.ambAddresses[1] = vars.hyperlaneImplementation;
@@ -455,7 +467,7 @@ abstract contract AbstractDeploySingle is Script {
         vars.kycDao4626Form = address(new ERC4626KYCDaoForm{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
-        /// @dev 9 - Add newly deployed form  implementation to Factory, formBeaconId 1
+        /// @dev 9 - Add newly deployed form implementations to Factory, formBeaconId 1
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
 
         ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
@@ -463,7 +475,6 @@ abstract contract AbstractDeploySingle is Script {
         ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
 
         /// @dev 10 - Deploy SuperformRouter
-
         vars.superformRouter = address(new SuperformRouter{salt: salt}(vars.superRegistry, 1, 1));
         contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
@@ -481,6 +492,16 @@ abstract contract AbstractDeploySingle is Script {
 
         contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))] =
             address(new SuperTransmuter{salt: salt}(IERC1155A(vars.superPositions), vars.superRegistry, 2));
+
+        vars.superRegistryC.setAddress(
+            vars.superRegistryC.SUPER_TRANSMUTER(),
+            contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))],
+            vars.chainId
+        );
+
+        vars.superRBACC.grantRole(
+            vars.superRBACC.BROADCASTER_ROLE(), contracts[vars.chainId][bytes32(bytes("SuperTransmuter"))]
+        );
 
         /// @dev 11.1 Set Router Info
 
@@ -534,10 +555,7 @@ abstract contract AbstractDeploySingle is Script {
         /// @dev Exports
         for (uint256 j = 0; j < contractNames.length; j++) {
             _exportContract(
-                chainNames[trueIndex],
-                contractNames[trueIndex],
-                getContract(vars.chainId, contractNames[j]),
-                vars.chainId
+                chainNames[trueIndex], contractNames[j], getContract(vars.chainId, contractNames[j]), vars.chainId
             );
         }
     }
@@ -598,6 +616,8 @@ abstract contract AbstractDeploySingle is Script {
                 );
 
                 LayerzeroImplementation(payable(vars.lzImplementation)).setChainId(vars.dstChainId, vars.dstLzChainId);
+
+                /// @dev for mainnet
                 LayerzeroImplementation(payable(vars.lzImplementation)).setConfig(
                     0,
                     /// Defaults To Zero
@@ -640,7 +660,6 @@ abstract contract AbstractDeploySingle is Script {
                     IPaymentHelper.PaymentHelperConfig(
                         PRICE_FEEDS[vars.chainId][vars.dstChainId],
                         address(0),
-                        50_000,
                         40_000,
                         70_000,
                         80_000,
@@ -648,8 +667,9 @@ abstract contract AbstractDeploySingle is Script {
                         /// 12 usd
                         28 gwei,
                         10 wei,
-                        30_000,
-                        10_000
+                        10_000,
+                        10_000,
+                        50_000
                     )
                 );
 
@@ -684,6 +704,12 @@ abstract contract AbstractDeploySingle is Script {
                 );
 
                 vars.superRegistryC.setAddress(
+                    vars.superRegistryC.DST_SWAPPER(),
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "DstSwapper"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistryC.setAddress(
                     vars.superRegistryC.TIMELOCK_STATE_REGISTRY(),
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "TimelockStateRegistry"),
                     vars.dstChainId
@@ -698,6 +724,12 @@ abstract contract AbstractDeploySingle is Script {
                 vars.superRegistryC.setAddress(
                     vars.superRegistryC.SUPER_POSITIONS(),
                     _readContract(chainNames[dstTrueIndex], vars.dstChainId, "SuperPositions"),
+                    vars.dstChainId
+                );
+
+                vars.superRegistryC.setAddress(
+                    vars.superRegistryC.SUPER_TRANSMUTER(),
+                    _readContract(chainNames[dstTrueIndex], vars.dstChainId, "SuperTransmuter"),
                     vars.dstChainId
                 );
 
