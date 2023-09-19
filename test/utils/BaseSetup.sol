@@ -453,10 +453,11 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 6.2 - deploy Hyperlane Implementation
             vars.hyperlaneImplementation = address(
                 new HyperlaneImplementation{salt: salt}(
-                    HyperlaneMailbox,
-                    HyperlaneGasPaymaster,
                     SuperRegistry(vars.superRegistry)
                 )
+            );
+            HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
+                HyperlaneMailbox, HyperlaneGasPaymaster
             );
             contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 

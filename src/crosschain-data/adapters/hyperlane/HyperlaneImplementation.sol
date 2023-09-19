@@ -19,7 +19,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
-                            State Variables
+                            STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
     IMailbox public mailbox;
     IInterchainGasPaymaster public igp;
@@ -32,7 +32,13 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
-                                Modifiers
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
+    event MailboxAdded(address _newMailbox);
+    event GasPayMasterAdded(address _igp);
+
+    /*///////////////////////////////////////////////////////////////
+                                MODIFIERS
     //////////////////////////////////////////////////////////////*/
     modifier onlyProtocolAdmin() {
         if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasProtocolAdminRole(msg.sender)) {
@@ -42,17 +48,29 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /*///////////////////////////////////////////////////////////////
-                                Constructor
+                                CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
-    /// @param mailbox_ is the hyperlane mailbox for respective chain.
     constructor(ISuperRegistry superRegistry_) {
-        // mailbox = mailbox_;
-        // igp = igp_;
         superRegistry = superRegistry_;
     }
 
     /*///////////////////////////////////////////////////////////////
-                            External Functions
+                           HYPERLANE APPLICATION CONFIG
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows protocol admin to configure hyperlane mailbox and gas paymaster
+    /// @param mailbox_ is the address of hyperlane mailbox
+    /// @param igp_ is the address of hyperlane gas paymaster
+    function setHyperlaneConfig(IMailbox mailbox_, IInterchainGasPaymaster igp_) external onlyProtocolAdmin {
+        mailbox = mailbox_;
+        igp = igp_;
+
+        emit MailboxAdded(address(mailbox_));
+        emit GasPayMasterAdded(address(igp_));
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                                EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IAmbImplementation
@@ -156,7 +174,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /*///////////////////////////////////////////////////////////////
-                    View Functions
+                            READ-ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IAmbImplementation
@@ -178,7 +196,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     }
 
     /*///////////////////////////////////////////////////////////////
-                    Internal Functions
+                         INTERNAL/HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @dev casts an address to bytes32

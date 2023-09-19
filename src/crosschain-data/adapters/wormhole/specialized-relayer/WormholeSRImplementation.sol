@@ -48,9 +48,8 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     }
 
     /*///////////////////////////////////////////////////////////////
-                                EXTERNAL FUNCTIONS
+                            WORMHOLE APPLICATION CONFIG
     //////////////////////////////////////////////////////////////*/
-
     /// @dev allows protocol admin to configure wormhole core contract
     /// @param wormhole_ is wormhole address for respective chain
     function setWormholeCore(address wormhole_) external onlyProtocolAdmin {
@@ -59,6 +58,20 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
             wormhole = IWormhole(wormhole_);
         }
     }
+
+    /// @dev allows protocol admin to set broadcast finality
+    /// @param finality_ is the required finality on src chain
+    function setFinality(uint8 finality_) external onlyProtocolAdmin {
+        if (finality_ == 0) {
+            revert Error.INVALID_BROADCAST_FINALITY();
+        }
+
+        broadcastFinality = finality_;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                                EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IBroadcastAmbImplementation
     function broadcastPayload(
@@ -148,18 +161,8 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         emit ChainAdded(superChainId_);
     }
 
-    /// @dev allows protocol admin to set broadcast finality
-    /// @param finality_ is the required finality on src chain
-    function setFinality(uint8 finality_) external onlyProtocolAdmin {
-        if (finality_ == 0) {
-            revert Error.INVALID_BROADCAST_FINALITY();
-        }
-
-        broadcastFinality = finality_;
-    }
-
     /*///////////////////////////////////////////////////////////////
-                    View Functions
+                    READ-ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IBroadcastAmbImplementation
