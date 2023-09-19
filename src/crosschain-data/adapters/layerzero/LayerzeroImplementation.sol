@@ -67,10 +67,6 @@ contract LayerzeroImplementation is IAmbImplementation, ILayerZeroUserApplicatio
                         Core External Functions
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice receive enables processing native token transfers into the smart contract.
-    /// @dev layerzero gas payments/refund fails without a native receive function.
-    receive() external payable { }
-
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
         address srcSender_,

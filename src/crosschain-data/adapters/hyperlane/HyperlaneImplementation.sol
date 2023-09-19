@@ -21,8 +21,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
-    IMailbox public immutable mailbox;
-    IInterchainGasPaymaster public immutable igp;
+    IMailbox public mailbox;
+    IInterchainGasPaymaster public igp;
     ISuperRegistry public immutable superRegistry;
 
     mapping(uint64 => uint32) public ambChainId;
@@ -45,19 +45,15 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
                                 Constructor
     //////////////////////////////////////////////////////////////*/
     /// @param mailbox_ is the hyperlane mailbox for respective chain.
-    constructor(IMailbox mailbox_, IInterchainGasPaymaster igp_, ISuperRegistry superRegistry_) {
-        mailbox = mailbox_;
-        igp = igp_;
+    constructor(ISuperRegistry superRegistry_) {
+        // mailbox = mailbox_;
+        // igp = igp_;
         superRegistry = superRegistry_;
     }
 
     /*///////////////////////////////////////////////////////////////
                             External Functions
     //////////////////////////////////////////////////////////////*/
-
-    /// @notice receive enables processing native token transfers into the smart contract.
-    /// @dev hyperlane gas payments/refund fails without a native receive function.
-    receive() external payable { }
 
     /// @inheritdoc IAmbImplementation
     function dispatchPayload(
