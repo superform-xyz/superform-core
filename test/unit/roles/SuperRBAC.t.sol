@@ -106,12 +106,12 @@ contract SuperRBACTest is BaseSetup {
         superRBAC.grantRole(superRBAC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1));
         vm.stopPrank();
 
-        assertEq(superRBAC.hasCoreStateRegistryProcessorRole(address(0x1)), true);
+        assertEq(superRBAC.hasRole(superRBAC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), address(0x1)), true);
     }
 
     function test_revokeCoreStateRegistryProcessorRole() public {
         _revokeAndCheck(
-            superRBAC.hasCoreStateRegistryProcessorRole.selector,
+            superRBAC.hasRole.selector,
             superRBAC.CORE_STATE_REGISTRY_PROCESSOR_ROLE(),
             superRegistry.CORE_REGISTRY_PROCESSOR(),
             deployer,

@@ -141,11 +141,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         return hasRole(PAYMENT_ADMIN_ROLE, admin_);
     }
 
-    /// @inheritdoc ISuperRBAC
-    function hasCoreStateRegistryProcessorRole(address processor_) external view override returns (bool) {
-        return hasRole(CORE_STATE_REGISTRY_PROCESSOR_ROLE, processor_);
-    }
-
     /*///////////////////////////////////////////////////////////////
                         Internal Functions
     //////////////////////////////////////////////////////////////*/

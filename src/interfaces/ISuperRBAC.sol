@@ -105,8 +105,4 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the payment admin role
     /// @param admin_ the address to check
     function hasPaymentAdminRole(address admin_) external view returns (bool);
-
-    /// @dev returns whether the given address has the processor role
-    /// @param processor_ the address to check
-    function hasCoreStateRegistryProcessorRole(address processor_) external view returns (bool);
 }
