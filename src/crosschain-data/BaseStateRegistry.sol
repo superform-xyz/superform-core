@@ -121,8 +121,8 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     function processPayload(uint256 payloadId_) external payable virtual override;
 
     /// @inheritdoc IBaseStateRegistry
-    function getProofAMB(bytes32 proof) external view override returns (uint8[] memory) {
-        return proofAMB[proof];
+    function getProofAMB(bytes32 proof_) external view override returns (uint8[] memory) {
+        return proofAMB[proof_];
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -130,13 +130,13 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev returns the amb id for address
-    function _getAmbId(address amb) internal view returns (uint8 ambId) {
-        return superRegistry.getAmbId(amb);
+    function _getAmbId(address amb_) internal view returns (uint8 ambId) {
+        return superRegistry.getAmbId(amb_);
     }
 
     /// @dev returns the amb id for address
-    function _getAmbAddress(uint8 id) internal view returns (address amb) {
-        return superRegistry.getAmbAddress(id);
+    function _getAmbAddress(uint8 id_) internal view returns (address amb) {
+        return superRegistry.getAmbAddress(id_);
     }
 
     /// @dev dispatches the payload(message_) through individual message bridge implementations

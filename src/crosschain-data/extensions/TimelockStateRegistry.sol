@@ -53,7 +53,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
     uint256 public timelockPayloadCounter;
 
     /// @dev stores the timelock payloads
-    mapping(uint256 timeLockPayloadId => TimelockPayload) public timelockPayload;
+    mapping(uint256 timelockPayloadId => TimelockPayload) public timelockPayload;
 
     /// @dev allows only form to write to the receive paylod
     modifier onlyForm(uint256 superformId) {
@@ -232,10 +232,10 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
         IBaseStateRegistry coreStateRegistry =
             IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
-        uint256 payloadHeader = coreStateRegistry.payloadHeader(payloadId_);
-        bytes memory payloadBody = coreStateRegistry.payloadBody(payloadId_);
+        uint256 payloadHeader_ = coreStateRegistry.payloadHeader(payloadId_);
+        bytes memory payloadBody_ = coreStateRegistry.payloadBody(payloadId_);
 
-        bytes32 proof = AMBMessage(payloadHeader, payloadBody).computeProof();
+        bytes32 proof = AMBMessage(payloadHeader_, payloadBody_).computeProof();
         uint8[] memory proofIds = coreStateRegistry.getProofAMB(proof);
 
         uint256 len = proofIds.length;

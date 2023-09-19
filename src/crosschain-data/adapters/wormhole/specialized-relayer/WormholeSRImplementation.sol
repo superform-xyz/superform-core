@@ -89,7 +89,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         );
     }
 
-    function receiveMessage(bytes memory encodedMessage) public {
+    function receiveMessage(bytes memory encodedMessage_) public {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
@@ -98,7 +98,7 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
 
         (IWormhole.VM memory wormholeMessage, bool valid, string memory reason) =
-            wormhole.parseAndVerifyVM(encodedMessage);
+            wormhole.parseAndVerifyVM(encodedMessage_);
 
         if (!valid) {
             revert Error.INVALID_BROADCAST_PAYLOAD();

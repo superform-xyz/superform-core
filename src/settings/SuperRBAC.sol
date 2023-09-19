@@ -208,11 +208,11 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     /**
      * @dev Overload {_revokeRole} to track enumerable memberships
      */
-    function _revokeRole(bytes32 role, address account) internal override {
-        if (role == PROTOCOL_ADMIN_ROLE || role == EMERGENCY_ADMIN_ROLE) {
-            if (getRoleMemberCount(role) == 1) revert Error.CANNOT_REVOKE_LAST_ADMIN();
+    function _revokeRole(bytes32 role_, address account_) internal override {
+        if (role_ == PROTOCOL_ADMIN_ROLE || role_ == EMERGENCY_ADMIN_ROLE) {
+            if (getRoleMemberCount(role_) == 1) revert Error.CANNOT_REVOKE_LAST_ADMIN();
         }
-        super._revokeRole(role, account);
+        super._revokeRole(role_, account_);
     }
 
     /// @dev interacts with role state registry to broadcasting state changes to all connected remote chains

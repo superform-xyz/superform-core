@@ -277,7 +277,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     )
         external
         override
-        onlyCoreStateRegistryRescuer //// FIXME: should be a new role
+        onlyCoreStateRegistryRescuer
     {
         FailedDeposit storage failedDeposits_ = failedDeposits[payloadId_];
 
@@ -383,23 +383,23 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev returns if an address has a specific role
-    function _hasRole(bytes32 id, address addressToCheck) internal view returns (bool) {
-        return IAccessControl(_getSuperRBAC()).hasRole(id, addressToCheck);
+    function _hasRole(bytes32 id_, address addressToCheck_) internal view returns (bool) {
+        return IAccessControl(_getSuperRBAC()).hasRole(id_, addressToCheck_);
     }
 
     /// @dev returns the state syncer address for id
-    function _getStateSyncer(uint8 id) internal view returns (address stateSyncer) {
-        return superRegistry.getStateSyncer(id);
+    function _getStateSyncer(uint8 id_) internal view returns (address stateSyncer) {
+        return superRegistry.getStateSyncer(id_);
     }
 
     /// @dev returns the registry address for id
-    function _getStateRegistryId(address registryAddress) internal view returns (uint8 id) {
-        return superRegistry.getStateRegistryId(registryAddress);
+    function _getStateRegistryId(address registryAddress_) internal view returns (uint8 id) {
+        return superRegistry.getStateRegistryId(registryAddress_);
     }
 
     /// @dev returns the address from super registry
-    function _getAddress(bytes32 id) internal view returns (address) {
-        return superRegistry.getAddress(id);
+    function _getAddress(bytes32 id_) internal view returns (address) {
+        return superRegistry.getAddress(id_);
     }
 
     /// @dev returns the current timelock delay
@@ -413,17 +413,17 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     }
 
     /// @dev returns the required quorum for the src chain id from super registry
-    /// @param chainId is the src chain id
+    /// @param chainId_ is the src chain id
     /// @return the quorum configured for the chain id
-    function _getRequiredMessagingQuorum(uint64 chainId) internal view returns (uint256) {
-        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId);
+    function _getRequiredMessagingQuorum(uint64 chainId_) internal view returns (uint256) {
+        return IQuorumManager(address(superRegistry)).getRequiredMessagingQuorum(chainId_);
     }
 
     /// @dev returns the required quorum for the src chain id from super registry
-    /// @param bridgeId is the bridge id
-    /// @return validator_ is the address of the validator contract
-    function _getBridgeValidator(uint8 bridgeId) internal view returns (IBridgeValidator validator_) {
-        return IBridgeValidator(superRegistry.getBridgeValidator(bridgeId));
+    /// @param bridgeId_ is the bridge id
+    /// @return validator is the address of the validator contract
+    function _getBridgeValidator(uint8 bridgeId_) internal view returns (IBridgeValidator validator) {
+        return IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
     }
 
     /// @dev helper function to update multi vault deposit payload
@@ -889,9 +889,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 payloadId_,
         uint8 superformRouterId_,
         TransactionType txType,
-        CallbackType returnType,
+        CallbackType returnType_,
         uint256[] memory superformIds_,
-        uint256[] memory amounts
+        uint256[] memory amounts_
     )
         internal
         view
@@ -902,13 +902,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             AMBMessage(
                 DataLib.packTxInfo(
                     uint8(txType),
-                    uint8(returnType),
+                    uint8(returnType_),
                     1,
                     _getStateRegistryId(address(this)),
                     srcSender_,
                     uint64(block.chainid)
                 ),
-                abi.encode(ReturnMultiData(superformRouterId_, payloadId_, superformIds_, amounts))
+                abi.encode(ReturnMultiData(superformRouterId_, payloadId_, superformIds_, amounts_))
             )
         );
     }
@@ -919,9 +919,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         uint256 payloadId_,
         uint8 superformRouterId_,
         TransactionType txType,
-        CallbackType returnType,
+        CallbackType returnType_,
         uint256 superformId_,
-        uint256 amount
+        uint256 amount_
     )
         internal
         view
@@ -932,13 +932,13 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             AMBMessage(
                 DataLib.packTxInfo(
                     uint8(txType),
-                    uint8(returnType),
+                    uint8(returnType_),
                     0,
                     _getStateRegistryId(address(this)),
                     srcSender_,
                     uint64(block.chainid)
                 ),
-                abi.encode(ReturnSingleData(superformRouterId_, payloadId_, superformId_, amount))
+                abi.encode(ReturnSingleData(superformRouterId_, payloadId_, superformId_, amount_))
             )
         );
     }

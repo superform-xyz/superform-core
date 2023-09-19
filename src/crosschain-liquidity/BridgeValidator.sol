@@ -39,7 +39,7 @@ abstract contract BridgeValidator is IBridgeValidator {
     /// @inheritdoc IBridgeValidator
     function validateReceiver(
         bytes calldata txData_,
-        address _receiver
+        address receiver_
     )
         external
         pure
@@ -48,7 +48,7 @@ abstract contract BridgeValidator is IBridgeValidator {
         returns (bool valid_);
 
     /// @inheritdoc IBridgeValidator
-    function validateTxData(ValidateTxDataArgs calldata args) external view virtual override;
+    function validateTxData(ValidateTxDataArgs calldata args_) external view virtual override;
 
     /// @inheritdoc IBridgeValidator
     function decodeMinAmountOut(
