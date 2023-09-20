@@ -322,6 +322,13 @@ contract PaymentHelperTest is ProtocolActions {
 
         uint256 result6 = paymentHelper.gasPrice(1);
         assertEq(result6, 425);
+
+        /// set config type: 11
+        vm.prank(deployer);
+        paymentHelper.updateChainConfig(1, 11, abi.encode(423));
+
+        uint256 result7 = paymentHelper.swapGasUsed(1);
+        assertEq(result7, 423);
     }
 
     function test_addChain() public {
