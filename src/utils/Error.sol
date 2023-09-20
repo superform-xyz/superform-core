@@ -143,7 +143,7 @@ library Error {
     error DISPUTE_TIME_ELAPSED();
 
     /// @dev thrown if the rescue is still in timelocked state
-    error RESCUE_TIMELOCKED();
+    error RESCUE_LOCKED();
 
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
