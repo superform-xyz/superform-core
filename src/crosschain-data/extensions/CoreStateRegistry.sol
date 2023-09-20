@@ -197,14 +197,15 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
 
-        /// @dev sets status as processed to prevent re-entrancy
-        payloadTracking[payloadId_] = PayloadState.PROCESSED;
-
         PayloadState initialState;
         bytes memory payloadBody__;
         uint256 payloadHeader__;
 
         initialState = payloadTracking[payloadId_];
+
+        /// @dev sets status as processed to prevent re-entrancy
+        payloadTracking[payloadId_] = PayloadState.PROCESSED;
+
         payloadBody__ = payloadBody[payloadId_];
         payloadHeader__ = payloadHeader[payloadId_];
 
