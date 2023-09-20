@@ -588,7 +588,6 @@ abstract contract BaseSetup is DSTest, Test {
             contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
-
             /// @dev grant extra roles to superformRouter
             vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.superformRouter);
             vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_BURNER_ROLE(), vars.superformRouter);
@@ -833,6 +832,9 @@ abstract contract BaseSetup is DSTest, Test {
                     );
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.dstChainId
+                    );
+                    vars.superRegistryC.setAddress(
+                        vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
                     );
                     vars.superRegistryC.setAddress(
                         vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), deployer, vars.dstChainId
