@@ -197,33 +197,36 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.PAYLOAD_ALREADY_PROCESSED();
         }
 
-        CoreProcessPayloadLocalVars memory v;
-        v.initialState = payloadTracking[payloadId_];
-
         /// @dev sets status as processed to prevent re-entrancy
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
 
-        v._payloadBody = payloadBody[payloadId_];
-        v._payloadHeader = payloadHeader[payloadId_];
+        PayloadState initialState;
+        bytes memory payloadBody__;
+        uint256 payloadHeader__;
 
-        (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) = v._payloadHeader.decodeTxInfo();
-        AMBMessage memory _message = AMBMessage(v._payloadHeader, v._payloadBody);
+        initialState = payloadTracking[payloadId_];
+        payloadBody__ = payloadBody[payloadId_];
+        payloadHeader__ = payloadHeader[payloadId_];
+
+        CoreProcessPayloadLocalVars memory v;
+        (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) = payloadHeader__.decodeTxInfo();
+        AMBMessage memory message = AMBMessage(payloadHeader__, payloadBody__);
 
         /// @dev validates quorum
-        v._proof = _message.computeProof();
+        bytes32 proof = message.computeProof();
 
         /// @dev The number of valid proofs (quorum) must be equal to the required messaging quorum
-        if (messageQuorum[v._proof] < _getRequiredMessagingQuorum(v.srcChainId)) {
+        if (messageQuorum[proof] < _getRequiredMessagingQuorum(v.srcChainId)) {
             revert Error.QUORUM_NOT_REACHED();
         }
 
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
             v.multi == 1
-                ? IStateSyncer(_getStateSyncer(abi.decode(v._payloadBody, (ReturnMultiData)).superformRouterId))
-                    .stateMultiSync(_message)
-                : IStateSyncer(_getStateSyncer(abi.decode(v._payloadBody, (ReturnSingleData)).superformRouterId)).stateSync(
-                    _message
+                ? IStateSyncer(_getStateSyncer(abi.decode(payloadBody__, (ReturnMultiData)).superformRouterId))
+                    .stateMultiSync(message)
+                : IStateSyncer(_getStateSyncer(abi.decode(payloadBody__, (ReturnSingleData)).superformRouterId)).stateSync(
+                    message
                 );
         }
 
@@ -232,40 +235,22 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         if (v.callbackType == uint8(CallbackType.INIT)) {
             if (v.txType == uint8(TransactionType.WITHDRAW)) {
                 returnMessage = v.multi == 1
-                    ? _processMultiWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId)
-                    : _processSingleWithdrawal(payloadId_, v._payloadBody, v.srcSender, v.srcChainId);
+                    ? _processMultiWithdrawal(payloadId_, payloadBody__, v.srcSender, v.srcChainId)
+                    : _processSingleWithdrawal(payloadId_, payloadBody__, v.srcSender, v.srcChainId);
             }
 
             if (v.txType == uint8(TransactionType.DEPOSIT)) {
-                if (v.initialState != PayloadState.UPDATED) {
+                if (initialState != PayloadState.UPDATED) {
                     revert Error.PAYLOAD_NOT_UPDATED();
                 }
 
                 returnMessage = v.multi == 1
-                    ? _processMultiDeposit(payloadId_, v._payloadBody, v.srcSender, v.srcChainId)
-                    : _processSingleDeposit(payloadId_, v._payloadBody, v.srcSender, v.srcChainId);
+                    ? _processMultiDeposit(payloadId_, payloadBody__, v.srcSender, v.srcChainId)
+                    : _processSingleDeposit(payloadId_, payloadBody__, v.srcSender, v.srcChainId);
             }
         }
 
-        uint8[] memory proofIds = proofAMB[v._proof];
-
-        /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
-        if (returnMessage.length > 0) {
-            uint8[] memory ambIds = new uint8[](proofIds.length + 1);
-
-            ambIds[0] = msgAMB[payloadId_];
-
-            uint256 len = proofIds.length;
-            for (uint256 i; i < len;) {
-                ambIds[i + 1] = proofIds[i];
-
-                unchecked {
-                    ++i;
-                }
-            }
-
-            _dispatchAcknowledgement(v.srcChainId, ambIds, returnMessage);
-        }
+        _processAcknowledgement(payloadId_, proof, v.srcChainId, returnMessage);
 
         emit PayloadProcessed(payloadId_);
     }
@@ -583,53 +568,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             );
         }
 
-        lV.len = lV.multiVaultData.liqData.length;
-
-        if (lV.len != txData_.length) {
+        if (lV.multiVaultData.liqData.length != txData_.length) {
             revert Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
         }
 
-        /// @dev validates if the incoming update is valid
-        for (lV.i; lV.i < lV.len;) {
-            if (txData_[lV.i].length != 0 && lV.multiVaultData.liqData[lV.i].txData.length == 0) {
-                (address superform,,) = lV.multiVaultData.superformIds[lV.i].getSuperform();
-
-                if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
-                    PayloadUpdaterLib.validateLiqReq(lV.multiVaultData.liqData[lV.i]);
-
-                    lV.bridgeValidator = _getBridgeValidator(lV.multiVaultData.liqData[lV.i].bridgeId);
-
-                    lV.bridgeValidator.validateTxData(
-                        IBridgeValidator.ValidateTxDataArgs(
-                            txData_[lV.i],
-                            v_.dstChainId,
-                            v_.srcChainId,
-                            lV.multiVaultData.liqData[lV.i].liqDstChainId,
-                            false,
-                            superform,
-                            v_.srcSender,
-                            lV.multiVaultData.liqData[lV.i].token
-                        )
-                    );
-                    /// payload with 1000 USDC SP being withdrawn (amounts)
-                    /// finalAmount (that will be dispatched) is amount in
-                    /// how can we compare an amount of underlying against superPositions? This seems invalid
-
-                    lV.finalAmount = lV.bridgeValidator.decodeAmountIn(txData_[lV.i], false);
-                    PayloadUpdaterLib.strictValidateSlippage(
-                        lV.finalAmount,
-                        IBaseForm(superform).previewRedeemFrom(lV.multiVaultData.amounts[lV.i]),
-                        lV.multiVaultData.maxSlippage[lV.i]
-                    );
-
-                    lV.multiVaultData.liqData[lV.i].txData = txData_[lV.i];
-                }
-            }
-
-            unchecked {
-                ++lV.i;
-            }
-        }
+        lV.multiVaultData =
+            _validateAndUpdateTxData(txData_, lV.multiVaultData, v_.srcSender, v_.srcChainId, v_.dstChainId);
 
         if (multi == 0) {
             lV.singleVaultData.liqData.txData = txData_[0];
@@ -637,6 +581,59 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         return abi.encode(lV.multiVaultData);
+    }
+
+    /// @dev validates the incoming update data
+    function _validateAndUpdateTxData(
+        bytes[] calldata txData_,
+        InitMultiVaultData memory multiVaultData_,
+        address srcSender_,
+        uint64 srcChainId_,
+        uint64 dstChainId_
+    )
+        internal
+        view
+        returns (InitMultiVaultData memory)
+    {
+        for (uint256 i; i < multiVaultData_.liqData.length;) {
+            if (txData_[i].length != 0 && multiVaultData_.liqData[i].txData.length == 0) {
+                (address superform,,) = multiVaultData_.superformIds[i].getSuperform();
+
+                if (IBaseForm(superform).getStateRegistryId() == _getStateRegistryId(address(this))) {
+                    PayloadUpdaterLib.validateLiqReq(multiVaultData_.liqData[i]);
+
+                    IBridgeValidator bridgeValidator = _getBridgeValidator(multiVaultData_.liqData[i].bridgeId);
+
+                    bridgeValidator.validateTxData(
+                        IBridgeValidator.ValidateTxDataArgs(
+                            txData_[i],
+                            dstChainId_,
+                            srcChainId_,
+                            multiVaultData_.liqData[i].liqDstChainId,
+                            false,
+                            superform,
+                            srcSender_,
+                            multiVaultData_.liqData[i].token
+                        )
+                    );
+
+                    uint256 finalAmount = bridgeValidator.decodeAmountIn(txData_[i], false);
+                    PayloadUpdaterLib.strictValidateSlippage(
+                        finalAmount,
+                        IBaseForm(superform).previewRedeemFrom(multiVaultData_.amounts[i]),
+                        multiVaultData_.maxSlippage[i]
+                    );
+
+                    multiVaultData_.liqData[i].txData = txData_[i];
+                }
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return multiVaultData_;
     }
 
     function _processMultiWithdrawal(
@@ -876,6 +873,35 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         return "";
+    }
+
+    function _processAcknowledgement(
+        uint256 payloadId_,
+        bytes32 proof_,
+        uint64 srcChainId_,
+        bytes memory returnMessage_
+    )
+        internal
+    {
+        uint8[] memory proofIds = proofAMB[proof_];
+
+        /// @dev if deposits succeeded or some withdrawal failed, dispatch a callback
+        if (returnMessage_.length > 0) {
+            uint8[] memory ambIds = new uint8[](proofIds.length + 1);
+
+            ambIds[0] = msgAMB[payloadId_];
+
+            uint256 len = proofIds.length;
+            for (uint256 i; i < len;) {
+                ambIds[i + 1] = proofIds[i];
+
+                unchecked {
+                    ++i;
+                }
+            }
+
+            _dispatchAcknowledgement(srcChainId_, ambIds, returnMessage_);
+        }
     }
 
     /// @notice depositSync and withdrawSync internal method for sending message back to the source chain

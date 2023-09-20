@@ -13,16 +13,11 @@ interface ICoreStateRegistry {
     //////////////////////////////////////////////////////////////*/
     /// @dev local struct to avoid stack too deep errors in `processPayload`
     struct CoreProcessPayloadLocalVars {
-        bytes _payloadBody;
-        uint256 _payloadHeader;
-        PayloadState initialState;
         uint8 txType;
         uint8 callbackType;
         uint8 multi;
         address srcSender;
         uint64 srcChainId;
-        AMBMessage _message;
-        bytes32 _proof;
     }
 
     /// @dev local struct to avoid stack too deep errors in `updateWithdrawPayload`
@@ -40,15 +35,11 @@ interface ICoreStateRegistry {
     struct UpdateMultiVaultWithdrawPayloadLocalVars {
         InitMultiVaultData multiVaultData;
         InitSingleVaultData singleVaultData;
-        uint256 len;
-        uint256 i;
         address superform;
         uint256[] tSuperFormIds;
         uint256[] tAmounts;
         uint256[] tMaxSlippage;
         LiqRequest[] tLiqData;
-        uint256 finalAmount;
-        IBridgeValidator bridgeValidator;
     }
 
     struct FailedDeposit {
