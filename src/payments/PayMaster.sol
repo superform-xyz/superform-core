@@ -22,7 +22,11 @@ contract PayMaster is IPayMaster, LiquidityHandler {
                         MODIFIER
     //////////////////////////////////////////////////////////////*/
     modifier onlyPaymentAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasPaymentAdminRole(msg.sender)) {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("PAYMENT_ADMIN_ROLE"), msg.sender
+            )
+        ) {
             revert Error.NOT_PAYMENT_ADMIN();
         }
         _;
@@ -127,7 +131,6 @@ contract PayMaster is IPayMaster, LiquidityHandler {
             liqRequest_.txData,
             liqRequest_.token,
             IBridgeValidator(bridgeValidator).decodeAmountIn(liqRequest_.txData, true),
-            msg.sender,
             liqRequest_.nativeAmount
         );
     }

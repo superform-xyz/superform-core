@@ -395,8 +395,9 @@ abstract contract AbstractDeploy is Script {
         LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[i]);
 
         /// @dev 5.2- deploy Hyperlane Implementation
-        vars.hyperlaneImplementation = address(
-            new HyperlaneImplementation{salt: salt}(HyperlaneMailbox, HyperlaneGasPaymaster, vars.superRegistryC)
+        vars.hyperlaneImplementation = address(new HyperlaneImplementation{salt: salt}(vars.superRegistryC));
+        HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
+            HyperlaneMailbox, HyperlaneGasPaymaster
         );
         contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 

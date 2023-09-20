@@ -48,9 +48,8 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
     }
 
     /*///////////////////////////////////////////////////////////////
-                                EXTERNAL FUNCTIONS
+                            WORMHOLE APPLICATION CONFIG
     //////////////////////////////////////////////////////////////*/
-
     /// @dev allows protocol admin to configure wormhole core contract
     /// @param wormhole_ is wormhole address for respective chain
     function setWormholeCore(address wormhole_) external onlyProtocolAdmin {
@@ -60,11 +59,25 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         }
     }
 
+    /// @dev allows protocol admin to set broadcast finality
+    /// @param finality_ is the required finality on src chain
+    function setFinality(uint8 finality_) external onlyProtocolAdmin {
+        if (finality_ == 0) {
+            revert Error.INVALID_BROADCAST_FINALITY();
+        }
+
+        broadcastFinality = finality_;
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                                EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     /// @inheritdoc IBroadcastAmbImplementation
     function broadcastPayload(
-        address srcSender_,
+        address, /*srcSender_*/
         bytes memory message_,
-        bytes memory extraData_
+        bytes memory /*extraData_*/
     )
         external
         payable
@@ -93,12 +106,15 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         /// @dev 1. validate caller
         /// @dev 2. validate src chain sender
         /// @dev 3. validate message uniqueness
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasWormholeVaaRole(msg.sender)) {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("WORMHOLE_VAA_RELAYER_ROLE"), msg.sender
+            )
+        ) {
             revert Error.CALLER_NOT_RELAYER();
         }
 
-        (IWormhole.VM memory wormholeMessage, bool valid, string memory reason) =
-            wormhole.parseAndVerifyVM(encodedMessage_);
+        (IWormhole.VM memory wormholeMessage, bool valid,) = wormhole.parseAndVerifyVM(encodedMessage_);
 
         if (!valid) {
             revert Error.INVALID_BROADCAST_PAYLOAD();
@@ -144,24 +160,14 @@ contract WormholeSRImplementation is IBroadcastAmbImplementation {
         emit ChainAdded(superChainId_);
     }
 
-    /// @dev allows protocol admin to set broadcast finality
-    /// @param finality_ is the required finality on src chain
-    function setFinality(uint8 finality_) external onlyProtocolAdmin {
-        if (finality_ == 0) {
-            revert Error.INVALID_BROADCAST_FINALITY();
-        }
-
-        broadcastFinality = finality_;
-    }
-
     /*///////////////////////////////////////////////////////////////
-                    View Functions
+                    READ-ONLY FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc IBroadcastAmbImplementation
     function estimateFees(
-        bytes memory message_,
-        bytes memory extraData_
+        bytes memory, /*message_*/
+        bytes memory /*extraData_*/
     )
         external
         view

@@ -397,8 +397,9 @@ abstract contract AbstractDeploySingle is Script {
         LayerzeroImplementation(payable(vars.lzImplementation)).setLzEndpoint(lzEndpoints[trueIndex]);
 
         /// @dev 5.2- deploy Hyperlane Implementation
-        vars.hyperlaneImplementation = address(
-            new HyperlaneImplementation{salt: salt}(HyperlaneMailbox, HyperlaneGasPaymaster, vars.superRegistryC)
+        vars.hyperlaneImplementation = address(new HyperlaneImplementation{salt: salt}(vars.superRegistryC));
+        HyperlaneImplementation(vars.hyperlaneImplementation).setHyperlaneConfig(
+            HyperlaneMailbox, HyperlaneGasPaymaster
         );
         contracts[vars.chainId][bytes32(bytes("HyperlaneImplementation"))] = vars.hyperlaneImplementation;
 
@@ -832,7 +833,15 @@ abstract contract AbstractDeploySingle is Script {
         }
     }
 
-    function _readContract(string memory name, uint64 chainId, string memory contractName) internal returns (address) {
+    function _readContract(
+        string memory name,
+        uint64 chainId,
+        string memory contractName
+    )
+        internal
+        view
+        returns (address)
+    {
         string memory json;
         string memory root = vm.projectRoot();
         json =

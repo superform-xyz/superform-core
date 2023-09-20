@@ -443,7 +443,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             args_.liqRequest.txData,
             args_.liqRequest.token,
             IBridgeValidator(bridgeValidator).decodeAmountIn(args_.liqRequest.txData, true),
-            args_.srcSender,
             args_.liqRequest.nativeAmount
         );
     }

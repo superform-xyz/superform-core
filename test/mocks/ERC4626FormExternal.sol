@@ -20,13 +20,13 @@ contract ERC4626FormExternal is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_
+        address /*srcSender_*/
     )
         internal
         override
         returns (uint256 dstAmount)
     {
-        dstAmount = _processDirectDeposit(singleVaultData_, srcSender_);
+        dstAmount = _processDirectDeposit(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm

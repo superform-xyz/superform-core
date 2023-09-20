@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.21;
 
+import { IAccessControl } from "openzeppelin-contracts/contracts/access/IAccessControl.sol";
+
 /// @title ISuperRBAC
 /// @author Zeropoint Labs.
 /// @dev interface for Super RBAC
-interface ISuperRBAC {
+interface ISuperRBAC is IAccessControl {
     /*///////////////////////////////////////////////////////////////
                         External Write Functions
     //////////////////////////////////////////////////////////////*/
@@ -97,56 +99,4 @@ interface ISuperRBAC {
     /// @dev returns whether the given address has the emergency admin role
     /// @param admin_ the address to check
     function hasEmergencyAdminRole(address admin_) external view returns (bool);
-
-    /// @dev returns whether the given address has the broadcaster role
-    /// @param broadcaster_ the address to check
-    function hasBroadcasterRole(address broadcaster_) external view returns (bool);
-
-    /// @dev returns whether the given address has the payment admin role
-    /// @param admin_ the address to check
-    function hasPaymentAdminRole(address admin_) external view returns (bool);
-
-    /// @dev returns whether the given address has the processor role
-    /// @param processor_ the address to check
-    function hasCoreStateRegistryProcessorRole(address processor_) external view returns (bool);
-
-    /// @dev returns whether the given address has the two steps processor role
-    /// @param twoStepsProcessor_ the address to check
-    function hasTimelockStateRegistryProcessorRole(address twoStepsProcessor_) external view returns (bool);
-
-    /// @dev returns whether the given address has the broadcast processor role
-    /// @param broadcastProcessor_ the address to check
-    function hasBroadcastStateRegistryProcessorRole(address broadcastProcessor_) external view returns (bool);
-
-    /// @dev returns whether the given address has the updater role
-    /// @param updater_ the address to check
-    function hasCoreStateRegistryUpdaterRole(address updater_) external view returns (bool);
-
-    /// @dev returns whether the given address has the super positions minter role
-    /// @param minter_ the address to check
-    function hasSuperPositionsMinterRole(address minter_) external view returns (bool);
-
-    /// @dev returns whether the given address has the dst swapper role
-    /// @param swapper_ the address to check
-    function hasDstSwapperRole(address swapper_) external view returns (bool);
-
-    /// @dev returns whether the given address has the super positions burner role
-    /// @param burner_ the address to check
-    function hasSuperPositionsBurnerRole(address burner_) external view returns (bool);
-
-    /// @dev returns whether the given address has the serc20 minter role
-    /// @param minter_ the address to check
-    function hasSERC20MinterRole(address minter_) external view returns (bool);
-
-    /// @dev returns whether the given address has the serc20 burner role
-    /// @param burner_ the address to check
-    function hasSERC20BurnerRole(address burner_) external view returns (bool);
-
-    /// @dev returns whether the given state registry address has the minter state registry role
-    /// @param stateRegistry_ the address to check
-    function hasMinterStateRegistryRole(address stateRegistry_) external view returns (bool);
-
-    /// @dev returns whether the given relayer_ address has the wormhole relayer role
-    /// @param relayer_ the address to check
-    function hasWormholeVaaRole(address relayer_) external view returns (bool);
 }

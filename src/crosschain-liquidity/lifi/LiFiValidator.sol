@@ -55,13 +55,13 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         /// @dev withdraw actions without bridge data (just swap) - goes into catch block
 
         try this.extractMainParameters(args_.txData) returns (
-            string memory bridge,
+            string memory, /*bridge*/
             address sendingAssetId,
             address receiver,
-            uint256 amount,
-            uint256 minAmount,
+            uint256, /*amount*/
+            uint256, /*minAmount*/
             uint256 destinationChainId,
-            bool hasSourceSwaps,
+            bool, /*hasSourceSwaps*/
             bool hasDestinationCall
         ) {
             /// @dev 0. Destination call validation
@@ -132,14 +132,14 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         returns (uint256 amount_)
     {
         try this.extractMainParameters(txData_) returns (
-            string memory bridge,
-            address sendingAssetId,
-            address receiver,
-            uint256 amount,
+            string memory, /*bridge*/
+            address, /*sendingAssetId*/
+            address, /*receiver*/
+            uint256, /*amount*/
             uint256 minAmount,
-            uint256 destinationChainId,
-            bool hasSourceSwaps,
-            bool hasDestinationCall
+            uint256, /*destinationChainId*/
+            bool, /*hasSourceSwaps*/
+            bool /*hasDestinationCall*/
         ) {
             /// @dev try is just used here to validate the txData. We need to always extract minAmount from bridge data
             amount_ = minAmount;
@@ -161,14 +161,14 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         returns (uint256 amount_)
     {
         try this.extractMainParameters(txData_) returns (
-            string memory bridge,
-            address sendingAssetId,
-            address receiver,
+            string memory, /*bridge*/
+            address, /*sendingAssetId*/
+            address, /*receiver*/
             uint256 amount,
-            uint256 minAmount,
-            uint256 destinationChainId,
-            bool hasSourceSwaps,
-            bool hasDestinationCall
+            uint256, /*minAmount*/
+            uint256, /*destinationChainId*/
+            bool, /*hasSourceSwaps*/
+            bool /*hasDestinationCall*/
         ) {
             /// @dev if there isn't a source swap, amountIn is minAmountOut from bridge data?
 
@@ -182,7 +182,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
     }
 
     /// @inheritdoc BridgeValidator
-    function decodeDstSwap(bytes calldata txData_) external view override returns (address token_, uint256 amount_) {
+    function decodeDstSwap(bytes calldata txData_) external pure override returns (address token_, uint256 amount_) {
         (token_, amount_,,,) = extractGenericSwapParameters(txData_);
     }
 

@@ -11,13 +11,12 @@ contract LiquidityHandlerUser is LiquidityHandler {
         bytes memory txData_,
         address token_,
         uint256 amount_,
-        address owner_,
         uint256 nativeAmount_
     )
         external
         payable
     {
-        dispatchTokens(bridge_, txData_, token_, amount_, owner_, nativeAmount_);
+        dispatchTokens(bridge_, txData_, token_, amount_, nativeAmount_);
     }
 }
 
@@ -54,7 +53,6 @@ contract LiquidityHandlerTest is ProtocolActions {
             ),
             token,
             transferAmount,
-            address(liquidityHandler),
             0
         );
         vm.stopPrank();
@@ -86,7 +84,6 @@ contract LiquidityHandlerTest is ProtocolActions {
             ),
             token,
             transferAmount,
-            deployer,
             0
         );
     }
@@ -105,7 +102,6 @@ contract LiquidityHandlerTest is ProtocolActions {
             ),
             token,
             transferAmount,
-            deployer,
             0
         );
     }
@@ -124,7 +120,6 @@ contract LiquidityHandlerTest is ProtocolActions {
             ),
             token,
             transferAmount,
-            deployer,
             transferAmount
         );
     }

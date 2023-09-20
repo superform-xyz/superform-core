@@ -30,14 +30,22 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     //////////////////////////////////////////////////////////////*/
 
     modifier onlyMinter() override {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsMinterRole(msg.sender)) {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("SUPERPOSITIONS_MINTER_ROLE"), msg.sender
+            )
+        ) {
             revert Error.NOT_MINTER();
         }
         _;
     }
 
     modifier onlyBurner() override {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasSuperPositionsBurnerRole(msg.sender)) {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("SUPERPOSITIONS_BURNER_ROLE"), msg.sender
+            )
+        ) {
             revert Error.NOT_BURNER();
         }
         _;

@@ -104,7 +104,6 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
                 vars.liqData.txData,
                 vars.liqData.token,
                 vars.amount,
-                address(this),
                 vars.liqData.nativeAmount
             );
         }
@@ -117,14 +116,14 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
     /// @inheritdoc BaseForm
     function _directDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
-        address srcSender_
+        address /*srcSender_*/
     )
         internal
         virtual
         override
         returns (uint256 dstAmount)
     {
-        dstAmount = _processDirectDeposit(singleVaultData_, srcSender_);
+        dstAmount = _processDirectDeposit(singleVaultData_);
     }
 
     /// @inheritdoc BaseForm
