@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import { Error } from "src/utils/Error.sol";
 import { ERC4626KYCDaoForm } from "src/forms/ERC4626KYCDaoForm.sol";

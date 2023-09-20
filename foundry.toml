@@ -1,6 +1,5 @@
 [profile.default]
-solc_version = "0.8.21" # Override for the solc version (setting this ignores `auto_detect_solc`)
-evm_version = "paris"   # to prevent usage of PUSH0, which is not supported on all chains
+solc_version = "0.8.19" 
 
 gas_reports = [
   "SuperformRouter",
@@ -19,8 +18,7 @@ fs_permissions = [{ access = "read-write", path = "./script/" }]
 remappings = ["solmate/=lib/ERC1155A/lib/solmate/src/"]
 
 [profile.localdev]
-solc_version = "0.8.21" # Override for the solc version (setting this ignores `auto_detect_solc`)
-evm_version = "paris"   # to prevent usage of PUSH0, which is not supported on all chains
+solc_version = "0.8.19" 
 
 gas_reports = [
   "SuperformRouter",

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import { IBroadcastRegistry } from "src/interfaces/IBroadcastRegistry.sol";
 import { IBroadcastAmbImplementation } from "src/interfaces/IBroadcastAmbImplementation.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
