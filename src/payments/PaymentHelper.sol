@@ -231,11 +231,11 @@ contract PaymentHelper is IPaymentHelper {
                 totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequests);
             }
 
-            /// @dev step 5: estimate execution costs in dst (withdraw / deposit)
+            /// @dev step 6: estimate execution costs in dst (withdraw / deposit)
             /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen);
 
-            /// @dev step 6: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
+            /// @dev step 7: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
             unchecked {

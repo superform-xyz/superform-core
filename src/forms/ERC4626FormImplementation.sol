@@ -252,7 +252,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC4626 v = IERC4626(vaultLoc);
 
         /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
-        IERC20(v.asset()).transferFrom(msg.sender, address(this), singleVaultData_.amount);
+        IERC20(v.asset()).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
 
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(v.asset()).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);
