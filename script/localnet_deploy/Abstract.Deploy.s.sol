@@ -517,9 +517,7 @@ abstract contract AbstractDeploy is Script {
         vars.superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
         /// @dev 12 - Deploy Payload Helper
-        vars.PayloadHelper = address(
-            new PayloadHelper{salt: salt}(vars.coreStateRegistry, vars.superRegistry, vars.twoStepsFormStateRegistry)
-        );
+        vars.PayloadHelper = address(new PayloadHelper{salt: salt}(vars.superRegistry));
         contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;
         vars.superRegistryC.setAddress(vars.superRegistryC.PAYLOAD_HELPER(), vars.PayloadHelper, vars.chainId);
 
