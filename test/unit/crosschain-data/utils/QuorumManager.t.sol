@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import "test/utils/BaseSetup.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
