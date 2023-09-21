@@ -53,7 +53,8 @@ contract PayloadUpdaterLibTest is Test {
         /// @dev payload updater goes rogue and tries to update new amount beyond slippage limit
         bool valid = payloadUpdateLib.validateSlippage(newAmountBeyondSlippage, maxAmount, slippage);
         assertFalse(valid);
-
+        vm.expectRevert(Error.NEGATIVE_SLIPPAGE.selector);
+        payloadUpdateLib.strictValidateSlippage(newAmount, maxAmount, slippage);
         vm.expectRevert(Error.SLIPPAGE_OUT_OF_BOUNDS.selector);
         payloadUpdateLib.strictValidateSlippage(newAmountBeyondSlippage, maxAmount, slippage);
     }

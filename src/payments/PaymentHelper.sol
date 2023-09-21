@@ -486,13 +486,9 @@ contract PaymentHelper is IPaymentHelper {
 
             if (ambIds_[i] == 1) {
                 extraDataPerAMB[i] = abi.encodePacked(uint16(2), gasReq, uint256(0), address(0));
-            }
-
-            if (ambIds_[i] == 2) {
+            } else if (ambIds_[i] == 2) {
                 extraDataPerAMB[i] = abi.encode(gasReq);
-            }
-
-            if (ambIds_[i] == 3) {
+            } else if (ambIds_[i] == 3) {
                 extraDataPerAMB[i] = abi.encode(0, gasReq);
             }
 
