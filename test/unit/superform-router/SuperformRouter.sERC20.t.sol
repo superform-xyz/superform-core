@@ -579,14 +579,44 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         address sERC20add1 = superTransmuterSyncer.synthethicTokenId(superformId1);
         address sERC20add2 = superTransmuterSyncer.synthethicTokenId(superformId2);
-
+        /// @dev approves before call
         sERC20(sERC20add1).approve(address(superformRouterSERC20), 1e18);
         sERC20(sERC20add2).approve(address(superformRouterSERC20), 1e18);
+        vm.recordLogs();
 
-        /// @dev approves before call
         superformRouterSERC20.singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
 
-        /// @dev could continue remainder of logic to redeem on dst
+        vm.stopPrank();
+
+        /// @dev mocks the cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ARBI],
+            1_000_000,
+            /// note: using some max limit
+            FORKS[ARBI],
+            vm.getRecordedLogs()
+        );
+        vm.selectFork(FORKS[ARBI]);
+
+        vm.startPrank(deployer);
+
+        vm.recordLogs();
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 10 ether }(2);
+        vm.stopPrank();
+        LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ETH],
+            1_000_000,
+            /// note: using some max limit
+            FORKS[ETH],
+            vm.getRecordedLogs()
+        );
+
+        vm.selectFork(FORKS[ETH]);
+
+        vm.startPrank(deployer);
+
+        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: 10 ether }(2);
+        vm.stopPrank();
     }
 
     function test_successful_direct_multivault_withdraw() public {
@@ -632,10 +662,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         sERC20(sERC20add1).approve(address(superformRouterSERC20), 1e18);
         sERC20(sERC20add2).approve(address(superformRouterSERC20), 1e18);
 
-        /// @dev approves before call
         superformRouterSERC20.singleDirectMultiVaultWithdraw{ value: 2 ether }(req);
-
-        /// @dev could continue remainder of logic to redeem on dst
     }
 
     function test_successful_xchain_singlevault_withdraw() public {
@@ -664,11 +691,43 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         address sERC20add = superTransmuterSyncer.synthethicTokenId(superformId);
 
         sERC20(sERC20add).approve(address(superformRouterSERC20), 1e18);
+        vm.recordLogs();
 
         /// @dev approves before call
         superformRouterSERC20.singleXChainSingleVaultWithdraw{ value: 2 ether }(req);
 
-        /// @dev could continue remainder of logic to redeem on dst
+        vm.stopPrank();
+
+        /// @dev mocks the cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ARBI],
+            1_000_000,
+            /// note: using some max limit
+            FORKS[ARBI],
+            vm.getRecordedLogs()
+        );
+        vm.selectFork(FORKS[ARBI]);
+
+        vm.startPrank(deployer);
+
+        vm.recordLogs();
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 10 ether }(2);
+        vm.stopPrank();
+
+        LayerZeroHelper(getContract(ARBI, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ETH],
+            1_000_000,
+            /// note: using some max limit
+            FORKS[ETH],
+            vm.getRecordedLogs()
+        );
+
+        vm.selectFork(FORKS[ETH]);
+
+        vm.startPrank(deployer);
+
+        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload{ value: 10 ether }(2);
+        vm.stopPrank();
     }
 
     function test_depositWithInvalidFeeForward() public {
