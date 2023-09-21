@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import { BaseRouter } from "./BaseRouter.sol";
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";

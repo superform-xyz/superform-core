@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import { IERC165Upgradeable } from
     "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";

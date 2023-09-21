@@ -1,5 +1,5 @@
 ///SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import { Transmuter } from "ERC1155A/transmuter/Transmuter.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";

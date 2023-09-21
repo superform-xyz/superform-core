@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import { AbstractDeploy } from "./Abstract.Deploy.s.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
