@@ -14,13 +14,9 @@ import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
-import { SolPretty } from "solpretty/SolPretty.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     using DataLib for uint256;
-    using SolPretty for string;
-    using Math for uint256;
 
     /// out of 10000
     int256 totalSlippage = 200;
