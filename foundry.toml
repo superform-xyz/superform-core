@@ -62,6 +62,15 @@ fantom_fork = "${FANTOM_LOCAL_URL}"
 max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
 runs = 50
 
+[invariant]
+runs = 10
+depth = 40
+fail_on_revert = false
+call_override = false
+dictionary_weight = 80
+include_storage = true
+include_push_bytes = true
+
 [fmt]
 bracket_spacing = true
 int_types = "long"
