@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import { kycDAO4626 } from "super-vaults/kycdao-4626/kycdao4626.sol";
 import { InitSingleVaultData } from "../types/DataTypes.sol";
