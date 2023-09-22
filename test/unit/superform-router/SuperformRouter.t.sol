@@ -1401,6 +1401,50 @@ contract SuperformRouterTest is ProtocolActions {
         vm.stopPrank();
     }
 
+    function test_multiVaultTokenForward_successfulSingleDirectWithNotxData() public {
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+        address superformRouter = getContract(ETH, "SuperformRouter");
+        address superform1 =
+            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+
+        address superform2 = getContract(
+            ETH, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+        );
+
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[1], ETH);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 1000;
+        maxSlippages[1] = 1000;
+
+        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+
+        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0);
+        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0);
+
+        MultiVaultSFData memory data =
+            MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](2), liqReqs, "", refundAddress, "");
+
+        SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "USDT")).approve(address(superformRouter), 2e18);
+
+        SuperformRouter(payable(superformRouter)).singleDirectMultiVaultDeposit{ value: 10 ether }(req);
+        vm.stopPrank();
+    }
+
     function _successfulMultiVaultDeposit() internal {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
