@@ -1970,16 +1970,16 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     function _getSuperpositionsForDstChain(
-        uint256 user,
+        uint256 user_,
         uint256[] memory underlyingTokens_,
         uint256[] memory vaultIds_,
         uint32[] memory formKinds_,
-        uint64 dstChain
+        uint64 dstChain_
     )
         internal
         returns (uint256[] memory superPositionBalances)
     {
-        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain);
+        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain_);
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -1990,7 +1990,33 @@ abstract contract ProtocolActions is BaseSetup {
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
         for (uint256 i = 0; i < superformIds.length; i++) {
-            superPositionBalances[i] = superPositions.balanceOf(users[user], superformIds[i]);
+            superPositionBalances[i] = superPositions.balanceOf(users[user_], superformIds[i]);
+        }
+    }
+
+    function _getSuperpositionsForDstChainFromSrcChain(
+        uint256 user_,
+        uint256[] memory underlyingTokens_,
+        uint256[] memory vaultIds_,
+        uint32[] memory formKinds_,
+        uint64 srcChain_,
+        uint64 dstChain_
+    )
+        internal
+        returns (uint256[] memory superPositionBalances)
+    {
+        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain_);
+        address superRegistryAddress = getContract(srcChain_, "SuperRegistry");
+        vm.selectFork(FORKS[srcChain_]);
+
+        superPositionBalances = new uint256[](superformIds.length);
+        address superPositionsAddress =
+            ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
+
+        IERC1155A superPositions = IERC1155A(superPositionsAddress);
+
+        for (uint256 i = 0; i < superformIds.length; i++) {
+            superPositionBalances[i] = superPositions.balanceOf(users[user_], superformIds[i]);
         }
     }
 
