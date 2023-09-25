@@ -1,24 +1,17 @@
 /// SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.21;
+pragma solidity ^0.8.19;
 
 import "../utils/ProtocolActions.sol";
 import "./handlers/VaultSharesHandler.sol";
 import "forge-std/Test.sol";
 
-contract VaultShares is Test, ProtocolActions {
+contract VaultShares is ProtocolActions {
     VaultSharesHandler public handler;
 
     function setUp() public override {
         super.setUp();
 
         handler = new VaultSharesHandler();
-
-        bytes4[] memory selectors = new bytes4[](1);
-        // selectors[0] = VaultSharesHandler.singleDirectSingleVaultDeposit.selector;
-        selectors[0] = VaultSharesHandler.singleDirectSingleVaultWithdraw.selector;
-
-        targetSelector(FuzzSelector({ addr: address(handler), selectors: selectors }));
-        targetContract(address(handler));
     }
 
     function invariant_vaultShares() public {
@@ -36,9 +29,12 @@ contract VaultShares is Test, ProtocolActions {
         }
 
         address superform = getContract(
-            ETH, string.concat(UNDERLYING_TOKENS[1], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+            ETH, string.concat(UNDERLYING_TOKENS[2], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0]))
         );
+
         vm.selectFork(ETH);
+        console.log("superPositionsSum:", superPositionsSum);
+        console.log("vaultShares:", IBaseForm(superform).getVaultShareBalance());
         assertEq(superPositionsSum, IBaseForm(superform).getVaultShareBalance());
     }
 }

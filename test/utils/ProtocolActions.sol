@@ -146,7 +146,11 @@ abstract contract ProtocolActions is BaseSetup {
             } else if (action.externalToken == 1) {
                 deal(token, users[action.user], TOTAL_SUPPLY_USDT);
             } else if (action.externalToken == 2) {
+                console.log("1");
+                console.log(action.user);
+                console.log(users[action.user]);
                 deal(token, users[action.user], TOTAL_SUPPLY_WETH);
+                console.log("2");
             }
         }
 
