@@ -5,7 +5,7 @@ import { Error } from "src/utils/Error.sol";
 import "test/utils/ProtocolActions.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 
-contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
+contract LiFiValidatorTest is ProtocolActions {
     function setUp() public override {
         super.setUp();
         vm.selectFork(FORKS[ETH]);
@@ -147,5 +147,18 @@ contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
                 address(420)
             )
         );
+    }
+
+    function test_extractGenericSwap_standardizedCallInterface() public {
+        bytes memory data = abi.encodeWithSelector(
+            0xd6a4bc50,
+            _buildDummyTxDataUnitTests(
+                1, address(0), address(0), deployer, ETH, uint256(100), getContract(ETH, "CoreStateRegistry"), true
+            )
+        );
+
+        (,, address receiver,,) = LiFiValidator(getContract(ETH, "LiFiValidator")).extractGenericSwapParameters(data);
+
+        assertEq(receiver, getContract(ETH, "CoreStateRegistry"));
     }
 }

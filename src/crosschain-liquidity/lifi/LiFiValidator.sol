@@ -254,7 +254,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         LibSwap.SwapData[] memory swapData;
         bytes memory callData = data_;
 
-        if (abi.decode(data_, (bytes4)) == 0xd6a4bc50) {
+        if (bytes4(data_[:4]) == 0xd6a4bc50) {
             // standardizedCall
             callData = abi.decode(data_[4:], (bytes));
         }
