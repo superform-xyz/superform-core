@@ -49,7 +49,7 @@ contract SXSVDTimelocked4626NoTokenInputSlippageAMB13 is ProtocolActions {
 
     function test_scenario(uint128 amount_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_USDT));
+        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_USDC));
         AMOUNTS[ARBI][0] = [amount_];
 
         for (uint256 act = 0; act < actions.length; act++) {

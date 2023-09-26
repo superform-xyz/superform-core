@@ -38,7 +38,7 @@ contract SDSVD4626SwapTokenInputSlippage is ProtocolActions {
                 revertRole: "",
                 slippage: 852, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 0
+                externalToken: 1
             })
         );
         /// @dev input token != vault underlying - swap involved
@@ -50,7 +50,7 @@ contract SDSVD4626SwapTokenInputSlippage is ProtocolActions {
 
     function test_scenario(uint128 amount_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_DAI));
+        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_USDC));
         AMOUNTS[OP][0] = [amount_];
 
         for (uint256 act = 0; act < actions.length; act++) {
