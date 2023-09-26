@@ -356,6 +356,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
+        /// @dev txData with 1e18 input amount
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
             getContract(ETH, "USDT"),
@@ -373,6 +374,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             0
         );
 
+        /// @dev superform data with 2e18 final amount
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             2e18,
@@ -390,10 +392,11 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         /// @dev make sure the beacon proxy has enough usdc for the user to hack it
         MockERC20(getContract(ETH, "DAI")).transfer(superform, 3e18);
+        /// balanceBefore = 3e18
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
         MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
 
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        vm.expectRevert(Error.DIRECT_DEPOSIT_INVALID_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
