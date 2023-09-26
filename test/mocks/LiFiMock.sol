@@ -23,8 +23,6 @@ contract LiFiMock is Test {
         external
         payable
     {
-        console.log("in here baba baba");
-
         if (!bridgeData.hasSourceSwaps) {
             _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
         } else {
@@ -51,7 +49,6 @@ contract LiFiMock is Test {
         external
         payable
     {
-        console.log("in here baba");
         _swap(
             _swapData[0].fromAmount,
             _swapData[0].sendingAssetId,
@@ -123,7 +120,6 @@ contract LiFiMock is Test {
     )
         internal
     {
-        console.log("in here");
         /// @dev encapsulating from
         address from = abi.decode(data_, (address));
         if (inputToken_ != NATIVE) {
@@ -135,18 +131,12 @@ contract LiFiMock is Test {
         uint256 decimal1 = MockERC20(inputToken_).decimals();
         uint256 decimal2 = MockERC20(outputToken_).decimals();
 
-        console.log("-------- DECIMALS ---------");
-        console.log(decimal1, decimal2);
-
         /// input token decimals are greater than output
         if (decimal1 > decimal2) {
             amount_ = amount_ / 10 ** (decimal1 - decimal2);
         } else {
             amount_ = amount_ * 10 ** (decimal2 - decimal1);
         }
-
-        console.log("-------- AMOUNT ---------");
-        console.log(amount_);
 
         /// @dev assume no swap slippage
         deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);

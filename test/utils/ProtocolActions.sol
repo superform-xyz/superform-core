@@ -533,9 +533,9 @@ abstract contract ProtocolActions is BaseSetup {
                 }
             }
         }
+
         /// @dev pigeon requires event logs to be recorded so that it can properly capture the variables it needs to
         /// fullfil messages. Check pigeon library docs for more info
-
         vm.recordLogs();
         if (action.multiVaults) {
             if (vars.nDestinations == 1) {
@@ -1708,9 +1708,7 @@ abstract contract ProtocolActions is BaseSetup {
         address liqRequestToken = args.externalToken != args.underlyingToken ? args.externalToken : args.underlyingToken;
 
         /// @dev build permit2 calldata
-
         vm.selectFork(FORKS[args.srcChainId]);
-
         if (action == Actions.DepositPermit2) {
             v.permit = IPermit2.PermitTransferFrom({
                 permitted: IPermit2.TokenPermissions({ token: IERC20(address(liqRequestToken)), amount: args.amount }),
@@ -1729,7 +1727,6 @@ abstract contract ProtocolActions is BaseSetup {
 
         if (liqRequestToken != NATIVE_TOKEN) {
             /// @dev - APPROVE transfer to SuperformRouter (because of Socket)
-
             if (action == Actions.DepositPermit2) {
                 vm.prank(users[args.user]);
                 MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);
