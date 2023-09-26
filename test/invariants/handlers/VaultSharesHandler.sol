@@ -9,7 +9,6 @@ import { StdCheats } from "forge-std/StdCheats.sol";
 import { StdUtils } from "forge-std/StdUtils.sol";
 
 contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, ProtocolActions {
-    /*
     constructor(address[][] memory allContracts, uint64[] memory chainIds, string[21] memory contractNames) {
         for (uint256 i = 0; i < chainIds.length; i++) {
             for (uint256 j = 0; j < contractNames.length; j++) {
@@ -143,17 +142,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, ProtocolActions 
 
         //_fundUnderlyingTokens(100);
     }
-    */
 
-    function setUp() public override {
-        super.setUp();
-    }
-
-    constructor() {
-        setUp();
-    }
-
-    /*
     function getSuperpositionsSum() public returns (uint256 superPositionsSum) {
         /// @dev sum up superpositions owned by user for the superform on ETH, on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -176,7 +165,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, ProtocolActions 
         vm.selectFork(ETH);
         vaultShares = IBaseForm(superform).getVaultShareBalance();
     }
-    */
+
     function singleDirectSingleVaultDeposit() public {
         AMBs = [2, 3];
         CHAIN_0 = AVAX;
