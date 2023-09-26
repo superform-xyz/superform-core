@@ -132,6 +132,22 @@ contract PayMasterTest is ProtocolActions {
         assertEq(txUpdaterETH.balance, 1 wei);
     }
 
+    function test_withdrawNativeToFailure() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address feeCollector = getContract(ETH, "PayMaster");
+        PayMaster(feeCollector).makePayment{ value: 2 wei }(deployer);
+
+        address mock = address(new KeeperMockThatWontAcceptEth());
+
+        superRegistry.setAddress(keccak256("KEEPER_MOCK"), mock, ETH);
+
+        /// @dev admin tries withdraw more than balance (check if handled gracefully)
+        vm.expectRevert(Error.FAILED_WITHDRAW.selector);
+        PayMaster(feeCollector).withdrawTo(keccak256("KEEPER_MOCK"), 1 wei);
+    }
+
     function test_rebalanceToCoreStateRegistryTxProcessor() public {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -170,6 +186,20 @@ contract PayMasterTest is ProtocolActions {
                 _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
                 NATIVE,
                 ARBI,
+                1 ether
+            ),
+            ARBI
+        );
+
+        /// @dev admin moves the payment from fee collector to different address on another chain
+        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
+        PayMaster(feeCollector).rebalanceTo(
+            keccak256("CORE_REGISTRY_PROCESSOR"),
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI, false),
+                NATIVE,
+                ETH,
                 1 ether
             ),
             ARBI

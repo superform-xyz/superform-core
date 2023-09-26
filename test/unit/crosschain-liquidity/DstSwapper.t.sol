@@ -2,6 +2,8 @@
 pragma solidity ^0.8.19;
 
 import { Error } from "src/utils/Error.sol";
+
+import { IStateSyncer } from "src/interfaces/IStateSyncer.sol";
 import "test/utils/ProtocolActions.sol";
 
 contract DstSwapperTest is ProtocolActions {
@@ -170,12 +172,16 @@ contract DstSwapperTest is ProtocolActions {
         amounts[1] = 1e18;
 
         uint256[] memory indices = new uint256[](2);
-        indices[0] = 0;
-        indices[1] = 1;
+        indices[0] = 2;
+        indices[1] = 2;
 
         (bool success,) = payable(dstSwapper).call{ value: 2e18 }("");
         if (!success) revert();
 
+        vm.expectRevert(Error.INVALID_INDEX.selector);
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
+        indices[0] = 0;
+        indices[1] = 1;
         DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
 
         /// @dev retry the same payload id and indices
@@ -191,6 +197,65 @@ contract DstSwapperTest is ProtocolActions {
         /// @dev no funds in multi-tx processor at this point; should revert
         vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
         DstSwapper(dstSwapper).batchProcessTx(2, indices, bridgeId, txData);
+    }
+
+    function test_failed_batch_process_tx_INVALID_PAYLOAD_STATUS() public {
+        address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[ETH]);
+        _simulateMultiVaultExistingPayload(coreStateRegistry);
+
+        vm.startPrank(deployer);
+
+        address native = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+        uint8[] memory bridgeId = new uint8[](2);
+        bridgeId[0] = 1;
+        bridgeId[1] = 1;
+
+        address[] memory approvalToken = new address[](2);
+        approvalToken[0] = native;
+        approvalToken[1] = native;
+
+        bytes[] memory txData = new bytes[](2);
+        txData[0] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0);
+        txData[1] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0);
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        uint256[] memory indices = new uint256[](2);
+        indices[0] = 0;
+        indices[1] = 1;
+
+        (bool success,) = payable(dstSwapper).call{ value: 2e18 }("");
+        if (!success) revert();
+        SuperRegistry(getContract(ETH, "SuperRegistry")).setRequiredMessagingQuorum(POLY, 0);
+
+        CoreStateRegistry(coreStateRegistry).processPayload{ value: 10 ether }(1);
+
+        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+        DstSwapper(dstSwapper).batchProcessTx(1, indices, bridgeId, txData);
+    }
+
+    function test_failed_INVALID_SWAP_OUTPUT() public {
+        address payable dstSwapper = payable(getContract(ETH, "DstSwapper"));
+        address payable coreStateRegistry = payable(getContract(ETH, "CoreStateRegistry"));
+
+        vm.selectFork(FORKS[ETH]);
+        _simulateSingleVaultExistingPayload(coreStateRegistry);
+
+        vm.startPrank(deployer);
+        /// @dev txData with amount 0 should revert
+        vm.expectRevert(Error.INVALID_SWAP_OUTPUT.selector);
+        DstSwapper(dstSwapper).processTx(
+            1,
+            0,
+            1,
+            _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "USDT"), dstSwapper, ETH, 0, 0)
+        );
     }
 
     function _simulateSingleVaultExistingPayload(address payable coreStateRegistry) internal {
@@ -231,12 +296,11 @@ contract DstSwapperTest is ProtocolActions {
         hasDstSwaps[1] = true;
 
         LiqRequest[] memory liq = new LiqRequest[](2);
-
         CoreStateRegistry(coreStateRegistry).receivePayload(
-            137,
+            POLY,
             abi.encode(
                 AMBMessage(
-                    DataLib.packTxInfo(1, 1, 1, 1, address(420), uint64(137)),
+                    DataLib.packTxInfo(1, 0, 1, 1, address(420), uint64(137)),
                     abi.encode(
                         InitMultiVaultData(
                             1, 1, superformIds, amounts, new uint256[](2), hasDstSwaps, liq, dstRefundAddress, bytes("")

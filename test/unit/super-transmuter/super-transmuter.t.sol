@@ -119,4 +119,164 @@ contract SuperTransmuterTest is BaseSetup {
             }
         }
     }
+
+    /// Test revert for invalid txType (single)
+    function test_revert_stateSync_InvalidPayloadStatus() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, 1, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+        superTransmuter.stateSync(maliciousMessage);
+    }
+
+    function test_revert_stateSync_InvalidPayload_CallbackType() public {
+        /// @dev CallbackType = 0 (INIT)
+        uint256 txInfo = DataLib.packTxInfo(0, 0, 0, 1, address(0), ETH);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, 1, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        superTransmuter.stateSync(maliciousMessage);
+    }
+
+    function test_revert_stateSync_InvalidPayload_Multi() public {
+        /// @dev multi = 1
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, 1, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        superTransmuter.stateSync(maliciousMessage);
+    }
+
+    function test_revert_stateSync_SrcSenderMismatch() public {
+        /// @dev returnDataSrcSender = address(0x1)
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0x1), ETH);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, 1, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.SRC_SENDER_MISMATCH.selector);
+        superTransmuter.stateSync(maliciousMessage);
+    }
+
+    function test_revert_stateSync_SrcTxTypeMismatch() public {
+        /// @dev TxType = 1
+        uint256 txInfo = DataLib.packTxInfo(1, 2, 0, 1, address(0), ETH);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, 1, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.SRC_TX_TYPE_MISMATCH.selector);
+        superTransmuter.stateSync(maliciousMessage);
+    }
+
+    function test_revert_stateSync_Invalid_payload_routerType_different() public {
+        /// @dev TxType = 1
+        uint256 txInfo = DataLib.packTxInfo(1, 2, 0, 1, address(0), ETH);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(1, 0, 1, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        superTransmuter.stateSync(maliciousMessage);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    /// Test revert for invalid txType (multi)
+    /// case: accidental messaging back for failed withdrawals with CallBackType FAIL
+    function test_revert_stateMultiSync_InvalidPayloadStatus() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0), ETH);
+
+        uint256[] memory x = new uint256[](1);
+        x[0] = 100;
+
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, x, x);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
+        superTransmuter.stateMultiSync(maliciousMessage);
+    }
+
+    function test_revert_stateMultiSync_InvalidPayload_CallbackType() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 0, 1, 1, address(0), ETH);
+
+        uint256[] memory x = new uint256[](1);
+        x[0] = 100;
+
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, x, x);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        superTransmuter.stateMultiSync(maliciousMessage);
+    }
+
+    function test_revert_stateMultiSync_InvalidPayload_Multi() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 0, 1, address(0), ETH);
+
+        uint256[] memory x = new uint256[](1);
+        x[0] = 100;
+
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, x, x);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        superTransmuter.stateMultiSync(maliciousMessage);
+    }
+
+    function test_revert_stateMultiSync_SrcSenderMismatch() public {
+        uint256 txInfo = DataLib.packTxInfo(0, 2, 1, 1, address(0x1), ETH);
+
+        uint256[] memory x = new uint256[](1);
+        x[0] = 100;
+
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, x, x);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.SRC_SENDER_MISMATCH.selector);
+        superTransmuter.stateMultiSync(maliciousMessage);
+    }
+
+    function test_revert_stateMultiSync_SrcTxTypeMismatch() public {
+        uint256 txInfo = DataLib.packTxInfo(1, 2, 1, 1, address(0), ETH);
+
+        uint256[] memory x = new uint256[](1);
+        x[0] = 100;
+
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, x, x);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.SRC_TX_TYPE_MISMATCH.selector);
+        superTransmuter.stateMultiSync(maliciousMessage);
+    }
+
+    function test_revert_stateMultiSync_Invalid_payload_routerType_different() public {
+        uint256 txInfo = DataLib.packTxInfo(1, 2, 1, 1, address(0), ETH);
+
+        uint256[] memory x = new uint256[](1);
+        x[0] = 100;
+
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(1, 0, x, x);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        superTransmuter.stateMultiSync(maliciousMessage);
+    }
+
+    function test_revert_stateSyncBroadcast() public {
+        vm.prank(deployer);
+        vm.expectRevert(Error.NOT_BROADCAST_REGISTRY.selector);
+        superTransmuter.stateSyncBroadcast("");
+    }
 }

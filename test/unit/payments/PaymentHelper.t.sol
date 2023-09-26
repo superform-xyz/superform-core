@@ -28,6 +28,73 @@ contract PaymentHelperTest is ProtocolActions {
         mockGasPriceOracle = new MockGasPriceOracle();
     }
 
+    function test_getGasPrice_chainlink_malfunction() public {
+        vm.prank(deployer);
+        paymentHelper.updateChainConfig(1, 2, abi.encode(address(0x222)));
+
+        address gasPriceOracle = address(paymentHelper.gasPriceOracle(ETH));
+        vm.mockCall(
+            gasPriceOracle,
+            abi.encodeWithSelector(MockGasPriceOracle(gasPriceOracle).latestRoundData.selector),
+            abi.encode(0, -10, block.timestamp, 0, 28 gwei)
+        );
+
+        vm.expectRevert(Error.CHAINLINK_MALFUNCTION.selector);
+        bytes memory emptyBytes;
+        paymentHelper.estimateSingleDirectSingleVault(
+            SingleDirectSingleVaultStateReq(
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    false,
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420),
+                    emptyBytes,
+                    dstRefundAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+
+        vm.clearMockedCalls();
+    }
+
+    function test_getGasPrice_chainlink_incomplete_round() public {
+        vm.prank(deployer);
+        paymentHelper.updateChainConfig(1, 2, abi.encode(address(0x222)));
+
+        address gasPriceOracle = address(paymentHelper.gasPriceOracle(ETH));
+
+        vm.mockCall(
+            gasPriceOracle,
+            abi.encodeWithSelector(MockGasPriceOracle(gasPriceOracle).latestRoundData.selector),
+            abi.encode(0, 10, block.timestamp, 0, 28 gwei)
+        );
+
+        vm.expectRevert(Error.CHAINLINK_INCOMPLETE_ROUND.selector);
+        bytes memory emptyBytes;
+        paymentHelper.estimateSingleDirectSingleVault(
+            SingleDirectSingleVaultStateReq(
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    false,
+                    LiqRequest(1, emptyBytes, address(0), ETH, 420),
+                    emptyBytes,
+                    dstRefundAddress,
+                    emptyBytes
+                )
+            ),
+            false
+        );
+
+        vm.clearMockedCalls();
+    }
+
     function test_estimateSingleDirectSingleVault() public {
         /// @dev scenario: single vault withdrawal involving timelock
         /// expected fees to be greater than zero
@@ -233,6 +300,164 @@ contract PaymentHelperTest is ProtocolActions {
         assertGt(fees, 0);
     }
 
+    function test_dstSwaps_swapFees() public {
+        /// @dev scenario: when the source native fee oracle is zero address
+
+        vm.prank(deployer);
+        paymentHelper.updateChainConfig(1, 11, abi.encode(1e8));
+
+        bytes memory emptyBytes;
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1, native, address(0), address(0), ETH, 1e18, getContract(ETH, "DstSwapper"), false
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        (,, uint256 dstAmount,) = paymentHelper.estimateSingleXChainSingleVault(
+            SingleXChainSingleVaultStateReq(
+                ambIds,
+                137,
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    false,
+                    LiqRequest(1, txData, address(0), ETH, 420),
+                    emptyBytes,
+                    dstRefundAddress,
+                    emptyBytes
+                )
+            ),
+            true
+        );
+
+        assertGt(dstAmount, 0);
+    }
+
+    function test_calculateAMBData() public {
+        /// @dev scenario: when the source native fee oracle is zero address
+
+        vm.prank(deployer);
+        uint8[] memory ambIds = new uint8[](3);
+
+        ambIds[0] = 1;
+        ambIds[1] = 2;
+        ambIds[2] = 3;
+        (uint256 totalFees,) = paymentHelper.calculateAMBData(137, ambIds, "0x");
+
+        assertGt(totalFees, 0);
+    }
+
+    function test_chainlink_malfunction() public {
+        /// @dev scenario: when the source native fee oracle is zero address
+        vm.prank(deployer);
+        paymentHelper.updateChainConfig(1, 1, abi.encode(address(0)));
+
+        vm.prank(deployer);
+        paymentHelper.updateChainConfig(1, 6, abi.encode(1e8));
+
+        bytes memory emptyBytes;
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1,
+            native,
+            address(0),
+            getContract(ETH, "CoreStateRegistry"),
+            ETH,
+            1e18,
+            getContract(ETH, "CoreStateRegistry"),
+            false
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        address nativeFeedOracleDst = address(paymentHelper.nativeFeedOracle(137));
+
+        vm.mockCall(
+            nativeFeedOracleDst,
+            abi.encodeWithSelector(MockGasPriceOracle(nativeFeedOracleDst).latestRoundData.selector),
+            abi.encode(0, -10, block.timestamp, 0, 28 gwei)
+        );
+
+        vm.expectRevert(Error.CHAINLINK_MALFUNCTION.selector);
+        paymentHelper.estimateSingleXChainSingleVault(
+            SingleXChainSingleVaultStateReq(
+                ambIds,
+                137,
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    false,
+                    LiqRequest(1, txData, address(0), ETH, 420),
+                    emptyBytes,
+                    dstRefundAddress,
+                    emptyBytes
+                )
+            ),
+            true
+        );
+
+        vm.clearMockedCalls();
+    }
+
+    function test_chainlink_incompleteround() public {
+        /// @dev scenario: when the source native fee oracle is zero address
+        vm.prank(deployer);
+        paymentHelper.updateChainConfig(1, 1, abi.encode(address(0)));
+
+        vm.prank(deployer);
+        paymentHelper.updateChainConfig(1, 6, abi.encode(1e8));
+
+        bytes memory emptyBytes;
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1,
+            native,
+            address(0),
+            getContract(ETH, "CoreStateRegistry"),
+            ETH,
+            1e18,
+            getContract(ETH, "CoreStateRegistry"),
+            false
+        );
+
+        uint8[] memory ambIds = new uint8[](1);
+        ambIds[0] = 1;
+
+        address nativeFeedOracleDst = address(paymentHelper.nativeFeedOracle(137));
+
+        vm.mockCall(
+            nativeFeedOracleDst,
+            abi.encodeWithSelector(MockGasPriceOracle(nativeFeedOracleDst).latestRoundData.selector),
+            abi.encode(0, 10, block.timestamp, 0, 28 gwei)
+        );
+
+        vm.expectRevert(Error.CHAINLINK_INCOMPLETE_ROUND.selector);
+        paymentHelper.estimateSingleXChainSingleVault(
+            SingleXChainSingleVaultStateReq(
+                ambIds,
+                137,
+                SingleVaultSFData(
+                    _generateTimelockSuperformPackWithShift(),
+                    /// timelock
+                    420,
+                    420,
+                    false,
+                    LiqRequest(1, txData, address(0), ETH, 420),
+                    emptyBytes,
+                    dstRefundAddress,
+                    emptyBytes
+                )
+            ),
+            true
+        );
+
+        vm.clearMockedCalls();
+    }
+
     function test_usageOfGasPriceOracle() public {
         /// @dev scenario: using mock gas price oracle
         vm.prank(deployer);
@@ -322,6 +547,13 @@ contract PaymentHelperTest is ProtocolActions {
 
         uint256 result6 = paymentHelper.gasPrice(1);
         assertEq(result6, 425);
+
+        /// set config type: 11
+        vm.prank(deployer);
+        paymentHelper.updateChainConfig(1, 11, abi.encode(423));
+
+        uint256 result7 = paymentHelper.swapGasUsed(1);
+        assertEq(result7, 423);
     }
 
     function test_addChain() public {

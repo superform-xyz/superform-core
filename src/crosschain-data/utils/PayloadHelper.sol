@@ -64,18 +64,14 @@ contract PayloadHelper is IPayloadHelper {
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
-    IBaseStateRegistry public immutable coreStateRegistry;
     ISuperRegistry public immutable superRegistry;
-    ITimelockStateRegistry public immutable twoStepRegistry;
 
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
-    constructor(address dstPayloadRegistry_, address superRegistry_, address twoStepRegistry_) {
-        coreStateRegistry = IBaseStateRegistry(dstPayloadRegistry_);
+    constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
-        twoStepRegistry = ITimelockStateRegistry(twoStepRegistry_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -100,7 +96,8 @@ contract PayloadHelper is IPayloadHelper {
         )
     {
         DecodeDstPayloadInternalVars memory v;
-
+        IBaseStateRegistry coreStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
         (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) =
             coreStateRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
 
@@ -175,6 +172,8 @@ contract PayloadHelper is IPayloadHelper {
         )
     {
         DecodeDstPayloadLiqDataInternalVars memory v;
+        IBaseStateRegistry coreStateRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")));
 
         (, v.callbackType, v.multi,,,) = coreStateRegistry.payloadHeader(dstPayloadId_).decodeTxInfo();
         if (v.multi == 1) {
@@ -269,7 +268,9 @@ contract PayloadHelper is IPayloadHelper {
         override
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
-        TimelockPayload memory payload = twoStepRegistry.getTimelockPayload(timelockPayloadId_);
+        TimelockPayload memory payload = ITimelockStateRegistry(
+            superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY"))
+        ).getTimelockPayload(timelockPayloadId_);
 
         return (
             payload.srcSender, payload.srcChainId, payload.data.payloadId, payload.data.superformId, payload.data.amount
@@ -282,7 +283,8 @@ contract PayloadHelper is IPayloadHelper {
         override
         returns (address srcSender, uint64 srcChainId, uint256 srcPayloadId, uint256 superformId, uint256 amount)
     {
-        IBaseStateRegistry timelockPayloadRegistry = IBaseStateRegistry(address(twoStepRegistry));
+        IBaseStateRegistry timelockPayloadRegistry =
+            IBaseStateRegistry(superRegistry.getAddress(keccak256("TIMELOCK_STATE_REGISTRY")));
         bytes memory payloadBody = timelockPayloadRegistry.payloadBody(timelockPayloadId_);
         uint256 payloadHeader = timelockPayloadRegistry.payloadHeader(timelockPayloadId_);
 

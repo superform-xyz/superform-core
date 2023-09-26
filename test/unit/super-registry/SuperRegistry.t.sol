@@ -118,6 +118,44 @@ contract SuperRegistryTest is BaseSetup {
         superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
     }
 
+    function test_setBridgeAddresses_array_mismatch_address() public {
+        uint8[] memory bridgeId = new uint8[](3);
+        address[] memory bridgeAddress = new address[](2);
+        address[] memory bridgeValidator = new address[](3);
+
+        bridgeId[0] = uint8(ETH);
+        bridgeAddress[0] = address(0x1);
+        bridgeValidator[0] = address(0x2);
+        bridgeId[1] = uint8(OP);
+        bridgeAddress[1] = address(0x3);
+        bridgeValidator[1] = address(0x4);
+        bridgeId[2] = uint8(POLY);
+        bridgeValidator[2] = address(0x6);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
+    }
+
+    function test_setBridgeAddresses_array_mismatch_validator() public {
+        uint8[] memory bridgeId = new uint8[](3);
+        address[] memory bridgeAddress = new address[](3);
+        address[] memory bridgeValidator = new address[](2);
+
+        bridgeId[0] = uint8(ETH);
+        bridgeAddress[0] = address(0x1);
+        bridgeValidator[0] = address(0x2);
+        bridgeId[1] = uint8(OP);
+        bridgeAddress[1] = address(0x3);
+        bridgeValidator[1] = address(0x4);
+        bridgeId[2] = uint8(POLY);
+        bridgeAddress[2] = address(0x5);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
+    }
+
     function test_setAmbAddress_and_revert_zeroAddress_invalidCaller() public {
         uint8[] memory ambId = new uint8[](2);
         address[] memory ambAddress = new address[](2);
@@ -127,7 +165,7 @@ contract SuperRegistryTest is BaseSetup {
         ambAddress[0] = address(0x1);
         ambId[1] = 3;
         ambAddress[1] = address(0x3);
-
+        broadcastAMB[1] = true;
         vm.startPrank(deployer);
         superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
         assertEq(superRegistry.getAmbAddress(3), address(0x3));
@@ -139,6 +177,40 @@ contract SuperRegistryTest is BaseSetup {
 
         assertEq(superRegistry.isValidAmbImpl(getContract(ETH, "LayerzeroImplementation")), true);
         assertEq(superRegistry.isValidAmbImpl(address(0x9)), false);
+
+        assertEq(superRegistry.isValidBroadcastAmbImpl(address(0x1)), false);
+        assertEq(superRegistry.isValidBroadcastAmbImpl(address(0x3)), true);
+    }
+
+    function test_setAmbAddress_array_mismatch_ambaddress() public {
+        uint8[] memory ambId = new uint8[](2);
+        address[] memory ambAddress = new address[](1);
+        bool[] memory broadcastAMB = new bool[](2);
+
+        ambId[0] = 1;
+        ambAddress[0] = address(0x1);
+        ambId[1] = 3;
+
+        vm.startPrank(deployer);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+
+        superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
+    }
+
+    function test_setAmbAddress_array_mismatch_broadcastamb() public {
+        uint8[] memory ambId = new uint8[](2);
+        address[] memory ambAddress = new address[](2);
+        bool[] memory broadcastAMB = new bool[](1);
+
+        ambId[0] = 1;
+        ambAddress[0] = address(0x1);
+        ambId[1] = 3;
+        ambAddress[1] = address(0x3);
+
+        vm.startPrank(deployer);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+
+        superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
     }
 
     function test_setStateRegistryAddress_and_revert_zeroAddress_invalidCaller() public {
@@ -169,6 +241,57 @@ contract SuperRegistryTest is BaseSetup {
         assertEq(superRegistry.isValidStateRegistry(getContract(ETH, "CoreStateRegistry")), true);
     }
 
+    function test_setStateRegistryAddress_arraylength_mismatch() public {
+        uint8[] memory registryId = new uint8[](2);
+        address[] memory registryAddress = new address[](1);
+
+        registryId[0] = 1;
+        registryAddress[0] = address(0x1);
+        registryId[1] = 3;
+
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+        vm.startPrank(deployer);
+        superRegistry.setStateRegistryAddress(registryId, registryAddress);
+    }
+
+    function test_setRouterInfo() public {
+        uint8[] memory superformRouterIds = new uint8[](2);
+        address[] memory stateSyncers = new address[](1);
+        address[] memory routers = new address[](2);
+
+        superformRouterIds[0] = 1;
+        stateSyncers[0] = address(0x1);
+        routers[0] = address(0x2);
+        superformRouterIds[1] = 3;
+        routers[1] = address(0x4);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+
+        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
+        stateSyncers = new address[](2);
+        stateSyncers[0] = address(0x1);
+        stateSyncers[1] = address(0x3);
+
+        routers = new address[](1);
+        routers[0] = address(0x2);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.ARRAY_LENGTH_MISMATCH.selector);
+
+        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
+        routers = new address[](2);
+        routers[0] = address(0x2);
+        routers[1] = address(0x4);
+
+        vm.prank(deployer);
+        superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
+
+        address router1 = superRegistry.getRouter(3);
+
+        assertEq(router1, address(0x4));
+    }
+
     function test_setRequiredMessagingQuorum_and_revert_invalidCaller() public {
         vm.prank(deployer);
         superRegistry.setRequiredMessagingQuorum(OP, 2);
@@ -177,6 +300,19 @@ contract SuperRegistryTest is BaseSetup {
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
         superRegistry.setRequiredMessagingQuorum(OP, 5);
+    }
+
+    function test_set_delay() public {
+        vm.prank(deployer);
+        vm.expectRevert(Error.INVALID_TIMELOCK_DELAY.selector);
+        superRegistry.setDelay(30 minutes);
+
+        vm.prank(deployer);
+        vm.expectRevert(Error.INVALID_TIMELOCK_DELAY.selector);
+        superRegistry.setDelay(48 hours);
+
+        vm.prank(deployer);
+        superRegistry.setDelay(11 hours);
     }
 
     function _setAndAssert(bytes32 id_, address contractAddress) internal {

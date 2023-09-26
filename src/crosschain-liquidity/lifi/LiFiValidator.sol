@@ -97,6 +97,10 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
+            /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
+            if (sendingAssetId == address(0)) {
+                sendingAssetId = NATIVE;
+            }
             /// @dev 3. token validations
             if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
         } catch {
@@ -116,6 +120,10 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
+            /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
+            if (sendingAssetId == address(0)) {
+                sendingAssetId = NATIVE;
+            }
             /// @dev 3. token validations
             if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
         }
@@ -254,7 +262,7 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
         LibSwap.SwapData[] memory swapData;
         bytes memory callData = data_;
 
-        if (abi.decode(data_, (bytes4)) == 0xd6a4bc50) {
+        if (bytes4(data_[:4]) == 0xd6a4bc50) {
             // standardizedCall
             callData = abi.decode(data_[4:], (bytes));
         }

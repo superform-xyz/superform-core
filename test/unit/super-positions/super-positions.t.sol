@@ -10,7 +10,7 @@ import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
 import { Error } from "src/utils/Error.sol";
 
-contract SuperPositionTest is BaseSetup {
+contract SuperPositionsTest is BaseSetup {
     bytes4 INTERFACE_ID_ERC165 = 0x01ffc9a7;
 
     string public URI = "https://superform.xyz/metadata/";
@@ -107,6 +107,17 @@ contract SuperPositionTest is BaseSetup {
         superPositions.stateSync(maliciousMessage);
     }
 
+    function test_revert_stateSync_Invalid_payload_routerType_different() public {
+        /// @dev TxType = 1
+        uint256 txInfo = DataLib.packTxInfo(1, 2, 0, 1, address(0), ETH);
+        ReturnSingleData memory maliciousReturnData = ReturnSingleData(2, 0, 1, 100);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
+        superPositions.stateSync(maliciousMessage);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
 
     /// Test revert for invalid txType (multi)
@@ -178,6 +189,20 @@ contract SuperPositionTest is BaseSetup {
 
         vm.broadcast(getContract(ETH, "CoreStateRegistry"));
         vm.expectRevert(Error.SRC_TX_TYPE_MISMATCH.selector);
+        superPositions.stateMultiSync(maliciousMessage);
+    }
+
+    function test_revert_stateMultiSync_Invalid_payload_routerType_different() public {
+        uint256 txInfo = DataLib.packTxInfo(1, 2, 1, 1, address(0), ETH);
+
+        uint256[] memory x = new uint256[](1);
+        x[0] = 100;
+
+        ReturnMultiData memory maliciousReturnData = ReturnMultiData(2, 0, x, x);
+        AMBMessage memory maliciousMessage = AMBMessage(txInfo, abi.encode(maliciousReturnData));
+
+        vm.broadcast(getContract(ETH, "CoreStateRegistry"));
+        vm.expectRevert(Error.INVALID_PAYLOAD.selector);
         superPositions.stateMultiSync(maliciousMessage);
     }
 }
