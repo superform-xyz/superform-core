@@ -131,6 +131,7 @@ abstract contract ProtocolActions is BaseSetup {
     {
         console.log("new-action");
 
+        console.log("CHAIN_0", CHAIN_0);
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
         address token;
@@ -2009,10 +2010,16 @@ abstract contract ProtocolActions is BaseSetup {
         address superRegistryAddress = getContract(srcChain_, "SuperRegistry");
         vm.selectFork(FORKS[srcChain_]);
 
+        console.log("srcChain_", srcChain_);
+        console.log("FORKS[srcChain_]", FORKS[srcChain_]);
+
         superPositionBalances = new uint256[](superformIds.length);
+        console.log("superRegistryAddress", superRegistryAddress);
+
         address superPositionsAddress =
             ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
 
+        console.log("DONE");
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
         for (uint256 i = 0; i < superformIds.length; i++) {

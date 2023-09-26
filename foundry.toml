@@ -63,7 +63,7 @@ runs = 50
 [invariant]
 runs = 10
 depth = 40
-fail_on_revert = false
+fail_on_revert = true
 call_override = false
 dictionary_weight = 80
 include_storage = true
