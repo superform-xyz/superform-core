@@ -6,9 +6,35 @@ import "forge-std/Test.sol";
 import "../VaultShares.invariant.t.sol";
 
 contract VaultSharesHandler is ProtocolActions {
-    // constructor() {
-    //     super.setUp();
-    // }
+    function setUp() public override {
+        super.setUp();
+    }
+
+    constructor() {
+        setUp();
+    }
+
+    function getSuperpositionsSum() public returns (uint256 superPositionsSum) {
+        /// @dev sum up superpositions owned by user for the superform on ETH, on all chains
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
+                0, TARGET_UNDERLYINGS[ETH][0], TARGET_VAULTS[ETH][0], TARGET_FORM_KINDS[ETH][0], chainIds[i], ETH
+            );
+
+            if (superPositions.length > 0) {
+                superPositionsSum += superPositions[0];
+            }
+        }
+    }
+
+    function getVaultShares() public returns (uint256 vaultShares) {
+        address superform = getContract(
+            ETH, string.concat(UNDERLYING_TOKENS[2], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        vm.selectFork(ETH);
+        vaultShares = IBaseForm(superform).getVaultShareBalance();
+    }
 
     function singleDirectSingleVaultDeposit() public {
         AMBs = [2, 3];

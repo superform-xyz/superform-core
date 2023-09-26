@@ -467,6 +467,7 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.superRegistryC
                 )
             );
+            console.log("vars.chainId, wormholeImplementation:", vars.chainId, vars.wormholeImplementation);
             contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
             WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
@@ -678,6 +679,7 @@ abstract contract BaseSetup is DSTest, Test {
             vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
+            console.log("wormholeImplementation_2", vars.wormholeImplementation);
             vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
             vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
 
@@ -698,7 +700,9 @@ abstract contract BaseSetup is DSTest, Test {
 
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
+                    console.log("vars.dstChainId", vars.dstChainId);
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
+                    console.log("dstWormholeARImplementation", vars.dstWormholeARImplementation);
                     vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
                     vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
 
@@ -717,6 +721,7 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstChainId, vars.dstHypChainId
                     );
 
+                    console.log("wormholeImplementation", vars.wormholeImplementation);
                     WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
                         vars.dstWormholeChainId, vars.dstWormholeARImplementation
                     );
