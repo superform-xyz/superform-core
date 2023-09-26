@@ -74,7 +74,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev ETH mainnet values as on 22nd Aug, 2023
     uint256 public constant TOTAL_SUPPLY_DAI = 3_961_541_270_138_222_277_363_935_051;
-    uint256 public constant TOTAL_SUPPLY_USDT = 39_026_949_359_163_005;
+    uint256 public constant TOTAL_SUPPLY_USDC = 23_575_381_028;
     uint256 public constant TOTAL_SUPPLY_WETH = 3_293_797_048_454_740_686_583_782;
     uint256 public constant TOTAL_SUPPLY_ETH = 120_000_000e18;
 
@@ -96,7 +96,7 @@ abstract contract BaseSetup is DSTest, Test {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev we should fork these instead of mocking
-    string[] public UNDERLYING_TOKENS = ["DAI", "USDT", "WETH"];
+    string[] public UNDERLYING_TOKENS = ["DAI", "USDC", "WETH"];
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
     uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
@@ -245,6 +245,7 @@ abstract contract BaseSetup is DSTest, Test {
     // chainID => FORK
     mapping(uint64 chainId => uint256 fork) public FORKS;
     mapping(uint64 chainId => string forkUrl) public RPC_URLS;
+    mapping(uint64 chainId => mapping(string underlying => address realAddress)) public UNDERLYING_EXISTING_TOKENS;
 
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
@@ -506,9 +507,15 @@ abstract contract BaseSetup is DSTest, Test {
 
             /// @dev 8.1 - Deploy UNDERLYING_TOKENS and VAULTS
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
-                vars.UNDERLYING_TOKEN = address(
-                    new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
-                );
+                vars.UNDERLYING_TOKEN = UNDERLYING_EXISTING_TOKENS[vars.chainId][UNDERLYING_TOKENS[j]];
+
+                if (vars.UNDERLYING_TOKEN == address(0)) {
+                    vars.UNDERLYING_TOKEN = address(
+                        new MockERC20{salt: salt}(UNDERLYING_TOKENS[j], UNDERLYING_TOKENS[j], deployer, hundredBilly)
+                    );
+                } else {
+                    deal(vars.UNDERLYING_TOKEN, deployer, hundredBilly);
+                }
                 contracts[vars.chainId][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.UNDERLYING_TOKEN;
             }
             bytes memory bytecodeWithArgs;
@@ -1034,6 +1041,33 @@ abstract contract BaseSetup is DSTest, Test {
                 VAULT_NAMES[i].push(string.concat(underlyingTokens[j], VAULT_KINDS[i]));
             }
         }
+
+        mapping(uint64 chainId => mapping(string underlying => address realAddress)) storage existingTokens =
+            UNDERLYING_EXISTING_TOKENS;
+
+        existingTokens[43_114]["DAI"] = 0xd586E7F844cEa2F87f50152665BCbc2C279D8d70;
+        existingTokens[43_114]["USDC"] = 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E;
+        existingTokens[43_114]["WETH"] = 0x49D5c2BdFfac6CE2BFdB6640F4F80f226bc10bAB;
+
+        existingTokens[42_161]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+        existingTokens[42_161]["USDC"] = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
+        existingTokens[42_161]["WETH"] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+
+        existingTokens[10]["DAI"] = 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1;
+        existingTokens[10]["USDC"] = 0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85;
+        existingTokens[10]["WETH"] = 0x4200000000000000000000000000000000000006;
+
+        existingTokens[1]["DAI"] = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+        existingTokens[1]["USDC"] = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        existingTokens[1]["WETH"] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+        existingTokens[137]["DAI"] = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
+        existingTokens[137]["USDC"] = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+        existingTokens[137]["WETH"] = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
+
+        existingTokens[56]["DAI"] = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
+        existingTokens[56]["USDC"] = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
+        existingTokens[56]["WETH"] = address(0);
     }
 
     function _fundNativeTokens() private {

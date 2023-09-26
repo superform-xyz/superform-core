@@ -100,23 +100,23 @@ contract DstSwapperTest is ProtocolActions {
 
         if (success) {
             DstSwapper(dstSwapper).processTx(
-                1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
+                1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0)
             );
 
             /// @dev try with a non-existent index
             vm.expectRevert(Error.INVALID_INDEX.selector);
             DstSwapper(dstSwapper).processTx(
-                1, 420, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
+                1, 420, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0)
             );
             /// @dev retry the same payload id and indices
             vm.expectRevert(Error.DST_SWAP_ALREADY_PROCESSED.selector);
             DstSwapper(dstSwapper).processTx(
-                1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
+                1, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0)
             );
             /// @dev no funds in multi-tx processor at this point; should revert
             vm.expectRevert(Error.FAILED_TO_EXECUTE_TXDATA_NATIVE.selector);
             DstSwapper(dstSwapper).processTx(
-                2, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0)
+                2, 0, 1, _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0)
             );
         } else {
             revert();
@@ -137,9 +137,7 @@ contract DstSwapperTest is ProtocolActions {
             1,
             0,
             1,
-            _buildLiqBridgeTxDataDstSwap(
-                1, getContract(ETH, "WETH"), getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0
-            )
+            _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0)
         );
     }
 
@@ -164,8 +162,8 @@ contract DstSwapperTest is ProtocolActions {
         approvalToken[1] = native;
 
         bytes[] memory txData = new bytes[](2);
-        txData[0] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0);
-        txData[1] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0);
+        txData[0] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+        txData[1] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
@@ -219,8 +217,8 @@ contract DstSwapperTest is ProtocolActions {
         approvalToken[1] = native;
 
         bytes[] memory txData = new bytes[](2);
-        txData[0] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0);
-        txData[1] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0);
+        txData[0] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+        txData[1] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
@@ -254,13 +252,13 @@ contract DstSwapperTest is ProtocolActions {
             1,
             0,
             1,
-            _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "USDT"), dstSwapper, ETH, 0, 0)
+            _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 0, 0)
         );
     }
 
     function _simulateSingleVaultExistingPayload(address payable coreStateRegistry) internal {
         /// simulate an existing payload in csr
-        address superform = getContract(ETH, string.concat("USDT", "VaultMock", "Superform", "1"));
+        address superform = getContract(ETH, string.concat("DAI", "VaultMock", "Superform", "1"));
         uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
 
         LiqRequest memory liq;
@@ -278,7 +276,7 @@ contract DstSwapperTest is ProtocolActions {
 
     function _simulateMultiVaultExistingPayload(address payable coreStateRegistry) internal {
         /// simulate an existing payload in csr
-        address superform = getContract(ETH, string.concat("USDT", "VaultMock", "Superform", "1"));
+        address superform = getContract(ETH, string.concat("DAI", "VaultMock", "Superform", "1"));
         uint256 superformId = DataLib.packSuperform(superform, 1, ETH);
 
         vm.prank(getContract(ETH, "LayerzeroImplementation"));

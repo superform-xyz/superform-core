@@ -144,7 +144,7 @@ abstract contract ProtocolActions is BaseSetup {
             if (action.externalToken == 0) {
                 deal(token, users[action.user], TOTAL_SUPPLY_DAI);
             } else if (action.externalToken == 1) {
-                deal(token, users[action.user], TOTAL_SUPPLY_USDT);
+                deal(token, users[action.user], TOTAL_SUPPLY_USDC);
             } else if (action.externalToken == 2) {
                 deal(token, users[action.user], TOTAL_SUPPLY_WETH);
             }
@@ -1729,15 +1729,19 @@ abstract contract ProtocolActions is BaseSetup {
 
         if (liqRequestToken != NATIVE_TOKEN) {
             /// @dev - APPROVE transfer to SuperformRouter (because of Socket)
-            vm.prank(users[args.user]);
 
             if (action == Actions.DepositPermit2) {
+                vm.prank(users[args.user]);
                 MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);
             } else if (action == Actions.Deposit && liqRequestToken != NATIVE_TOKEN) {
                 /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts
                 /// are ordered from lowest to highest,
                 /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
-                MockERC20(liqRequestToken).increaseAllowance(args.fromSrc, args.amount);
+                vm.startPrank(users[args.user]);
+                MockERC20(liqRequestToken).approve(
+                    args.fromSrc, MockERC20(liqRequestToken).allowance(users[args.user], args.fromSrc) + args.amount
+                );
+                vm.stopPrank();
             }
         }
         vm.selectFork(v.initialFork);
