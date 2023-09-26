@@ -217,8 +217,8 @@ contract DstSwapperTest is ProtocolActions {
         approvalToken[1] = native;
 
         bytes[] memory txData = new bytes[](2);
-        txData[0] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0);
-        txData[1] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "USDT"), dstSwapper, ETH, 1e18, 0);
+        txData[0] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
+        txData[1] = _buildLiqBridgeTxDataDstSwap(1, native, getContract(ETH, "DAI"), dstSwapper, ETH, 1e18, 0);
 
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1e18;
@@ -252,7 +252,7 @@ contract DstSwapperTest is ProtocolActions {
             1,
             0,
             1,
-            _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "USDT"), dstSwapper, ETH, 0, 0)
+            _buildLiqBridgeTxDataDstSwap(1, getContract(ETH, "WETH"), getContract(ETH, "DAI"), dstSwapper, ETH, 0, 0)
         );
     }
 
