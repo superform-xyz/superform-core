@@ -934,7 +934,7 @@ abstract contract BaseSetup is DSTest, Test {
                         MISC. HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _preDeploymentSetup() internal {
+    function _preDeploymentSetup() internal virtual {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 18_092_097);

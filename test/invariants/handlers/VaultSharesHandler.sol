@@ -9,13 +9,56 @@ import { StdCheats } from "forge-std/StdCheats.sol";
 import { StdUtils } from "forge-std/StdUtils.sol";
 
 contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, ProtocolActions {
-    constructor(address[][] memory allContracts, uint64[] memory chainIds, string[21] memory contractNames) {
+    constructor(
+        uint64[] memory chainIds,
+        string[27] memory contractNames,
+        address[][] memory coreContracts,
+        address[][] memory underlyingAddresses,
+        address[][][] memory vaultAddresses,
+        address[][][] memory superformAddresses
+    ) {
+        _preDeploymentSetup();
+
         for (uint256 i = 0; i < chainIds.length; i++) {
             for (uint256 j = 0; j < contractNames.length; j++) {
-                contracts[chainIds[i]][bytes32(bytes(contractNames[j]))] = allContracts[i][j];
+                contracts[chainIds[i]][bytes32(bytes(contractNames[j]))] = coreContracts[i][j];
+            }
+
+            for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
+                contracts[chainIds[i]][bytes32(bytes(UNDERLYING_TOKENS[j]))] = underlyingAddresses[i][j];
+            }
+
+            for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
+                uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;
+                uint256 counter;
+
+                for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
+                    for (uint256 l = 0; l < lenBytecodes; l++) {
+                        contracts[chainIds[i]][bytes32(bytes(VAULT_NAMES[l][k]))] = vaultAddresses[i][j][counter];
+                        contracts[chainIds[i]][bytes32(
+                            bytes(
+                                string.concat(
+                                    UNDERLYING_TOKENS[k],
+                                    VAULT_KINDS[l],
+                                    "Superform",
+                                    Strings.toString(FORM_BEACON_IDS[j])
+                                )
+                            )
+                        )] = superformAddresses[i][j][counter];
+                        counter++;
+                    }
+                }
             }
         }
 
+        console.log("Handler setup done!");
+
+        //_fundNativeTokens();
+
+        //_fundUnderlyingTokens(100);
+    }
+
+    function _preDeploymentSetup() internal override {
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
         rpcURLs[BSC] = BSC_RPC_URL;
@@ -137,12 +180,9 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, ProtocolActions 
                 VAULT_NAMES[i].push(string.concat(underlyingTokens[j], VAULT_KINDS[i]));
             }
         }
-
-        //_fundNativeTokens();
-
-        //_fundUnderlyingTokens(100);
     }
 
+    /*
     function getSuperpositionsSum() public returns (uint256 superPositionsSum) {
         /// @dev sum up superpositions owned by user for the superform on ETH, on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
@@ -165,7 +205,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, ProtocolActions 
         vm.selectFork(ETH);
         vaultShares = IBaseForm(superform).getVaultShareBalance();
     }
-
+    */
     function singleDirectSingleVaultDeposit() public {
         AMBs = [2, 3];
         CHAIN_0 = AVAX;

@@ -147,11 +147,7 @@ abstract contract ProtocolActions is BaseSetup {
             } else if (action.externalToken == 1) {
                 deal(token, users[action.user], TOTAL_SUPPLY_USDT);
             } else if (action.externalToken == 2) {
-                console.log("1");
-                console.log("action.user id", action.user);
-                console.log("user address ", users[action.user]);
                 deal(token, users[action.user], TOTAL_SUPPLY_WETH);
-                console.log("2");
             }
         }
 
@@ -182,9 +178,10 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(initialFork);
         if (action.dstSwap) MULTI_TX_SLIPPAGE_SHARE = 40;
-
+        console.log("PRE_STAGE1");
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
+        console.log("Stage 1 complete");
 
         uint256[][] memory spAmountSummed = new uint256[][](vars.nDestinations);
         uint256[] memory spAmountBeforeWithdrawPerDst;
@@ -628,6 +625,8 @@ abstract contract ProtocolActions is BaseSetup {
         } else {
             if (vars.nDestinations == 1) {
                 if (CHAIN_0 != DST_CHAINS[0]) {
+                    (,,uint64 chainId) = DataLib.getSuperform(singleSuperformsData[0].superformId);
+                    console.log("CHAIN ID of THE SUPERFORM"; chainId);
                     vars.singleXChainSingleVaultStateReq =
                         SingleXChainSingleVaultStateReq(AMBs, DST_CHAINS[0], singleSuperformsData[0]);
 
@@ -1988,38 +1987,6 @@ abstract contract ProtocolActions is BaseSetup {
         address superPositionsAddress =
             ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
 
-        IERC1155A superPositions = IERC1155A(superPositionsAddress);
-
-        for (uint256 i = 0; i < superformIds.length; i++) {
-            superPositionBalances[i] = superPositions.balanceOf(users[user_], superformIds[i]);
-        }
-    }
-
-    function _getSuperpositionsForDstChainFromSrcChain(
-        uint256 user_,
-        uint256[] memory underlyingTokens_,
-        uint256[] memory vaultIds_,
-        uint32[] memory formKinds_,
-        uint64 srcChain_,
-        uint64 dstChain_
-    )
-        internal
-        returns (uint256[] memory superPositionBalances)
-    {
-        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain_);
-        address superRegistryAddress = getContract(srcChain_, "SuperRegistry");
-        vm.selectFork(FORKS[srcChain_]);
-
-        console.log("srcChain_", srcChain_);
-        console.log("FORKS[srcChain_]", FORKS[srcChain_]);
-
-        superPositionBalances = new uint256[](superformIds.length);
-        console.log("superRegistryAddress", superRegistryAddress);
-
-        address superPositionsAddress =
-            ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
-
-        console.log("DONE");
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
         for (uint256 i = 0; i < superformIds.length; i++) {
