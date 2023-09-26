@@ -97,6 +97,10 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
+            /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
+            if (sendingAssetId == address(0)) {
+                sendingAssetId = NATIVE;
+            }
             /// @dev 3. token validations
             if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
         } catch {
@@ -116,6 +120,10 @@ contract LiFiValidator is BridgeValidator, LiFiTxDataExtractor {
                 if (receiver != args_.srcSender) revert Error.INVALID_TXDATA_RECEIVER();
             }
 
+            /// @dev remap of address 0 to NATIVE because of how LiFi produces txData
+            if (sendingAssetId == address(0)) {
+                sendingAssetId = NATIVE;
+            }
             /// @dev 3. token validations
             if (args_.liqDataToken != sendingAssetId) revert Error.INVALID_TXDATA_TOKEN();
         }
