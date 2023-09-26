@@ -83,7 +83,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address superform;
         uint256 len = req_.superformsData.superformIds.length;
 
-        _multiVaultTokenForward(msg.sender, new address[](0), req_.superformsData.permit2data, ambData);
+        _multiVaultTokenForward(msg.sender, new address[](0), req_.superformsData.permit2data, ambData, true);
 
         /// @dev this loop is what allows to deposit to >1 different underlying on destination
         /// @dev if a loop fails in a validation the whole chain should be reverted
@@ -540,7 +540,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev decode superforms
         (v.superforms,,) = DataLib.getSuperforms(vaultData_.superformIds);
 
-        _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_);
+        _multiVaultTokenForward(srcSender_, v.superforms, permit2data_, vaultData_, false);
 
         for (uint256 i; i < v.len;) {
             /// @dev deposits collateral to a given vault and mint vault positions.
@@ -871,6 +871,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             } else {
                 address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData.bridgeId);
                 amount = IBridgeValidator(bridgeValidator).decodeAmountIn(vaultData_.liqData.txData, false);
+                /// e.g asset in is USDC (6 decimals), we use this amount to approve the transfer to superform
             }
 
             if (permit2data_.length != 0) {
@@ -878,6 +879,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
                 (uint256 nonce, uint256 deadline, bytes memory signature) =
                     abi.decode(permit2data_, (uint256, uint256, bytes));
+
+                /// @dev moves the tokens from the user to the router
 
                 IPermit2(permit2).permitTransferFrom(
                     // The permit message.
@@ -901,11 +904,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
                 }
 
-                /// @dev moves the tokens from the user and approves the form
+                /// @dev moves the tokens from the user to the router
                 token.safeTransferFrom(srcSender_, address(this), amount);
             }
 
-            /// @dev approves the superform
+            /// @dev approves the input amount to the superform
             token.safeIncreaseAllowance(superform_, amount);
         }
     }
@@ -923,7 +926,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         address srcSender_,
         address[] memory targets_,
         bytes memory permit2data_,
-        InitMultiVaultData memory vaultData_
+        InitMultiVaultData memory vaultData_,
+        bool xChain
     )
         internal
         virtual
@@ -944,9 +948,10 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 }
 
                 uint256 len = vaultData_.liqData[i].txData.length;
-
-                if (len == 0) {
+                if (len == 0 && !xChain) {
                     v.approvalAmounts[i] = vaultData_.amounts[i];
+                } else if (len == 0 && xChain) {
+                    revert Error.NO_TXDATA_PRESENT();
                 } else {
                     address bridgeValidator = superRegistry.getBridgeValidator(vaultData_.liqData[i].bridgeId);
                     v.approvalAmounts[i] =
@@ -964,6 +969,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                     (uint256 nonce, uint256 deadline, bytes memory signature) =
                         abi.decode(permit2data_, (uint256, uint256, bytes));
 
+                    /// @dev moves the tokens from the user to the router
                     IPermit2(v.permit2).permitTransferFrom(
                         // The permit message.
                         IPermit2.PermitTransferFrom({
@@ -986,7 +992,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                         revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
                     }
 
-                    /// @dev moves the tokens from the user and approves the form
+                    /// @dev moves the tokens from the user to the router
                     v.token.safeTransferFrom(srcSender_, address(this), v.totalAmount);
                 }
             }

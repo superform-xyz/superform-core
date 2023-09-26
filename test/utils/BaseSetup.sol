@@ -639,9 +639,7 @@ abstract contract BaseSetup is DSTest, Test {
             /// @dev 13- deploy Payload Helper
             vars.PayloadHelper = address(
                 new PayloadHelper{salt: salt}(
-                    vars.coreStateRegistry,
-                    vars.superRegistry,
-                    vars.twoStepsFormStateRegistry
+                    vars.superRegistry
                 )
             );
             contracts[vars.chainId][bytes32(bytes("PayloadHelper"))] = vars.PayloadHelper;

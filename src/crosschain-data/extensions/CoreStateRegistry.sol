@@ -341,7 +341,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         for (uint256 i; i < superformIds.length;) {
             (address form_,,) = DataLib.getSuperform(superformIds[i]);
             /// @dev refunds the amount to user specified refund address
-            IERC20(IERC4626Form(form_).getVaultAsset()).transfer(refundAddress, amounts[i]);
+            IERC20(IERC4626Form(form_).getVaultAsset()).safeTransfer(refundAddress, amounts[i]);
             unchecked {
                 ++i;
             }

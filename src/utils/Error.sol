@@ -145,6 +145,9 @@ library Error {
     /// @dev thrown if the rescue is still in timelocked state
     error RESCUE_LOCKED();
 
+    /// @dev error thrown when txData must be present (in case of xChain acitons)
+    error NO_TXDATA_PRESENT();
+
     /*///////////////////////////////////////////////////////////////
                         STATE REGISTRY ERRORS
     //////////////////////////////////////////////////////////////*/
