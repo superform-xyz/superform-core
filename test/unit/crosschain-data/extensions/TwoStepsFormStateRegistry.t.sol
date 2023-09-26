@@ -21,9 +21,9 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            getContract(ETH, "USDT"),
-            getContract(ETH, "USDT"),
-            getContract(ETH, "USDT"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
             getContract(ETH, "ERC4626TimelockForm"),
             ETH,
             ETH,
@@ -50,7 +50,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
                 420,
                 0,
                 false,
-                LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "USDT"), ETH, 0),
+                LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), ETH, 0),
                 dstRefundAddress,
                 bytes("")
             )
@@ -65,7 +65,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         address superform = getContract(
-            ETH, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
         );
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
 
@@ -84,7 +84,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
                 false,
                 /// @dev note txData (2nd arg) is empty and token (3rd arg) is not address(0) to
                 /// indicate keeper to create and update txData using finalizePayload()
-                LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
+                LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
                 dstRefundAddress,
                 bytes("")
             )
@@ -92,9 +92,9 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            getContract(ETH, "USDT"),
-            getContract(ETH, "USDT"),
-            getContract(ETH, "USDT"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
             getContract(ETH, "ERC4626TimelockForm"),
             ETH,
             ETH,

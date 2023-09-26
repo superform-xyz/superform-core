@@ -21,12 +21,12 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(ETH, string.concat("USDT", "kycDAO4626", "Superform", Strings.toString(FORM_BEACON_IDS[2])));
+            getContract(ETH, string.concat("DAI", "kycDAO4626", "Superform", Strings.toString(FORM_BEACON_IDS[2])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[2], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", refundAddress, ""
+            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
@@ -34,7 +34,7 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
         vm.expectRevert(ERC4626KYCDaoForm.NO_VALID_KYC_TOKEN.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
 
