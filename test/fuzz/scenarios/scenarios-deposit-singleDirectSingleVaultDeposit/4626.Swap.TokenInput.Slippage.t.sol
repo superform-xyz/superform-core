@@ -16,7 +16,7 @@ contract SDSVD4626SwapTokenInputSlippage is ProtocolActions {
         DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [1];
+        TARGET_UNDERLYINGS[OP][0] = [0];
 
         TARGET_VAULTS[OP][0] = [0];
 
