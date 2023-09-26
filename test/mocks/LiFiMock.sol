@@ -128,8 +128,8 @@ contract LiFiMock is Test {
             try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
         }
 
-        uint256 decimal1 = MockERC20(inputToken_).decimals();
-        uint256 decimal2 = MockERC20(outputToken_).decimals();
+        uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
+        uint256 decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
 
         /// input token decimals are greater than output
         if (decimal1 > decimal2) {

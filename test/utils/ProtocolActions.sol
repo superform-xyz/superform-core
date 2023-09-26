@@ -1747,7 +1747,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
             args.superformId,
-            args.amount * 10 ** 12,
+            args.amount,
             args.maxSlippage,
             args.dstSwap,
             v.liqReq,
