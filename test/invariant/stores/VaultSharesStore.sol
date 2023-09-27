@@ -18,10 +18,7 @@ contract VaultSharesStore {
 
     function setInvariantToAssert(uint256 _superPositionsSum, uint256 _vaultShares) external {
         // Store the results
-
-        console.log("A");
         superPositionsSum = _superPositionsSum;
         vaultShares = _vaultShares;
-        console.log("B");
     }
 }

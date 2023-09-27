@@ -100,14 +100,11 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
         /// @dev vaultSharesStore results to vaultSharesStore
         uint256 superPositionsSum = _getSuperpositionsSum();
-        console.log("superPositionsSum", superPositionsSum);
         uint256 vaultShares = _getVaultShares();
-        console.log("vaultShares", vaultShares);
-        console.log("vaultSharesStore", address(vaultSharesStore));
-
-        //vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
-
         actions.pop();
+
+        vm.selectFork(FORKS[0]);
+        vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
 
         console.log("dep");
     }

@@ -8,55 +8,56 @@ import { TimestampStore } from "./stores/TimestampStore.sol";
 contract BaseInvariantTest is ProtocolActions {
     TimestampStore internal timestampStore;
 
-    address[][] coreAddresses;
-    address[][] underlyingAddresses;
-    address[][][] vaultAddresses;
-    address[][][] superformAddresses;
-    address[] superRegistries;
-    uint256[] forksArray;
-
     /*//////////////////////////////////////////////////////////////////////////
                                      MODIFIERS
     //////////////////////////////////////////////////////////////////////////*/
     /// @dev uses the warped timestamp from the handler
     modifier useCurrentTimestamp() {
-        console.log("sr ", getContract(ETH, "SuperRegistry"));
-
-        console.log("timestampStore ", address(timestampStore));
+        vm.selectFork(FORKS[0]);
 
         vm.warp(timestampStore.currentTimestamp());
         _;
     }
 
     function setUp() public virtual override {
-        ProtocolActions.setUp();
-        _grabStateForHandler();
+        super.setUp();
+        vm.selectFork(FORKS[0]);
 
         timestampStore = new TimestampStore();
 
-        //vm.label({ account: address(timestampStore), newLabel: "TimestampStore" });
-
-        console.log("timestampStore ", address(timestampStore));
+        vm.label({ account: address(timestampStore), newLabel: "TimestampStore" });
 
         // Prevent these contracts from being fuzzed as `msg.sender`.
-        //excludeSender(address(timestampStore));
+        excludeSender(address(timestampStore));
     }
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _grabStateForHandler() internal {
+    function _grabStateForHandler()
+        internal
+        view
+        returns (
+            address[][] memory coreAddresses,
+            address[][] memory underlyingAddresses,
+            address[][][] memory vaultAddresses,
+            address[][][] memory superformAddresses,
+            uint256[] memory forksArray
+        )
+    {
+        coreAddresses = new address[][](chainIds.length);
+        underlyingAddresses = new address[][](chainIds.length);
+        vaultAddresses = new address[][][](chainIds.length);
+        superformAddresses = new address[][][](chainIds.length);
+        forksArray = new uint256[](chainIds.length);
         for (uint256 i = 0; i < chainIds.length; i++) {
             /// @dev grab core addresses
             address[] memory addresses = new address[](contractNames.length);
             for (uint256 j = 0; j < contractNames.length; j++) {
                 addresses[j] = getContract(chainIds[i], contractNames[j]);
-                if (keccak256(abi.encodePacked((contractNames[j]))) == keccak256(abi.encodePacked(("SuperRegistry")))) {
-                    superRegistries.push(addresses[j]);
-                }
             }
-            coreAddresses.push(addresses);
+            coreAddresses[i] = addresses;
 
             addresses = new address[](UNDERLYING_TOKENS.length);
 
@@ -65,7 +66,7 @@ contract BaseInvariantTest is ProtocolActions {
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 addresses[j] = getContract(chainIds[i], UNDERLYING_TOKENS[j]);
             }
-            underlyingAddresses.push(addresses);
+            underlyingAddresses[i] = addresses;
 
             address[] memory superformAddressesT;
             address[][] memory vaultAddressesPerBeacon = new address[][](FORM_BEACON_IDS.length);
@@ -96,10 +97,10 @@ contract BaseInvariantTest is ProtocolActions {
                 superformAddressesPerBeacon[j] = superformAddressesT;
             }
 
-            vaultAddresses.push(vaultAddressesPerBeacon);
-            superformAddresses.push(superformAddressesPerBeacon);
+            vaultAddresses[i] = vaultAddressesPerBeacon;
+            superformAddresses[i] = superformAddressesPerBeacon;
 
-            forksArray.push(FORKS[chainIds[i]]);
+            forksArray[i] = FORKS[chainIds[i]];
         }
     }
 }
