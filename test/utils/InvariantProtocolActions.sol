@@ -5,7 +5,7 @@ import "./BaseProtocolActions.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
-abstract contract ProtocolActions is BaseProtocolActions {
+abstract contract InvariantProtocolActions is BaseProtocolActions {
     using DataLib for uint256;
 
     function setUp() public virtual override {
@@ -29,10 +29,9 @@ abstract contract ProtocolActions is BaseProtocolActions {
         override
     {
         console.log("new-action");
-
-        console.log("CHAIN_0", CHAIN_0);
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
+
         address token;
         /// @dev assumption here is DAI has total supply of TOTAL_SUPPLY_DAI on all chains
         /// and similarly for USDT, WETH and ETH
@@ -81,14 +80,6 @@ abstract contract ProtocolActions is BaseProtocolActions {
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
         console.log("Stage 1 complete");
 
-        uint256[][] memory spAmountSummed = new uint256[][](vars.nDestinations);
-        uint256[] memory spAmountBeforeWithdrawPerDst;
-        uint256 inputBalanceBefore;
-
-        /// @dev asserts superPosition balances before calling superFormRouter
-        (, spAmountSummed, spAmountBeforeWithdrawPerDst, inputBalanceBefore) =
-            _assertBeforeAction(action, multiSuperformsData, singleSuperformsData, vars);
-
         /// @dev passes request data and performs initial call
         /// @dev returns sameChainDstHasRevertingVault - this means that the request reverted, thus no payloadId
         /// increase happened nor there is any need for payload update or further assertion
@@ -107,11 +98,6 @@ abstract contract ProtocolActions is BaseProtocolActions {
             return;
         } else if (action.action == Actions.Withdraw && action.testType == TestType.Pass) {
             console.log("Stage 4 complete");
-
-            /// @dev fully successful withdraws finish here and are asserted
-            _assertAfterStage4Withdraw(
-                action, multiSuperformsData, singleSuperformsData, vars, spAmountSummed, spAmountBeforeWithdrawPerDst
-            );
         }
 
         if (
@@ -127,14 +113,8 @@ abstract contract ProtocolActions is BaseProtocolActions {
                 return;
             } else if (action.testType != TestType.RevertMainAction) {
                 console.log("Stage 5 complete");
-
-                /// @dev if we don't even process main action there is nothing to assert
-                /// @dev assert superpositions mint
-                _assertAfterDeposit(action, multiSuperformsData, singleSuperformsData, vars, inputBalanceBefore);
             }
         }
-
-        uint256[][] memory amountsToRemintPerDst;
 
         /// @dev for all form kinds including timelocked (first stage)
         /// @dev if there is a failure we immediately re-mint superShares
@@ -146,19 +126,8 @@ abstract contract ProtocolActions is BaseProtocolActions {
             if (!success) {
                 console.log("Stage 6 failed");
                 return;
-            } else if (toAssert) {
-                amountsToRemintPerDst = _amountsToRemintPerDst(action, vars, multiSuperformsData, singleSuperformsData);
-                console.log("Stage 6 complete - asserting");
-                /// @dev assert superpositions re-mint
-                _assertAfterFailedWithdraw(
-                    action,
-                    multiSuperformsData,
-                    singleSuperformsData,
-                    vars,
-                    spAmountSummed,
-                    spAmountBeforeWithdrawPerDst,
-                    amountsToRemintPerDst
-                );
+            } else {
+                console.log("Stage 6 complete");
             }
         }
 
@@ -167,18 +136,6 @@ abstract contract ProtocolActions is BaseProtocolActions {
             _stage7_finalize_timelocked_payload(vars);
 
             console.log("Stage 7 complete");
-
-            if (action.testType == TestType.Pass) {
-                /// @dev assert superpositions were burned
-                _assertAfterStage7Withdraw(
-                    action,
-                    multiSuperformsData,
-                    singleSuperformsData,
-                    vars,
-                    spAmountSummed,
-                    spAmountBeforeWithdrawPerDst
-                );
-            }
         }
 
         if (action.action == Actions.Withdraw) {
@@ -186,19 +143,6 @@ abstract contract ProtocolActions is BaseProtocolActions {
             _stage8_process_failed_timelocked_xchain_remint(action, vars);
 
             console.log("Stage 8 complete");
-
-            amountsToRemintPerDst =
-                _amountsToRemintPerDstWithTimelocked(action, vars, multiSuperformsData, singleSuperformsData);
-            /// @dev assert superpositions were re-minted
-            _assertAfterTimelockFailedWithdraw(
-                action,
-                multiSuperformsData,
-                singleSuperformsData,
-                vars,
-                spAmountSummed,
-                spAmountBeforeWithdrawPerDst,
-                amountsToRemintPerDst
-            );
         }
 
         delete revertingDepositSFs;
@@ -211,5 +155,32 @@ abstract contract ProtocolActions is BaseProtocolActions {
             delete TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]];
         }
         MULTI_TX_SLIPPAGE_SHARE = 0;
+    }
+
+    function _getSuperpositionsForDstChainFromSrcChain(
+        uint256 user_,
+        uint256[] memory underlyingTokens_,
+        uint256[] memory vaultIds_,
+        uint32[] memory formKinds_,
+        uint64 srcChain_,
+        uint64 dstChain_
+    )
+        internal
+        returns (uint256[] memory superPositionBalances)
+    {
+        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain_);
+        address superRegistryAddress = getContract(srcChain_, "SuperRegistry");
+        vm.selectFork(FORKS[srcChain_]);
+
+        superPositionBalances = new uint256[](superformIds.length);
+        address superPositionsAddress =
+            ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
+
+        IERC1155A superPositions = IERC1155A(superPositionsAddress);
+
+        console.log("superformIds", superformIds.length);
+        for (uint256 i = 0; i < superformIds.length; i++) {
+            superPositionBalances[i] = superPositions.balanceOf(users[user_], superformIds[i]);
+        }
     }
 }

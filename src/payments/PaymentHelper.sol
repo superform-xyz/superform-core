@@ -29,15 +29,16 @@ contract PaymentHelper is IPaymentHelper {
     /*///////////////////////////////////////////////////////////////
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev is the address of the superRegistry on the chain
+    ISuperRegistry public immutable superRegistry;
+    uint64 public immutable CHAIN_ID;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint32 public constant TIMELOCK_FORM_ID = 1;
 
     /*///////////////////////////////////////////////////////////////
                                 STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
-
-    /// @dev is the address of the superRegistry on the chain
-    ISuperRegistry public immutable superRegistry;
 
     /// @dev xchain params
     mapping(uint64 chainId => AggregatorV3Interface) public nativeFeedOracle;
@@ -74,6 +75,7 @@ contract PaymentHelper is IPaymentHelper {
                                 CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     constructor(address superRegistry_) {
+        CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -389,7 +391,7 @@ contract PaymentHelper is IPaymentHelper {
         (, uint32 formId,) = req_.superformData.superformId.getSuperform();
         /// @dev only if timelock form withdrawal is involved
         if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-            srcAmount += twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
+            srcAmount += twoStepCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
         }
 
         if (isDeposit_) liqAmount += _estimateLiqAmount(req_.superformData.liqRequest.castToArray());
@@ -415,7 +417,7 @@ contract PaymentHelper is IPaymentHelper {
             (, uint32 formId,) = req_.superformData.superformIds[i].getSuperform();
             /// @dev only if timelock form withdrawal is involved
             if (!isDeposit_ && formId == TIMELOCK_FORM_ID) {
-                srcAmount += twoStepCost[uint64(block.chainid)] * _getGasPrice(uint64(block.chainid));
+                srcAmount += twoStepCost[CHAIN_ID] * _getGasPrice(CHAIN_ID);
             }
 
             unchecked {
@@ -595,7 +597,7 @@ contract PaymentHelper is IPaymentHelper {
     {
         uint256 totalSwaps;
 
-        if (uint64(block.chainid) == dstChainId_) {
+        if (CHAIN_ID == dstChainId_) {
             return 0;
         }
 
@@ -651,9 +653,9 @@ contract PaymentHelper is IPaymentHelper {
         view
         returns (uint256 nativeFee)
     {
-        uint256 gasCost = dstChainCount_ * vaultsCount_ * ackGasCost[uint64(block.chainid)];
+        uint256 gasCost = dstChainCount_ * vaultsCount_ * ackGasCost[CHAIN_ID];
 
-        return gasCost * _getGasPrice(uint64(block.chainid));
+        return gasCost * _getGasPrice(CHAIN_ID);
     }
 
     /// @dev generates the amb message for single vault data
@@ -725,7 +727,7 @@ contract PaymentHelper is IPaymentHelper {
 
         /// @dev converts the usd value to source chain's native token
         /// @dev native token price is 8 decimal which cancels the 8 decimal multiplied in previous step
-        nativeFee = (dstUsdValue) / _getNativeTokenPrice(uint64(block.chainid));
+        nativeFee = (dstUsdValue) / _getNativeTokenPrice(CHAIN_ID);
     }
 
     /// @dev helps generate the new payload id

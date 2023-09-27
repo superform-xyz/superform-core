@@ -11,15 +11,15 @@ contract VaultSharesInvariantTest is Test, ProtocolActions {
     address[][] underlyingAddresses;
     address[][][] vaultAddresses;
     address[][][] superformAddresses;
-
-    address[] public superRegistries;
+    address[] superRegistries;
+    uint256[] forksArray;
 
     function setUp() public override {
         super.setUp();
         _grabStateForHandler();
 
         handler =
-        new VaultSharesHandler(chainIds, contractNames, coreAddresses, underlyingAddresses, vaultAddresses, superformAddresses);
+        new VaultSharesHandler(chainIds, contractNames, coreAddresses, underlyingAddresses, vaultAddresses, superformAddresses, forksArray);
 
         bytes4[] memory selectors = new bytes4[](1);
         selectors[0] = VaultSharesHandler.singleDirectSingleVaultDeposit.selector;
@@ -32,6 +32,7 @@ contract VaultSharesInvariantTest is Test, ProtocolActions {
 
     function _grabStateForHandler() internal {
         for (uint256 i = 0; i < chainIds.length; i++) {
+            /// @dev grab core addresses
             address[] memory addresses = new address[](contractNames.length);
             for (uint256 j = 0; j < contractNames.length; j++) {
                 addresses[j] = getContract(chainIds[i], contractNames[j]);
@@ -42,6 +43,8 @@ contract VaultSharesInvariantTest is Test, ProtocolActions {
             coreAddresses.push(addresses);
 
             addresses = new address[](UNDERLYING_TOKENS.length);
+
+            /// @dev grab underlying asset addresses
 
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 addresses[j] = getContract(chainIds[i], UNDERLYING_TOKENS[j]);
@@ -57,6 +60,7 @@ contract VaultSharesInvariantTest is Test, ProtocolActions {
             address[][] memory vaultAddressesPerBeacon = new address[][](FORM_BEACON_IDS.length);
             address[][] memory superformAddressesPerBeacon = new address[][](FORM_BEACON_IDS.length);
 
+            /// @dev grab vaults and superforms
             for (uint32 j = 0; j < FORM_BEACON_IDS.length; j++) {
                 uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;
 
@@ -83,9 +87,11 @@ contract VaultSharesInvariantTest is Test, ProtocolActions {
 
             vaultAddresses.push(vaultAddressesPerBeacon);
             superformAddresses.push(superformAddressesPerBeacon);
+
+            forksArray.push(FORKS[chainIds[i]]);
         }
     }
-
+    /*
     function _getSuperpositionsForDstChainFromSrcChain(
         uint256 user_,
         uint256[] memory underlyingTokens_,
@@ -109,22 +115,27 @@ contract VaultSharesInvariantTest is Test, ProtocolActions {
         vm.selectFork(FORKS[srcChain_]);
 
         superPositionBalances = new uint256[](superformIds.length);
-        ISuperRegistry sr = ISuperRegistry(superRegistries[trueIndex]);
+
+        ISuperRegistry sr = ISuperRegistry(getContract(srcChain_, "SuperRegistry"));
 
         IERC1155A superPositions = IERC1155A(sr.getAddress(sr.SUPER_POSITIONS()));
-
+        console.log("superformIds", superformIds.length);
         for (uint256 i = 0; i < superformIds.length; i++) {
+            console.log("user ", users[user_]);
+            console.log("superformIds[i] ", superformIds[i]);
             superPositionBalances[i] = superPositions.balanceOf(users[user_], superformIds[i]);
         }
     }
+    */
 
     function invariant_vaultShares() public {
+        /*
         /// @dev target superform: (underlying, vault, formKind, chain) = (1, 0, 0, 1)
         uint256 superPositionsSum;
         /// @dev sum up superpositions owned by user for the superform on ETH, on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
             uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
-                0, TARGET_UNDERLYINGS[AVAX][0], TARGET_VAULTS[AVAX][0], TARGET_FORM_KINDS[AVAX][0], chainIds[i], AVAX
+        0, TARGET_UNDERLYINGS[AVAX][0], TARGET_VAULTS[AVAX][0], TARGET_FORM_KINDS[AVAX][0], chainIds[i], AVAX
             );
 
             if (superPositions.length > 0) {
@@ -133,15 +144,15 @@ contract VaultSharesInvariantTest is Test, ProtocolActions {
         }
 
         address superform = getContract(
-            AVAX, string.concat(UNDERLYING_TOKENS[2], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        AVAX, string.concat(UNDERLYING_TOKENS[2], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0]))
         );
 
         vm.selectFork(FORKS[AVAX]);
         console.log("superPositionsSum:", superPositionsSum);
         console.log("vaultShares:", IBaseForm(superform).getVaultShareBalance());
         assertEq(superPositionsSum, IBaseForm(superform).getVaultShareBalance());
-
-        //assertEq(handler.getSuperpositionsSum(), handler.getVaultShares());
+        */
+        assertEq(handler.getSuperpositionsSum(), handler.getVaultShares());
     }
 
     /*

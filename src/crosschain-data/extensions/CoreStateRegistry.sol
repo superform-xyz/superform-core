@@ -160,7 +160,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         /// @dev validate payload update
         PayloadUpdaterLib.validateWithdrawPayloadUpdate(v.prevPayloadHeader, payloadTracking[payloadId_], v.isMulti);
-        v.dstChainId = uint64(block.chainid);
+        v.dstChainId = CHAIN_ID;
 
         bytes memory newPayloadBody = _updateWithdrawPayload(v, txData_, v.isMulti);
 
@@ -656,7 +656,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         for (uint256 i; i < len;) {
             /// @dev it is critical to validate that the action is being performed to the correct chainId coming from
             /// the superform
-            DataLib.validateSuperformChainId(multiVaultData.superformIds[i], uint64(block.chainid));
+            DataLib.validateSuperformChainId(multiVaultData.superformIds[i], CHAIN_ID);
 
             singleVaultData = InitSingleVaultData({
                 superformRouterId: multiVaultData.superformRouterId,
@@ -732,7 +732,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                 /// @dev it is critical to validate that the action is being performed to the correct chainId coming
                 /// from the superform
-                DataLib.validateSuperformChainId(multiVaultData.superformIds[i], uint64(block.chainid));
+                DataLib.validateSuperformChainId(multiVaultData.superformIds[i], CHAIN_ID);
 
                 /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0
                 /// SPs back on source (slight gas waste)
@@ -804,7 +804,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
         singleVaultData.extraFormData = abi.encode(payloadId_, 0);
 
-        DataLib.validateSuperformChainId(singleVaultData.superformId, uint64(block.chainid));
+        DataLib.validateSuperformChainId(singleVaultData.superformId, CHAIN_ID);
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();
         /// @dev Withdraw from superform
@@ -838,7 +838,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        DataLib.validateSuperformChainId(singleVaultData.superformId, uint64(block.chainid));
+        DataLib.validateSuperformChainId(singleVaultData.superformId, CHAIN_ID);
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();
 
@@ -923,12 +923,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return abi.encode(
             AMBMessage(
                 DataLib.packTxInfo(
-                    uint8(txType),
-                    uint8(returnType_),
-                    1,
-                    _getStateRegistryId(address(this)),
-                    srcSender_,
-                    uint64(block.chainid)
+                    uint8(txType), uint8(returnType_), 1, _getStateRegistryId(address(this)), srcSender_, CHAIN_ID
                 ),
                 abi.encode(ReturnMultiData(superformRouterId_, payloadId_, superformIds_, amounts_))
             )
@@ -953,12 +948,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return abi.encode(
             AMBMessage(
                 DataLib.packTxInfo(
-                    uint8(txType),
-                    uint8(returnType_),
-                    0,
-                    _getStateRegistryId(address(this)),
-                    srcSender_,
-                    uint64(block.chainid)
+                    uint8(txType), uint8(returnType_), 0, _getStateRegistryId(address(this)), srcSender_, CHAIN_ID
                 ),
                 abi.encode(ReturnSingleData(superformRouterId_, payloadId_, superformId_, amount_))
             )
