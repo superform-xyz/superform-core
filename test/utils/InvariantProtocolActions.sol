@@ -43,7 +43,7 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
             if (action.externalToken == 0) {
                 deal(token, users[action.user], TOTAL_SUPPLY_DAI);
             } else if (action.externalToken == 1) {
-                deal(token, users[action.user], TOTAL_SUPPLY_USDT);
+                deal(token, users[action.user], TOTAL_SUPPLY_USDC);
             } else if (action.externalToken == 2) {
                 deal(token, users[action.user], TOTAL_SUPPLY_WETH);
             }

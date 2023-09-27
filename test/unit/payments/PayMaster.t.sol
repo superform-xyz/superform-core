@@ -132,6 +132,22 @@ contract PayMasterTest is ProtocolActions {
         assertEq(txUpdaterETH.balance, 1 wei);
     }
 
+    function test_withdrawNativeToFailure() public {
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+
+        address feeCollector = getContract(ETH, "PayMaster");
+        PayMaster(feeCollector).makePayment{ value: 2 wei }(deployer);
+
+        address mock = address(new KeeperMockThatWontAcceptEth());
+
+        superRegistry.setAddress(keccak256("KEEPER_MOCK"), mock, ETH);
+
+        /// @dev admin tries withdraw more than balance (check if handled gracefully)
+        vm.expectRevert(Error.FAILED_WITHDRAW.selector);
+        PayMaster(feeCollector).withdrawTo(keccak256("KEEPER_MOCK"), 1 wei);
+    }
+
     function test_rebalanceToCoreStateRegistryTxProcessor() public {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -170,6 +186,20 @@ contract PayMasterTest is ProtocolActions {
                 _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
                 NATIVE,
                 ARBI,
+                1 ether
+            ),
+            ARBI
+        );
+
+        /// @dev admin moves the payment from fee collector to different address on another chain
+        vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
+        PayMaster(feeCollector).rebalanceTo(
+            keccak256("CORE_REGISTRY_PROCESSOR"),
+            LiqRequest(
+                1,
+                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI, false),
+                NATIVE,
+                ETH,
                 1 ether
             ),
             ARBI
@@ -264,7 +294,7 @@ contract PayMasterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
@@ -273,7 +303,7 @@ contract PayMasterTest is ProtocolActions {
             1e18,
             100,
             false,
-            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
+            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
             bytes(""),
             dstRefundAddress,
             bytes("")
@@ -284,7 +314,7 @@ contract PayMasterTest is ProtocolActions {
         address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
         (,,, uint256 msgFees) =
             PaymentHelper(getContract(ETH, "PaymentHelper")).estimateSingleDirectSingleVault(req, true);
         msgFees = msgFees + 2 ether;

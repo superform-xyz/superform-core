@@ -32,7 +32,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         gasPerAMB[0] = 5 ether;
 
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
-        MockERC20(getContract(AVAX, "USDT")).transfer(deployer, 1e18);
+        MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 1e18);
 
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
@@ -61,7 +61,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         gasPerAMB[0] = 5 ether;
 
         vm.prank(getContract(AVAX, "CoreStateRegistry"));
-        MockERC20(getContract(AVAX, "USDT")).transfer(deployer, 840);
+        MockERC20(getContract(AVAX, "DAI")).transfer(deployer, 840);
 
         vm.prank(deployer);
         vm.expectRevert(Error.BRIDGE_TOKENS_PENDING.selector);
@@ -196,7 +196,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         txData = new bytes[](2);
 
         address superform =
-            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         /// @dev number of superpositions to be burned per withdraw is 1e18, specified in _successfulMultiWithdrawal()
         uint256 actualWithdrawAmount = IBaseForm(superform).previewWithdrawFrom(
@@ -205,9 +205,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            getContract(AVAX, "USDT"),
-            getContract(AVAX, "USDT"),
-            getContract(ETH, "USDT"),
+            getContract(AVAX, "DAI"),
+            getContract(AVAX, "DAI"),
+            getContract(ETH, "DAI"),
             superform,
             AVAX,
             ETH,
@@ -276,7 +276,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
 
@@ -284,9 +284,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            getContract(ETH, "USDT"),
-            getContract(ETH, "USDT"),
-            getContract(AVAX, "USDT"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(AVAX, "DAI"),
             superformRouter,
             ETH,
             AVAX,
@@ -305,13 +305,13 @@ contract CoreStateRegistryTest is ProtocolActions {
             1e18,
             100,
             false,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0),
             bytes(""),
             dstRefundAddress,
             bytes("")
         );
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "DAI")).approve(superformRouter, 1e18);
 
         vm.recordLogs();
         SuperformRouter(payable(superformRouter)).singleXChainSingleVaultDeposit{ value: 2 ether }(
@@ -334,11 +334,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         address superform = beaconId == 1
             ? getContract(
-                AVAX, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId]))
+                AVAX, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId]))
             )
-            : getContract(
-                AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId]))
-            );
+            : getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[beaconId], AVAX);
         address superformRouter = getContract(ETH, "SuperformRouter");
@@ -351,7 +349,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             1e18,
             100,
             false,
-            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
+            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
             bytes(""),
             dstRefundAddress,
             bytes("")
@@ -384,7 +382,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
 
@@ -402,9 +400,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            getContract(ETH, "USDT"),
-            getContract(ETH, "USDT"),
-            getContract(AVAX, "USDT"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(AVAX, "DAI"),
             superformRouter,
             ETH,
             AVAX,
@@ -419,14 +417,14 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), dstRefundAddress, bytes("")
         );
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "DAI")).approve(superformRouter, 1e18);
 
         vm.recordLogs();
         SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
@@ -450,7 +448,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
 
@@ -468,9 +466,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            getContract(ETH, "USDT"),
-            getContract(ETH, "USDT"),
-            getContract(AVAX, "USDT"),
+            getContract(ETH, "DAI"),
+            getContract(ETH, "DAI"),
+            getContract(AVAX, "DAI"),
             superformRouter,
             ETH,
             AVAX,
@@ -485,14 +483,14 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
 
         liqReqArr[0] =
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), AVAX, 0);
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), AVAX, 0);
         liqReqArr[1] = liqReqArr[0];
 
         MultiVaultSFData memory data = MultiVaultSFData(
             superformIds, uint256MemArr, uint256MemArr, new bool[](2), liqReqArr, bytes(""), dstRefundAddress, bytes("")
         );
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(superformRouter, 1e18);
+        MockERC20(getContract(ETH, "DAI")).approve(superformRouter, 1e18);
 
         vm.expectRevert(errorSelector);
         SuperformRouter(payable(superformRouter)).singleXChainMultiVaultDeposit{ value: 2 ether }(
@@ -505,7 +503,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         address superform =
-            getContract(AVAX, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
         address superformRouter = getContract(ETH, "SuperformRouter");
@@ -522,7 +520,7 @@ contract CoreStateRegistryTest is ProtocolActions {
         amountArr[1] = 1e18;
 
         LiqRequest[] memory liqReqArr = new LiqRequest[](2);
-        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "USDT"), ETH, 0);
+        liqReqArr[0] = LiqRequest(1, bytes(""), getContract(AVAX, "DAI"), ETH, 0);
         liqReqArr[1] = liqReqArr[0];
 
         uint256[] memory maxSlippages = new uint256[](2);

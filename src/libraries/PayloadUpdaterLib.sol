@@ -56,7 +56,7 @@ library PayloadUpdaterLib {
         return true;
     }
 
-    function validateLiqReq(LiqRequest memory req_) public pure {
+    function validateLiqReq(LiqRequest memory req_) internal pure {
         /// req token should be address(0)
         /// req tx data length should be 0
         if (req_.token != address(0) && req_.txData.length > 0) {

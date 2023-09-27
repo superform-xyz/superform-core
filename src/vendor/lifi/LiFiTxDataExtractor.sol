@@ -19,7 +19,7 @@ contract LiFiTxDataExtractor {
     /// @param data The calldata to extract the bridge data from
     /// @return bridgeData The bridge data extracted from the calldata
     function _extractBridgeData(bytes calldata data) internal pure returns (ILiFi.BridgeData memory bridgeData) {
-        if (abi.decode(data, (bytes4)) == 0xd6a4bc50) {
+        if (bytes4(data[:4]) == 0xd6a4bc50) {
             // StandardizedCall
             bytes memory unwrappedData = abi.decode(data[4:], (bytes));
             bridgeData = abi.decode(_slice(unwrappedData, 4, unwrappedData.length - 4), (ILiFi.BridgeData));
@@ -33,7 +33,7 @@ contract LiFiTxDataExtractor {
     /// @param data The calldata to extract the swap data from
     /// @return swapData The swap data extracted from the calldata
     function _extractSwapData(bytes calldata data) internal pure returns (LibSwap.SwapData[] memory swapData) {
-        if (abi.decode(data, (bytes4)) == 0xd6a4bc50) {
+        if (bytes4(data[:4]) == 0xd6a4bc50) {
             // standardizedCall
             bytes memory unwrappedData = abi.decode(data[4:], (bytes));
             (, swapData) =

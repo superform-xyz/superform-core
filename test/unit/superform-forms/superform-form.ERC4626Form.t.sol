@@ -303,12 +303,12 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", refundAddress, ""
+            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
@@ -328,19 +328,19 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(deployer);
         /// try depositing without approval
         address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 2e18, 100, false, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", refundAddress, ""
+            superformId, 2e18, 100, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
         /// @dev make sure the beacon proxy has enough usdc for the user to hack it
-        MockERC20(getContract(ETH, "USDT")).transfer(superform, 3e18);
-        MockERC20(getContract(ETH, "USDT")).approve(superform, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 3e18);
+        MockERC20(getContract(ETH, "DAI")).approve(superform, 1e18);
 
         vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
@@ -356,9 +356,10 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
+        /// @dev txData with 1e18 input amount
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            getContract(ETH, "USDT"),
+            getContract(ETH, "DAI"),
             getContract(ETH, "DAI"),
             getContract(ETH, "DAI"),
             superform,
@@ -373,12 +374,13 @@ contract SuperformERC4626FormTest is ProtocolActions {
             0
         );
 
+        /// @dev superform data with 2e18 final amount
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
             2e18,
             100,
             false,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "USDT"), ETH, 0),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, true), getContract(ETH, "DAI"), ETH, 0),
             "",
             refundAddress,
             ""
@@ -390,10 +392,11 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         /// @dev make sure the beacon proxy has enough usdc for the user to hack it
         MockERC20(getContract(ETH, "DAI")).transfer(superform, 3e18);
+        /// balanceBefore = 3e18
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
-        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
 
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        vm.expectRevert(Error.DIRECT_DEPOSIT_INVALID_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
@@ -405,8 +408,8 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
-        address USDT = getContract(ETH, "USDT");
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address DAI = getContract(ETH, "DAI");
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
@@ -415,7 +418,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             1e18,
             100,
             false,
-            LiqRequest(1, _buildMaliciousTxData(1, USDT, formBeacon, ETH, 2e18, deployer), USDT, ETH, 0),
+            LiqRequest(1, _buildMaliciousTxData(1, DAI, formBeacon, ETH, 2e18, deployer), DAI, ETH, 0),
             "",
             refundAddress,
             ""
@@ -440,13 +443,13 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
         IBaseForm(superform).getVaultAddress();
 
-        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
         vm.stopPrank();
 
         /// @dev simulating withdrawals with malicious tx data
@@ -459,7 +462,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             1e18,
             100,
             false,
-            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0),
+            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ARBI, 0),
             refundAddress,
             ""
         );
@@ -476,12 +479,12 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
-        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
         vm.stopPrank();
 
         /// @dev simulating withdrawals with malicious tx data
@@ -496,8 +499,8 @@ contract SuperformERC4626FormTest is ProtocolActions {
             false,
             LiqRequest(
                 1,
-                _buildMaliciousTxData(1, getContract(ETH, "USDT"), formBeacon, ARBI, 2e18, deployer),
-                getContract(ETH, "USDT"),
+                _buildMaliciousTxData(1, getContract(ETH, "DAI"), formBeacon, ARBI, 2e18, deployer),
+                getContract(ETH, "DAI"),
                 ARBI,
                 0
             ),
@@ -517,12 +520,12 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
-        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0), "", refundAddress, ""
@@ -547,12 +550,12 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
-        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
         vm.stopPrank();
         bytes memory invalidTxData = abi.encode(1);
 
@@ -600,6 +603,50 @@ contract SuperformERC4626FormTest is ProtocolActions {
         superformFactory.createSuperform(formBeaconId, address(vault));
     }
 
+    function test_directDepositInvalidData() public {
+        /// @dev no txData is sent for a vault that requires it
+        vm.selectFork(FORKS[ETH]);
+        vm.startPrank(deployer);
+        address superformRouter = getContract(ETH, "SuperformRouter");
+        address superform1 =
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+
+        address superform2 =
+            getContract(ETH, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ETH);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId1;
+        superformIds[1] = superformId2;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 1e18;
+        amounts[1] = 1e18;
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 1000;
+        maxSlippages[1] = 1000;
+
+        LiqRequest[] memory liqReqs = new LiqRequest[](2);
+
+        liqReqs[0] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
+        liqReqs[1] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
+
+        MultiVaultSFData memory data =
+            MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](2), liqReqs, "", refundAddress, "");
+
+        SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
+
+        /// @dev approves before call
+        MockERC20(getContract(ETH, "DAI")).approve(address(superformRouter), 2e18);
+
+        vm.expectRevert(Error.DIRECT_DEPOSIT_INVALID_DATA.selector);
+        SuperformRouter(payable(superformRouter)).singleDirectMultiVaultDeposit{ value: 10 ether }(req);
+        vm.stopPrank();
+    }
+
     /*///////////////////////////////////////////////////////////////
                         INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -610,12 +657,12 @@ contract SuperformERC4626FormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "USDT"), ETH, 0), "", refundAddress, ""
+            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
@@ -623,7 +670,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 

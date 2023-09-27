@@ -233,11 +233,11 @@ contract PaymentHelper is IPaymentHelper {
                 totalDstGas += _estimateSwapFees(req_.dstChainIds[i], req_.superformsData[i].liqRequests);
             }
 
-            /// @dev step 5: estimate execution costs in dst (withdraw / deposit)
+            /// @dev step 6: estimate execution costs in dst (withdraw / deposit)
             /// note: execution cost includes acknowledgement messaging cost
             totalDstGas += _estimateDstExecutionCost(isDeposit_, req_.dstChainIds[i], superformIdsLen);
 
-            /// @dev step 6: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
+            /// @dev step 7: convert all dst gas estimates to src chain estimate  (withdraw / deposit)
             dstAmount += _convertToNativeFee(req_.dstChainIds[i], totalDstGas);
 
             unchecked {
@@ -488,13 +488,9 @@ contract PaymentHelper is IPaymentHelper {
 
             if (ambIds_[i] == 1) {
                 extraDataPerAMB[i] = abi.encodePacked(uint16(2), gasReq, uint256(0), address(0));
-            }
-
-            if (ambIds_[i] == 2) {
+            } else if (ambIds_[i] == 2) {
                 extraDataPerAMB[i] = abi.encode(gasReq);
-            }
-
-            if (ambIds_[i] == 3) {
+            } else if (ambIds_[i] == 3) {
                 extraDataPerAMB[i] = abi.encode(0, gasReq);
             }
 

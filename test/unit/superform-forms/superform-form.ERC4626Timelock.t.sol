@@ -28,13 +28,13 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
         );
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
-        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
@@ -44,7 +44,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             1e18,
             100,
             false,
-            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ARBI, 0),
+            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ARBI, 0),
             refundAddress,
             ""
         );
@@ -68,13 +68,13 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
         );
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
-        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
         vm.stopPrank();
 
         bytes memory invalidNonEmptyTxData = abi.encode(1);
@@ -110,13 +110,13 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
         );
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
-        MockERC20(getContract(ETH, "USDT")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
@@ -140,17 +140,17 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
         );
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
 
-        MockERC20(getContract(ETH, "USDT")).transfer(superform, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
         vm.stopPrank();
 
         LiqBridgeTxDataArgs memory liqBridgeTxDataArgs = LiqBridgeTxDataArgs(
             1,
-            getContract(ETH, "USDT"),
+            getContract(ETH, "DAI"),
             getContract(ETH, "DAI"),
             getContract(ETH, "DAI"),
             superform,
@@ -172,7 +172,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             1e18,
             100,
             false,
-            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "USDT"), ETH, 0),
+            LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ETH, 0),
             refundAddress,
             ""
         );
@@ -197,7 +197,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("USDT", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
         );
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
@@ -207,7 +207,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             1e18,
             100,
             false,
-            LiqRequest(1, bytes(""), getContract(ETH, "USDT"), ETH, 0),
+            LiqRequest(1, bytes(""), getContract(ETH, "DAI"), ETH, 0),
             bytes(""),
             refundAddress,
             bytes("")
@@ -218,7 +218,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         address router = getContract(ETH, "SuperformRouter");
 
         /// @dev approves before call
-        MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
+        MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 }

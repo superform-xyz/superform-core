@@ -102,6 +102,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         uint256 balanceAfter;
         uint256 nonce;
         uint256 deadline;
+        uint256 inputAmount;
         bytes signature;
     }
 
@@ -113,7 +114,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         vars.balanceBefore = IERC20(vars.collateral).balanceOf(address(this));
         IERC20 token = IERC20(singleVaultData_.liqData.token);
 
-        if (address(token) != NATIVE) {
+        if (address(token) != NATIVE && singleVaultData_.liqData.txData.length == 0) {
+            /// @dev this is only valid if token == collateral (no txData)
+
             /// @dev handles the collateral token transfers.
             if (token.allowance(msg.sender, address(this)) < singleVaultData_.amount) {
                 revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
@@ -123,19 +126,25 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             token.safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
         }
 
-        /// @dev if we don't have txData (no swap) then the full amount in the stateReq is used
         /// @dev non empty txData means there is a swap needed before depositing (input asset not the same as vault
         /// asset)
         if (singleVaultData_.liqData.txData.length > 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
-            /// @dev in this case, a swap is needed, first the txData is validated and then the final asset is obtained
             vars.chainId = CHAIN_ID;
-            /// @dev e.g
-            /// @dev 1010 min amountReceived by generic swap
-            /// @dev 1012 amount inscribed in singleVaultData_.amount
-            /// @dev true amount received 1011 (is this possible? to be different than amountReceived in txData)
-            /// @dev we are trying to deposit 1012 below, when we should be depositing 1010, otherwise it will revert
+
+            vars.inputAmount =
+                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
+
+            if (address(token) != NATIVE) {
+                /// @dev checks the allowance before transfer from router
+                if (token.allowance(msg.sender, address(this)) < vars.inputAmount) {
+                    revert Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();
+                }
+
+                /// @dev transfers input token, which is different from the vault asset, to the form
+                token.safeTransferFrom(msg.sender, address(this), vars.inputAmount);
+            }
 
             IBridgeValidator(vars.bridgeValidator).validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
@@ -154,7 +163,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 superRegistry.getBridgeAddress(singleVaultData_.liqData.bridgeId),
                 singleVaultData_.liqData.txData,
                 address(token),
-                IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false),
+                vars.inputAmount,
                 singleVaultData_.liqData.nativeAmount
             );
         }
@@ -166,6 +175,9 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             revert Error.DIRECT_DEPOSIT_INVALID_DATA();
         }
 
+        /// @dev notice the inscribed singleVaultData_.amount is deposited regardless if txData exists or not
+        /// @dev this is always the estimated value post any swaps (if they exist)
+        /// @dev the balance check above implies that a certain dust may be left in the superform after depositing
         /// @dev the vault asset (collateral) is approved and deposited to the vault
         IERC20(vars.collateral).safeIncreaseAllowance(vault, singleVaultData_.amount);
 
@@ -252,7 +264,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         IERC4626 v = IERC4626(vaultLoc);
 
         /// @dev pulling from sender, to auto-send tokens back in case of failed deposits / reverts
-        IERC20(v.asset()).transferFrom(msg.sender, address(this), singleVaultData_.amount);
+        IERC20(v.asset()).safeTransferFrom(msg.sender, address(this), singleVaultData_.amount);
 
         /// @dev allowance is modified inside of the IERC20.transferFrom() call
         IERC20(v.asset()).safeIncreaseAllowance(vaultLoc, singleVaultData_.amount);

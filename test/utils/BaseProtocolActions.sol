@@ -1545,15 +1545,19 @@ abstract contract BaseProtocolActions is BaseSetup {
 
         if (liqRequestToken != NATIVE_TOKEN) {
             /// @dev - APPROVE transfer to SuperformRouter (because of Socket)
-            vm.prank(users[args.user]);
 
             if (action == Actions.DepositPermit2) {
+                vm.prank(users[args.user]);
                 MockERC20(liqRequestToken).approve(getContract(args.srcChainId, "CanonicalPermit2"), type(uint256).max);
             } else if (action == Actions.Deposit && liqRequestToken != NATIVE_TOKEN) {
                 /// @dev this assumes that if same underlying is present in >1 vault in a multi vault, that the amounts
                 /// are ordered from lowest to highest,
                 /// @dev this is because the approves override each other and may lead to Arithmetic over/underflow
-                MockERC20(liqRequestToken).increaseAllowance(args.fromSrc, args.amount);
+                vm.startPrank(users[args.user]);
+                MockERC20(liqRequestToken).approve(
+                    args.fromSrc, MockERC20(liqRequestToken).allowance(users[args.user], args.fromSrc) + args.amount
+                );
+                vm.stopPrank();
             }
         }
         vm.selectFork(v.initialFork);
@@ -1782,16 +1786,16 @@ abstract contract BaseProtocolActions is BaseSetup {
     }
 
     function _getSuperpositionsForDstChain(
-        uint256 user_,
+        uint256 user,
         uint256[] memory underlyingTokens_,
         uint256[] memory vaultIds_,
         uint32[] memory formKinds_,
-        uint64 dstChain_
+        uint64 dstChain
     )
         internal
         returns (uint256[] memory superPositionBalances)
     {
-        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain_);
+        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain);
         address superRegistryAddress = getContract(CHAIN_0, "SuperRegistry");
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -1802,7 +1806,7 @@ abstract contract BaseProtocolActions is BaseSetup {
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
         for (uint256 i = 0; i < superformIds.length; i++) {
-            superPositionBalances[i] = superPositions.balanceOf(users[user_], superformIds[i]);
+            superPositionBalances[i] = superPositions.balanceOf(users[user], superformIds[i]);
         }
     }
 
