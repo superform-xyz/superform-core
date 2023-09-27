@@ -91,6 +91,36 @@ abstract contract BaseSetup is DSTest, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
+    string[27] public contractNames = [
+        "CoreStateRegistry",
+        "TimelockStateRegistry",
+        "BroadcastRegistry",
+        "LayerzeroImplementation",
+        "HyperlaneImplementation",
+        "WormholeARImplementation",
+        "WormholeSRImplementation",
+        "LiFiValidator",
+        "DstSwapper",
+        "SuperformFactory",
+        "ERC4626Form",
+        "ERC4626TimelockForm",
+        "ERC4626KYCDaoForm",
+        "SuperformRouter",
+        "SuperPositions",
+        "SuperRegistry",
+        "SuperRBAC",
+        "SuperTransmuter",
+        "PayloadHelper",
+        "PaymentHelper",
+        "PayMaster",
+        "LayerZeroHelper",
+        "HyperlaneHelper",
+        "WormholeHelper",
+        "WormholeBroadcastHelper",
+        "LiFiMock",
+        "KYCDAOMock"
+    ];
+
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -467,7 +497,6 @@ abstract contract BaseSetup is DSTest, Test {
                     vars.superRegistryC
                 )
             );
-            console.log("vars.chainId, wormholeImplementation:", vars.chainId, vars.wormholeImplementation);
             contracts[vars.chainId][bytes32(bytes("WormholeARImplementation"))] = vars.wormholeImplementation;
 
             WormholeARImplementation(vars.wormholeImplementation).setWormholeRelayer(wormholeRelayer);
@@ -679,7 +708,6 @@ abstract contract BaseSetup is DSTest, Test {
             vars.lzImplementation = getContract(vars.chainId, "LayerzeroImplementation");
             vars.hyperlaneImplementation = getContract(vars.chainId, "HyperlaneImplementation");
             vars.wormholeImplementation = getContract(vars.chainId, "WormholeARImplementation");
-            console.log("wormholeImplementation_2", vars.wormholeImplementation);
             vars.wormholeSRImplementation = getContract(vars.chainId, "WormholeSRImplementation");
             vars.superRBAC = getContract(vars.chainId, "SuperRBAC");
 
@@ -700,9 +728,7 @@ abstract contract BaseSetup is DSTest, Test {
 
                     vars.dstLzImplementation = getContract(vars.dstChainId, "LayerzeroImplementation");
                     vars.dstHyperlaneImplementation = getContract(vars.dstChainId, "HyperlaneImplementation");
-                    console.log("vars.dstChainId", vars.dstChainId);
                     vars.dstWormholeARImplementation = getContract(vars.dstChainId, "WormholeARImplementation");
-                    console.log("dstWormholeARImplementation", vars.dstWormholeARImplementation);
                     vars.dstWormholeSRImplementation = getContract(vars.dstChainId, "WormholeSRImplementation");
                     vars.dstwormholeBroadcastHelper = getContract(vars.dstChainId, "WormholeBroadcastHelper");
 
@@ -721,7 +747,6 @@ abstract contract BaseSetup is DSTest, Test {
                         vars.dstChainId, vars.dstHypChainId
                     );
 
-                    console.log("wormholeImplementation", vars.wormholeImplementation);
                     WormholeARImplementation(payable(vars.wormholeImplementation)).setReceiver(
                         vars.dstWormholeChainId, vars.dstWormholeARImplementation
                     );
@@ -909,7 +934,7 @@ abstract contract BaseSetup is DSTest, Test {
                         MISC. HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _preDeploymentSetup() private {
+    function _preDeploymentSetup() internal virtual {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 18_092_097);
@@ -1043,7 +1068,7 @@ abstract contract BaseSetup is DSTest, Test {
         }
     }
 
-    function _fundNativeTokens() private {
+    function _fundNativeTokens() internal {
         for (uint256 i = 0; i < chainIds.length; i++) {
             vm.selectFork(FORKS[chainIds[i]]);
 
@@ -1058,7 +1083,7 @@ abstract contract BaseSetup is DSTest, Test {
         }
     }
 
-    function _fundUnderlyingTokens(uint256 amount) private {
+    function _fundUnderlyingTokens(uint256 amount) internal {
         for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
             if (getContract(chainIds[0], UNDERLYING_TOKENS[j]) == address(0)) {
                 revert INVALID_UNDERLYING_TOKEN_NAME();

@@ -130,7 +130,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
             /// @dev in this case, a swap is needed, first the txData is validated and then the final asset is obtained
-            vars.chainId = uint64(block.chainid);
+            vars.chainId = CHAIN_ID;
             /// @dev e.g
             /// @dev 1010 min amountReceived by generic swap
             /// @dev 1012 amount inscribed in singleVaultData_.amount
@@ -213,7 +213,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            v.chainId = uint64(block.chainid);
+            v.chainId = CHAIN_ID;
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(v.bridgeValidator).validateTxData(

@@ -18,7 +18,7 @@ abstract contract StateSyncer is IStateSyncer {
     /// @dev is the super registry address
     ISuperRegistry public immutable superRegistry;
     uint8 public immutable ROUTER_TYPE;
-
+    uint64 public immutable CHAIN_ID;
     /// @dev maps all transaction data routed through the smart contract.
     mapping(uint256 transactionId => uint256 txInfo) public override txHistory;
 
@@ -59,6 +59,8 @@ abstract contract StateSyncer is IStateSyncer {
     /// @param superRegistry_ the superform registry contract
     /// @param routerType_ the router type
     constructor(address superRegistry_, uint8 routerType_) {
+        CHAIN_ID = uint64(block.chainid);
+
         superRegistry = ISuperRegistry(superRegistry_);
         ROUTER_TYPE = routerType_;
     }
