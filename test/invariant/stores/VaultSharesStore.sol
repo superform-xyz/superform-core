@@ -1,0 +1,27 @@
+/// SPDX-License-Identifier: Apache-2.0
+pragma solidity ^0.8.19;
+
+import "forge-std/console.sol";
+/// @dev Storage variables needed by all vault shares handlers.
+
+contract VaultSharesStore {
+    /*//////////////////////////////////////////////////////////////////////////
+                                     VARIABLES
+    //////////////////////////////////////////////////////////////////////////*/
+
+    uint256 public superPositionsSum;
+    uint256 public vaultShares;
+
+    /*//////////////////////////////////////////////////////////////////////////
+                                      HELPERS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    function setInvariantToAssert(uint256 _superPositionsSum, uint256 _vaultShares) external {
+        // Store the results
+
+        console.log("A");
+        superPositionsSum = _superPositionsSum;
+        vaultShares = _vaultShares;
+        console.log("B");
+    }
+}

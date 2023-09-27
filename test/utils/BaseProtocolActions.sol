@@ -1777,7 +1777,6 @@ abstract contract BaseProtocolActions is BaseSetup {
                     Strings.toString(FORM_BEACON_IDS[formKinds_[i]])
                 )
             );
-
             /// @dev superformids are built here
             superformIds_[i] = DataLib.packSuperform(superform, FORM_BEACON_IDS[formKinds_[i]], chainId_);
         }

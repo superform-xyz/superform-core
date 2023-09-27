@@ -65,9 +65,7 @@ runs = 1
 depth = 4
 fail_on_revert = true
 call_override = false
-dictionary_weight = 80
-include_storage = true
-include_push_bytes = true
+
 
 [fmt]
 bracket_spacing = true

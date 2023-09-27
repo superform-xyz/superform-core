@@ -3,12 +3,29 @@ pragma solidity ^0.8.19;
 
 import "../VaultShares.invariant.t.sol";
 import "test/utils/InvariantProtocolActions.sol";
-
+import { VaultSharesStore } from "../stores/VaultSharesStore.sol";
+import { TimestampStore } from "../stores/TimestampStore.sol";
 import { CommonBase } from "forge-std/Base.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
 import { StdUtils } from "forge-std/StdUtils.sol";
 
 contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtocolActions {
+    VaultSharesStore public vaultSharesStore;
+    TimestampStore public timestampStore;
+
+    /// @dev Simulates the passage of time.
+    /// See https://github.com/foundry-rs/foundry/issues/4994.
+    /// @dev taken from
+    /// https://github.com/sablier-labs/v2-core/blob/main/test/invariant/handlers/BaseHandler.sol#L60C1-L69C1
+    /// @param timeJumpSeed A fuzzed value needed for generating random time warps.
+
+    modifier adjustTimestamp(uint256 timeJumpSeed) {
+        uint256 timeJump = _bound(timeJumpSeed, 2 minutes, 30 minutes);
+        timestampStore.increaseCurrentTimestamp(timeJump);
+        vm.warp(TimestampStore(timestampStore).currentTimestamp());
+        _;
+    }
+
     constructor(
         uint64[] memory chainIds,
         string[27] memory contractNames,
@@ -16,8 +33,13 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         address[][] memory underlyingAddresses,
         address[][][] memory vaultAddresses,
         address[][][] memory superformAddresses,
-        uint256[] memory forksArray
+        uint256[] memory forksArray,
+        VaultSharesStore _vaultSharesStore,
+        TimestampStore _timestampStore
     ) {
+        vaultSharesStore = _vaultSharesStore;
+        timestampStore = _timestampStore;
+
         _initHandler(
             InitHandlerSetupVars(
                 chainIds,
@@ -29,37 +51,15 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                 forksArray
             )
         );
+
         console.log("Handler setup done!");
-
-        //_fundNativeTokens();
-
-        //_fundUnderlyingTokens(100);
     }
 
-    function getSuperpositionsSum() public returns (uint256 superPositionsSum) {
-        /// @dev sum up superpositions owned by user for the superform on ETH, on all chains
-        for (uint256 i = 0; i < chainIds.length; i++) {
-            uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
-                0, TARGET_UNDERLYINGS[AVAX][0], TARGET_VAULTS[AVAX][0], TARGET_FORM_KINDS[AVAX][0], chainIds[i], AVAX
-            );
+    /*///////////////////////////////////////////////////////////////
+                    HANDLER PUBLIC FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
-            if (superPositions.length > 0) {
-                superPositionsSum += superPositions[0];
-            }
-        }
-    }
-
-    function getVaultShares() public returns (uint256 vaultShares) {
-        ///
-        address superform = getContract(
-            AVAX, string.concat(UNDERLYING_TOKENS[2], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0]))
-        );
-        console.log("superform", superform);
-        vm.selectFork(AVAX);
-        vaultShares = IBaseForm(superform).getVaultShareBalance();
-    }
-
-    function singleDirectSingleVaultDeposit() public {
+    function singleDirectSingleVaultDeposit(uint256 timeJumpSeed) public adjustTimestamp(timeJumpSeed) {
         AMBs = [2, 3];
         CHAIN_0 = AVAX;
         DST_CHAINS = [AVAX];
@@ -98,7 +98,17 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
+        /// @dev vaultSharesStore results to vaultSharesStore
+        uint256 superPositionsSum = _getSuperpositionsSum();
+        console.log("superPositionsSum", superPositionsSum);
+        uint256 vaultShares = _getVaultShares();
+        console.log("vaultShares", vaultShares);
+        console.log("vaultSharesStore", address(vaultSharesStore));
+
+        //vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
+
         actions.pop();
+
         console.log("dep");
     }
     /*
@@ -248,6 +258,10 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     }
     */
 
+    /*///////////////////////////////////////////////////////////////
+                    INTERNAL HANDLER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     struct InitHandlerSetupVars {
         uint64[] chainIds;
         string[27] contractNames;
@@ -300,6 +314,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         }
     }
 
+    /// @dev overrides basesetup _preDeploymentSetup so that forks are not created again
     function _preDeploymentSetup() internal override {
         mapping(uint64 => string) storage rpcURLs = RPC_URLS;
         rpcURLs[ETH] = ETHEREUM_RPC_URL;
@@ -422,5 +437,55 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                 VAULT_NAMES[i].push(string.concat(underlyingTokens[j], VAULT_KINDS[i]));
             }
         }
+    }
+
+    function _getSuperpositionsForDstChainFromSrcChain(
+        uint256 user_,
+        uint256[] memory underlyingTokens_,
+        uint256[] memory vaultIds_,
+        uint32[] memory formKinds_,
+        uint64 srcChain_,
+        uint64 dstChain_
+    )
+        internal
+        returns (uint256[] memory superPositionBalances)
+    {
+        uint256[] memory superformIds = _superformIds(underlyingTokens_, vaultIds_, formKinds_, dstChain_);
+        address superRegistryAddress = getContract(srcChain_, "SuperRegistry");
+        vm.selectFork(FORKS[srcChain_]);
+
+        superPositionBalances = new uint256[](superformIds.length);
+        address superPositionsAddress =
+            ISuperRegistry(superRegistryAddress).getAddress(ISuperRegistry(superRegistryAddress).SUPER_POSITIONS());
+
+        IERC1155A superPositions = IERC1155A(superPositionsAddress);
+
+        for (uint256 i = 0; i < superformIds.length; i++) {
+            superPositionBalances[i] = superPositions.balanceOf(users[user_], superformIds[i]);
+        }
+    }
+
+    function _getSuperpositionsSum() internal returns (uint256 superPositionsSum) {
+        /// @dev sum up superpositions owned by user for the superform on ETH, on all chains
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
+                0, TARGET_UNDERLYINGS[AVAX][0], TARGET_VAULTS[AVAX][0], TARGET_FORM_KINDS[AVAX][0], chainIds[i], AVAX
+            );
+
+            if (superPositions.length > 0) {
+                superPositionsSum += superPositions[0];
+            }
+        }
+    }
+
+    function _getVaultShares() internal returns (uint256 vaultShares) {
+        ///
+        address superform = getContract(
+            AVAX, string.concat(UNDERLYING_TOKENS[2], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+        );
+
+        vm.selectFork(FORKS[AVAX]);
+
+        vaultShares = IBaseForm(superform).getVaultShareBalance();
     }
 }
