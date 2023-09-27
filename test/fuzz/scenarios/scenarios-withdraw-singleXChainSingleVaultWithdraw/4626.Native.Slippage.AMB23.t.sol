@@ -77,7 +77,7 @@ contract SXSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
 
     function test_scenario(uint128 amountOne_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH));
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, TOTAL_SUPPLY_ETH));
         AMOUNTS[OP][0] = [amountOne_];
 
         for (uint256 act = 0; act < actions.length; act++) {

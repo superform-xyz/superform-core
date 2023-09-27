@@ -79,9 +79,9 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
         public
     {
         /// @dev min amountOne_ and amountThree_ need to be 3 as their withdraw amount >= 2
-        // amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_USDC / 3));
-        // amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_USDC / 3));
-        // amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_USDC / 3));
+        // amountOne_ = uint128(bound(amountOne_, 11 * 10**6, TOTAL_SUPPLY_USDC / 3));
+        // amountTwo_ = uint128(bound(amountTwo_, 11 * 10**6, TOTAL_SUPPLY_USDC / 3));
+        // amountThree_ = uint128(bound(amountThree_, 11 * 10**6, TOTAL_SUPPLY_USDC / 3));
         // AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
         AMOUNTS[AVAX][0] = [1e6, 2e6, 3e6];
 

@@ -59,9 +59,9 @@ contract MDSVDNormal4626RevertNoTokenInputSlippageAMB1 is ProtocolActions {
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_DAI / 3));
-        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_DAI / 3));
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, TOTAL_SUPPLY_DAI / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 2 * 10 ** 18, TOTAL_SUPPLY_DAI / 3));
+        amountThree_ = uint128(bound(amountThree_, 2 * 10 ** 18, TOTAL_SUPPLY_DAI / 3));
         AMOUNTS[OP][0] = [amountOne_];
         AMOUNTS[ETH][0] = [amountTwo_];
         AMOUNTS[POLY][0] = [amountThree_];

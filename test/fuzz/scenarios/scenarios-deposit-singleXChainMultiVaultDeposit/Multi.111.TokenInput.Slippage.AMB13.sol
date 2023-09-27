@@ -25,7 +25,7 @@ contract SDMVDMulti111NoTokenInputSlippageAMB14 is ProtocolActions {
 
         TARGET_FORM_KINDS[AVAX][0] = [1, 1, 1];
 
-        AMOUNTS[AVAX][0] = [214, 798, 55_312];
+        AMOUNTS[AVAX][0] = [214 * 10e18, 798 * 10e18, 55_312 * 10e18];
 
         MAX_SLIPPAGE = 1000;
 

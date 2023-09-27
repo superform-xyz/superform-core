@@ -71,8 +71,8 @@ contract SDiMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountTwoWithdraw_) public {
-        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_ETH / 2));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 2));
+        amountOne_ = uint128(bound(amountOne_, 1 * 10 ** 18, TOTAL_SUPPLY_ETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 2 * 10 ** 18, TOTAL_SUPPLY_ETH / 2));
         AMOUNTS[OP][0] = [amountOne_, amountTwo_];
 
         /// @dev bound to amountTwo_ - 1 as partial is true for second vault

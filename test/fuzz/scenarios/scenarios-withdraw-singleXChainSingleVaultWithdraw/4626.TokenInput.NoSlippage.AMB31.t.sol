@@ -33,8 +33,8 @@ contract SXSVWNormal4626NativeSlippageAMB24 is ProtocolActions {
 
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
-        AMOUNTS[AVAX][0] = [541_135];
-        AMOUNTS[AVAX][1] = [541_135];
+        AMOUNTS[AVAX][0] = [541_135 * 10 ** 18];
+        AMOUNTS[AVAX][1] = [541_135 * 10 ** 18];
 
         MAX_SLIPPAGE = 1000;
 

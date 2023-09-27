@@ -71,7 +71,7 @@ contract SDMVW0TokenInputNoSlippageAMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_USDC));
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 6, TOTAL_SUPPLY_USDC));
         AMOUNTS[ARBI][0] = [amountOne_];
         /// @dev partial is true
         amountTwo_ = uint128(bound(amountTwo_, 1, amountOne_ - 1));

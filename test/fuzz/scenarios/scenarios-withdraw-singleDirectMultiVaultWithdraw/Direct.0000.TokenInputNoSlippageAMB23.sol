@@ -68,10 +68,10 @@ contract SDiMVW0000TokenInputNoSlippage2AMB23 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_, uint128 amountFour_) public {
-        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_WETH / 4));
-        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_WETH / 4));
-        amountThree_ = uint128(bound(amountThree_, 1, TOTAL_SUPPLY_WETH / 4));
-        amountFour_ = uint128(bound(amountFour_, 1, TOTAL_SUPPLY_WETH / 4));
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
+        amountTwo_ = uint128(bound(amountTwo_, 2 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
+        amountThree_ = uint128(bound(amountThree_, 2 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
+        amountFour_ = uint128(bound(amountFour_, 2 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
         AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountFour_];
 
         for (uint256 act = 0; act < actions.length; act++) {

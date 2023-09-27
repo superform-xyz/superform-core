@@ -59,9 +59,9 @@ contract MDSVDNormal4626MultiTokenInputNoSlippageAMB23 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
-        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_USDC / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_USDC / 3));
-        amountThree_ = uint128(bound(amountThree_, 1, TOTAL_SUPPLY_USDC / 3));
+        amountOne_ = uint128(bound(amountOne_, 1 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 1 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
+        amountThree_ = uint128(bound(amountThree_, 1 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
         AMOUNTS[ETH][0] = [amountOne_];
         AMOUNTS[OP][0] = [amountTwo_];
         AMOUNTS[POLY][0] = [amountThree_];

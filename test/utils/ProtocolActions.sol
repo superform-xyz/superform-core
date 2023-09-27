@@ -1665,6 +1665,9 @@ abstract contract ProtocolActions is BaseSetup {
         bytes txData;
         bytes sig;
         bytes permit2Calldata;
+        uint256 decimal1;
+        uint256 decimal2;
+        uint256 amount;
         LiqRequest liqReq;
     }
 
@@ -1679,6 +1682,9 @@ abstract contract ProtocolActions is BaseSetup {
         v.initialFork = vm.activeFork();
 
         v.from = args.fromSrc;
+        /// @dev build permit2 calldata
+        vm.selectFork(FORKS[args.srcChainId]);
+        v.decimal1 = args.externalToken != NATIVE_TOKEN ? MockERC20(args.externalToken).decimals() : 18;
 
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is superform (which is inscribed in toDst in the beginning of stage 1)
@@ -1707,8 +1713,6 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev to also inscribe the token address in the Struct
         address liqRequestToken = args.externalToken != args.underlyingToken ? args.externalToken : args.underlyingToken;
 
-        /// @dev build permit2 calldata
-        vm.selectFork(FORKS[args.srcChainId]);
         if (action == Actions.DepositPermit2) {
             v.permit = IPermit2.PermitTransferFrom({
                 permitted: IPermit2.TokenPermissions({ token: IERC20(address(liqRequestToken)), amount: args.amount }),
@@ -1741,13 +1745,22 @@ abstract contract ProtocolActions is BaseSetup {
                 vm.stopPrank();
             }
         }
-        vm.selectFork(v.initialFork);
+        vm.selectFork(FORKS[args.toChainId]);
+        v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
 
+        if (v.decimal1 > v.decimal2) {
+            v.amount = args.amount / 10 ** (v.decimal1 - v.decimal2);
+        } else {
+            v.amount = args.amount * 10 ** (v.decimal2 - v.decimal1);
+        }
+
+        console.log(v.amount);
+        vm.selectFork(v.initialFork);
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
             args.superformId,
-            args.amount,
+            v.amount,
             args.maxSlippage,
             args.dstSwap,
             v.liqReq,
