@@ -939,7 +939,7 @@ abstract contract ProtocolActions is BaseSetup {
                                         CHAIN_0,
                                         aV[i].toChainId,
                                         vars.underlyingDstToken,
-                                        vars.amounts,
+                                        vars.multiVaultsPayloadArg.amounts,
                                         action.slippage
                                     );
                                 } else {
@@ -948,7 +948,7 @@ abstract contract ProtocolActions is BaseSetup {
                                         CHAIN_0,
                                         aV[i].toChainId,
                                         vars.underlyingDstToken[0],
-                                        singleSuperformsData[i].amount,
+                                        vars.singleVaultsPayloadArg.amount,
                                         action.slippage
                                     );
                                 }
@@ -1351,14 +1351,18 @@ abstract contract ProtocolActions is BaseSetup {
                 args.partialWithdrawVaults.length > 0 ? args.partialWithdrawVaults[i] : false,
                 args.slippage
             );
+
             if (args.action == Actions.Deposit || args.action == Actions.DepositPermit2) {
                 superformData = _buildSingleVaultDepositCallData(callDataArgs, args.action);
             } else if (args.action == Actions.Withdraw) {
                 superformData = _buildSingleVaultWithdrawCallData(callDataArgs);
             }
+
             liqRequests[i] = superformData.liqRequest;
             maxSlippageTemp[i] = args.maxSlippage;
             v.totalAmount += finalAmounts[i];
+
+            finalAmounts[i] = superformData.amount;
         }
 
         if (action == Actions.DepositPermit2) {
@@ -1754,7 +1758,6 @@ abstract contract ProtocolActions is BaseSetup {
             v.amount = args.amount * 10 ** (v.decimal2 - v.decimal1);
         }
 
-        console.log(v.amount);
         vm.selectFork(v.initialFork);
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
@@ -1777,6 +1780,9 @@ abstract contract ProtocolActions is BaseSetup {
         bytes txData;
         LiqRequest liqReq;
         address superform;
+        uint256 decimal1;
+        uint256 decimal2;
+        uint256 amount;
         uint256 actualWithdrawAmount;
     }
 
@@ -1788,7 +1794,24 @@ abstract contract ProtocolActions is BaseSetup {
 
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
+        vars.decimal1 = MockERC20(args.externalToken).decimals();
 
+        vm.selectFork(FORKS[args.toChainId]);
+        vars.decimal2 = MockERC20(args.underlyingTokenDst).decimals();
+
+        if (vars.decimal1 > vars.decimal2) {
+            vars.amount = args.amount / 10 ** (vars.decimal1 - vars.decimal2);
+        } else {
+            vars.amount = args.amount * 10 ** (vars.decimal2 - vars.decimal1);
+        }
+
+        console.log("PROTO PROTO PROTO");
+        console.log(vars.amount);
+        console.log(args.amount);
+        console.log(vars.decimal1);
+        console.log(vars.decimal2);
+
+        vm.selectFork(FORKS[CHAIN_0]);
         vars.superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
         vars.superPositions = IERC1155A(
@@ -1798,11 +1821,11 @@ abstract contract ProtocolActions is BaseSetup {
 
         /// @dev singleId approvals from ERC1155A are used here https://github.com/superform-xyz/ERC1155A, avoiding
         /// approving all superPositions at once
-        vars.superPositions.increaseAllowance(vars.superformRouter, args.superformId, args.amount);
+        vars.superPositions.increaseAllowance(vars.superformRouter, args.superformId, vars.amount);
 
         vm.selectFork(FORKS[args.toChainId]);
         (vars.superform,,) = args.superformId.getSuperform();
-        vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(args.amount);
+        vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(vars.amount);
 
         vm.selectFork(initialFork);
 
@@ -1848,7 +1871,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
-            args.amount,
+            vars.amount,
             args.maxSlippage,
             args.dstSwap,
             vars.liqReq,

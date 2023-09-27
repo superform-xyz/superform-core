@@ -74,6 +74,7 @@ contract SDMVW0000TokenInputNoSlippageAMB23 is ProtocolActions {
         amountTwo_ = uint128(bound(amountTwo_, 1 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
         amountThree_ = uint128(bound(amountThree_, 1 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
         amountFour_ = uint128(bound(amountFour_, 1 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
+
         AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountFour_];
         AMOUNTS[ARBI][1] = [amountOne_, amountTwo_, amountThree_, amountFour_];
 
