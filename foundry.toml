@@ -63,7 +63,7 @@ runs = 50
 [invariant]
 runs = 20
 depth = 20
-fail_on_revert = false
+fail_on_revert = true
 call_override = false
 
 

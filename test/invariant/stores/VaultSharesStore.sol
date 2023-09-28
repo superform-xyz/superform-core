@@ -1,9 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import "forge-std/console.sol";
 /// @dev Storage variables needed by all vault shares handlers.
-
 contract VaultSharesStore {
     /*//////////////////////////////////////////////////////////////////////////
                                      VARIABLES

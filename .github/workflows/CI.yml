@@ -48,7 +48,7 @@ jobs:
           echo "## Build result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  test:
+  test-unit-fuzz:
     needs: ["build"]
     runs-on: "SuperformCore2"
     steps:
@@ -71,14 +71,45 @@ jobs:
         run: |
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
-      - name: "Run the fork tests against the optimized build"
-        run: "forge test"
+      - name: "Run fuzz and unit tests against the optimized build"
+        run: "forge test --match-path \"test/(unit|fuzz)\""
 
       - name: "Add test summary"
         run: |
           echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
+  test-invariant:
+    needs: ["build"]
+    runs-on: "SuperformCore2"
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v3"
+        with:
+          submodules: "recursive"
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v3"
+        with:
+          fail-on-cache-miss: true
+          key: "foundry-build-${{ github.sha }}"
+          path: "out"
+
+      - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
+        run: |
+          echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
+
+      - name: "Run invariant tests against the optimized build"
+        run: "forge test --match-path \"test/invariant\""
+
+      - name: "Add test summary"
+        run: |
+          echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+                
   coverage:
     needs: ["build"]
     runs-on: "SuperformCore2"

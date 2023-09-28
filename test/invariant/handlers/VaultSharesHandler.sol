@@ -18,7 +18,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     /// @dev taken from
     /// https://github.com/sablier-labs/v2-core/blob/main/test/invariant/handlers/BaseHandler.sol#L60C1-L69C1
     /// @param timeJumpSeed A fuzzed value needed for generating random time warps.
-
     modifier adjustTimestamp(uint256 timeJumpSeed) {
         uint256 timeJump = _bound(timeJumpSeed, 2 minutes, 30 minutes);
         vm.selectFork(FORKS[0]);
@@ -60,7 +59,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                     HANDLER PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function singleVaultDeposit(
+    function singleDirectSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
         uint256 underlying1,
@@ -75,6 +74,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         AMBs = [2, 3];
         CHAIN_0 = chainIds[bound(chain0, 0, chainIds.length - 1)];
         uint64 dstChain = chainIds[bound(dstChain1, 0, chainIds.length - 1)];
+        dstChain = CHAIN_0;
         DST_CHAINS = [dstChain];
 
         TARGET_VAULTS[DST_CHAINS[0]][0] = [0];
@@ -98,8 +98,8 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                 revertRole: "",
                 slippage: int256(bound(slippage, 0, 1000)),
                 dstSwap: false,
-                externalToken: bound(inputToken, 0, 2) // this could be 0
-             })
+                externalToken: bound(inputToken, 0, 2)
+            })
         );
 
         for (uint256 act = 0; act < actions.length; act++) {
@@ -113,9 +113,8 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
-        /// @dev vaultSharesStore results to vaultSharesStore
         uint256 superPositionsSum = _getSingleVaultSuperpositionsSum(dstChain);
-        uint256 vaultShares = _getSingleVaultShares(dstChain, underlying1);
+        uint256 vaultShares = _getSingleVaultShares(dstChain);
         actions.pop();
 
         vm.selectFork(FORKS[0]);
@@ -493,12 +492,15 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         }
     }
 
-    function _getSingleVaultShares(uint64 dstChain, uint256 underlying1) internal returns (uint256 vaultShares) {
+    function _getSingleVaultShares(uint64 dstChain) internal returns (uint256 vaultShares) {
         /// @dev FIXME currently hardcoded to vault kind and form beacon id 0
         address superform = getContract(
             dstChain,
             string.concat(
-                UNDERLYING_TOKENS[underlying1], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0])
+                UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]],
+                VAULT_KINDS[0],
+                "Superform",
+                Strings.toString(FORM_BEACON_IDS[0])
             )
         );
 
