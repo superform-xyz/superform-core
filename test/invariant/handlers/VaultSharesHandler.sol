@@ -74,13 +74,19 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     {
         AMBs = [2, 3];
         CHAIN_0 = chainIds[bound(chain0, 0, chainIds.length - 1)];
-        DST_CHAINS = [chainIds[bound(dstChain1, 0, chainIds.length - 1)]];
-        CHAIN_0 = 2;
-        DST_CHAINS = [5];
+        uint64 dstChain = chainIds[bound(dstChain1, 0, chainIds.length - 1)];
+        DST_CHAINS = [dstChain];
+
         TARGET_VAULTS[DST_CHAINS[0]][0] = [0];
         TARGET_FORM_KINDS[DST_CHAINS[0]][0] = [0];
+        underlying1 = bound(underlying1, 0, 2);
+        TARGET_UNDERLYINGS[DST_CHAINS[0]][0] = [underlying1];
+
+        /// @dev this needs to be bounded by the max of all supplies because of the assumptions in the tests
+        AMOUNTS[DST_CHAINS[0]][0] = [bound(amount1, 2, TOTAL_SUPPLY_USDC)];
+        /// amount of collateral to be deposited
         MAX_SLIPPAGE = 1000;
-        LIQ_BRIDGES[DST_CHAINS[0]][0] = [0];
+        LIQ_BRIDGES[DST_CHAINS[0]][0] = [1];
 
         actions.push(
             TestAction({
@@ -92,12 +98,9 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                 revertRole: "",
                 slippage: int256(bound(slippage, 0, 1000)),
                 dstSwap: false,
-                externalToken: bound(inputToken, 0, 2)
-            })
+                externalToken: bound(inputToken, 0, 2) // this could be 0
+             })
         );
-
-        AMOUNTS[DST_CHAINS[0]][0] = [bound(amount1, 2, TOTAL_SUPPLY_WETH)];
-        TARGET_UNDERLYINGS[DST_CHAINS[0]][0] = [bound(underlying1, 0, 2)];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -111,8 +114,8 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         }
 
         /// @dev vaultSharesStore results to vaultSharesStore
-        uint256 superPositionsSum = _getSuperpositionsSum();
-        uint256 vaultShares = _getVaultShares();
+        uint256 superPositionsSum = _getSingleVaultSuperpositionsSum(dstChain);
+        uint256 vaultShares = _getSingleVaultShares(dstChain, underlying1);
         actions.pop();
 
         vm.selectFork(FORKS[0]);
@@ -472,11 +475,16 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         }
     }
 
-    function _getSuperpositionsSum() internal returns (uint256 superPositionsSum) {
+    function _getSingleVaultSuperpositionsSum(uint64 dstChain) internal returns (uint256 superPositionsSum) {
         /// @dev sum up superpositions owned by user for the superform on ETH, on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
             uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
-                0, TARGET_UNDERLYINGS[AVAX][0], TARGET_VAULTS[AVAX][0], TARGET_FORM_KINDS[AVAX][0], chainIds[i], AVAX
+                0,
+                TARGET_UNDERLYINGS[dstChain][0],
+                TARGET_VAULTS[dstChain][0],
+                TARGET_FORM_KINDS[dstChain][0],
+                chainIds[i],
+                dstChain
             );
 
             if (superPositions.length > 0) {
@@ -485,13 +493,16 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         }
     }
 
-    function _getVaultShares() internal returns (uint256 vaultShares) {
-        ///
+    function _getSingleVaultShares(uint64 dstChain, uint256 underlying1) internal returns (uint256 vaultShares) {
+        /// @dev FIXME currently hardcoded to vault kind and form beacon id 0
         address superform = getContract(
-            AVAX, string.concat(UNDERLYING_TOKENS[2], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0]))
+            dstChain,
+            string.concat(
+                UNDERLYING_TOKENS[underlying1], VAULT_KINDS[0], "Superform", Strings.toString(FORM_BEACON_IDS[0])
+            )
         );
 
-        vm.selectFork(FORKS[AVAX]);
+        vm.selectFork(FORKS[dstChain]);
 
         vaultShares = IBaseForm(superform).getVaultShareBalance();
     }
