@@ -103,7 +103,7 @@ abstract contract BaseSetup is DSTest, Test {
 
     /// @dev WARNING!! THESE VAULT NAMES MUST BE THE EXACT NAMES AS FILLED IN vaultKinds
     string[] public VAULT_KINDS = [
-        "VaultMock",
+        "ERC4626Vault",
         "ERC4626TimelockMock",
         "kycDAO4626",
         "VaultMockRevertDeposit",
@@ -246,6 +246,8 @@ abstract contract BaseSetup is DSTest, Test {
     mapping(uint64 chainId => uint256 fork) public FORKS;
     mapping(uint64 chainId => string forkUrl) public RPC_URLS;
     mapping(uint64 chainId => mapping(string underlying => address realAddress)) public UNDERLYING_EXISTING_TOKENS;
+    mapping(uint64 chainId => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault))) public
+        REAL_VAULT_ADDRESS;
 
     string public ETHEREUM_RPC_URL = vm.envString("ETHEREUM_RPC_URL"); // Native token: ETH
     string public BSC_RPC_URL = vm.envString("BSC_RPC_URL"); // Native token: BNB
@@ -531,27 +533,32 @@ abstract contract BaseSetup is DSTest, Test {
                     uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;
                     IERC4626[] memory vaultsT = new IERC4626[](lenBytecodes);
                     for (uint256 l = 0; l < lenBytecodes; l++) {
-                        /// @dev 8.2 - Deploy mock Vault
+                        vars.vault = REAL_VAULT_ADDRESS[FORM_BEACON_IDS[j]][UNDERLYING_TOKENS[k]][l];
 
-                        if (j != 2) {
-                            bytecodeWithArgs = abi.encodePacked(
-                                vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode[l],
-                                abi.encode(
-                                    MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
-                                    VAULT_NAMES[l][k],
-                                    VAULT_NAMES[l][k]
-                                )
-                            );
+                        if (vars.vault == address(0)) {
+                            /// @dev 8.2 - Deploy mock Vault
+                            if (j != 2) {
+                                bytecodeWithArgs = abi.encodePacked(
+                                    vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode[l],
+                                    abi.encode(
+                                        MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])),
+                                        VAULT_NAMES[l][k],
+                                        VAULT_NAMES[l][k]
+                                    )
+                                );
 
-                            vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
-                        } else {
-                            /// deploy the kycDAOVault wrapper with different args
-                            bytecodeWithArgs = abi.encodePacked(
-                                vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode[l],
-                                abi.encode(MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock)
-                            );
+                                vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                            } else {
+                                /// deploy the kycDAOVault wrapper with different args
+                                bytecodeWithArgs = abi.encodePacked(
+                                    vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode[l],
+                                    abi.encode(
+                                        MockERC20(getContract(vars.chainId, UNDERLYING_TOKENS[k])), vars.kycDAOMock
+                                    )
+                                );
 
-                            vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                                vars.vault = _deployWithCreate2(bytecodeWithArgs, 1);
+                            }
                         }
 
                         /// @dev Add ERC4626Vault
@@ -1014,7 +1021,7 @@ abstract contract BaseSetup is DSTest, Test {
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMock).creationCode);
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertDeposit).creationCode);
         vaultBytecodes2[1].vaultBytecode.push(type(VaultMockRevertWithdraw).creationCode);
-        vaultBytecodes2[1].vaultKinds.push("VaultMock");
+        vaultBytecodes2[1].vaultKinds.push("ERC4626Vault");
         vaultBytecodes2[1].vaultKinds.push("VaultMockRevertDeposit");
         vaultBytecodes2[1].vaultKinds.push("VaultMockRevertWithdraw");
 
@@ -1068,6 +1075,32 @@ abstract contract BaseSetup is DSTest, Test {
         existingTokens[56]["DAI"] = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
         existingTokens[56]["USDC"] = 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d;
         existingTokens[56]["WETH"] = address(0);
+
+        mapping(uint64 chainId => mapping(string underlying => mapping(uint256 vaultKindIndex => address realVault)))
+            storage existingVaults = REAL_VAULT_ADDRESS;
+        existingVaults[43_114]["DAI"][0] = 0x2c1AeE2acE536BF41d78865E15b100bd61682cb9;
+        existingVaults[43_114]["USDC"][0] = 0xcEE169c9673362A244726D6eBc57390ad0B5b824;
+        existingVaults[43_114]["WETH"][0] = 0x1a225008efffB6e07D01671127c9E40f6f787c8C;
+
+        existingVaults[42_161]["DAI"][0] = 0x105bdc0990947318FA1c873623730F332A6f6203;
+        existingVaults[42_161]["USDC"][0] = 0xDAF2D8AAc9174B1168b9f78075FE64a04bae197B;
+        existingVaults[42_161]["WETH"][0] = 0xe4c2A17f38FEA3Dcb3bb59CEB0aC0267416806e2;
+
+        existingVaults[10]["DAI"][0] = 0xe4c2A17f38FEA3Dcb3bb59CEB0aC0267416806e2;
+        existingVaults[10]["USDC"][0] = 0x105bdc0990947318FA1c873623730F332A6f6203;
+        existingVaults[10]["WETH"][0] = 0xDAF2D8AAc9174B1168b9f78075FE64a04bae197B;
+
+        existingVaults[1]["DAI"][0] = 0x064AA994e3D69c9d5531BcA7502E2F35df09EB25;
+        existingVaults[1]["USDC"][0] = 0x660e2fC185a9fFE722aF253329CEaAD4C9F6F928;
+        existingVaults[1]["WETH"][0] = 0xc4d4500326981eacD020e20A81b1c479c161c7EF;
+
+        existingVaults[137]["DAI"][0] = 0x24601C6E09EC261CE1D7c331D15fbfb231DA16c0;
+        existingVaults[137]["USDC"][0] = 0x2ff83bdDee43A5a1A70885C73aCE8B6451F17CFD;
+        existingVaults[137]["WETH"][0] = address(0);
+
+        existingVaults[56]["DAI"][0] = 0x50b2d6a5984667Bb8b1f287D29955b77a667970d;
+        existingVaults[56]["USDC"][0] = 0x6A354D50fC2476061F378390078e30F9782C5266;
+        existingVaults[56]["WETH"][0] = address(0);
     }
 
     function _fundNativeTokens() private {
