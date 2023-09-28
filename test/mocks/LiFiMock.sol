@@ -26,7 +26,7 @@ contract LiFiMock is Test {
         if (!bridgeData.hasSourceSwaps) {
             _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
         } else {
-             _swap(
+            uint256 amount = _swap(
                 swapData[0].fromAmount,
                 swapData[0].sendingAssetId,
                 swapData[0].receivingAssetId,
@@ -34,8 +34,8 @@ contract LiFiMock is Test {
                 address(this)
             );
 
-            _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, true);
-        }  
+            _bridge(amount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, true);
+        }
     }
 
     function swapTokensGeneric(
@@ -78,7 +78,6 @@ contract LiFiMock is Test {
     )
         internal
     {
-        console.log("ONLY HERE");
         BridgeLocalVars memory v;
         /// @dev encapsulating from
         (v.from, v.toForkId, v.outputToken, v.slippage, v.isMultiTx, v.multiTxSlippageShare, v.isDirect) =
@@ -95,6 +94,7 @@ contract LiFiMock is Test {
 
         uint256 prevForkId = vm.activeFork();
         vm.selectFork(v.toForkId);
+
         uint256 decimal2 = v.outputToken == NATIVE ? 18 : MockERC20(v.outputToken).decimals();
         uint256 amountOut;
 
@@ -111,6 +111,9 @@ contract LiFiMock is Test {
             v.amount = amountOut * 10 ** (decimal2 - decimal1);
         }
 
+        console.log(inputToken_);
+        console.log(v.outputToken);
+        console.log(v.amount);
         if (v.outputToken != NATIVE) {
             deal(v.outputToken, receiver_, MockERC20(v.outputToken).balanceOf(receiver_) + v.amount);
         } else {
@@ -130,9 +133,8 @@ contract LiFiMock is Test {
         address receiver_
     )
         internal
+        returns (uint256)
     {
-        console.log("ONLY HERE 2 2 2");
-
         /// @dev encapsulating from
         address from = abi.decode(data_, (address));
         if (inputToken_ != NATIVE) {
@@ -150,8 +152,8 @@ contract LiFiMock is Test {
         } else {
             amount_ = amount_ * 10 ** (decimal2 - decimal1);
         }
-
         /// @dev assume no swap slippage
         deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);
+        return amount_;
     }
 }

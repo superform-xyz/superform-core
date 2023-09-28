@@ -1799,17 +1799,14 @@ abstract contract ProtocolActions is BaseSetup {
         vm.selectFork(FORKS[args.toChainId]);
         vars.decimal2 = MockERC20(args.underlyingTokenDst).decimals();
 
+        console.log(vars.decimal1);
+        console.log(vars.decimal2);
+
         if (vars.decimal1 > vars.decimal2) {
             vars.amount = args.amount / 10 ** (vars.decimal1 - vars.decimal2);
         } else {
             vars.amount = args.amount * 10 ** (vars.decimal2 - vars.decimal1);
         }
-
-        console.log("PROTO PROTO PROTO");
-        console.log(vars.amount);
-        console.log(args.amount);
-        console.log(vars.decimal1);
-        console.log(vars.decimal2);
 
         vm.selectFork(FORKS[CHAIN_0]);
         vars.superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
