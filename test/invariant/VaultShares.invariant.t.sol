@@ -21,6 +21,7 @@ contract VaultSharesInvariantTest is BaseInvariantTest {
             uint256[] memory forksArray
         ) = _grabStateForHandler();
 
+        /// @dev set fork back to id 0 to create a store and a handler (which will be shared by all forks)
         vm.selectFork(FORKS[0]);
         vaultSharesStore = new VaultSharesStore();
 
@@ -32,9 +33,7 @@ contract VaultSharesInvariantTest is BaseInvariantTest {
         vm.label({ account: address(vaultSharesHandler), newLabel: "VaultSharesHandler" });
 
         bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = VaultSharesHandler.singleDirectSingleVaultDeposit.selector;
-        //selectors[1] = VaultSharesHandler.singleDirectSingleVaultWithdraw.selector;
-        //selectors[2] = VaultSharesHandler.singleXChainRescueFailedDeposit.selector;
+        selectors[0] = VaultSharesHandler.singleVaultDeposit.selector;
 
         targetSelector(FuzzSelector({ addr: address(vaultSharesHandler), selectors: selectors }));
         targetContract(address(vaultSharesHandler));

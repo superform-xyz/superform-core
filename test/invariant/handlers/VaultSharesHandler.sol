@@ -21,6 +21,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
     modifier adjustTimestamp(uint256 timeJumpSeed) {
         uint256 timeJump = _bound(timeJumpSeed, 2 minutes, 30 minutes);
+        vm.selectFork(FORKS[0]);
         timestampStore.increaseCurrentTimestamp(timeJump);
         vm.warp(TimestampStore(timestampStore).currentTimestamp());
         _;
@@ -59,17 +60,27 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                     HANDLER PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function singleDirectSingleVaultDeposit(uint256 timeJumpSeed) public adjustTimestamp(timeJumpSeed) {
+    function singleVaultDeposit(
+        uint256 timeJumpSeed,
+        uint256 amount1,
+        uint256 underlying1,
+        uint256 inputToken,
+        uint256 slippage,
+        uint64 chain0,
+        uint64 dstChain1
+    )
+        public
+        adjustTimestamp(timeJumpSeed)
+    {
         AMBs = [2, 3];
-        CHAIN_0 = AVAX;
-        DST_CHAINS = [AVAX];
-        /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[AVAX][0] = [2];
-        TARGET_VAULTS[AVAX][0] = [0];
-        /// @dev id 0 is normal 4626
-        TARGET_FORM_KINDS[AVAX][0] = [0];
+        CHAIN_0 = chainIds[bound(chain0, 0, chainIds.length - 1)];
+        DST_CHAINS = [chainIds[bound(dstChain1, 0, chainIds.length - 1)]];
+        CHAIN_0 = 2;
+        DST_CHAINS = [5];
+        TARGET_VAULTS[DST_CHAINS[0]][0] = [0];
+        TARGET_FORM_KINDS[DST_CHAINS[0]][0] = [0];
         MAX_SLIPPAGE = 1000;
-        LIQ_BRIDGES[AVAX][0] = [0];
+        LIQ_BRIDGES[DST_CHAINS[0]][0] = [0];
 
         actions.push(
             TestAction({
@@ -79,13 +90,14 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
-                slippage: 999, // 0% <- if we are testing a pass this must be below each maxSlippage,
+                slippage: int256(bound(slippage, 0, 1000)),
                 dstSwap: false,
-                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
-             })
+                externalToken: bound(inputToken, 0, 2)
+            })
         );
 
-        AMOUNTS[AVAX][0] = [8_000_000];
+        AMOUNTS[DST_CHAINS[0]][0] = [bound(amount1, 2, TOTAL_SUPPLY_WETH)];
+        TARGET_UNDERLYINGS[DST_CHAINS[0]][0] = [bound(underlying1, 0, 2)];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -105,8 +117,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
         vm.selectFork(FORKS[0]);
         vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
-
-        console.log("dep");
     }
     /*
     function singleDirectSingleVaultWithdraw() public {

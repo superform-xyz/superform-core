@@ -21,13 +21,15 @@ contract BaseInvariantTest is ProtocolActions {
 
     function setUp() public virtual override {
         super.setUp();
+
+        /// @dev set fork back to id 0 to create a store (which will be shared by all forks)
         vm.selectFork(FORKS[0]);
 
         timestampStore = new TimestampStore();
 
         vm.label({ account: address(timestampStore), newLabel: "TimestampStore" });
 
-        // Prevent these contracts from being fuzzed as `msg.sender`.
+        // Prevent timestampStore from being fuzzed as `msg.sender`.
         excludeSender(address(timestampStore));
     }
 
