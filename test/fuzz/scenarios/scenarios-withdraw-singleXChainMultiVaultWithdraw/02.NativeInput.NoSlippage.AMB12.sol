@@ -77,10 +77,6 @@ contract SDMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
         amountTwo_ = uint128(bound(amountTwo_, 2 * 10 ** 18, TOTAL_SUPPLY_ETH / 2));
         AMOUNTS[OP][0] = [amountOne_, amountTwo_];
 
-        /// @dev bound to amountTwo_ - 1 as partial is true for second vault
-        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, amountTwo_ - 1));
-        AMOUNTS[OP][1] = [amountOne_, amountTwoWithdraw_];
-
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
@@ -88,6 +84,19 @@ contract SDMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                    actions[1].user,
+                    TARGET_UNDERLYINGS[DST_CHAINS[0]][1],
+                    TARGET_VAULTS[DST_CHAINS[0]][1],
+                    TARGET_FORM_KINDS[DST_CHAINS[0]][1],
+                    DST_CHAINS[0]
+                );
+                /// @dev bound to amountTwo_ - 1 as partial is true for second vault
+                amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, superPositions[1] - 1));
+                AMOUNTS[OP][1] = [superPositions[0], amountTwoWithdraw_];
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

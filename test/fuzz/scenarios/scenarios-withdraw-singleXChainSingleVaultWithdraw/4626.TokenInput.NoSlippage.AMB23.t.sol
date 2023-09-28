@@ -87,6 +87,20 @@ contract SXSVWNormal4626NativeNoSlippageAMB23 is ProtocolActions {
             StagesLocalVars memory vars;
             bool success;
 
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
+                }
+            }
+
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
     }

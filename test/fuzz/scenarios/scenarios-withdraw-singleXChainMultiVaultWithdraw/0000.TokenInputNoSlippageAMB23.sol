@@ -9,9 +9,9 @@ contract SDMVW0000TokenInputNoSlippageAMB23 is ProtocolActions {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
                 !! WARNING !!  DEFINE TEST SETTINGS HERE
-    //////////////////////////////////////////////////////////////*/
-        /// @dev singleDestinationMultiVault, large test
+        //////////////////////////////////////////////////////////////*/
 
+        /// @dev singleDestinationMultiVault, large test
         AMBs = [3, 2];
 
         CHAIN_0 = ETH;
@@ -20,6 +20,7 @@ contract SDMVW0000TokenInputNoSlippageAMB23 is ProtocolActions {
         /// @dev define vaults amounts and slippage for every destination chain and for every action
         TARGET_UNDERLYINGS[ARBI][0] = [1, 1, 1, 0];
         TARGET_VAULTS[ARBI][0] = [0, 0, 0, 0];
+
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ARBI][0] = [0, 0, 0, 0];
 
@@ -46,7 +47,7 @@ contract SDMVW0000TokenInputNoSlippageAMB23 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 2 // 0 = DAI, 1 = USDT, 2 = WETH
              })
         );
 
@@ -69,14 +70,8 @@ contract SDMVW0000TokenInputNoSlippageAMB23 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_, uint128 amountFour_) public {
-        amountOne_ = uint128(bound(amountOne_, 1 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
-        amountTwo_ = uint128(bound(amountTwo_, 1 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
-        amountThree_ = uint128(bound(amountThree_, 1 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
-        amountFour_ = uint128(bound(amountFour_, 1 * 10 ** 18, TOTAL_SUPPLY_WETH / 4));
-
-        AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountFour_];
-        AMOUNTS[ARBI][1] = [amountOne_, amountTwo_, amountThree_, amountFour_];
+    function test_scenario() public {
+        AMOUNTS[ARBI][0] = [3 * 10 ** 18, 3 * 10 ** 18, 3 * 10 ** 18, 3 * 10 ** 18];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -85,6 +80,19 @@ contract SDMVW0000TokenInputNoSlippageAMB23 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                    actions[1].user,
+                    TARGET_UNDERLYINGS[DST_CHAINS[0]][1],
+                    TARGET_VAULTS[DST_CHAINS[0]][1],
+                    TARGET_FORM_KINDS[DST_CHAINS[0]][1],
+                    DST_CHAINS[0]
+                );
+
+                AMOUNTS[ARBI][1] =
+                    [superPositions[0] / 3, superPositions[1] / 3, superPositions[2] / 3, superPositions[3]];
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

@@ -1780,9 +1780,6 @@ abstract contract ProtocolActions is BaseSetup {
         bytes txData;
         LiqRequest liqReq;
         address superform;
-        uint256 decimal1;
-        uint256 decimal2;
-        uint256 amount;
         uint256 actualWithdrawAmount;
     }
 
@@ -1794,19 +1791,8 @@ abstract contract ProtocolActions is BaseSetup {
 
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
-        vars.decimal1 = MockERC20(args.externalToken).decimals();
 
         vm.selectFork(FORKS[args.toChainId]);
-        vars.decimal2 = MockERC20(args.underlyingTokenDst).decimals();
-
-        console.log(vars.decimal1);
-        console.log(vars.decimal2);
-
-        if (vars.decimal1 > vars.decimal2) {
-            vars.amount = args.amount / (10 ** (vars.decimal1 - vars.decimal2));
-        } else {
-            vars.amount = args.amount;
-        }
 
         vm.selectFork(FORKS[CHAIN_0]);
         vars.superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
@@ -1818,11 +1804,11 @@ abstract contract ProtocolActions is BaseSetup {
 
         /// @dev singleId approvals from ERC1155A are used here https://github.com/superform-xyz/ERC1155A, avoiding
         /// approving all superPositions at once
-        vars.superPositions.increaseAllowance(vars.superformRouter, args.superformId, vars.amount);
+        vars.superPositions.increaseAllowance(vars.superformRouter, args.superformId, args.amount);
 
         vm.selectFork(FORKS[args.toChainId]);
         (vars.superform,,) = args.superformId.getSuperform();
-        vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(vars.amount);
+        vars.actualWithdrawAmount = IBaseForm(vars.superform).previewRedeemFrom(args.amount);
 
         vm.selectFork(initialFork);
 
@@ -1868,7 +1854,7 @@ abstract contract ProtocolActions is BaseSetup {
         /// for withdraws
         superformData = SingleVaultSFData(
             args.superformId,
-            vars.amount,
+            args.amount,
             args.maxSlippage,
             args.dstSwap,
             vars.liqReq,
