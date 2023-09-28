@@ -99,9 +99,9 @@ contract MDSVW010NativeSlippage2AMB12 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
-        amountOne_ = uint128(bound(amountOne_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
-        amountThree_ = uint128(bound(amountThree_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
+        amountOne_ = uint128(bound(amountOne_, 11e18, 20e18));
+        amountTwo_ = uint128(bound(amountTwo_, 11e18, 20e18));
+        amountThree_ = uint128(bound(amountThree_, 11e18, 20e18));
 
         AMOUNTS[ARBI][0] = [amountOne_];
         AMOUNTS[OP][0] = [amountTwo_];
