@@ -1803,9 +1803,9 @@ abstract contract ProtocolActions is BaseSetup {
         console.log(vars.decimal2);
 
         if (vars.decimal1 > vars.decimal2) {
-            vars.amount = args.amount / 10 ** (vars.decimal1 - vars.decimal2);
+            vars.amount = args.amount / (10 ** (vars.decimal1 - vars.decimal2));
         } else {
-            vars.amount = args.amount * 10 ** (vars.decimal2 - vars.decimal1);
+            vars.amount = args.amount;
         }
 
         vm.selectFork(FORKS[CHAIN_0]);
