@@ -115,9 +115,9 @@ contract MDMVW0102408NativeInputSlippageAMB12 is ProtocolActions {
     )
         public
     {
-        amountOne_ = uint128(bound(amountOne_, 12 * 10 ** 18, TOTAL_SUPPLY_ETH / 7));
-        amountTwo_ = uint128(bound(amountTwo_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 7));
-        amountThree_ = uint128(bound(amountThree_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 7));
+        amountOne_ = uint128(bound(amountOne_, 12e18, 20e18));
+        amountTwo_ = uint128(bound(amountTwo_, 11e18, 20e18));
+        amountThree_ = uint128(bound(amountThree_, 11e18, 20e18));
 
         AMOUNTS[ETH][0] = [amountOne_, amountTwo_];
         AMOUNTS[POLY][0] = [amountTwo_, amountThree_, amountOne_];

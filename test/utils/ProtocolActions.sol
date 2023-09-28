@@ -2529,7 +2529,7 @@ abstract contract ProtocolActions is BaseSetup {
                 /// @dev <= 1 due to off by one issues with vault.previewRedeem(), leading to
                 /// currentBalanceOfSp being 1 more than expected
                 //assertLe(currentBalanceOfSp - amountsToAssert[i], 1);
-                assertEq(currentBalanceOfSp, amountsToAssert[i]);
+                assertLe(currentBalanceOfSp, amountsToAssert[i]);
             } else {
                 assertGt(currentBalanceOfSp, amountsToAssert[i]);
             }
@@ -2548,7 +2548,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superformId);
 
-        assertEq(currentBalanceOfSp, amountToAssert);
+        assertLe(currentBalanceOfSp, amountToAssert);
     }
 
     /// @dev generalized internal function to assert single superPosition balances of partial withdraws

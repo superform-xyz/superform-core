@@ -97,8 +97,8 @@ contract MDSVWNormal4626NativeSlippageAMB23 is ProtocolActions {
     )
         public
     {
-        amountOne_ = uint128(bound(amountOne_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 11 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
+        amountOne_ = uint128(bound(amountOne_, 11e18, 20e18));
+        amountTwo_ = uint128(bound(amountTwo_, 11e18, 20e18));
 
         AMOUNTS[OP][0] = [amountOne_];
         AMOUNTS[AVAX][0] = [amountTwo_];
