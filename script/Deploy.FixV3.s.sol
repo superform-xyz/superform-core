@@ -120,7 +120,16 @@ contract DeployContract is Script {
         address paymentHelper = SuperRegistry(superRegistry).getAddress(keccak256("PAYMENT_HELPER"));
         console.log("read paymentHelper: %s", paymentHelper);
 
-        PaymentHelper(payable(paymentHelper)).updateChainConfig(chainId, 6, abi.encode(111));
+        for (uint256 j = 0; j < SELECTED_CHAIN_IDS.length; j++) {
+            if (j != i) {
+                address dstPaymentHelper = SuperRegistry(
+                    _readContract(chainNames[j], SELECTED_CHAIN_IDS[j], "SuperRegistry")
+                ).getAddress(keccak256("PAYMENT_HELPER"));
+                PaymentHelper(payable(dstPaymentHelper)).updateChainConfig(SELECTED_CHAIN_IDS[j], 6, abi.encode(111));
+            } else {
+                PaymentHelper(payable(paymentHelper)).updateChainConfig(chainId, 6, abi.encode(111));
+            }
+        }
 
         vm.stopBroadcast();
     }
