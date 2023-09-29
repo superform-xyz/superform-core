@@ -83,8 +83,6 @@ contract LiFiMock is Test {
 
         if (inputToken_ != NATIVE) {
             if (!prevSwap) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
-            /// @dev not all tokens allow burn / transfer to zero address
-            try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
         } else {
             require(msg.value == amount_);
         }
@@ -123,8 +121,6 @@ contract LiFiMock is Test {
         address from = abi.decode(data_, (address));
         if (inputToken_ != NATIVE) {
             MockERC20(inputToken_).transferFrom(from, address(this), amount_);
-            /// @dev not all tokens allow burn / transfer to zero address
-            try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
         }
         /// @dev assume no swap slippage
         deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);

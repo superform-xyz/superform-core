@@ -149,7 +149,8 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         delete revertingWithdrawSFs;
         delete revertingWithdrawTimelockedSFs;
         delete sameChainDstHasRevertingVault;
-
+        delete actualAmountWithdrawnPerDst;
+        sameChainDstHasRevertingVault = false;
         for (uint256 i = 0; i < vars.nDestinations; ++i) {
             delete countTimelocked[i];
             delete TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]];

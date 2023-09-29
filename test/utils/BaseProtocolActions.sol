@@ -695,6 +695,7 @@ abstract contract BaseProtocolActions is BaseSetup {
             delete usedDSTs[aV[i].toChainId].payloadNumber;
             delete usedDSTs[aV[i].toChainId].nRepetitions;
         }
+        delete uniqueDSTs;
         return aV;
     }
 
