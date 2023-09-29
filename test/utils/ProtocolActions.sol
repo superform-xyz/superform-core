@@ -15,7 +15,7 @@ import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 import { SolPretty } from "solpretty/SolPretty.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { Math } from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 abstract contract ProtocolActions is BaseSetup {
     using DataLib for uint256;

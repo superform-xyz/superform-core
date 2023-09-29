@@ -6,6 +6,8 @@ import "test/utils/ProtocolActions.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 
 contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
+    address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
     function setUp() public override {
         super.setUp();
         vm.selectFork(FORKS[ETH]);
@@ -23,7 +25,7 @@ contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
                 true,
                 address(0),
                 deployer,
-                address(0)
+                NATIVE
             )
         );
     }
@@ -42,7 +44,7 @@ contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
                 true,
                 address(0),
                 deployer,
-                address(0)
+                NATIVE
             )
         );
     }
@@ -61,7 +63,7 @@ contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
                 true,
                 address(0),
                 deployer,
-                address(0)
+                NATIVE
             )
         );
     }
@@ -80,7 +82,7 @@ contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
                 true,
                 address(0),
                 deployer,
-                address(0)
+                NATIVE
             )
         );
     }
@@ -99,7 +101,7 @@ contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
                 false,
                 address(0),
                 deployer,
-                address(0)
+                NATIVE
             )
         );
     }
@@ -118,7 +120,7 @@ contract BridgeValidatorInvalidReceiverTest is ProtocolActions {
                 false,
                 address(0),
                 deployer,
-                address(0)
+                NATIVE
             )
         );
     }

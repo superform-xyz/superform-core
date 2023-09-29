@@ -2,9 +2,9 @@
 pragma solidity ^0.8.19;
 
 import { Script } from "forge-std/Script.sol";
-import { SuperRegistry } from "src/settings/SuperRegistry.sol";
-import { PaymentHelper } from "src/payments/PaymentHelper.sol";
-import { SuperRBAC } from "src/settings/SuperRBAC.sol";
+import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
+import { IPaymentHelper } from "src/interfaces/IPaymentHelper.sol";
+import { ISuperRBAC } from "src/interfaces/ISuperRBAC.sol";
 
 import "forge-std/console.sol";
 
@@ -91,6 +91,8 @@ contract DeployContract is Script {
     }
 
     /// @dev sets roles for keeper as updater and processor
+    /// @dev 56, 137, 43_114
+    uint256[3] public nativePrices = [21_641_000_000, 13_752_069_100, 925_000_000];
 
     function _scriptAction(uint256 i, uint256 trueIndex) public {
         deployerPrivateKey = vm.envUint("DEPLOYER_KEY");
@@ -104,10 +106,10 @@ contract DeployContract is Script {
         address superRegistry = _readContract(chainNames[trueIndex], chainId, "SuperRegistry");
         console.log("read superRegistry: %s", superRegistry);
 
-        address payable superRbac = payable(SuperRegistry(superRegistry).getAddress(keccak256("SUPER_RBAC")));
+        address payable superRbac = payable(ISuperRegistry(superRegistry).getAddress(keccak256("SUPER_RBAC")));
 
         console.log("read superRbac: %s", superRbac);
-        SuperRBAC sRbac = SuperRBAC(superRbac);
+        ISuperRBAC sRbac = ISuperRBAC(superRbac);
 
         sRbac.revokeRole(sRbac.CORE_STATE_REGISTRY_UPDATER_ROLE(), ownerAddress);
 
@@ -117,17 +119,26 @@ contract DeployContract is Script {
 
         sRbac.grantRole(sRbac.CORE_STATE_REGISTRY_PROCESSOR_ROLE(), csrKeeper);
 
-        address paymentHelper = SuperRegistry(superRegistry).getAddress(keccak256("PAYMENT_HELPER"));
+        address paymentHelper = ISuperRegistry(superRegistry).getAddress(keccak256("PAYMENT_HELPER"));
         console.log("read paymentHelper: %s", paymentHelper);
-
         for (uint256 j = 0; j < SELECTED_CHAIN_IDS.length; j++) {
             if (j != i) {
-                address dstPaymentHelper = SuperRegistry(
-                    _readContract(chainNames[j], SELECTED_CHAIN_IDS[j], "SuperRegistry")
+                uint256 dstTrueIndex;
+                for (uint256 k = 0; i < chainIds.length; k++) {
+                    if (SELECTED_CHAIN_IDS[j] == chainIds[k]) {
+                        dstTrueIndex = k;
+
+                        break;
+                    }
+                }
+                address dstPaymentHelper = ISuperRegistry(
+                    _readContract(chainNames[dstTrueIndex], SELECTED_CHAIN_IDS[j], "SuperRegistry")
                 ).getAddress(keccak256("PAYMENT_HELPER"));
-                PaymentHelper(payable(dstPaymentHelper)).updateChainConfig(SELECTED_CHAIN_IDS[j], 6, abi.encode(111));
+                IPaymentHelper(payable(dstPaymentHelper)).updateChainConfig(
+                    SELECTED_CHAIN_IDS[j], 6, abi.encode(nativePrices[j])
+                );
             } else {
-                PaymentHelper(payable(paymentHelper)).updateChainConfig(chainId, 6, abi.encode(111));
+                IPaymentHelper(payable(paymentHelper)).updateChainConfig(chainId, 6, abi.encode(nativePrices[j]));
             }
         }
 

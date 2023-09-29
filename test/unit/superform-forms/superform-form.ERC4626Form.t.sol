@@ -393,7 +393,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         MockERC20(getContract(ETH, "DAI")).approve(router, 1e18);
         MockERC20(getContract(ETH, "USDT")).approve(router, 1e18);
 
-        vm.expectRevert(Error.DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE.selector);
+        vm.expectRevert(Error.DIRECT_DEPOSIT_INVALID_DATA.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
