@@ -72,7 +72,7 @@ jobs:
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
       - name: "Run fuzz and unit tests against the optimized build"
-        run: "forge test --match-path \"test/(unit|fuzz)\""
+        run: "forge test --match-path \"test/(unit|fuzz)/**/*.sol\""
 
       - name: "Add test summary"
         run: |
@@ -103,7 +103,7 @@ jobs:
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
       - name: "Run invariant tests against the optimized build"
-        run: "forge test --match-path \"test/invariant\""
+        run: "forge test --match-path \"test/invariant/**/*.sol\""
 
       - name: "Add test summary"
         run: |
@@ -123,7 +123,7 @@ jobs:
         uses: "foundry-rs/foundry-toolchain@v1"
 
       - name: "Generate the coverage report using the unit and the integration tests"
-        run: 'FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov'
+        run: "FOUNDRY_PROFILE=coverage forge coverage --match-path \"test/(unit|fuzz)/**/*.sol\" --report lcov"
 
       - name: "Upload coverage report to Codecov"
         uses: "codecov/codecov-action@v3"

@@ -13,9 +13,9 @@ import "src/types/DataTypes.sol";
 //////////////////////////////////////////////////////////////*/
 enum Actions {
     Deposit,
-    Withdraw,
     DepositPermit2,
-    RescueFailedDeposit
+    RescueFailedDeposit,
+    Withdraw
 }
 
 enum LiquidityChange {

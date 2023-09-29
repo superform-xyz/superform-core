@@ -39,7 +39,6 @@ contract BaseInvariantTest is ProtocolActions {
 
     function _grabStateForHandler()
         internal
-        view
         returns (
             address[][] memory coreAddresses,
             address[][] memory underlyingAddresses,
@@ -58,6 +57,7 @@ contract BaseInvariantTest is ProtocolActions {
             address[] memory addresses = new address[](contractNames.length);
             for (uint256 j = 0; j < contractNames.length; j++) {
                 addresses[j] = getContract(chainIds[i], contractNames[j]);
+                excludeSender(addresses[j]);
             }
             coreAddresses[i] = addresses;
 
@@ -67,6 +67,7 @@ contract BaseInvariantTest is ProtocolActions {
 
             for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
                 addresses[j] = getContract(chainIds[i], UNDERLYING_TOKENS[j]);
+                excludeSender(addresses[j]);
             }
             underlyingAddresses[i] = addresses;
 
@@ -86,12 +87,16 @@ contract BaseInvariantTest is ProtocolActions {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     for (uint256 l = 0; l < lenBytecodes; l++) {
                         addresses[counter] = getContract(chainIds[i], string.concat(VAULT_NAMES[l][k]));
+                        excludeSender(addresses[counter]);
+
                         superformAddressesT[counter] = getContract(
                             chainIds[i],
                             string.concat(
                                 UNDERLYING_TOKENS[k], VAULT_KINDS[l], "Superform", Strings.toString(FORM_BEACON_IDS[j])
                             )
                         );
+                        excludeSender(superformAddressesT[counter]);
+
                         ++counter;
                     }
                 }

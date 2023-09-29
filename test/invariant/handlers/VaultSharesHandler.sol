@@ -28,7 +28,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
     constructor(
         uint64[] memory chainIds,
-        string[27] memory contractNames,
+        string[28] memory contractNames,
         address[][] memory coreContracts,
         address[][] memory underlyingAddresses,
         address[][][] memory vaultAddresses,
@@ -66,12 +66,14 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         uint256 inputToken,
         uint256 slippage,
         uint64 chain0,
-        uint64 dstChain1
+        uint64 dstChain1,
+        uint256 actionType,
+        uint256 user
     )
         public
         adjustTimestamp(timeJumpSeed)
     {
-        AMBs = [2, 3];
+        AMBs = [1, 2];
         CHAIN_0 = chainIds[bound(chain0, 0, chainIds.length - 1)];
         uint64 dstChain = chainIds[bound(dstChain1, 0, chainIds.length - 1)];
         dstChain = CHAIN_0;
@@ -87,12 +89,84 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         /// amount of collateral to be deposited
         MAX_SLIPPAGE = 1000;
         LIQ_BRIDGES[DST_CHAINS[0]][0] = [1];
+        uint256 userId = bound(user, 0, 2);
+        actions.push(
+            TestAction({
+                action: Actions(bound(actionType, 0, 1)), //Deposit or permit2 deposit
+                multiVaults: false, //!!WARNING turn on or off multi vaults
+                user: userId,
+                testType: TestType.Pass,
+                revertError: "",
+                revertRole: "",
+                slippage: int256(bound(slippage, 0, 1000)),
+                dstSwap: false,
+                externalToken: bound(inputToken, 0, 2)
+            })
+        );
+
+        for (uint256 act = 0; act < actions.length; act++) {
+            TestAction memory action = actions[act];
+            MultiVaultSFData[] memory multiSuperformsData;
+            SingleVaultSFData[] memory singleSuperformsData;
+            MessagingAssertVars[] memory aV;
+            StagesLocalVars memory vars;
+            bool success;
+
+            _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
+        }
+
+        uint256 superPositionsSum = _getSingleVaultSuperpositionsSum(dstChain);
+        uint256 vaultShares = _getSingleVaultShares(dstChain);
+        actions.pop();
+
+        vm.selectFork(FORKS[0]);
+        vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
+    }
+
+    function singleXChainSingleVaultDeposit(
+        uint256 timeJumpSeed,
+        uint256 amount1,
+        uint256 underlying1,
+        uint256 inputToken,
+        uint256 slippage,
+        uint64 chain0,
+        uint64 dstChain1,
+        uint256 actionType,
+        uint256 user
+    )
+        public
+        adjustTimestamp(timeJumpSeed)
+    {
+        AMBs = [1, 2];
+
+        uint256 chain0Index = bound(chain0, 0, chainIds.length - 1);
+        CHAIN_0 = chainIds[chain0Index];
+        uint64 dstChain;
+        if (CHAIN_0 != chainIds[chainIds.length - 1]) {
+            dstChain = chainIds[bound(dstChain1, chain0Index, chainIds.length - 1)];
+        } else {
+            dstChain = chainIds[bound(dstChain1, 0, chainIds.length - 2)];
+        }
+
+        DST_CHAINS = [dstChain];
+
+        TARGET_VAULTS[DST_CHAINS[0]][0] = [0];
+        TARGET_FORM_KINDS[DST_CHAINS[0]][0] = [0];
+        underlying1 = bound(underlying1, 0, 2);
+        TARGET_UNDERLYINGS[DST_CHAINS[0]][0] = [underlying1];
+
+        /// @dev this needs to be bounded by the max of all supplies because of the assumptions in the tests
+        AMOUNTS[DST_CHAINS[0]][0] = [bound(amount1, 2, TOTAL_SUPPLY_USDC)];
+        /// amount of collateral to be deposited
+        MAX_SLIPPAGE = 1000;
+        LIQ_BRIDGES[DST_CHAINS[0]][0] = [1];
+        uint256 userId = bound(user, 0, 2);
 
         actions.push(
             TestAction({
-                action: Actions.Deposit,
+                action: Actions(bound(actionType, 0, 1)), //Deposit or permit2 deposit
                 multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: 0,
+                user: userId,
                 testType: TestType.Pass,
                 revertError: "",
                 revertRole: "",
@@ -273,7 +347,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
     struct InitHandlerSetupVars {
         uint64[] chainIds;
-        string[27] contractNames;
+        string[28] contractNames;
         address[][] coreContracts;
         address[][] underlyingAddresses;
         address[][][] vaultAddresses;
@@ -449,7 +523,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     }
 
     function _getSuperpositionsForDstChainFromSrcChain(
-        uint256 user_,
         uint256[] memory underlyingTokens_,
         uint256[] memory vaultIds_,
         uint32[] memory formKinds_,
@@ -470,15 +543,16 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
 
         for (uint256 i = 0; i < superformIds.length; i++) {
-            superPositionBalances[i] = superPositions.balanceOf(users[user_], superformIds[i]);
+            for (uint256 j = 0; j < users.length; j++) {
+                superPositionBalances[i] += superPositions.balanceOf(users[j], superformIds[i]);
+            }
         }
     }
 
     function _getSingleVaultSuperpositionsSum(uint64 dstChain) internal returns (uint256 superPositionsSum) {
-        /// @dev sum up superpositions owned by user for the superform on ETH, on all chains
+        /// @dev sum up superposition owned by all users on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
             uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
-                0,
                 TARGET_UNDERLYINGS[dstChain][0],
                 TARGET_VAULTS[dstChain][0],
                 TARGET_FORM_KINDS[dstChain][0],

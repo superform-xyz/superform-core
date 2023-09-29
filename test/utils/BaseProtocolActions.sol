@@ -692,6 +692,8 @@ abstract contract BaseProtocolActions is BaseSetup {
 
                 --usedDSTs[aV[i].toChainId].payloadNumber;
             }
+            delete usedDSTs[aV[i].toChainId].payloadNumber;
+            delete usedDSTs[aV[i].toChainId].nRepetitions;
         }
         return aV;
     }
@@ -778,7 +780,6 @@ abstract contract BaseProtocolActions is BaseSetup {
                             } else if (singleSuperformsData.length > 0) {
                                 _updateSingleVaultDepositPayload(vars.singleVaultsPayloadArg);
                             }
-                            console.log("grabbing logs");
 
                             vm.recordLogs();
 
@@ -834,7 +835,6 @@ abstract contract BaseProtocolActions is BaseSetup {
                                 }
                             }
                         }
-                        console.log("grabbing logs");
 
                         vm.recordLogs();
 
@@ -1059,7 +1059,7 @@ abstract contract BaseProtocolActions is BaseSetup {
 
             vm.selectFork(FORKS[DST_CHAINS[0]]);
             uint256 userWethBalanceBefore =
-                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[action.user]);
             address payable coreStateRegistryDst = payable(getContract(DST_CHAINS[0], "CoreStateRegistry"));
 
             uint256[] memory rescueSuperformIds;
@@ -1093,7 +1093,7 @@ abstract contract BaseProtocolActions is BaseSetup {
             CoreStateRegistry(coreStateRegistryDst).finalizeRescueFailedDeposits(PAYLOAD_ID[DST_CHAINS[0]]);
 
             uint256 userWethBalanceAfter =
-                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[0]);
+                MockERC20(getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2])).balanceOf(users[action.user]);
             assertEq(userWethBalanceAfter, userWethBalanceBefore + stuckAmount);
         }
     }
@@ -2325,9 +2325,6 @@ abstract contract BaseProtocolActions is BaseSetup {
             }
 
             if (!partialWithdraw) {
-                /// @dev <= 1 due to off by one issues with vault.previewRedeem(), leading to
-                /// currentBalanceOfSp being 1 more than expected
-                //assertLe(currentBalanceOfSp - amountsToAssert[i], 1);
                 assertEq(currentBalanceOfSp, amountsToAssert[i]);
             } else {
                 assertGt(currentBalanceOfSp, amountsToAssert[i]);
@@ -2690,7 +2687,7 @@ abstract contract BaseProtocolActions is BaseSetup {
         MultiVaultSFData[] memory multiSuperformsData,
         SingleVaultSFData[] memory singleSuperformsData,
         StagesLocalVars memory vars,
-        uint256 inputBalanceBefore
+        uint256 /*inputBalanceBefore*/
     )
         internal
     {
@@ -2780,13 +2777,15 @@ abstract contract BaseProtocolActions is BaseSetup {
                 );
             }
         }
-        /// @dev TODO
+        /// @dev FIXME @sujith
+        /*
         if (token == NATIVE_TOKEN) {
             console.log("balance now", users[action.user].balance);
             console.log("balance Before action", inputBalanceBefore);
             console.log("msgValue", msgValue);
             console.log("balance now + msgValue", msgValue + users[action.user].balance);
         }
+        */
         /// @dev assert user input token balance
 
         // assertEq(

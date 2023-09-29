@@ -32,9 +32,10 @@ contract VaultSharesInvariantTest is BaseInvariantTest {
         vm.label({ account: address(vaultSharesStore), newLabel: "VaultSharesStore" });
         vm.label({ account: address(vaultSharesHandler), newLabel: "VaultSharesHandler" });
 
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = VaultSharesHandler.singleDirectSingleVaultDeposit.selector;
-
+        /// @dev Note: disable some of the selectors to test a bunch of them only
+        bytes4[] memory selectors = new bytes4[](2);
+        selectors[0] = VaultSharesHandler.singleXChainSingleVaultDeposit.selector;
+        selectors[1] = VaultSharesHandler.singleDirectSingleVaultDeposit.selector;
         targetSelector(FuzzSelector({ addr: address(vaultSharesHandler), selectors: selectors }));
         targetContract(address(vaultSharesHandler));
 
