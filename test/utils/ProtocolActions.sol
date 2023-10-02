@@ -2555,13 +2555,10 @@ abstract contract ProtocolActions is BaseSetup {
             v.partialWithdraw = (partialWithdrawVaults.length > i) && partialWithdrawVaults[i];
 
             if (!isWithdraw) {
-                console.log("here 1", isWithdraw, v.partialWithdraw);
                 assertLe(v.currentBalanceOfSp, v.currentAmount);
             } else if (isWithdraw && !v.partialWithdraw) {
-                console.log("here 2", isWithdraw, v.partialWithdraw);
                 assertLe(v.currentBalanceOfSp, v.currentAmount);
             } else {
-                console.log("here 3", isWithdraw, v.partialWithdraw);
                 assertGe(v.currentBalanceOfSp, v.currentAmount);
             }
         }

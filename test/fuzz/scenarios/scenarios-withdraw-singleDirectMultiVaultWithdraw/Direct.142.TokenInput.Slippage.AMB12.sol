@@ -103,9 +103,6 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    console.log("superPositions[0]", superPositions[0]);
-                    console.log("superPositions[1]", superPositions[1]);
-                    console.log("superPositions[2]", superPositions[2]);
                     // amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
                     // amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, superPositions[2] - 1));
                     // AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], amountThreeWithdraw_];
