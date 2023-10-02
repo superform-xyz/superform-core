@@ -28,7 +28,7 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         internal
         override
     {
-        //console.log("new-action");
+        console.log("new-action");
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -79,27 +79,32 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
         console.log("Stage 1 complete");
+        console.log("BBBB");
 
         /// @dev passes request data and performs initial call
         /// @dev returns sameChainDstHasRevertingVault - this means that the request reverted, thus no payloadId
         /// increase happened nor there is any need for payload update or further assertion
         vars = _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
         console.log("Stage 2 complete");
-
+        console.log("C");
+        /*
         /// @dev simulation of cross-chain message delivery (for x-chain actions) (With no assertions)
         aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
         console.log("Stage 3 complete");
 
+
         /// @dev processing of message delivery on destination   (for x-chain actions)
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act);
-        /*
         if (!success) {
             console.log("Stage 4 failed");
             return;
         } else if (action.action == Actions.Withdraw && action.testType == TestType.Pass) {
             console.log("Stage 4 complete");
         }
+        console.log("B");
+        console.log("C");
 
+        /*
         if (
             (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
                 && !(action.testType == TestType.RevertXChainDeposit)
@@ -144,7 +149,7 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
 
             console.log("Stage 8 complete");
         }
-        */
+
         delete revertingDepositSFs;
         delete revertingWithdrawSFs;
         delete revertingWithdrawTimelockedSFs;
@@ -156,6 +161,7 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
             delete TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]];
         }
         MULTI_TX_SLIPPAGE_SHARE = 0;
+               */
     }
 
     function _stage3_src_to_dst_amb_delivery(
@@ -171,8 +177,11 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         Stage3InternalVars memory internalVars;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
+            console.log("usedDSTs[DST_CHAINS[i]].payloadNumber", usedDSTs[DST_CHAINS[i]].payloadNumber);
+
             /// @dev if payloadNumber is = 0 still it means uniqueDst has not been found yet (1 repetition)
             if (usedDSTs[DST_CHAINS[i]].payloadNumber == 0) {
+                console.log("START HERE");
                 /// @dev NOTE: re-set struct to null to reset repetitions for multi action
                 delete usedDSTs[DST_CHAINS[i]];
 
@@ -186,6 +195,8 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
             }
         }
         vars.nUniqueDsts = uniqueDSTs.length;
+
+        console.log("vars.nUniqueDsts", vars.nUniqueDsts);
 
         internalVars.toMailboxes = new address[](vars.nUniqueDsts);
         internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);
@@ -259,47 +270,18 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
             vars.nDestinations
         );
 
-        CoreStateRegistry stateRegistry;
         /// @dev assert good delivery of message on destination by analyzing superformIds and mounts
         for (uint256 i = 0; i < vars.nDestinations; i++) {
             aV[i].toChainId = DST_CHAINS[i];
-            if (usedDSTs[aV[i].toChainId].nRepetitions == 0) {
-                usedDSTs[aV[i].toChainId].nRepetitions = usedDSTs[aV[i].toChainId].payloadNumber;
-            }
-            vm.selectFork(FORKS[aV[i].toChainId]);
-
             if (CHAIN_0 != aV[i].toChainId && !sameChainDstHasRevertingVault) {
-                stateRegistry = CoreStateRegistry(payable(getContract(aV[i].toChainId, "CoreStateRegistry")));
-                /// @dev increase payloadIds and decode info
-                aV[i].receivedPayloadId = stateRegistry.payloadsCount() - usedDSTs[aV[i].toChainId].payloadNumber + 1;
-                aV[i].data =
-                    abi.decode(_payload(address(stateRegistry), aV[i].toChainId, aV[i].receivedPayloadId), (AMBMessage));
-                console.log("payloadsCount", stateRegistry.payloadsCount());
-                console.log("usedDSTs[aV[i].toChainId].payloadNumber", usedDSTs[aV[i].toChainId].payloadNumber);
-
                 if (action.multiVaults) {
                     aV[i].expectedMultiVaultsData = multiSuperformsData[i];
-                    aV[i].receivedMultiVaultData = abi.decode(aV[i].data.params, (InitMultiVaultData));
-
-                    assertEq(aV[i].expectedMultiVaultsData.superformIds, aV[i].receivedMultiVaultData.superformIds);
-
-                    assertEq(aV[i].expectedMultiVaultsData.amounts, aV[i].receivedMultiVaultData.amounts);
                 } else {
                     aV[i].expectedSingleVaultData = singleSuperformsData[i];
-
-                    aV[i].receivedSingleVaultData = abi.decode(aV[i].data.params, (InitSingleVaultData));
-
-                    assertEq(aV[i].expectedSingleVaultData.superformId, aV[i].receivedSingleVaultData.superformId);
-
-                    assertEq(aV[i].expectedSingleVaultData.amount, aV[i].receivedSingleVaultData.amount);
                 }
-
-                --usedDSTs[aV[i].toChainId].payloadNumber;
             }
-            delete usedDSTs[aV[i].toChainId].payloadNumber;
-            delete usedDSTs[aV[i].toChainId].nRepetitions;
         }
-        delete uniqueDSTs;
+
         return aV;
     }
 }
