@@ -90,11 +90,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         }
 
         uint32 domain = ambChainId[dstChainId_];
-        bytes32 messageId = mailbox.dispatch(domain, _castAddr(authorizedImpl[domain]), message_);
-
-        igp.payForGas{ value: msg.value }(
-            messageId, domain, extraData_.length > 0 ? abi.decode(extraData_, (uint256)) : 0, srcSender_
-        );
+        bytes32 messageId = mailbox.dispatch{msg.value}(domain, _castAddr(authorizedImpl[domain]), message_, extraData_);
     }
 
     /// @dev allows protocol admin to add new chain ids in future
