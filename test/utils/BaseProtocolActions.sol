@@ -563,6 +563,7 @@ abstract contract BaseProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperformsData
     )
         internal
+        virtual
         returns (MessagingAssertVars[] memory)
     {
         Stage3InternalVars memory internalVars;
@@ -1926,7 +1927,6 @@ abstract contract BaseProtocolActions is BaseSetup {
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
-
             uint256[] memory finalAmounts = new uint256[](1);
             finalAmounts[0] = finalAmount;
 
@@ -2773,6 +2773,9 @@ abstract contract BaseProtocolActions is BaseSetup {
                 finalAmount = repetitions * finalAmount;
                 /// @dev assert spToken Balance. If reverting amount of sp should be 0 (assuming no action before this
                 /// one)
+                console.log("foundRevertingDeposit", foundRevertingDeposit);
+                console.log("finalAmount", finalAmount);
+
                 _assertSingleVaultBalance(
                     action.user, singleSuperformsData[i].superformId, foundRevertingDeposit ? 0 : finalAmount
                 );

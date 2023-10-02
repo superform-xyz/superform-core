@@ -28,7 +28,7 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         internal
         override
     {
-        console.log("new-action");
+        //console.log("new-action");
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
 
@@ -92,7 +92,7 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
 
         /// @dev processing of message delivery on destination   (for x-chain actions)
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act);
-
+        /*
         if (!success) {
             console.log("Stage 4 failed");
             return;
@@ -104,7 +104,7 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
             (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
                 && !(action.testType == TestType.RevertXChainDeposit)
         ) {
-            /// @dev processing of superPositions mint from destination callback on source (for successful deposits)
+        /// @dev processing of superPositions mint from destination callback on source (for successful deposits)
 
             success = _stage5_process_superPositions_mint(action, vars, multiSuperformsData);
             if (!success) {
@@ -139,12 +139,12 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         }
 
         if (action.action == Actions.Withdraw) {
-            /// @dev Process payload received on source from destination (withdraw callback, for failed withdraws)
+        /// @dev Process payload received on source from destination (withdraw callback, for failed withdraws)
             _stage8_process_failed_timelocked_xchain_remint(action, vars);
 
             console.log("Stage 8 complete");
         }
-
+        */
         delete revertingDepositSFs;
         delete revertingWithdrawSFs;
         delete revertingWithdrawTimelockedSFs;
@@ -156,5 +156,150 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
             delete TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]];
         }
         MULTI_TX_SLIPPAGE_SHARE = 0;
+    }
+
+    function _stage3_src_to_dst_amb_delivery(
+        TestAction memory action,
+        StagesLocalVars memory vars,
+        MultiVaultSFData[] memory multiSuperformsData,
+        SingleVaultSFData[] memory singleSuperformsData
+    )
+        internal
+        override
+        returns (MessagingAssertVars[] memory)
+    {
+        Stage3InternalVars memory internalVars;
+
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            /// @dev if payloadNumber is = 0 still it means uniqueDst has not been found yet (1 repetition)
+            if (usedDSTs[DST_CHAINS[i]].payloadNumber == 0) {
+                /// @dev NOTE: re-set struct to null to reset repetitions for multi action
+                delete usedDSTs[DST_CHAINS[i]];
+
+                ++usedDSTs[DST_CHAINS[i]].payloadNumber;
+                if (DST_CHAINS[i] != CHAIN_0) {
+                    uniqueDSTs.push(DST_CHAINS[i]);
+                }
+            } else {
+                /// @dev add repetitions (for non unique destinations)
+                ++usedDSTs[DST_CHAINS[i]].payloadNumber;
+            }
+        }
+        vars.nUniqueDsts = uniqueDSTs.length;
+
+        internalVars.toMailboxes = new address[](vars.nUniqueDsts);
+        internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);
+
+        internalVars.endpoints = new address[](vars.nUniqueDsts);
+        internalVars.lzChainIds = new uint16[](vars.nUniqueDsts);
+
+        internalVars.wormholeRelayers = new address[](vars.nUniqueDsts);
+        internalVars.expDstChainAddresses = new address[](vars.nUniqueDsts);
+
+        internalVars.forkIds = new uint256[](vars.nUniqueDsts);
+
+        internalVars.k = 0;
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            for (uint256 j = 0; j < vars.nUniqueDsts; j++) {
+                if (uniqueDSTs[j] == chainIds[i] && chainIds[i] != CHAIN_0) {
+                    internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
+                    internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
+
+                    internalVars.endpoints[internalVars.k] = lzEndpoints[i];
+                    internalVars.lzChainIds[internalVars.k] = lz_chainIds[i];
+
+                    internalVars.forkIds[internalVars.k] = FORKS[chainIds[i]];
+
+                    internalVars.wormholeRelayers[internalVars.k] = wormholeRelayer;
+                    internalVars.expDstChainAddresses[internalVars.k] =
+                        getContract(chainIds[i], "WormholeARImplementation");
+
+                    internalVars.k++;
+                }
+            }
+        }
+        delete uniqueDSTs;
+        vars.logs = vm.getRecordedLogs();
+
+        for (uint256 index; index < AMBs.length; index++) {
+            if (AMBs[index] == 1) {
+                LayerZeroHelper(getContract(CHAIN_0, "LayerZeroHelper")).help(
+                    internalVars.endpoints,
+                    internalVars.lzChainIds,
+                    5_000_000,
+                    /// note: using some max limit
+                    internalVars.forkIds,
+                    vars.logs
+                );
+            }
+
+            if (AMBs[index] == 2) {
+                /// @dev see pigeon for this implementation
+                HyperlaneHelper(getContract(CHAIN_0, "HyperlaneHelper")).help(
+                    address(HyperlaneMailbox),
+                    internalVars.toMailboxes,
+                    internalVars.expDstDomains,
+                    internalVars.forkIds,
+                    vars.logs
+                );
+            }
+
+            if (AMBs[index] == 3) {
+                WormholeHelper(getContract(CHAIN_0, "WormholeHelper")).help(
+                    WORMHOLE_CHAIN_IDS[CHAIN_0],
+                    internalVars.forkIds,
+                    internalVars.expDstChainAddresses,
+                    internalVars.wormholeRelayers,
+                    vars.logs
+                );
+            }
+        }
+
+        MessagingAssertVars[] memory aV = new MessagingAssertVars[](
+            vars.nDestinations
+        );
+
+        CoreStateRegistry stateRegistry;
+        /// @dev assert good delivery of message on destination by analyzing superformIds and mounts
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            aV[i].toChainId = DST_CHAINS[i];
+            if (usedDSTs[aV[i].toChainId].nRepetitions == 0) {
+                usedDSTs[aV[i].toChainId].nRepetitions = usedDSTs[aV[i].toChainId].payloadNumber;
+            }
+            vm.selectFork(FORKS[aV[i].toChainId]);
+
+            if (CHAIN_0 != aV[i].toChainId && !sameChainDstHasRevertingVault) {
+                stateRegistry = CoreStateRegistry(payable(getContract(aV[i].toChainId, "CoreStateRegistry")));
+                /// @dev increase payloadIds and decode info
+                aV[i].receivedPayloadId = stateRegistry.payloadsCount() - usedDSTs[aV[i].toChainId].payloadNumber + 1;
+                aV[i].data =
+                    abi.decode(_payload(address(stateRegistry), aV[i].toChainId, aV[i].receivedPayloadId), (AMBMessage));
+                console.log("payloadsCount", stateRegistry.payloadsCount());
+                console.log("usedDSTs[aV[i].toChainId].payloadNumber", usedDSTs[aV[i].toChainId].payloadNumber);
+
+                if (action.multiVaults) {
+                    aV[i].expectedMultiVaultsData = multiSuperformsData[i];
+                    aV[i].receivedMultiVaultData = abi.decode(aV[i].data.params, (InitMultiVaultData));
+
+                    assertEq(aV[i].expectedMultiVaultsData.superformIds, aV[i].receivedMultiVaultData.superformIds);
+
+                    assertEq(aV[i].expectedMultiVaultsData.amounts, aV[i].receivedMultiVaultData.amounts);
+                } else {
+                    aV[i].expectedSingleVaultData = singleSuperformsData[i];
+
+                    aV[i].receivedSingleVaultData = abi.decode(aV[i].data.params, (InitSingleVaultData));
+
+                    assertEq(aV[i].expectedSingleVaultData.superformId, aV[i].receivedSingleVaultData.superformId);
+
+                    assertEq(aV[i].expectedSingleVaultData.amount, aV[i].receivedSingleVaultData.amount);
+                }
+
+                --usedDSTs[aV[i].toChainId].payloadNumber;
+            }
+            delete usedDSTs[aV[i].toChainId].payloadNumber;
+            delete usedDSTs[aV[i].toChainId].nRepetitions;
+        }
+        delete uniqueDSTs;
+        return aV;
     }
 }

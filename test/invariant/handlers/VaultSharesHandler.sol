@@ -141,12 +141,9 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
         uint256 chain0Index = bound(chain0, 0, chainIds.length - 1);
         CHAIN_0 = chainIds[chain0Index];
-        uint64 dstChain;
-        if (CHAIN_0 != chainIds[chainIds.length - 1]) {
-            dstChain = chainIds[bound(dstChain1, chain0Index, chainIds.length - 1)];
-        } else {
-            dstChain = chainIds[bound(dstChain1, 0, chainIds.length - 2)];
-        }
+        uint256 dstChainIndex = bound(dstChain1, 0, chainIds.length - 1);
+        if (dstChainIndex == chain0Index && dstChainIndex != chainIds.length - 1) dstChainIndex++;
+        uint64 dstChain = chainIds[dstChainIndex];
 
         console.log("chain 0 ", CHAIN_0);
         console.log("dst chain ", dstChain);

@@ -228,7 +228,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
     function _checkDstPayloadLiqData() internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadLiqDataInternalVars memory v;
-
+        console.log("A");
         (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts,, v.nativeAmounts) = IPayloadHelper(
             contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
         ).decodeCoreStateRegistryPayloadLiqData(2);
@@ -244,6 +244,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         /// @dev number of superpositions to burn in withdraws are not meant to be same as deposit amounts
 
         assertEq(v.amounts, actualAmountWithdrawnPerDst[0]);
+        console.log("B");
     }
 
     function _checkDstPayloadReturn() internal {
