@@ -25,10 +25,12 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     IMailbox public mailbox;
     ISuperRegistry public immutable superRegistry;
 
+    // do you still need this? we are using chain ID everywhere now?
     mapping(uint64 => uint32) public ambChainId;
     mapping(uint32 => uint64) public superChainId;
     mapping(uint32 => address) public authorizedImpl;
 
+    // can you reuse mailbox.delivered() ?
     mapping(bytes32 => bool) public processedMessages;
 
     /*///////////////////////////////////////////////////////////////
@@ -59,10 +61,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
     /// @dev allows protocol admin to configure hyperlane mailbox and gas paymaster
     /// @param mailbox_ is the address of hyperlane mailbox
-    /// @param igp_ is the address of hyperlane gas paymaster
-    function setHyperlaneConfig(IMailbox mailbox_, IInterchainGasPaymaster igp_) external onlyProtocolAdmin {
+    function setHyperlaneConfig(IMailbox mailbox_) external onlyProtocolAdmin {
         mailbox = mailbox_;
-        igp = igp_;
 
         emit MailboxAdded(address(mailbox_));
     }
@@ -144,6 +144,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
             revert Error.CALLER_NOT_MAILBOX();
         }
 
+        // why not reuse Router contract?
         if (sender_ != _castAddr(authorizedImpl[origin_])) {
             revert Error.INVALID_SRC_SENDER();
         }
@@ -157,6 +158,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
         processedMessages[hash] = true;
 
+        // you can use calldata slicing and possibly avoid memory copies
         /// @dev decoding payload
         AMBMessage memory decoded = abi.decode(body_, (AMBMessage));
 
