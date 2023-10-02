@@ -21,8 +21,8 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
+    // this should hopefully never change again
     IMailbox public mailbox;
-    IInterchainGasPaymaster public igp;
     ISuperRegistry public immutable superRegistry;
 
     mapping(uint64 => uint32) public ambChainId;
@@ -35,7 +35,6 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
     event MailboxAdded(address _newMailbox);
-    event GasPayMasterAdded(address _igp);
 
     /*///////////////////////////////////////////////////////////////
                                 MODIFIERS
@@ -66,7 +65,6 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         igp = igp_;
 
         emit MailboxAdded(address(mailbox_));
-        emit GasPayMasterAdded(address(igp_));
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -152,6 +150,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
 
         bytes32 hash = keccak256(body_);
 
+        // why not use mailbox.delivered() ?
         if (processedMessages[hash]) {
             revert Error.DUPLICATE_PAYLOAD();
         }
@@ -176,7 +175,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
     /// @inheritdoc IAmbImplementation
     function estimateFees(
         uint64 dstChainId_,
-        bytes memory,
+        bytes memory message_,
         bytes memory extraData_
     )
         external
@@ -187,7 +186,7 @@ contract HyperlaneImplementation is IAmbImplementation, IMessageRecipient {
         uint32 domain = ambChainId[dstChainId_];
 
         if (domain != 0) {
-            fees = igp.quoteGasPayment(domain, abi.decode(extraData_, (uint256)));
+            fees = mailbox.quoteDispatch(dstChainId_, _message, extraData_);
         }
     }
 
