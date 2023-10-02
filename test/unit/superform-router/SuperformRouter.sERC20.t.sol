@@ -640,8 +640,10 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superformIds[1] = superformId2;
 
         uint256[] memory amounts = new uint256[](2);
-        amounts[0] = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId1);
-        amounts[1] = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId2);
+        amounts[0] = MockERC20(SuperTransmuter(getContract(ETH, "SuperTransmuter")).synthethicTokenId(superformId1))
+            .balanceOf(deployer);
+        amounts[1] = MockERC20(SuperTransmuter(getContract(ETH, "SuperTransmuter")).synthethicTokenId(superformId2))
+            .balanceOf(deployer);
 
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 1000;
