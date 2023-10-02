@@ -1744,8 +1744,20 @@ abstract contract ProtocolActions is BaseSetup {
                 vm.stopPrank();
             }
         }
-        vm.selectFork(v.initialFork);
 
+        console.log("args.srcChainId", args.srcChainId);
+        console.log("args.underlyingTokenDst", args.underlyingTokenDst);
+        console.log("TOKEN_FEED", tokenPriceFeeds[args.srcChainId][args.underlyingTokenDst]);
+        (, int256 USDPerUnderlyingDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.underlyingTokenDst]).latestRoundData();
+        (, int256 USDPerExternalToken,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.externalToken]).latestRoundData();
+
+        /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDT, daiAmount = 100
+        /// => usdtAmount = (USDPerDai / USDPerUsdt) * daiAmount
+        args.amount = (uint256(USDPerExternalToken) * args.amount) / uint256(USDPerUnderlyingDst);
+
+        vm.selectFork(v.initialFork);
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
         /// vaults without resorting to extra args, just for withdraws)
         superformData = SingleVaultSFData(
