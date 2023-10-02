@@ -1099,15 +1099,15 @@ abstract contract BaseSetup is DSTest, Test {
 
         existingVaults[1][1]["DAI"][0] = 0x36F8d0D0573ae92326827C4a82Fe4CE4C244cAb6;
         existingVaults[1][1]["USDC"][0] = 0x6bAD6A9BcFdA3fd60Da6834aCe5F93B8cFed9598;
-        existingVaults[1][1]["WETH"][0] = 0x676E1B7d5856f4f69e10399685e17c2299370E95;
+        existingVaults[1][1]["WETH"][0] = 0x490BBbc2485e99989Ba39b34802faFa58e26ABa4;
 
         existingVaults[10][1]["DAI"][0] = address(0);
         existingVaults[10][1]["USDC"][0] = address(0);
         existingVaults[10][1]["WETH"][0] = address(0);
 
-        existingVaults[137][1]["DAI"][0] = address(0);
-        existingVaults[137][1]["USDC"][0] = address(0);
-        existingVaults[137][1]["WETH"][0] = address(0);
+        existingVaults[137][1]["DAI"][0] = 0x4A7CfE3ccE6E88479206Fefd7b4dcD738971e723;
+        existingVaults[137][1]["USDC"][0] = 0x277ba089b4CF2AF32589D98aA839Bf8c35A30Da3;
+        existingVaults[137][1]["WETH"][0] = 0x0D0188268D0693e2494989dc3DA5e64F0D6BA972;
 
         existingVaults[56][1]["DAI"][0] = address(0);
         existingVaults[56][1]["USDC"][0] = address(0);

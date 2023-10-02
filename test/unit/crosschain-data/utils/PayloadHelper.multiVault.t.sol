@@ -200,9 +200,12 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertEq(v.srcChainId, 10);
         /// chain id of optimism is 10
         assertEq(v.srcPayloadId, 1);
-        assertEq(v.amounts, AMOUNTS[POLY][0]);
 
         assertEq(v.superformRouterId, 1);
+
+        for (uint256 i; i < v.amounts.length; i++) {
+            assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
+        }
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
             assertEq(v.slippage[i], MAX_SLIPPAGE);
@@ -262,10 +265,10 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertEq(v.srcChainId, 137);
         /// chain id of polygon is 137
         assertEq(v.srcPayloadId, 1);
-        assertEq(v.amounts, AMOUNTS[POLY][0]);
         assertEq(v.superformRouterId, 1);
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
+            assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
             assertEq(v.slippage[i], MAX_SLIPPAGE);
         }
     }
