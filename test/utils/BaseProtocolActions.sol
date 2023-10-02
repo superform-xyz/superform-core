@@ -563,6 +563,7 @@ abstract contract BaseProtocolActions is BaseSetup {
         SingleVaultSFData[] memory singleSuperformsData
     )
         internal
+        virtual
         returns (MessagingAssertVars[] memory)
     {
         Stage3InternalVars memory internalVars;
@@ -692,10 +693,12 @@ abstract contract BaseProtocolActions is BaseSetup {
 
                 --usedDSTs[aV[i].toChainId].payloadNumber;
             }
-            delete usedDSTs[aV[i].toChainId].payloadNumber;
-            delete usedDSTs[aV[i].toChainId].nRepetitions;
         }
-        delete uniqueDSTs;
+
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            usedDSTs[DST_CHAINS[i]].payloadNumber = usedDSTs[DST_CHAINS[i]].nRepetitions;
+        }
+
         return aV;
     }
 
@@ -716,15 +719,19 @@ abstract contract BaseProtocolActions is BaseSetup {
                 aV[i].toChainId = DST_CHAINS[i];
                 if (CHAIN_0 != aV[i].toChainId) {
                     vm.selectFork(FORKS[aV[i].toChainId]);
-
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
-                        unchecked {
-                            PAYLOAD_ID[aV[i].toChainId]++;
-                        }
+                        uint256 payloadCount = CoreStateRegistry(
+                            payable(getContract(aV[i].toChainId, "CoreStateRegistry"))
+                        ).payloadsCount();
+                        console.log("payloadCount", payloadCount);
+                        console.log("usedDSTs[aV[i].toChainId].payloadNumber", usedDSTs[aV[i].toChainId].payloadNumber);
 
+                        PAYLOAD_ID[aV[i].toChainId] = payloadCount - usedDSTs[aV[i].toChainId].payloadNumber + 1;
+                        --usedDSTs[aV[i].toChainId].payloadNumber;
+                        console.log("usedDSTs[aV[i].toChainId].payloadNumber", usedDSTs[aV[i].toChainId].payloadNumber);
                         vars.multiVaultsPayloadArg = updateMultiVaultDepositPayloadArgs(
                             PAYLOAD_ID[aV[i].toChainId],
-                            aV[i].receivedMultiVaultData.amounts,
+                            aV[i].expectedMultiVaultsData.amounts,
                             action.slippage,
                             aV[i].toChainId,
                             action.testType,
@@ -735,7 +742,7 @@ abstract contract BaseProtocolActions is BaseSetup {
 
                         vars.singleVaultsPayloadArg = updateSingleVaultDepositPayloadArgs(
                             PAYLOAD_ID[aV[i].toChainId],
-                            aV[i].receivedSingleVaultData.amount,
+                            aV[i].expectedSingleVaultData.amount,
                             action.slippage,
                             aV[i].toChainId,
                             action.testType,
@@ -789,7 +796,6 @@ abstract contract BaseProtocolActions is BaseSetup {
                             /// @dev hence the record logs before and after and payload delivery to source
                             success = _processPayload(PAYLOAD_ID[aV[i].toChainId], aV[i].toChainId, action.testType);
                             vars.logs = vm.getRecordedLogs();
-
                             _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
                         } else if (action.testType == TestType.RevertProcessPayload) {
                             /// @dev this logic is essentially repeated from above
@@ -822,9 +828,9 @@ abstract contract BaseProtocolActions is BaseSetup {
                         action.action == Actions.Withdraw
                             && (action.testType == TestType.Pass || action.testType == TestType.RevertVaultsWithdraw)
                     ) {
-                        unchecked {
-                            PAYLOAD_ID[aV[i].toChainId]++;
-                        }
+                        PAYLOAD_ID[aV[i].toChainId] = CoreStateRegistry(
+                            payable(getContract(aV[i].toChainId, "CoreStateRegistry"))
+                        ).payloadsCount() - usedDSTs[aV[i].toChainId].payloadNumber + 1;
 
                         /// @dev for scenarios with GENERATE_WITHDRAW_TX_DATA_ON_DST update txData on destination
                         if (GENERATE_WITHDRAW_TX_DATA_ON_DST) {
@@ -846,6 +852,7 @@ abstract contract BaseProtocolActions is BaseSetup {
                         vars.logs = vm.getRecordedLogs();
 
                         _payloadDeliveryHelper(CHAIN_0, aV[i].toChainId, vars.logs);
+                        --usedDSTs[aV[i].toChainId].payloadNumber;
                     }
                 }
                 vm.selectFork(aV[i].initialFork);
@@ -1695,6 +1702,10 @@ abstract contract BaseProtocolActions is BaseSetup {
     {
         TargetVaultsVars memory vars;
         vars.underlyingTokens = TARGET_UNDERLYINGS[chain1][action];
+        console.log("action", action);
+        console.log("chain1", chain1);
+        console.log("TARGET_VAULTS[chain1][action]", TARGET_VAULTS[chain1][action][0]);
+
         vars.vaultIds = TARGET_VAULTS[chain1][action];
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
 
@@ -1769,6 +1780,9 @@ abstract contract BaseProtocolActions is BaseSetup {
         /// @dev obtains superform addresses through string concatenation, notice what is done in BaseSetup to save
         /// these in contracts mapping
         for (uint256 i = 0; i < vaultIds_.length; i++) {
+            console.log("UNDERLYING_TOKENS[underlyingTokens_[i]]", UNDERLYING_TOKENS[underlyingTokens_[i]]);
+            console.log("VAULT_KINDS[vaultIds_[i]]", VAULT_KINDS[vaultIds_[i]]);
+            console.log("FORM_BEACON_IDS[formKinds_[i]]", FORM_BEACON_IDS[formKinds_[i]]);
             address superform = getContract(
                 chainId_,
                 string.concat(
@@ -1926,7 +1940,6 @@ abstract contract BaseProtocolActions is BaseSetup {
         /// @dev if test type is RevertProcessPayload, revert is further down the call chain
         if (args.testType == TestType.Pass || args.testType == TestType.RevertProcessPayload) {
             vm.prank(deployer);
-
             uint256[] memory finalAmounts = new uint256[](1);
             finalAmounts[0] = finalAmount;
 
@@ -2773,6 +2786,7 @@ abstract contract BaseProtocolActions is BaseSetup {
                 finalAmount = repetitions * finalAmount;
                 /// @dev assert spToken Balance. If reverting amount of sp should be 0 (assuming no action before this
                 /// one)
+
                 _assertSingleVaultBalance(
                     action.user, singleSuperformsData[i].superformId, foundRevertingDeposit ? 0 : finalAmount
                 );

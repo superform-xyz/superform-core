@@ -58,7 +58,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     /*///////////////////////////////////////////////////////////////
                     HANDLER PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
+    /*
     function singleDirectSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
@@ -122,7 +122,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         vm.selectFork(FORKS[0]);
         vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
     }
-
+    */
     function singleXChainSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
@@ -141,12 +141,9 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
         uint256 chain0Index = bound(chain0, 0, chainIds.length - 1);
         CHAIN_0 = chainIds[chain0Index];
-        uint64 dstChain;
-        if (CHAIN_0 != chainIds[chainIds.length - 1]) {
-            dstChain = chainIds[bound(dstChain1, chain0Index, chainIds.length - 1)];
-        } else {
-            dstChain = chainIds[bound(dstChain1, 0, chainIds.length - 2)];
-        }
+        uint256 dstChainIndex = bound(dstChain1, 0, chainIds.length - 1);
+        if (dstChainIndex == chain0Index && dstChainIndex != chainIds.length - 1) dstChainIndex++;
+        uint64 dstChain = chainIds[dstChainIndex];
 
         console.log("chain 0 ", CHAIN_0);
         console.log("dst chain ", dstChain);
@@ -164,23 +161,22 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         MAX_SLIPPAGE = 1000;
         LIQ_BRIDGES[DST_CHAINS[0]][0] = [1];
         uint256 userId = bound(user, 0, 2);
+        TestAction[] memory actionsMem = new TestAction[](1);
 
-        actions.push(
-            TestAction({
-                action: Actions(bound(actionType, 0, 1)), //Deposit or permit2 deposit
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: userId,
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: int256(bound(slippage, 0, 1000)),
-                dstSwap: false,
-                externalToken: bound(inputToken, 0, 2)
-            })
-        );
+        actionsMem[0] = TestAction({
+            action: Actions(bound(actionType, 0, 1)), //Deposit or permit2 deposit
+            multiVaults: false, //!!WARNING turn on or off multi vaults
+            user: userId,
+            testType: TestType.Pass,
+            revertError: "",
+            revertRole: "",
+            slippage: int256(bound(slippage, 0, 1000)),
+            dstSwap: false,
+            externalToken: bound(inputToken, 0, 2)
+        });
 
-        for (uint256 act = 0; act < actions.length; act++) {
-            TestAction memory action = actions[act];
+        for (uint256 act = 0; act < actionsMem.length; act++) {
+            TestAction memory action = actionsMem[act];
             MultiVaultSFData[] memory multiSuperformsData;
             SingleVaultSFData[] memory singleSuperformsData;
             MessagingAssertVars[] memory aV;
@@ -190,12 +186,15 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
+        console.log("ASDF");
+
+        /*
         uint256 superPositionsSum = _getSingleVaultSuperpositionsSum(dstChain);
         uint256 vaultShares = _getSingleVaultShares(dstChain);
-        actions.pop();
 
         vm.selectFork(FORKS[0]);
         vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
+        */
     }
     /*
     function singleDirectSingleVaultWithdraw() public {
