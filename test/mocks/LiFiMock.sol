@@ -111,9 +111,6 @@ contract LiFiMock is Test {
             v.amount = amountOut * 10 ** (decimal2 - decimal1);
         }
 
-        console.log(inputToken_);
-        console.log(v.outputToken);
-        console.log(v.amount);
         if (v.outputToken != NATIVE) {
             deal(v.outputToken, receiver_, MockERC20(v.outputToken).balanceOf(receiver_) + v.amount);
         } else {
