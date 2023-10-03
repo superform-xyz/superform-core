@@ -58,7 +58,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     /*///////////////////////////////////////////////////////////////
                     HANDLER PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    /*
+
     function singleDirectSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
@@ -122,7 +122,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         vm.selectFork(FORKS[0]);
         vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
     }
-    */
+
     function singleXChainSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
@@ -186,15 +186,11 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }
 
-        console.log("ASDF");
-
-        /*
         uint256 superPositionsSum = _getSingleVaultSuperpositionsSum(dstChain);
         uint256 vaultShares = _getSingleVaultShares(dstChain);
 
         vm.selectFork(FORKS[0]);
         vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
-        */
     }
     /*
     function singleDirectSingleVaultWithdraw() public {

@@ -49,6 +49,6 @@ contract VaultSharesInvariantTest is BaseInvariantTest {
     //////////////////////////////////////////////////////////////*/
 
     function invariant_vaultShares() public useCurrentTimestamp {
-        //assertEq(vaultSharesStore.superPositionsSum(), vaultSharesStore.vaultShares());
+        assertEq(vaultSharesStore.superPositionsSum(), vaultSharesStore.vaultShares());
     }
 }

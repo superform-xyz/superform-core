@@ -354,6 +354,7 @@ abstract contract BaseProtocolActions is BaseSetup {
         /// fullfil messages. Check pigeon library docs for more info
 
         vm.recordLogs();
+
         if (action.multiVaults) {
             if (vars.nDestinations == 1) {
                 /// @dev data built in step 1 is aggregated with AMBS and dstChains info
@@ -514,8 +515,7 @@ abstract contract BaseProtocolActions is BaseSetup {
                     MultiDstSingleVaultStateReq(MultiDstAMBs, DST_CHAINS, singleSuperformsData);
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                     /// @dev payment estimation, differs according to the type of entry point used
-                    (,, dstValue, msgValue) =
-                        paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
+                    (,,, msgValue) = paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
                     vm.prank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
@@ -527,8 +527,7 @@ abstract contract BaseProtocolActions is BaseSetup {
                 } else if (action.action == Actions.Withdraw) {
                     /// @dev payment estimation, differs according to the type of entry point used
 
-                    (,, dstValue, msgValue) =
-                        paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
+                    (,,, msgValue) = paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
                     vm.prank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
@@ -714,21 +713,26 @@ abstract contract BaseProtocolActions is BaseSetup {
         returns (bool success)
     {
         success = true;
+
         if (!sameChainDstHasRevertingVault) {
             for (uint256 i = 0; i < vars.nDestinations; i++) {
                 aV[i].toChainId = DST_CHAINS[i];
                 if (CHAIN_0 != aV[i].toChainId) {
                     vm.selectFork(FORKS[aV[i].toChainId]);
+
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                         uint256 payloadCount = CoreStateRegistry(
                             payable(getContract(aV[i].toChainId, "CoreStateRegistry"))
                         ).payloadsCount();
+
                         console.log("payloadCount", payloadCount);
                         console.log("usedDSTs[aV[i].toChainId].payloadNumber", usedDSTs[aV[i].toChainId].payloadNumber);
 
                         PAYLOAD_ID[aV[i].toChainId] = payloadCount - usedDSTs[aV[i].toChainId].payloadNumber + 1;
+
+                        console.log("payloadId", PAYLOAD_ID[aV[i].toChainId]);
                         --usedDSTs[aV[i].toChainId].payloadNumber;
-                        console.log("usedDSTs[aV[i].toChainId].payloadNumber", usedDSTs[aV[i].toChainId].payloadNumber);
+
                         vars.multiVaultsPayloadArg = updateMultiVaultDepositPayloadArgs(
                             PAYLOAD_ID[aV[i].toChainId],
                             aV[i].expectedMultiVaultsData.amounts,
@@ -1702,9 +1706,6 @@ abstract contract BaseProtocolActions is BaseSetup {
     {
         TargetVaultsVars memory vars;
         vars.underlyingTokens = TARGET_UNDERLYINGS[chain1][action];
-        console.log("action", action);
-        console.log("chain1", chain1);
-        console.log("TARGET_VAULTS[chain1][action]", TARGET_VAULTS[chain1][action][0]);
 
         vars.vaultIds = TARGET_VAULTS[chain1][action];
         vars.formKinds = TARGET_FORM_KINDS[chain1][action];
@@ -1780,9 +1781,6 @@ abstract contract BaseProtocolActions is BaseSetup {
         /// @dev obtains superform addresses through string concatenation, notice what is done in BaseSetup to save
         /// these in contracts mapping
         for (uint256 i = 0; i < vaultIds_.length; i++) {
-            console.log("UNDERLYING_TOKENS[underlyingTokens_[i]]", UNDERLYING_TOKENS[underlyingTokens_[i]]);
-            console.log("VAULT_KINDS[vaultIds_[i]]", VAULT_KINDS[vaultIds_[i]]);
-            console.log("FORM_BEACON_IDS[formKinds_[i]]", FORM_BEACON_IDS[formKinds_[i]]);
             address superform = getContract(
                 chainId_,
                 string.concat(

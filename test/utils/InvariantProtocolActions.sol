@@ -79,19 +79,16 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
         console.log("Stage 1 complete");
-        console.log("BBBB");
 
         /// @dev passes request data and performs initial call
         /// @dev returns sameChainDstHasRevertingVault - this means that the request reverted, thus no payloadId
         /// increase happened nor there is any need for payload update or further assertion
         vars = _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
         console.log("Stage 2 complete");
-        console.log("C");
-        /*
+
         /// @dev simulation of cross-chain message delivery (for x-chain actions) (With no assertions)
         aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
         console.log("Stage 3 complete");
-
 
         /// @dev processing of message delivery on destination   (for x-chain actions)
         success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, act);
@@ -101,15 +98,12 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         } else if (action.action == Actions.Withdraw && action.testType == TestType.Pass) {
             console.log("Stage 4 complete");
         }
-        console.log("B");
-        console.log("C");
 
-        /*
         if (
             (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
                 && !(action.testType == TestType.RevertXChainDeposit)
         ) {
-        /// @dev processing of superPositions mint from destination callback on source (for successful deposits)
+            /// @dev processing of superPositions mint from destination callback on source (for successful deposits)
 
             success = _stage5_process_superPositions_mint(action, vars, multiSuperformsData);
             if (!success) {
@@ -144,7 +138,7 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         }
 
         if (action.action == Actions.Withdraw) {
-        /// @dev Process payload received on source from destination (withdraw callback, for failed withdraws)
+            /// @dev Process payload received on source from destination (withdraw callback, for failed withdraws)
             _stage8_process_failed_timelocked_xchain_remint(action, vars);
 
             console.log("Stage 8 complete");
@@ -161,7 +155,8 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
             delete TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]];
         }
         MULTI_TX_SLIPPAGE_SHARE = 0;
-               */
+
+        console.log("DONE");
     }
 
     function _stage3_src_to_dst_amb_delivery(
@@ -177,11 +172,8 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
         Stage3InternalVars memory internalVars;
 
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            console.log("usedDSTs[DST_CHAINS[i]].payloadNumber", usedDSTs[DST_CHAINS[i]].payloadNumber);
-
             /// @dev if payloadNumber is = 0 still it means uniqueDst has not been found yet (1 repetition)
             if (usedDSTs[DST_CHAINS[i]].payloadNumber == 0) {
-                console.log("START HERE");
                 /// @dev NOTE: re-set struct to null to reset repetitions for multi action
                 delete usedDSTs[DST_CHAINS[i]];
 
@@ -195,8 +187,6 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
             }
         }
         vars.nUniqueDsts = uniqueDSTs.length;
-
-        console.log("vars.nUniqueDsts", vars.nUniqueDsts);
 
         internalVars.toMailboxes = new address[](vars.nUniqueDsts);
         internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);

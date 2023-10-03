@@ -34,8 +34,11 @@ jobs:
       - name: "Show the Foundry config"
         run: "forge config"
 
-      - name: "Build and perform size checks"
+      - name: "Perform mainnet size checks"
         run: forge build --sizes
+
+      - name: "Cache unoptimized build"
+        run: "FOUNDRY_PROFILE=localdev forge build"
 
       - name: "Cache the build so that it can be re-used by the other jobs"
         uses: "actions/cache/save@v3"
