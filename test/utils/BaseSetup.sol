@@ -905,6 +905,60 @@ abstract contract BaseSetup is DSTest, Test {
             KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
         }
 
+        /// @dev set chainlink price feeds
+        /// ETH
+        tokenPriceFeeds[ETH][getContract(ETH, "DAI")] = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
+        tokenPriceFeeds[ETH][getContract(ETH, "USDC")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH), also coz chainlink doesn't provide
+        tokenPriceFeeds[ETH][getContract(ETH, "WETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        tokenPriceFeeds[ETH][getContract(ETH, "USDT")] = 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
+        tokenPriceFeeds[ETH][NATIVE_TOKEN] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        console.log("ETH_chain", ETH);
+        console.log("NATIVE_TOKEN", NATIVE_TOKEN);
+        console.log("USDT", getContract(ETH, "USDT"));
+        console.log("tokenPriceFeeds[ETH][NATIVE_TOKEN]", tokenPriceFeeds[ETH][NATIVE_TOKEN]);
+        console.log("tokenPriceFeeds[ETH][getContract(ETH, USDT)]", tokenPriceFeeds[ETH][getContract(ETH, "USDT")]);
+
+        /// BSC
+        tokenPriceFeeds[BSC][getContract(BSC, "DAI")] = 0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA;
+        tokenPriceFeeds[BSC][getContract(BSC, "USDC")] = 0x51597f405303C4377E36123cBc172b13269EA163;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[BSC][getContract(BSC, "WETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+        tokenPriceFeeds[BSC][getContract(BSC, "USDT")] = 0xB97Ad0E74fa7d920791E90258A6E2085088b4320;
+        tokenPriceFeeds[BSC][NATIVE_TOKEN] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
+
+        /// AVAX
+        tokenPriceFeeds[AVAX][getContract(AVAX, "DAI")] = 0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "USDC")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[AVAX][getContract(AVAX, "WETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+        tokenPriceFeeds[AVAX][getContract(AVAX, "USDT")] = 0xEBE676ee90Fe1112671f19b6B7459bC678B67e8a;
+        tokenPriceFeeds[AVAX][NATIVE_TOKEN] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
+
+        /// POLYGON
+        tokenPriceFeeds[POLY][getContract(POLY, "DAI")] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
+        tokenPriceFeeds[POLY][getContract(POLY, "USDC")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[POLY][getContract(POLY, "WETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+        tokenPriceFeeds[POLY][getContract(POLY, "USDT")] = 0x0A6513e40db6EB1b165753AD52E80663aeA50545;
+        tokenPriceFeeds[POLY][NATIVE_TOKEN] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
+
+        /// OPTIMISM
+        tokenPriceFeeds[OP][getContract(OP, "DAI")] = 0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6;
+        tokenPriceFeeds[OP][getContract(OP, "USDC")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[OP][getContract(OP, "WETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+        tokenPriceFeeds[OP][getContract(OP, "USDT")] = 0xECef79E109e997bCA29c1c0897ec9d7b03647F5E;
+        tokenPriceFeeds[OP][NATIVE_TOKEN] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
+
+        /// ARBITRUM
+        tokenPriceFeeds[ARBI][getContract(ARBI, "DAI")] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "USDC")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
+        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
+        tokenPriceFeeds[ARBI][getContract(ARBI, "WETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+        tokenPriceFeeds[ARBI][getContract(ARBI, "USDT")] = 0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7;
+        tokenPriceFeeds[ARBI][NATIVE_TOKEN] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+
         vm.stopPrank();
     }
 
@@ -957,12 +1011,6 @@ abstract contract BaseSetup is DSTest, Test {
         priceFeeds[ETH][POLY] = 0x7bAC85A8a13A4BcD8abb3eB7d6b4d632c5a57676;
         priceFeeds[ETH][OP] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         priceFeeds[ETH][ARBI] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        tokenPriceFeeds[ETH][getContract(ETH, "DAI")] = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
-        tokenPriceFeeds[ETH][getContract(ETH, "USDC")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
-        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH), also coz chainlink doesn't provide
-        tokenPriceFeeds[ETH][getContract(ETH, "WETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        tokenPriceFeeds[ETH][getContract(ETH, "USDT")] = 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
-        tokenPriceFeeds[ETH][NATIVE_TOKEN] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
         /// BSC
         priceFeeds[BSC][BSC] = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;
@@ -971,12 +1019,6 @@ abstract contract BaseSetup is DSTest, Test {
         priceFeeds[BSC][POLY] = 0x7CA57b0cA6367191c94C8914d7Df09A57655905f;
         priceFeeds[BSC][OP] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
         priceFeeds[BSC][ARBI] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
-        tokenPriceFeeds[BSC][getContract(BSC, "DAI")] = 0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA;
-        tokenPriceFeeds[BSC][getContract(BSC, "USDC")] = 0x51597f405303C4377E36123cBc172b13269EA163;
-        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
-        tokenPriceFeeds[BSC][getContract(BSC, "WETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
-        tokenPriceFeeds[BSC][getContract(BSC, "USDT")] = 0xB97Ad0E74fa7d920791E90258A6E2085088b4320;
-        tokenPriceFeeds[BSC][NATIVE_TOKEN] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
 
         /// AVAX
         priceFeeds[AVAX][AVAX] = 0x0A77230d17318075983913bC2145DB16C7366156;
@@ -985,12 +1027,6 @@ abstract contract BaseSetup is DSTest, Test {
         priceFeeds[AVAX][POLY] = address(0);
         priceFeeds[AVAX][OP] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
         priceFeeds[AVAX][ARBI] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
-        tokenPriceFeeds[AVAX][getContract(AVAX, "DAI")] = 0x51D7180edA2260cc4F6e4EebB82FEF5c3c2B8300;
-        tokenPriceFeeds[AVAX][getContract(AVAX, "USDC")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
-        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
-        tokenPriceFeeds[AVAX][getContract(AVAX, "WETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
-        tokenPriceFeeds[AVAX][getContract(AVAX, "USDT")] = 0xEBE676ee90Fe1112671f19b6B7459bC678B67e8a;
-        tokenPriceFeeds[AVAX][NATIVE_TOKEN] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
 
         /// POLYGON
         priceFeeds[POLY][POLY] = 0xAB594600376Ec9fD91F8e885dADF0CE036862dE0;
@@ -999,13 +1035,6 @@ abstract contract BaseSetup is DSTest, Test {
         priceFeeds[POLY][ETH] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][OP] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
         priceFeeds[POLY][ARBI] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
-        tokenPriceFeeds[POLY][getContract(POLY, "DAI")] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D;
-        tokenPriceFeeds[POLY][getContract(POLY, "USDC")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
-        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
-        tokenPriceFeeds[POLY][getContract(POLY, "WETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
-        tokenPriceFeeds[POLY][getContract(POLY, "USDT")] = 0x0A6513e40db6EB1b165753AD52E80663aeA50545;
-        tokenPriceFeeds[POLY][NATIVE_TOKEN] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
-
         /// OPTIMISM
         priceFeeds[OP][OP] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][POLY] = address(0);
@@ -1013,13 +1042,6 @@ abstract contract BaseSetup is DSTest, Test {
         priceFeeds[OP][BSC] = address(0);
         priceFeeds[OP][ETH] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
         priceFeeds[OP][ARBI] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
-        tokenPriceFeeds[OP][getContract(OP, "DAI")] = 0x8dBa75e83DA73cc766A7e5a0ee71F656BAb470d6;
-        tokenPriceFeeds[OP][getContract(OP, "USDC")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
-        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
-        tokenPriceFeeds[OP][getContract(OP, "WETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
-        tokenPriceFeeds[OP][getContract(OP, "USDT")] = 0xECef79E109e997bCA29c1c0897ec9d7b03647F5E;
-        tokenPriceFeeds[OP][NATIVE_TOKEN] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
-        console.log("tokenPriceFeeds[OP][getContract(OP, USDT)]", tokenPriceFeeds[OP][getContract(OP, "USDT")]);
 
         /// ARBITRUM
         priceFeeds[ARBI][ARBI] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
@@ -1028,13 +1050,6 @@ abstract contract BaseSetup is DSTest, Test {
         priceFeeds[ARBI][AVAX] = address(0);
         priceFeeds[ARBI][BSC] = address(0);
         priceFeeds[ARBI][ETH] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
-        tokenPriceFeeds[ARBI][getContract(ARBI, "DAI")] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB;
-        tokenPriceFeeds[ARBI][getContract(ARBI, "USDC")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
-        /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
-        tokenPriceFeeds[ARBI][getContract(ARBI, "WETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
-        tokenPriceFeeds[ARBI][getContract(ARBI, "USDT")] = 0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7;
-        tokenPriceFeeds[ARBI][NATIVE_TOKEN] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
-        console.log("tokenPriceFeeds[ARBI][getContract(ARBI, USDT)]", tokenPriceFeeds[ARBI][getContract(ARBI, "USDT")]);
 
         /// @dev setup bridges. 1 is lifi
         bridgeIds.push(1);

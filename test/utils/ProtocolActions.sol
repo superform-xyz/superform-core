@@ -1745,17 +1745,28 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
 
-        console.log("args.srcChainId", args.srcChainId);
+        /// @dev decimals = 6 for USDC, 18 for DAI, ETH, WETH
+        uint256 decimalsExternalToken = args.externalToken == getContract(args.srcChainId, "USDC") ? 6 : 18;
+        vm.selectFork(FORKS[args.toChainId]);
+        uint256 decimalsUnderlyingTokenDst = args.underlyingTokenDst == getContract(args.toChainId, "USDC") ? 6 : 18;
+        vm.selectFork(FORKS[args.srcChainId]);
+
+        console.log("args.externalToken", args.externalToken);
         console.log("args.underlyingTokenDst", args.underlyingTokenDst);
-        console.log("TOKEN_FEED", tokenPriceFeeds[args.srcChainId][args.underlyingTokenDst]);
+        console.log("TOKEN_FEED_externalToken", tokenPriceFeeds[args.srcChainId][args.externalToken]);
+        console.log("TOKEN_FEED_underlyingTokenDst", tokenPriceFeeds[args.srcChainId][args.underlyingTokenDst]);
+
         (, int256 USDPerUnderlyingDst,,,) =
             AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.underlyingTokenDst]).latestRoundData();
         (, int256 USDPerExternalToken,,,) =
             AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.externalToken]).latestRoundData();
 
-        /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDT, daiAmount = 100
-        /// => usdtAmount = (USDPerDai / USDPerUsdt) * daiAmount
-        args.amount = (uint256(USDPerExternalToken) * args.amount) / uint256(USDPerUnderlyingDst);
+        console.log("args.amount before", args.amount);
+        /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDC, daiAmount = 100
+        /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
+        args.amount = (uint256(USDPerExternalToken) * args.amount * (10 ** decimalsUnderlyingTokenDst))
+            / (uint256(USDPerUnderlyingDst) * (10 ** decimalsExternalToken));
+        console.log("args.amount after", args.amount);
 
         vm.selectFork(v.initialFork);
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
