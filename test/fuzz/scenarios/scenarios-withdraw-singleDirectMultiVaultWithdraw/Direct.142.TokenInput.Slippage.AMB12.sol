@@ -70,20 +70,12 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario()
-        // uint128 amountOne_,
-        // uint128 amountOneWithdraw_,
-        // uint128 amountTwo_,
-        // uint128 amountThree_,
-        // uint128 amountThreeWithdraw_
-        public
-    {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
         /// @dev min amountOne_ and amountThree_ need to be 3 as their withdraw amount >= 2
-        // amountOne_ = uint128(bound(amountOne_, 11 * 10**6, TOTAL_SUPPLY_USDC / 3));
-        // amountTwo_ = uint128(bound(amountTwo_, 11 * 10**6, TOTAL_SUPPLY_USDC / 3));
-        // amountThree_ = uint128(bound(amountThree_, 11 * 10**6, TOTAL_SUPPLY_USDC / 3));
-        // AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
-        AMOUNTS[AVAX][0] = [1e6, 2e6, 3e6];
+        amountOne_ = uint128(bound(amountOne_, 1e6, 1e10));
+        amountTwo_ = uint128(bound(amountTwo_, 1e6, 1e10));
+        amountThree_ = uint128(bound(amountThree_, 1e6, 1e10));
+        AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -103,9 +95,6 @@ contract SDiMVW142TokenInputSlippageAMB12 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    // amountOneWithdraw_ = uint128(bound(amountOneWithdraw_, 1, superPositions[0] - 1));
-                    // amountThreeWithdraw_ = uint128(bound(amountThreeWithdraw_, 2, superPositions[2] - 1));
-                    // AMOUNTS[DST_CHAINS[i]][1] = [amountOneWithdraw_, superPositions[1], amountThreeWithdraw_];
                     AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0] / 2, superPositions[1], superPositions[2] / 2];
                 }
             }
