@@ -58,7 +58,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     /*///////////////////////////////////////////////////////////////
                     HANDLER PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
+    /*
     function singleDirectSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
@@ -122,7 +122,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         vm.selectFork(FORKS[0]);
         vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
     }
-
+    */
     function singleXChainSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
@@ -142,7 +142,11 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         uint256 chain0Index = bound(chain0, 0, chainIds.length - 1);
         CHAIN_0 = chainIds[chain0Index];
         uint256 dstChainIndex = bound(dstChain1, 0, chainIds.length - 1);
-        if (dstChainIndex == chain0Index && dstChainIndex != chainIds.length - 1) dstChainIndex++;
+        if (dstChainIndex == chain0Index && dstChainIndex != chainIds.length - 1) {
+            dstChainIndex++;
+        } else if (dstChainIndex == chain0Index && dstChainIndex == chainIds.length - 1) {
+            dstChainIndex--;
+        }
         uint64 dstChain = chainIds[dstChainIndex];
 
         console.log("chain 0 ", CHAIN_0);

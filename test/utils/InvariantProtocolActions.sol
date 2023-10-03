@@ -155,8 +155,6 @@ abstract contract InvariantProtocolActions is BaseProtocolActions {
             delete TX_DATA_TO_UPDATE_ON_DST[DST_CHAINS[i]];
         }
         MULTI_TX_SLIPPAGE_SHARE = 0;
-
-        console.log("DONE");
     }
 
     function _stage3_src_to_dst_amb_delivery(
