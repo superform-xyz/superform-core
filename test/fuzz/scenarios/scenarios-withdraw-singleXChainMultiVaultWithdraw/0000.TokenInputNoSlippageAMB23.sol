@@ -71,7 +71,7 @@ contract SDMVW0000TokenInputNoSlippageAMB23 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario() public {
-        AMOUNTS[ARBI][0] = [3 * 10 ** 18, 3 * 10 ** 18, 3 * 10 ** 18, 3 * 10 ** 18];
+        AMOUNTS[ARBI][0] = [3e18, 3e18, 3e18, 3e18];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];

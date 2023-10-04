@@ -2539,12 +2539,21 @@ abstract contract ProtocolActions is BaseSetup {
             v.decimal2 = MockERC20(ERC4626Form(payable(superform)).getVaultAsset()).decimals();
             v.assertAmnt = amountsToAssert[i];
 
-            if (v.decimal1 > v.decimal2) {
-                v.assertAmnt *= 10 ** (v.decimal1 - v.decimal2);
-            } else if (v.decimal1 < v.decimal2) {
-                v.assertAmnt /= 10 ** (v.decimal2 - v.decimal1);
+            if (!isWithdraw) {
+                v.assertAmnt = ERC4626Form(payable(superform)).previewDepositTo(v.assertAmnt);
+                if (amounts[superformIds[i]] == 0) {
+                    amounts[superformIds[i]] += v.assertAmnt;
+                }
+            } else {
+                console.log(v.assertAmnt);
+                if (v.decimal1 > v.decimal2) {
+                    v.assertAmnt *= 10 ** (v.decimal1 - v.decimal2);
+                } else if (v.decimal1 < v.decimal2) {
+                    v.assertAmnt /= 10 ** (v.decimal2 - v.decimal1);
+                }
+                amounts[superformIds[i]] += v.assertAmnt;
             }
-            amounts[superformIds[i]] += v.assertAmnt;
+            console.log(v.assertAmnt);
         }
 
         vm.selectFork(FORKS[CHAIN_0]);
@@ -2554,12 +2563,13 @@ abstract contract ProtocolActions is BaseSetup {
             v.currentBalanceOfSp = superPositions.balanceOf(users[user], superformIds[i]);
             v.partialWithdraw = (partialWithdrawVaults.length > i) && partialWithdrawVaults[i];
 
+            console.log(v.partialWithdraw);
             if (!isWithdraw) {
-                assertLe(v.currentBalanceOfSp, v.currentAmount);
-            } else if (isWithdraw && !v.partialWithdraw) {
+                assertApproxEqAbs(v.currentBalanceOfSp, v.currentAmount, 95);
+            } else if (isWithdraw && v.partialWithdraw) {
                 assertLe(v.currentBalanceOfSp, v.currentAmount);
             } else {
-                assertGe(v.currentBalanceOfSp, v.currentAmount);
+                assertEq(v.currentBalanceOfSp, v.currentAmount);
             }
         }
 
@@ -2626,6 +2636,8 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 i;
         uint256 j;
         uint256 k;
+        address superform;
+        uint64 superformChainId;
     }
 
     struct SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs {
@@ -2644,7 +2656,6 @@ abstract contract ProtocolActions is BaseSetup {
         SpAmountsMultiBeforeActionOrAfterSuccessDepositArgs memory args
     )
         internal
-        view
         returns (uint256[] memory emptyAmount, uint256[] memory spAmountSummed, uint256 totalSpAmount)
     {
         DepositMultiSPCalculationVars memory v;
@@ -2749,6 +2760,7 @@ abstract contract ProtocolActions is BaseSetup {
                         multiSuperformsData.superformIds[i] == multiSuperformsData.superformIds[j]
                             && !(sameDst && foundRevertingWithdraw)
                     ) {
+                        console.log(spAmountFinal[i], multiSuperformsData.amounts[j]);
                         spAmountFinal[i] -= multiSuperformsData.amounts[j];
                     }
                 }
@@ -2979,8 +2991,8 @@ abstract contract ProtocolActions is BaseSetup {
                         action.dstSwap
                     )
                 );
-                totalSpAmountAllDestinations += totalSpAmount;
 
+                totalSpAmountAllDestinations += totalSpAmount;
                 token = multiSuperformsData[0].liqRequests[0].token;
 
                 if (CHAIN_0 == DST_CHAINS[i] && lenRevertDeposit > 0) {
@@ -3094,6 +3106,11 @@ abstract contract ProtocolActions is BaseSetup {
                 v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
                 /// @dev obtain amounts to assert
 
+                console.log("hey hey hey");
+                for (uint256 i = 0; i < spAmountsBeforeWithdraw.length; i++) {
+                    console.log("heyi", spAmountsBeforeWithdraw[0][i]);
+                }
+
                 v.spAmountFinal = _spAmountsMultiAfterWithdraw(
                     multiSuperformsData[i],
                     action.user,
@@ -3103,9 +3120,8 @@ abstract contract ProtocolActions is BaseSetup {
                     v.sameDst,
                     i
                 );
-
+                console.log("hey hey hey ba ba ba");
                 /// @dev assert
-
                 _assertMultiVaultBalance(
                     action.user, multiSuperformsData[i].superformIds, v.spAmountFinal, v.partialWithdrawVaults, true
                 );
