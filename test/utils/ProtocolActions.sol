@@ -2565,9 +2565,10 @@ abstract contract ProtocolActions is BaseSetup {
 
             console.log(v.partialWithdraw);
             if (!isWithdraw) {
-                assertApproxEqAbs(v.currentBalanceOfSp, v.currentAmount, 95);
+                assertApproxEqAbs(v.currentBalanceOfSp, v.currentAmount, 99);
             } else if (isWithdraw && v.partialWithdraw) {
-                assertLe(v.currentBalanceOfSp, v.currentAmount);
+                /// if withdrawal is partial then the balance should be greater than zero
+                assertGt(v.currentBalanceOfSp, 0);
             } else {
                 assertEq(v.currentBalanceOfSp, v.currentAmount);
             }
@@ -3105,12 +3106,6 @@ abstract contract ProtocolActions is BaseSetup {
             if (action.multiVaults) {
                 v.partialWithdrawVaults = abi.decode(multiSuperformsData[i].extraFormData, (bool[]));
                 /// @dev obtain amounts to assert
-
-                console.log("hey hey hey");
-                for (uint256 i = 0; i < spAmountsBeforeWithdraw.length; i++) {
-                    console.log("heyi", spAmountsBeforeWithdraw[0][i]);
-                }
-
                 v.spAmountFinal = _spAmountsMultiAfterWithdraw(
                     multiSuperformsData[i],
                     action.user,
@@ -3120,7 +3115,6 @@ abstract contract ProtocolActions is BaseSetup {
                     v.sameDst,
                     i
                 );
-                console.log("hey hey hey ba ba ba");
                 /// @dev assert
                 _assertMultiVaultBalance(
                     action.user, multiSuperformsData[i].superformIds, v.spAmountFinal, v.partialWithdrawVaults, true

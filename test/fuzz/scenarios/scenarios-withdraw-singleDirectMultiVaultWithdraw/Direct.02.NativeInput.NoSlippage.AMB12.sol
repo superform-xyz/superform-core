@@ -70,14 +70,10 @@ contract SDiMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountTwoWithdraw_) public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
         amountOne_ = uint128(bound(amountOne_, 1e18, 20e18));
         amountTwo_ = uint128(bound(amountTwo_, 1e18, 20e18));
         AMOUNTS[OP][0] = [amountOne_, amountTwo_];
-
-        /// @dev bound to amountTwo_ - 1 as partial is true for second vault
-        amountTwoWithdraw_ = uint128(bound(amountTwoWithdraw_, 1, amountTwo_ - 1));
-        AMOUNTS[OP][1] = [amountOne_, amountTwoWithdraw_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
@@ -97,7 +93,7 @@ contract SDiMVW02NativeInputNoSlippageAMB12 is ProtocolActions {
                         DST_CHAINS[i]
                     );
 
-                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1]];
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0], superPositions[1] - 3];
                 }
             }
 

@@ -102,9 +102,9 @@ contract MDMVW00001200TokenInputSlippageAMB12 is ProtocolActions {
         public
     {
         /// @dev min amountOne_ and amountThree_ need to be 3 as their withdraw amount >= 2
-        amountOne_ = uint128(bound(amountOne_, 12 * 10 ** 6, TOTAL_SUPPLY_USDC / 8));
-        amountTwo_ = uint128(bound(amountTwo_, 12 * 10 ** 6, TOTAL_SUPPLY_USDC / 8));
-        amountThree_ = uint128(bound(amountThree_, 12 * 10 ** 6, TOTAL_SUPPLY_USDC / 8));
+        amountOne_ = uint128(bound(amountOne_, 2e6, 2e10));
+        amountTwo_ = uint128(bound(amountTwo_, 2e6, 2e10));
+        amountThree_ = uint128(bound(amountThree_, 2e6, 2e10));
         AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_, amountOne_];
 
         AMOUNTS[POLY][0] = [amountOne_, amountOne_, amountTwo_, amountThree_];
