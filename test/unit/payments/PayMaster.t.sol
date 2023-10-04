@@ -293,10 +293,11 @@ contract PayMasterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,

@@ -16,7 +16,7 @@ library Error {
     error ZERO_AMOUNT();
 
     /// @dev error thrown when beacon id already exists
-    error BEACON_ID_ALREADY_EXISTS();
+    error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
 
     /// @dev thrown when msg.sender is not core state registry
     error NOT_CORE_STATE_REGISTRY();
@@ -247,7 +247,7 @@ library Error {
     error FORM_DOES_NOT_EXIST();
 
     /// @dev thrown when same vault and beacon is used to create new superform
-    error VAULT_BEACON_COMBNATION_EXISTS();
+    error VAULT_FORM_IMPLEMENTATION_COMBNATION_EXISTS();
 
     /// @dev thrown when there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();

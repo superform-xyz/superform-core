@@ -2,22 +2,19 @@
 pragma solidity ^0.8.19;
 
 import { Initializable } from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { ERC165Upgradeable } from
-    "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
-import { IERC165Upgradeable } from
-    "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
+import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import { InitSingleVaultData } from "./types/DataTypes.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./utils/Error.sol";
-import { IFormBeacon } from "./interfaces/IFormBeacon.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
-abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
+abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
@@ -43,12 +40,12 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     modifier notPaused(InitSingleVaultData memory singleVaultData_) {
-        (, uint32 formBeaconId_,) = singleVaultData_.superformId.getSuperform();
+        (, uint32 formImplementationId_,) = singleVaultData_.superformId.getSuperform();
 
         if (
-            IFormBeacon(
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
-            ).paused() == 2
+            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+                formImplementationId_
+            )
         ) revert Error.PAUSED();
         _;
     }
@@ -87,13 +84,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     //////////////////////////////////////////////////////////////*/
     receive() external payable { }
 
-    function supportsInterface(bytes4 interfaceId_)
-        public
-        view
-        virtual
-        override(ERC165Upgradeable, IERC165Upgradeable)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
 
