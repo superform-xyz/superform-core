@@ -229,7 +229,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadLiqDataInternalVars memory v;
 
-        (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts,, v.nativeAmounts) = IPayloadHelper(
+        (v.bridgeIds, v.txDatas, v.tokens, v.liqDstChainIds, v.amounts,, v.nativeAmounts,,) = IPayloadHelper(
             contracts[DST_CHAINS[0]][bytes32(bytes("PayloadHelper"))]
         ).decodeCoreStateRegistryPayloadLiqData(2);
 
