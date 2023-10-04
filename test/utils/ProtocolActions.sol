@@ -2569,6 +2569,9 @@ abstract contract ProtocolActions is BaseSetup {
             } else if (isWithdraw && v.partialWithdraw) {
                 /// if withdrawal is partial then the balance should be greater than zero
                 assertGt(v.currentBalanceOfSp, 0);
+
+                /// withdrawal fuzz amount could be zero (people can initiate 0 amounts in core)
+                assertGe(v.currentAmount, 0);
             } else {
                 assertEq(v.currentBalanceOfSp, v.currentAmount);
             }
@@ -2761,7 +2764,6 @@ abstract contract ProtocolActions is BaseSetup {
                         multiSuperformsData.superformIds[i] == multiSuperformsData.superformIds[j]
                             && !(sameDst && foundRevertingWithdraw)
                     ) {
-                        console.log(spAmountFinal[i], multiSuperformsData.amounts[j]);
                         spAmountFinal[i] -= multiSuperformsData.amounts[j];
                     }
                 }
