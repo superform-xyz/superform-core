@@ -62,6 +62,7 @@ contract MDSVDNormal4626MultiTokenInputNoSlippageAMB23 is ProtocolActions {
         amountOne_ = uint128(bound(amountOne_, 1e6, 1e10));
         amountTwo_ = uint128(bound(amountTwo_, 1e6, 1e10));
         amountThree_ = uint128(bound(amountThree_, 1e6, 1e10));
+
         AMOUNTS[ETH][0] = [amountOne_];
         AMOUNTS[OP][0] = [amountTwo_];
         AMOUNTS[POLY][0] = [amountThree_];

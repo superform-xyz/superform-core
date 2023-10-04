@@ -2545,7 +2545,6 @@ abstract contract ProtocolActions is BaseSetup {
                     amounts[superformIds[i]] += v.assertAmnt;
                 }
             } else {
-                console.log(v.assertAmnt);
                 if (v.decimal1 > v.decimal2) {
                     v.assertAmnt *= 10 ** (v.decimal1 - v.decimal2);
                 } else if (v.decimal1 < v.decimal2) {
@@ -2553,7 +2552,6 @@ abstract contract ProtocolActions is BaseSetup {
                 }
                 amounts[superformIds[i]] += v.assertAmnt;
             }
-            console.log(v.assertAmnt);
         }
 
         vm.selectFork(FORKS[CHAIN_0]);
@@ -2563,9 +2561,8 @@ abstract contract ProtocolActions is BaseSetup {
             v.currentBalanceOfSp = superPositions.balanceOf(users[user], superformIds[i]);
             v.partialWithdraw = (partialWithdrawVaults.length > i) && partialWithdrawVaults[i];
 
-            console.log(v.partialWithdraw);
             if (!isWithdraw) {
-                assertApproxEqAbs(v.currentBalanceOfSp, v.currentAmount, 99);
+                assertApproxEqRel(v.currentBalanceOfSp, v.currentAmount, 0.99e18);
             } else if (isWithdraw && v.partialWithdraw) {
                 /// if withdrawal is partial then the balance should be greater than zero
                 assertGt(v.currentBalanceOfSp, 0);
@@ -2584,19 +2581,20 @@ abstract contract ProtocolActions is BaseSetup {
     }
 
     /// @dev generalized internal function to assert single superPosition balances.
-    function _assertSingleVaultBalance(uint256 user, uint256 superformId, uint256 amountToAssert) internal {
+    function _assertSingleVaultBalance(
+        uint256 user,
+        uint256 superformId,
+        uint256 amountToAssert,
+        bool isWithdraw
+    )
+        internal
+    {
         // Fetch superform details and select fork
         (address superform,, uint64 chainId) = DataLib.getSuperform(superformId);
         vm.selectFork(FORKS[chainId]);
 
-        // Get decimals and adjust amountToAssert if necessary
-        uint256 decimal1 = ERC4626Form(payable(superform)).getVaultDecimals();
-        uint256 decimal2 = MockERC20(ERC4626Form(payable(superform)).getVaultAsset()).decimals();
-
-        if (decimal1 > decimal2) {
-            amountToAssert *= 10 ** (decimal1 - decimal2);
-        } else if (decimal1 < decimal2) {
-            amountToAssert /= 10 ** (decimal2 - decimal1);
+        if (!isWithdraw) {
+            amountToAssert = ERC4626Form(payable(superform)).previewDepositTo(amountToAssert);
         }
 
         // Switch back to the main fork for registry operations
@@ -2609,7 +2607,11 @@ abstract contract ProtocolActions is BaseSetup {
         IERC1155A superPositions = IERC1155A(superPositionsAddress);
         uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superformId);
 
-        assertLe(currentBalanceOfSp, amountToAssert);
+        if (!isWithdraw) {
+            assertApproxEqRel(currentBalanceOfSp, amountToAssert, 0.99e18);
+        } else {
+            assertEq(currentBalanceOfSp, amountToAssert);
+        }
     }
 
     /// @dev generalized internal function to assert single superPosition balances of partial withdraws
@@ -2944,7 +2946,8 @@ abstract contract ProtocolActions is BaseSetup {
                     _assertSingleVaultBalance(
                         action.user,
                         singleSuperformsData[i].superformId,
-                        action.action == Actions.Withdraw ? spAmountBeforeWithdrawPerDestination[i] : 0
+                        action.action == Actions.Withdraw ? spAmountBeforeWithdrawPerDestination[i] : 0,
+                        action.action == Actions.Withdraw
                     );
                 } else {
                     _assertSingleVaultPartialWithdrawBalance(
@@ -3048,7 +3051,7 @@ abstract contract ProtocolActions is BaseSetup {
                 /// @dev assert spToken Balance. If reverting amount of sp should be 0 (assuming no action before this
                 /// one)
                 _assertSingleVaultBalance(
-                    action.user, singleSuperformsData[i].superformId, foundRevertingDeposit ? 0 : finalAmount
+                    action.user, singleSuperformsData[i].superformId, foundRevertingDeposit ? 0 : finalAmount, false
                 );
             }
         }
@@ -3143,7 +3146,8 @@ abstract contract ProtocolActions is BaseSetup {
                         singleSuperformsData[i].superformId,
                         v.sameDst && v.foundRevertingWithdraw
                             ? spAmountBeforeWithdrawPerDst[i]
-                            : spAmountBeforeWithdrawPerDst[i] - singleSuperformsData[i].amount
+                            : spAmountBeforeWithdrawPerDst[i] - singleSuperformsData[i].amount,
+                        true
                     );
                 } else {
                     /// @dev notice the amount sent for non (same DSt and reverting) is amount after burn
@@ -3231,7 +3235,8 @@ abstract contract ProtocolActions is BaseSetup {
                                 || (!v.sameDst && v.foundRevertingWithdraw)
                         )
                             ? spAmountBeforeWithdrawPerDst[i]
-                            : spAmountBeforeWithdrawPerDst[i] - singleSuperformsData[i].amount
+                            : spAmountBeforeWithdrawPerDst[i] - singleSuperformsData[i].amount,
+                        true
                     );
                 } else {
                     /// @dev notice the amount asserted if: sameDst + reverting OR xChain + reverting is the amount
@@ -3287,7 +3292,7 @@ abstract contract ProtocolActions is BaseSetup {
                         /// @dev this assertion assumes the withdraw is happening on the same superformId as the
                         /// previous deposit
                         _assertSingleVaultBalance(
-                            action.user, singleSuperformsData[i].superformId, spAmountBeforeWithdrawPerDst[i]
+                            action.user, singleSuperformsData[i].superformId, spAmountBeforeWithdrawPerDst[i], true
                         );
                     } else {
                         _assertSingleVaultPartialWithdrawBalance(
@@ -3350,7 +3355,7 @@ abstract contract ProtocolActions is BaseSetup {
                             /// @dev this assertion assumes the withdraw is happening on the same superformId as the
                             /// previous deposit
                             _assertSingleVaultBalance(
-                                action.user, singleSuperformsData[i].superformId, spAmountBeforeWithdrawPerDst[i]
+                                action.user, singleSuperformsData[i].superformId, spAmountBeforeWithdrawPerDst[i], true
                             );
                         } else {
                             _assertSingleVaultPartialWithdrawBalance(
