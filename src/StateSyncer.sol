@@ -42,14 +42,8 @@ abstract contract StateSyncer is IStateSyncer {
         _;
     }
 
+    /// FIXME
     modifier onlyMinterStateRegistry() {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("MINTER_STATE_REGISTRY_ROLE"), msg.sender
-            )
-        ) {
-            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
-        }
         _;
     }
     /*///////////////////////////////////////////////////////////////

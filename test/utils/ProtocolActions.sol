@@ -3059,8 +3059,8 @@ abstract contract ProtocolActions is BaseSetup {
             console.log("msgValue", msgValue);
             console.log("balance now + msgValue", msgValue + users[action.user].balance);
         }
-        /// @dev assert user input token balance
 
+        /// @dev assert user input token balance
         // assertEq(
         //     token != NATIVE_TOKEN ? IERC20(token).balanceOf(users[action.user]) : users[action.user].balance,
         //     inputBalanceBefore - totalSpAmountAllDestinations - msgValue
