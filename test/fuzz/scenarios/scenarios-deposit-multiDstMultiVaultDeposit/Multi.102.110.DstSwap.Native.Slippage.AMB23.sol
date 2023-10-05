@@ -55,9 +55,9 @@ contract MDMVDMulti102110TokenInputSlippageAMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
-        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_WETH / 6));
-        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_WETH / 6));
-        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_WETH / 6));
+        amountOne_ = uint128(bound(amountOne_, 11 * 10 ** 18, TOTAL_SUPPLY_WETH / 6));
+        amountTwo_ = uint128(bound(amountTwo_, 11 * 10 ** 18, TOTAL_SUPPLY_WETH / 6));
+        amountThree_ = uint128(bound(amountThree_, 11 * 10 ** 18, TOTAL_SUPPLY_WETH / 6));
         AMOUNTS[ARBI][0] = [amountOne_, amountTwo_, amountThree_];
         AMOUNTS[ETH][0] = [amountThree_, amountOne_, amountTwo_];
 

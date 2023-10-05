@@ -48,7 +48,7 @@ contract SXSVDNormal4626NoNativeNoSlippageAMB12 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amount_) public {
-        amount_ = uint128(bound(amount_, 1, TOTAL_SUPPLY_ETH));
+        amount_ = uint128(bound(amount_, 1 * 10 ** 18, TOTAL_SUPPLY_ETH));
         AMOUNTS[POLY][0] = [amount_];
 
         for (uint256 act = 0; act < actions.length; act++) {

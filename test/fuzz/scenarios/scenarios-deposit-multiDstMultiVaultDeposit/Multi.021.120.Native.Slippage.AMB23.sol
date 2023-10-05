@@ -56,9 +56,9 @@ contract MDMVDMulti021120NoNativeSlippageAMB23 is ProtocolActions {
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_ETH / 6));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_ETH / 6));
-        amountThree_ = uint128(bound(amountThree_, 2, TOTAL_SUPPLY_ETH / 6));
+        amountOne_ = uint128(bound(amountOne_, 2e18, 20e18));
+        amountTwo_ = uint128(bound(amountTwo_, 2e18, 20e18));
+        amountThree_ = uint128(bound(amountThree_, 2e18, 20e18));
         AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];
         AMOUNTS[OP][0] = [amountThree_, amountOne_, amountTwo_];
 

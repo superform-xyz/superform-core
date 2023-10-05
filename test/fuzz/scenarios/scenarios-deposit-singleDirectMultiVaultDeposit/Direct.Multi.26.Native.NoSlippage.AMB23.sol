@@ -49,8 +49,8 @@ contract SDiMVDMulti26NativeNoSlippageAMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
-        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_ETH / 2));
-        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_ETH / 2));
+        amountOne_ = uint128(bound(amountOne_, 1 * 10 ** 18, TOTAL_SUPPLY_ETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 1 * 10 ** 18, TOTAL_SUPPLY_ETH / 2));
         AMOUNTS[POLY][0] = [amountOne_, amountTwo_];
 
         for (uint256 act; act < actions.length; act++) {

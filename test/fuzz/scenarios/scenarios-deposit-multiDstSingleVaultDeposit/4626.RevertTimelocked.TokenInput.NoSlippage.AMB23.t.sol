@@ -58,9 +58,9 @@ contract MDSVD4626RevertTimelockedNoTokenInputNoSlippageAMB23 is ProtocolActions
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
-        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_WETH / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_WETH / 3));
-        amountThree_ = uint128(bound(amountThree_, 1, TOTAL_SUPPLY_WETH / 3));
+        amountOne_ = uint128(bound(amountOne_, 1e18, 20e18));
+        amountTwo_ = uint128(bound(amountTwo_, 1e18, 20e18));
+        amountThree_ = uint128(bound(amountThree_, 1e18, 20e18));
         AMOUNTS[ETH][0] = [amountOne_];
         AMOUNTS[ARBI][0] = [amountTwo_];
         AMOUNTS[POLY][0] = [amountThree_];

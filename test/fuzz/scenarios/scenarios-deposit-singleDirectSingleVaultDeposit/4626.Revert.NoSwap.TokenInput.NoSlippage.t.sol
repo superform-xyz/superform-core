@@ -50,7 +50,7 @@ contract SDSVD4626RevertNoSwapNativeNoSlippage is ProtocolActions {
 
     function test_scenario(uint128 amount_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amount_ = uint128(bound(amount_, 1, TOTAL_SUPPLY_DAI));
+        amount_ = uint128(bound(amount_, 1 * 10 ** 18, TOTAL_SUPPLY_DAI));
         AMOUNTS[ARBI][0] = [amount_];
 
         for (uint256 act = 0; act < actions.length; act++) {

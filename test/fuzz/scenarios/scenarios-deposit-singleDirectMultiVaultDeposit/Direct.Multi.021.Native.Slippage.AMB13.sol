@@ -25,8 +25,6 @@ contract SDiMVDMulti021NoNativeSlippageAMB24 is ProtocolActions {
 
         TARGET_FORM_KINDS[ETH][0] = [0, 2, 1];
 
-        AMOUNTS[ETH][0] = [4124, 144, 75];
-
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[ETH][0] = [1, 1, 1];
@@ -50,7 +48,13 @@ contract SDiMVDMulti021NoNativeSlippageAMB24 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_, uint128 amountTwo_, uint128 amountThree_) public {
+        /// @dev amount = 1 after slippage will become 0, hence starting with 2
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 2 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
+        amountThree_ = uint128(bound(amountThree_, 2 * 10 ** 18, TOTAL_SUPPLY_ETH / 3));
+        AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];
+
         for (uint256 act; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
