@@ -1794,9 +1794,6 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[CHAIN_0]);
 
-        vm.selectFork(FORKS[args.toChainId]);
-
-        vm.selectFork(FORKS[CHAIN_0]);
         vars.superformRouter = contracts[CHAIN_0][bytes32(bytes("SuperformRouter"))];
         vars.stateRegistry = contracts[CHAIN_0][bytes32(bytes("SuperRegistry"))];
         vars.superPositions = IERC1155A(
@@ -2562,7 +2559,7 @@ abstract contract ProtocolActions is BaseSetup {
             v.partialWithdraw = (partialWithdrawVaults.length > i) && partialWithdrawVaults[i];
 
             if (!isWithdraw) {
-                assertApproxEqRel(v.currentBalanceOfSp, v.currentAmount, 0.99e18);
+                assertApproxEqRel(v.currentBalanceOfSp, v.currentAmount, 0.01e18);
             } else if (isWithdraw && v.partialWithdraw) {
                 /// if withdrawal is partial then the balance should be greater than zero
                 assertGt(v.currentBalanceOfSp, 0);
@@ -2608,7 +2605,7 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 currentBalanceOfSp = superPositions.balanceOf(users[user], superformId);
 
         if (!isWithdraw) {
-            assertApproxEqRel(currentBalanceOfSp, amountToAssert, 0.99e18);
+            assertApproxEqRel(currentBalanceOfSp, amountToAssert, 0.01e18);
         } else {
             assertEq(currentBalanceOfSp, amountToAssert);
         }
