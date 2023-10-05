@@ -6,6 +6,9 @@ import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { Error } from "./utils/Error.sol";
+import { DataLib } from "./libraries/DataLib.sol";
+
+import "forge-std/console.sol";
 
 /// @title StateSyncer
 /// @author Zeropoint Labs.
@@ -42,10 +45,6 @@ abstract contract StateSyncer is IStateSyncer {
         _;
     }
 
-    /// FIXME
-    modifier onlyMinterStateRegistry() {
-        _;
-    }
     /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -97,4 +96,36 @@ abstract contract StateSyncer is IStateSyncer {
 
     /// @inheritdoc IStateSyncer
     function stateSync(AMBMessage memory data_) external virtual override returns (uint64 srcChainId_);
+
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL/HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev helps validate the state registry id for minting superform id
+    function _validateStateSyncer(uint256 superformId_) internal {
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+        (, uint32 formBeaconId,) = DataLib.getSuperform(superformId_);
+
+        console.log(formBeaconId);
+        console.log(superformId_);
+        console.log(registryId);
+        if (uint32(registryId) != formBeaconId) {
+            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
+        }
+    }
+
+    /// @dev helps validate the state registry id for minting superform id
+    function _validateStateSyncer(uint256[] memory superformIds_) internal {
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+        for (uint256 i; i < superformIds_.length;) {
+            (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds_[i]);
+
+            if (uint32(registryId) != formBeaconId) {
+                revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
 }

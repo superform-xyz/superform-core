@@ -170,11 +170,11 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.srcSender, p.data)
                 );
             }
+
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
-                IStateSyncer(superRegistry.getStateSyncer(p.data.superformRouterId)).mintSingle(
-                    p.srcSender, p.data.superformId, p.data.amount
-                );
+                AMBMessage memory data = abi.decode(_constructSingleReturnData(p.srcSender, p.data), (AMBMessage));
+                IStateSyncer(superRegistry.getStateSyncer(p.data.superformRouterId)).stateSync(data);
             }
         }
 

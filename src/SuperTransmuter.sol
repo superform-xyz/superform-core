@@ -197,7 +197,6 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     function stateMultiSync(AMBMessage memory data_)
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {
         /// @dev here we decode the txInfo and params from the data brought back from destination
@@ -212,6 +211,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
         if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
+        _validateStateSyncer(returnData.superformIds);
 
         uint256 txInfo = txHistory[returnData.payloadId];
         address srcSender;
@@ -251,7 +251,6 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     function stateSync(AMBMessage memory data_)
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {
         /// @dev here we decode the txInfo and params from the data brought back from destination
@@ -266,6 +265,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
         if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
+        _validateStateSyncer(returnData.superformId);
 
         uint256 txInfo = txHistory[returnData.payloadId];
         uint256 txType;

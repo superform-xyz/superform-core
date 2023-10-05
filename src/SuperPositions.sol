@@ -9,6 +9,8 @@ import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { Error } from "./utils/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 
+import "forge-std/console.sol";
+
 /// @title SuperPositions
 /// @author Zeropoint Labs.
 contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
@@ -31,19 +33,18 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     /// @dev minters can be state registry with id 1 or router with id 1
     modifier onlyMinter() override {
         uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
-        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-        if (routerId != 1 && registryId != 1) {
+        if (routerId != 1) {
             revert Error.NOT_MINTER();
         }
         _;
     }
 
-    /// @dev only routers with id 1 & 2 can burn super positions
+    /// @dev only routers with id 1 can burn super positions
     modifier onlyBurner() override {
         uint8 id = superRegistry.getSuperformRouterId(msg.sender);
 
-        if (id != 1 && id != 2) {
+        if (id != 1) {
             revert Error.NOT_BURNER();
         }
         _;
@@ -126,7 +127,6 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     function stateMultiSync(AMBMessage memory data_)
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {
         /// @dev here we decode the txInfo and params from the data brought back from destination
@@ -141,6 +141,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
         if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
+        _validateStateSyncer(returnData.superformIds);
 
         uint256 txInfo = txHistory[returnData.payloadId];
         address srcSender;
@@ -173,7 +174,6 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     function stateSync(AMBMessage memory data_)
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {
         /// @dev here we decode the txInfo and params from the data brought back from destination
@@ -188,6 +188,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
         if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
+        _validateStateSyncer(returnData.superformId);
 
         uint256 txInfo = txHistory[returnData.payloadId];
         uint256 txType;
@@ -198,6 +199,8 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
 
         /// @dev verify this is a multi vault mint
         if (multi == 1) revert Error.INVALID_PAYLOAD();
+        console.log(returnDataSrcSender);
+        console.log(srcSender);
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
