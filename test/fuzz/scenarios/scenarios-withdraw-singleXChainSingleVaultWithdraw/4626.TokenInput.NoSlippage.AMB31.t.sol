@@ -77,7 +77,6 @@ contract SXSVWNormal4626NativeSlippageAMB24 is ProtocolActions {
     function test_scenario(uint128 amountOne_) public {
         amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, TOTAL_SUPPLY_DAI));
         AMOUNTS[AVAX][0] = [amountOne_];
-        AMOUNTS[AVAX][1] = [amountOne_];
 
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
