@@ -1,0 +1,110 @@
+Compiling 110 files with 0.8.19
+Solc 0.8.19 finished in 1.27s
+Error: 
+[31mCompiler run [31mfailed:[0m
+[1;31mError (9322)[0m[1;37m: No matching declaration found after argument-dependent lookup.[0m
+    [34m-->[0m test/utils/ProtocolActions.sol:3065:13:
+[34m     |[0m
+[34m3065 |[0m             [33massertEq[0m(getContract(CHAIN_0, "LiFiMock"), liqValue);
+[34m     |[0m             [1;33m^^^^^^^^[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:28:5:
+[34m   |[0m
+[34m28 |[0m     [33mfunction assertEq(bool a, bool b) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:37:5:
+[34m   |[0m
+[34m37 |[0m     [33mfunction assertEq(bool a, bool b, string memory err) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:44:5:
+[34m   |[0m
+[34m44 |[0m     [33mfunction assertEq(bytes memory a, bytes memory b) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:48:5:
+[34m   |[0m
+[34m48 |[0m     [33mfunction assertEq(bytes memory a, bytes memory b, string memory err) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:52:5:
+[34m   |[0m
+[34m52 |[0m     [33mfunction assertEq(uint256[] memory a, uint256[] memory b) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:61:5:
+[34m   |[0m
+[34m61 |[0m     [33mfunction assertEq(int256[] memory a, int256[] memory b) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:70:5:
+[34m   |[0m
+[34m70 |[0m     [33mfunction assertEq(address[] memory a, address[] memory b) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:79:5:
+[34m   |[0m
+[34m79 |[0m     [33mfunction assertEq(uint256[] memory a, uint256[] memory b, string memory err) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:86:5:
+[34m   |[0m
+[34m86 |[0m     [33mfunction assertEq(int256[] memory a, int256[] memory b, string memory err) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+  [34m-->[0m lib/forge-std/src/StdAssertions.sol:93:5:
+[34m   |[0m
+[34m93 |[0m     [33mfunction assertEq(address[] memory a, address[] memory b, string memory err) internal virtual {[0m
+[34m   |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:107:5:
+[34m    |[0m
+[34m107 |[0m     [33mfunction assertEq(address a, address b) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:115:5:
+[34m    |[0m
+[34m115 |[0m     [33mfunction assertEq(address a, address b, string memory err) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:122:5:
+[34m    |[0m
+[34m122 |[0m     [33mfunction assertEq(bytes32 a, bytes32 b) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:130:5:
+[34m    |[0m
+[34m130 |[0m     [33mfunction assertEq(bytes32 a, bytes32 b, string memory err) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:143:5:
+[34m    |[0m
+[34m143 |[0m     [33mfunction assertEq(int a, int b) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:151:5:
+[34m    |[0m
+[34m151 |[0m     [33mfunction assertEq(int a, int b, string memory err) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:157:5:
+[34m    |[0m
+[34m157 |[0m     [33mfunction assertEq(uint a, uint b) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:165:5:
+[34m    |[0m
+[34m165 |[0m     [33mfunction assertEq(uint a, uint b, string memory err) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:521:5:
+[34m    |[0m
+[34m521 |[0m     [33mfunction assertEq(string memory a, string memory b) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[1;36mNote[0m[1;37m: Candidate:[0m
+   [34m-->[0m lib/ds-test/src/test.sol:529:5:
+[34m    |[0m
+[34m529 |[0m     [33mfunction assertEq(string memory a, string memory b, string memory err) internal {[0m
+[34m    |[0m     [1;33m^ (Relevant source part starts here and spans across multiple lines).[0m
+[0m
