@@ -415,7 +415,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
-            1e18,
+            SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId),
             100,
             false,
             LiqRequest(1, _buildMaliciousTxData(1, DAI, formBeacon, ETH, 2e18, deployer), DAI, ETH, 0),
@@ -484,6 +484,8 @@ contract SuperformERC4626FormTest is ProtocolActions {
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
         (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
+        uint256 amount = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId);
+
         MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
         vm.stopPrank();
 
@@ -494,7 +496,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             1,
             1,
             superformId,
-            1e18,
+            amount,
             100,
             false,
             LiqRequest(
@@ -512,7 +514,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
         IBaseForm(superform).xChainWithdrawFromVault(data, deployer, ARBI);
     }
 
-    function test_superformDirectWithtrawWithInvalidLiqDataToken() public {
+    function test_superformDirectWithdrawWithInvalidLiqDataToken() public {
         /// @dev prank deposits (just mint super-shares)
         _successfulDeposit();
 
@@ -528,7 +530,14 @@ contract SuperformERC4626FormTest is ProtocolActions {
         MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
 
         SingleVaultSFData memory data = SingleVaultSFData(
-            superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0), "", refundAddress, ""
+            superformId,
+            SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId),
+            100,
+            false,
+            LiqRequest(1, "", getContract(ETH, "WETH"), ETH, 0),
+            "",
+            refundAddress,
+            ""
         );
 
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);

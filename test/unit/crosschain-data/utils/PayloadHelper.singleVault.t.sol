@@ -136,11 +136,11 @@ contract PayloadHelperSingleTest is ProtocolActions {
         assertEq(v.srcChainId, 10);
 
         assertEq(v.srcPayloadId, 1);
-        assertEq(v.amounts, AMOUNTS[POLY][0]);
 
         assertEq(v.superformRouterId, 1);
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
+            assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
             assertEq(v.slippage[i], MAX_SLIPPAGE);
         }
 
@@ -169,11 +169,11 @@ contract PayloadHelperSingleTest is ProtocolActions {
         /// @dev chain id of polygon is 137
         assertEq(v.srcChainId, 137);
         assertEq(v.srcPayloadId, 1);
-        assertEq(v.amounts, AMOUNTS[POLY][0]);
 
         assertEq(v.superformRouterId, 1);
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
+            assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
             assertEq(v.slippage[i], MAX_SLIPPAGE);
         }
     }

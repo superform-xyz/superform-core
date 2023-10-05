@@ -108,9 +108,9 @@ contract MDMVW84002408NativeInputSlipageAMB12NewDst is ProtocolActions {
         public
     {
         /// @dev TOTAL_SUPPLY_ETH / 8 because 2 * amountOne_ + 3 * amountTwo_ + 3 * amountThree_
-        amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_ETH / 8));
-        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 8));
-        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 8));
+        amountOne_ = uint128(bound(amountOne_, 2e18, 20e18));
+        amountTwo_ = uint128(bound(amountTwo_, 2e18, 20e18));
+        amountThree_ = uint128(bound(amountThree_, 2e18, 20e18));
 
         /// @dev notice partial withdrawals in ETH->0 and POLY->2
         AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];

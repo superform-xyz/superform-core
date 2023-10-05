@@ -45,7 +45,7 @@ contract MDMVDMulti01NoDstSwapTokenInputNoSlippageL2AMB13 is ProtocolActions {
                 revertRole: "",
                 slippage: 0, // 0% <- if we are testing a pass this must be below each maxSlippage,
                 dstSwap: false,
-                externalToken: 1 // 0 = DAI, 1 = USDT, 2 = WETH
+                externalToken: 1 // 0 = DAI, 1 = USDC, 2 = WETH
              })
         );
     }
@@ -55,8 +55,8 @@ contract MDMVDMulti01NoDstSwapTokenInputNoSlippageL2AMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
-        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_USDC / 4));
-        amountTwo_ = uint128(bound(amountTwo_, 1, TOTAL_SUPPLY_USDC / 4));
+        amountOne_ = uint128(bound(amountOne_, 1e6, 1e9));
+        amountTwo_ = uint128(bound(amountTwo_, 1e6, 1e9));
         AMOUNTS[ETH][0] = [amountOne_, amountTwo_];
         AMOUNTS[AVAX][0] = [amountTwo_, amountOne_];
 

@@ -560,8 +560,8 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superformIds[1] = superformId2;
 
         uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 1e18;
-        amounts[1] = 1e18;
+        amounts[0] = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId1);
+        amounts[1] = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId2);
 
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 1000;
@@ -640,8 +640,10 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superformIds[1] = superformId2;
 
         uint256[] memory amounts = new uint256[](2);
-        amounts[0] = 1e18;
-        amounts[1] = 1e18;
+        amounts[0] = MockERC20(SuperTransmuter(getContract(ETH, "SuperTransmuter")).synthethicTokenId(superformId1))
+            .balanceOf(deployer);
+        amounts[1] = MockERC20(SuperTransmuter(getContract(ETH, "SuperTransmuter")).synthethicTokenId(superformId2))
+            .balanceOf(deployer);
 
         uint256[] memory maxSlippages = new uint256[](2);
         maxSlippages[0] = 1000;
@@ -677,7 +679,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
 
-        uint256 amount = 1e18;
+        uint256 amount = SuperPositions(getContract(ETH, "SuperPositions")).balanceOf(deployer, superformId);
 
         uint256 maxSlippage = 1000;
         LiqRequest memory liqReq = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);

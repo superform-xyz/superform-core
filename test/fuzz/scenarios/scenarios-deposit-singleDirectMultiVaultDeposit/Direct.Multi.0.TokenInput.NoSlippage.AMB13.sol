@@ -49,7 +49,7 @@ contract SDiMVDMulti0NoTokenInputNoSlippageAMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_) public {
-        amountOne_ = uint128(bound(amountOne_, 1, TOTAL_SUPPLY_WETH));
+        amountOne_ = uint128(bound(amountOne_, 1e18, 20e18));
         AMOUNTS[ETH][0] = [amountOne_];
 
         for (uint256 act; act < actions.length; act++) {

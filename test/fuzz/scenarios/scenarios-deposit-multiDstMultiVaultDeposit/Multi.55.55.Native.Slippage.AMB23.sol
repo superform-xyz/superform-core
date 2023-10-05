@@ -55,8 +55,8 @@ contract MDMVDMulti0026NativeNoSlippageAMB23 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
-        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_USDC / 4));
-        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_USDC / 4));
+        amountOne_ = uint128(bound(amountOne_, 11 * 10 ** 6, TOTAL_SUPPLY_USDC / 4));
+        amountTwo_ = uint128(bound(amountTwo_, 11 * 10 ** 6, TOTAL_SUPPLY_USDC / 4));
         AMOUNTS[POLY][0] = [amountOne_, amountTwo_];
         AMOUNTS[ETH][0] = [amountTwo_, amountOne_];
 

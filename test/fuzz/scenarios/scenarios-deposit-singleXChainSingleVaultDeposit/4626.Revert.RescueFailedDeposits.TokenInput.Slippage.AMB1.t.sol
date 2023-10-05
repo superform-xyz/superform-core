@@ -67,7 +67,7 @@ contract SXSVDNormal4626RevertRescueFailedDepositsNoTokenInputSlippageAMB1 is Pr
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_) public {
-        amountOne_ = uint128(bound(amountOne_, 11, TOTAL_SUPPLY_WETH));
+        amountOne_ = uint128(bound(amountOne_, 11 * 10 ** 18, TOTAL_SUPPLY_WETH));
         AMOUNTS[POLY][0] = [amountOne_];
 
         /// @dev specifying the amount that was deposited earlier, as the amount to be rescued
