@@ -913,11 +913,6 @@ abstract contract BaseSetup is DSTest, Test {
         tokenPriceFeeds[ETH][getContract(ETH, "WETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         tokenPriceFeeds[ETH][getContract(ETH, "USDT")] = 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
         tokenPriceFeeds[ETH][NATIVE_TOKEN] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        console.log("ETH_chain", ETH);
-        console.log("NATIVE_TOKEN", NATIVE_TOKEN);
-        console.log("USDT", getContract(ETH, "USDT"));
-        console.log("tokenPriceFeeds[ETH][NATIVE_TOKEN]", tokenPriceFeeds[ETH][NATIVE_TOKEN]);
-        console.log("tokenPriceFeeds[ETH][getContract(ETH, USDT)]", tokenPriceFeeds[ETH][getContract(ETH, "USDT")]);
 
         /// BSC
         tokenPriceFeeds[BSC][getContract(BSC, "DAI")] = 0x132d3C0B1D2cEa0BC552588063bdBb210FDeecfA;
