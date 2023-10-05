@@ -8,7 +8,6 @@ import { ISuperPositions } from "./interfaces/ISuperPositions.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { Error } from "./utils/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
-import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 
 /// @title SuperPositions
 /// @author Zeropoint Labs.
@@ -29,23 +28,22 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev minters can be state registry with id 1 or router with id 1
     modifier onlyMinter() override {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("SUPERPOSITIONS_MINTER_ROLE"), msg.sender
-            )
-        ) {
+        uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+
+        if (routerId != 1 && registryId != 1) {
             revert Error.NOT_MINTER();
         }
         _;
     }
 
+    /// @dev only routers with id 1 & 2 can burn super positions
     modifier onlyBurner() override {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("SUPERPOSITIONS_BURNER_ROLE"), msg.sender
-            )
-        ) {
+        uint8 id = superRegistry.getSuperformRouterId(msg.sender);
+
+        if (id != 1 && id != 2) {
             revert Error.NOT_BURNER();
         }
         _;
