@@ -24,7 +24,7 @@ contract LiFiMock is Test {
         payable
     {
         if (!bridgeData.hasSourceSwaps) {
-            _bridge(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false);
+            _bridge(BridgeArgs(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false));
         } else {
             uint256 amount = _swap(
                 swapData[0].fromAmount,
@@ -34,7 +34,7 @@ contract LiFiMock is Test {
                 address(this)
             );
 
-            _bridge(amount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, true);
+            _bridge(BridgeArgs(amount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, true));
         }
     }
 
@@ -72,12 +72,16 @@ contract LiFiMock is Test {
         uint256 USDPerUnderlyingTokenDst;
     }
 
-    function _bridge(
-        uint256 amount_,
-        address receiver_,
-        address inputToken_,
-        bytes memory data_,
+    struct BridgeArgs {
+        uint256 amount,
+        address receiver,
+        address inputToken,
+        bytes memory data,
         bool prevSwap
+    }
+
+    function _bridge(
+        BridgeArgs memory args
     )
         internal
     {
@@ -93,15 +97,15 @@ contract LiFiMock is Test {
             v.isDirect,
             v.USDPerExternalToken,
             v.USDPerUnderlyingTokenDst
-        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256));
+        ) = abi.decode(args.data, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256));
 
         // v.decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
-        if (inputToken_ != NATIVE) {
-            if (!prevSwap) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
+        if (args.inputToken != NATIVE) {
+            if (!args.prevSwap) MockERC20(args.inputToken).transferFrom(v.from, address(this), args.amount);
             /// @dev not all tokens allow burn / transfer to zero address
-            try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
+            try MockERC20(args.inputToken).burn(address(this), args.amount) { } catch { }
         } else {
-            require(msg.value == amount_);
+            require(msg.value == args.amount);
         }
 
         v.prevForkId = vm.activeFork();
@@ -113,12 +117,12 @@ contract LiFiMock is Test {
         else if (v.isMultiTx) v.slippage = (v.slippage * int256(v.multiTxSlippageShare)) / 100;
         else v.slippage = (v.slippage * int256(100 - v.multiTxSlippageShare)) / 100;
 
-        v.amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
+        v.amountOut = (args.amount * uint256(10_000 - v.slippage)) / 10_000;
 
         _sendOutputTokenToReceiver(
-            inputToken_,
+            args.inputToken,
             v.outputToken,
-            receiver_,
+            args.receiver,
             v.amountOut,
             v.prevForkId,
             v.toForkId,
