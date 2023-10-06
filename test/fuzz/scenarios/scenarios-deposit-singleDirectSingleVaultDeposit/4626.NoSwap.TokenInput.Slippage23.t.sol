@@ -24,7 +24,7 @@ contract SDSVD4626NoSwapNativeSlippage14 is ProtocolActions {
 
         TARGET_FORM_KINDS[AVAX][0] = [0];
 
-        AMOUNTS[AVAX][0] = [2];
+        AMOUNTS[AVAX][0] = [2 * 10e18];
 
         MAX_SLIPPAGE = 1000;
 

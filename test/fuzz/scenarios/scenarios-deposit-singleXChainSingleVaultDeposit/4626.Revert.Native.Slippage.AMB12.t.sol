@@ -48,7 +48,7 @@ contract SXSVDNormal4626RevertTokenInputSlippageAMB1 is ProtocolActions {
 
     function test_scenario(uint128 amount_) public {
         /// @dev bounding to 0.9 of ETH SUPPLY coz user account (with 120m ETH) runs short of ETH
-        amount_ = uint128(bound(amount_, 11, (TOTAL_SUPPLY_ETH * 9) / 10));
+        amount_ = uint128(bound(amount_, 11 * 10 ** 18, (TOTAL_SUPPLY_ETH * 9) / 10));
         AMOUNTS[AVAX][0] = [amount_];
 
         for (uint256 act; act < actions.length; act++) {

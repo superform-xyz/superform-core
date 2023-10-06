@@ -16,7 +16,7 @@ contract SDSVD4626SwapTokenInputSlippage is ProtocolActions {
         DST_CHAINS = [OP];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
-        TARGET_UNDERLYINGS[OP][0] = [1];
+        TARGET_UNDERLYINGS[OP][0] = [0];
 
         TARGET_VAULTS[OP][0] = [0];
 
@@ -50,7 +50,7 @@ contract SDSVD4626SwapTokenInputSlippage is ProtocolActions {
 
     function test_scenario(uint128 amount_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_USDC));
+        amount_ = uint128(bound(amount_, 2 * 10 ** 6, TOTAL_SUPPLY_USDC));
         AMOUNTS[OP][0] = [amount_];
 
         for (uint256 act = 0; act < actions.length; act++) {

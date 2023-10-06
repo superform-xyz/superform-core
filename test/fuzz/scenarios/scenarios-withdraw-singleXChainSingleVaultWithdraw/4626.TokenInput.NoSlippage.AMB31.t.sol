@@ -33,9 +33,6 @@ contract SXSVWNormal4626NativeSlippageAMB24 is ProtocolActions {
 
         TARGET_FORM_KINDS[AVAX][1] = [0];
 
-        AMOUNTS[AVAX][0] = [541_135];
-        AMOUNTS[AVAX][1] = [541_135];
-
         MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[AVAX][0] = [1];
@@ -77,7 +74,10 @@ contract SXSVWNormal4626NativeSlippageAMB24 is ProtocolActions {
                         SCENARIO TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function test_scenario() public {
+    function test_scenario(uint128 amountOne_) public {
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, TOTAL_SUPPLY_DAI));
+        AMOUNTS[AVAX][0] = [amountOne_];
+
         for (uint256 act = 0; act < actions.length; act++) {
             TestAction memory action = actions[act];
             MultiVaultSFData[] memory multiSuperformsData;
@@ -85,6 +85,20 @@ contract SXSVWNormal4626NativeSlippageAMB24 is ProtocolActions {
             MessagingAssertVars[] memory aV;
             StagesLocalVars memory vars;
             bool success;
+
+            if (act == 1) {
+                for (uint256 i = 0; i < DST_CHAINS.length; i++) {
+                    uint256[] memory superPositions = _getSuperpositionsForDstChain(
+                        actions[1].user,
+                        TARGET_UNDERLYINGS[DST_CHAINS[i]][1],
+                        TARGET_VAULTS[DST_CHAINS[i]][1],
+                        TARGET_FORM_KINDS[DST_CHAINS[i]][1],
+                        DST_CHAINS[i]
+                    );
+
+                    AMOUNTS[DST_CHAINS[i]][1] = [superPositions[0]];
+                }
+            }
 
             _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
         }

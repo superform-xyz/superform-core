@@ -29,9 +29,9 @@ contract MDSVD4626RevertTimelockedNoTokenInputNoSlippageAMB24 is ProtocolActions
         TARGET_FORM_KINDS[ARBI][0] = [1];
         TARGET_FORM_KINDS[POLY][0] = [1];
 
-        AMOUNTS[ETH][0] = [421];
-        AMOUNTS[ARBI][0] = [666];
-        AMOUNTS[POLY][0] = [22];
+        AMOUNTS[ETH][0] = [421 * 10e18];
+        AMOUNTS[ARBI][0] = [666 * 10e18];
+        AMOUNTS[POLY][0] = [22 * 10e18];
 
         MAX_SLIPPAGE = 1000;
 

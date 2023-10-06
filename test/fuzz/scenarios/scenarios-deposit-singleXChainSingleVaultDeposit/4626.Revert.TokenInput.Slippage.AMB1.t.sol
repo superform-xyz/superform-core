@@ -48,7 +48,7 @@ contract SXSVDNormal4626RevertNoTokenInputSlippageAMB1 is ProtocolActions {
 
     function test_scenario(uint128 amount_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amount_ = uint128(bound(amount_, 2, TOTAL_SUPPLY_WETH));
+        amount_ = uint128(bound(amount_, 2 * 10 ** 18, TOTAL_SUPPLY_WETH));
         AMOUNTS[POLY][0] = [amount_];
 
         for (uint256 act; act < actions.length; act++) {

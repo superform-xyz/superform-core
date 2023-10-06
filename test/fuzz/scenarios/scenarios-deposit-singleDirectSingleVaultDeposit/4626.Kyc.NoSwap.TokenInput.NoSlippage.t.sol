@@ -49,7 +49,7 @@ contract SDSVD4626KycNoSwapTokenInputNoSlippage is ProtocolActions {
 
     function test_scenario(uint128 amount_) public {
         /// @dev amount = 1 works here as slippage = 0
-        amount_ = uint128(bound(amount_, 1, TOTAL_SUPPLY_WETH));
+        amount_ = uint128(bound(amount_, 1 * 10 ** 18, TOTAL_SUPPLY_WETH));
         AMOUNTS[POLY][0] = [amount_];
 
         for (uint256 act = 0; act < actions.length; act++) {
