@@ -1415,6 +1415,7 @@ abstract contract ProtocolActions is BaseSetup {
         int256 slippage;
         uint256 USDPerExternalToken;
         uint256 USDPerUnderlyingTokenDst;
+        uint256 USDPerUnderlyingToken;
     }
 
     function _buildLiqBridgeTxData(
@@ -1450,6 +1451,7 @@ abstract contract ProtocolActions is BaseSetup {
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.srcChainId == args.toChainId,
                         args.USDPerExternalToken,
+                        args.USDPerUnderlyingToken,
                         args.USDPerUnderlyingTokenDst
                     ),
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
@@ -1532,6 +1534,7 @@ abstract contract ProtocolActions is BaseSetup {
                         MULTI_TX_SLIPPAGE_SHARE,
                         args.srcChainId == args.toChainId,
                         args.USDPerExternalToken,
+                        args.USDPerUnderlyingToken,
                         args.USDPerUnderlyingTokenDst
                     ),
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
@@ -1679,6 +1682,7 @@ abstract contract ProtocolActions is BaseSetup {
         bytes permit2Calldata;
         uint256 decimal1;
         uint256 decimal2;
+        uint256 amountTemp;
         uint256 amount;
         LiqRequest liqReq;
     }
@@ -1705,6 +1709,8 @@ abstract contract ProtocolActions is BaseSetup {
         v.decimal1 = args.externalToken != NATIVE_TOKEN ? MockERC20(args.externalToken).decimals() : 18;
         (, int256 USDPerExternalToken,,,) =
             AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.externalToken]).latestRoundData();
+        (, int256 USDPerUnderlyingToken,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.underlyingToken]).latestRoundData();
 
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is superform (which is inscribed in toDst in the beginning of stage 1)
@@ -1727,7 +1733,8 @@ abstract contract ProtocolActions is BaseSetup {
             false,
             args.slippage,
             uint256(USDPerExternalToken),
-            uint256(USDPerUnderlyingTokenDst)
+            uint256(USDPerUnderlyingTokenDst),
+            uint256(USDPerUnderlyingToken)
         );
 
         v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.srcChainId == args.toChainId);
@@ -1779,6 +1786,18 @@ abstract contract ProtocolActions is BaseSetup {
             v.amount = (args.amount * uint256(USDPerExternalToken) * 10 ** (v.decimal2 - v.decimal1))
                 / uint256(USDPerUnderlyingTokenDst);
         }
+
+        // if (v.decimal1 > v.decimal2) {
+        //     v.amountTemp = (args.amount * uint256(USDPerExternalToken))
+        //         / (uint256(USDPerUnderlyingToken) * 10 ** (v.decimal1 - v.decimal2));
+        //     v.amount = (v.amountTemp * uint256(USDPerUnderlyingToken))
+        //         / (uint256(USDPerUnderlyingTokenDst) * 10 ** (v.decimal1 - v.decimal2));
+        // } else {
+        //     v.amountTemp = (args.amount * uint256(USDPerExternalToken) * 10 ** (v.decimal2 - v.decimal1))
+        //         / uint256(USDPerUnderlyingToken);
+        //     v.amount = (v.amountTemp * uint256(USDPerUnderlyingToken) * 10 ** (v.decimal2 - v.decimal1))
+        //         / uint256(USDPerUnderlyingTokenDst);
+        // }
 
         // if (v.decimal1 > v.decimal2) {
         //     v.amount = args.amount / 10 ** (v.decimal1 - v.decimal2);
@@ -1858,8 +1877,9 @@ abstract contract ProtocolActions is BaseSetup {
             true,
             /// @dev putting a placeholder value for now (not really used)
             args.slippage,
-            0,
-            0
+            1,
+            1,
+            1
         );
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);

@@ -35,8 +35,9 @@ contract TimelockStateRegistryTest is ProtocolActions {
             false,
             /// @dev placeholder value, not used
             0,
-            0,
-            0
+            1,
+            1,
+            1
         );
 
         vm.prank(getContract(ETH, "ERC4626TimelockForm"));
@@ -109,8 +110,9 @@ contract TimelockStateRegistryTest is ProtocolActions {
             false,
             /// @dev currently testing with 0 bridge slippage
             0,
-            0,
-            0
+            1,
+            1,
+            1
         );
 
         bytes memory txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, true);

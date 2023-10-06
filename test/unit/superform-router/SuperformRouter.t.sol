@@ -810,6 +810,7 @@ contract SuperformRouterTest is ProtocolActions {
             /// @dev placeholder value, not used
             0,
             1,
+            1,
             1
         );
 
@@ -832,6 +833,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             /// @dev placeholder value, not used
             0,
+            1,
             1,
             1
         );
@@ -999,6 +1001,7 @@ contract SuperformRouterTest is ProtocolActions {
             /// @dev placeholder value, not used
             0,
             1,
+            1,
             1
         );
 
@@ -1021,6 +1024,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             /// @dev placeholder value, not used
             0,
+            1,
             1,
             1
         );
@@ -1101,6 +1105,7 @@ contract SuperformRouterTest is ProtocolActions {
             /// @dev placeholder value, not used
             0,
             1,
+            1,
             1
         );
 
@@ -1124,6 +1129,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             /// @dev placeholder value, not used
             0,
+            1,
             1,
             1
         );
@@ -1209,6 +1215,7 @@ contract SuperformRouterTest is ProtocolActions {
             /// @dev placeholder value, not used
             0,
             1,
+            1,
             1
         );
 
@@ -1232,6 +1239,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             /// @dev placeholder value, not used
             0,
+            1,
             1,
             1
         );
@@ -1304,6 +1312,7 @@ contract SuperformRouterTest is ProtocolActions {
             /// @dev placeholder value, not used
             0,
             1,
+            1,
             1
         );
 
@@ -1327,6 +1336,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             /// @dev placeholder value, not used
             0,
+            1,
             1,
             1
         );
@@ -1512,6 +1522,7 @@ contract SuperformRouterTest is ProtocolActions {
             /// @dev placeholder value, not used
             0,
             1,
+            1,
             1
         );
 
@@ -1534,6 +1545,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             /// @dev placeholder value, not used
             0,
+            1,
             1,
             1
         );

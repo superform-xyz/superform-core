@@ -1075,6 +1075,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     false,
                     0,
                     1,
+                    1,
                     1
                 ),
                 false
@@ -1101,6 +1102,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     1e18,
                     false,
                     0,
+                    1,
                     1,
                     1
                 ),
@@ -1209,6 +1211,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     false,
                     0,
                     1,
+                    1,
                     1
                 ),
                 true
@@ -1235,6 +1238,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     1e18,
                     false,
                     0,
+                    1,
                     1,
                     1
                 ),
@@ -1295,6 +1299,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     1e18,
                     false,
                     0,
+                    1,
                     1,
                     1
                 ),

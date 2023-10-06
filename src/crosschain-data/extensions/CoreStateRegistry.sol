@@ -848,7 +848,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
 
         console.log("underlying.balanceOf(address(this))", underlying.balanceOf(address(this)));
-        console.log("multiVaultData.amounts[i]", singleVaultData.amount);
+        console.log("singleVaultData.amount", singleVaultData.amount);
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.safeIncreaseAllowance(superform_, singleVaultData.amount);
 

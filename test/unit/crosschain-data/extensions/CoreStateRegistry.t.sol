@@ -220,8 +220,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             true,
             /// @dev currently testing with 0 bridge slippage
             0,
-            0,
-            0
+            1,
+            1,
+            1
         );
 
         txData[0] = _buildLiqBridgeTxData(liqBridgeTxDataArgs, false);
@@ -299,9 +300,10 @@ contract CoreStateRegistryTest is ProtocolActions {
             1e18,
             false,
             /// @dev placeholder value, not used
-            0,
-            0,
-            0
+            1,
+            1,
+            1,
+            1
         );
 
         SingleVaultSFData memory data = SingleVaultSFData(
@@ -418,8 +420,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             /// @dev placeholder value, not used
             0,
-            0,
-            0
+            1,
+            1,
+            1
         );
 
         liqReqArr[0] =
@@ -486,8 +489,9 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             /// @dev placeholder value, not used
             0,
-            0,
-            0
+            1,
+            1,
+            1
         );
 
         liqReqArr[0] =
