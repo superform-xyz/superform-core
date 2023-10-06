@@ -34,6 +34,8 @@ contract TimelockStateRegistryTest is ProtocolActions {
             420,
             false,
             /// @dev placeholder value, not used
+            0,
+            0,
             0
         );
 
@@ -106,6 +108,8 @@ contract TimelockStateRegistryTest is ProtocolActions {
             377,
             false,
             /// @dev currently testing with 0 bridge slippage
+            0,
+            0,
             0
         );
 

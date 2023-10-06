@@ -65,8 +65,11 @@ contract LiFiMock is Test {
         int256 slippage;
         bool isMultiTx;
         uint256 multiTxSlippageShare;
-        uint256 amount;
         bool isDirect;
+        uint256 prevForkId;
+        uint256 amountOut;
+        uint256 USDPerExternalToken;
+        uint256 USDPerUnderlyingTokenDst;
     }
 
     function _bridge(
@@ -80,10 +83,19 @@ contract LiFiMock is Test {
     {
         BridgeLocalVars memory v;
         /// @dev encapsulating from
-        (v.from, v.toForkId, v.outputToken, v.slippage, v.isMultiTx, v.multiTxSlippageShare, v.isDirect) =
-            abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool));
+        (
+            v.from,
+            v.toForkId,
+            v.outputToken,
+            v.slippage,
+            v.isMultiTx,
+            v.multiTxSlippageShare,
+            v.isDirect,
+            v.USDPerExternalToken,
+            v.USDPerUnderlyingTokenDst
+        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256));
 
-        uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
+        // v.decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         if (inputToken_ != NATIVE) {
             if (!prevSwap) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
             /// @dev not all tokens allow burn / transfer to zero address
@@ -92,34 +104,67 @@ contract LiFiMock is Test {
             require(msg.value == amount_);
         }
 
-        uint256 prevForkId = vm.activeFork();
+        v.prevForkId = vm.activeFork();
         vm.selectFork(v.toForkId);
 
-        uint256 decimal2 = v.outputToken == NATIVE ? 18 : MockERC20(v.outputToken).decimals();
-        uint256 amountOut;
+        // v.decimal2 = v.outputToken == NATIVE ? 18 : MockERC20(v.outputToken).decimals();
 
         if (v.isDirect) v.slippage = 0;
         else if (v.isMultiTx) v.slippage = (v.slippage * int256(v.multiTxSlippageShare)) / 100;
         else v.slippage = (v.slippage * int256(100 - v.multiTxSlippageShare)) / 100;
 
-        amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
+        v.amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
 
-        /// input token decimals are greater than output
+        _sendOutputTokenToReceiver(
+            inputToken_,
+            v.outputToken,
+            receiver_,
+            v.amountOut,
+            v.prevForkId,
+            v.toForkId,
+            v.USDPerExternalToken,
+            v.USDPerUnderlyingTokenDst
+        );
+
+        vm.selectFork(v.prevForkId);
+    }
+
+    function _sendOutputTokenToReceiver(
+        address inputToken_,
+        address outputToken_,
+        address receiver_,
+        uint256 amountOut_,
+        uint256 prevForkId_,
+        uint256 toForkId_,
+        uint256 USDPerExternalToken_,
+        uint256 USDPerUnderlyingTokenDst_
+    )
+        internal
+    {
+        uint256 decimal1;
+        uint256 decimal2;
+        uint256 finalAmount;
+
+        vm.selectFork(prevForkId_);
+        decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
+        vm.selectFork(toForkId_);
+        decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
+
         if (decimal1 > decimal2) {
-            v.amount = amountOut / 10 ** (decimal1 - decimal2);
+            finalAmount =
+                (amountOut_ * USDPerExternalToken_) / (10 ** (decimal1 - decimal2) * USDPerUnderlyingTokenDst_);
         } else {
-            v.amount = amountOut * 10 ** (decimal2 - decimal1);
+            finalAmount = (amountOut_ * USDPerExternalToken_) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingTokenDst_;
         }
 
-        if (v.outputToken != NATIVE) {
-            deal(v.outputToken, receiver_, MockERC20(v.outputToken).balanceOf(receiver_) + v.amount);
+        if (outputToken_ != NATIVE) {
+            deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + finalAmount);
         } else {
-            if (prevForkId != v.toForkId) vm.deal(address(this), v.amount);
+            if (prevForkId_ != toForkId_) vm.deal(address(this), finalAmount);
 
-            (bool success,) = payable(receiver_).call{ value: v.amount }("");
+            (bool success,) = payable(receiver_).call{ value: finalAmount }("");
             require(success);
         }
-        vm.selectFork(prevForkId);
     }
 
     function _swap(
@@ -132,8 +177,12 @@ contract LiFiMock is Test {
         internal
         returns (uint256)
     {
+        address from;
+        uint256 USDPerExternalToken;
+        uint256 USDPerUnderlyingTokenDst;
         /// @dev encapsulating from
-        address from = abi.decode(data_, (address));
+        (from,,,,,,, USDPerExternalToken, USDPerUnderlyingTokenDst) =
+            abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256));
         if (inputToken_ != NATIVE) {
             MockERC20(inputToken_).transferFrom(from, address(this), amount_);
             /// @dev not all tokens allow burn / transfer to zero address
@@ -145,9 +194,9 @@ contract LiFiMock is Test {
 
         /// input token decimals are greater than output
         if (decimal1 > decimal2) {
-            amount_ = amount_ / 10 ** (decimal1 - decimal2);
+            amount_ = (amount_ * USDPerExternalToken) / (USDPerUnderlyingTokenDst * 10 ** (decimal1 - decimal2));
         } else {
-            amount_ = amount_ * 10 ** (decimal2 - decimal1);
+            amount_ = (amount_ * USDPerExternalToken) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingTokenDst;
         }
         /// @dev assume no swap slippage
         deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);

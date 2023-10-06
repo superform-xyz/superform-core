@@ -17,6 +17,7 @@ import { IERC4626Form } from "../../forms/interfaces/IERC4626Form.sol";
 import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
+import "forge-std/console.sol";
 
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
@@ -726,6 +727,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         for (uint256 i; i < numberOfVaults;) {
             underlying = IERC20(IBaseForm(superforms[i]).getVaultAsset());
 
+            console.log("underlying.balanceOf(address(this)) multi", underlying.balanceOf(address(this)));
+            console.log("multiVaultData.amounts[i] multi", multiVaultData.amounts[i]);
             if (underlying.balanceOf(address(this)) >= multiVaultData.amounts[i]) {
                 underlying.safeIncreaseAllowance(superforms[i], multiVaultData.amounts[i]);
                 LiqRequest memory emptyRequest;
@@ -844,6 +847,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
 
+        console.log("underlying.balanceOf(address(this))", underlying.balanceOf(address(this)));
+        console.log("multiVaultData.amounts[i]", singleVaultData.amount);
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
             underlying.safeIncreaseAllowance(superform_, singleVaultData.amount);
 

@@ -162,7 +162,9 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             uint256(ETH),
             2e18,
             false,
-            0
+            0,
+            1,
+            1
         );
 
         InitSingleVaultData memory data = InitSingleVaultData(

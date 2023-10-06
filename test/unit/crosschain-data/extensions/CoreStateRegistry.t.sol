@@ -219,6 +219,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             ((actualWithdrawAmount * 9) / 10) - 1,
             true,
             /// @dev currently testing with 0 bridge slippage
+            0,
+            0,
             0
         );
 
@@ -297,6 +299,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             1e18,
             false,
             /// @dev placeholder value, not used
+            0,
+            0,
             0
         );
 
@@ -413,6 +417,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             420,
             false,
             /// @dev placeholder value, not used
+            0,
+            0,
             0
         );
 
@@ -479,6 +485,8 @@ contract CoreStateRegistryTest is ProtocolActions {
             420,
             false,
             /// @dev placeholder value, not used
+            0,
+            0,
             0
         );
 

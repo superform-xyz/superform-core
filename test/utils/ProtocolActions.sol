@@ -1413,6 +1413,8 @@ abstract contract ProtocolActions is BaseSetup {
         uint256 amount;
         bool withdraw;
         int256 slippage;
+        uint256 USDPerExternalToken;
+        uint256 USDPerUnderlyingTokenDst;
     }
 
     function _buildLiqBridgeTxData(
@@ -1446,7 +1448,9 @@ abstract contract ProtocolActions is BaseSetup {
                         args.slippage,
                         false,
                         MULTI_TX_SLIPPAGE_SHARE,
-                        args.srcChainId == args.toChainId
+                        args.srcChainId == args.toChainId,
+                        args.USDPerExternalToken,
+                        args.USDPerUnderlyingTokenDst
                     ),
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
                     /// resemble
@@ -1526,7 +1530,9 @@ abstract contract ProtocolActions is BaseSetup {
                         args.slippage,
                         false,
                         MULTI_TX_SLIPPAGE_SHARE,
-                        args.srcChainId == args.toChainId
+                        args.srcChainId == args.toChainId,
+                        args.USDPerExternalToken,
+                        args.USDPerUnderlyingTokenDst
                     ),
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
                     /// resemble
@@ -1689,8 +1695,16 @@ abstract contract ProtocolActions is BaseSetup {
 
         v.from = args.fromSrc;
         /// @dev build permit2 calldata
+
+        vm.selectFork(FORKS[args.toChainId]);
+        v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
+        (, int256 USDPerUnderlyingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
+
         vm.selectFork(FORKS[args.srcChainId]);
         v.decimal1 = args.externalToken != NATIVE_TOKEN ? MockERC20(args.externalToken).decimals() : 18;
+        (, int256 USDPerExternalToken,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.externalToken]).latestRoundData();
 
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is superform (which is inscribed in toDst in the beginning of stage 1)
@@ -1711,7 +1725,9 @@ abstract contract ProtocolActions is BaseSetup {
             args.liquidityBridgeToChainId,
             args.amount,
             false,
-            args.slippage
+            args.slippage,
+            uint256(USDPerExternalToken),
+            uint256(USDPerUnderlyingTokenDst)
         );
 
         v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.srcChainId == args.toChainId);
@@ -1752,34 +1768,23 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
 
-        vm.selectFork(FORKS[args.srcChainId]);
-
-        (, int256 USDPerExternalToken,,,) =
-            AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.externalToken]).latestRoundData();
-
         console.log("args.amount before", args.amount);
-
-        vm.selectFork(FORKS[args.toChainId]);
-
-        v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
-        (, int256 USDPerUnderlyingDst,,,) =
-            AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
 
         /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDC, daiAmount = 100
         /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
-        // if (v.decimal1 > v.decimal2) {
-        //     v.amount = (args.amount * uint256(USDPerExternalToken))
-        //         / (uint256(USDPerUnderlyingDst) * 10 ** (v.decimal1 - v.decimal2));
-        // } else {
-        //     v.amount = (args.amount * uint256(USDPerExternalToken) * 10 ** (v.decimal2 - v.decimal1))
-        //         / uint256(USDPerUnderlyingDst);
-        // }
-
         if (v.decimal1 > v.decimal2) {
-            v.amount = args.amount / 10 ** (v.decimal1 - v.decimal2);
+            v.amount = (args.amount * uint256(USDPerExternalToken))
+                / (uint256(USDPerUnderlyingTokenDst) * 10 ** (v.decimal1 - v.decimal2));
         } else {
-            v.amount = args.amount * 10 ** (v.decimal2 - v.decimal1);
+            v.amount = (args.amount * uint256(USDPerExternalToken) * 10 ** (v.decimal2 - v.decimal1))
+                / uint256(USDPerUnderlyingTokenDst);
         }
+
+        // if (v.decimal1 > v.decimal2) {
+        //     v.amount = args.amount / 10 ** (v.decimal1 - v.decimal2);
+        // } else {
+        //     v.amount = args.amount * 10 ** (v.decimal2 - v.decimal1);
+        // }
         console.log("args.amount after", v.amount);
 
         vm.selectFork(v.initialFork);
@@ -1852,7 +1857,9 @@ abstract contract ProtocolActions is BaseSetup {
             vars.actualWithdrawAmount,
             true,
             /// @dev putting a placeholder value for now (not really used)
-            args.slippage
+            args.slippage,
+            0,
+            0
         );
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);

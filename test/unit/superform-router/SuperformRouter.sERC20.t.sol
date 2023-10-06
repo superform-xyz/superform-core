@@ -1073,7 +1073,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     uint256(ARBI),
                     1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1
                 ),
                 false
             ),
@@ -1098,7 +1100,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     uint256(ARBI),
                     1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1
                 ),
                 false
             ),
@@ -1203,7 +1207,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     uint256(ETH),
                     1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1
                 ),
                 true
             ),
@@ -1228,7 +1234,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     uint256(ETH),
                     1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1
                 ),
                 true
             ),
@@ -1286,7 +1294,9 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     uint256(ARBI),
                     1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1
                 ),
                 false
             ),
