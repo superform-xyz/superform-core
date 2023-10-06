@@ -24,7 +24,11 @@ contract LiFiMock is Test {
         payable
     {
         if (!bridgeData.hasSourceSwaps) {
-            _bridge(BridgeArgs(bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false));
+            _bridge(
+                BridgeArgs(
+                    bridgeData.minAmount, bridgeData.receiver, bridgeData.sendingAssetId, swapData[0].callData, false
+                )
+            );
         } else {
             uint256 amount = _swap(
                 swapData[0].fromAmount,
@@ -73,18 +77,14 @@ contract LiFiMock is Test {
     }
 
     struct BridgeArgs {
-        uint256 amount,
-        address receiver,
-        address inputToken,
-        bytes memory data,
-        bool prevSwap
+        uint256 amount;
+        address receiver;
+        address inputToken;
+        bytes data;
+        bool prevSwap;
     }
 
-    function _bridge(
-        BridgeArgs memory args
-    )
-        internal
-    {
+    function _bridge(BridgeArgs memory args) internal {
         BridgeLocalVars memory v;
         /// @dev encapsulating from
         (
