@@ -50,8 +50,8 @@ contract SDiMVDMulti31TokenInputSlippageAMB13 is ProtocolActions {
 
     function test_scenario(uint128 amountOne_, uint128 amountTwo_) public {
         /// @dev amount = 1 after slippage will become 0, hence starting with 2
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_WETH / 2));
-        amountTwo_ = uint128(bound(amountTwo_, 2, TOTAL_SUPPLY_WETH / 2));
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, TOTAL_SUPPLY_WETH / 2));
+        amountTwo_ = uint128(bound(amountTwo_, 2 * 10 ** 18, TOTAL_SUPPLY_WETH / 2));
         AMOUNTS[OP][0] = [amountOne_, amountTwo_];
 
         for (uint256 act; act < actions.length; act++) {

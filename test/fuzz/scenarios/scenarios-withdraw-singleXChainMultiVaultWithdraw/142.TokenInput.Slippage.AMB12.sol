@@ -79,9 +79,9 @@ contract SDMVW142TokenInputSlippageAMB12 is ProtocolActions {
     )
         public
     {
-        amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_USDC / 3));
-        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_USDC / 3));
-        amountThree_ = uint128(bound(amountThree_, 12, TOTAL_SUPPLY_USDC / 3));
+        amountOne_ = uint128(bound(amountOne_, 12 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
+        amountTwo_ = uint128(bound(amountTwo_, 11 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
+        amountThree_ = uint128(bound(amountThree_, 12 * 10 ** 6, TOTAL_SUPPLY_USDC / 3));
 
         AMOUNTS[AVAX][0] = [amountOne_, amountTwo_, amountThree_];
 

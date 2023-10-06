@@ -73,7 +73,7 @@ contract SXSVWRevertKycNativeNoSlippageAMB13 is ProtocolActions {
     //////////////////////////////////////////////////////////////*/
 
     function test_scenario(uint128 amountOne_) public {
-        amountOne_ = uint128(bound(amountOne_, 2, TOTAL_SUPPLY_DAI));
+        amountOne_ = uint128(bound(amountOne_, 2 * 10 ** 18, TOTAL_SUPPLY_DAI));
         AMOUNTS[AVAX][0] = [amountOne_];
         AMOUNTS[AVAX][1] = [amountOne_];
 

@@ -149,9 +149,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         }
         uint64 dstChain = chainIds[dstChainIndex];
 
-        console.log("chain 0 ", CHAIN_0);
-        console.log("dst chain ", dstChain);
-
         DST_CHAINS = [dstChain];
 
         TARGET_VAULTS[DST_CHAINS[0]][0] = [0];

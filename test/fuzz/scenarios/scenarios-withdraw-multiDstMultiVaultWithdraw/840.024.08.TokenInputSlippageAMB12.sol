@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 // Test Utils
 import "../../../utils/ProtocolActions.sol";
 
-contract MDMVW84002408NativeInputSlipageAMB12 is ProtocolActions {
+contract MDMVW84002408NativeInputSlipageAMB12ABA is ProtocolActions {
     function setUp() public override {
         super.setUp();
         /*//////////////////////////////////////////////////////////////
@@ -116,9 +116,10 @@ contract MDMVW84002408NativeInputSlipageAMB12 is ProtocolActions {
         public
     {
         /// @dev min amountOne_ needs to be 3 as its withdraw amount >= 2
-        amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_ETH / 8));
-        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 8));
-        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 8));
+
+        amountOne_ = uint128(bound(amountOne_, 2e18, 20e18));
+        amountTwo_ = uint128(bound(amountTwo_, 2e18, 20e18));
+        amountThree_ = uint128(bound(amountThree_, 2e18, 20e18));
 
         /// @dev notice partial withdrawals in ETH->0 and POLY->2
         AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];

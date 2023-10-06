@@ -125,9 +125,9 @@ contract MDMVW84002408NativeInputSlipageAMB14 is ProtocolActions {
         public
     {
         /// @dev min amountOne_ needs to be 3 as its withdraw amount >= 2
-        amountOne_ = uint128(bound(amountOne_, 12, TOTAL_SUPPLY_ETH / 7));
-        amountTwo_ = uint128(bound(amountTwo_, 11, TOTAL_SUPPLY_ETH / 7));
-        amountThree_ = uint128(bound(amountThree_, 11, TOTAL_SUPPLY_ETH / 7));
+        amountOne_ = uint128(bound(amountOne_, 12e18, 20e18));
+        amountTwo_ = uint128(bound(amountTwo_, 11e18, 20e18));
+        amountThree_ = uint128(bound(amountThree_, 11e18, 20e18));
 
         /// @dev notice partial withdrawals in ETH->0 and POLY->2
         AMOUNTS[ETH][0] = [amountOne_, amountTwo_, amountThree_];

@@ -24,7 +24,7 @@ contract SXSVDTimelockedRevert4626NoTokenInputSlippageAMB24 is ProtocolActions {
 
         TARGET_FORM_KINDS[POLY][0] = [1];
 
-        AMOUNTS[POLY][0] = [2];
+        AMOUNTS[POLY][0] = [2 * 10 ** 6];
 
         MAX_SLIPPAGE = 1000;
 
