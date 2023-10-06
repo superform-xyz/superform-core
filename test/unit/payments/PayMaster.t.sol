@@ -49,7 +49,7 @@ contract PayMasterTest is ProtocolActions {
         vm.stopPrank();
     }
 
-    function test_manipuationsBySendingFeesIntoRouter() public {
+    function test_manipulationsBySendingFeesIntoRouter() public {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 

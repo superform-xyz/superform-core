@@ -1049,7 +1049,6 @@ abstract contract ProtocolActions is BaseSetup {
         ///@dev assume it will pass by default
         success = true;
 
-        console.log("stage5");
         vm.selectFork(FORKS[CHAIN_0]);
 
         uint256 toChainId;
@@ -2960,6 +2959,7 @@ abstract contract ProtocolActions is BaseSetup {
                 finalAmount = repetitions * finalAmount;
                 /// @dev assert spToken Balance. If reverting amount of sp should be 0 (assuming no action before this
                 /// one)
+
                 _assertSingleVaultBalance(
                     action.user, singleSuperformsData[i].superformId, foundRevertingDeposit ? 0 : finalAmount
                 );

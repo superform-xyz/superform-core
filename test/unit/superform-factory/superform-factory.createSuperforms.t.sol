@@ -153,7 +153,7 @@ contract SuperformFactoryCreateSuperformTest is BaseSetup {
         SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formImplementationId, vault);
 
         /// @dev Creating superform using same form and vault
-        vm.expectRevert(Error.VAULT_FORM_IMPLEMENTATION_COMBNATION_EXISTS.selector);
+        vm.expectRevert(Error.VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS.selector);
         SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formImplementationId, vault);
     }
 

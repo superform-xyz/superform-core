@@ -247,7 +247,7 @@ library Error {
     error FORM_DOES_NOT_EXIST();
 
     /// @dev thrown when same vault and beacon is used to create new superform
-    error VAULT_FORM_IMPLEMENTATION_COMBNATION_EXISTS();
+    error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
     /// @dev thrown when there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();

@@ -33,7 +33,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev the vault this form pertains to
-    address internal vault;
+    address public vault;
+
+    uint32 public formImplementationId;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -41,6 +43,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     modifier notPaused(InitSingleVaultData memory singleVaultData_) {
         (, uint32 formImplementationId_,) = singleVaultData_.superformId.getSuperform();
+
+        if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
 
         if (
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
@@ -68,14 +72,16 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
+
         _disableInitializers();
     }
 
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    function initialize(address superRegistry_, address vault_) external initializer {
+    function initialize(address superRegistry_, address vault_, uint32 formImplementationId_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
+        formImplementationId = formImplementationId_;
         vault = vault_;
     }
 

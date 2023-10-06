@@ -117,12 +117,12 @@ contract SuperformFactory is ISuperformFactory {
         /// @dev Same vault and beacon can be used only once to create superform
         bytes32 vaultFormImplementationCombination = keccak256(abi.encode(tFormImplementation, vault_));
         if (vaultBeaconToSuperforms[vaultFormImplementationCombination] != 0) {
-            revert Error.VAULT_FORM_IMPLEMENTATION_COMBNATION_EXISTS();
+            revert Error.VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
         }
 
         /// @dev instantiate the superform.
         superform_ = tFormImplementation.clone();
-        BaseForm(payable(superform_)).initialize(address(superRegistry), vault_);
+        BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, formImplementationId_);
 
         /// @dev this will always be unique because all chainIds are unique
         superformId_ = DataLib.packSuperform(superform_, formImplementationId_, uint64(block.chainid));
