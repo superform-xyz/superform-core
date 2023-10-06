@@ -1,8 +1,6 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import "../utils/ProtocolActions.sol";
-
 import { VaultSharesHandler } from "./handlers/VaultSharesHandler.sol";
 import { VaultSharesStore } from "./stores/VaultSharesStore.sol";
 import { BaseInvariantTest } from "./Base.invariant.t.sol";

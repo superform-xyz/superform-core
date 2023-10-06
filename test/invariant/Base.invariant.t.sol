@@ -1,11 +1,11 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import "../utils/ProtocolActions.sol";
+import "../utils/InvariantProtocolActions.sol";
 
 import { TimestampStore } from "./stores/TimestampStore.sol";
 
-contract BaseInvariantTest is ProtocolActions {
+contract BaseInvariantTest is InvariantProtocolActions {
     TimestampStore internal timestampStore;
 
     /*//////////////////////////////////////////////////////////////////////////

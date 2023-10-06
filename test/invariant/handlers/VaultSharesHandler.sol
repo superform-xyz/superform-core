@@ -87,7 +87,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         /// @dev this needs to be bounded by the max of all supplies because of the assumptions in the tests
         AMOUNTS[DST_CHAINS[0]][0] = [bound(amount1, 2, TOTAL_SUPPLY_USDC)];
         /// amount of collateral to be deposited
-        MAX_SLIPPAGE = 1000;
         LIQ_BRIDGES[DST_CHAINS[0]][0] = [1];
         uint256 userId = bound(user, 0, 2);
         actions.push(
@@ -156,10 +155,17 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         underlying1 = bound(underlying1, 0, 2);
         TARGET_UNDERLYINGS[DST_CHAINS[0]][0] = [underlying1];
 
+        inputToken = bound(inputToken, 0, 2);
+        if (inputToken == 0) {
+            amount1 = bound(amount1, 1 * 10 ** 18, 1 * 10 ** 20);
+        } else if (inputToken == 1) {
+            amount1 = bound(amount1, 12 * 10 ** 6, 12 * 10 ** 8);
+        } else if (inputToken == 2) {
+            amount1 = bound(amount1, 11 * 10 ** 18, 11 * 10 ** 20);
+        }
         /// @dev this needs to be bounded by the max of all supplies because of the assumptions in the tests
-        AMOUNTS[DST_CHAINS[0]][0] = [bound(amount1, 2, TOTAL_SUPPLY_USDC)];
+        AMOUNTS[DST_CHAINS[0]][0] = [amount1];
         /// amount of collateral to be deposited
-        MAX_SLIPPAGE = 1000;
         LIQ_BRIDGES[DST_CHAINS[0]][0] = [1];
         uint256 userId = bound(user, 0, 2);
         TestAction[] memory actionsMem = new TestAction[](1);
@@ -173,7 +179,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             revertRole: "",
             slippage: int256(bound(slippage, 0, 1000)),
             dstSwap: false,
-            externalToken: bound(inputToken, 0, 2)
+            externalToken: inputToken
         });
 
         for (uint256 act = 0; act < actionsMem.length; act++) {
@@ -208,7 +214,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         TARGET_VAULTS[ETH][1] = [0];
         /// @dev id 0 is normal 4626
         TARGET_FORM_KINDS[ETH][1] = [0];
-        MAX_SLIPPAGE = 1000;
         LIQ_BRIDGES[ETH][0] = [1];
         LIQ_BRIDGES[ETH][1] = [1];
         FINAL_LIQ_DST_WITHDRAW[ETH] = [ETH];
@@ -290,7 +295,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         /// @dev vault index 3 is failedDepositMock, check VAULT_KINDS
         TARGET_FORM_KINDS[OP][1] = [0];
 
-        MAX_SLIPPAGE = 1000;
 
         LIQ_BRIDGES[POLY][0] = [1];
         LIQ_BRIDGES[OP][1] = [1];
