@@ -509,16 +509,19 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             srcSender_
         );
 
-        /// @dev mint super positions at the end of the deposit action
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintSingle(
-            srcSender_, vaultData_.superformId, dstAmount
-        );
+        if (dstAmount != 0) {
+            /// @dev mint super positions at the end of the deposit action
+            IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintSingle(
+                srcSender_, vaultData_.superformId, dstAmount
+            );
+        }
     }
 
     struct MultiDepositLocalVars {
         uint256 len;
         address[] superforms;
         uint256[] dstAmounts;
+        bool mint;
     }
 
     /// @notice deposits to multiple vaults on the same chain
@@ -557,15 +560,21 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 srcSender_
             );
 
+            if (v.dstAmounts[i] > 0 && !v.mint) {
+                v.mint = true;
+            }
+
             unchecked {
                 ++i;
             }
         }
 
-        /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintBatch(
-            srcSender_, vaultData_.superformIds, v.dstAmounts
-        );
+        if (v.mint) {
+            /// @dev in direct deposits, SuperPositions are minted right after depositing to vaults
+            IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).mintBatch(
+                srcSender_, vaultData_.superformIds, v.dstAmounts
+            );
+        }
     }
 
     /// @notice fulfils the final stage of same chain deposit action
