@@ -1241,14 +1241,14 @@ abstract contract InvariantProtocolActions is BaseSetup {
             if (!sameChain) {
                 ILiFi.BridgeData memory bridgeData;
                 LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-                /*
+
                 uint256 prevForkId = vm.activeFork();
 
-                vm.selectFork(FORKS[args.toChainId]);
+                vm.selectFork(FORKS[args.srcChainId]);
 
-                uint256 decimalsDstUnderlyingToken = MockERC20(args.underlyingTokenDst).decimals();
+                uint256 decimalsExternalToken = MockERC20(args.externalToken).decimals();
                 vm.selectFork(prevForkId);
-                */
+
                 swapData[0] = LibSwap.SwapData(
                     address(0),
                     /// @dev  callTo (arbitrary)
@@ -1267,7 +1267,8 @@ abstract contract InvariantProtocolActions is BaseSetup {
                         args.slippage,
                         false,
                         MULTI_TX_SLIPPAGE_SHARE,
-                        args.srcChainId == args.toChainId
+                        args.srcChainId == args.toChainId,
+                        decimalsExternalToken
                     ),
                     //decimalsDstUnderlyingToken
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not

@@ -67,6 +67,7 @@ contract LiFiMock is Test {
         uint256 multiTxSlippageShare;
         uint256 amount;
         bool isDirect;
+        uint256 decimalsExternalToken;
     }
 
     function _bridge(
@@ -80,8 +81,16 @@ contract LiFiMock is Test {
     {
         BridgeLocalVars memory v;
         /// @dev encapsulating from
-        (v.from, v.toForkId, v.outputToken, v.slippage, v.isMultiTx, v.multiTxSlippageShare, v.isDirect) =
-            abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool));
+        (
+            v.from,
+            v.toForkId,
+            v.outputToken,
+            v.slippage,
+            v.isMultiTx,
+            v.multiTxSlippageShare,
+            v.isDirect,
+            v.decimalsExternalToken
+        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256));
 
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         // if underlyingTokenn
@@ -102,19 +111,22 @@ contract LiFiMock is Test {
         else v.slippage = (v.slippage * int256(100 - v.multiTxSlippageShare)) / 100;
 
         amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
-
-        /// input token decimals are greater than output
-        if (decimal1 > decimal2) {
-            v.amount = amountOut / 10 ** (decimal1 - decimal2);
+        if (decimal1 != decimal2 && decimal2 == v.decimalsExternalToken) {
+            v.amount = amountOut;
         } else {
-            v.amount = amountOut * 10 ** (decimal2 - decimal1);
+            /// input token decimals are greater than output
+            if (decimal1 > decimal2) {
+                v.amount = amountOut / 10 ** (decimal1 - decimal2);
+            } else {
+                v.amount = amountOut * 10 ** (decimal2 - decimal1);
+            }
+            console.log("--LiFi Mock Logs");
+
+            console.log("amountOut", amountOut);
+            console.log("decimal1", decimal1);
+            console.log("decimal2", decimal2);
         }
 
-        console.log("--LiFi Mock Logs");
-
-        console.log("amountOut", amountOut);
-        console.log("decimal1", decimal1);
-        console.log("decimal2", decimal2);
         console.log("v.amount", v.amount);
 
         if (v.outputToken != NATIVE) {
