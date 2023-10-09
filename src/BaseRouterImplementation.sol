@@ -316,18 +316,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev same chain action
         _directSingleWithdraw(ambData, msg.sender);
-
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).updateTxHistory(
-            vars.currentPayloadId,
-            DataLib.packTxInfo(
-                uint8(TransactionType.WITHDRAW),
-                uint8(CallbackType.INIT),
-                0,
-                STATE_REGISTRY_TYPE,
-                msg.sender,
-                uint64(block.chainid)
-            )
-        );
         emit Completed(vars.currentPayloadId);
     }
 
@@ -356,18 +344,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
 
         /// @dev same chain action & forward residual payment to payment collector
         _directMultiWithdraw(vaultData, msg.sender);
-
-        IStateSyncer(superRegistry.getStateSyncer(ROUTER_TYPE)).updateTxHistory(
-            vars.currentPayloadId,
-            DataLib.packTxInfo(
-                uint8(TransactionType.WITHDRAW),
-                uint8(CallbackType.INIT),
-                1,
-                STATE_REGISTRY_TYPE,
-                msg.sender,
-                uint64(block.chainid)
-            )
-        );
         emit Completed(vars.currentPayloadId);
     }
 

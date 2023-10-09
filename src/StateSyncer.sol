@@ -32,7 +32,7 @@ abstract contract StateSyncer is IStateSyncer {
         _;
     }
 
-    modifier onlyMinter() virtual;
+    modifier onlyMinter(uint256 id) virtual;
 
     modifier onlyBurner() virtual;
 

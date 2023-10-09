@@ -28,7 +28,18 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
 
-    modifier onlyMinter() override {
+    modifier onlyMinter(uint256 id) override {
+        if (
+            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
+                keccak256("SERC20_MINTER_ROLE"), msg.sender
+            )
+        ) {
+            revert Error.NOT_MINTER();
+        }
+        _;
+    }
+
+    modifier onlyMinters(uint256[] memory id) {
         if (
             !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
                 keccak256("SERC20_MINTER_ROLE"), msg.sender
@@ -132,7 +143,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     )
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinter
+        onlyMinter(id_)
     {
         sERC20(synthethicTokenId[id_]).mint(srcSender_, amount_);
     }
@@ -145,7 +156,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     )
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinter
+        onlyMinters(ids_)
     {
         uint256 len = ids_.length;
         for (uint256 i; i < len;) {

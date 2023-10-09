@@ -29,11 +29,40 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev minters can be state registry with id 1 or router with id 1
-    modifier onlyMinter() override {
+    modifier onlyMinter(uint256 superformId) override {
         uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
-        if (routerId != 1) {
+        /// if registry id is 1 (or) router can mint
+        if (routerId == 1 || registryId == 1) {
+            return;
+        }
+
+        (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
+
+        if (uint32(registryId) != formBeaconId) {
             revert Error.NOT_MINTER();
+        }
+
+        _;
+    }
+
+    /// @dev minters can be state registry with id 1 or router with id 1
+    modifier onlyMinters(uint256[] memory superformIds) {
+        uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+
+        /// if registry id is 1 (or) router can mint
+        if (routerId == 1 || registryId == 1) {
+            return;
+        }
+
+        for (uint256 i; i < superformIds.length; ++i) {
+            (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
+
+            if (uint32(registryId) != formBeaconId) {
+                revert Error.NOT_MINTER();
+            }
         }
         _;
     }
@@ -77,7 +106,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     )
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinter
+        onlyMinter(id_)
     {
         _mint(srcSender_, id_, amount_, "");
     }
@@ -90,7 +119,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     )
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinter
+        onlyMinters(ids_)
     {
         _batchMint(srcSender_, ids_, amounts_, "");
     }
