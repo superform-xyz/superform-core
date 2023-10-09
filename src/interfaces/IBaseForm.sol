@@ -66,14 +66,13 @@ interface IBaseForm is IERC165Upgradeable {
     /// @param srcSender_ The address of the sender of the transaction
     /// @param srcChainId_ The chain id of the source chain
     /// @return dstAmount The amount of tokens withdrawn
-    /// @return sendAck Whether the processor should send acknowledgement back to source chain
     function xChainWithdrawFromVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
     )
         external
-        returns (uint256 dstAmount, bool sendAck);
+        returns (uint256 dstAmount);
 
     /// @notice get Superform name of the ERC20 vault representation
     /// @return The ERC20 name
