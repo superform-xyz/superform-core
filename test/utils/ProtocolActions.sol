@@ -45,7 +45,7 @@ abstract contract ProtocolActions is BaseSetup {
 
     uint256 public msgValue;
 
-    uint256 public dstValue;
+    uint256 public liqValue;
 
     /// @dev to hold reverting superForms per action kind and for timelocked
     uint256[][] public revertingDepositSFs;
@@ -549,7 +549,7 @@ abstract contract ProtocolActions is BaseSetup {
 
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                     /// @dev payment estimation, differs according to the type of entry point used
-                    (,, dstValue, msgValue) = CHAIN_0 != DST_CHAINS[0]
+                    (liqValue,,, msgValue) = CHAIN_0 != DST_CHAINS[0]
                         ? paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, true)
                         : paymentHelper.estimateSingleDirectMultiVault(
                             SingleDirectMultiVaultStateReq(multiSuperformsData[0]), true
@@ -569,7 +569,7 @@ abstract contract ProtocolActions is BaseSetup {
                         );
                 } else if (action.action == Actions.Withdraw) {
                     /// @dev payment estimation, differs according to the type of entry point used
-                    (,, dstValue, msgValue) = CHAIN_0 != DST_CHAINS[0]
+                    (liqValue,,, msgValue) = CHAIN_0 != DST_CHAINS[0]
                         ? paymentHelper.estimateSingleXChainMultiVault(vars.singleDstMultiVaultStateReq, false)
                         : paymentHelper.estimateSingleDirectMultiVault(
                             SingleDirectMultiVaultStateReq(multiSuperformsData[0]), false
@@ -599,7 +599,7 @@ abstract contract ProtocolActions is BaseSetup {
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                     /// @dev payment estimation, differs according to the type of entry point used
 
-                    (,, dstValue, msgValue) =
+                    (liqValue,,, msgValue) =
                         paymentHelper.estimateMultiDstMultiVault(vars.multiDstMultiVaultStateReq, true);
                     vm.prank(users[action.user]);
 
@@ -612,7 +612,7 @@ abstract contract ProtocolActions is BaseSetup {
                 } else if (action.action == Actions.Withdraw) {
                     /// @dev payment estimation, differs according to the type of entry point used
 
-                    (,, dstValue, msgValue) =
+                    (liqValue,,, msgValue) =
                         paymentHelper.estimateMultiDstMultiVault(vars.multiDstMultiVaultStateReq, false);
                     vm.prank(users[action.user]);
 
@@ -633,7 +633,7 @@ abstract contract ProtocolActions is BaseSetup {
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                         /// @dev payment estimation, differs according to the type of entry point used
 
-                        (,, dstValue, msgValue) =
+                        (liqValue,,, msgValue) =
                             paymentHelper.estimateSingleXChainSingleVault(vars.singleXChainSingleVaultStateReq, true);
                         vm.prank(users[action.user]);
 
@@ -648,7 +648,7 @@ abstract contract ProtocolActions is BaseSetup {
                     } else if (action.action == Actions.Withdraw) {
                         /// @dev payment estimation, differs according to the type of entry point used
 
-                        (,, dstValue, msgValue) =
+                        (liqValue,,, msgValue) =
                             paymentHelper.estimateSingleXChainSingleVault(vars.singleXChainSingleVaultStateReq, false);
                         vm.prank(users[action.user]);
 
@@ -667,7 +667,7 @@ abstract contract ProtocolActions is BaseSetup {
                     if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                         /// @dev payment estimation, differs according to the type of entry point used
 
-                        (,, dstValue, msgValue) =
+                        (liqValue,,, msgValue) =
                             paymentHelper.estimateSingleDirectSingleVault(vars.singleDirectSingleVaultStateReq, true);
                         vm.prank(users[action.user]);
 
@@ -682,7 +682,7 @@ abstract contract ProtocolActions is BaseSetup {
                     } else if (action.action == Actions.Withdraw) {
                         /// @dev payment estimation, differs according to the type of entry point used
 
-                        (,, dstValue, msgValue) =
+                        (liqValue,,, msgValue) =
                             paymentHelper.estimateSingleDirectSingleVault(vars.singleDirectSingleVaultStateReq, false);
                         vm.prank(users[action.user]);
 
@@ -701,7 +701,9 @@ abstract contract ProtocolActions is BaseSetup {
                     MultiDstSingleVaultStateReq(MultiDstAMBs, DST_CHAINS, singleSuperformsData);
                 if (action.action == Actions.Deposit || action.action == Actions.DepositPermit2) {
                     /// @dev payment estimation, differs according to the type of entry point used
-                    (,,, msgValue) = paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
+
+                    (liqValue,,, msgValue) =
+                        paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
                     vm.prank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
@@ -713,7 +715,8 @@ abstract contract ProtocolActions is BaseSetup {
                 } else if (action.action == Actions.Withdraw) {
                     /// @dev payment estimation, differs according to the type of entry point used
 
-                    (,,, msgValue) = paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
+                    (liqValue,,, msgValue) =
+                        paymentHelper.estimateMultiDstSingleVault(vars.multiDstSingleVaultStateReq, true);
                     vm.prank(users[action.user]);
 
                     if (sameChainDstHasRevertingVault || action.testType == TestType.RevertMainAction) {
@@ -3066,20 +3069,21 @@ abstract contract ProtocolActions is BaseSetup {
                 );
             }
         }
-        /// @dev TODO
-        if (token == NATIVE_TOKEN) {
-            console.log("balance now", users[action.user].balance);
-            console.log("balance Before action", inputBalanceBefore);
-            console.log("msgValue", msgValue);
-            console.log("balance now + msgValue", msgValue + users[action.user].balance);
-        }
-        /// @dev assert user input token balance
 
-        // assertEq(
-        //     token != NATIVE_TOKEN ? IERC20(token).balanceOf(users[action.user]) : users[action.user].balance,
-        //     inputBalanceBefore - totalSpAmountAllDestinations - msgValue
-        // );
-        // console.log("Asserted after deposit");
+        /// @dev native balance assertions
+        if (token == NATIVE_TOKEN) {
+            /// @dev difference balance before deposit and msgValue sent along tx
+            assertEq(users[action.user].balance, inputBalanceBefore - msgValue);
+        }
+
+        /// @dev assert payment helper
+        /// asserting less than or equal
+        /// for direct actions the number is going to be equal
+        /// for xChain it should be less since some is used for xChain message
+        assertLe(getContract(CHAIN_0, "PayMaster").balance, msgValue - liqValue);
+
+        /// asserting balance of lifi mock
+        assertEq(getContract(CHAIN_0, "LiFiMock").balance, liqValue);
     }
 
     struct AssertAfterWithdrawVars {

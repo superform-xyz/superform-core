@@ -55,6 +55,8 @@ contract PayloadHelper is IPayloadHelper {
         uint256[] liqDataAmountsIn;
         uint256[] liqDataAmountsOut;
         uint256[] liqDataNativeAmounts;
+        bool[] hasDstSwaps;
+        address dstRefundAddress;
         InitMultiVaultData imvd;
         InitSingleVaultData isvd;
         uint256 i;
@@ -168,7 +170,9 @@ contract PayloadHelper is IPayloadHelper {
             uint64[] memory liqDstChainIds,
             uint256[] memory amountsIn,
             uint256[] memory amountsOut,
-            uint256[] memory nativeAmounts
+            uint256[] memory nativeAmounts,
+            bool[] memory hasDstSwaps,
+            address dstRefundAddress
         )
     {
         DecodeDstPayloadLiqDataInternalVars memory v;
@@ -186,6 +190,8 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataAmountsIn = new uint256[](v.imvd.liqData.length);
             v.liqDataAmountsOut = new uint256[](v.imvd.liqData.length);
             v.liqDataNativeAmounts = new uint256[](v.imvd.liqData.length);
+            v.hasDstSwaps = v.imvd.hasDstSwaps;
+            v.dstRefundAddress = v.imvd.dstRefundAddress;
 
             uint256 len = v.imvd.liqData.length;
 
@@ -231,6 +237,11 @@ contract PayloadHelper is IPayloadHelper {
 
             v.liqDataNativeAmounts = new uint256[](1);
             v.liqDataNativeAmounts[0] = v.isvd.liqData.nativeAmount;
+
+            v.hasDstSwaps = new bool[](1);
+            v.hasDstSwaps[0] = v.isvd.hasDstSwap;
+
+            v.dstRefundAddress = v.isvd.dstRefundAddress;
         }
 
         return (
@@ -240,7 +251,9 @@ contract PayloadHelper is IPayloadHelper {
             v.liqDataChainIds,
             v.liqDataAmountsIn,
             v.liqDataAmountsOut,
-            v.liqDataNativeAmounts
+            v.liqDataNativeAmounts,
+            v.hasDstSwaps,
+            v.dstRefundAddress
         );
     }
 
