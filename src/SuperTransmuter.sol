@@ -28,34 +28,46 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
 
-    modifier onlyMinter(uint256 id) override {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("SERC20_MINTER_ROLE"), msg.sender
-            )
-        ) {
-            revert Error.NOT_MINTER();
+    /// @dev minters can be router with id 2 (or) state registry for that beacon
+    modifier onlyMinter(uint256 superformId) override {
+        uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+
+        /// if registry id is 2 (or) corresponding state registry can mint
+        if (routerId != 2) {
+            (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
+
+            if (uint32(registryId) != formBeaconId) {
+                revert Error.NOT_MINTER();
+            }
+        }
+
+        _;
+    }
+
+    /// @dev minters can be router with id 2 (or) state registry for that beacon
+    modifier onlyBatchMinter(uint256[] memory superformIds) override {
+        uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+
+        /// if registry id is 1 (or) corresponding state registry can mint
+        if (routerId != 2) {
+            for (uint256 i; i < superformIds.length; ++i) {
+                (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
+
+                if (uint32(registryId) != formBeaconId) {
+                    revert Error.NOT_MINTER();
+                }
+            }
         }
         _;
     }
 
-    modifier onlyBatchMinter(uint256[] memory id) override {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("SERC20_MINTER_ROLE"), msg.sender
-            )
-        ) {
-            revert Error.NOT_MINTER();
-        }
-        _;
-    }
-
+    /// @dev only routers with id 2 can burn sERC20
     modifier onlyBurner() override {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("SERC20_BURNER_ROLE"), msg.sender
-            )
-        ) {
+        uint8 id = superRegistry.getSuperformRouterId(msg.sender);
+
+        if (id != 2) {
             revert Error.NOT_BURNER();
         }
         _;

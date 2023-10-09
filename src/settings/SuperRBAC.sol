@@ -27,8 +27,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_RESCUER_ROLE = keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE");
     bytes32 public constant override CORE_STATE_REGISTRY_DISPUTER_ROLE = keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE");
-    bytes32 public constant override SERC20_MINTER_ROLE = keccak256("SERC20_MINTER_ROLE");
-    bytes32 public constant override SERC20_BURNER_ROLE = keccak256("SERC20_BURNER_ROLE");
     bytes32 public constant override WORMHOLE_VAA_RELAYER_ROLE = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
     bytes32 public constant override DST_SWAPPER_ROLE = keccak256("DST_SWAPPER_ROLE");
 
@@ -45,8 +43,6 @@ contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
         _setRoleAdmin(TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(CORE_STATE_REGISTRY_UPDATER_ROLE, PROTOCOL_ADMIN_ROLE);
-        _setRoleAdmin(SERC20_MINTER_ROLE, PROTOCOL_ADMIN_ROLE);
-        _setRoleAdmin(SERC20_BURNER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(BROADCASTER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(WORMHOLE_VAA_RELAYER_ROLE, PROTOCOL_ADMIN_ROLE);
         _setRoleAdmin(DST_SWAPPER_ROLE, PROTOCOL_ADMIN_ROLE);
