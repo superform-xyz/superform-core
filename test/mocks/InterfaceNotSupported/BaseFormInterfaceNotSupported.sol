@@ -1,7 +1,7 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import { Initializable } from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import { Initializable } from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
