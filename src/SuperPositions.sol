@@ -197,8 +197,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
 
         /// @dev verify this is a multi vault mint
         if (multi == 1) revert Error.INVALID_PAYLOAD();
-        console.log(returnDataSrcSender);
-        console.log(srcSender);
+
         /// @dev compare final shares beneficiary to be the same (dst/src)
         if (returnDataSrcSender != srcSender) revert Error.SRC_SENDER_MISMATCH();
         /// @dev compare txType to be the same (dst/src)
