@@ -34,34 +34,30 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
         /// if registry id is 1 (or) router can mint
-        if (routerId == 1 || registryId == 1) {
-            return;
-        }
+        if (routerId != 1 && registryId != 1) {
+            (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
 
-        (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
-
-        if (uint32(registryId) != formBeaconId) {
-            revert Error.NOT_MINTER();
+            if (uint32(registryId) != formBeaconId) {
+                revert Error.NOT_MINTER();
+            }
         }
 
         _;
     }
 
     /// @dev minters can be state registry with id 1 or router with id 1
-    modifier onlyMinters(uint256[] memory superformIds) {
+    modifier onlyMinters(uint256[] memory superformIds) override {
         uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
         /// if registry id is 1 (or) router can mint
-        if (routerId == 1 || registryId == 1) {
-            return;
-        }
+        if (routerId != 1 && registryId != 1) {
+            for (uint256 i; i < superformIds.length; ++i) {
+                (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
 
-        for (uint256 i; i < superformIds.length; ++i) {
-            (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
-
-            if (uint32(registryId) != formBeaconId) {
-                revert Error.NOT_MINTER();
+                if (uint32(registryId) != formBeaconId) {
+                    revert Error.NOT_MINTER();
+                }
             }
         }
         _;
