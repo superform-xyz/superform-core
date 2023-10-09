@@ -46,7 +46,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     }
 
     /// @dev minters can be router with id 1 (or) state registry for that beacon
-    modifier onlyMinters(uint256[] memory superformIds) override {
+    modifier onlyBatchMinter(uint256[] memory superformIds) override {
         uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
@@ -115,7 +115,7 @@ contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
     )
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinters(ids_)
+        onlyBatchMinter(ids_)
     {
         _batchMint(srcSender_, ids_, amounts_, "");
     }

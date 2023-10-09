@@ -39,7 +39,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         _;
     }
 
-    modifier onlyMinters(uint256[] memory id) override {
+    modifier onlyBatchMinter(uint256[] memory id) override {
         if (
             !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
                 keccak256("SERC20_MINTER_ROLE"), msg.sender
@@ -156,7 +156,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     )
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinters(ids_)
+        onlyBatchMinter(ids_)
     {
         uint256 len = ids_.length;
         for (uint256 i; i < len;) {

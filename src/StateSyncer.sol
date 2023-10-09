@@ -34,7 +34,7 @@ abstract contract StateSyncer is IStateSyncer {
 
     modifier onlyMinter(uint256 id) virtual;
 
-    modifier onlyMinters(uint256[] memory ids) virtual;
+    modifier onlyBatchMinter(uint256[] memory ids) virtual;
 
     modifier onlyBurner() virtual;
 
