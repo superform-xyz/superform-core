@@ -8,8 +8,6 @@ import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { Error } from "./utils/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 
-import "forge-std/console.sol";
-
 /// @title StateSyncer
 /// @author Zeropoint Labs.
 /// @dev base contract for stateSync functions
@@ -104,28 +102,35 @@ abstract contract StateSyncer is IStateSyncer {
     /// @dev helps validate the state registry id for minting superform id
     function _validateStateSyncer(uint256 superformId_) internal {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
-        (, uint32 formBeaconId,) = DataLib.getSuperform(superformId_);
-
-        console.log(formBeaconId);
-        console.log(superformId_);
-        console.log(registryId);
-        if (uint32(registryId) != formBeaconId) {
-            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
-        }
+        _isValidStateSyncer(registryId, superformId_);
     }
 
     /// @dev helps validate the state registry id for minting superform id
     function _validateStateSyncer(uint256[] memory superformIds_) internal {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
         for (uint256 i; i < superformIds_.length;) {
-            (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds_[i]);
-
-            if (uint32(registryId) != formBeaconId) {
-                revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
-            }
+            _isValidStateSyncer(registryId, superformIds_[i]);
             unchecked {
                 ++i;
             }
+        }
+    }
+
+    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal {
+        // Directly check if the registryId is 0 or doesn't match the allowed cases.
+        if (registryId_ == 0) {
+            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
+        }
+
+        // If registryId is 1, no further checks are necessary.
+        if (registryId_ == 1) {
+            return;
+        }
+
+        (, uint32 formBeaconId,) = DataLib.getSuperform(superformId_);
+
+        if (uint32(registryId_) != formBeaconId) {
+            revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();
         }
     }
 }

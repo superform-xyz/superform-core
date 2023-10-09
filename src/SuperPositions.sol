@@ -9,8 +9,6 @@ import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { Error } from "./utils/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 
-import "forge-std/console.sol";
-
 /// @title SuperPositions
 /// @author Zeropoint Labs.
 contract SuperPositions is ISuperPositions, ERC1155A, StateSyncer {
