@@ -125,7 +125,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         override
         onlyCoreStateRegistry
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 dstAmount, bool sendAck)
     {
         dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
     }
@@ -140,7 +140,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         override
         onlyCoreStateRegistry
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount)
+        returns (uint256 dstAmount, bool sendAck)
     {
         dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
     }

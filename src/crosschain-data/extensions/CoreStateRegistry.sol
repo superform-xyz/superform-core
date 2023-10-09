@@ -750,10 +750,12 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     }),
                     srcSender_,
                     srcChainId_
-                ) returns (uint256 dstAmount) {
+                ) returns (uint256 dstAmount, bool sendAck) {
                     if (!fulfilment) fulfilment = true;
-                    /// @dev marks the indexes that require a callback mint of shares (successful)
-                    dstAmounts[i] = dstAmount;
+                    if (sendAck) {
+                        /// @dev marks the indexes that require a callback mint of shares (successful)
+                        dstAmounts[i] = dstAmount;
+                    }
                 } catch {
                     /// @dev cleaning unused approval
                     underlying.safeDecreaseAllowance(superforms[i], multiVaultData.amounts[i]);
@@ -849,17 +851,19 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
             /// @dev deposit to superform
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
-                uint256 dstAmount
+                uint256 dstAmount, bool sendAck
             ) {
-                return _constructSingleReturnData(
-                    srcSender_,
-                    singleVaultData.payloadId,
-                    singleVaultData.superformRouterId,
-                    TransactionType.DEPOSIT,
-                    CallbackType.RETURN,
-                    singleVaultData.superformId,
-                    dstAmount
-                );
+                if (sendAck) {
+                    return _constructSingleReturnData(
+                        srcSender_,
+                        singleVaultData.payloadId,
+                        singleVaultData.superformRouterId,
+                        TransactionType.DEPOSIT,
+                        CallbackType.RETURN,
+                        singleVaultData.superformId,
+                        dstAmount
+                    );
+                }
             } catch {
                 /// @dev cleaning unused approval
                 underlying.safeDecreaseAllowance(superform_, singleVaultData.amount);
