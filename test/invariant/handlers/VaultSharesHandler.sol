@@ -122,6 +122,28 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
     }
     */
+
+    struct HandlerLocalVars {
+        uint256 chain0Index;
+        uint256 dstChainIndex;
+        uint256[] targetVaultsPerDst;
+        uint32[] targetFormKindsPerDst;
+        uint256[] targetUnderlyingsPerDst;
+        uint256[] amountsPerDst;
+        uint8[] liqBridgesPerDst;
+        uint256 superPositionsSum;
+        uint256 vaultShares;
+        TestAction[] actionsMem;
+        TestAction singleAction;
+        MultiVaultSFData[] multiSuperformsData;
+        SingleVaultSFData[] singleSuperformsData;
+        MessagingAssertVars[] aV;
+        StagesLocalVars vars;
+        uint8[] AMBs;
+        uint64 CHAIN_0;
+        uint64[] DST_CHAINS;
+    }
+
     function singleXChainSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
@@ -136,44 +158,57 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         public
         adjustTimestamp(timeJumpSeed)
     {
-        AMBs = [1, 2];
+        HandlerLocalVars memory v;
+        v.AMBs = new uint8[](2);
+        v.AMBs[0] = 1;
+        v.AMBs[1] = 2;
 
-        uint256 chain0Index = bound(chain0, 0, chainIds.length - 1);
-        CHAIN_0 = chainIds[chain0Index];
-        uint256 dstChainIndex = bound(dstChain1, 0, chainIds.length - 1);
-        if (dstChainIndex == chain0Index && dstChainIndex != chainIds.length - 1) {
-            dstChainIndex++;
-        } else if (dstChainIndex == chain0Index && dstChainIndex == chainIds.length - 1) {
-            dstChainIndex--;
+        v.chain0Index = bound(chain0, 0, chainIds.length - 1);
+        v.CHAIN_0 = chainIds[v.chain0Index];
+        v.dstChainIndex = bound(dstChain1, 0, chainIds.length - 1);
+        if (v.dstChainIndex == v.chain0Index && v.dstChainIndex != chainIds.length - 1) {
+            v.dstChainIndex++;
+        } else if (v.dstChainIndex == v.chain0Index && v.dstChainIndex == chainIds.length - 1) {
+            v.dstChainIndex--;
         }
-        uint64 dstChain = chainIds[dstChainIndex];
+        v.DST_CHAINS = new uint64[](1);
+        v.DST_CHAINS[0] = chainIds[v.dstChainIndex];
 
-        DST_CHAINS = [dstChain];
+        v.targetVaultsPerDst = new uint256[](1);
+        v.targetFormKindsPerDst = new uint32[](1);
+        v.targetUnderlyingsPerDst = new uint256[](1);
+        v.amountsPerDst = new uint256[](1);
+        v.liqBridgesPerDst = new uint8[](1);
 
-        TARGET_VAULTS[DST_CHAINS[0]][0] = [0];
-        TARGET_FORM_KINDS[DST_CHAINS[0]][0] = [0];
-        underlying1 = bound(underlying1, 0, 2);
-        TARGET_UNDERLYINGS[DST_CHAINS[0]][0] = [underlying1];
-
+        v.targetVaultsPerDst[0] = 0;
+        v.targetFormKindsPerDst[0] = 0;
+        //v.targetUnderlyingsPerDst[0] = bound(underlying1, 0, 2);
+        v.targetUnderlyingsPerDst[0] = 1;
         inputToken = bound(inputToken, 0, 2);
-        if (inputToken == 0) {
-            amount1 = bound(amount1, 1 * 10 ** 18, 1 * 10 ** 20);
-        } else if (inputToken == 1) {
-            amount1 = bound(amount1, 12 * 10 ** 6, 12 * 10 ** 8);
-        } else if (inputToken == 2) {
-            amount1 = bound(amount1, 11 * 10 ** 18, 11 * 10 ** 20);
-        }
-        /// @dev this needs to be bounded by the max of all supplies because of the assumptions in the tests
-        AMOUNTS[DST_CHAINS[0]][0] = [amount1];
-        /// amount of collateral to be deposited
-        LIQ_BRIDGES[DST_CHAINS[0]][0] = [1];
-        uint256 userId = bound(user, 0, 2);
-        TestAction[] memory actionsMem = new TestAction[](1);
 
-        actionsMem[0] = TestAction({
+        vm.selectFork(FORKS[v.CHAIN_0]);
+        uint256 inputDecimals = MockERC20(getContract(v.CHAIN_0, UNDERLYING_TOKENS[inputToken])).decimals();
+        if (inputToken == 0) {
+            amount1 = bound(amount1, 1 * 10 ** inputDecimals, 1 * 10 ** (inputDecimals + 2));
+            console.log("amount1 dai", amount1);
+        } else if (inputToken == 1) {
+            amount1 = bound(amount1, 12 * 10 ** inputDecimals, 12 * 10 ** (inputDecimals + 2));
+            console.log("amount1 usdc", amount1);
+        } else if (inputToken == 2) {
+            amount1 = bound(amount1, 11 * 10 ** inputDecimals, 11 * 10 ** (inputDecimals + 2));
+            console.log("amount1 weth", amount1);
+        }
+
+        v.amountsPerDst[0] = amount1;
+
+        v.liqBridgesPerDst[0] = 1;
+
+        v.actionsMem = new TestAction[](1);
+
+        v.actionsMem[0] = TestAction({
             action: Actions(bound(actionType, 0, 1)), //Deposit or permit2 deposit
             multiVaults: false, //!!WARNING turn on or off multi vaults
-            user: userId,
+            user: bound(user, 0, 2),
             testType: TestType.Pass,
             revertError: "",
             revertRole: "",
@@ -182,22 +217,34 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             externalToken: inputToken
         });
 
-        for (uint256 act = 0; act < actionsMem.length; act++) {
-            TestAction memory action = actionsMem[act];
-            MultiVaultSFData[] memory multiSuperformsData;
-            SingleVaultSFData[] memory singleSuperformsData;
-            MessagingAssertVars[] memory aV;
-            StagesLocalVars memory vars;
-            bool success;
+        for (uint256 act = 0; act < v.actionsMem.length; act++) {
+            v.singleAction = v.actionsMem[act];
 
-            _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
+            /// @dev this is per destination (hardcoding 1 here)
+            v.vars.targetVaults = new uint256[][](1);
+            v.vars.targetVaults[0] = v.targetVaultsPerDst;
+            v.vars.targetFormKinds = new uint32[][](1);
+            v.vars.targetFormKinds[0] = v.targetFormKindsPerDst;
+            v.vars.targetUnderlyings = new uint256[][](1);
+            v.vars.targetUnderlyings[0] = v.targetUnderlyingsPerDst;
+            v.vars.targetAmounts = new uint256[][](1);
+            v.vars.targetAmounts[0] = v.amountsPerDst;
+            v.vars.targetLiqBridges = new uint8[][](1);
+            v.vars.targetLiqBridges[0] = v.liqBridgesPerDst;
+            v.vars.AMBs = v.AMBs;
+            v.vars.CHAIN_0 = v.CHAIN_0;
+            v.vars.DST_CHAINS = v.DST_CHAINS;
+
+            _runMainStages(v.singleAction, v.multiSuperformsData, v.singleSuperformsData, v.aV, v.vars, false);
         }
 
-        uint256 superPositionsSum = _getSingleVaultSuperpositionsSum(dstChain);
-        uint256 vaultShares = _getSingleVaultShares(dstChain);
+        v.superPositionsSum = _getSingleVaultSuperpositionsSum(
+            chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst, v.targetVaultsPerDst, v.targetFormKindsPerDst
+        );
+        v.vaultShares = _getSingleVaultShares(chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst);
 
         vm.selectFork(FORKS[0]);
-        vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
+        vaultSharesStore.setInvariantToAssert(v.superPositionsSum, v.vaultShares);
     }
     /*
     function singleDirectSingleVaultWithdraw() public {
@@ -552,15 +599,19 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         }
     }
 
-    function _getSingleVaultSuperpositionsSum(uint64 dstChain) internal returns (uint256 superPositionsSum) {
+    function _getSingleVaultSuperpositionsSum(
+        uint64 dstChain,
+        uint256[] memory underlyingTokens_,
+        uint256[] memory vaultIds_,
+        uint32[] memory formKinds_
+    )
+        internal
+        returns (uint256 superPositionsSum)
+    {
         /// @dev sum up superposition owned by all users on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
             uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
-                TARGET_UNDERLYINGS[dstChain][0],
-                TARGET_VAULTS[dstChain][0],
-                TARGET_FORM_KINDS[dstChain][0],
-                chainIds[i],
-                dstChain
+                underlyingTokens_, vaultIds_, formKinds_, chainIds[i], dstChain
             );
 
             if (superPositions.length > 0) {
@@ -569,12 +620,18 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         }
     }
 
-    function _getSingleVaultShares(uint64 dstChain) internal returns (uint256 vaultShares) {
+    function _getSingleVaultShares(
+        uint64 dstChain,
+        uint256[] memory underlyingTokens_
+    )
+        internal
+        returns (uint256 vaultShares)
+    {
         /// @dev FIXME currently hardcoded to vault kind and form beacon id 0
         address superform = getContract(
             dstChain,
             string.concat(
-                UNDERLYING_TOKENS[TARGET_UNDERLYINGS[DST_CHAINS[0]][0][0]],
+                UNDERLYING_TOKENS[underlyingTokens_[0]],
                 VAULT_KINDS[0],
                 "Superform",
                 Strings.toString(FORM_BEACON_IDS[0])

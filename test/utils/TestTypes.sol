@@ -60,6 +60,15 @@ struct StagesLocalVars {
     bool[] partialWithdrawVaults;
     int256 slippage;
     uint256[] superformIds;
+    /// @dev targets from invariant handler
+    uint256[][] targetVaults;
+    uint32[][] targetFormKinds;
+    uint256[][] targetUnderlyings;
+    uint256[][] targetAmounts;
+    uint8[][] targetLiqBridges;
+    uint8[] AMBs;
+    uint64 CHAIN_0;
+    uint64[] DST_CHAINS;
 }
 
 struct MessagingAssertVars {

@@ -84,6 +84,7 @@ contract LiFiMock is Test {
             abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool));
 
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
+        // if underlyingTokenn
         if (inputToken_ != NATIVE) {
             if (!prevSwap) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
         } else {
@@ -109,12 +110,26 @@ contract LiFiMock is Test {
             v.amount = amountOut * 10 ** (decimal2 - decimal1);
         }
 
+        console.log("--LiFi Mock Logs");
+
+        console.log("amountOut", amountOut);
+        console.log("decimal1", decimal1);
+        console.log("decimal2", decimal2);
+        console.log("v.amount", v.amount);
+
         if (v.outputToken != NATIVE) {
+            console.log("balance b4", MockERC20(v.outputToken).balanceOf(receiver_));
+            //MockERC20(v.outputToken).approve(receiver_, v.amount);
+            //MockERC20(v.outputToken).transferFrom(address(this), receiver_, v.amount);
             deal(v.outputToken, receiver_, MockERC20(v.outputToken).balanceOf(receiver_) + v.amount);
+
+            console.log("receiver", receiver_);
+            console.log("balance after", MockERC20(v.outputToken).balanceOf(receiver_));
         } else {
             if (prevForkId != v.toForkId) vm.deal(address(this), v.amount);
 
             (bool success,) = payable(receiver_).call{ value: v.amount }("");
+
             require(success);
         }
         vm.selectFork(prevForkId);
@@ -145,6 +160,7 @@ contract LiFiMock is Test {
         } else {
             amount_ = amount_ * 10 ** (decimal2 - decimal1);
         }
+        console.log("amount swapped", amount_);
         /// @dev assume no swap slippage
         deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);
         return amount_;
