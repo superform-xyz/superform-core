@@ -1682,6 +1682,7 @@ abstract contract ProtocolActions is BaseSetup {
         bytes permit2Calldata;
         uint256 decimal1;
         uint256 decimal2;
+        uint256 decimal3;
         uint256 amountTemp;
         uint256 amount;
         LiqRequest liqReq;
@@ -1707,6 +1708,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         vm.selectFork(FORKS[args.srcChainId]);
         v.decimal1 = args.externalToken != NATIVE_TOKEN ? MockERC20(args.externalToken).decimals() : 18;
+        v.decimal3 = args.underlyingToken != NATIVE_TOKEN ? MockERC20(args.underlyingToken).decimals() : 18;
         (, int256 USDPerExternalToken,,,) =
             AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.externalToken]).latestRoundData();
         (, int256 USDPerUnderlyingToken,,,) =
@@ -1775,36 +1777,48 @@ abstract contract ProtocolActions is BaseSetup {
             }
         }
 
-        console.log("args.amount before", args.amount);
-
         /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDC, daiAmount = 100
         /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
-        if (v.decimal1 > v.decimal2) {
-            v.amount = (args.amount * uint256(USDPerExternalToken))
-                / (uint256(USDPerUnderlyingTokenDst) * 10 ** (v.decimal1 - v.decimal2));
-        } else {
-            v.amount = (args.amount * uint256(USDPerExternalToken) * 10 ** (v.decimal2 - v.decimal1))
-                / uint256(USDPerUnderlyingTokenDst);
+        console.log("test amount pre-swap", args.amount);
+        /// @dev src swaps simulation if any
+        if (args.externalToken != args.underlyingToken) {
+            vm.selectFork(FORKS[args.srcChainId]);
+            uint256 decimal1 = v.decimal1;
+            uint256 decimal2 = args.underlyingToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
+                ? 18
+                : MockERC20(args.underlyingToken).decimals();
+
+            /// @dev decimal1 = decimals of args.externalToken (src chain), decimal2 = decimals of args.underlyingToken
+            /// (src chain)
+            if (decimal1 > decimal2) {
+                args.amount = (args.amount * uint256(USDPerExternalToken))
+                    / (uint256(USDPerUnderlyingToken) * 10 ** (decimal1 - decimal2));
+            } else {
+                args.amount = ((args.amount * uint256(USDPerExternalToken)) * 10 ** (decimal2 - decimal1))
+                    / uint256(USDPerUnderlyingToken);
+            }
+            console.log("test amount post-swap", args.amount);
         }
 
-        // if (v.decimal1 > v.decimal2) {
-        //     v.amountTemp = (args.amount * uint256(USDPerExternalToken))
-        //         / (uint256(USDPerUnderlyingToken) * 10 ** (v.decimal1 - v.decimal2));
-        //     v.amount = (v.amountTemp * uint256(USDPerUnderlyingToken))
-        //         / (uint256(USDPerUnderlyingTokenDst) * 10 ** (v.decimal1 - v.decimal2));
-        // } else {
-        //     v.amountTemp = (args.amount * uint256(USDPerExternalToken) * 10 ** (v.decimal2 - v.decimal1))
-        //         / uint256(USDPerUnderlyingToken);
-        //     v.amount = (v.amountTemp * uint256(USDPerUnderlyingToken) * 10 ** (v.decimal2 - v.decimal1))
-        //         / uint256(USDPerUnderlyingTokenDst);
-        // }
+        int256 slippage = args.slippage;
+        if (args.srcChainId == args.toChainId) slippage = 0;
+        else if (args.dstSwap) slippage = (slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        else slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
-        // if (v.decimal1 > v.decimal2) {
-        //     v.amount = args.amount / 10 ** (v.decimal1 - v.decimal2);
-        // } else {
-        //     v.amount = args.amount * 10 ** (v.decimal2 - v.decimal1);
-        // }
-        console.log("args.amount after", v.amount);
+        args.amount = (args.amount * uint256(10_000 - slippage)) / 10_000;
+        console.log("test amount pre-bridge, post-slippage", v.amount);
+
+        /// @dev if args.externalToken == args.underlyingToken, USDPerExternalToken == USDPerUnderlyingToken
+        /// @dev v.decimal3 = decimals of args.underlyingToken (args.externalToken too if above holds true) (src chain),
+        /// v.decimal2 = decimals of args.underlyingTokenDst (dst chain)
+        if (v.decimal3 > v.decimal2) {
+            v.amount = (args.amount * uint256(USDPerUnderlyingToken))
+                / (uint256(USDPerUnderlyingTokenDst) * 10 ** (v.decimal3 - v.decimal2));
+        } else {
+            v.amount = (args.amount * uint256(USDPerUnderlyingToken) * 10 ** (v.decimal2 - v.decimal3))
+                / uint256(USDPerUnderlyingTokenDst);
+        }
+        console.log("test amount post-bridge", v.amount);
 
         vm.selectFork(v.initialFork);
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw

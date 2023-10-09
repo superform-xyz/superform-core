@@ -99,7 +99,7 @@ contract LiFiMock is Test {
 
         v.amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
 
-        console.log("amount before", v.amountOut);
+        console.log("amount pre-bridge", v.amountOut);
 
         _sendOutputTokenToReceiver(data_, inputToken_, receiver_, v.amountOut, v.prevForkId, v.toForkId);
 
@@ -135,10 +135,11 @@ contract LiFiMock is Test {
             finalAmount =
                 (amountOut_ * USDPerUnderlyingToken) / (10 ** (decimal1 - decimal2) * USDPerUnderlyingTokenDst);
         } else {
-            finalAmount = (amountOut_ * USDPerUnderlyingToken) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingTokenDst;
+            finalAmount =
+                ((amountOut_ * USDPerUnderlyingToken) * 10 ** (decimal2 - decimal1)) / USDPerUnderlyingTokenDst;
         }
 
-        console.log("amount after", finalAmount);
+        console.log("amount post-bridge", finalAmount);
 
         if (outputToken != NATIVE) {
             deal(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
@@ -176,12 +177,14 @@ contract LiFiMock is Test {
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         uint256 decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
 
+        console.log("amount pre-swap", amount_);
         /// input token decimals are greater than output
         if (decimal1 > decimal2) {
             amount_ = (amount_ * USDPerExternalToken) / (USDPerUnderlyingToken * 10 ** (decimal1 - decimal2));
         } else {
             amount_ = (amount_ * USDPerExternalToken) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingToken;
         }
+        console.log("amount post-swap", amount_);
         /// @dev assume no swap slippage
         deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);
         return amount_;
