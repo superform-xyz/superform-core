@@ -102,8 +102,6 @@ contract LiFiMock is Test {
         uint256 prevForkId = vm.activeFork();
         vm.selectFork(v.toForkId);
 
-        uint256 decimal2 = v.outputToken == NATIVE ? 18 : MockERC20(v.outputToken).decimals();
-
         if (v.isDirect) v.slippage = 0;
         else if (v.isMultiTx) v.slippage = (v.slippage * int256(v.multiTxSlippageShare)) / 100;
         else v.slippage = (v.slippage * int256(100 - v.multiTxSlippageShare)) / 100;

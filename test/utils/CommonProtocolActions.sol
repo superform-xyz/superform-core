@@ -33,6 +33,7 @@ abstract contract CommonProtocolActions is BaseSetup {
         bool sameChain
     )
         internal
+        view
         returns (bytes memory txData)
     {
         if (args.liqBridgeKind == 1) {

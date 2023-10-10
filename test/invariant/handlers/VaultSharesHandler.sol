@@ -13,6 +13,9 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     VaultSharesStore public vaultSharesStore;
     TimestampStore public timestampStore;
 
+    uint256 public vaultShares;
+    uint256 public superPositionsSum;
+
     /// @dev Simulates the passage of time.
     /// See https://github.com/foundry-rs/foundry/issues/4994.
     /// @dev taken from
@@ -87,13 +90,13 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         uint256 inputToken,
         uint256 slippage,
         uint64 chain0,
-        uint64 dstChain1,
         uint256 actionType,
         uint256 user
     )
         public
         adjustTimestamp(timeJumpSeed)
     {
+        console.log("## Handler call direct ##");
         HandlerLocalVars memory v;
         v.AMBs = new uint8[](2);
         v.AMBs[0] = 1;
@@ -176,8 +179,12 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         );
         v.vaultShares = _getSingleVaultShares(chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst);
 
+        //vaultSharesStore.setSuperPositions(v.superPositionsSum);
+        // vaultSharesStore.setVaultShares(v.vaultShares);
         vm.selectFork(FORKS[0]);
-        vaultSharesStore.setInvariantToAssert(v.superPositionsSum, v.vaultShares);
+
+        vaultShares = v.vaultShares;
+        superPositionsSum = v.superPositionsSum;
     }
 
     function singleXChainSingleVaultDeposit(
@@ -194,6 +201,8 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         public
         adjustTimestamp(timeJumpSeed)
     {
+        console.log("## Handler call xChain ##");
+
         HandlerLocalVars memory v;
         v.AMBs = new uint8[](2);
         v.AMBs[0] = 1;
@@ -280,9 +289,10 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst, v.targetVaultsPerDst, v.targetFormKindsPerDst
         );
         v.vaultShares = _getSingleVaultShares(chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst);
-
         vm.selectFork(FORKS[0]);
-        vaultSharesStore.setInvariantToAssert(v.superPositionsSum, v.vaultShares);
+
+        vaultShares = v.vaultShares;
+        superPositionsSum = v.superPositionsSum;
     }
     /*
     function singleDirectSingleVaultWithdraw() public {

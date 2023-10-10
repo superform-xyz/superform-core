@@ -3,40 +3,18 @@ pragma solidity ^0.8.19;
 
 import "./CommonProtocolActions.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
-
 import { IERC20 } from "openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
-import { ITimelockStateRegistry } from "src/interfaces/ITimelockStateRegistry.sol";
 import { IERC1155A } from "ERC1155A/interfaces/IERC1155A.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
-import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
 abstract contract InvariantProtocolActions is CommonProtocolActions {
     using DataLib for uint256;
 
-    event FailedXChainDeposits(uint256 indexed payloadId);
-
-    /// @dev counts for each chain in each testAction the number of timelocked superforms
-    mapping(uint256 chainIdIndex => uint256) countTimelocked;
-
     /// @dev TODO - sujith to comment
     uint8[][] public MultiDstAMBs;
-
-    /// @dev for multiDst scenarios, sometimes its important to consider the number of uniqueDSTs because pigeon
-    /// aggregates deliveries per destination
-    uint64[] public uniqueDSTs;
-
-    /// @dev to hold reverting superForms per action kind and for timelocked
-    uint256[][] public revertingDepositSFs;
-    uint256[][] public revertingWithdrawSFs;
-    uint256[][] public revertingWithdrawTimelockedSFs;
-
-    /// @dev dynamic arrays to insert in the double array above
-    uint256[] public revertingDepositSFsPerDst;
-    uint256[] public revertingWithdrawSFsPerDst;
-    uint256[] public revertingWithdrawTimelockedSFsPerDst;
 
     /// @dev for multiDst tests with repeating destinations
     struct UniqueDSTInfo {
@@ -50,7 +28,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
     bool sameChainDstHasRevertingVault;
 
     /// @dev to be aware which destinations have been 'used' already
-    mapping(uint64 chainId => UniqueDSTInfo info) public usedDSTs;
 
     function setUp() public virtual override {
         super.setUp();
@@ -70,7 +47,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
     )
         internal
     {
-        console.log("new-action");
+        console.log("--new-action");
         uint256 initialFork = vm.activeFork();
         vm.selectFork(FORKS[vars.CHAIN_0]);
 
@@ -122,17 +99,17 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         /// increase happened nor there is any need for payload update or further assertion
         (vars, msgValue) = _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
         console.log("Stage 2 complete");
-
+        UniqueDSTInfo[] memory usedDsts;
         /// @dev simulation of cross-chain message delivery (for x-chain actions) (With no assertions)
-        aV = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
+        (aV, usedDsts) = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
         console.log("Stage 3 complete");
 
         /// @dev processing of message delivery on destination   (for x-chain actions)
-        success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData);
+        success = _stage4_process_src_dst_payload(action, vars, aV, singleSuperformsData, usedDsts);
         if (!success) {
             console.log("Stage 4 failed");
             return;
-        } else if (action.action == Actions.Withdraw && action.testType == TestType.Pass) {
+        } else {
             console.log("Stage 4 complete");
         }
 
@@ -142,7 +119,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         ) {
             /// @dev processing of superPositions mint from destination callback on source (for successful deposits)
 
-            success = _stage5_process_superPositions_mint(action, vars, multiSuperformsData);
+            success = _stage5_process_superPositions_mint(action, vars);
             if (!success) {
                 console.log("Stage 5 failed");
 
@@ -152,53 +129,9 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             }
         }
 
-        /// @dev for all form kinds including timelocked (first stage)
-        /// @dev if there is a failure we immediately re-mint superShares
-        /// @dev stage 6 is only required if there is any failed cross chain withdraws
-        /// @dev this is only for x-chain actions
-        if (action.action == Actions.Withdraw) {
-            bool toAssert;
-            (success, toAssert) = _stage6_process_superPositions_withdraw(action, vars, multiSuperformsData);
-            if (!success) {
-                console.log("Stage 6 failed");
-                return;
-            } else {
-                console.log("Stage 6 complete");
-            }
-        }
-
-        /// @dev stage 7 and 8 are only required for timelocked forms, but also including direct chain actions
-        if (action.action == Actions.Withdraw) {
-            _stage7_finalize_timelocked_payload(vars);
-
-            console.log("Stage 7 complete");
-        }
-
-        if (action.action == Actions.Withdraw) {
-            /// @dev Process payload received on source from destination (withdraw callback, for failed withdraws)
-            _stage8_process_failed_timelocked_xchain_remint(action, vars, msgValue);
-
-            console.log("Stage 8 complete");
-        }
-
-        delete revertingDepositSFs;
-        delete revertingWithdrawSFs;
-        delete revertingWithdrawTimelockedSFs;
-        delete sameChainDstHasRevertingVault;
-        sameChainDstHasRevertingVault = false;
-        for (uint256 i = 0; i < vars.nDestinations; ++i) {
-            delete countTimelocked[i];
-        }
         MULTI_TX_SLIPPAGE_SHARE = 0;
 
-        console.log("ASDF");
-    }
-
-    struct BuildReqDataVars {
-        uint256 i;
-        uint256 j;
-        uint256 k;
-        uint256 finalAmount;
+        console.log("Done --");
     }
 
     /// @dev STEP 1: Build Request Data for SuperformRouter
@@ -251,7 +184,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             (vars.targetSuperformIds, vars.underlyingSrcToken, vars.underlyingDstToken, vars.vaultMock) = _targetVaults(
                 vars.CHAIN_0,
                 vars.DST_CHAINS[i],
-                i,
                 vars.targetVaults[i],
                 vars.targetFormKinds[i],
                 vars.targetUnderlyings[i]
@@ -386,30 +318,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         SuperformRouter superformRouter = SuperformRouter(vars.fromSrc);
 
         PaymentHelper paymentHelper = PaymentHelper(getContract(vars.CHAIN_0, "PaymentHelper"));
-
-        /// @dev this step atempts to detect if there are reverting vaults on direct chain calls, for either deposits or
-        /// withdraws
-        /// @dev notice we are not detecting reverts for timelocks. This is because timelock mocks currently do not
-        /// revert on 1st stage (unlock)
-        for (uint256 i = 0; i < vars.nDestinations; ++i) {
-            if (vars.CHAIN_0 == vars.DST_CHAINS[i]) {
-                if (revertingDepositSFs.length > 0) {
-                    if (
-                        revertingDepositSFs[i].length > 0
-                            && (action.action == Actions.Deposit || action.action == Actions.DepositPermit2)
-                    ) {
-                        sameChainDstHasRevertingVault = true;
-                        break;
-                    }
-                }
-                if (revertingWithdrawSFs.length > 0) {
-                    if (revertingWithdrawSFs[i].length > 0 && action.action == Actions.Withdraw) {
-                        sameChainDstHasRevertingVault = true;
-                        break;
-                    }
-                }
-            }
-        }
 
         /// @dev pigeon requires event logs to be recorded so that it can properly capture the variables it needs to
         /// fullfil messages. Check pigeon library docs for more info
@@ -618,25 +526,38 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         SingleVaultSFData[] memory singleSuperformsData
     )
         internal
-        returns (MessagingAssertVars[] memory)
+        returns (MessagingAssertVars[] memory, UniqueDSTInfo[] memory)
     {
         Stage3InternalVars memory internalVars;
+        UniqueDSTInfo[] memory usedDSTs = new UniqueDSTInfo[](vars.nDestinations);
+        uint64[] memory uniqueDsts;
         for (uint256 i = 0; i < vars.nDestinations; i++) {
-            /// @dev if payloadNumber is = 0 still it means uniqueDst has not been found yet (1 repetition)
-            if (usedDSTs[vars.DST_CHAINS[i]].payloadNumber == 0) {
-                /// @dev NOTE: re-set struct to null to reset repetitions for multi action
-                delete usedDSTs[vars.DST_CHAINS[i]];
-
-                ++usedDSTs[vars.DST_CHAINS[i]].payloadNumber;
+            if (usedDSTs[i].payloadNumber == 0) {
+                ++usedDSTs[i].payloadNumber;
                 if (vars.DST_CHAINS[i] != vars.CHAIN_0) {
-                    uniqueDSTs.push(vars.DST_CHAINS[i]);
+                    ++vars.nUniqueDsts;
                 }
             } else {
                 /// @dev add repetitions (for non unique destinations)
-                ++usedDSTs[vars.DST_CHAINS[i]].payloadNumber;
+                ++usedDSTs[i].payloadNumber;
             }
         }
-        vars.nUniqueDsts = uniqueDSTs.length;
+        uniqueDsts = new uint64[](vars.nUniqueDsts);
+        uint256 countUnique;
+        for (uint256 i = 0; i < vars.nDestinations; i++) {
+            /// @dev if nRepetitions is = 0 still it means uniqueDst has not been found yet (1 repetition)
+            if (usedDSTs[i].nRepetitions == 0) {
+                ++usedDSTs[i].nRepetitions;
+                if (vars.DST_CHAINS[i] != vars.CHAIN_0) {
+                    uniqueDsts[countUnique] = vars.DST_CHAINS[i];
+                    ++countUnique;
+                }
+            } else {
+                /// @dev add repetitions (for non unique destinations)
+                ++usedDSTs[i].nRepetitions;
+            }
+        }
+        if (countUnique != vars.nUniqueDsts) revert("InvalidCount");
 
         internalVars.toMailboxes = new address[](vars.nUniqueDsts);
         internalVars.expDstDomains = new uint32[](vars.nUniqueDsts);
@@ -652,7 +573,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         internalVars.k = 0;
         for (uint256 i = 0; i < chainIds.length; i++) {
             for (uint256 j = 0; j < vars.nUniqueDsts; j++) {
-                if (uniqueDSTs[j] == chainIds[i] && chainIds[i] != vars.CHAIN_0) {
+                if (uniqueDsts[j] == chainIds[i] && chainIds[i] != vars.CHAIN_0) {
                     internalVars.toMailboxes[internalVars.k] = hyperlaneMailboxes[i];
                     internalVars.expDstDomains[internalVars.k] = hyperlane_chainIds[i];
 
@@ -669,7 +590,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                 }
             }
         }
-        delete uniqueDSTs;
         vars.logs = vm.getRecordedLogs();
 
         for (uint256 index; index < vars.AMBs.length; index++) {
@@ -722,7 +642,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             }
         }
 
-        return aV;
+        return (aV, usedDSTs);
     }
 
     /// @dev STEP 4 X-CHAIN: Update state (for deposits) and process src to dst payload (for deposits/withdraws)
@@ -730,7 +650,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         TestAction memory action,
         StagesLocalVars memory vars,
         MessagingAssertVars[] memory aV,
-        SingleVaultSFData[] memory singleSuperformsData
+        SingleVaultSFData[] memory singleSuperformsData,
+        UniqueDSTInfo[] memory usedDSTs
     )
         internal
         returns (bool success)
@@ -747,9 +668,9 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                             payable(getContract(aV[i].toChainId, "CoreStateRegistry"))
                         ).payloadsCount();
 
-                        PAYLOAD_ID[aV[i].toChainId] = payloadCount - usedDSTs[aV[i].toChainId].payloadNumber + 1;
+                        PAYLOAD_ID[aV[i].toChainId] = payloadCount - usedDSTs[i].payloadNumber + 1;
 
-                        --usedDSTs[aV[i].toChainId].payloadNumber;
+                        --usedDSTs[i].payloadNumber;
 
                         vars.multiVaultsPayloadArg = updateMultiVaultDepositPayloadArgs(
                             PAYLOAD_ID[aV[i].toChainId],
@@ -780,7 +701,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                                 (,, vars.underlyingDstToken,) = _targetVaults(
                                     vars.CHAIN_0,
                                     vars.DST_CHAINS[i],
-                                    i,
                                     vars.targetVaults[i],
                                     vars.targetFormKinds[i],
                                     vars.targetUnderlyings[i]
@@ -864,7 +784,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     ) {
                         PAYLOAD_ID[aV[i].toChainId] = CoreStateRegistry(
                             payable(getContract(aV[i].toChainId, "CoreStateRegistry"))
-                        ).payloadsCount() - usedDSTs[aV[i].toChainId].payloadNumber + 1;
+                        ).payloadsCount() - usedDSTs[i].payloadNumber + 1;
+                        --usedDSTs[i].payloadNumber;
 
                         vm.recordLogs();
 
@@ -877,7 +798,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                         vars.logs = vm.getRecordedLogs();
 
                         _payloadDeliveryHelper(vars.CHAIN_0, aV[i].toChainId, vars.AMBs, vars.logs);
-                        --usedDSTs[aV[i].toChainId].payloadNumber;
                     }
                 }
                 vm.selectFork(aV[i].initialFork);
@@ -890,8 +810,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
     /// @dev STEP 5 X-CHAIN: Process dst to src payload (mint of SuperPositions for deposits)
     function _stage5_process_superPositions_mint(
         TestAction memory action,
-        StagesLocalVars memory vars,
-        MultiVaultSFData[] memory multiSuperformsData
+        StagesLocalVars memory vars
     )
         internal
         returns (bool success)
@@ -907,178 +826,12 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
             if (vars.CHAIN_0 != toChainId) {
                 if (action.testType == TestType.Pass) {
-                    /// @dev only perform payload processing for successful deposits
-                    /// @dev message is not delivered if ALL deposit vaults fail in a multi vault or single vault
-                    if (action.multiVaults) {
-                        if (revertingDepositSFs[i].length == multiSuperformsData[i].superformIds.length) {
-                            continue;
-                        }
-                    } else {
-                        if (revertingDepositSFs[i].length == 1) {
-                            continue;
-                        }
-                    }
                     unchecked {
                         PAYLOAD_ID[vars.CHAIN_0]++;
                     }
 
                     success = _processPayload(
                         PAYLOAD_ID[vars.CHAIN_0], vars.CHAIN_0, vars.CHAIN_0, vars.AMBs, action.testType
-                    );
-                }
-            }
-        }
-    }
-
-    /// @dev STEP 6 X-CHAIN: Process payload back on source (re-mint of SuperPositions for failed withdraws (inc. 1st
-    /// stage timelock failures - unlock request))
-    function _stage6_process_superPositions_withdraw(
-        TestAction memory action,
-        StagesLocalVars memory vars,
-        MultiVaultSFData[] memory multiSuperformsData
-    )
-        internal
-        returns (bool success, bool toAssert)
-    {
-        /// @dev assume it will pass by default
-        success = true;
-        toAssert = false;
-        vm.selectFork(FORKS[vars.CHAIN_0]);
-
-        uint256 toChainId;
-
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
-            toChainId = vars.DST_CHAINS[i];
-
-            if (vars.CHAIN_0 != toChainId) {
-                /// @dev this must not be called if all vaults are reverting timelocked in a given destination (it is
-                /// done in a later stage)
-                if (action.multiVaults) {
-                    if (revertingWithdrawTimelockedSFs[i].length == multiSuperformsData[i].superformIds.length) {
-                        continue;
-                    }
-                } else {
-                    if (revertingWithdrawTimelockedSFs[i].length == 1) {
-                        continue;
-                    }
-                }
-                /// @dev if there is any reverting withdraw normal vault, process payload on src
-                if (revertingWithdrawSFs[i].length > 0) {
-                    toAssert = true;
-                    unchecked {
-                        PAYLOAD_ID[vars.CHAIN_0]++;
-                    }
-
-                    _processPayload(PAYLOAD_ID[vars.CHAIN_0], vars.CHAIN_0, vars.CHAIN_0, vars.AMBs, action.testType);
-                }
-            }
-        }
-    }
-
-    /// @dev STEP 7 DIRECT AND X-CHAIN: Finalize timelocked payload after time has passed
-    function _stage7_finalize_timelocked_payload(StagesLocalVars memory vars) internal {
-        uint256 initialFork;
-        uint256 currentUnlockId;
-
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
-            if (countTimelocked[i] > 0) {
-                initialFork = vm.activeFork();
-
-                vm.selectFork(FORKS[vars.DST_CHAINS[i]]);
-
-                ITimelockStateRegistry twoStepsFormStateRegistry =
-                    ITimelockStateRegistry(contracts[vars.DST_CHAINS[i]][bytes32(bytes("TimelockStateRegistry"))]);
-
-                currentUnlockId = twoStepsFormStateRegistry.timelockPayloadCounter();
-                if (currentUnlockId > 0) {
-                    vm.recordLogs();
-
-                    /// @dev performs unlock before the time ends
-                    for (uint256 j = countTimelocked[i]; j > 0; j--) {
-                        (uint256 nativeFee,) = _generateAckGasFeesAndParamsForTimeLock(
-                            abi.encode(vars.CHAIN_0, vars.DST_CHAINS[i]), vars.AMBs, currentUnlockId - j + 1
-                        );
-
-                        vm.prank(deployer);
-                        /// @dev tries to process the payload during lock-in period
-                        vm.expectRevert(Error.LOCKED.selector);
-                        twoStepsFormStateRegistry.finalizePayload{ value: nativeFee }(
-                            currentUnlockId - j + 1, bytes("")
-                        );
-                    }
-
-                    /// @dev perform the calls from beginning to last because of easiness in passing unlock id
-                    for (uint256 j = countTimelocked[i]; j > 0; j--) {
-                        (uint256 nativeFee,) = _generateAckGasFeesAndParamsForTimeLock(
-                            abi.encode(vars.CHAIN_0, vars.DST_CHAINS[i]), vars.AMBs, currentUnlockId - j + 1
-                        );
-
-                        /// @dev increase time by 5 days
-                        vm.warp(block.timestamp + (86_400 * 5));
-                        vm.prank(deployer);
-
-                        /// @dev if needed in certain test scenarios, re-feed txData for timelocked here
-                        twoStepsFormStateRegistry.finalizePayload{ value: nativeFee }(
-                            currentUnlockId - j + 1, bytes("")
-                        );
-
-                        /// @dev tries to process already finalized payload
-                        vm.prank(deployer);
-                        vm.expectRevert(Error.INVALID_PAYLOAD_STATUS.selector);
-                        twoStepsFormStateRegistry.finalizePayload{ value: nativeFee }(
-                            currentUnlockId - j + 1, bytes("")
-                        );
-                    }
-                    /// @dev deliver the message for the given destination
-                    Vm.Log[] memory logs = vm.getRecordedLogs();
-                    _payloadDeliveryHelper(vars.CHAIN_0, vars.DST_CHAINS[i], vars.AMBs, logs);
-                }
-            }
-        }
-        vm.selectFork(initialFork);
-    }
-
-    /// @dev STEP 8 X-CHAIN: to process failed messages from 2 step forms registry
-    function _stage8_process_failed_timelocked_xchain_remint(
-        TestAction memory action,
-        StagesLocalVars memory vars,
-        uint256 msgValue
-    )
-        internal
-        returns (bool success)
-    {
-        /// @dev assume it will pass by default
-        success = true;
-        vm.selectFork(FORKS[vars.CHAIN_0]);
-
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
-            if (vars.CHAIN_0 != vars.DST_CHAINS[i] && revertingWithdrawTimelockedSFs[i].length > 0) {
-                IBaseStateRegistry twoStepsFormStateRegistry =
-                    IBaseStateRegistry(contracts[vars.CHAIN_0][bytes32(bytes("TimelockStateRegistry"))]);
-
-                /// @dev if a payload exists to be processed, process it
-                if (
-                    _payload(address(twoStepsFormStateRegistry), vars.CHAIN_0, TWO_STEP_PAYLOAD_ID[vars.CHAIN_0] + 1)
-                        .length > 0
-                ) {
-                    unchecked {
-                        TWO_STEP_PAYLOAD_ID[vars.CHAIN_0]++;
-                    }
-
-                    (address srcSender, uint64 srcChainId,,,) = PayloadHelper(
-                        getContract(vars.CHAIN_0, "PayloadHelper")
-                    ).decodeTimeLockFailedPayload(TWO_STEP_PAYLOAD_ID[vars.CHAIN_0]);
-
-                    assertEq(srcChainId, vars.DST_CHAINS[i]);
-                    assertEq(srcSender, users[action.user]);
-
-                    success = _processTwoStepPayload(
-                        TWO_STEP_PAYLOAD_ID[vars.CHAIN_0],
-                        vars.DST_CHAINS[i],
-                        vars.CHAIN_0,
-                        action.testType,
-                        action.revertError,
-                        msgValue
                     );
                 }
             }
@@ -1415,12 +1168,12 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
     function _targetVaults(
         uint64 chain0,
         uint64 chain1,
-        uint256 dst,
         uint256[] memory targetVaultsPerDst,
         uint32[] memory targetFormKindsPerDst,
         uint256[] memory targetUnderlyingsPerDst
     )
         internal
+        view
         returns (
             uint256[] memory targetSuperformsMem,
             address[] memory underlyingSrcTokensMem,
@@ -1451,31 +1204,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             underlyingSrcTokensMem[i] = getContract(chain0, vars.underlyingToken);
             underlyingDstTokensMem[i] = getContract(chain1, vars.underlyingToken);
             vaultMocksMem[i] = getContract(chain1, VAULT_NAMES[targetVaultsPerDst[i]][targetUnderlyingsPerDst[i]]);
-
-            if (targetVaultsPerDst[i] == 3 || targetVaultsPerDst[i] == 5 || targetVaultsPerDst[i] == 6) {
-                revertingDepositSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-            if (targetVaultsPerDst[i] == 4) {
-                revertingWithdrawTimelockedSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-            if (targetVaultsPerDst[i] == 7 || targetVaultsPerDst[i] == 8) {
-                revertingWithdrawSFsPerDst.push(vars.superformIdsTemp[i]);
-            }
-        }
-
-        /// @dev this is used to have info on all reverting superforms in all destinations. Storage access is used for
-        /// easiness of pushing
-        revertingDepositSFs.push(revertingDepositSFsPerDst);
-        revertingWithdrawSFs.push(revertingWithdrawSFsPerDst);
-        revertingWithdrawTimelockedSFs.push(revertingWithdrawTimelockedSFsPerDst);
-
-        delete revertingDepositSFsPerDst;
-        delete revertingWithdrawSFsPerDst;
-        delete revertingWithdrawTimelockedSFsPerDst;
-
-        /// @dev detects timelocked forms in scenario and counts them
-        for (uint256 j; j < targetFormKindsPerDst.length; j++) {
-            if (targetFormKindsPerDst[j] == 1) ++countTimelocked[dst];
         }
     }
 
@@ -1666,16 +1394,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
                 value: nativeFee
             }(payloadId_);
-        } else if (testType == TestType.RevertProcessPayload) {
-            /// @dev WARNING the try catch silences the revert, therefore the only way to assert is via emit
-            vm.expectEmit();
-            // We emit the event we expect to see.
-            emit FailedXChainDeposits(payloadId_);
-
-            CoreStateRegistry(payable(getContract(targetChainId_, "CoreStateRegistry"))).processPayload{
-                value: nativeFee
-            }(payloadId_);
-            return false;
         }
 
         vm.selectFork(initialFork);
@@ -1834,123 +1552,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     WORMHOLE_CHAIN_IDS[TO_CHAIN], FORKS[FROM_CHAIN], wormholeRelayer, logs
                 );
             }
-        }
-    }
-
-    function _amountsToRemintPerDstWithTimelocked(
-        TestAction memory action,
-        StagesLocalVars memory vars,
-        MultiVaultSFData[] memory multiSuperformsData,
-        SingleVaultSFData[] memory singleSuperformsData
-    )
-        internal
-        view
-        returns (uint256[][] memory amountsToRemintPerDst)
-    {
-        amountsToRemintPerDst = new uint256[][](vars.nDestinations);
-
-        uint256[] memory amountsToRemint;
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
-            if (action.multiVaults) {
-                amountsToRemint = new uint256[](
-                    multiSuperformsData[i].superformIds.length
-                );
-
-                for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; j++) {
-                    amountsToRemint[j] = multiSuperformsData[i].amounts[j];
-                    bool found = false;
-                    for (uint256 k = 0; k < revertingWithdrawTimelockedSFs[i].length; k++) {
-                        if (revertingWithdrawTimelockedSFs[i][k] == multiSuperformsData[i].superformIds[j]) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
-                        if (revertingWithdrawSFs[i][k] == multiSuperformsData[i].superformIds[j]) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        amountsToRemint[j] = 0;
-                        found = false;
-                    }
-                }
-            } else {
-                amountsToRemint = new uint256[](1);
-                amountsToRemint[0] = singleSuperformsData[i].amount;
-                bool found;
-
-                for (uint256 k = 0; k < revertingWithdrawTimelockedSFs[i].length; k++) {
-                    if (revertingWithdrawTimelockedSFs[i][k] == singleSuperformsData[i].superformId) {
-                        found = true;
-                        break;
-                    }
-                }
-                for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
-                    if (revertingWithdrawSFs[i][k] == singleSuperformsData[i].superformId) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    amountsToRemint[0] = 0;
-                }
-            }
-            amountsToRemintPerDst[i] = amountsToRemint;
-        }
-    }
-
-    function _amountsToRemintPerDst(
-        TestAction memory action,
-        StagesLocalVars memory vars,
-        MultiVaultSFData[] memory multiSuperformsData,
-        SingleVaultSFData[] memory singleSuperformsData
-    )
-        internal
-        view
-        returns (uint256[][] memory amountsToRemintPerDst)
-    {
-        amountsToRemintPerDst = new uint256[][](vars.nDestinations);
-
-        uint256[] memory amountsToRemint;
-        for (uint256 i = 0; i < vars.nDestinations; i++) {
-            if (action.multiVaults) {
-                amountsToRemint = new uint256[](
-                    multiSuperformsData[i].superformIds.length
-                );
-
-                for (uint256 j = 0; j < multiSuperformsData[i].superformIds.length; j++) {
-                    amountsToRemint[j] = multiSuperformsData[i].amounts[j];
-                    bool found = false;
-
-                    for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
-                        if (revertingWithdrawSFs[i][k] == multiSuperformsData[i].superformIds[j]) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        amountsToRemint[j] = 0;
-                        found = false;
-                    }
-                }
-            } else {
-                amountsToRemint = new uint256[](1);
-                amountsToRemint[0] = singleSuperformsData[i].amount;
-                bool found;
-
-                for (uint256 k = 0; k < revertingWithdrawSFs[i].length; k++) {
-                    if (revertingWithdrawSFs[i][k] == singleSuperformsData[i].superformId) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    amountsToRemint[0] = 0;
-                }
-            }
-            amountsToRemintPerDst[i] = amountsToRemint;
         }
     }
 }

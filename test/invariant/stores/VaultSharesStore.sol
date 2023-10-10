@@ -6,17 +6,19 @@ contract VaultSharesStore {
     /*//////////////////////////////////////////////////////////////////////////
                                      VARIABLES
     //////////////////////////////////////////////////////////////////////////*/
-
-    uint256 public superPositionsSum;
     uint256 public vaultShares;
+    uint256 public superPositionsSum;
 
     /*//////////////////////////////////////////////////////////////////////////
                                       HELPERS
     //////////////////////////////////////////////////////////////////////////*/
 
-    function setInvariantToAssert(uint256 _superPositionsSum, uint256 _vaultShares) external {
+    function setSuperPositions(uint256 _superPositionsSum) external {
         // Store the results
         superPositionsSum = _superPositionsSum;
+    }
+
+    function setVaultShares(uint256 _vaultShares) external {
         vaultShares = _vaultShares;
     }
 }

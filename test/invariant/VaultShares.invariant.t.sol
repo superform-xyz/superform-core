@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import { VaultSharesHandler } from "./handlers/VaultSharesHandler.sol";
 import { VaultSharesStore } from "./stores/VaultSharesStore.sol";
 import { BaseInvariantTest } from "./Base.invariant.t.sol";
+import "forge-std/console.sol";
 
 contract VaultSharesInvariantTest is BaseInvariantTest {
     VaultSharesStore internal vaultSharesStore;
@@ -31,9 +32,9 @@ contract VaultSharesInvariantTest is BaseInvariantTest {
         vm.label({ account: address(vaultSharesHandler), newLabel: "VaultSharesHandler" });
 
         /// @dev Note: disable some of the selectors to test a bunch of them only
-        bytes4[] memory selectors = new bytes4[](1);
+        bytes4[] memory selectors = new bytes4[](2);
         selectors[0] = VaultSharesHandler.singleXChainSingleVaultDeposit.selector;
-        //selectors[1] = VaultSharesHandler.singleDirectSingleVaultDeposit.selector;
+        selectors[1] = VaultSharesHandler.singleDirectSingleVaultDeposit.selector;
         targetSelector(FuzzSelector({ addr: address(vaultSharesHandler), selectors: selectors }));
         targetContract(address(vaultSharesHandler));
 
@@ -47,6 +48,8 @@ contract VaultSharesInvariantTest is BaseInvariantTest {
     //////////////////////////////////////////////////////////////*/
 
     function invariant_vaultShares() public useCurrentTimestamp {
-        assertEq(vaultSharesStore.superPositionsSum(), vaultSharesStore.vaultShares());
+        vm.selectFork(FORKS[0]);
+
+        assertEq(vaultSharesHandler.superPositionsSum(), vaultSharesHandler.vaultShares());
     }
 }
