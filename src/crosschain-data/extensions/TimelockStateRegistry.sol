@@ -170,6 +170,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.srcSender, p.data)
                 );
             }
+
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
                 IStateSyncer(superRegistry.getStateSyncer(p.data.superformRouterId)).mintSingle(

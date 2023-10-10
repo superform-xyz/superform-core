@@ -38,6 +38,11 @@ contract TimelockStateRegistryTest is ProtocolActions {
             0
         );
 
+        vm.prank(getContract(AVAX, "SuperformRouter"));
+        SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
+        );
+
         vm.prank(getContract(ETH, "ERC4626TimelockForm"));
         timelockStateRegistry.receivePayload(
             0,
@@ -146,7 +151,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
     function _legacySuperformPackWithShift() internal view returns (uint256 superformId_) {
         address superform_ = getContract(ETH, "ERC4626TimelockForm");
-        uint32 formImplementationId_ = 1;
+        uint32 formImplementationId_ = 2;
         uint64 chainId_ = ETH;
 
         superformId_ = uint256(uint160(superform_));

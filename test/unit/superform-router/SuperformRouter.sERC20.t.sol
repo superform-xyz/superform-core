@@ -37,9 +37,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         SuperRBAC superRBACC = SuperRBAC(getContract(ETH, "SuperRBAC"));
         SuperRegistry superRegistryC = SuperRegistry(getContract(ETH, "SuperRegistry"));
 
-        superRBACC.grantRole(superRBACC.SERC20_MINTER_ROLE(), address(superformRouterSERC20));
-        superRBACC.grantRole(superRBACC.SERC20_BURNER_ROLE(), address(superformRouterSERC20));
-
         superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20), ETH);
         superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncer), ETH);
 
@@ -61,9 +58,6 @@ contract SuperformRouterSERC20Test is ProtocolActions {
 
         superRBACC = SuperRBAC(getContract(ARBI, "SuperRBAC"));
         superRegistryC = SuperRegistry(getContract(ARBI, "SuperRegistry"));
-
-        superRBACC.grantRole(superRBACC.SERC20_MINTER_ROLE(), address(superformRouterSERC20Arbi));
-        superRBACC.grantRole(superRBACC.SERC20_BURNER_ROLE(), address(superformRouterSERC20Arbi));
 
         superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20Arbi), ARBI);
         superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncerArbi), ARBI);

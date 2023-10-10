@@ -455,7 +455,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(
                 vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
             );
-            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
             /// @dev 4.3 - deploy Broadcast State Registry
             vars.broadcastRegistry = address(new BroadcastRegistry{salt: salt}(vars.superRegistryC));
@@ -476,8 +475,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             registryIds[2] = 3;
 
             vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
-            vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.coreStateRegistry);
-            vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.twoStepsFormStateRegistry);
 
             /// @dev 5- deploy Payment Helper
             vars.paymentHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
@@ -641,9 +638,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
             vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
-            /// @dev grant extra roles to superformRouter
-            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.superformRouter);
-            vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_BURNER_ROLE(), vars.superformRouter);
 
             /// @dev 12 - Deploy SuperPositions and SuperTransmuter
             vars.superPositions =
