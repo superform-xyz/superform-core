@@ -34,7 +34,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
         /// if registry id is 2 (or) corresponding state registry can mint
-        if (routerId != 2) {
+        if (routerId != ROUTER_TYPE) {
             (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
 
             if (uint32(registryId) != formBeaconId) {
@@ -51,7 +51,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
 
         /// if registry id is 1 (or) corresponding state registry can mint
-        if (routerId != 2) {
+        if (routerId != ROUTER_TYPE) {
             for (uint256 i; i < superformIds.length; ++i) {
                 (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
 
