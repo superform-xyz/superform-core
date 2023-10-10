@@ -61,8 +61,8 @@ max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
 runs = 50
 
 [invariant]
-runs = 1
-depth = 100 # “Calls” refer to the number of times functions in the smart contract are called during a single test run. “Reverts” refers to the number of times a call to any function within the smart contract resulted in a transaction being reverted due to an error or exception.
+runs = 20
+depth = 5 # “Calls” refer to the number of times functions in the smart contract are called during a single test run. “Reverts” refers to the number of times a call to any function within the smart contract resulted in a transaction being reverted due to an error or exception.
 fail_on_revert = true
 call_override = false
 

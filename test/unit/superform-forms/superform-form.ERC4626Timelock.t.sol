@@ -161,6 +161,7 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
             superform,
             uint256(ETH),
             2e18,
+            2e18,
             false,
             0
         );

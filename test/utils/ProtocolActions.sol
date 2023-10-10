@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import "./BaseSetup.sol";
+import "./CommonProtocolActions.sol";
 import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
 import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
@@ -15,7 +15,7 @@ import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
 
-abstract contract ProtocolActions is BaseSetup {
+abstract contract ProtocolActions is CommonProtocolActions {
     using DataLib for uint256;
 
     /// out of 10000
@@ -67,9 +67,6 @@ abstract contract ProtocolActions is BaseSetup {
     /// @dev test slippage and max slippage are global params
     uint256 SLIPPAGE;
     uint256 MAX_SLIPPAGE;
-
-    /// @dev percentage of total slippage that is used for dstSwap
-    uint256 MULTI_TX_SLIPPAGE_SHARE;
 
     /// @dev bool to flag if scenario should have txData fullfiled on destination for a withdraw (used to test cases
     /// where txData expires in mainnet)
@@ -1413,272 +1410,6 @@ abstract contract ProtocolActions is BaseSetup {
         );
     }
 
-    struct LiqBridgeTxDataArgs {
-        uint256 liqBridgeKind;
-        address externalToken; // this is underlyingTokenDst for withdraws
-        address underlyingToken;
-        address underlyingTokenDst; // this is external token (to receive in the end) for withdraws
-        address from;
-        uint64 srcChainId;
-        uint64 toChainId;
-        uint64 liqDstChainId;
-        bool dstSwap;
-        address toDst;
-        uint256 liqBridgeToChainId;
-        uint256 amount;
-        bool withdraw;
-        int256 slippage;
-    }
-
-    function _buildLiqBridgeTxData(
-        LiqBridgeTxDataArgs memory args,
-        bool sameChain
-    )
-        internal
-        view
-        returns (bytes memory txData)
-    {
-        if (args.liqBridgeKind == 1) {
-            if (!sameChain) {
-                ILiFi.BridgeData memory bridgeData;
-                LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
-                swapData[0] = LibSwap.SwapData(
-                    address(0),
-                    /// @dev  callTo (arbitrary)
-                    address(0),
-                    /// @dev  callTo (approveTo)
-                    args.externalToken,
-                    args.withdraw ? args.externalToken : args.underlyingToken,
-                    /// @dev initial token to extract will be externalToken in args, which is the actual
-                    /// underlyingTokenDst
-                    /// for withdraws (check how the call is made in _buildSingleVaultWithdrawCallData )
-                    args.amount,
-                    abi.encode(
-                        args.from,
-                        FORKS[args.liqDstChainId],
-                        args.underlyingTokenDst,
-                        args.slippage,
-                        false,
-                        MULTI_TX_SLIPPAGE_SHARE,
-                        args.srcChainId == args.toChainId
-                    ),
-                    /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
-                    /// resemble
-                    /// mainnet
-                    false
-                );
-                /// @dev  arbitrary
-
-                if (args.externalToken != args.underlyingToken) {
-                    bridgeData = ILiFi.BridgeData(
-                        bytes32("1"),
-                        /// @dev request id, arbitrary number
-                        "",
-                        /// @dev unused in tests
-                        "",
-                        /// @dev unused in tests
-                        address(0),
-                        /// @dev unused in tests
-                        args.withdraw ? args.externalToken : args.underlyingToken,
-                        /// @dev initial token to extract will be externalToken in args, which is the actual
-                        /// underlyingTokenDst for withdraws (check how the call is made in
-                        /// _buildSingleVaultWithdrawCallData )
-                        args.dstSwap && CHAIN_0 != args.toChainId
-                            ? getContract(args.toChainId, "DstSwapper")
-                            : args.toDst,
-                        args.amount,
-                        args.liqBridgeToChainId,
-                        true,
-                        /// @dev if external != underlying, this is true
-                        false
-                    );
-                    /// @dev always false for mocking purposes
-                } else {
-                    bridgeData = ILiFi.BridgeData(
-                        bytes32("1"),
-                        /// @dev request id, arbitrary number
-                        "",
-                        /// @dev unused in tests
-                        "",
-                        /// @dev unused in tests
-                        address(0),
-                        args.withdraw ? args.externalToken : args.underlyingToken,
-                        /// @dev initial token to extract will be externalToken in args, which is the actual
-                        /// underlyingTokenDst for withdraws (check how the call is made in
-                        /// _buildSingleVaultWithdrawCallData )
-                        args.dstSwap && CHAIN_0 != args.toChainId
-                            ? getContract(args.toChainId, "DstSwapper")
-                            : args.toDst,
-                        args.amount,
-                        args.liqBridgeToChainId,
-                        false,
-                        false
-                    );
-                    /// @dev always false for mocking purposes
-                }
-
-                txData =
-                    abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
-            } else {
-                LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
-                swapData[0] = LibSwap.SwapData(
-                    address(0),
-                    /// @dev  callTo (arbitrary)
-                    address(0),
-                    /// @dev  callTo (approveTo)
-                    args.externalToken,
-                    args.withdraw ? args.externalToken : args.underlyingToken,
-                    /// @dev initial token to extract will be externalToken in args, which is the actual
-                    /// underlyingTokenDst
-                    /// for withdraws (check how the call is made in _buildSingleVaultWithdrawCallData )
-                    args.amount,
-                    abi.encode(
-                        args.from,
-                        FORKS[args.liqDstChainId],
-                        args.underlyingTokenDst,
-                        args.slippage,
-                        false,
-                        MULTI_TX_SLIPPAGE_SHARE,
-                        args.srcChainId == args.toChainId
-                    ),
-                    /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
-                    /// resemble
-                    /// mainnet
-                    false
-                );
-
-                txData = abi.encodeWithSelector(
-                    LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", args.toDst, 0, swapData
-                );
-            }
-        }
-    }
-
-    function _buildLiqBridgeTxDataDstSwap(
-        uint8 liqBridgeKind_,
-        address sendingTokenDst_,
-        address receivingTokenDst_,
-        address from_,
-        uint64 toChainId_,
-        uint256 amount_,
-        int256 slippage_
-    )
-        internal
-        view
-        returns (bytes memory txData)
-    {
-        /// @dev amount_ adjusted after bridge slippage
-        amount_ = (amount_ * uint256(10_000 - slippage_)) / 10_000;
-
-        /// @dev amount_ adjusted after swap slippage
-        int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
-
-        if (liqBridgeKind_ == 1) {
-            /// @dev for lifi
-            LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
-            swapData[0] = LibSwap.SwapData(
-                address(0),
-                ///  @dev  callTo (arbitrary)
-                address(0),
-                ///  @dev  callTo (approveTo)
-                sendingTokenDst_,
-                /// @dev in dst swap, assumes a swap between same token - FIXME
-                receivingTokenDst_,
-                /// @dev in dst swap, assumes a swap between same token - FIXME
-                amount_,
-                /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
-                /// @dev and multiTx means cross-chain (last arg)
-                abi.encode(
-                    from_, FORKS[toChainId_], receivingTokenDst_, slippage_, true, MULTI_TX_SLIPPAGE_SHARE, false
-                ),
-                false // arbitrary
-            );
-
-            txData = abi.encodeWithSelector(
-                LiFiMock.swapTokensGeneric.selector,
-                bytes32(0),
-                "",
-                "",
-                getContract(toChainId_, "CoreStateRegistry"),
-                0,
-                swapData
-            );
-        }
-    }
-
-    function _buildDummyTxDataUnitTests(
-        uint8 liqBridgeKind_,
-        address underlyingToken_,
-        address underlyingTokenDst_,
-        address from_,
-        uint64 toChainId_,
-        uint256 amount_,
-        address receiver_,
-        bool sameChain_
-    )
-        internal
-        view
-        returns (bytes memory txData)
-    {
-        if (liqBridgeKind_ == 1) {
-            if (!sameChain_) {
-                ILiFi.BridgeData memory bridgeData;
-                LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
-                swapData[0] = LibSwap.SwapData(
-                    address(0),
-                    /// callTo (arbitrary)
-                    address(0),
-                    /// callTo (approveTo)
-                    underlyingToken_,
-                    underlyingToken_,
-                    amount_,
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false, 0, false),
-                    false // arbitrary
-                );
-
-                bridgeData = ILiFi.BridgeData(
-                    bytes32("1"),
-                    /// request id
-                    "",
-                    "",
-                    address(0),
-                    underlyingToken_,
-                    receiver_,
-                    amount_,
-                    uint256(toChainId_),
-                    false,
-                    false
-                );
-
-                txData =
-                    abi.encodeWithSelector(LiFiMock.swapAndStartBridgeTokensViaBridge.selector, bridgeData, swapData);
-            } else {
-                LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
-
-                swapData[0] = LibSwap.SwapData(
-                    address(0),
-                    /// callTo (arbitrary)
-                    address(0),
-                    /// callTo (approveTo)
-                    underlyingToken_,
-                    underlyingToken_,
-                    amount_,
-                    abi.encode(from_, FORKS[toChainId_], underlyingTokenDst_, totalSlippage, false, 0, false),
-                    false // arbitrary
-                );
-
-                txData = abi.encodeWithSelector(
-                    LiFiMock.swapTokensGeneric.selector, bytes32(0), "", "", receiver_, 0, swapData
-                );
-            }
-        }
-    }
-
     struct SingleVaultDepositLocalVars {
         uint256 initialFork;
         address from;
@@ -1706,7 +1437,17 @@ abstract contract ProtocolActions is BaseSetup {
         /// @dev build permit2 calldata
         vm.selectFork(FORKS[args.srcChainId]);
         v.decimal1 = args.externalToken != NATIVE_TOKEN ? MockERC20(args.externalToken).decimals() : 18;
+        vm.selectFork(FORKS[args.toChainId]);
+        v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
+        vm.selectFork(FORKS[args.srcChainId]);
 
+        /// @dev this is to attach v.amount pre dst slippage with the correct decimals to avoid intermediary truncation
+        /// in LiFi mock
+        if (v.decimal1 > v.decimal2) {
+            v.amount = args.amount / 10 ** (v.decimal1 - v.decimal2);
+        } else {
+            v.amount = args.amount * 10 ** (v.decimal2 - v.decimal1);
+        }
         if (args.srcChainId == args.toChainId) {
             /// @dev same chain deposit, from is superform (which is inscribed in toDst in the beginning of stage 1)
             v.from = args.toDst;
@@ -1725,6 +1466,7 @@ abstract contract ProtocolActions is BaseSetup {
             args.toDst,
             args.liquidityBridgeToChainId,
             args.amount,
+            v.amount,
             false,
             args.slippage
         );
@@ -1766,14 +1508,6 @@ abstract contract ProtocolActions is BaseSetup {
                 );
                 vm.stopPrank();
             }
-        }
-        vm.selectFork(FORKS[args.toChainId]);
-        v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
-
-        if (v.decimal1 > v.decimal2) {
-            v.amount = args.amount / 10 ** (v.decimal1 - v.decimal2);
-        } else {
-            v.amount = args.amount * 10 ** (v.decimal2 - v.decimal1);
         }
 
         vm.selectFork(v.initialFork);
@@ -1844,6 +1578,7 @@ abstract contract ProtocolActions is BaseSetup {
             false,
             users[args.user],
             args.liquidityBridgeSrcChainId,
+            vars.actualWithdrawAmount,
             vars.actualWithdrawAmount,
             true,
             /// @dev putting a placeholder value for now (not really used)

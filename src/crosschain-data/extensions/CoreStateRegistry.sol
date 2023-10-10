@@ -18,8 +18,6 @@ import { PayloadUpdaterLib } from "../../libraries/PayloadUpdaterLib.sol";
 import { Error } from "../../utils/Error.sol";
 import "../../interfaces/ICoreStateRegistry.sol";
 
-import "forge-std/console.sol";
-
 /// @title CoreStateRegistry
 /// @author Zeropoint Labs
 /// @dev enables communication between Superform Core Contracts deployed on all supported networks
@@ -864,11 +862,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         (address superform_,,) = singleVaultData.superformId.getSuperform();
 
         IERC20 underlying = IERC20(IBaseForm(superform_).getVaultAsset());
-        console.log("underlying.balanceOf(address(this))", underlying.balanceOf(address(this)));
-        console.log("singleVaultData.amount", singleVaultData.amount);
 
         if (underlying.balanceOf(address(this)) >= singleVaultData.amount) {
-            console.log("ENTERED");
             underlying.safeIncreaseAllowance(superform_, singleVaultData.amount);
 
             /// @dev deposit to superform

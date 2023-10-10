@@ -144,6 +144,106 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         uint64[] DST_CHAINS;
     }
 
+    function singleDirectSingleVaultDeposit(
+        uint256 timeJumpSeed,
+        uint256 amount1,
+        uint256 underlying1,
+        uint256 inputToken,
+        uint256 slippage,
+        uint64 chain0,
+        uint64 dstChain1,
+        uint256 actionType,
+        uint256 user
+    )
+        public
+        adjustTimestamp(timeJumpSeed)
+    {
+        HandlerLocalVars memory v;
+        v.AMBs = new uint8[](2);
+        v.AMBs[0] = 1;
+        v.AMBs[1] = 2;
+
+        v.chain0Index = bound(chain0, 0, chainIds.length - 1);
+        v.CHAIN_0 = chainIds[v.chain0Index];
+
+        v.DST_CHAINS = new uint64[](1);
+        v.DST_CHAINS[0] = v.CHAIN_0;
+
+        v.targetVaultsPerDst = new uint256[](1);
+        v.targetFormKindsPerDst = new uint32[](1);
+        v.targetUnderlyingsPerDst = new uint256[](1);
+        v.amountsPerDst = new uint256[](1);
+        v.liqBridgesPerDst = new uint8[](1);
+
+        v.targetVaultsPerDst[0] = 0;
+        v.targetFormKindsPerDst[0] = 0;
+        /// @dev this bound is currently disabled because there is an issue with one of the vaults and we are not
+        /// reminting
+        //v.targetUnderlyingsPerDst[0] = bound(underlying1, 0, 2);
+        v.targetUnderlyingsPerDst[0] = 1;
+        inputToken = bound(inputToken, 0, 2);
+
+        vm.selectFork(FORKS[v.CHAIN_0]);
+        uint256 inputDecimals = MockERC20(getContract(v.CHAIN_0, UNDERLYING_TOKENS[inputToken])).decimals();
+        if (inputToken == 0) {
+            amount1 = bound(amount1, 1 * 10 ** inputDecimals, 1 * 10 ** (inputDecimals + 2));
+            console.log("amount1 dai", amount1);
+        } else if (inputToken == 1) {
+            amount1 = bound(amount1, 12 * 10 ** inputDecimals, 12 * 10 ** (inputDecimals + 2));
+            console.log("amount1 usdc", amount1);
+        } else if (inputToken == 2) {
+            amount1 = bound(amount1, 11 * 10 ** inputDecimals, 11 * 10 ** (inputDecimals + 2));
+            console.log("amount1 weth", amount1);
+        }
+
+        v.amountsPerDst[0] = amount1;
+
+        v.liqBridgesPerDst[0] = 1;
+
+        v.actionsMem = new TestAction[](1);
+
+        v.actionsMem[0] = TestAction({
+            action: Actions(bound(actionType, 0, 1)), //Deposit or permit2 deposit
+            multiVaults: false, //!!WARNING turn on or off multi vaults
+            user: bound(user, 0, 2),
+            testType: TestType.Pass,
+            revertError: "",
+            revertRole: "",
+            slippage: int256(bound(slippage, 0, 1000)),
+            dstSwap: false,
+            externalToken: inputToken
+        });
+
+        for (uint256 act = 0; act < v.actionsMem.length; act++) {
+            v.singleAction = v.actionsMem[act];
+
+            /// @dev this is per destination (hardcoding 1 here)
+            v.vars.targetVaults = new uint256[][](1);
+            v.vars.targetVaults[0] = v.targetVaultsPerDst;
+            v.vars.targetFormKinds = new uint32[][](1);
+            v.vars.targetFormKinds[0] = v.targetFormKindsPerDst;
+            v.vars.targetUnderlyings = new uint256[][](1);
+            v.vars.targetUnderlyings[0] = v.targetUnderlyingsPerDst;
+            v.vars.targetAmounts = new uint256[][](1);
+            v.vars.targetAmounts[0] = v.amountsPerDst;
+            v.vars.targetLiqBridges = new uint8[][](1);
+            v.vars.targetLiqBridges[0] = v.liqBridgesPerDst;
+            v.vars.AMBs = v.AMBs;
+            v.vars.CHAIN_0 = v.CHAIN_0;
+            v.vars.DST_CHAINS = v.DST_CHAINS;
+
+            _runMainStages(v.singleAction, v.multiSuperformsData, v.singleSuperformsData, v.aV, v.vars, false);
+        }
+
+        v.superPositionsSum = _getSingleVaultSuperpositionsSum(
+            chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst, v.targetVaultsPerDst, v.targetFormKindsPerDst
+        );
+        v.vaultShares = _getSingleVaultShares(chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst);
+
+        vm.selectFork(FORKS[0]);
+        vaultSharesStore.setInvariantToAssert(v.superPositionsSum, v.vaultShares);
+    }
+
     function singleXChainSingleVaultDeposit(
         uint256 timeJumpSeed,
         uint256 amount1,
@@ -182,6 +282,8 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
         v.targetVaultsPerDst[0] = 0;
         v.targetFormKindsPerDst[0] = 0;
+        /// @dev this bound is currently disabled because there is an issue with one of the vaults and we are not
+        /// reminting
         //v.targetUnderlyingsPerDst[0] = bound(underlying1, 0, 2);
         v.targetUnderlyingsPerDst[0] = 1;
         inputToken = bound(inputToken, 0, 2);

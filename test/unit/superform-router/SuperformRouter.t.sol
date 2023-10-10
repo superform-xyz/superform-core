@@ -806,6 +806,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0
@@ -826,6 +827,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -991,6 +993,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0
@@ -1011,6 +1014,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -1089,6 +1093,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0
@@ -1110,6 +1115,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -1193,6 +1199,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0
@@ -1214,6 +1221,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -1284,6 +1292,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0
@@ -1305,6 +1314,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -1488,6 +1498,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0
@@ -1508,6 +1519,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
