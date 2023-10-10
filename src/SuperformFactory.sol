@@ -128,7 +128,7 @@ contract SuperformFactory is ISuperformFactory {
         BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, formImplementationId_);
 
         /// @dev this will always be unique because all chainIds are unique
-        superformId_ = DataLib.packSuperform(superform_, formBeaconId_, CHAIN_ID);
+        superformId_ = DataLib.packSuperform(superform_, formImplementationId_, CHAIN_ID);
 
         vaultToSuperforms[vault_].push(superformId_);
 

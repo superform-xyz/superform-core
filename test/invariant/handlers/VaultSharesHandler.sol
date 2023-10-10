@@ -58,70 +58,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
     /*///////////////////////////////////////////////////////////////
                     HANDLER PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    /*
-    function singleDirectSingleVaultDeposit(
-        uint256 timeJumpSeed,
-        uint256 amount1,
-        uint256 underlying1,
-        uint256 inputToken,
-        uint256 slippage,
-        uint64 chain0,
-        uint64 dstChain1,
-        uint256 actionType,
-        uint256 user
-    )
-        public
-        adjustTimestamp(timeJumpSeed)
-    {
-        AMBs = [1, 2];
-        CHAIN_0 = chainIds[bound(chain0, 0, chainIds.length - 1)];
-        uint64 dstChain = chainIds[bound(dstChain1, 0, chainIds.length - 1)];
-        dstChain = CHAIN_0;
-        DST_CHAINS = [dstChain];
-
-        TARGET_VAULTS[DST_CHAINS[0]][0] = [0];
-        TARGET_FORM_KINDS[DST_CHAINS[0]][0] = [0];
-        underlying1 = bound(underlying1, 0, 2);
-        TARGET_UNDERLYINGS[DST_CHAINS[0]][0] = [underlying1];
-
-        /// @dev this needs to be bounded by the max of all supplies because of the assumptions in the tests
-        AMOUNTS[DST_CHAINS[0]][0] = [bound(amount1, 2, TOTAL_SUPPLY_USDC)];
-        /// amount of collateral to be deposited
-        LIQ_BRIDGES[DST_CHAINS[0]][0] = [1];
-        uint256 userId = bound(user, 0, 2);
-        actions.push(
-            TestAction({
-                action: Actions(bound(actionType, 0, 1)), //Deposit or permit2 deposit
-                multiVaults: false, //!!WARNING turn on or off multi vaults
-                user: userId,
-                testType: TestType.Pass,
-                revertError: "",
-                revertRole: "",
-                slippage: int256(bound(slippage, 0, 1000)),
-                dstSwap: false,
-                externalToken: bound(inputToken, 0, 2)
-            })
-        );
-
-        for (uint256 act = 0; act < actions.length; act++) {
-            TestAction memory action = actions[act];
-            MultiVaultSFData[] memory multiSuperformsData;
-            SingleVaultSFData[] memory singleSuperformsData;
-            MessagingAssertVars[] memory aV;
-            StagesLocalVars memory vars;
-            bool success;
-
-            _runMainStages(action, act, multiSuperformsData, singleSuperformsData, aV, vars, success);
-        }
-
-        uint256 superPositionsSum = _getSingleVaultSuperpositionsSum(dstChain);
-        uint256 vaultShares = _getSingleVaultShares(dstChain);
-        actions.pop();
-
-        vm.selectFork(FORKS[0]);
-        vaultSharesStore.setInvariantToAssert(superPositionsSum, vaultShares);
-    }
-    */
 
     struct HandlerLocalVars {
         uint256 chain0Index;
@@ -524,8 +460,8 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                 contracts[vars.chainIds[i]][bytes32(bytes(UNDERLYING_TOKENS[j]))] = vars.underlyingAddresses[i][j];
             }
 
-            for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
-                uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;
+            for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; j++) {
+                uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
                 uint256 counter;
 
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
@@ -538,7 +474,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                                     UNDERLYING_TOKENS[k],
                                     VAULT_KINDS[l],
                                     "Superform",
-                                    Strings.toString(FORM_BEACON_IDS[j])
+                                    Strings.toString(FORM_IMPLEMENTATION_IDS[j])
                                 )
                             )
                         )] = vars.superformAddresses[i][j][counter];
@@ -736,7 +672,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
                 UNDERLYING_TOKENS[underlyingTokens_[0]],
                 VAULT_KINDS[0],
                 "Superform",
-                Strings.toString(FORM_BEACON_IDS[0])
+                Strings.toString(FORM_IMPLEMENTATION_IDS[0])
             )
         );
 

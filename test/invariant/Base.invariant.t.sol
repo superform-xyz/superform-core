@@ -72,12 +72,12 @@ contract BaseInvariantTest is InvariantProtocolActions {
             underlyingAddresses[i] = addresses;
 
             address[] memory superformAddressesT;
-            address[][] memory vaultAddressesPerBeacon = new address[][](FORM_BEACON_IDS.length);
-            address[][] memory superformAddressesPerBeacon = new address[][](FORM_BEACON_IDS.length);
+            address[][] memory vaultAddressesPerBeacon = new address[][](FORM_IMPLEMENTATION_IDS.length);
+            address[][] memory superformAddressesPerBeacon = new address[][](FORM_IMPLEMENTATION_IDS.length);
 
             /// @dev grab vaults and superforms
-            for (uint32 j = 0; j < FORM_BEACON_IDS.length; j++) {
-                uint256 lenBytecodes = vaultBytecodes2[FORM_BEACON_IDS[j]].vaultBytecode.length;
+            for (uint32 j = 0; j < FORM_IMPLEMENTATION_IDS.length; j++) {
+                uint256 lenBytecodes = vaultBytecodes2[FORM_IMPLEMENTATION_IDS[j]].vaultBytecode.length;
 
                 addresses = new address[](UNDERLYING_TOKENS.length * lenBytecodes);
                 superformAddressesT = new address[](UNDERLYING_TOKENS.length * lenBytecodes);
@@ -92,7 +92,10 @@ contract BaseInvariantTest is InvariantProtocolActions {
                         superformAddressesT[counter] = getContract(
                             chainIds[i],
                             string.concat(
-                                UNDERLYING_TOKENS[k], VAULT_KINDS[l], "Superform", Strings.toString(FORM_BEACON_IDS[j])
+                                UNDERLYING_TOKENS[k],
+                                VAULT_KINDS[l],
+                                "Superform",
+                                Strings.toString(FORM_IMPLEMENTATION_IDS[j])
                             )
                         );
                         excludeSender(superformAddressesT[counter]);

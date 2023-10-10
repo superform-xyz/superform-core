@@ -1505,11 +1505,11 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
                     UNDERLYING_TOKENS[underlyingTokens_[i]],
                     VAULT_KINDS[vaultIds_[i]],
                     "Superform",
-                    Strings.toString(FORM_BEACON_IDS[formKinds_[i]])
+                    Strings.toString(FORM_IMPLEMENTATION_IDS[formKinds_[i]])
                 )
             );
             /// @dev superformids are built here
-            superformIds_[i] = DataLib.packSuperform(superform, FORM_BEACON_IDS[formKinds_[i]], chainId_);
+            superformIds_[i] = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formKinds_[i]], chainId_);
         }
 
         return superformIds_;
