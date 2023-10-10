@@ -25,6 +25,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     uint256 internal constant PRECISION = 10 ** PRECISION_DECIMALS;
 
+    uint64 public immutable CHAIN_ID;
+
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -71,6 +73,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     //////////////////////////////////////////////////////////////*/
 
     constructor(address superRegistry_) {
+        CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
 
         _disableInitializers();

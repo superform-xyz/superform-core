@@ -67,6 +67,7 @@ contract LiFiMock is Test {
         uint256 multiTxSlippageShare;
         uint256 amount;
         bool isDirect;
+        uint256 finalAmountDst;
     }
 
     function _bridge(
@@ -80,14 +81,20 @@ contract LiFiMock is Test {
     {
         BridgeLocalVars memory v;
         /// @dev encapsulating from
-        (v.from, v.toForkId, v.outputToken, v.slippage, v.isMultiTx, v.multiTxSlippageShare, v.isDirect) =
-            abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool));
+        (
+            v.from,
+            v.toForkId,
+            v.outputToken,
+            v.slippage,
+            v.isMultiTx,
+            v.multiTxSlippageShare,
+            v.isDirect,
+            v.finalAmountDst
+        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256));
 
-        uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
+        // if underlyingTokenn
         if (inputToken_ != NATIVE) {
             if (!prevSwap) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
-            /// @dev not all tokens allow burn / transfer to zero address
-            try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
         } else {
             require(msg.value == amount_);
         }
@@ -96,20 +103,13 @@ contract LiFiMock is Test {
         vm.selectFork(v.toForkId);
 
         uint256 decimal2 = v.outputToken == NATIVE ? 18 : MockERC20(v.outputToken).decimals();
-        uint256 amountOut;
 
         if (v.isDirect) v.slippage = 0;
         else if (v.isMultiTx) v.slippage = (v.slippage * int256(v.multiTxSlippageShare)) / 100;
         else v.slippage = (v.slippage * int256(100 - v.multiTxSlippageShare)) / 100;
 
-        amountOut = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
-
-        /// input token decimals are greater than output
-        if (decimal1 > decimal2) {
-            v.amount = amountOut / 10 ** (decimal1 - decimal2);
-        } else {
-            v.amount = amountOut * 10 ** (decimal2 - decimal1);
-        }
+        /// @dev amount provided by a previous swap is effectively ignored
+        v.amount = (v.finalAmountDst * uint256(10_000 - v.slippage)) / 10_000;
 
         if (v.outputToken != NATIVE) {
             deal(v.outputToken, receiver_, MockERC20(v.outputToken).balanceOf(receiver_) + v.amount);
@@ -117,6 +117,7 @@ contract LiFiMock is Test {
             if (prevForkId != v.toForkId) vm.deal(address(this), v.amount);
 
             (bool success,) = payable(receiver_).call{ value: v.amount }("");
+
             require(success);
         }
         vm.selectFork(prevForkId);
@@ -136,14 +137,13 @@ contract LiFiMock is Test {
         address from = abi.decode(data_, (address));
         if (inputToken_ != NATIVE) {
             MockERC20(inputToken_).transferFrom(from, address(this), amount_);
-            /// @dev not all tokens allow burn / transfer to zero address
-            try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
         }
 
         uint256 decimal1 = inputToken_ == NATIVE ? 18 : MockERC20(inputToken_).decimals();
         uint256 decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
 
         /// input token decimals are greater than output
+        /// @dev the results of this amount if there is a bridge are effectively ignored
         if (decimal1 > decimal2) {
             amount_ = amount_ / 10 ** (decimal1 - decimal2);
         } else {

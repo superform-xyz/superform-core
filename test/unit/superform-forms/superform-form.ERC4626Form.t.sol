@@ -403,6 +403,7 @@ contract SuperformERC4626FormTest is ProtocolActions {
             superform,
             uint256(ETH),
             1e18,
+            1e18,
             false,
             0
         );

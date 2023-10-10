@@ -25,6 +25,7 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////*/
     bytes32 constant SYNC_IMPLEMENTATION_STATUS = keccak256("SYNC_IMPLEMENTATION_STATUS");
 
+    uint64 public immutable CHAIN_ID;
     /*///////////////////////////////////////////////////////////////
                             State Variables
     //////////////////////////////////////////////////////////////*/
@@ -69,6 +70,7 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @param superRegistry_ the superform registry contract
     constructor(address superRegistry_) {
+        CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -126,7 +128,7 @@ contract SuperformFactory is ISuperformFactory {
         BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, formImplementationId_);
 
         /// @dev this will always be unique because all chainIds are unique
-        superformId_ = DataLib.packSuperform(superform_, formImplementationId_, uint64(block.chainid));
+        superformId_ = DataLib.packSuperform(superform_, formImplementationId_, CHAIN_ID);
 
         vaultToSuperforms[vault_].push(superformId_);
 
@@ -159,7 +161,7 @@ contract SuperformFactory is ISuperformFactory {
             BroadcastMessage memory factoryPayload = BroadcastMessage(
                 "SUPERFORM_FACTORY",
                 SYNC_IMPLEMENTATION_STATUS,
-                abi.encode(uint64(block.chainid), ++xChainPayloadCounter, formImplementationId_, paused_)
+                abi.encode(CHAIN_ID, ++xChainPayloadCounter, formImplementationId_, paused_)
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);

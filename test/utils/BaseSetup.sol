@@ -4,6 +4,8 @@ pragma solidity ^0.8.19;
 /// @dev lib imports
 import "forge-std/Test.sol";
 import "ds-test/test.sol";
+import { StdInvariant } from "forge-std/StdInvariant.sol";
+
 import { LayerZeroHelper } from "pigeon/layerzero/LayerZeroHelper.sol";
 import { HyperlaneHelper } from "pigeon/hyperlane/HyperlaneHelper.sol";
 
@@ -63,7 +65,7 @@ import { IBaseStateRegistry } from "src/interfaces/IBaseStateRegistry.sol";
 import "src/types/DataTypes.sol";
 import "./TestTypes.sol";
 
-abstract contract BaseSetup is DSTest, Test {
+abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         GENERAL VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -90,6 +92,37 @@ abstract contract BaseSetup is DSTest, Test {
     uint256 public trustedRemote;
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
+
+    string[28] public contractNames = [
+        "CoreStateRegistry",
+        "TimelockStateRegistry",
+        "BroadcastRegistry",
+        "LayerzeroImplementation",
+        "HyperlaneImplementation",
+        "WormholeARImplementation",
+        "WormholeSRImplementation",
+        "LiFiValidator",
+        "DstSwapper",
+        "SuperformFactory",
+        "ERC4626Form",
+        "ERC4626TimelockForm",
+        "ERC4626KYCDaoForm",
+        "SuperformRouter",
+        "SuperPositions",
+        "SuperRegistry",
+        "SuperRBAC",
+        "SuperTransmuter",
+        "PayloadHelper",
+        "PaymentHelper",
+        "PayMaster",
+        "LayerZeroHelper",
+        "HyperlaneHelper",
+        "WormholeHelper",
+        "WormholeBroadcastHelper",
+        "LiFiMock",
+        "KYCDAOMock",
+        "CanonicalPermit2"
+    ];
 
     /*//////////////////////////////////////////////////////////////
                         PROTOCOL VARIABLES
@@ -922,7 +955,7 @@ abstract contract BaseSetup is DSTest, Test {
                         MISC. HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _preDeploymentSetup() private {
+    function _preDeploymentSetup() internal virtual {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
         mapping(uint64 => uint256) storage forks = FORKS;
         forks[ETH] = vm.createFork(ETHEREUM_RPC_URL, 18_092_097);
@@ -1115,7 +1148,7 @@ abstract contract BaseSetup is DSTest, Test {
         existingVaults[56][1]["WETH"][0] = address(0);
     }
 
-    function _fundNativeTokens() private {
+    function _fundNativeTokens() internal {
         for (uint256 i = 0; i < chainIds.length; i++) {
             vm.selectFork(FORKS[chainIds[i]]);
 
@@ -1130,7 +1163,7 @@ abstract contract BaseSetup is DSTest, Test {
         }
     }
 
-    function _fundUnderlyingTokens(uint256 amount) private {
+    function _fundUnderlyingTokens(uint256 amount) internal {
         for (uint256 j = 0; j < UNDERLYING_TOKENS.length; j++) {
             if (getContract(chainIds[0], UNDERLYING_TOKENS[j]) == address(0)) {
                 revert INVALID_UNDERLYING_TOKEN_NAME();

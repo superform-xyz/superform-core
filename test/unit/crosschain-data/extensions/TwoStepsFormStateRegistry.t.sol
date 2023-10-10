@@ -32,6 +32,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
             deployer,
             uint256(ETH),
             420,
+            420,
             false,
             /// @dev placeholder value, not used
             0
@@ -103,6 +104,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
             deployer,
             uint256(ETH),
             /// @dev amount is 1 less than 420 * 0.9 i.e. exceeding maxSlippage of 10% by 1
+            377,
             377,
             false,
             /// @dev currently testing with 0 bridge slippage

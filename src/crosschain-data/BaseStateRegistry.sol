@@ -22,6 +22,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                             CONSTANTS
     //////////////////////////////////////////////////////////////*/
     ISuperRegistry public immutable superRegistry;
+    uint64 public immutable CHAIN_ID;
 
     /*///////////////////////////////////////////////////////////////
                             STATE VARIABLES
@@ -56,6 +57,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
                         CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
     constructor(ISuperRegistry superRegistry_) {
+        CHAIN_ID = uint64(block.chainid);
         superRegistry = superRegistry_;
     }
 
@@ -111,7 +113,7 @@ abstract contract BaseStateRegistry is IBaseStateRegistry {
 
             msgAMB[payloadsCount] = _getAmbId(msg.sender);
 
-            emit PayloadReceived(srcChainId_, uint64(block.chainid), payloadsCount);
+            emit PayloadReceived(srcChainId_, CHAIN_ID, payloadsCount);
         }
     }
 

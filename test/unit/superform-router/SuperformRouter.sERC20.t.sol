@@ -1097,6 +1097,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     getContract(ARBI, "CoreStateRegistry"),
                     uint256(ARBI),
                     1e18,
+                    1e18,
                     false,
                     0
                 ),
@@ -1121,6 +1122,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     false,
                     getContract(ARBI, "CoreStateRegistry"),
                     uint256(ARBI),
+                    1e18,
                     1e18,
                     false,
                     0
@@ -1229,6 +1231,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     superform1,
                     uint256(ETH),
                     1e18,
+                    1e18,
                     false,
                     0
                 ),
@@ -1253,6 +1256,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     false,
                     superform2,
                     uint256(ETH),
+                    1e18,
                     1e18,
                     false,
                     0
@@ -1312,6 +1316,7 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     false,
                     getContract(ARBI, "CoreStateRegistry"),
                     uint256(ARBI),
+                    1e18,
                     1e18,
                     false,
                     0

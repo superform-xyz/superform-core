@@ -61,7 +61,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
 
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
 
         vars.currentPayloadId = ++payloadIds;
@@ -126,7 +126,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
 
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
 
         /// @dev disallow direct chain actions
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
@@ -180,7 +180,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain single vault deposit
     function _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
 
         InitSingleVaultData memory vaultData = InitSingleVaultData(
@@ -203,7 +203,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain multi vault deposit
     function _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
@@ -237,7 +237,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
 
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev write packed txData
@@ -275,7 +275,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
 
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
@@ -307,7 +307,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain single vault withdraw
     function _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
 
         InitSingleVaultData memory ambData;
 
@@ -321,7 +321,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain multi vault withdraw
     function _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev SuperPositions are burnt optimistically here
@@ -592,7 +592,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.ZERO_AMOUNT();
         }
 
-        if (chainId != uint64(block.chainid)) {
+        if (chainId != CHAIN_ID) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -683,7 +683,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (,, uint64 chainId) =
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
 
-        if (chainId != uint64(block.chainid)) {
+        if (chainId != CHAIN_ID) {
             revert Error.INVALID_CHAIN_ID();
         }
 
