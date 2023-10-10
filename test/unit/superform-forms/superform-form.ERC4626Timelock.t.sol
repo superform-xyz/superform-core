@@ -28,13 +28,12 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
 
-        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
@@ -68,13 +67,12 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
 
-        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
         vm.stopPrank();
 
         bytes memory invalidNonEmptyTxData = abi.encode(1);
@@ -110,13 +108,12 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
 
-        MockERC20(getContract(ETH, "DAI")).transfer(formBeacon, 1e18);
+        MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
         vm.stopPrank();
 
         InitSingleVaultData memory data = InitSingleVaultData(
@@ -140,10 +137,10 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
 
         MockERC20(getContract(ETH, "DAI")).transfer(superform, 1e18);
         vm.stopPrank();
@@ -198,10 +195,10 @@ contract SuperformERC4626TimelockFormTest is ProtocolActions {
         vm.startPrank(deployer);
 
         address superform = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
         );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,

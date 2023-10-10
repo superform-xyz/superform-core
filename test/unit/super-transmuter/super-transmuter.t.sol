@@ -15,7 +15,7 @@ contract SuperTransmuterTest is BaseSetup {
     SuperTransmuter public superTransmuter;
     address formImplementation;
     address vault;
-    uint32 formBeaconId = 4;
+    uint32 formImplementationId = 4;
 
     function setUp() public override {
         super.setUp();
@@ -27,18 +27,20 @@ contract SuperTransmuterTest is BaseSetup {
         formImplementation = address(new ERC4626Form(superRegistry));
         vault = getContract(ETH, VAULT_NAMES[0][0]);
         vm.prank(deployer);
-        SuperformFactory(getContract(ETH, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).addFormImplementation(
+            formImplementation, formImplementationId
+        );
     }
 
     function test_registerTransmuter_invalid_interface() public {
-        SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
+        SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         vm.expectRevert(Error.DISABLED.selector);
         superTransmuter.registerTransmuter(1, "", "", 1);
     }
 
     function test_registerTransmuter() public {
         (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         superTransmuter.registerTransmuter(superformId, "");
     }
 
@@ -46,7 +48,7 @@ contract SuperTransmuterTest is BaseSetup {
         uint8[] memory ambId = new uint8[](1);
         ambId[0] = 4;
         (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         vm.expectRevert();
         superTransmuter.registerTransmuter(superformId, abi.encode(ambId, 1));
     }
@@ -56,16 +58,17 @@ contract SuperTransmuterTest is BaseSetup {
         SuperRegistry(getContract(ETH, "SuperRegistry")).setAddress(keccak256("BROADCAST_REGISTRY"), address(0), ETH);
 
         (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         vm.expectRevert();
         superTransmuter.registerTransmuter(superformId, generateBroadcastParams(5, 1));
     }
 
     function test_withdrawFromInvalidChainId() public {
-        address superform =
-            getContract(ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
 
@@ -78,7 +81,7 @@ contract SuperTransmuterTest is BaseSetup {
         superTransmuter.registerTransmuter(invalidSuperFormId, "");
     }
 
-    function test_InvalidFormBeacon() public {
+    function test_InvalidFormImplementation() public {
         uint256 invalidSuperFormId = DataLib.packSuperform(address(0x777), 0, ETH);
         vm.expectRevert(Error.FORM_DOES_NOT_EXIST.selector);
         superTransmuter.registerTransmuter(invalidSuperFormId, "");
@@ -86,7 +89,7 @@ contract SuperTransmuterTest is BaseSetup {
 
     function test_alreadyRegistered() public {
         (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
         superTransmuter.registerTransmuter(superformId, "");
         vm.expectRevert(Transmuter.TRANSMUTER_ALREADY_REGISTERED.selector);
 
@@ -95,7 +98,7 @@ contract SuperTransmuterTest is BaseSetup {
 
     function test_broadcastAndDeploy() public {
         (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formBeaconId, vault);
+            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
 
         vm.recordLogs();
         superTransmuter.registerTransmuter(superformId, generateBroadcastParams(5, 1));

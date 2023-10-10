@@ -45,5 +45,7 @@ interface IWormholeReceiver {
         bytes32 sourceAddress,
         uint16 sourceChain,
         bytes32 deliveryHash
-    ) external payable;
+    )
+        external
+        payable;
 }

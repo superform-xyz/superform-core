@@ -90,11 +90,11 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
 
     /// @inheritdoc ISuperTransmuter
     function registerTransmuter(uint256 superformId_, bytes memory extraData_) external override returns (address) {
-        (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId_);
+        (address superform, uint32 formImplementationId, uint64 chainId) = DataLib.getSuperform(superformId_);
 
         if (CHAIN_ID != chainId) revert Error.INVALID_CHAIN_ID();
         if (superform == address(0)) revert Error.NOT_SUPERFORM();
-        if (formBeaconId == 0) revert Error.FORM_DOES_NOT_EXIST();
+        if (formImplementationId == 0) revert Error.FORM_DOES_NOT_EXIST();
         if (synthethicTokenId[superformId_] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
 
         string memory name =

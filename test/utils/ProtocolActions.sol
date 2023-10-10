@@ -1726,11 +1726,11 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     UNDERLYING_TOKENS[underlyingTokens_[i]],
                     VAULT_KINDS[vaultIds_[i]],
                     "Superform",
-                    Strings.toString(FORM_BEACON_IDS[formKinds_[i]])
+                    Strings.toString(FORM_IMPLEMENTATION_IDS[formKinds_[i]])
                 )
             );
             /// @dev superformids are built here
-            superformIds_[i] = DataLib.packSuperform(superform, FORM_BEACON_IDS[formKinds_[i]], chainId_);
+            superformIds_[i] = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formKinds_[i]], chainId_);
         }
 
         return superformIds_;
@@ -2799,6 +2799,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
                 finalAmount = repetitions * finalAmount;
                 /// @dev assert spToken Balance. If reverting amount of sp should be 0 (assuming no action before this
                 /// one)
+
                 _assertSingleVaultBalance(
                     action.user, singleSuperformsData[i].superformId, foundRevertingDeposit ? 0 : finalAmount, false
                 );
