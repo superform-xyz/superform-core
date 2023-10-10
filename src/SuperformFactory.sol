@@ -44,9 +44,10 @@ contract SuperformFactory is ISuperformFactory {
 
     mapping(address vault => uint256[] superformIds) public vaultToSuperforms;
 
-    mapping(address vault => uint256[] formImplementationId) public vaultToFormBeaconId;
+    mapping(address vault => uint256[] formImplementationId) public vaultToFormImplementationId;
 
-    mapping(bytes32 vaultFormImplementationCombination => uint256 superformIds) public vaultBeaconToSuperforms;
+    mapping(bytes32 vaultFormImplementationCombination => uint256 superformIds) public
+        vaultFormImplCombinationToSuperforms;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -116,7 +117,7 @@ contract SuperformFactory is ISuperformFactory {
 
         /// @dev Same vault and beacon can be used only once to create superform
         bytes32 vaultFormImplementationCombination = keccak256(abi.encode(tFormImplementation, vault_));
-        if (vaultBeaconToSuperforms[vaultFormImplementationCombination] != 0) {
+        if (vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] != 0) {
             revert Error.VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
         }
 
@@ -130,9 +131,9 @@ contract SuperformFactory is ISuperformFactory {
         vaultToSuperforms[vault_].push(superformId_);
 
         /// @dev Mapping vaults to formImplementationId for use in Backend
-        vaultToFormBeaconId[vault_].push(formImplementationId_);
+        vaultToFormImplementationId[vault_].push(formImplementationId_);
 
-        vaultBeaconToSuperforms[vaultFormImplementationCombination] = superformId_;
+        vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] = superformId_;
 
         superforms.push(superformId_);
 
