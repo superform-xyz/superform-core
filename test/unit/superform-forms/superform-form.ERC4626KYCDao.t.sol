@@ -20,10 +20,11 @@ contract SuperformERC4626KYCDaoFormTest is BaseSetup {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(ETH, string.concat("DAI", "kycDAO4626", "Superform", Strings.toString(FORM_BEACON_IDS[2])));
+        address superform = getContract(
+            ETH, string.concat("DAI", "kycDAO4626", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[2]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[2], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[2], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""

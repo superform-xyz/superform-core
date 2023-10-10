@@ -43,15 +43,15 @@ library DataLib {
     /// @dev returns the vault-form-chain pair of a superform
     /// @param superformId_ is the id of the superform
     /// @return superform_ is the address of the superform
-    /// @return formBeaconId_ is the form id
+    /// @return formImplementationId_ is the form id
     /// @return chainId_ is the chain id
     function getSuperform(uint256 superformId_)
         internal
         pure
-        returns (address superform_, uint32 formBeaconId_, uint64 chainId_)
+        returns (address superform_, uint32 formImplementationId_, uint64 chainId_)
     {
         superform_ = address(uint160(superformId_));
-        formBeaconId_ = uint32(superformId_ >> 160);
+        formImplementationId_ = uint32(superformId_ >> 160);
         chainId_ = uint64(superformId_ >> 192);
     }
 
@@ -119,11 +119,11 @@ library DataLib {
 
     /// @dev generates the superformId
     /// @param superform_ is the address of the superform
-    /// @param formBeaconId_ is the type of the form
+    /// @param formImplementationId_ is the type of the form
     /// @param chainId_ is the chain id on which the superform is deployed
     function packSuperform(
         address superform_,
-        uint32 formBeaconId_,
+        uint32 formImplementationId_,
         uint64 chainId_
     )
         internal
@@ -132,7 +132,7 @@ library DataLib {
     {
         assembly ("memory-safe") {
             superformId_ := superform_
-            superformId_ := or(superformId_, shl(160, formBeaconId_))
+            superformId_ := or(superformId_, shl(160, formImplementationId_))
             superformId_ := or(superformId_, shl(192, chainId_))
         }
     }

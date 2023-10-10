@@ -73,7 +73,11 @@ interface IWormhole {
     event ContractUpgraded(address indexed oldContract, address indexed newContract);
     event GuardianSetAdded(uint32 indexed index);
 
-    function publishMessage(uint32 nonce, bytes memory payload, uint8 consistencyLevel)
+    function publishMessage(
+        uint32 nonce,
+        bytes memory payload,
+        uint8 consistencyLevel
+    )
         external
         payable
         returns (uint64 sequence);
@@ -87,7 +91,11 @@ interface IWormhole {
 
     function verifyVM(VM memory vm) external view returns (bool valid, string memory reason);
 
-    function verifySignatures(bytes32 hash, Signature[] memory signatures, GuardianSet memory guardianSet)
+    function verifySignatures(
+        bytes32 hash,
+        Signature[] memory signatures,
+        GuardianSet memory guardianSet
+    )
         external
         pure
         returns (bool valid, string memory reason);

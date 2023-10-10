@@ -2,9 +2,7 @@
 pragma solidity ^0.8.19;
 
 import { ERC165Checker } from "openzeppelin-contracts/contracts/utils/introspection/ERC165Checker.sol";
-import { BeaconProxy } from "openzeppelin-contracts/contracts/proxy/beacon/BeaconProxy.sol";
 import { BaseForm } from "./BaseForm.sol";
-import { FormBeacon } from "./forms/FormBeacon.sol";
 import { BroadcastMessage } from "./types/DataTypes.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
@@ -13,17 +11,19 @@ import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./utils/Error.sol";
 import { DataLib } from "./libraries/DataLib.sol";
+import { Clones } from "openzeppelin-contracts/contracts/proxy/Clones.sol";
 
 /// @title Superforms Factory
 /// @dev A secure, and easily queryable central point of access for all Superforms on any given chain,
 /// @author Zeropoint Labs.
 contract SuperformFactory is ISuperformFactory {
     using DataLib for uint256;
+    using Clones for address;
 
     /*///////////////////////////////////////////////////////////////
                             Constants
     //////////////////////////////////////////////////////////////*/
-    bytes32 constant SYNC_BEACON_STATUS = keccak256("SYNC_BEACON_STATUS");
+    bytes32 constant SYNC_IMPLEMENTATION_STATUS = keccak256("SYNC_IMPLEMENTATION_STATUS");
 
     /*///////////////////////////////////////////////////////////////
                             State Variables
@@ -32,19 +32,22 @@ contract SuperformFactory is ISuperformFactory {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev all form beacon addresses
-    address[] public formBeacons;
+    address[] public formImplementations;
 
     /// @dev all superform ids
     uint256[] public superforms;
 
-    /// @notice If formBeaconId is 0, formBeacon is not part of the protocol
-    mapping(uint32 formBeaconId => address formBeaconAddress) public formBeacon;
+    /// @notice If formImplementationId is 0, formImplementation is not part of the protocol
+    mapping(uint32 formImplementationId => address formBeaconAddress) public formImplementation;
+
+    mapping(uint32 formImplementationId => bool paused) public formImplementationPaused;
 
     mapping(address vault => uint256[] superformIds) public vaultToSuperforms;
 
-    mapping(address vault => uint256[] formBeaconId) public vaultToFormBeaconId;
+    mapping(address vault => uint256[] formImplementationId) public vaultToFormImplementationId;
 
-    mapping(bytes32 vaultBeaconCombination => uint256 superformIds) public vaultBeaconToSuperforms;
+    mapping(bytes32 vaultFormImplementationCombination => uint256 superformIds) public
+        vaultFormImplCombinationToSuperforms;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
@@ -74,91 +77,73 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperformFactory
-    function addFormBeacon(
+    function addFormImplementation(
         address formImplementation_,
-        uint32 formBeaconId_,
-        bytes32 salt_
+        uint32 formImplementationId_
     )
         public
         override
         onlyProtocolAdmin
-        returns (address beacon)
     {
         if (formImplementation_ == address(0)) revert Error.ZERO_ADDRESS();
         if (!ERC165Checker.supportsERC165(formImplementation_)) revert Error.ERC165_UNSUPPORTED();
-        if (formBeacon[formBeaconId_] != address(0)) revert Error.BEACON_ID_ALREADY_EXISTS();
+        if (formImplementation[formImplementationId_] != address(0)) {
+            revert Error.FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
+        }
         if (!ERC165Checker.supportsInterface(formImplementation_, type(IBaseForm).interfaceId)) {
             revert Error.FORM_INTERFACE_UNSUPPORTED();
         }
 
-        /// @dev instantiate a new formBeacon using a given formImplementation
-        beacon = address(new FormBeacon{salt: salt_}(address(superRegistry), formImplementation_));
+        /// @dev save the newly added address in the mapping and array registry
+        formImplementation[formImplementationId_] = formImplementation_;
 
-        /// @dev save the newly created beacon address in the mapping and array registry
-        formBeacon[formBeaconId_] = beacon;
+        formImplementations.push(formImplementation_);
 
-        formBeacons.push(beacon);
-
-        emit FormBeaconAdded(formImplementation_, beacon, formBeaconId_);
+        emit FormImplementationAdded(formImplementation_, formImplementationId_);
     }
 
     /// @inheritdoc ISuperformFactory
     function createSuperform(
-        uint32 formBeaconId_,
+        uint32 formImplementationId_,
         address vault_
     )
         public
         override
         returns (uint256 superformId_, address superform_)
     {
-        address tFormBeacon = formBeacon[formBeaconId_];
+        address tFormImplementation = formImplementation[formImplementationId_];
         if (vault_ == address(0)) revert Error.ZERO_ADDRESS();
-        if (tFormBeacon == address(0)) revert Error.FORM_DOES_NOT_EXIST();
+        if (tFormImplementation == address(0)) revert Error.FORM_DOES_NOT_EXIST();
 
         /// @dev Same vault and beacon can be used only once to create superform
-        bytes32 vaultBeaconCombination = keccak256(abi.encode(tFormBeacon, vault_));
-        if (vaultBeaconToSuperforms[vaultBeaconCombination] != 0) revert Error.VAULT_BEACON_COMBNATION_EXISTS();
+        bytes32 vaultFormImplementationCombination = keccak256(abi.encode(tFormImplementation, vault_));
+        if (vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] != 0) {
+            revert Error.VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
+        }
 
-        /// @dev instantiate the superform. The initialize function call is encoded in the request
-        superform_ = address(
-            new BeaconProxy(
-                address(tFormBeacon),
-                abi.encodeWithSelector(BaseForm(payable(address(0))).initialize.selector, superRegistry, vault_)
-            )
-        );
+        /// @dev instantiate the superform.
+        superform_ = tFormImplementation.clone();
+        BaseForm(payable(superform_)).initialize(address(superRegistry), vault_, formImplementationId_);
 
         /// @dev this will always be unique because all chainIds are unique
-        superformId_ = DataLib.packSuperform(superform_, formBeaconId_, uint64(block.chainid));
+        superformId_ = DataLib.packSuperform(superform_, formImplementationId_, uint64(block.chainid));
 
         vaultToSuperforms[vault_].push(superformId_);
 
-        /// @dev Mapping vaults to formBeaconId for use in Backend
-        vaultToFormBeaconId[vault_].push(formBeaconId_);
+        /// @dev Mapping vaults to formImplementationId for use in Backend
+        vaultToFormImplementationId[vault_].push(formImplementationId_);
 
-        vaultBeaconToSuperforms[vaultBeaconCombination] = superformId_;
+        vaultFormImplCombinationToSuperforms[vaultFormImplementationCombination] = superformId_;
 
         superforms.push(superformId_);
 
-        emit SuperformCreated(formBeaconId_, vault_, superformId_, superform_);
+        emit SuperformCreated(formImplementationId_, vault_, superformId_, superform_);
     }
 
     /// @inheritdoc ISuperformFactory
-    function updateFormBeaconLogic(uint32 formBeaconId_, address newFormLogic_) external override onlyProtocolAdmin {
-        if (newFormLogic_ == address(0)) revert Error.ZERO_ADDRESS();
-        if (!ERC165Checker.supportsERC165(newFormLogic_)) revert Error.ERC165_UNSUPPORTED();
-        if (!ERC165Checker.supportsInterface(newFormLogic_, type(IBaseForm).interfaceId)) {
-            revert Error.FORM_INTERFACE_UNSUPPORTED();
-        }
-        if (formBeacon[formBeaconId_] == address(0)) revert Error.INVALID_FORM_ID();
-
-        /// @dev form logics are not updated via broadcasting
-        FormBeacon(formBeacon[formBeaconId_]).update(newFormLogic_);
-    }
-
-    /// @inheritdoc ISuperformFactory
-    function changeFormBeaconPauseStatus(
-        uint32 formBeaconId_,
-        uint256 paused_,
+    function changeFormImplementationPauseStatus(
+        uint32 formImplementationId_,
+        bool paused_,
         bytes memory extraData_
     )
         external
@@ -166,16 +151,15 @@ contract SuperformFactory is ISuperformFactory {
         override
         onlyEmergencyAdmin
     {
-        if (formBeacon[formBeaconId_] == address(0)) revert Error.INVALID_FORM_ID();
-
-        FormBeacon(formBeacon[formBeaconId_]).changePauseStatus(paused_);
+        if (formImplementation[formImplementationId_] == address(0)) revert Error.INVALID_FORM_ID();
+        formImplementationPaused[formImplementationId_] = paused_;
 
         /// @dev broadcast the change in status to the other destination chains
         if (extraData_.length > 0) {
             BroadcastMessage memory factoryPayload = BroadcastMessage(
                 "SUPERFORM_FACTORY",
-                SYNC_BEACON_STATUS,
-                abi.encode(uint64(block.chainid), ++xChainPayloadCounter, formBeaconId_, paused_)
+                SYNC_IMPLEMENTATION_STATUS,
+                abi.encode(uint64(block.chainid), ++xChainPayloadCounter, formImplementationId_, paused_)
             );
 
             _broadcast(abi.encode(factoryPayload), extraData_);
@@ -191,8 +175,8 @@ contract SuperformFactory is ISuperformFactory {
 
         BroadcastMessage memory factoryPayload = abi.decode(data_, (BroadcastMessage));
 
-        if (factoryPayload.messageType == SYNC_BEACON_STATUS) {
-            _syncBeaconStatus(factoryPayload.message);
+        if (factoryPayload.messageType == SYNC_IMPLEMENTATION_STATUS) {
+            _syncFormPausedStatus(factoryPayload.message);
         }
     }
 
@@ -201,13 +185,13 @@ contract SuperformFactory is ISuperformFactory {
     //////////////////////////////////////////////////////////////*/
 
     /// @inheritdoc ISuperformFactory
-    function getFormBeacon(uint32 formBeaconId_) external view override returns (address formBeacon_) {
-        formBeacon_ = formBeacon[formBeaconId_];
+    function getFormImplementation(uint32 formImplementationId_) external view override returns (address) {
+        return formImplementation[formImplementationId_];
     }
 
     /// @inheritdoc ISuperformFactory
-    function isFormBeaconPaused(uint32 formBeaconId_) external view override returns (uint256 paused_) {
-        paused_ = FormBeacon(formBeacon[formBeaconId_]).paused();
+    function isFormImplementationPaused(uint32 formImplementationId_) external view override returns (bool) {
+        return formImplementationPaused[formImplementationId_];
     }
 
     /// @inheritdoc ISuperformFactory
@@ -235,9 +219,9 @@ contract SuperformFactory is ISuperformFactory {
         external
         pure
         override
-        returns (address superform_, uint32 formBeaconId_, uint64 chainId_)
+        returns (address superform_, uint32 formImplementationId_, uint64 chainId_)
     {
-        (superform_, formBeaconId_, chainId_) = superformId_.getSuperform();
+        (superform_, formImplementationId_, chainId_) = superformId_.getSuperform();
     }
 
     /// @inheritdoc ISuperformFactory
@@ -261,7 +245,7 @@ contract SuperformFactory is ISuperformFactory {
 
     /// @inheritdoc ISuperformFactory
     function getFormCount() external view override returns (uint256 forms_) {
-        forms_ = formBeacons.length;
+        forms_ = formImplementations.length;
     }
 
     /// @inheritdoc ISuperformFactory
@@ -286,20 +270,13 @@ contract SuperformFactory is ISuperformFactory {
         }(msg.sender, ambIds, message_, broadcastParams);
     }
 
-    /// @dev synchornize beacon status update message from remote chain
+    /// @dev synchronize paused status update message from remote chain
     /// @notice is a part of broadcasting / dispatching through factory state registry
     /// @param message_ is the crosschain message received.
-    function _syncBeaconStatus(bytes memory message_) internal {
-        (,, uint32 formBeaconId, uint256 status) = abi.decode(message_, (uint64, uint256, uint32, uint256));
+    function _syncFormPausedStatus(bytes memory message_) internal {
+        (,, uint32 formImplementationId, bool paused) = abi.decode(message_, (uint64, uint256, uint32, bool));
 
-        if (formBeacon[formBeaconId] == address(0)) revert Error.INVALID_FORM_ID();
-
-        FormBeacon(formBeacon[formBeaconId]).changePauseStatus(status);
-    }
-
-    function getBytecodeFormBeacon(address superRegistry_, address formLogic_) public pure returns (bytes memory) {
-        bytes memory bytecode = type(FormBeacon).creationCode;
-
-        return abi.encodePacked(bytecode, abi.encode(superRegistry_, formLogic_));
+        if (formImplementation[formImplementationId] == address(0)) revert Error.INVALID_FORM_ID();
+        formImplementationPaused[formImplementationId] = paused;
     }
 }

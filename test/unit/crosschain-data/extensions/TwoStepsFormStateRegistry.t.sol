@@ -65,9 +65,9 @@ contract TimelockStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         address superform = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
         );
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
 
         vm.prank(superform);
         timelockStateRegistry.receivePayload(
@@ -144,11 +144,11 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
     function _legacySuperformPackWithShift() internal view returns (uint256 superformId_) {
         address superform_ = getContract(ETH, "ERC4626TimelockForm");
-        uint32 formBeaconId_ = 1;
+        uint32 formImplementationId_ = 1;
         uint64 chainId_ = ETH;
 
         superformId_ = uint256(uint160(superform_));
-        superformId_ |= uint256(formBeaconId_) << 160;
+        superformId_ |= uint256(formImplementationId_) << 160;
         superformId_ |= uint256(chainId_) << 192;
     }
 }
