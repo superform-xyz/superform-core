@@ -1,23 +1,20 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import { Initializable } from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { ERC165Upgradeable } from
-    "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
-import { IERC165Upgradeable } from
-    "openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+import { Initializable } from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
+import { IERC165 } from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import { InitSingleVaultData } from "./types/DataTypes.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./utils/Error.sol";
-import { IFormBeacon } from "./interfaces/IFormBeacon.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
-abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
+abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
@@ -36,19 +33,23 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     ISuperRegistry public immutable superRegistry;
 
     /// @dev the vault this form pertains to
-    address internal vault;
+    address public vault;
+
+    uint32 public formImplementationId;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
     modifier notPaused(InitSingleVaultData memory singleVaultData_) {
-        (, uint32 formBeaconId_,) = singleVaultData_.superformId.getSuperform();
+        (, uint32 formImplementationId_,) = singleVaultData_.superformId.getSuperform();
+
+        if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
 
         if (
-            IFormBeacon(
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
-            ).paused() == 2
+            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+                formImplementationId_
+            )
         ) revert Error.PAUSED();
         _;
     }
@@ -71,14 +72,16 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
 
     constructor(address superRegistry_) {
         superRegistry = ISuperRegistry(superRegistry_);
+
         _disableInitializers();
     }
 
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    function initialize(address superRegistry_, address vault_) external initializer {
+    function initialize(address superRegistry_, address vault_, uint32 formImplementationId_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
+        formImplementationId = formImplementationId_;
         vault = vault_;
     }
 
@@ -87,13 +90,7 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     //////////////////////////////////////////////////////////////*/
     receive() external payable { }
 
-    function supportsInterface(bytes4 interfaceId_)
-        public
-        view
-        virtual
-        override(ERC165Upgradeable, IERC165Upgradeable)
-        returns (bool)
-    {
+    function supportsInterface(bytes4 interfaceId_) public view virtual override(ERC165, IERC165) returns (bool) {
         return interfaceId_ == type(IBaseForm).interfaceId || super.supportsInterface(interfaceId_);
     }
 

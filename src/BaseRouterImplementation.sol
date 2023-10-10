@@ -10,7 +10,6 @@ import { IPayMaster } from "./interfaces/IPayMaster.sol";
 import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { IFormBeacon } from "./interfaces/IFormBeacon.sol";
 import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { DataLib } from "./libraries/DataLib.sol";
@@ -725,11 +724,11 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev 10000 = 100% slippage
         if (superformData_.maxSlippage > 10_000) return false;
 
-        (, uint32 formBeaconId_,) = superformData_.superformId.getSuperform();
+        (, uint32 formImplementationId_,) = superformData_.superformId.getSuperform();
 
-        return IFormBeacon(
-            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
-        ).paused() == 1;
+        return !ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+            formImplementationId_
+        );
     }
 
     function _validateSuperformsDepositData(
@@ -762,15 +761,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
-            (, uint32 formBeaconId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
+            (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
 
             if (
-                IFormBeacon(
-                    ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
-                        formBeaconId_
-                    )
-                ).paused() == 2
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+                    formImplementationId_
+                )
             ) return false;
 
             unchecked {
@@ -814,15 +811,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
-            (, uint32 formBeaconId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
+            (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
 
             if (
-                IFormBeacon(
-                    ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
-                        formBeaconId_
-                    )
-                ).paused() == 2
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+                    formImplementationId_
+                )
             ) return false;
 
             unchecked {

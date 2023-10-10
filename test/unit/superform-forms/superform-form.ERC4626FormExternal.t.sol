@@ -24,18 +24,21 @@ contract SuperformERC4626FormExternalTest is BaseSetup {
 
         /// @dev Deploying Forms
         address formImplementation = address(new ERC4626FormExternal(superRegistry));
-        uint32 formBeaconId = 0;
+        uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
         MockERC20 asset = new MockERC20("Mock ERC20 Token", "Mock", address(this), uint256(1000));
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
-        // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
+        // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation, formImplementationId
+        );
 
-        /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) =
-            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
+        /// @dev Creating superform using formImplementationId and vault
+        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
+            formImplementationId, address(vault)
+        );
 
         uint256 vaultShareAmount = 100;
 
@@ -55,18 +58,21 @@ contract SuperformERC4626FormExternalTest is BaseSetup {
 
         /// @dev Deploying Forms
         address formImplementation = address(new ERC4626FormExternal(superRegistry));
-        uint32 formBeaconId = 0;
+        uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
         MockERC20 asset = new MockERC20("Mock ERC20 Token", "Mock", address(this), uint256(1000));
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
-        // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
+        // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation, formImplementationId
+        );
 
-        /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) =
-            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
+        /// @dev Creating superform using formImplementationId and vault
+        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
+            formImplementationId, address(vault)
+        );
 
         uint256 vaultShareAmount = 100;
 
@@ -86,18 +92,21 @@ contract SuperformERC4626FormExternalTest is BaseSetup {
 
         /// @dev Deploying Forms
         address formImplementation = address(new ERC4626FormExternal(superRegistry));
-        uint32 formBeaconId = 0;
+        uint32 formImplementationId = 0;
 
         /// @dev Vaults For The Superforms
         MockERC20 asset = new MockERC20("Mock ERC20 Token", "Mock", address(this), uint256(1000));
         VaultMock vault = new VaultMock(asset, "Mock Vault", "Mock");
 
-        // Deploying Forms Using AddBeacon. Not Testing Reverts As Already Tested
-        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormBeacon(formImplementation, formBeaconId, salt);
+        // Deploying Forms Using AddImplementation. Not Testing Reverts As Already Tested
+        SuperformFactory(getContract(chainId, "SuperformFactory")).addFormImplementation(
+            formImplementation, formImplementationId
+        );
 
-        /// @dev Creating superform using formBeaconId and vault
-        (, address superformCreated) =
-            SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(formBeaconId, address(vault));
+        /// @dev Creating superform using formImplementationId and vault
+        (, address superformCreated) = SuperformFactory(getContract(chainId, "SuperformFactory")).createSuperform(
+            formImplementationId, address(vault)
+        );
 
         uint256 vaultShareAmount = 100;
 
