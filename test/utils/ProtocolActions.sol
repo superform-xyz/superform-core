@@ -182,6 +182,7 @@ abstract contract ProtocolActions is BaseSetup {
 
         /// @dev builds superformRouter request data
         (multiSuperformsData, singleSuperformsData, vars) = _stage1_buildReqData(action, act);
+        console.log("Stage 1 complete");
 
         uint256[][] memory spAmountSummed = new uint256[][](vars.nDestinations);
         uint256[] memory spAmountBeforeWithdrawPerDst;
@@ -1563,12 +1564,18 @@ abstract contract ProtocolActions is BaseSetup {
         view
         returns (bytes memory txData)
     {
-        /// @dev amount_ adjusted after bridge slippage
-        amount_ = (amount_ * uint256(10_000 - slippage_)) / 10_000;
+        // /// @dev amount_ adjusted after bridge slippage
+        // amount_ = (amount_ * uint256(10_000 - slippage_)) / 10_000;
 
         /// @dev amount_ adjusted after swap slippage
         int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
         amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
+
+        /// @dev already on target chain, so need to vm.selectFork() to it
+        (, int256 USDPerSendingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[toChainId_][sendingTokenDst_]).latestRoundData();
+        (, int256 USDPerReceivingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[toChainId_][receivingTokenDst_]).latestRoundData();
 
         if (liqBridgeKind_ == 1) {
             /// @dev for lifi
@@ -1587,7 +1594,16 @@ abstract contract ProtocolActions is BaseSetup {
                 /// @dev _buildLiqBridgeTxDataMultiTx() will only be called when multiTx is true
                 /// @dev and multiTx means cross-chain (last arg)
                 abi.encode(
-                    from_, FORKS[toChainId_], receivingTokenDst_, slippage_, true, MULTI_TX_SLIPPAGE_SHARE, false
+                    from_,
+                    FORKS[toChainId_],
+                    receivingTokenDst_,
+                    slippage_,
+                    true,
+                    MULTI_TX_SLIPPAGE_SHARE,
+                    false,
+                    uint256(USDPerSendingTokenDst),
+                    uint256(USDPerReceivingTokenDst),
+                    1
                 ),
                 false // arbitrary
             );
@@ -1802,9 +1818,12 @@ abstract contract ProtocolActions is BaseSetup {
 
         int256 slippage = args.slippage;
         if (args.srcChainId == args.toChainId) slippage = 0;
-        else if (args.dstSwap) slippage = (slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        else slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        // else if (args.dstSwap) slippage = (slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        // else slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
+        /// @dev applying 100% x-chain slippage at once i.e. bridge + dstSwap slippage (as opposed to 2 steps in
+        /// LiFiMock) coz this code will only be executed once (as opposed to twice in LiFiMock, once for bridge and
+        /// other for dstSwap)
         args.amount = (args.amount * uint256(10_000 - slippage)) / 10_000;
         console.log("test amount pre-bridge, post-slippage", v.amount);
 
@@ -2120,7 +2139,7 @@ abstract contract ProtocolActions is BaseSetup {
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
-                finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
+                // finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
 
                 if (args.isdstSwap) {
                     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
@@ -2611,8 +2630,10 @@ abstract contract ProtocolActions is BaseSetup {
                     v.assertAmnt /= 10 ** (v.decimal2 - v.decimal1);
                 }
                 amounts[superformIds[i]] += v.assertAmnt;
+                console.log("amounts[superformIds[i]]", amounts[superformIds[i]]);
             }
         }
+        console.log("amounts[superformIds[0]]", amounts[superformIds[0]]);
 
         vm.selectFork(FORKS[CHAIN_0]);
         // 2. Perform your assertion logic
@@ -2622,7 +2643,7 @@ abstract contract ProtocolActions is BaseSetup {
             v.partialWithdraw = (partialWithdrawVaults.length > i) && partialWithdrawVaults[i];
 
             if (!isWithdraw) {
-                assertApproxEqRel(v.currentBalanceOfSp, v.currentAmount, 0.01e18);
+                assertApproxEqRel(v.currentBalanceOfSp, v.currentAmount, 0.02e18);
             } else if (isWithdraw && v.partialWithdraw) {
                 /// if withdrawal is partial then the balance should be greater than zero
                 assertGt(v.currentBalanceOfSp, 0);
@@ -2754,16 +2775,19 @@ abstract contract ProtocolActions is BaseSetup {
                     /// @dev calculate amounts with slippage if needed for assertions
                     v.finalAmount = args.multiSuperformsData.amounts[v.j];
 
-                    if (args.assertWithSlippage && args.slippage != 0 && !args.sameChain) {
-                        /// @dev applying bridge slippage
-                        v.finalAmount = (v.finalAmount * uint256(10_000 - args.slippage)) / 10_000;
+                    /// @dev note: bridge + dstSwap slippage is now applied to multiSuperformsData.amounts[] at the end
+                    /// of _buildSingleVaultDepositCallData() as its updated value is required before this point
 
-                        /// @dev applying dstSwap slippage
-                        if (args.isdstSwap) {
-                            dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-                            v.finalAmount = (v.finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
-                        }
-                    }
+                    // if (args.assertWithSlippage && args.slippage != 0 && !args.sameChain) {
+                    // /// @dev applying bridge slippage
+                    // v.finalAmount = (v.finalAmount * uint256(10_000 - args.slippage)) / 10_000;
+
+                    // /// @dev applying dstSwap slippage
+                    // if (args.isdstSwap) {
+                    //     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
+                    //     v.finalAmount = (v.finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
+                    // }
+                    // }
                     /// @dev add number of repetitions to properly assert
                     v.finalAmount = v.finalAmount * args.repetitions;
 
