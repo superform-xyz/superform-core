@@ -32,12 +32,18 @@ contract TimelockStateRegistryTest is ProtocolActions {
             deployer,
             uint256(ETH),
             420,
+            420,
             false,
             /// @dev placeholder value, not used
             0,
             1,
             1,
             1
+        );
+
+        vm.prank(getContract(AVAX, "SuperformRouter"));
+        SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
         );
 
         vm.prank(getContract(ETH, "ERC4626TimelockForm"));
@@ -68,9 +74,9 @@ contract TimelockStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         address superform = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
         );
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[1], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
 
         vm.prank(superform);
         timelockStateRegistry.receivePayload(
@@ -106,6 +112,7 @@ contract TimelockStateRegistryTest is ProtocolActions {
             deployer,
             uint256(ETH),
             /// @dev amount is 1 less than 420 * 0.9 i.e. exceeding maxSlippage of 10% by 1
+            377,
             377,
             false,
             /// @dev currently testing with 0 bridge slippage
@@ -150,11 +157,11 @@ contract TimelockStateRegistryTest is ProtocolActions {
 
     function _legacySuperformPackWithShift() internal view returns (uint256 superformId_) {
         address superform_ = getContract(ETH, "ERC4626TimelockForm");
-        uint32 formBeaconId_ = 1;
+        uint32 formImplementationId_ = 2;
         uint64 chainId_ = ETH;
 
         superformId_ = uint256(uint160(superform_));
-        superformId_ |= uint256(formBeaconId_) << 160;
+        superformId_ |= uint256(formImplementationId_) << 160;
         superformId_ |= uint256(chainId_) << 192;
     }
 }

@@ -197,8 +197,9 @@ contract CoreStateRegistryTest is ProtocolActions {
 
         txData = new bytes[](2);
 
-        address superform =
-            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
         /// @dev number of superpositions to be burned per withdraw is 1e18, specified in _successfulMultiWithdrawal()
         uint256 actualWithdrawAmount = IBaseForm(superform).previewWithdrawFrom(
@@ -218,6 +219,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             deployer,
             uint256(ETH),
             /// @dev amount is 1 less than (actualWithdrawAmount * 0.9) => slippage > 10% => should revert
+            ((actualWithdrawAmount * 9) / 10) - 1,
             ((actualWithdrawAmount * 9) / 10) - 1,
             true,
             /// @dev currently testing with 0 bridge slippage
@@ -280,10 +282,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], AVAX);
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
@@ -299,6 +302,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -339,16 +343,27 @@ contract CoreStateRegistryTest is ProtocolActions {
         );
     }
 
-    function _successfulSingleWithdrawal(uint8[] memory ambIds, uint256 beaconId) internal {
+    function _successfulSingleWithdrawal(uint8[] memory ambIds, uint256 formImplementationId) internal {
         vm.selectFork(FORKS[ETH]);
 
-        address superform = beaconId == 1
+        address superform = formImplementationId == 1
             ? getContract(
-                AVAX, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId]))
+                AVAX,
+                string.concat(
+                    "DAI",
+                    "ERC4626TimelockMock",
+                    "Superform",
+                    Strings.toString(FORM_IMPLEMENTATION_IDS[formImplementationId])
+                )
             )
-            : getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[beaconId])));
+            : getContract(
+                AVAX,
+                string.concat(
+                    "DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[formImplementationId])
+                )
+            );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[beaconId], AVAX);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[formImplementationId], AVAX);
         address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.prank(superformRouter);
@@ -391,10 +406,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], AVAX);
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
@@ -420,6 +436,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
+            420,
             420,
             false,
             /// @dev placeholder value, not used
@@ -460,10 +477,11 @@ contract CoreStateRegistryTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], AVAX);
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
@@ -489,6 +507,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             false,
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
+            420,
             420,
             false,
             /// @dev placeholder value, not used
@@ -518,10 +537,11 @@ contract CoreStateRegistryTest is ProtocolActions {
     function _successfulMultiWithdrawal(uint8[] memory ambIds) internal {
         vm.selectFork(FORKS[ETH]);
 
-        address superform =
-            getContract(AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            AVAX, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], AVAX);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], AVAX);
         address superformRouter = getContract(ETH, "SuperformRouter");
 
         vm.prank(superformRouter);

@@ -131,6 +131,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         if (singleVaultData_.liqData.txData.length > 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
+            vars.chainId = CHAIN_ID;
+
             vars.inputAmount =
                 IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
@@ -143,8 +145,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 /// @dev transfers input token, which is different from the vault asset, to the form
                 token.safeTransferFrom(msg.sender, address(this), vars.inputAmount);
             }
-
-            vars.chainId = uint64(block.chainid);
 
             IBridgeValidator(vars.bridgeValidator).validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
@@ -225,7 +225,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            v.chainId = uint64(block.chainid);
+            v.chainId = CHAIN_ID;
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(v.bridgeValidator).validateTxData(

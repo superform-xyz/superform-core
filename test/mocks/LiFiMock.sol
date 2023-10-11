@@ -67,6 +67,7 @@ contract LiFiMock is Test {
         bool isDirect;
         uint256 prevForkId;
         uint256 amountOut;
+        uint256 finalAmountDst;
     }
 
     function _bridge(
@@ -86,6 +87,24 @@ contract LiFiMock is Test {
             if (!prevSwap_) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
             /// @dev not all tokens allow burn / transfer to zero address
             try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
+
+            /*
+        /// @dev encapsulating from
+        (
+            v.from,
+            v.toForkId,
+            v.outputToken,
+            v.slippage,
+            v.isMultiTx,
+            v.multiTxSlippageShare,
+            v.isDirect,
+            v.finalAmountDst
+        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256));
+
+        // if underlyingTokenn
+        if (inputToken_ != NATIVE) {
+            if (!prevSwap) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
+            */
         } else {
             require(msg.value == amount_);
         }
@@ -139,6 +158,11 @@ contract LiFiMock is Test {
                 ((amountOut_ * USDPerUnderlyingToken) * 10 ** (decimal2 - decimal1)) / USDPerUnderlyingTokenDst;
         }
 
+        /*
+        /// @dev amount provided by a previous swap is effectively ignored
+        v.amount = (v.finalAmountDst * uint256(10_000 - v.slippage)) / 10_000;
+        */
+
         console.log("amount post-bridge", finalAmount);
 
         if (outputToken != NATIVE) {
@@ -147,6 +171,9 @@ contract LiFiMock is Test {
             if (prevForkId_ != toForkId_) vm.deal(address(this), finalAmount);
 
             (bool success,) = payable(receiver_).call{ value: finalAmount }("");
+
+            //(bool success,) = payable(receiver_).call{ value: v.amount }("");
+
             require(success);
         }
     }
@@ -170,8 +197,6 @@ contract LiFiMock is Test {
 
         if (inputToken_ != NATIVE) {
             MockERC20(inputToken_).transferFrom(from, address(this), amount_);
-            /// @dev not all tokens allow burn / transfer to zero address
-            try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
         }
 
         /// @dev TODO: simulate dstSwap slippage here (currently in ProtocolActions._buildLiqBridgeTxDataDstSwap()), and
@@ -184,6 +209,7 @@ contract LiFiMock is Test {
 
         console.log("amount pre-swap", amount_);
         /// input token decimals are greater than output
+        /// @dev the results of this amount if there is a bridge are effectively ignored
         if (decimal1 > decimal2) {
             amount_ = (amount_ * USDPerExternalToken) / (USDPerUnderlyingToken * 10 ** (decimal1 - decimal2));
         } else {

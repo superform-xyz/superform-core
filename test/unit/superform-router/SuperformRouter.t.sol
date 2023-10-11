@@ -17,10 +17,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         /// try depositing without approval
-        address superform =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
@@ -41,10 +42,11 @@ contract SuperformRouterTest is ProtocolActions {
         /// scenario: withdraw from an invalid super form id (which doesn't exist on the chain)
         vm.selectFork(FORKS[ETH]);
 
-        address superform =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         vm.startPrank(getContract(ETH, "SuperformRouter"));
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
@@ -84,10 +86,11 @@ contract SuperformRouterTest is ProtocolActions {
     function test_withdrawInvalidSuperformData() public {
         vm.selectFork(FORKS[ETH]);
 
-        address superform =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         vm.startPrank(getContract(ETH, "SuperformRouter"));
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
@@ -112,10 +115,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         /// simulating deposits by just minting superPosition
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         vm.startPrank(getContract(ETH, "SuperformRouter"));
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
@@ -156,10 +160,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         /// simulating deposits by just minting superPosition
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         vm.startPrank(getContract(ETH, "SuperformRouter"));
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
@@ -190,10 +195,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
 
         /// simulating deposits by just minting superPosition
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         vm.startPrank(getContract(ETH, "SuperformRouter"));
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
@@ -231,10 +237,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = superformId;
@@ -268,11 +275,12 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
         /// @dev incorrect chainId (should be ARBI)
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], POLY);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], POLY);
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = superformId;
@@ -307,10 +315,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = superformId;
@@ -345,10 +354,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = superformId;
@@ -385,10 +395,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = superformId;
@@ -429,14 +440,16 @@ contract SuperformRouterTest is ProtocolActions {
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
-        address superform1 =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform1 = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        address superform2 =
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform2 = getContract(
+            ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], POLY);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], POLY);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
@@ -479,14 +492,16 @@ contract SuperformRouterTest is ProtocolActions {
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
-        address superform1 =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform1 = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        address superform2 =
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform2 = getContract(
+            ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ARBI);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
@@ -527,14 +542,16 @@ contract SuperformRouterTest is ProtocolActions {
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
-        address superform1 =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform1 = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        address superform2 =
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform2 = getContract(
+            ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ARBI);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
@@ -574,10 +591,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         /// try depositing without approval
-        address superform =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId, 1e18, 100, false, LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0), "", refundAddress, ""
@@ -600,10 +618,11 @@ contract SuperformRouterTest is ProtocolActions {
         vm.startPrank(deployer);
 
         /// try depositing without approval
-        address superform =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
@@ -620,23 +639,24 @@ contract SuperformRouterTest is ProtocolActions {
         SingleDirectSingleVaultStateReq memory req = SingleDirectSingleVaultStateReq(data);
 
         /// @dev no point approving 0 tokens
-        // MockERC20(getContract(ETH, "DAI")).approve(formBeacon, 0);
+        // MockERC20(getContract(ETH, "DAI")).approve(formImplementation, 0);
 
         vm.expectRevert(Error.ZERO_AMOUNT.selector);
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
-    function test_withdrawWithPausedBeacon() public {
-        _pauseFormBeacon();
+    function test_withdrawWithPausedImplementation() public {
+        _pauseFormImplementation();
 
-        /// scenario: withdraw from an paused form beacon id (which doesn't exist on the chain)
+        /// scenario: withdraw from an paused form form id (which doesn't exist on the chain)
         vm.selectFork(FORKS[ETH]);
 
         /// simulating deposits by just minting superPosition
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         vm.startPrank(getContract(ETH, "SuperformRouter"));
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
@@ -671,17 +691,18 @@ contract SuperformRouterTest is ProtocolActions {
         SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw(req);
     }
 
-    function test_depositWithPausedBeacon() public {
-        _pauseFormBeacon();
+    function test_depositWithPausedImplementation() public {
+        _pauseFormImplementation();
 
-        /// scenario: deposit from an paused form beacon id (which doesn't exist on the chain)
+        /// scenario: deposit from an paused form form id (which doesn't exist on the chain)
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = superformId;
@@ -714,15 +735,15 @@ contract SuperformRouterTest is ProtocolActions {
     }
 
     function test_depositWithInvalidDstChainId() public {
-        /// scenario: deposit from an paused form beacon id (which doesn't exist on the chain)
+        /// scenario: deposit from an paused form form id (which doesn't exist on the chain)
 
-        address superform =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         vm.selectFork(FORKS[ETH]);
-        (address formBeacon,,) = SuperformFactory(getContract(ETH, "SuperformFactory")).getSuperform(superformId);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -738,7 +759,7 @@ contract SuperformRouterTest is ProtocolActions {
                     1,
                     getContract(ETH, "DAI"),
                     getContract(ETH, "DAI"),
-                    formBeacon,
+                    superform,
                     ETH,
                     1e18,
                     getContract(ETH, "CoreStateRegistry"),
@@ -770,14 +791,16 @@ contract SuperformRouterTest is ProtocolActions {
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
-        address superform1 =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform1 = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        address superform2 =
-            getContract(ETH, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform2 = getContract(
+            ETH, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ETH);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ETH);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
@@ -806,6 +829,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0,
@@ -830,6 +854,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0,
@@ -853,16 +878,16 @@ contract SuperformRouterTest is ProtocolActions {
     }
 
     function test_depositWithMismatchingChainIdsInStateReqAndSuperformsData() public {
-        /// scenario: deposit from an paused form beacon id (which doesn't exist on the chain)
+        /// scenario: deposit from an paused form form id (which doesn't exist on the chain)
 
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
         /// @dev incorrect chainId (should be ARBI)
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], POLY);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], POLY);
 
         vm.selectFork(FORKS[ARBI]);
-        (address formBeacon,,) = SuperformFactory(getContract(ARBI, "SuperformFactory")).getSuperform(superformId);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -878,7 +903,7 @@ contract SuperformRouterTest is ProtocolActions {
                     1,
                     getContract(ETH, "DAI"),
                     getContract(ARBI, "DAI"),
-                    formBeacon,
+                    superform,
                     ARBI,
                     1e18,
                     getContract(ARBI, "CoreStateRegistry"),
@@ -904,15 +929,15 @@ contract SuperformRouterTest is ProtocolActions {
     }
 
     function test_depositWithInvalidSlippage() public {
-        /// scenario: deposit from an paused form beacon id (which doesn't exist on the chain)
+        /// scenario: deposit from an paused form form id (which doesn't exist on the chain)
 
-        address superform =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         vm.selectFork(FORKS[ARBI]);
-        (address formBeacon,,) = SuperformFactory(getContract(ARBI, "SuperformFactory")).getSuperform(superformId);
 
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
@@ -929,7 +954,7 @@ contract SuperformRouterTest is ProtocolActions {
                     1,
                     getContract(ETH, "DAI"),
                     getContract(ARBI, "DAI"),
-                    formBeacon,
+                    superform,
                     ARBI,
                     1e18,
                     getContract(ARBI, "CoreStateRegistry"),
@@ -961,14 +986,16 @@ contract SuperformRouterTest is ProtocolActions {
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
-        address superform1 =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform1 = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        address superform2 =
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform2 = getContract(
+            ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ARBI);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
@@ -997,6 +1024,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0,
@@ -1020,6 +1048,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -1068,13 +1097,17 @@ contract SuperformRouterTest is ProtocolActions {
 
         v.superformIds = new uint256[](2);
         v.superformIds[0] = DataLib.packSuperform(
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))),
-            FORM_BEACON_IDS[0],
+            getContract(
+                ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
             ARBI
         );
         v.superformIds[1] = DataLib.packSuperform(
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))),
-            FORM_BEACON_IDS[0],
+            getContract(
+                ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
             ARBI
         );
 
@@ -1101,6 +1134,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0,
@@ -1125,6 +1159,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -1178,13 +1213,17 @@ contract SuperformRouterTest is ProtocolActions {
 
         v.superformIds = new uint256[](2);
         v.superformIds[0] = DataLib.packSuperform(
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))),
-            FORM_BEACON_IDS[0],
+            getContract(
+                ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
             ARBI
         );
         v.superformIds[1] = DataLib.packSuperform(
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))),
-            FORM_BEACON_IDS[0],
+            getContract(
+                ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
             ARBI
         );
 
@@ -1211,6 +1250,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0,
@@ -1235,6 +1275,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -1275,13 +1316,17 @@ contract SuperformRouterTest is ProtocolActions {
 
         v.superformIds = new uint256[](2);
         v.superformIds[0] = DataLib.packSuperform(
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))),
-            FORM_BEACON_IDS[0],
+            getContract(
+                ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
             ARBI
         );
         v.superformIds[1] = DataLib.packSuperform(
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))),
-            FORM_BEACON_IDS[0],
+            getContract(
+                ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
             ARBI
         );
 
@@ -1308,6 +1353,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0,
@@ -1332,6 +1378,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -1373,13 +1420,17 @@ contract SuperformRouterTest is ProtocolActions {
 
         v.superformIds = new uint256[](2);
         v.superformIds[0] = DataLib.packSuperform(
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))),
-            FORM_BEACON_IDS[0],
+            getContract(
+                ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
             ARBI
         );
         v.superformIds[1] = DataLib.packSuperform(
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0]))),
-            FORM_BEACON_IDS[0],
+            getContract(
+                ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+            ),
+            FORM_IMPLEMENTATION_IDS[0],
             ARBI
         );
 
@@ -1436,15 +1487,16 @@ contract SuperformRouterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
         address superformRouter = getContract(ETH, "SuperformRouter");
-        address superform1 =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
-
-        address superform2 = getContract(
-            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_BEACON_IDS[1]))
+        address superform1 = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
 
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ETH);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[1], ETH);
+        address superform2 = getContract(
+            ETH, string.concat("DAI", "ERC4626TimelockMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[1]))
+        );
+
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ETH);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[1], ETH);
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
@@ -1482,14 +1534,16 @@ contract SuperformRouterTest is ProtocolActions {
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
-        address superform1 =
-            getContract(ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform1 = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        address superform2 =
-            getContract(ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform2 = getContract(
+            ARBI, string.concat("WETH", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_BEACON_IDS[0], ARBI);
-        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_BEACON_IDS[0], ARBI);
+        uint256 superformId1 = DataLib.packSuperform(superform1, FORM_IMPLEMENTATION_IDS[0], ARBI);
+        uint256 superformId2 = DataLib.packSuperform(superform2, FORM_IMPLEMENTATION_IDS[0], ARBI);
 
         uint256[] memory superformIds = new uint256[](2);
         superformIds[0] = superformId1;
@@ -1518,6 +1572,7 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
+            1e18,
             false,
             /// @dev placeholder value, not used
             0,
@@ -1541,6 +1596,7 @@ contract SuperformRouterTest is ProtocolActions {
             false,
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
+            1e18,
             1e18,
             false,
             /// @dev placeholder value, not used
@@ -1621,16 +1677,16 @@ contract SuperformRouterTest is ProtocolActions {
         }
     }
 
-    function _pauseFormBeacon() public {
-        /// pausing form beacon id 1 from ARBI
-        uint32 formBeaconId = 1;
+    function _pauseFormImplementation() public {
+        /// pausing form form id 1 from ARBI
+        uint32 formImplementationId = 1;
 
         vm.selectFork(FORKS[ARBI]);
         vm.startPrank(deployer);
 
         vm.recordLogs();
-        SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormBeaconPauseStatus{ value: 800 ether }(
-            formBeaconId, 2, generateBroadcastParams(5, 1)
+        SuperformFactory(getContract(ARBI, "SuperformFactory")).changeFormImplementationPauseStatus{ value: 800 ether }(
+            formImplementationId, true, generateBroadcastParams(5, 1)
         );
 
         _broadcastPayloadHelper(ARBI, vm.getRecordedLogs());
@@ -1639,15 +1695,15 @@ contract SuperformRouterTest is ProtocolActions {
             if (chainIds[i] != ARBI) {
                 vm.selectFork(FORKS[chainIds[i]]);
 
-                uint256 statusBefore =
-                    SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
+                bool statusBefore = SuperformFactory(getContract(chainIds[i], "SuperformFactory"))
+                    .isFormImplementationPaused(formImplementationId);
                 BroadcastRegistry(payable(getContract(chainIds[i], "BroadcastRegistry"))).processPayload(1);
-                uint256 statusAfter =
-                    SuperformFactory(getContract(chainIds[i], "SuperformFactory")).isFormBeaconPaused(formBeaconId);
+                bool statusAfter = SuperformFactory(getContract(chainIds[i], "SuperformFactory"))
+                    .isFormImplementationPaused(formImplementationId);
 
                 /// @dev assert status update before and after processing the payload
-                assertEq(statusBefore, 1);
-                assertEq(statusAfter, 2);
+                assertEq(statusBefore, false);
+                assertEq(statusAfter, true);
             }
         }
     }

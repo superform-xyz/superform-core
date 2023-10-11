@@ -176,72 +176,6 @@ contract SuperRBACTest is BaseSetup {
         );
     }
 
-    function test_grantMinterRole() public {
-        vm.startPrank(deployer);
-        superRBAC.grantRole(superRBAC.SUPERPOSITIONS_MINTER_ROLE(), address(0x1));
-        vm.stopPrank();
-
-        assertEq(superRBAC.hasRole(superRBAC.SUPERPOSITIONS_MINTER_ROLE(), address(0x1)), true);
-    }
-
-    function test_revokeMinterRole() public {
-        _revokeAndCheck(
-            superRBAC.SUPERPOSITIONS_MINTER_ROLE(),
-            superRegistry.TIMELOCK_STATE_REGISTRY(),
-            deployer,
-            "TimelockStateRegistry",
-            generateBroadcastParams(5, 1),
-            0
-        );
-    }
-
-    function test_grantBurnerRole() public {
-        vm.startPrank(deployer);
-        superRBAC.grantRole(superRBAC.SUPERPOSITIONS_BURNER_ROLE(), address(0x1));
-        vm.stopPrank();
-
-        assertEq(superRBAC.hasRole(superRBAC.SUPERPOSITIONS_BURNER_ROLE(), address(0x1)), true);
-    }
-
-    function test_revokeBurnerRole() public {
-        _revokeAndCheck(
-            superRBAC.SUPERPOSITIONS_BURNER_ROLE(),
-            superRegistry.SUPERFORM_ROUTER(),
-            deployer,
-            "SuperformRouter",
-            generateBroadcastParams(5, 1),
-            0
-        );
-    }
-
-    function test_grantStateRegistryMinterRole() public {
-        vm.startPrank(deployer);
-
-        uint8[] memory registryIds = new uint8[](1);
-        registryIds[0] = 1;
-
-        address[] memory registryAddress = new address[](1);
-        registryAddress[0] = address(0x1);
-
-        superRegistry.setStateRegistryAddress(registryIds, registryAddress);
-
-        superRBAC.grantRole(superRBAC.MINTER_STATE_REGISTRY_ROLE(), address(0x1));
-        vm.stopPrank();
-
-        assertEq(superRBAC.hasRole(superRBAC.MINTER_STATE_REGISTRY_ROLE(), address(0x1)), true);
-    }
-
-    function test_revokeStateRegistryMinterRole() public {
-        _revokeAndCheck(
-            superRBAC.MINTER_STATE_REGISTRY_ROLE(),
-            superRegistry.CORE_STATE_REGISTRY(),
-            deployer,
-            "CoreStateRegistry",
-            generateBroadcastParams(5, 1),
-            0
-        );
-    }
-
     function test_stateSync_invalidCaller() public {
         vm.expectRevert(Error.NOT_BROADCAST_REGISTRY.selector);
         superRBAC.stateSyncBroadcast("");
@@ -255,7 +189,7 @@ contract SuperRBACTest is BaseSetup {
                 BroadcastMessage(
                     "SUPER_RBAC",
                     keccak256("SYNC_REVOKE"),
-                    abi.encode(keccak256("SUPERPOSITIONS_MINTER_ROLE"), keccak256("NON_EXISTENT_ID"))
+                    abi.encode(keccak256("PAYMENT_ADMIN_ROLE"), keccak256("NON_EXISTENT_ID"))
                 )
             )
         );

@@ -89,16 +89,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         onlyCoreStateRegistryUpdater
         isValidPayloadId(payloadId_)
     {
-        uint256 prevPayloadHeader = payloadHeader[payloadId_];
-        bytes memory prevPayloadBody = payloadBody[payloadId_];
-
-        bytes32 prevPayloadProof = AMBMessage(prevPayloadHeader, prevPayloadBody).computeProof();
-
-        (,, uint8 isMulti,,, uint64 srcChainId) = prevPayloadHeader.decodeTxInfo();
-
-        if (messageQuorum[prevPayloadProof] < _getRequiredMessagingQuorum(srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
-        }
+        (uint256 prevPayloadHeader, bytes memory prevPayloadBody,, bytes32 prevPayloadProof,,, uint8 isMulti,,,) =
+            _retrievePayloadHeaderAndBody(payloadId_);
 
         PayloadUpdaterLib.validateDepositPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
 
@@ -146,37 +138,36 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         onlyCoreStateRegistryUpdater
         isValidPayloadId(payloadId_)
     {
-        UpdateWithdrawPayloadVars memory v;
-
-        /// @dev load header and body of payload
-        v.prevPayloadHeader = payloadHeader[payloadId_];
-        v.prevPayloadBody = payloadBody[payloadId_];
-
-        v.prevPayloadProof = AMBMessage(v.prevPayloadHeader, v.prevPayloadBody).computeProof();
-        (,, v.isMulti,, v.srcSender, v.srcChainId) = v.prevPayloadHeader.decodeTxInfo();
-
-        if (messageQuorum[v.prevPayloadProof] < _getRequiredMessagingQuorum(v.srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
-        }
+        (
+            uint256 prevPayloadHeader,
+            bytes memory prevPayloadBody,
+            ,
+            bytes32 prevPayloadProof,
+            ,
+            ,
+            uint8 isMulti,
+            ,
+            address srcSender,
+            uint64 srcChainId
+        ) = _retrievePayloadHeaderAndBody(payloadId_);
 
         /// @dev validate payload update
-        PayloadUpdaterLib.validateWithdrawPayloadUpdate(v.prevPayloadHeader, payloadTracking[payloadId_], v.isMulti);
-        v.dstChainId = uint64(block.chainid);
+        PayloadUpdaterLib.validateWithdrawPayloadUpdate(prevPayloadHeader, payloadTracking[payloadId_], isMulti);
 
-        bytes memory newPayloadBody = _updateWithdrawPayload(v, txData_, v.isMulti);
+        bytes memory newPayloadBody = _updateWithdrawPayload(prevPayloadBody, srcSender, srcChainId, txData_, isMulti);
 
         /// @dev set the new payload body
         payloadBody[payloadId_] = newPayloadBody;
-        bytes32 newPayloadProof = AMBMessage(v.prevPayloadHeader, newPayloadBody).computeProof();
+        bytes32 newPayloadProof = AMBMessage(prevPayloadHeader, newPayloadBody).computeProof();
 
-        if (newPayloadProof != v.prevPayloadProof) {
+        if (newPayloadProof != prevPayloadProof) {
             /// @dev set new message quorum
-            messageQuorum[newPayloadProof] = messageQuorum[v.prevPayloadProof];
-            proofAMB[newPayloadProof] = proofAMB[v.prevPayloadProof];
+            messageQuorum[newPayloadProof] = messageQuorum[prevPayloadProof];
+            proofAMB[newPayloadProof] = proofAMB[prevPayloadProof];
 
             /// @dev re-set previous message quorum to 0
-            delete messageQuorum[v.prevPayloadProof];
-            delete proofAMB[v.prevPayloadProof];
+            delete messageQuorum[prevPayloadProof];
+            delete proofAMB[prevPayloadProof];
         }
 
         /// @dev define the payload status as updated
@@ -199,28 +190,16 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         }
 
         PayloadState initialState;
-        bytes memory payloadBody__;
-        uint256 payloadHeader__;
-
         initialState = payloadTracking[payloadId_];
-
         /// @dev sets status as processed to prevent re-entrancy
         payloadTracking[payloadId_] = PayloadState.PROCESSED;
-
-        payloadBody__ = payloadBody[payloadId_];
-        payloadHeader__ = payloadHeader[payloadId_];
-
+        uint256 payloadHeader__;
+        bytes memory payloadBody__;
+        bytes32 proof;
         CoreProcessPayloadLocalVars memory v;
-        (v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId) = payloadHeader__.decodeTxInfo();
-        AMBMessage memory message = AMBMessage(payloadHeader__, payloadBody__);
-
-        /// @dev validates quorum
-        bytes32 proof = message.computeProof();
-
-        /// @dev The number of valid proofs (quorum) must be equal to the required messaging quorum
-        if (messageQuorum[proof] < _getRequiredMessagingQuorum(v.srcChainId)) {
-            revert Error.QUORUM_NOT_REACHED();
-        }
+        AMBMessage memory message;
+        (payloadHeader__, payloadBody__, message, proof, v.txType, v.callbackType, v.multi,, v.srcSender, v.srcChainId)
+        = _retrievePayloadHeaderAndBody(payloadId_);
 
         /// @dev mint superPositions for successful deposits or remint for failed withdraws
         if (v.callbackType == uint256(CallbackType.RETURN) || v.callbackType == uint256(CallbackType.FAIL)) {
@@ -410,6 +389,45 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
     }
 
+    /// @dev retrieves information associated with the payload and validates quorum
+    /// @param payloadId_ is the payload id
+    /// @return payloadHeader_ is the payload header
+    /// @return payloadBody_ is the payload body
+    /// @return message is the AMBMessage struct
+    /// @return payloadProof is the payload proof
+    /// @return txType is the transaction type
+    /// @return callbackType is the callback type
+    /// @return isMulti is the multi flag
+    /// @return registryId is the registry id
+    /// @return srcSender is the source sender
+    /// @return srcChainId is the source chain id
+    function _retrievePayloadHeaderAndBody(uint256 payloadId_)
+        internal
+        view
+        returns (
+            uint256 payloadHeader_,
+            bytes memory payloadBody_,
+            AMBMessage memory message,
+            bytes32 payloadProof,
+            uint8 txType,
+            uint8 callbackType,
+            uint8 isMulti,
+            uint8 registryId,
+            address srcSender,
+            uint64 srcChainId
+        )
+    {
+        payloadHeader_ = payloadHeader[payloadId_];
+        payloadBody_ = payloadBody[payloadId_];
+        message = AMBMessage(payloadHeader_, payloadBody_);
+        payloadProof = message.computeProof();
+        (txType, callbackType, isMulti, registryId, srcSender, srcChainId) = payloadHeader_.decodeTxInfo();
+
+        if (messageQuorum[payloadProof] < _getRequiredMessagingQuorum(srcChainId)) {
+            revert Error.QUORUM_NOT_REACHED();
+        }
+    }
+
     /// @dev helper function to update multi vault deposit payload
     function _updateMultiVaultDepositPayload(
         uint256 payloadId_,
@@ -531,7 +549,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
     /// @dev helper function to update multi vault withdraw payload
     function _updateWithdrawPayload(
-        UpdateWithdrawPayloadVars memory v_,
+        bytes memory prevPayloadBody_,
+        address srcSender_,
+        uint64 srcChainId_,
         bytes[] calldata txData_,
         uint8 multi
     )
@@ -541,9 +561,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         UpdateMultiVaultWithdrawPayloadLocalVars memory lV;
         if (multi == 1) {
-            lV.multiVaultData = abi.decode(v_.prevPayloadBody, (InitMultiVaultData));
+            lV.multiVaultData = abi.decode(prevPayloadBody_, (InitMultiVaultData));
         } else {
-            lV.singleVaultData = abi.decode(v_.prevPayloadBody, (InitSingleVaultData));
+            lV.singleVaultData = abi.decode(prevPayloadBody_, (InitSingleVaultData));
 
             lV.tSuperFormIds = new uint256[](1);
             lV.tSuperFormIds[0] = lV.singleVaultData.superformId;
@@ -574,8 +594,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             revert Error.DIFFERENT_PAYLOAD_UPDATE_TX_DATA_LENGTH();
         }
 
-        lV.multiVaultData =
-            _validateAndUpdateTxData(txData_, lV.multiVaultData, v_.srcSender, v_.srcChainId, v_.dstChainId);
+        lV.multiVaultData = _validateAndUpdateTxData(txData_, lV.multiVaultData, srcSender_, srcChainId_, CHAIN_ID);
 
         if (multi == 0) {
             lV.singleVaultData.liqData.txData = txData_[0];
@@ -657,7 +676,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         for (uint256 i; i < len;) {
             /// @dev it is critical to validate that the action is being performed to the correct chainId coming from
             /// the superform
-            DataLib.validateSuperformChainId(multiVaultData.superformIds[i], uint64(block.chainid));
+            DataLib.validateSuperformChainId(multiVaultData.superformIds[i], CHAIN_ID);
 
             singleVaultData = InitSingleVaultData({
                 superformRouterId: multiVaultData.superformRouterId,
@@ -735,7 +754,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
                 /// @dev it is critical to validate that the action is being performed to the correct chainId coming
                 /// from the superform
-                DataLib.validateSuperformChainId(multiVaultData.superformIds[i], uint64(block.chainid));
+                DataLib.validateSuperformChainId(multiVaultData.superformIds[i], CHAIN_ID);
 
                 /// @notice dstAmounts has same size of the number of vaults. If a given deposit fails, we are minting 0
                 /// SPs back on source (slight gas waste)
@@ -807,7 +826,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
         singleVaultData.extraFormData = abi.encode(payloadId_, 0);
 
-        DataLib.validateSuperformChainId(singleVaultData.superformId, uint64(block.chainid));
+        DataLib.validateSuperformChainId(singleVaultData.superformId, CHAIN_ID);
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();
         /// @dev Withdraw from superform
@@ -841,7 +860,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
     {
         InitSingleVaultData memory singleVaultData = abi.decode(payload_, (InitSingleVaultData));
 
-        DataLib.validateSuperformChainId(singleVaultData.superformId, uint64(block.chainid));
+        DataLib.validateSuperformChainId(singleVaultData.superformId, CHAIN_ID);
 
         (address superform_,,) = singleVaultData.superformId.getSuperform();
 
@@ -928,12 +947,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return abi.encode(
             AMBMessage(
                 DataLib.packTxInfo(
-                    uint8(txType),
-                    uint8(returnType_),
-                    1,
-                    _getStateRegistryId(address(this)),
-                    srcSender_,
-                    uint64(block.chainid)
+                    uint8(txType), uint8(returnType_), 1, _getStateRegistryId(address(this)), srcSender_, CHAIN_ID
                 ),
                 abi.encode(ReturnMultiData(superformRouterId_, payloadId_, superformIds_, amounts_))
             )
@@ -958,12 +972,7 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
         return abi.encode(
             AMBMessage(
                 DataLib.packTxInfo(
-                    uint8(txType),
-                    uint8(returnType_),
-                    0,
-                    _getStateRegistryId(address(this)),
-                    srcSender_,
-                    uint64(block.chainid)
+                    uint8(txType), uint8(returnType_), 0, _getStateRegistryId(address(this)), srcSender_, CHAIN_ID
                 ),
                 abi.encode(ReturnSingleData(superformRouterId_, payloadId_, superformId_, amount_))
             )

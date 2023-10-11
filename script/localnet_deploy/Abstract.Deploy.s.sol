@@ -142,7 +142,7 @@ abstract contract AbstractDeploy is Script {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev 1 = ERC4626Form, 2 = ERC4626TimelockForm, 3 = KYCDaoForm
-    uint32[] public FORM_BEACON_IDS = [uint32(1), uint32(2), uint32(3)];
+    uint32[] public FORM_IMPLEMENTATION_IDS = [uint32(1), uint32(2), uint32(3)];
     string[] public VAULT_KINDS = ["Vault", "TimelockedVault", "KYCDaoVault"];
 
     /// @dev liquidity bridge ids 1 is lifi
@@ -372,7 +372,6 @@ abstract contract AbstractDeploy is Script {
         vars.superRegistryC.setAddress(
             vars.superRegistryC.TIMELOCK_STATE_REGISTRY(), vars.twoStepsFormStateRegistry, vars.chainId
         );
-        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.twoStepsFormStateRegistry);
 
         /// @dev 4.3 - deploy Broadcast State Registry
         vars.broadcastRegistry = address(new BroadcastRegistry{salt: salt}(vars.superRegistryC));
@@ -391,8 +390,6 @@ abstract contract AbstractDeploy is Script {
         registryIds[2] = 3;
 
         vars.superRegistryC.setStateRegistryAddress(registryIds, registryAddresses);
-        vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.coreStateRegistry);
-        vars.superRBACC.grantRole(vars.superRBACC.MINTER_STATE_REGISTRY_ROLE(), vars.twoStepsFormStateRegistry);
 
         /// @dev 4- deploy Payment Helper
         vars.paymentHelper = address(new PaymentHelper{salt: salt}(vars.superRegistry));
@@ -466,11 +463,11 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("ERC4626KYCDaoForm"))] = vars.kycDao4626Form;
 
         /// @dev 9 - Add newly deployed form implementations to Factory, formBeaconId 1
-        ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626Form, FORM_BEACON_IDS[0], salt);
+        ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626Form, FORM_IMPLEMENTATION_IDS[0]);
 
-        ISuperformFactory(vars.factory).addFormBeacon(vars.erc4626TimelockForm, FORM_BEACON_IDS[1], salt);
+        ISuperformFactory(vars.factory).addFormImplementation(vars.erc4626TimelockForm, FORM_IMPLEMENTATION_IDS[1]);
 
-        ISuperformFactory(vars.factory).addFormBeacon(vars.kycDao4626Form, FORM_BEACON_IDS[2], salt);
+        ISuperformFactory(vars.factory).addFormImplementation(vars.kycDao4626Form, FORM_IMPLEMENTATION_IDS[2]);
 
         /// @dev 10 - Deploy SuperformRouter
 
@@ -478,10 +475,6 @@ abstract contract AbstractDeploy is Script {
         contracts[vars.chainId][bytes32(bytes("SuperformRouter"))] = vars.superformRouter;
 
         vars.superRegistryC.setAddress(vars.superRegistryC.SUPERFORM_ROUTER(), vars.superformRouter, vars.chainId);
-
-        /// @dev grant extra roles to superformRouter
-        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_MINTER_ROLE(), vars.superformRouter);
-        vars.superRBACC.grantRole(vars.superRBACC.SUPERPOSITIONS_BURNER_ROLE(), vars.superformRouter);
 
         /// @dev 11 - Deploy SuperPositions
         vars.superPositions =

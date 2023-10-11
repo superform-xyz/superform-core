@@ -21,12 +21,9 @@ contract MDSVW70TokenInputSlippageAMB13 is ProtocolActions {
         TARGET_UNDERLYINGS[ETH][0] = [2];
 
         TARGET_VAULTS[OP][0] = [7];
-
-        /// @dev id 0 is normal 4626
         TARGET_VAULTS[ETH][0] = [0];
-        /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[OP][0] = [0];
+        TARGET_FORM_KINDS[OP][0] = [2];
         TARGET_FORM_KINDS[ETH][0] = [0];
 
         /// @dev define vaults amounts and slippage for every destination chain and for every action
@@ -39,7 +36,7 @@ contract MDSVW70TokenInputSlippageAMB13 is ProtocolActions {
         TARGET_VAULTS[ETH][1] = [0];
         /// @dev id 0 is normal 4626
 
-        TARGET_FORM_KINDS[OP][1] = [0];
+        TARGET_FORM_KINDS[OP][1] = [2];
         TARGET_FORM_KINDS[ETH][1] = [0];
 
         PARTIAL[OP][1] = [true];

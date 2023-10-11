@@ -43,11 +43,11 @@ contract DataLibTest is Test {
 
     function _legacySuperformPackWithShift() internal pure returns (uint256 superformId_) {
         address superform_ = address(111);
-        uint32 formBeaconId_ = 1;
+        uint32 formImplementationId_ = 1;
         uint64 chainId_ = 1;
 
         superformId_ = uint256(uint160(superform_));
-        superformId_ |= uint256(formBeaconId_) << 160;
+        superformId_ |= uint256(formImplementationId_) << 160;
         superformId_ |= uint256(chainId_) << 192;
     }
 }

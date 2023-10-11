@@ -34,8 +34,11 @@ jobs:
       - name: "Show the Foundry config"
         run: "forge config"
 
-      - name: "Build and perform size checks"
+      - name: "Perform mainnet size checks"
         run: forge build --sizes
+
+      - name: "Cache unoptimized build"
+        run: "FOUNDRY_PROFILE=localdev forge build"
 
       - name: "Cache the build so that it can be re-used by the other jobs"
         uses: "actions/cache/save@v3"
@@ -48,7 +51,7 @@ jobs:
           echo "## Build result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
-  test:
+  test-unit:
     needs: ["build"]
     runs-on: "SuperformCore2"
     steps:
@@ -71,14 +74,77 @@ jobs:
         run: |
           echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
 
-      - name: "Run the fork tests against the optimized build"
-        run: "forge test"
+      - name: "Run unit tests against the optimized build"
+        run: "forge test --match-path \"test/unit/**/*.sol\""
 
       - name: "Add test summary"
         run: |
           echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
           echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
 
+  test-fuzz:
+    needs: ["build"]
+    runs-on: "SuperformCore2"
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v3"
+        with:
+          submodules: "recursive"
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v3"
+        with:
+          fail-on-cache-miss: true
+          key: "foundry-build-${{ github.sha }}"
+          path: "out"
+
+      - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
+        run: |
+          echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
+
+      - name: "Run fuzz tests against the optimized build"
+        run: "forge test --match-path \"test/fuzz/**/*.sol\""
+
+      - name: "Add test summary"
+        run: |
+          echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+                  
+  test-invariant:
+    needs: ["build"]
+    runs-on: "SuperformCore2"
+    steps:
+      - name: "Check out the repo"
+        uses: "actions/checkout@v3"
+        with:
+          submodules: "recursive"
+
+      - name: "Install Foundry"
+        uses: "foundry-rs/foundry-toolchain@v1"
+
+      - name: "Restore the cached build"
+        uses: "actions/cache/restore@v3"
+        with:
+          fail-on-cache-miss: true
+          key: "foundry-build-${{ github.sha }}"
+          path: "out"
+
+      - name: "Generate fuzz seed that changes weekly to avoid burning through RPC allowance"
+        run: |
+          echo "FOUNDRY_FUZZ_SEED=$(echo $(($EPOCHSECONDS / 604800)))" >> $GITHUB_ENV
+
+      - name: "Run invariant tests against the optimized build"
+        run: "forge test --match-path \"test/invariant/**/*.sol\""
+
+      - name: "Add test summary"
+        run: |
+          echo "## Fork tests result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+                
   coverage:
     needs: ["build"]
     runs-on: "SuperformCore2"
@@ -92,7 +158,7 @@ jobs:
         uses: "foundry-rs/foundry-toolchain@v1"
 
       - name: "Generate the coverage report using the unit and the integration tests"
-        run: 'FOUNDRY_PROFILE=coverage forge coverage --match-path "test/**/*.sol" --report lcov'
+        run: "FOUNDRY_PROFILE=coverage forge coverage --match-path \"test/(unit|fuzz)/**/*.sol\" --report lcov"
 
       - name: "Upload coverage report to Codecov"
         uses: "codecov/codecov-action@v3"
