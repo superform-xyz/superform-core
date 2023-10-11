@@ -49,7 +49,7 @@ contract PayMasterTest is ProtocolActions {
         vm.stopPrank();
     }
 
-    function test_manipuationsBySendingFeesIntoRouter() public {
+    function test_manipulationsBySendingFeesIntoRouter() public {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
@@ -200,7 +200,6 @@ contract PayMasterTest is ProtocolActions {
         assertEq(feeCollector.balance, 0);
 
         vm.selectFork(FORKS[ARBI]);
-        (, int256 USDPerUnderlyingToken,,,) = AggregatorV3Interface(tokenPriceFeeds[ARBI][NATIVE]).latestRoundData();
         /// @dev amount received will be bridge-slippage-adjusted
         assertEq(txProcessorARBI.balance, (1 ether * (10_000 - uint256(totalSlippage))) / 10_000);
     }
@@ -261,10 +260,11 @@ contract PayMasterTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
         vm.startPrank(deployer);
 
-        address superform =
-            getContract(ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_BEACON_IDS[0])));
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
 
-        uint256 superformId = DataLib.packSuperform(superform, FORM_BEACON_IDS[0], ETH);
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ETH);
 
         SingleVaultSFData memory data = SingleVaultSFData(
             superformId,
