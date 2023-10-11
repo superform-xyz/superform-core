@@ -125,10 +125,13 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         external
         override
         onlySuperRouter
-        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
-        dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
+        if (_isPaused(singleVaultData_.superformId)) { 
+            
+        } else {
+            dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
+        }
     }
 
     /// @inheritdoc IBaseForm
@@ -265,6 +268,16 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+    /// @dev returns if a form id is paused
+    function _isPaused(uint256 superformId) internal view returns (bool) {
+        (, uint32 formImplementationId_,) = superformId.getSuperform();
+
+        if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
+
+        return ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+            formImplementationId_
+        );
+    }
 
     /// @dev Converts a vault share amount into an equivalent underlying asset amount
     function _vaultSharesAmountToUnderlyingAmount(

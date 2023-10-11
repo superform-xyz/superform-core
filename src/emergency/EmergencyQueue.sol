@@ -5,29 +5,24 @@ import { DataLib } from "../libraries/DataLib.sol";
 import { IBaseForm } from "../interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
+import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
 import "../types/DataTypes.sol";
 
 /// @title EmergencyQueue
 /// @author Zeropoint Labs
 /// @dev stores withdrawal requests when forms are paused
-contract EmergencyQueue {
+contract EmergencyQueue is IEmergencyQueue {
     using DataLib for uint256;
 
-    struct QueuedWithdrawal {
-        address refundAddress;
-        uint256 superformId;
-        uint256 amount;
-        uint256 srcPayloadId;
-    }
-
-    /*///////////////////////////////////////////////////////////////
-                            STATE VARIABLES
-    //////////////////////////////////////////////////////////////*/
     /// @dev is the chain id
     uint64 public immutable CHAIN_ID;
 
     /// @dev is the address of super registry
     ISuperRegistry public immutable superRegistry;
+
+    /*///////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
 
     /// @dev is the count of actions queued
     uint256 public queueCounter;
@@ -71,20 +66,6 @@ contract EmergencyQueue {
     }
 
     /*///////////////////////////////////////////////////////////////
-                                EVENTS
-    //////////////////////////////////////////////////////////////*/
-    event WithdrawalQueued(
-        address indexed srcAddress,
-        address indexed refundAddress,
-        uint256 indexed id,
-        uint256 superformId,
-        uint256 amount,
-        uint256 srcPayloadId
-    );
-
-    event WithdrawalProcessed(address indexed refundAddress, uint256 indexed id, uint256 superformId, uint256 amount);
-
-    /*///////////////////////////////////////////////////////////////
                             CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
 
@@ -98,13 +79,13 @@ contract EmergencyQueue {
                         EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev called by paused forms to queue up withdrawals for exit
-    /// @param data_ is the single vault data passed by the user
+    /// @inheritdoc IEmergencyQueue
     function queueWithdrawal(
         InitSingleVaultData memory data_,
         address srcSender
     )
         external
+        override
         onlySuperform(data_.superformId)
     {
         ++queueCounter;
@@ -121,18 +102,19 @@ contract EmergencyQueue {
         );
     }
 
-    function executeQueuedWithdrawal(uint256 id) external onlyEmergencyAdmin {
+    /// @inheritdoc IEmergencyQueue
+    function executeQueuedWithdrawal(uint256 id_) external override onlyEmergencyAdmin {
         /// FIXME: add revert message here
-        if (queuedWithdrawalStatus[id]) {
+        if (queuedWithdrawalStatus[id_]) {
             revert();
         }
 
-        queuedWithdrawalStatus[id] = true;
-        QueuedWithdrawal memory data = queuedWithdrawal[id];
+        queuedWithdrawalStatus[id_] = true;
+        QueuedWithdrawal memory data = queuedWithdrawal[id_];
 
         (address superform,,) = data.superformId.getSuperform();
         IBaseForm(superform).emergencyWithdraw(data.refundAddress, data.amount);
 
-        emit WithdrawalProcessed(data.refundAddress, id, data.superformId, data.amount);
+        emit WithdrawalProcessed(data.refundAddress, id_, data.superformId, data.amount);
     }
 }
