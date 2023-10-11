@@ -761,6 +761,12 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
 
+            if (
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+                    formImplementationId_
+                )
+            ) return false;
+
             unchecked {
                 ++i;
             }

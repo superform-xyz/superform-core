@@ -169,7 +169,6 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         external
         override
         onlyCoreStateRegistry
-        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
         if (_isPaused(singleVaultData_.superformId)) {
