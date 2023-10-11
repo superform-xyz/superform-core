@@ -724,11 +724,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev 10000 = 100% slippage
         if (superformData_.maxSlippage > 10_000) return false;
 
-        (, uint32 formImplementationId_,) = superformData_.superformId.getSuperform();
-
-        return !ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-            formImplementationId_
-        );
+        /// if it reaches this point then is valid
+        return true;
     }
 
     function _validateSuperformsDepositData(
@@ -763,12 +760,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (superformsData_.maxSlippages[i] > 10_000) return false;
             (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
-
-            if (
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-                    formImplementationId_
-                )
-            ) return false;
 
             unchecked {
                 ++i;
@@ -813,12 +804,6 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             if (superformsData_.maxSlippages[i] > 10_000) return false;
             (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
-
-            if (
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
-                    formImplementationId_
-                )
-            ) return false;
 
             unchecked {
                 ++i;

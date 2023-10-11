@@ -713,6 +713,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
 
             /// @dev 17 deploy emergency queue
             vars.emergencyQueue = address(new EmergencyQueue(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
             vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
 
             delete bridgeAddresses;
