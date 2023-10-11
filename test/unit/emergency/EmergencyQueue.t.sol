@@ -214,7 +214,7 @@ contract EmergencyQueueTest is ProtocolActions {
 
     function test_emergencyQueueProcessingXChain() public {
         /// user deposits successfully to a form
-        _successfulDepositXChain();
+        _successfulDepositXChain(1);
 
         /// now pause the form and try to withdraw
         _pauseFormXChain();
@@ -241,6 +241,45 @@ contract EmergencyQueueTest is ProtocolActions {
 
         uint256 balanceAfter = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
         assertEq(balanceBefore + 1e18, balanceAfter);
+    }
+
+    function test_emergencyQueueProcessingXChainMultiVault() public {
+        /// user deposits successfully to a form
+        _successfulDepositXChain(1);
+        _successfulDepositXChain(2);
+
+        /// now pause the form and try to withdraw
+        _pauseFormXChain();
+
+        /// try to withdraw after pause (mrperfect panicks)
+        _withdrawAfterPauseXChainMulti();
+
+        /// processing the queued withdrawal and assert
+        vm.selectFork(FORKS[ARBI]);
+
+        /// @dev deployer has emergency admin role
+        address emergencyQueue = getContract(ARBI, "EmergencyQueue");
+
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 balanceBefore = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
+
+        assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+        assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(2));
+
+        vm.prank(deployer);
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
+
+        vm.prank(deployer);
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(2);
+
+        assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+        assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(2));
+
+        uint256 balanceAfter = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
+        assertEq(balanceBefore + (0.9e18 * 2), balanceAfter);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -345,7 +384,7 @@ contract EmergencyQueueTest is ProtocolActions {
         /// @dev simulate cross-chain payload delivery
         LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
             LZ_ENDPOINTS[ARBI],
-            500_000,
+            10_000_000,
             /// note: using some max limit
             FORKS[ARBI],
             logs
@@ -363,6 +402,77 @@ contract EmergencyQueueTest is ProtocolActions {
 
         /// @dev assert emergency withdrawal added to queue on ARBI
         assertEq(EmergencyQueue(getContract(ARBI, "EmergencyQueue")).queueCounter(), 1);
+    }
+
+    function _withdrawAfterPauseXChainMulti() internal {
+        /// scenario: user deposits with his own collateral and has approved enough tokens
+        vm.selectFork(FORKS[ETH]);
+
+        address superformRouter = getContract(ETH, "SuperformRouter");
+
+        address superform = getContract(
+            ARBI, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = superformId;
+        superformIds[1] = superformId;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 0.9e18;
+        amounts[1] = 0.9e18;
+
+        uint256[] memory slippages = new uint256[](2);
+        slippages[0] = 100;
+        slippages[1] = 100;
+
+        LiqRequest[] memory liqRequests = new LiqRequest[](2);
+        liqRequests[0] = LiqRequest(1, "", address(0), ETH, 0);
+        liqRequests[1] = liqRequests[0];
+
+        MultiVaultSFData memory data =
+            MultiVaultSFData(superformIds, amounts, slippages, new bool[](2), liqRequests, "", mrimperfect, "");
+
+        uint8[] memory ambIds = new uint8[](2);
+        ambIds[0] = 1;
+        ambIds[1] = 2;
+
+        SingleXChainMultiVaultStateReq memory req = SingleXChainMultiVaultStateReq(ambIds, ARBI, data);
+
+        /// @dev approves before call
+        vm.prank(mrperfect);
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(superformRouter, superformId, 2e18);
+        vm.recordLogs();
+
+        vm.prank(mrperfect);
+        vm.deal(mrperfect, 2 ether);
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        /// @dev simulate cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ARBI],
+            5_000_000,
+            /// note: using some max limit
+            FORKS[ARBI],
+            logs
+        );
+
+        HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
+            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+        );
+
+        /// @dev update and process the payload on ARBI
+        vm.selectFork(FORKS[ARBI]);
+
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload(3);
+
+        /// @dev assert emergency withdrawal added to queue on ARBI
+        assertEq(EmergencyQueue(getContract(ARBI, "EmergencyQueue")).queueCounter(), 2);
     }
 
     function _pauseForm() internal {
@@ -404,7 +514,7 @@ contract EmergencyQueueTest is ProtocolActions {
         vm.stopPrank();
     }
 
-    function _successfulDepositXChain() internal {
+    function _successfulDepositXChain(uint256 payloadId) internal {
         /// scenario: user deposits with his own collateral and has approved enough tokens
         vm.selectFork(FORKS[ETH]);
 
@@ -486,11 +596,11 @@ contract EmergencyQueueTest is ProtocolActions {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 2e18;
 
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(1, amounts);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).updateDepositPayload(payloadId, amounts);
 
         vm.recordLogs();
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 1 ether }(1);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload{ value: 1 ether }(payloadId);
 
         logs = vm.getRecordedLogs();
 
@@ -510,7 +620,7 @@ contract EmergencyQueueTest is ProtocolActions {
         /// @dev mint super positions on source chain
         vm.selectFork(FORKS[ETH]);
         vm.prank(deployer);
-        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload(1);
+        CoreStateRegistry(payable(getContract(ETH, "CoreStateRegistry"))).processPayload(payloadId);
     }
 
     function _getTestSuperformId() internal view returns (uint256) {
