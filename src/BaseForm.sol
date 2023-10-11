@@ -73,9 +73,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     }
 
     modifier onlyEmergencyQueue() {
-        /// FIXME: add revert messages here
         if (msg.sender != address(emergencyQueue)) {
-            revert();
+            revert Error.NOT_EMERGENCY_QUEUE();
         }
         _;
     }

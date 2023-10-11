@@ -338,9 +338,8 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
     function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
         IERC4626 vaultContract = IERC4626(vault);
 
-        /// FIXME: add revert message
         if (vaultContract.balanceOf(address(this)) < amount_) {
-            revert();
+            revert Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
         }
 
         vaultContract.transfer(refundAddress_, amount_);

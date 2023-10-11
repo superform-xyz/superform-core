@@ -39,28 +39,24 @@ contract EmergencyQueue is IEmergencyQueue {
     modifier onlySuperform(uint256 superformId_) {
         (address superform, uint32 formId, uint64 chainId) = superformId_.getSuperform();
 
-        /// FIXME: add revert message here
         if (msg.sender != superform) {
-            revert();
+            revert Error.NOT_SUPERFORM();
         }
 
-        /// FIXME: add revert message here
         if (chainId != CHAIN_ID) {
-            revert();
+            revert Error.INVALID_CHAIN_ID();
         }
 
-        /// FIXME: add revert message here
         if (IBaseForm(superform).formImplementationId() != formId) {
-            revert();
+            revert Error.INVALID_SUPERFORMS_DATA();
         }
 
         _;
     }
 
     modifier onlyEmergencyAdmin() {
-        /// FIXME: add revert message here
         if (!ISuperRBAC(superRegistry.getAddress("SUPER_RBAC")).hasEmergencyAdminRole(msg.sender)) {
-            revert();
+            revert Error.NOT_EMERGENCY_ADMIN();
         }
         _;
     }
@@ -104,9 +100,8 @@ contract EmergencyQueue is IEmergencyQueue {
 
     /// @inheritdoc IEmergencyQueue
     function executeQueuedWithdrawal(uint256 id_) external override onlyEmergencyAdmin {
-        /// FIXME: add revert message here
         if (queuedWithdrawalStatus[id_]) {
-            revert();
+            revert Error.EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
         }
 
         queuedWithdrawalStatus[id_] = true;
