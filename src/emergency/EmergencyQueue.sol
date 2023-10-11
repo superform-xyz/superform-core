@@ -56,7 +56,7 @@ contract EmergencyQueue is IEmergencyQueue {
     }
 
     modifier onlyEmergencyAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress("SUPER_RBAC")).hasEmergencyAdminRole(msg.sender)) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC")) ).hasEmergencyAdminRole(msg.sender)) {
             revert Error.NOT_EMERGENCY_ADMIN();
         }
         _;
