@@ -82,7 +82,7 @@ contract EmergencyQueue is IEmergencyQueue {
     /// @inheritdoc IEmergencyQueue
     function queueWithdrawal(
         InitSingleVaultData memory data_,
-        address srcSender
+        address srcSender_
     )
         external
         override
@@ -91,14 +91,14 @@ contract EmergencyQueue is IEmergencyQueue {
         ++queueCounter;
 
         queuedWithdrawal[queueCounter] = QueuedWithdrawal(
-            data_.dstRefundAddress == address(0) ? srcSender : data_.dstRefundAddress,
+            data_.dstRefundAddress == address(0) ? srcSender_ : data_.dstRefundAddress,
             data_.superformId,
             data_.amount,
             data_.payloadId
         );
 
         emit WithdrawalQueued(
-            srcSender, data_.dstRefundAddress, queueCounter, data_.superformId, data_.amount, data_.payloadId
+            srcSender_, data_.dstRefundAddress, queueCounter, data_.superformId, data_.amount, data_.payloadId
         );
     }
 

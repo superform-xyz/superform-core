@@ -24,7 +24,7 @@ interface IEmergencyQueue {
 
     /// @dev called by paused forms to queue up withdrawals for exit
     /// @param data_ is the single vault data passed by the user
-    function queueWithdrawal(InitSingleVaultData memory data_, address srcSender) external;
+    function queueWithdrawal(InitSingleVaultData memory data_, address srcSender_) external;
 
     /// @dev alled by emergency admin to processed queued withdrawal
     /// @param id_ is the identifier of the queued action
