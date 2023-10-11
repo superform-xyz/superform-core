@@ -162,47 +162,26 @@ contract PayMasterTest is ProtocolActions {
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), address(0), ETH);
 
+        bytes memory txData =
+            _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false);
+
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceTo(
-            keccak256("CORE_REGISTRY_PROCESSOR"),
-            LiqRequest(
-                1,
-                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
-                NATIVE,
-                ARBI,
-                1 ether
-            ),
-            420
+            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), 420
         );
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_PROCESSOR"), txProcessorETH, ETH);
-
+        txData = _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false);
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(feeCollector).rebalanceTo(
-            keccak256("CORE_REGISTRY_PROCESSOR"),
-            LiqRequest(
-                1,
-                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
-                NATIVE,
-                ARBI,
-                1 ether
-            ),
-            ARBI
+            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), ARBI
         );
-
+        txData = _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI, false);
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
         PayMaster(feeCollector).rebalanceTo(
-            keccak256("CORE_REGISTRY_PROCESSOR"),
-            LiqRequest(
-                1,
-                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, txProcessorARBI, false),
-                NATIVE,
-                ETH,
-                1 ether
-            ),
-            ARBI
+            keccak256("CORE_REGISTRY_PROCESSOR"), LiqRequest(1, txData, NATIVE, ETH, 1 ether), ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
@@ -221,6 +200,7 @@ contract PayMasterTest is ProtocolActions {
         assertEq(feeCollector.balance, 0);
 
         vm.selectFork(FORKS[ARBI]);
+        (, int256 USDPerUnderlyingToken,,,) = AggregatorV3Interface(tokenPriceFeeds[ARBI][NATIVE]).latestRoundData();
         /// @dev amount received will be bridge-slippage-adjusted
         assertEq(txProcessorARBI.balance, (1 ether * (10_000 - uint256(totalSlippage))) / 10_000);
     }
@@ -238,34 +218,22 @@ contract PayMasterTest is ProtocolActions {
 
         /// @dev admin tries withdraw if processor address is zero (check if handled gracefully)
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), address(0), ETH);
+        bytes memory txData =
+            _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false);
 
         vm.expectRevert(Error.ZERO_ADDRESS.selector);
         PayMaster(feeCollector).rebalanceTo(
-            keccak256("CORE_REGISTRY_UPDATER"),
-            LiqRequest(
-                1,
-                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
-                NATIVE,
-                ARBI,
-                1 ether
-            ),
-            420
+            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), 420
         );
 
         superRegistry.setAddress(keccak256("CORE_REGISTRY_UPDATER"), txUpdaterARBI, ETH);
 
+        txData = _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false);
+
         /// @dev admin moves the payment from fee collector to different address on another chain
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
         PayMaster(feeCollector).rebalanceTo(
-            keccak256("CORE_REGISTRY_UPDATER"),
-            LiqRequest(
-                1,
-                _buildDummyTxDataUnitTests(1, NATIVE, NATIVE, feeCollector, ARBI, 1 ether, feeCollectorDst, false),
-                NATIVE,
-                ARBI,
-                1 ether
-            ),
-            ARBI
+            keccak256("CORE_REGISTRY_UPDATER"), LiqRequest(1, txData, NATIVE, ARBI, 1 ether), ARBI
         );
 
         /// @dev admin moves the payment from fee collector (ideal conditions)
