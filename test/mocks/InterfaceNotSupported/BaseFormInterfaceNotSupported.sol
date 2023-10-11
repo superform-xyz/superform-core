@@ -34,6 +34,8 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @dev the vault this form pertains to
     address internal vault;
 
+    uint32 public formImplementationId;
+
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
     //////////////////////////////////////////////////////////////*/
@@ -61,6 +63,11 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         _;
     }
 
+    modifier onlyEmergencyQueue() {
+        /// FIXME: add validations here
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
@@ -74,8 +81,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    function initialize(address superRegistry_, address vault_) external initializer {
+    function initialize(address superRegistry_, address vault_, uint32 formImplementationId_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
+        formImplementationId = formImplementationId_;
         vault = vault_;
     }
 
@@ -141,6 +149,11 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         returns (uint256 dstAmount)
     {
         dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
+    }
+
+    /// @inheritdoc IBaseForm
+    function emergencyWithdraw(address refundAddress_, uint256 amount_) external override onlyEmergencyQueue {
+        _emergencyWithdraw(refundAddress_, amount_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -234,6 +247,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         internal
         virtual
         returns (uint256 dstAmount);
+
+    /// @dev withdraws vault shares from form during emergency
+    function _emergencyWithdraw(address refundAddress_, uint256 amount_) internal virtual;
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS

@@ -19,7 +19,7 @@ import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
 
 /// @title BaseRouterImplementation
-/// @author Zeropoint Labs.
+/// @author Zeropoint Labs
 /// @dev Extends BaseRouter with standard internal execution functions (based on SuperPositions)
 abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRouter, LiquidityHandler {
     using SafeERC20 for IERC20;

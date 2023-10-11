@@ -19,6 +19,9 @@ interface IBaseForm is IERC165 {
     /// @dev is emitted when a payload is processed by the destination contract.
     event Processed(uint64 srcChainID, uint64 dstChainId, uint256 srcPayloadId, uint256 amount, address vault);
 
+    /// @dev is emitted when an emergency withdrawal is processed
+    event EmergencyWithdrawalProcessed(address refundAddress, uint256 amount);
+
     /*///////////////////////////////////////////////////////////////
                         EXTERNAL WRITE FUNCTONS
     //////////////////////////////////////////////////////////////*/
@@ -71,6 +74,11 @@ interface IBaseForm is IERC165 {
     )
         external
         returns (uint256 dstAmount);
+
+    /// @dev process withdrawal of shares if form is paused
+    /// @param refundAddress_ The address to refund the shares to
+    /// @param amount_ The amount of vault shares to refund
+    function emergencyWithdraw(address refundAddress_, uint256 amount_) external;
 
     /// @notice get Superform name of the ERC20 vault representation
     /// @return The ERC20 name
@@ -126,4 +134,6 @@ interface IBaseForm is IERC165 {
 
     /// @dev API may need to know state of funds deployed
     function previewRedeemFrom(uint256 shares_) external view returns (uint256);
+
+    function formImplementationId() external view returns (uint32);
 }

@@ -335,6 +335,19 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
     }
 
+    function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
+        IERC4626 vaultContract = IERC4626(vault);
+
+        /// FIXME: add revert message
+        if (vaultContract.balanceOf(address(this)) < amount_) {
+            revert();
+        }
+
+        vaultContract.transfer(refundAddress_, amount_);
+
+        emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
+    }
+
     /*///////////////////////////////////////////////////////////////
                 EXTERNAL VIEW VIRTUAL FUNCTIONS OVERRIDES
     //////////////////////////////////////////////////////////////*/
