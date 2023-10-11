@@ -31,123 +31,71 @@ contract LiFiValidatorTest is ProtocolActions {
     }
 
     function test_lifi_invalid_receiver() public {
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "PayMaster"), false
+        );
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(
-                _buildDummyTxDataUnitTests(
-                    1, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "PayMaster"), false
-                ),
-                ETH,
-                BSC,
-                BSC,
-                true,
-                address(0),
-                deployer,
-                NATIVE
-            )
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, BSC, BSC, true, address(0), deployer, NATIVE)
         );
     }
 
     function test_lifi_invalid_dstchain() public {
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
+        );
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(
-                _buildDummyTxDataUnitTests(
-                    1, address(0), address(0), deployer, BSC, uint256(100), getContract(BSC, "CoreStateRegistry"), false
-                ),
-                ETH,
-                ARBI,
-                ARBI,
-                true,
-                address(0),
-                deployer,
-                NATIVE
-            )
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, NATIVE)
         );
     }
 
     function test_lifi_invalid_receiver_samechain() public {
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1, address(0), address(0), deployer, ETH, uint256(100), getContract(ETH, "PayMaster"), true
+        );
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(
-                _buildDummyTxDataUnitTests(
-                    1, address(0), address(0), deployer, ETH, uint256(100), getContract(ETH, "PayMaster"), true
-                ),
-                ETH,
-                ETH,
-                ETH,
-                true,
-                address(0),
-                deployer,
-                NATIVE
-            )
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ETH, ETH, true, address(0), deployer, NATIVE)
         );
     }
 
     function test_lifi_invalid_receiver_xchain_withdraw() public {
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1, address(0), address(0), deployer, OP, uint256(100), getContract(OP, "PayMaster"), false
+        );
+
         vm.expectRevert(Error.INVALID_TXDATA_RECEIVER.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(
-                _buildDummyTxDataUnitTests(
-                    1, address(0), address(0), deployer, OP, uint256(100), getContract(OP, "PayMaster"), false
-                ),
-                ETH,
-                ARBI,
-                OP,
-                false,
-                address(0),
-                deployer,
-                NATIVE
-            )
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, OP, false, address(0), deployer, NATIVE)
         );
     }
 
     function test_lifi_invalid_txdata_chainid_withdraw() public {
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1, address(0), address(0), deployer, OP, uint256(100), getContract(OP, "PayMaster"), false
+        );
+
         vm.expectRevert(Error.INVALID_TXDATA_CHAIN_ID.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(
-                _buildDummyTxDataUnitTests(
-                    1, address(0), address(0), deployer, OP, uint256(100), getContract(OP, "PayMaster"), false
-                ),
-                ETH,
-                ARBI,
-                ARBI,
-                false,
-                address(0),
-                deployer,
-                NATIVE
-            )
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, false, address(0), deployer, NATIVE)
         );
     }
 
     function test_lifi_invalid_token() public {
+        bytes memory txData = _buildDummyTxDataUnitTests(
+            1, address(0), address(0), deployer, ARBI, uint256(100), getContract(ARBI, "CoreStateRegistry"), false
+        );
+
         vm.expectRevert(Error.INVALID_TXDATA_TOKEN.selector);
 
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
-            IBridgeValidator.ValidateTxDataArgs(
-                _buildDummyTxDataUnitTests(
-                    1,
-                    address(0),
-                    address(0),
-                    deployer,
-                    ARBI,
-                    uint256(100),
-                    getContract(ARBI, "CoreStateRegistry"),
-                    false
-                ),
-                ETH,
-                ARBI,
-                ARBI,
-                true,
-                address(0),
-                deployer,
-                address(420)
-            )
+            IBridgeValidator.ValidateTxDataArgs(txData, ETH, ARBI, ARBI, true, address(0), deployer, address(420))
         );
     }
 
