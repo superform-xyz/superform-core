@@ -9,6 +9,8 @@ import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
 import { Error } from "../utils/Error.sol";
 import "../types/DataTypes.sol";
 
+import "forge-std/console.sol";
+
 /// @title EmergencyQueue
 /// @author Zeropoint Labs
 /// @dev stores withdrawal requests when forms are paused
@@ -56,7 +58,7 @@ contract EmergencyQueue is IEmergencyQueue {
     }
 
     modifier onlyEmergencyAdmin() {
-        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC")) ).hasEmergencyAdminRole(msg.sender)) {
+        if (!ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasEmergencyAdminRole(msg.sender)) {
             revert Error.NOT_EMERGENCY_ADMIN();
         }
         _;
@@ -87,6 +89,7 @@ contract EmergencyQueue is IEmergencyQueue {
     {
         ++queueCounter;
 
+        console.log(data_.dstRefundAddress, "dst refund address");
         queuedWithdrawal[queueCounter] = QueuedWithdrawal(
             data_.dstRefundAddress == address(0) ? srcSender_ : data_.dstRefundAddress,
             data_.superformId,
