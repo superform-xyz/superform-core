@@ -104,13 +104,13 @@ abstract contract StateSyncer is IStateSyncer {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev helps validate the state registry id for minting superform id
-    function _validateStateSyncer(uint256 superformId_) internal {
+    function _validateStateSyncer(uint256 superformId_) internal view {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
         _isValidStateSyncer(registryId, superformId_);
     }
 
     /// @dev helps validate the state registry id for minting superform id
-    function _validateStateSyncer(uint256[] memory superformIds_) internal {
+    function _validateStateSyncer(uint256[] memory superformIds_) internal view {
         uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
         for (uint256 i; i < superformIds_.length;) {
             _isValidStateSyncer(registryId, superformIds_[i]);
@@ -120,7 +120,7 @@ abstract contract StateSyncer is IStateSyncer {
         }
     }
 
-    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal {
+    function _isValidStateSyncer(uint8 registryId_, uint256 superformId_) internal pure {
         // Directly check if the registryId is 0 or doesn't match the allowed cases.
         if (registryId_ == 0) {
             revert Error.NOT_MINTER_STATE_REGISTRY_ROLE();

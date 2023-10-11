@@ -312,11 +312,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         _fundUnderlyingTokens(100);
     }
 
-    function getContract(uint64 chainId, string memory _name) public view returns (address) {
+    function getContract(uint64 chainId, string memory _name) internal view returns (address) {
         return contracts[chainId][bytes32(bytes(_name))];
     }
 
-    function getAccessControlErrorMsg(address _addr, bytes32 _role) public pure returns (bytes memory errorMsg) {
+    function getAccessControlErrorMsg(address _addr, bytes32 _role) internal pure returns (bytes memory errorMsg) {
         errorMsg = abi.encodePacked(
             "AccessControl: account ",
             Strings.toHexString(uint160(_addr), 20),
@@ -1272,7 +1272,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     }
 
     ///@dev Compute the address of the contract to be deployed
-    function getAddress(bytes memory bytecode_, bytes32 salt_, address deployer_) public pure returns (address) {
+    function getAddress(bytes memory bytecode_, bytes32 salt_, address deployer_) internal pure returns (address) {
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), deployer_, salt_, keccak256(bytecode_)));
 
         // NOTE: cast last 20 bytes of hash to address
