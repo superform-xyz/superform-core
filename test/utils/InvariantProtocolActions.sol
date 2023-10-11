@@ -100,7 +100,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         (vars, msgValue) = _stage2_run_src_action(action, multiSuperformsData, singleSuperformsData, vars);
         console.log("Stage 2 complete");
         UniqueDSTInfo[] memory usedDsts;
-
         /// @dev simulation of cross-chain message delivery (for x-chain actions) (With no assertions)
         (aV, usedDsts) = _stage3_src_to_dst_amb_delivery(action, vars, multiSuperformsData, singleSuperformsData);
         console.log("Stage 3 complete");

@@ -46,6 +46,11 @@ contract TimelockStateRegistryTest is ProtocolActions {
             1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
         );
 
+        vm.prank(getContract(AVAX, "SuperformRouter"));
+        SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
+        );
+
         vm.prank(getContract(ETH, "ERC4626TimelockForm"));
         timelockStateRegistry.receivePayload(
             0,
