@@ -173,6 +173,45 @@ contract EmergencyQueueTest is ProtocolActions {
         assertEq(balanceBefore + 1e18, balanceAfter);
     }
 
+    function test_emergencyQueueProcessingMultiVault() public {
+        /// user deposits successfully to a form
+        _successfulDeposit();
+        _successfulDeposit();
+
+        /// now pause the form and try to withdraw
+        _pauseForm();
+
+        /// try to withdraw after pause (mrperfect panicks)
+        _withdrawAfterPauseMulti();
+
+        /// processing the queued withdrawal and assert
+        vm.selectFork(FORKS[ETH]);
+
+        /// @dev deployer has emergency admin role
+        address emergencyQueue = getContract(ETH, "EmergencyQueue");
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 balanceBefore = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
+
+        assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+        assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(2));
+
+        vm.prank(deployer);
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
+
+        vm.prank(deployer);
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(2);
+
+        assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
+        assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(2));
+
+        uint256 balanceAfter = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
+        assertEq(balanceBefore + (0.9e18 * 2), balanceAfter);
+    }
+
     function test_emergencyQueueProcessingXChain() public {
         /// user deposits successfully to a form
         _successfulDepositXChain();
@@ -233,6 +272,41 @@ contract EmergencyQueueTest is ProtocolActions {
         SuperformRouter(router).singleDirectSingleVaultWithdraw(req);
 
         assertEq(EmergencyQueue(getContract(ETH, "EmergencyQueue")).queueCounter(), 1);
+    }
+
+    function _withdrawAfterPauseMulti() internal {
+        vm.selectFork(FORKS[ETH]);
+        address payable router = payable(getContract(ETH, "SuperformRouter"));
+        address superPositions = getContract(ETH, "SuperPositions");
+
+        uint256[] memory superformIds = new uint256[](2);
+        superformIds[0] = _getTestSuperformId();
+        superformIds[1] = _getTestSuperformId();
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 0.9e18;
+        amounts[1] = 0.9e18;
+
+        uint256[] memory maxSlippages = new uint256[](2);
+        maxSlippages[0] = 100;
+        maxSlippages[1] = 100;
+
+        LiqRequest[] memory liqRequests = new LiqRequest[](2);
+        liqRequests[0] = LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0);
+        liqRequests[1] = liqRequests[0];
+
+        MultiVaultSFData memory data =
+            MultiVaultSFData(superformIds, amounts, maxSlippages, new bool[](2), liqRequests, "", mrimperfect, "");
+
+        SingleDirectMultiVaultStateReq memory req = SingleDirectMultiVaultStateReq(data);
+
+        vm.prank(mrperfect);
+        SuperPositions(superPositions).increaseAllowance(router, _getTestSuperformId(), 100e18);
+
+        vm.prank(mrperfect);
+        SuperformRouter(router).singleDirectMultiVaultWithdraw(req);
+
+        assertEq(EmergencyQueue(getContract(ETH, "EmergencyQueue")).queueCounter(), 2);
     }
 
     function _withdrawAfterPauseXChain() internal {
