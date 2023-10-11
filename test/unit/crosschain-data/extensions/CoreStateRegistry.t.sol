@@ -220,7 +220,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             uint256(ETH),
             /// @dev amount is 1 less than (actualWithdrawAmount * 0.9) => slippage > 10% => should revert
             ((actualWithdrawAmount * 9) / 10) - 1,
-            ((actualWithdrawAmount * 9) / 10) - 1,
+            //((actualWithdrawAmount * 9) / 10) - 1,
             true,
             /// @dev currently testing with 0 bridge slippage
             0,
@@ -303,7 +303,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
             1,
@@ -437,7 +437,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
             420,
-            420,
+            //420,
             false,
             /// @dev placeholder value, not used
             0,
@@ -508,7 +508,7 @@ contract CoreStateRegistryTest is ProtocolActions {
             getContract(AVAX, "CoreStateRegistry"),
             uint256(AVAX),
             420,
-            420,
+            //420,
             false,
             /// @dev placeholder value, not used
             0,

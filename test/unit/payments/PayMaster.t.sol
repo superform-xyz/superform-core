@@ -200,7 +200,6 @@ contract PayMasterTest is ProtocolActions {
         assertEq(feeCollector.balance, 0);
 
         vm.selectFork(FORKS[ARBI]);
-        (, int256 USDPerUnderlyingToken,,,) = AggregatorV3Interface(tokenPriceFeeds[ARBI][NATIVE]).latestRoundData();
         /// @dev amount received will be bridge-slippage-adjusted
         assertEq(txProcessorARBI.balance, (1 ether * (10_000 - uint256(totalSlippage))) / 10_000);
     }

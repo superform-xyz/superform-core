@@ -18,9 +18,6 @@ import { DataLib } from "src/libraries/DataLib.sol";
 abstract contract ProtocolActions is CommonProtocolActions {
     using DataLib for uint256;
 
-    /// out of 10000
-    int256 totalSlippage = 200;
-
     event FailedXChainDeposits(uint256 indexed payloadId);
 
     /// @dev counts for each chain in each testAction the number of timelocked superforms
@@ -1580,7 +1577,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             args.toDst,
             args.liquidityBridgeToChainId,
             args.amount,
-            v.amount,
+            //v.amount,
             false,
             args.slippage,
             uint256(USDPerExternalToken),
@@ -1758,7 +1755,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
             users[args.user],
             args.liquidityBridgeSrcChainId,
             vars.actualWithdrawAmount,
-            vars.actualWithdrawAmount,
+            //vars.actualWithdrawAmount,
             true,
             /// @dev putting a placeholder value for now (not really used)
             args.slippage,
@@ -2603,7 +2600,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         emptyAmount = new uint256[](v.lenSuperforms);
         spAmountSummed = new uint256[](v.lenSuperforms);
 
-        int256 dstSwapSlippage;
+        //int256 dstSwapSlippage;
 
         /// @dev create an array of amounts summing the amounts of the same superform ids
         for (v.i = 0; v.i < v.lenSuperforms; v.i++) {

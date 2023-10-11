@@ -9,6 +9,8 @@ import { LiFiMock } from "../mocks/LiFiMock.sol";
 abstract contract CommonProtocolActions is BaseSetup {
     /// @dev percentage of total slippage that is used for dstSwap
     uint256 MULTI_TX_SLIPPAGE_SHARE;
+    /// out of 10000
+    int256 totalSlippage = 200;
 
     struct LiqBridgeTxDataArgs {
         uint256 liqBridgeKind;
@@ -23,9 +25,12 @@ abstract contract CommonProtocolActions is BaseSetup {
         address toDst;
         uint256 liqBridgeToChainId;
         uint256 amount;
-        uint256 finalAmountDst;
+        //uint256 finalAmountDst;
         bool withdraw;
         int256 slippage;
+        uint256 USDPerExternalToken;
+        uint256 USDPerUnderlyingTokenDst;
+        uint256 USDPerUnderlyingToken;
     }
 
     function _buildLiqBridgeTxData(
@@ -242,7 +247,6 @@ abstract contract CommonProtocolActions is BaseSetup {
         bool sameChain_
     )
         internal
-        view
         returns (bytes memory txData)
     {
         vm.selectFork(FORKS[toChainId_]);

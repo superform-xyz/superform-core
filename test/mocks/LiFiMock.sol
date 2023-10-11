@@ -86,7 +86,7 @@ contract LiFiMock is Test {
         if (inputToken_ != NATIVE) {
             if (!prevSwap_) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
             /// @dev not all tokens allow burn / transfer to zero address
-            try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
+            //try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
 
             /*
         /// @dev encapsulating from

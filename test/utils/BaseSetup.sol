@@ -945,7 +945,18 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             KYCDaoNFTMock(getContract(chainIds[i], "KYCDAOMock")).mint(users[2]);
         }
 
-        /// @dev set chainlink price feeds
+        _setTokenPriceFeeds();
+  
+
+        vm.stopPrank();
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        MISC. HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+    function _setTokenPriceFeeds() internal  {
+
+      /// @dev set chainlink price feeds
         /// ETH
         tokenPriceFeeds[ETH][getContract(ETH, "DAI")] = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
         tokenPriceFeeds[ETH][getContract(ETH, "USDC")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
@@ -993,13 +1004,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         tokenPriceFeeds[ARBI][getContract(ARBI, "WETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
         tokenPriceFeeds[ARBI][getContract(ARBI, "USDT")] = 0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7;
         tokenPriceFeeds[ARBI][NATIVE_TOKEN] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
-
-        vm.stopPrank();
     }
-
-    /*//////////////////////////////////////////////////////////////
-                        MISC. HELPER FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
 
     function _preDeploymentSetup() internal virtual {
         /// @dev These blocks have been chosen arbitrarily - can be updated to other values
@@ -1191,6 +1196,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingVaults[56][1]["DAI"][0] = 0x6A354D50fC2476061F378390078e30F9782C5266;
         existingVaults[56][1]["USDC"][0] = 0x32307B89a1c59Ea4EBaB1Fde6bD37b1139D06759;
         existingVaults[56][1]["WETH"][0] = address(0);
+
+
+
+
+
     }
 
     function _fundNativeTokens() internal {
