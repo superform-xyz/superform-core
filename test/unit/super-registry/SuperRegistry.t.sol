@@ -98,20 +98,20 @@ contract SuperRegistryTest is BaseSetup {
         address[] memory bridgeAddress = new address[](3);
         address[] memory bridgeValidator = new address[](3);
 
-        bridgeId[0] = uint8(ETH);
+        bridgeId[0] = 5;
         bridgeAddress[0] = address(0x1);
         bridgeValidator[0] = address(0x2);
-        bridgeId[1] = uint8(OP);
+        bridgeId[1] = 6;
         bridgeAddress[1] = address(0x3);
         bridgeValidator[1] = address(0x4);
-        bridgeId[2] = uint8(POLY);
+        bridgeId[2] = 7;
         bridgeAddress[2] = address(0x5);
         bridgeValidator[2] = address(0x6);
 
         vm.prank(deployer);
         superRegistry.setBridgeAddresses(bridgeId, bridgeAddress, bridgeValidator);
-        assertEq(superRegistry.getBridgeAddress(uint8(OP)), address(0x3));
-        assertEq(superRegistry.getBridgeValidator(uint8(POLY)), address(0x6));
+        assertEq(superRegistry.getBridgeAddress(6), address(0x3));
+        assertEq(superRegistry.getBridgeValidator(7), address(0x6));
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
         vm.prank(bond);
@@ -161,14 +161,14 @@ contract SuperRegistryTest is BaseSetup {
         address[] memory ambAddress = new address[](2);
         bool[] memory broadcastAMB = new bool[](2);
 
-        ambId[0] = 1;
+        ambId[0] = 5;
         ambAddress[0] = address(0x1);
-        ambId[1] = 3;
+        ambId[1] = 6;
         ambAddress[1] = address(0x3);
         broadcastAMB[1] = true;
         vm.startPrank(deployer);
         superRegistry.setAmbAddress(ambId, ambAddress, broadcastAMB);
-        assertEq(superRegistry.getAmbAddress(3), address(0x3));
+        assertEq(superRegistry.getAmbAddress(6), address(0x3));
         vm.stopPrank();
 
         vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
@@ -217,18 +217,23 @@ contract SuperRegistryTest is BaseSetup {
         uint8[] memory registryId = new uint8[](2);
         address[] memory registryAddress = new address[](2);
 
-        registryId[0] = 1;
-        registryAddress[0] = address(0x1);
-        registryId[1] = 3;
+        registryId[0] = 4;
+        registryAddress[0] = address(0);
+        registryId[1] = 5;
         registryAddress[1] = address(0x3);
 
         vm.startPrank(deployer);
+        vm.expectRevert(Error.ZERO_ADDRESS.selector);
         superRegistry.setStateRegistryAddress(registryId, registryAddress);
-        assertEq(superRegistry.getStateRegistry(3), address(0x3));
+        registryAddress[0] = address(0x1);
+
+        superRegistry.setStateRegistryAddress(registryId, registryAddress);
+
+        assertEq(superRegistry.getStateRegistry(5), address(0x3));
 
         registryAddress[1] = address(0);
 
-        vm.expectRevert(Error.ZERO_ADDRESS.selector);
+        vm.expectRevert(Error.DISABLED.selector);
         vm.startPrank(deployer);
         superRegistry.setStateRegistryAddress(registryId, registryAddress);
 
@@ -259,10 +264,10 @@ contract SuperRegistryTest is BaseSetup {
         address[] memory stateSyncers = new address[](1);
         address[] memory routers = new address[](2);
 
-        superformRouterIds[0] = 1;
+        superformRouterIds[0] = 3;
         stateSyncers[0] = address(0x1);
         routers[0] = address(0x2);
-        superformRouterIds[1] = 3;
+        superformRouterIds[1] = 4;
         routers[1] = address(0x4);
 
         vm.prank(deployer);
@@ -287,7 +292,7 @@ contract SuperRegistryTest is BaseSetup {
         vm.prank(deployer);
         superRegistry.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
-        address router1 = superRegistry.getRouter(3);
+        address router1 = superRegistry.getRouter(4);
 
         assertEq(router1, address(0x4));
     }

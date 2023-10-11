@@ -131,6 +131,9 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address bridgeAddress = bridgeAddress_[i];
             address bridgeValidatorT = bridgeValidator_[i];
 
+            if (bridgeAddresses[bridgeId] != address(0)) revert Error.DISABLED();
+            if (bridgeValidator[bridgeId] != address(0)) revert Error.DISABLED();
+
             bridgeAddresses[bridgeId] = bridgeAddress;
             bridgeValidator[bridgeId] = bridgeValidatorT;
             emit SetBridgeAddress(bridgeId, bridgeAddress);
@@ -160,6 +163,10 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             uint8 ambId = ambId_[i];
             bool broadcastAMB = isBroadcastAMB_[i];
 
+            if (ambAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (ambAddresses[ambId] != address(0)) revert Error.DISABLED();
+            if (ambIds[ambAddress] != 0) revert Error.DISABLED();
+
             ambAddresses[ambId] = ambAddress;
             ambIds[ambAddress] = ambId;
             isBroadcastAMB[ambId] = broadcastAMB;
@@ -187,6 +194,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address registryAddress = registryAddress_[i];
             uint8 registryId = registryId_[i];
             if (registryAddress == address(0)) revert Error.ZERO_ADDRESS();
+            if (registryAddresses[registryId] != address(0)) revert Error.DISABLED();
+            if (stateRegistryIds[registryAddress] != 0) revert Error.DISABLED();
 
             registryAddresses[registryId] = registryAddress;
             stateRegistryIds[registryAddress] = registryId;
@@ -215,6 +224,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
             address stateSyncer = stateSyncers_[i];
             address router = routers_[i];
             uint8 superFormRouterId = superformRouterIds_[i];
+            if (stateSyncer == address(0)) revert Error.ZERO_ADDRESS();
+            if (router == address(0)) revert Error.ZERO_ADDRESS();
+            if (stateSyncers[superFormRouterId] != address(0)) revert Error.DISABLED();
+            if (routers[superFormRouterId] != address(0)) revert Error.DISABLED();
+            if (superformRouterIds[router] != 0) revert Error.DISABLED();
 
             stateSyncers[superFormRouterId] = stateSyncer;
             routers[superFormRouterId] = router;

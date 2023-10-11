@@ -40,17 +40,14 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20), ETH);
         superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncer), ETH);
 
-        uint8[] memory superformRouterIds = new uint8[](2);
-        superformRouterIds[0] = 1;
-        superformRouterIds[1] = 2;
+        uint8[] memory superformRouterIds = new uint8[](1);
+        superformRouterIds[0] = 2;
 
-        address[] memory stateSyncers = new address[](2);
-        stateSyncers[0] = getContract(ETH, "SuperPositions");
-        stateSyncers[1] = address(superTransmuterSyncer);
+        address[] memory stateSyncers = new address[](1);
+        stateSyncers[0] = address(superTransmuterSyncer);
 
-        address[] memory routers = new address[](2);
-        routers[0] = getContract(ETH, "SuperformRouter");
-        routers[1] = address(superformRouterSERC20);
+        address[] memory routers = new address[](1);
+        routers[0] = address(superformRouterSERC20);
 
         superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 
@@ -62,14 +59,11 @@ contract SuperformRouterSERC20Test is ProtocolActions {
         superRegistryC.setAddress(keccak256("SUPERFORM_ROUTER_SERC20"), address(superformRouterSERC20Arbi), ARBI);
         superRegistryC.setAddress(keccak256("SUPER_TRANSMUTER_SYNCER"), address(superTransmuterSyncerArbi), ARBI);
 
-        superformRouterIds[0] = 1;
-        superformRouterIds[1] = 2;
+        superformRouterIds[0] = 2;
 
-        stateSyncers[0] = getContract(ARBI, "SuperPositions");
-        stateSyncers[1] = address(superTransmuterSyncerArbi);
+        stateSyncers[0] = address(superTransmuterSyncerArbi);
 
-        routers[0] = getContract(ARBI, "SuperformRouter");
-        routers[1] = address(superformRouterSERC20Arbi);
+        routers[0] = address(superformRouterSERC20Arbi);
 
         superRegistryC.setRouterInfo(superformRouterIds, stateSyncers, routers);
 

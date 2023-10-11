@@ -54,6 +54,7 @@ interface ISuperRegistry {
     function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) external;
 
     /// @dev allows admin to set the bridge address for an bridge id.
+    /// @notice this function operates in an APPEND-ONLY fashion.
     /// @param bridgeId_         represents the bridge unqiue identifier.
     /// @param bridgeAddress_    represents the bridge address.
     /// @param bridgeValidator_  represents the bridge validator address.
@@ -65,6 +66,7 @@ interface ISuperRegistry {
         external;
 
     /// @dev allows admin to set the amb address for an amb id.
+    /// @notice this function operates in an APPEND-ONLY fashion.
     /// @param ambId_         represents the bridge unqiue identifier.
     /// @param ambAddress_    represents the bridge address.
     /// @param isBroadcastAMB_ represents whether the amb implementation supports broadcasting
@@ -76,11 +78,13 @@ interface ISuperRegistry {
         external;
 
     /// @dev allows admin to set the state registry address for an state registry id.
+    /// @notice this function operates in an APPEND-ONLY fashion.
     /// @param registryId_    represents the state registry's unqiue identifier.
     /// @param registryAddress_    represents the state registry's address.
     function setStateRegistryAddress(uint8[] memory registryId_, address[] memory registryAddress_) external;
 
     /// @dev allows admin to set the superform routers info
+    /// @notice this function operates in an APPEND-ONLY fashion.
     /// @param superformRouterIds_    represents the superform router's unqiue identifier.
     /// @param stateSyncers_    represents the state syncer's address.
     /// @param routers_    represents the router's address.
