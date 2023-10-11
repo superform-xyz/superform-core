@@ -337,7 +337,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.maxSlippages,
             new bool[](req_.superformData.superformIds.length),
             req_.superformData.liqRequests,
-            address(0),
+            req_.superformData.dstRefundAddress,
             req_.superformData.extraFormData
         );
 
@@ -633,7 +633,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vaultData_.maxSlippage,
             vaultData_.liqData,
             vaultData_.extraFormData,
-            srcSender_
+            srcSender_,
+            vaultData_.dstRefundAddress
         );
     }
 
@@ -655,7 +656,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vaultData_.maxSlippage[i],
                 vaultData_.liqData[i],
                 vaultData_.extraFormData,
-                srcSender_
+                srcSender_,
+                vaultData_.dstRefundAddress
             );
 
             unchecked {
@@ -674,7 +676,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 maxSlippage_,
         LiqRequest memory liqData_,
         bytes memory extraFormData_,
-        address srcSender_
+        address srcSender_,
+        address refundAddress_
     )
         internal
         virtual
@@ -697,7 +700,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 maxSlippage_,
                 false,
                 liqData_,
-                address(0),
+                refundAddress_,
                 extraFormData_
             ),
             srcSender_

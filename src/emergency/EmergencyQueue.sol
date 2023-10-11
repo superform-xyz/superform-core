@@ -89,7 +89,6 @@ contract EmergencyQueue is IEmergencyQueue {
     {
         ++queueCounter;
 
-        console.log(data_.dstRefundAddress, "dst refund address");
         queuedWithdrawal[queueCounter] = QueuedWithdrawal(
             data_.dstRefundAddress == address(0) ? srcSender_ : data_.dstRefundAddress,
             data_.superformId,

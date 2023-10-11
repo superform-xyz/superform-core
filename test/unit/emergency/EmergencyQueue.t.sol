@@ -17,6 +17,120 @@ contract EmergencyQueueTest is ProtocolActions {
         mrimperfect = vm.addr(420);
     }
 
+    /*///////////////////////////////////////////////////////////////
+                    PESSIMISTIC TEST_CASES
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev tries to process emergency queue by random user
+    function test_emergencyQueueProcessingPrevilages() public {
+        /// user deposits successfully to a form
+        _successfulDeposit();
+
+        /// now pause the form and try to withdraw
+        _pauseForm();
+
+        /// try to withdraw after pause (mrperfect panicks)
+        _withdrawAfterPause();
+
+        vm.selectFork(FORKS[ETH]);
+        address emergencyQueue = getContract(ETH, "EmergencyQueue");
+
+        vm.expectRevert(Error.NOT_EMERGENCY_ADMIN.selector);
+        vm.prank(mrimperfect);
+
+        EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
+    }
+
+    /// @dev tries to queue emergency transaction by invalid caller
+    function test_emergencyQueueAdditionPrevilages() public {
+        vm.selectFork(FORKS[ETH]);
+        address emergencyQueue = getContract(ETH, "EmergencyQueue");
+
+        vm.expectRevert(Error.NOT_SUPERFORM.selector);
+        vm.prank(mrimperfect);
+
+        EmergencyQueue(emergencyQueue).queueWithdrawal(
+            InitSingleVaultData(
+                1,
+                1,
+                _getTestSuperformId(),
+                1e18, // good hacker tries to take only 1e18
+                1000,
+                false,
+                LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+                mrimperfect,
+                ""
+            ),
+            mrperfect
+        );
+    }
+
+    /// @dev tries to queue emergency transaction by invalid superform
+    /// @dev cross-form attack
+    function test_emergencyQueueAdditionFormImplIdMismatch() public {
+        vm.selectFork(FORKS[ETH]);
+        address emergencyQueue = getContract(ETH, "EmergencyQueue");
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[1], ETH);
+
+        vm.prank(superform);
+
+        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
+        EmergencyQueue(emergencyQueue).queueWithdrawal(
+            InitSingleVaultData(
+                1,
+                1,
+                superformId,
+                1e18, // good hacker tries to take only 1e18
+                1000,
+                false,
+                LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+                mrimperfect,
+                ""
+            ),
+            mrperfect
+        );
+    }
+
+    /// @dev tries to queue emergency transaction by invalid superform
+    /// @dev cross-form attack
+    function test_emergencyQueueAdditionChainIdMismatch() public {
+        vm.selectFork(FORKS[ETH]);
+        address emergencyQueue = getContract(ETH, "EmergencyQueue");
+
+        address superform = getContract(
+            ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
+        );
+
+        uint256 superformId = DataLib.packSuperform(superform, FORM_IMPLEMENTATION_IDS[0], ARBI);
+
+        vm.prank(superform);
+
+        vm.expectRevert(Error.INVALID_CHAIN_ID.selector);
+        EmergencyQueue(emergencyQueue).queueWithdrawal(
+            InitSingleVaultData(
+                1,
+                1,
+                superformId,
+                1e18, // good hacker tries to take only 1e18
+                1000,
+                false,
+                LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
+                mrimperfect,
+                ""
+            ),
+            mrperfect
+        );
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                    OPTIMISTIC TEST_CASES
+    //////////////////////////////////////////////////////////////*/
+
     function test_emergencyQueueAddition() public {
         /// user deposits successfully to a form
         _successfulDeposit();
@@ -48,14 +162,14 @@ contract EmergencyQueueTest is ProtocolActions {
             ETH, string.concat("DAI", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))
         );
 
-        uint256 balanceBefore = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrperfect);
+        uint256 balanceBefore = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
 
         assertFalse(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
         vm.prank(deployer);
         EmergencyQueue(emergencyQueue).executeQueuedWithdrawal(1);
         assertTrue(EmergencyQueue(emergencyQueue).queuedWithdrawalStatus(1));
 
-        uint256 balanceAfter = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrperfect);
+        uint256 balanceAfter = MockERC20(IBaseForm(superform).getVaultAddress()).balanceOf(mrimperfect);
         assertEq(balanceBefore + 1e18, balanceAfter);
     }
 
@@ -90,6 +204,10 @@ contract EmergencyQueueTest is ProtocolActions {
         assertEq(balanceBefore + 1e18, balanceAfter);
     }
 
+    /*///////////////////////////////////////////////////////////////
+                        INTERNAL HELPERS
+    //////////////////////////////////////////////////////////////*/
+
     function _withdrawAfterPause() internal {
         vm.selectFork(FORKS[ETH]);
         address payable router = payable(getContract(ETH, "SuperformRouter"));
@@ -102,7 +220,7 @@ contract EmergencyQueueTest is ProtocolActions {
             false,
             LiqRequest(1, "", getContract(ETH, "DAI"), ETH, 0),
             "",
-            mrperfect,
+            mrimperfect,
             ""
         );
 
