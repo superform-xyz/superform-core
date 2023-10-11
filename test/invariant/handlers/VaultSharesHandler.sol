@@ -1,15 +1,11 @@
 /// SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import "../VaultShares.invariant.t.sol";
 import "test/utils/InvariantProtocolActions.sol";
 import { VaultSharesStore } from "../stores/VaultSharesStore.sol";
 import { TimestampStore } from "../stores/TimestampStore.sol";
-import { CommonBase } from "forge-std/Base.sol";
-import { StdCheats } from "forge-std/StdCheats.sol";
-import { StdUtils } from "forge-std/StdUtils.sol";
 
-contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtocolActions {
+contract VaultSharesHandler is InvariantProtocolActions {
     VaultSharesStore public vaultSharesStore;
     TimestampStore public timestampStore;
 
@@ -103,6 +99,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         v.AMBs[1] = 2;
 
         v.chain0Index = bound(chain0, 0, chainIds.length - 1);
+        v.dstChainIndex = v.chain0Index;
         v.CHAIN_0 = chainIds[v.chain0Index];
 
         v.DST_CHAINS = new uint64[](1);
@@ -178,13 +175,10 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
             chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst, v.targetVaultsPerDst, v.targetFormKindsPerDst
         );
         v.vaultShares = _getSingleVaultShares(chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst);
-
-        //vaultSharesStore.setSuperPositions(v.superPositionsSum);
-        // vaultSharesStore.setVaultShares(v.vaultShares);
         vm.selectFork(FORKS[0]);
 
-        vaultShares = v.vaultShares;
-        superPositionsSum = v.superPositionsSum;
+        vaultSharesStore.setSuperPositions(v.superPositionsSum);
+        vaultSharesStore.setVaultShares(v.vaultShares);
     }
 
     function singleXChainSingleVaultDeposit(
@@ -291,8 +285,8 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         v.vaultShares = _getSingleVaultShares(chainIds[v.dstChainIndex], v.targetUnderlyingsPerDst);
         vm.selectFork(FORKS[0]);
 
-        vaultShares = v.vaultShares;
-        superPositionsSum = v.superPositionsSum;
+        vaultSharesStore.setSuperPositions(v.superPositionsSum);
+        vaultSharesStore.setVaultShares(v.vaultShares);
     }
     /*
     function singleDirectSingleVaultWithdraw() public {
@@ -654,16 +648,22 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         uint32[] memory formKinds_
     )
         internal
-        returns (uint256 superPositionsSum)
+        returns (uint256 superPositionsSum_)
     {
         /// @dev sum up superposition owned by all users on all chains
         for (uint256 i = 0; i < chainIds.length; i++) {
+            // ETH - SuperPositions amount of superform X on BSC
+            // BSC - SuperPositions amount of superform X on BSC
+            // AVAX - SuperPositions amount of superform X on BSC
+            // POLY - SuperPositions amount of superform X on BSC
+            // ARBI - SuperPositions amount of superform X on BSC
+            // OP - SuperPositions amount of superform X on BSC
             uint256[] memory superPositions = _getSuperpositionsForDstChainFromSrcChain(
                 underlyingTokens_, vaultIds_, formKinds_, chainIds[i], dstChain
             );
 
             if (superPositions.length > 0) {
-                superPositionsSum += superPositions[0];
+                superPositionsSum_ += superPositions[0];
             }
         }
     }
@@ -673,7 +673,7 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
         uint256[] memory underlyingTokens_
     )
         internal
-        returns (uint256 vaultShares)
+        returns (uint256 vaultShares_)
     {
         /// @dev FIXME currently hardcoded to vault kind and form beacon id 0
         address superform = getContract(
@@ -688,6 +688,6 @@ contract VaultSharesHandler is CommonBase, StdCheats, StdUtils, InvariantProtoco
 
         vm.selectFork(FORKS[dstChain]);
 
-        vaultShares = IBaseForm(superform).getVaultShareBalance();
+        vaultShares_ = IBaseForm(superform).getVaultShareBalance();
     }
 }

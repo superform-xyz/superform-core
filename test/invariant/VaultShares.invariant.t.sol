@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import { VaultSharesHandler } from "./handlers/VaultSharesHandler.sol";
 import { VaultSharesStore } from "./stores/VaultSharesStore.sol";
 import { BaseInvariantTest } from "./Base.invariant.t.sol";
-import "forge-std/console.sol";
 
 contract VaultSharesInvariantTest is BaseInvariantTest {
     VaultSharesStore internal vaultSharesStore;
@@ -48,8 +47,6 @@ contract VaultSharesInvariantTest is BaseInvariantTest {
     //////////////////////////////////////////////////////////////*/
 
     function invariant_vaultShares() public useCurrentTimestamp {
-        vm.selectFork(FORKS[0]);
-
-        assertEq(vaultSharesHandler.superPositionsSum(), vaultSharesHandler.vaultShares());
+        assertEq(vaultSharesStore.superPositionsSum(), vaultSharesStore.vaultShares());
     }
 }
