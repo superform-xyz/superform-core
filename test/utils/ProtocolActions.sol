@@ -1926,6 +1926,7 @@ abstract contract ProtocolActions is BaseSetup {
             true,
             /// @dev putting a placeholder value for now (not really used)
             args.slippage,
+            /// @dev switching USDPerExternalToken with USDPerUnderlyingTokenDst as above
             uint256(USDPerUnderlyingTokenDst),
             uint256(USDPerExternalToken),
             uint256(USDPerUnderlyingToken)
@@ -1946,54 +1947,6 @@ abstract contract ProtocolActions is BaseSetup {
             args.liqDstChainId,
             0
         );
-
-        /// @dev for e.g. underlyingTokenDst = DAI, externalToken = USDC, daiAmount = 100
-        /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
-        console.log("test withdraw amount pre-swap", args.amount);
-        /// @dev src swaps simulation if any
-        if (args.underlyingTokenDst != args.underlyingToken) {
-            vm.selectFork(FORKS[args.srcChainId]);
-            uint256 decimal1 = vars.decimal1;
-            uint256 decimal2 = args.underlyingToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
-                ? 18
-                : MockERC20(args.underlyingToken).decimals();
-
-            /// @dev decimal1 = decimals of args.underlyingTokenDst (src chain), decimal2 = decimals of
-            /// args.underlyingToken
-            /// (src chain)
-            if (decimal1 > decimal2) {
-                args.amount = (args.amount * uint256(USDPerUnderlyingTokenDst))
-                    / (uint256(USDPerUnderlyingToken) * 10 ** (decimal1 - decimal2));
-            } else {
-                args.amount = ((args.amount * uint256(USDPerUnderlyingTokenDst)) * 10 ** (decimal2 - decimal1))
-                    / uint256(USDPerUnderlyingToken);
-            }
-            console.log("test withdraw amount post-swap", args.amount);
-        }
-
-        int256 slippage = args.slippage;
-        if (args.srcChainId == args.toChainId) slippage = 0;
-        // else if (args.dstSwap) slippage = (slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        // else slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
-
-        /// @dev applying 100% x-chain slippage at once i.e. bridge + dstSwap slippage (as opposed to 2 steps in
-        /// LiFiMock) coz this code will only be executed once (as opposed to twice in LiFiMock, once for bridge and
-        /// other for dstSwap)
-        args.amount = (args.amount * uint256(10_000 - slippage)) / 10_000;
-        console.log("test withdraw amount pre-bridge, post-slippage", vars.amount);
-
-        /// @dev if args.underlyingTokenDst == args.underlyingToken, USDPerUnderlyingTokenDst == USDPerUnderlyingToken
-        /// @dev v.decimal3 = decimals of args.underlyingToken (args.underlyingTokenDst too if above holds true) (src
-        /// chain),
-        /// v.decimal2 = decimals of args.externalToken (dst chain)
-        if (vars.decimal3 > vars.decimal2) {
-            vars.amount = (args.amount * uint256(USDPerUnderlyingToken))
-                / (uint256(USDPerExternalToken) * 10 ** (vars.decimal3 - vars.decimal2));
-        } else {
-            vars.amount = (args.amount * uint256(USDPerUnderlyingToken) * 10 ** (vars.decimal2 - vars.decimal3))
-                / uint256(USDPerExternalToken);
-        }
-        console.log("test withdraw amount post-bridge", vars.amount);
 
         /// @dev extraData is currently used to send in the partialWithdraw vaults without resorting to extra args, just
         /// for withdraws
