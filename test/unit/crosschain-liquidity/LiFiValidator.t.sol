@@ -13,7 +13,7 @@ contract LiFiValidatorTest is ProtocolActions {
         vm.selectFork(FORKS[ETH]);
     }
 
-    function test_lifi_validator() public view {
+    function test_lifi_validator() public {
         LiFiValidator(getContract(ETH, "LiFiValidator")).validateTxData(
             IBridgeValidator.ValidateTxDataArgs(
                 _buildDummyTxDataUnitTests(
