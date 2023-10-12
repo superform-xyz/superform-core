@@ -138,10 +138,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         onlySuperRouter
         returns (uint256 dstAmount)
     {
-        if (_isPaused(singleVaultData_.superformId)) {
-            emergencyQueue.queueWithdrawal(singleVaultData_, srcSender_);
-        } else {
+        if (!_isPaused(singleVaultData_.superformId)) {
             dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
+        } else {
+            emergencyQueue.queueWithdrawal(singleVaultData_, srcSender_);
         }
     }
 
@@ -171,10 +171,10 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         onlyCoreStateRegistry
         returns (uint256 dstAmount)
     {
-        if (_isPaused(singleVaultData_.superformId)) {
-            emergencyQueue.queueWithdrawal(singleVaultData_, srcSender_);
-        } else {
+        if (!_isPaused(singleVaultData_.superformId)) {
             dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
+        } else {
+            emergencyQueue.queueWithdrawal(singleVaultData_, srcSender_);
         }
     }
 

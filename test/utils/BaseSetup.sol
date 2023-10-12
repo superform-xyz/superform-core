@@ -94,7 +94,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[28] public contractNames = [
+    string[29] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -122,7 +122,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "WormholeBroadcastHelper",
         "LiFiMock",
         "KYCDAOMock",
-        "CanonicalPermit2"
+        "CanonicalPermit2",
+        "EmergencyQueue"
     ];
 
     /*//////////////////////////////////////////////////////////////

@@ -9,8 +9,6 @@ import { IEmergencyQueue } from "../interfaces/IEmergencyQueue.sol";
 import { Error } from "../utils/Error.sol";
 import "../types/DataTypes.sol";
 
-import "forge-std/console.sol";
-
 /// @title EmergencyQueue
 /// @author Zeropoint Labs
 /// @dev stores withdrawal requests when forms are paused
@@ -32,9 +30,6 @@ contract EmergencyQueue is IEmergencyQueue {
 
     /// @dev is the queue of pending actions
     mapping(uint256 id => QueuedWithdrawal) public queuedWithdrawal;
-
-    /// @dev is the status of the queued action
-    mapping(uint256 id => bool processed) public queuedWithdrawalStatus;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIER
@@ -93,7 +88,8 @@ contract EmergencyQueue is IEmergencyQueue {
             data_.dstRefundAddress == address(0) ? srcSender_ : data_.dstRefundAddress,
             data_.superformId,
             data_.amount,
-            data_.payloadId
+            data_.payloadId,
+            false
         );
 
         emit WithdrawalQueued(
@@ -103,16 +99,26 @@ contract EmergencyQueue is IEmergencyQueue {
 
     /// @inheritdoc IEmergencyQueue
     function executeQueuedWithdrawal(uint256 id_) external override onlyEmergencyAdmin {
-        if (queuedWithdrawalStatus[id_]) {
+        QueuedWithdrawal storage data = queuedWithdrawal[id_];
+
+        if (data.isProcessed) {
             revert Error.EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
         }
 
-        queuedWithdrawalStatus[id_] = true;
-        QueuedWithdrawal memory data = queuedWithdrawal[id_];
+        data.isProcessed = true;
 
         (address superform,,) = data.superformId.getSuperform();
         IBaseForm(superform).emergencyWithdraw(data.refundAddress, data.amount);
 
         emit WithdrawalProcessed(data.refundAddress, id_, data.superformId, data.amount);
+    }
+
+    /*///////////////////////////////////////////////////////////////
+                        VIEW/HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @inheritdoc IEmergencyQueue
+    function queuedWithdrawalStatus(uint256 id) external view override returns (bool) {
+        return queuedWithdrawal[id].isProcessed;
     }
 }

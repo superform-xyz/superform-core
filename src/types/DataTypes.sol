@@ -122,6 +122,7 @@ struct QueuedWithdrawal {
     uint256 superformId;
     uint256 amount;
     uint256 srcPayloadId;
+    bool isProcessed;
 }
 
 /// @dev all statuses of the two steps payload

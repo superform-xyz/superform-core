@@ -29,4 +29,13 @@ interface IEmergencyQueue {
     /// @dev alled by emergency admin to processed queued withdrawal
     /// @param id_ is the identifier of the queued action
     function executeQueuedWithdrawal(uint256 id_) external;
+
+    /*///////////////////////////////////////////////////////////////
+                        VIEW/HELPER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev returns the execution status of an id in the emergency queue
+    /// @param id is the identifier of the queued action
+    /// @return boolean representing the execution status
+    function queuedWithdrawalStatus(uint256 id) external view returns (bool);
 }
