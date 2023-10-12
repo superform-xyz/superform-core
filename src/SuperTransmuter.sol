@@ -28,23 +28,46 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
                             MODIFIER
     //////////////////////////////////////////////////////////////*/
 
-    modifier onlyMinter() override {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("SERC20_MINTER_ROLE"), msg.sender
-            )
-        ) {
-            revert Error.NOT_MINTER();
+    /// @dev minters can be router with id 2 (or) state registry for that beacon
+    modifier onlyMinter(uint256 superformId) override {
+        uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+
+        /// if registry id is 2 (or) corresponding state registry can mint
+        if (routerId != ROUTER_TYPE) {
+            (, uint32 formBeaconId,) = DataLib.getSuperform(superformId);
+
+            if (uint32(registryId) != formBeaconId) {
+                revert Error.NOT_MINTER();
+            }
+        }
+
+        _;
+    }
+
+    /// @dev minters can be router with id 2 (or) state registry for that beacon
+    modifier onlyBatchMinter(uint256[] memory superformIds) override {
+        uint8 routerId = superRegistry.getSuperformRouterId(msg.sender);
+        uint8 registryId = superRegistry.getStateRegistryId(msg.sender);
+
+        /// if registry id is 1 (or) corresponding state registry can mint
+        if (routerId != ROUTER_TYPE) {
+            for (uint256 i; i < superformIds.length; ++i) {
+                (, uint32 formBeaconId,) = DataLib.getSuperform(superformIds[i]);
+
+                if (uint32(registryId) != formBeaconId) {
+                    revert Error.NOT_MINTER();
+                }
+            }
         }
         _;
     }
 
+    /// @dev only routers with id 2 can burn sERC20
     modifier onlyBurner() override {
-        if (
-            !ISuperRBAC(superRegistry.getAddress(keccak256("SUPER_RBAC"))).hasRole(
-                keccak256("SERC20_BURNER_ROLE"), msg.sender
-            )
-        ) {
+        uint8 id = superRegistry.getSuperformRouterId(msg.sender);
+
+        if (id != 2) {
             revert Error.NOT_BURNER();
         }
         _;
@@ -90,11 +113,11 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
 
     /// @inheritdoc ISuperTransmuter
     function registerTransmuter(uint256 superformId_, bytes memory extraData_) external override returns (address) {
-        (address superform, uint32 formBeaconId, uint64 chainId) = DataLib.getSuperform(superformId_);
+        (address superform, uint32 formImplementationId, uint64 chainId) = DataLib.getSuperform(superformId_);
 
-        if (uint64(block.chainid) != chainId) revert Error.INVALID_CHAIN_ID();
+        if (CHAIN_ID != chainId) revert Error.INVALID_CHAIN_ID();
         if (superform == address(0)) revert Error.NOT_SUPERFORM();
-        if (formBeaconId == 0) revert Error.FORM_DOES_NOT_EXIST();
+        if (formImplementationId == 0) revert Error.FORM_DOES_NOT_EXIST();
         if (synthethicTokenId[superformId_] != address(0)) revert TRANSMUTER_ALREADY_REGISTERED();
 
         string memory name =
@@ -115,7 +138,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
             BroadcastMessage memory transmuterPayload = BroadcastMessage(
                 "SUPER_TRANSMUTER",
                 DEPLOY_NEW_TRANSMUTER,
-                abi.encode(uint64(block.chainid), ++xChainPayloadCounter, superformId_, name, symbol, decimal)
+                abi.encode(CHAIN_ID, ++xChainPayloadCounter, superformId_, name, symbol, decimal)
             );
 
             _broadcast(abi.encode(transmuterPayload), extraData_);
@@ -132,7 +155,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     )
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinter
+        onlyMinter(id_)
     {
         sERC20(synthethicTokenId[id_]).mint(srcSender_, amount_);
     }
@@ -145,7 +168,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     )
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinter
+        onlyBatchMinter(ids_)
     {
         uint256 len = ids_.length;
         for (uint256 i; i < len;) {
@@ -197,7 +220,6 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     function stateMultiSync(AMBMessage memory data_)
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {
         /// @dev here we decode the txInfo and params from the data brought back from destination
@@ -212,6 +234,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnMultiData memory returnData = abi.decode(data_.params, (ReturnMultiData));
         if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
+        _validateStateSyncer(returnData.superformIds);
 
         uint256 txInfo = txHistory[returnData.payloadId];
         address srcSender;
@@ -251,7 +274,6 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
     function stateSync(AMBMessage memory data_)
         external
         override(IStateSyncer, StateSyncer)
-        onlyMinterStateRegistry
         returns (uint64 srcChainId_)
     {
         /// @dev here we decode the txInfo and params from the data brought back from destination
@@ -266,6 +288,7 @@ contract SuperTransmuter is ISuperTransmuter, Transmuter, StateSyncer {
         /// @dev decode remaining info on superPositions to mint from destination
         ReturnSingleData memory returnData = abi.decode(data_.params, (ReturnSingleData));
         if (returnData.superformRouterId != ROUTER_TYPE) revert Error.INVALID_PAYLOAD();
+        _validateStateSyncer(returnData.superformId);
 
         uint256 txInfo = txHistory[returnData.payloadId];
         uint256 txType;

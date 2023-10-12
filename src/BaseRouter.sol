@@ -20,6 +20,7 @@ abstract contract BaseRouter is IBaseRouter {
 
     uint8 public immutable STATE_REGISTRY_TYPE;
     uint8 public immutable ROUTER_TYPE;
+    uint64 public immutable CHAIN_ID;
 
     ISuperRegistry public immutable superRegistry;
 
@@ -31,6 +32,7 @@ abstract contract BaseRouter is IBaseRouter {
     /// @param stateRegistryType_ the state registry type
     /// @param routerType_ the router type
     constructor(address superRegistry_, uint8 stateRegistryType_, uint8 routerType_) {
+        CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
         STATE_REGISTRY_TYPE = stateRegistryType_;
         ROUTER_TYPE = routerType_;

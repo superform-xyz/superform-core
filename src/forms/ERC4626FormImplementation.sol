@@ -16,6 +16,7 @@ import { DataLib } from "../libraries/DataLib.sol";
 /// @notice Has common internal functions that can be re-used by actual form implementations
 abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IERC4626;
     using DataLib for uint256;
 
     uint256 internal immutable STATE_REGISTRY_ID;
@@ -131,6 +132,8 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         if (singleVaultData_.liqData.txData.length > 0) {
             vars.bridgeValidator = superRegistry.getBridgeValidator(singleVaultData_.liqData.bridgeId);
 
+            vars.chainId = CHAIN_ID;
+
             vars.inputAmount =
                 IBridgeValidator(vars.bridgeValidator).decodeAmountIn(singleVaultData_.liqData.txData, false);
 
@@ -143,8 +146,6 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
                 /// @dev transfers input token, which is different from the vault asset, to the form
                 token.safeTransferFrom(msg.sender, address(this), vars.inputAmount);
             }
-
-            vars.chainId = uint64(block.chainid);
 
             IBridgeValidator(vars.bridgeValidator).validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
@@ -225,7 +226,7 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (v.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            v.chainId = uint64(block.chainid);
+            v.chainId = CHAIN_ID;
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(v.bridgeValidator).validateTxData(
@@ -348,6 +349,17 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
 
         emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+    }
+
+    function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
+        IERC4626 vaultContract = IERC4626(vault);
+
+        if (vaultContract.balanceOf(address(this)) < amount_) {
+            revert Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+        }
+
+        vaultContract.safeTransfer(refundAddress_, amount_);
+        emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
     }
 
     /*///////////////////////////////////////////////////////////////

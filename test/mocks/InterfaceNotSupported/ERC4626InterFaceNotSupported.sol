@@ -66,4 +66,9 @@ contract ERC4626FormInterfaceNotSupported is ERC4626FormImplementationInterfaceN
     {
         dstAmount = _processXChainWithdraw(singleVaultData_, srcSender_, srcChainId_);
     }
+
+    /// @inheritdoc BaseForm
+    function _emergencyWithdraw(address refundAddress_, uint256 amount_) internal override {
+        _processEmergencyWithdraw(refundAddress_, amount_);
+    }
 }

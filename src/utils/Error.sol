@@ -16,10 +16,13 @@ library Error {
     error ZERO_AMOUNT();
 
     /// @dev error thrown when beacon id already exists
-    error BEACON_ID_ALREADY_EXISTS();
+    error FORM_IMPLEMENTATION_ID_ALREADY_EXISTS();
 
     /// @dev thrown when msg.sender is not core state registry
     error NOT_CORE_STATE_REGISTRY();
+
+    /// @dev thrown when msg.sender is not emergency queue
+    error NOT_EMERGENCY_QUEUE();
 
     /// @dev thrown when msg.sender is not form
     error NOT_SUPERFORM();
@@ -247,7 +250,7 @@ library Error {
     error FORM_DOES_NOT_EXIST();
 
     /// @dev thrown when same vault and beacon is used to create new superform
-    error VAULT_BEACON_COMBNATION_EXISTS();
+    error VAULT_FORM_IMPLEMENTATION_COMBINATION_EXISTS();
 
     /// @dev thrown when there is an array length mismatch
     error ARRAY_LENGTH_MISMATCH();
@@ -296,6 +299,12 @@ library Error {
     /*///////////////////////////////////////////////////////////////
                             FORM ERRORS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev thrown when the form has insufficient balance for emergency withdraw
+    error EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+
+    /// @dev thrown when emergency withdraw is already processed
+    error EMERGENCY_WITHDRAW_PROCESSED_ALREADY();
 
     /// @dev thrown when the allowance in direct deposit is not correct
     error DIRECT_DEPOSIT_INSUFFICIENT_ALLOWANCE();

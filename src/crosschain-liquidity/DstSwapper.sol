@@ -20,13 +20,17 @@ import "../types/DataTypes.sol";
 contract DstSwapper is IDstSwapper, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    /*///////////////////////////////////////////////////////////////
+                    Constants
+    //////////////////////////////////////////////////////////////*/
+    ISuperRegistry public immutable superRegistry;
+    uint64 public immutable CHAIN_ID;
     address constant NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     /*///////////////////////////////////////////////////////////////
                     State Variables
     //////////////////////////////////////////////////////////////*/
 
-    ISuperRegistry public immutable superRegistry;
     mapping(uint256 payloadId => mapping(uint256 index => uint256 amount)) public swappedAmount;
 
     modifier onlySwapper() {
@@ -49,6 +53,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
 
     /// @param superRegistry_        Superform registry contract
     constructor(address superRegistry_) {
+        CHAIN_ID = uint64(block.chainid);
         superRegistry = ISuperRegistry(superRegistry_);
     }
 
@@ -83,7 +88,7 @@ contract DstSwapper is IDstSwapper, ReentrancyGuard {
         }
 
         ProcessTxVars memory v;
-        uint64 chainId = uint64(block.chainid);
+        uint64 chainId = CHAIN_ID;
 
         IBridgeValidator validator = IBridgeValidator(superRegistry.getBridgeValidator(bridgeId_));
         (address approvalToken_, uint256 amount_) = validator.decodeDstSwap(txData_);

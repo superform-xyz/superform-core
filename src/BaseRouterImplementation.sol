@@ -10,7 +10,6 @@ import { IPayMaster } from "./interfaces/IPayMaster.sol";
 import { IPaymentHelper } from "./interfaces/IPaymentHelper.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
 import { IBaseForm } from "./interfaces/IBaseForm.sol";
-import { IFormBeacon } from "./interfaces/IFormBeacon.sol";
 import { IBridgeValidator } from "./interfaces/IBridgeValidator.sol";
 import { IStateSyncer } from "./interfaces/IStateSyncer.sol";
 import { DataLib } from "./libraries/DataLib.sol";
@@ -20,7 +19,7 @@ import "./crosschain-liquidity/LiquidityHandler.sol";
 import "./types/DataTypes.sol";
 
 /// @title BaseRouterImplementation
-/// @author Zeropoint Labs.
+/// @author Zeropoint Labs
 /// @dev Extends BaseRouter with standard internal execution functions (based on SuperPositions)
 abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRouter, LiquidityHandler {
     using SafeERC20 for IERC20;
@@ -62,7 +61,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
 
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
 
         vars.currentPayloadId = ++payloadIds;
@@ -127,7 +126,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _singleXChainSingleVaultDeposit(SingleXChainSingleVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
 
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
 
         /// @dev disallow direct chain actions
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_ACTION();
@@ -181,7 +180,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain single vault deposit
     function _singleDirectSingleVaultDeposit(SingleDirectSingleVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
 
         InitSingleVaultData memory vaultData = InitSingleVaultData(
@@ -204,7 +203,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain multi vault deposit
     function _singleDirectMultiVaultDeposit(SingleDirectMultiVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
 
         InitMultiVaultData memory vaultData = InitMultiVaultData(
@@ -238,7 +237,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         ActionLocalVars memory vars;
         InitMultiVaultData memory ambData;
 
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev write packed txData
@@ -276,7 +275,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     function _singleXChainSingleVaultWithdraw(SingleXChainSingleVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
 
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         if (vars.srcChainId == req_.dstChainId) revert Error.INVALID_CHAIN_IDS();
 
         InitSingleVaultData memory ambData;
@@ -308,7 +307,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain single vault withdraw
     function _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
 
         InitSingleVaultData memory ambData;
 
@@ -322,7 +321,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
     /// @dev handles same-chain multi vault withdraw
     function _singleDirectMultiVaultWithdraw(SingleDirectMultiVaultStateReq memory req_) internal virtual {
         ActionLocalVars memory vars;
-        vars.srcChainId = uint64(block.chainid);
+        vars.srcChainId = CHAIN_ID;
         vars.currentPayloadId = ++payloadIds;
 
         /// @dev SuperPositions are burnt optimistically here
@@ -338,7 +337,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             req_.superformData.maxSlippages,
             new bool[](req_.superformData.superformIds.length),
             req_.superformData.liqRequests,
-            address(0),
+            req_.superformData.dstRefundAddress,
             req_.superformData.extraFormData
         );
 
@@ -406,7 +405,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             superformData_.maxSlippage,
             false,
             superformData_.liqRequest,
-            address(0),
+            superformData_.dstRefundAddress,
             superformData_.extraFormData
         );
     }
@@ -602,7 +601,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             revert Error.ZERO_AMOUNT();
         }
 
-        if (chainId != uint64(block.chainid)) {
+        if (chainId != CHAIN_ID) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -643,7 +642,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
             vaultData_.maxSlippage,
             vaultData_.liqData,
             vaultData_.extraFormData,
-            srcSender_
+            srcSender_,
+            vaultData_.dstRefundAddress
         );
     }
 
@@ -665,7 +665,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 vaultData_.maxSlippage[i],
                 vaultData_.liqData[i],
                 vaultData_.extraFormData,
-                srcSender_
+                srcSender_,
+                vaultData_.dstRefundAddress
             );
 
             unchecked {
@@ -684,7 +685,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         uint256 maxSlippage_,
         LiqRequest memory liqData_,
         bytes memory extraFormData_,
-        address srcSender_
+        address srcSender_,
+        address refundAddress_
     )
         internal
         virtual
@@ -693,7 +695,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         (,, uint64 chainId) =
             ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getSuperform(superformId_);
 
-        if (chainId != uint64(block.chainid)) {
+        if (chainId != CHAIN_ID) {
             revert Error.INVALID_CHAIN_ID();
         }
 
@@ -707,7 +709,7 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
                 maxSlippage_,
                 false,
                 liqData_,
-                address(0),
+                refundAddress_,
                 extraFormData_
             ),
             srcSender_
@@ -734,11 +736,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         /// @dev 10000 = 100% slippage
         if (superformData_.maxSlippage > 10_000) return false;
 
-        (, uint32 formBeaconId_,) = superformData_.superformId.getSuperform();
-
-        return IFormBeacon(
-            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
-        ).paused() == 1;
+        /// if it reaches this point then is valid
+        return true;
     }
 
     function _validateSuperformsDepositData(
@@ -771,15 +770,13 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
-            (, uint32 formBeaconId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
+            (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
 
             if (
-                IFormBeacon(
-                    ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
-                        formBeaconId_
-                    )
-                ).paused() == 2
+                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+                    formImplementationId_
+                )
             ) return false;
 
             unchecked {
@@ -823,16 +820,8 @@ abstract contract BaseRouterImplementation is IBaseRouterImplementation, BaseRou
         for (uint256 i; i < len;) {
             /// @dev 10000 = 100% slippage
             if (superformsData_.maxSlippages[i] > 10_000) return false;
-            (, uint32 formBeaconId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
+            (, uint32 formImplementationId_, uint64 sfDstChainId) = superformsData_.superformIds[i].getSuperform();
             if (dstChainId_ != sfDstChainId) return false;
-
-            if (
-                IFormBeacon(
-                    ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(
-                        formBeaconId_
-                    )
-                ).paused() == 2
-            ) return false;
 
             unchecked {
                 ++i;

@@ -26,6 +26,8 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev rescue timelock delay config
     uint256 public delay;
 
+    uint64 public immutable CHAIN_ID;
+
     mapping(bytes32 id => mapping(uint64 chainid => address moduleAddress)) private registry;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
@@ -58,6 +60,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @dev default keepers - identifiers
     bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");
+    bytes32 public constant override EMERGENCY_QUEUE = keccak256("EMERGENCY_QUEUE");
     bytes32 public constant override CORE_REGISTRY_UPDATER = keccak256("CORE_REGISTRY_UPDATER");
     bytes32 public constant override CORE_REGISTRY_PROCESSOR = keccak256("CORE_REGISTRY_PROCESSOR");
     bytes32 public constant override BROADCAST_REGISTRY_PROCESSOR = keccak256("BROADCAST_REGISTRY_PROCESSOR");
@@ -65,16 +68,17 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     bytes32 public constant override DST_SWAPPER = keccak256("DST_SWAPPER");
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(registry[SUPER_RBAC][uint64(block.chainid)]).hasProtocolAdminRole(msg.sender)) {
+        if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID]).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
     }
 
     constructor(address superRBAC_) {
-        registry[SUPER_RBAC][uint64(block.chainid)] = superRBAC_;
+        CHAIN_ID = uint64(block.chainid);
+        registry[SUPER_RBAC][CHAIN_ID] = superRBAC_;
 
-        emit AddressUpdated(SUPER_RBAC, uint64(block.chainid), address(0), superRBAC_);
+        emit AddressUpdated(SUPER_RBAC, CHAIN_ID, address(0), superRBAC_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -236,7 +240,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////*/
 
     function getAddress(bytes32 id_) external view override returns (address) {
-        return registry[id_][uint64(block.chainid)];
+        return registry[id_][CHAIN_ID];
     }
 
     function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address) {

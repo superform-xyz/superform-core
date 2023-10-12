@@ -11,7 +11,6 @@ import { BaseForm } from "./BaseFormInterfaceNotSupported.sol";
 import { IBridgeValidator } from "src/interfaces/IBridgeValidator.sol";
 import { Error } from "src/utils/Error.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
-import { IPermit2 } from "src/vendor/dragonfly-xyz/IPermit2.sol";
 
 /// @title ERC4626FormImplementation
 /// @notice Has common internal functions that can be re-used by actual form implementations
@@ -334,6 +333,18 @@ abstract contract ERC4626FormImplementationInterfaceNotSupported is BaseForm, Li
         }
 
         emit Processed(srcChainId, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+    }
+
+    function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
+        IERC4626 vaultContract = IERC4626(vault);
+
+        if (vaultContract.balanceOf(address(this)) < amount_) {
+            revert Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+        }
+
+        vaultContract.transfer(refundAddress_, amount_);
+
+        emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
     }
 
     /*///////////////////////////////////////////////////////////////

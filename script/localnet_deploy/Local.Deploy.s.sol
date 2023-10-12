@@ -99,7 +99,7 @@ contract LocalDeploy is AbstractDeploy {
 
             vaultId = 0;
 
-            for (uint256 j = 0; j < FORM_BEACON_IDS.length; j++) {
+            for (uint256 j = 0; j < FORM_IMPLEMENTATION_IDS.length; j++) {
                 for (uint256 k = 0; k < UNDERLYING_TOKENS.length; k++) {
                     /// @dev 5 - Deploy mock Vault
                     if (j != 2) {
@@ -129,8 +129,8 @@ contract LocalDeploy is AbstractDeploy {
                     /// @dev Add ERC4626Vault
                     contracts[SELECTED_CHAIN_IDS[i]][bytes32(bytes(string.concat(VAULT_NAMES[j][k])))] = vault;
 
-                    vaults[SELECTED_CHAIN_IDS[i]][FORM_BEACON_IDS[j]].push(IERC4626(vault));
-                    vaultIds[SELECTED_CHAIN_IDS[i]][FORM_BEACON_IDS[j]].push(vaultId++);
+                    vaults[SELECTED_CHAIN_IDS[i]][FORM_IMPLEMENTATION_IDS[j]].push(IERC4626(vault));
+                    vaultIds[SELECTED_CHAIN_IDS[i]][FORM_IMPLEMENTATION_IDS[j]].push(vaultId++);
                 }
             }
         }

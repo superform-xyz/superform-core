@@ -36,7 +36,7 @@ contract SuperformRouter is BaseRouterImplementation {
         payable
         override(BaseRouter, IBaseRouter)
     {
-        uint256 chainId = uint64(block.chainid);
+        uint256 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
         for (uint256 i; i < len;) {
@@ -61,7 +61,7 @@ contract SuperformRouter is BaseRouterImplementation {
         payable
         override(BaseRouter, IBaseRouter)
     {
-        uint64 srcChainId = uint64(block.chainid);
+        uint64 srcChainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
 
@@ -135,7 +135,7 @@ contract SuperformRouter is BaseRouterImplementation {
         payable
         override(BaseRouter, IBaseRouter)
     {
-        uint256 chainId = uint64(block.chainid);
+        uint256 chainId = CHAIN_ID;
         uint256 balanceBefore = address(this).balance - msg.value;
         uint256 len = req_.dstChainIds.length;
 
@@ -166,7 +166,7 @@ contract SuperformRouter is BaseRouterImplementation {
         uint256 len = req_.dstChainIds.length;
 
         for (uint256 i; i < len;) {
-            if (uint64(block.chainid) == req_.dstChainIds[i]) {
+            if (CHAIN_ID == req_.dstChainIds[i]) {
                 _singleDirectSingleVaultWithdraw(SingleDirectSingleVaultStateReq(req_.superformsData[i]));
             } else {
                 _singleXChainSingleVaultWithdraw(

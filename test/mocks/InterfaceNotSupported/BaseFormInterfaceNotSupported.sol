@@ -1,21 +1,20 @@
 ///SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.19;
 
-import { Initializable } from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import { ERC165Upgradeable } from
-    "openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import { Initializable } from "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
+import { ERC165 } from "openzeppelin-contracts/contracts/utils/introspection/ERC165.sol";
 import { InitSingleVaultData } from "src/types/DataTypes.sol";
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "src/interfaces/ISuperRegistry.sol";
 import { Error } from "src/utils/Error.sol";
-import { IFormBeacon } from "src/interfaces/IFormBeacon.sol";
 import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { DataLib } from "src/libraries/DataLib.sol";
+import { IEmergencyQueue } from "src/interfaces/IEmergencyQueue.sol";
 
 /// @title BaseForm
 /// @author Zeropoint Labs.
 /// @dev Abstract contract to be inherited by different form implementations
-abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
+abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     using DataLib for uint256;
 
     /*///////////////////////////////////////////////////////////////
@@ -33,20 +32,25 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @dev The superRegistry address is used to access relevant protocol addresses
     ISuperRegistry public immutable superRegistry;
 
+    /// @dev The emergency queue is used to help users exit after forms are paused
+    IEmergencyQueue public emergencyQueue;
+
     /// @dev the vault this form pertains to
     address internal vault;
+
+    uint32 public formImplementationId;
 
     /*///////////////////////////////////////////////////////////////
                             MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
     modifier notPaused(InitSingleVaultData memory singleVaultData_) {
-        (, uint32 formBeaconId_,) = singleVaultData_.superformId.getSuperform();
+        (, uint32 formImplementationId_,) = singleVaultData_.superformId.getSuperform();
 
         if (
-            IFormBeacon(
-                ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).getFormBeacon(formBeaconId_)
-            ).paused() == 2
+            ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+                formImplementationId_
+            )
         ) revert Error.PAUSED();
         _;
     }
@@ -59,6 +63,13 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     modifier onlyCoreStateRegistry() {
         if (superRegistry.getAddress(keccak256("CORE_STATE_REGISTRY")) != msg.sender) {
             revert Error.NOT_CORE_STATE_REGISTRY();
+        }
+        _;
+    }
+
+    modifier onlyEmergencyQueue() {
+        if (msg.sender != address(emergencyQueue)) {
+            revert Error.NOT_EMERGENCY_QUEUE();
         }
         _;
     }
@@ -76,8 +87,14 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
     /// @param superRegistry_        ISuperRegistry address deployed
     /// @param vault_         The vault address this form pertains to
     /// @dev sets caller as the admin of the contract.
-    function initialize(address superRegistry_, address vault_) external initializer {
+    function initialize(address superRegistry_, address vault_, uint32 formImplementationId_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
+
+        address emergencyQueue_ = superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"));
+        if (emergencyQueue_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        emergencyQueue = IEmergencyQueue(emergencyQueue_);
+        formImplementationId = formImplementationId_;
         vault = vault_;
     }
 
@@ -143,6 +160,11 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         returns (uint256 dstAmount)
     {
         dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
+    }
+
+    /// @inheritdoc IBaseForm
+    function emergencyWithdraw(address refundAddress_, uint256 amount_) external override onlyEmergencyQueue {
+        _emergencyWithdraw(refundAddress_, amount_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -236,6 +258,9 @@ abstract contract BaseForm is Initializable, ERC165Upgradeable, IBaseForm {
         internal
         virtual
         returns (uint256 dstAmount);
+
+    /// @dev withdraws vault shares from form during emergency
+    function _emergencyWithdraw(address refundAddress_, uint256 amount_) internal virtual;
 
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS

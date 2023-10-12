@@ -13,9 +13,9 @@ import "src/types/DataTypes.sol";
 //////////////////////////////////////////////////////////////*/
 enum Actions {
     Deposit,
-    Withdraw,
     DepositPermit2,
-    RescueFailedDeposit
+    RescueFailedDeposit,
+    Withdraw
 }
 
 enum LiquidityChange {
@@ -60,6 +60,15 @@ struct StagesLocalVars {
     bool[] partialWithdrawVaults;
     int256 slippage;
     uint256[] superformIds;
+    /// @dev targets from invariant handler
+    uint256[][] targetVaults;
+    uint32[][] targetFormKinds;
+    uint256[][] targetUnderlyings;
+    uint256[][] targetAmounts;
+    uint8[][] targetLiqBridges;
+    uint8[] AMBs;
+    uint64 CHAIN_0;
+    uint64[] DST_CHAINS;
 }
 
 struct MessagingAssertVars {
@@ -142,6 +151,7 @@ struct SetupVars {
     address dstwormholeBroadcastHelper;
     address payMaster;
     address superRegistry;
+    address emergencyQueue;
     address superRBAC;
     address canonicalPermit2;
     address lifiValidator;

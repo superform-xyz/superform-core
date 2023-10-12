@@ -74,21 +74,6 @@ interface ISuperRBAC is IAccessControl {
     /// @dev returns the id of the core state registry updater role
     function CORE_STATE_REGISTRY_UPDATER_ROLE() external view returns (bytes32);
 
-    /// @dev returns the id of superpositions minter role
-    function SUPERPOSITIONS_MINTER_ROLE() external view returns (bytes32);
-
-    /// @dev returns the id of superpositions burner role
-    function SUPERPOSITIONS_BURNER_ROLE() external view returns (bytes32);
-
-    /// @dev returns the id of serc20 minter role
-    function SERC20_MINTER_ROLE() external view returns (bytes32);
-
-    /// @dev returns the id of serc20 burner role
-    function SERC20_BURNER_ROLE() external view returns (bytes32);
-
-    /// @dev returns the id of minter state registry role
-    function MINTER_STATE_REGISTRY_ROLE() external view returns (bytes32);
-
     /// @dev returns the id of wormhole vaa relayer role
     function WORMHOLE_VAA_RELAYER_ROLE() external view returns (bytes32);
 

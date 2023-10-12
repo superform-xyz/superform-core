@@ -149,6 +149,9 @@ interface ISuperRegistry {
     /// @dev returns the id of the two steps form state registry processor keeper
     function TWO_STEPS_REGISTRY_PROCESSOR() external view returns (bytes32);
 
+    /// @dev returns the id of the emergency queue
+    function EMERGENCY_QUEUE() external view returns (bytes32);
+
     /// @dev returns the id of the dst swapper keeper
     function DST_SWAPPER() external view returns (bytes32);
 

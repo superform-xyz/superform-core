@@ -142,7 +142,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
             bridgeValidator.validateTxData(
                 IBridgeValidator.ValidateTxDataArgs(
                     txData_,
-                    uint64(block.chainid),
+                    CHAIN_ID,
                     p.srcChainId,
                     p.data.liqData.liqDstChainId,
                     false,
@@ -170,6 +170,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     p.srcChainId, _getDeliveryAMB(payloadId), _constructSingleReturnData(p.srcSender, p.data)
                 );
             }
+
             /// @dev for direct chain, superPositions are minted directly
             if (p.isXChain == 0) {
                 IStateSyncer(superRegistry.getStateSyncer(p.data.superformRouterId)).mintSingle(
@@ -277,7 +278,7 @@ contract TimelockStateRegistry is BaseStateRegistry, ITimelockStateRegistry, Ree
                     0,
                     superRegistry.getStateRegistryId(address(this)),
                     srcSender_,
-                    uint64(block.chainid)
+                    CHAIN_ID
                 ),
                 abi.encode(
                     ReturnSingleData(

@@ -83,7 +83,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
             /// @dev the amount inscribed in liqData must be less or equal than the amount redeemed from the vault
             if (vars.amount > dstAmount) revert Error.DIRECT_WITHDRAW_INVALID_LIQ_REQUEST();
 
-            vars.chainId = uint64(block.chainid);
+            vars.chainId = CHAIN_ID;
 
             /// @dev validate and perform the swap to desired output token and send to beneficiary
             IBridgeValidator(superRegistry.getBridgeValidator(vars.liqData.bridgeId)).validateTxData(
@@ -143,7 +143,7 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         /// @dev after requesting the unlock, the information with the time of full unlock is saved and sent to the two
         /// step
         /// @dev state registry for re-processing at a later date
-        _storePayload(0, srcSender_, uint64(block.chainid), lockedTill, singleVaultData_);
+        _storePayload(0, srcSender_, CHAIN_ID, lockedTill, singleVaultData_);
 
         return 0;
     }
@@ -183,6 +183,11 @@ contract ERC4626TimelockForm is ERC4626FormImplementation {
         _storePayload(1, srcSender_, srcChainId_, lockedTill, singleVaultData_);
 
         return 0;
+    }
+
+    /// @inheritdoc BaseForm
+    function _emergencyWithdraw(address refundAddress_, uint256 amount_) internal override {
+        _processEmergencyWithdraw(refundAddress_, amount_);
     }
 
     /// @dev calls the vault to request unlock
