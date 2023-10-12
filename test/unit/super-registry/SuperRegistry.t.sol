@@ -322,21 +322,44 @@ contract SuperRegistryTest is BaseSetup {
 
     function _setAndAssert(bytes32 id_, address contractAddress) internal {
         vm.prank(deployer);
+        bool isLocked = false;
+        if (id_ == keccak256("SUPERFORM_FACTORY")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("CORE_STATE_REGISTRY")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("TIMELOCK_STATE_REGISTRY")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("BROADCAST_REGISTRY")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("SUPER_RBAC")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("DST_SWAPPER")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        }
+
         (bool success,) = address(superRegistry).call(
             abi.encodeWithSelector(superRegistry.setAddress.selector, id_, contractAddress, ETH)
         );
         if (!success) revert();
-        (, bytes memory isSet) =
-            address(superRegistry).call(abi.encodeWithSelector(superRegistry.getAddress.selector, id_));
-        assertEq(abi.decode(isSet, (bool)), true);
 
-        if (id_ != superRegistry.SUPER_RBAC()) {
-            vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
-            vm.prank(bond);
-            (bool success_,) = address(superRegistry).call(
-                abi.encodeWithSelector(superRegistry.setAddress.selector, id_, address(0x2), ETH)
-            );
-            if (!success_) revert();
+        address moduleAddress = superRegistry.getAddress(id_);
+        assertNotEq(moduleAddress, address(0));
+
+        if (!isLocked) {
+            if (id_ != superRegistry.SUPER_RBAC()) {
+                vm.expectRevert(Error.NOT_PROTOCOL_ADMIN.selector);
+                vm.prank(bond);
+                (bool success_,) = address(superRegistry).call(
+                    abi.encodeWithSelector(superRegistry.setAddress.selector, id_, address(0x2), ETH)
+                );
+                if (!success_) revert();
+            }
         }
     }
 }

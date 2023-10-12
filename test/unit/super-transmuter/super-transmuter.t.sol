@@ -53,16 +53,6 @@ contract SuperTransmuterTest is BaseSetup {
         superTransmuter.registerTransmuter(superformId, abi.encode(ambId, 1));
     }
 
-    function test_registerTransmuter_invalidBroadcastRegistryAddress() public {
-        vm.prank(deployer);
-        SuperRegistry(getContract(ETH, "SuperRegistry")).setAddress(keccak256("BROADCAST_REGISTRY"), address(0), ETH);
-
-        (uint256 superformId,) =
-            SuperformFactory(getContract(ETH, "SuperformFactory")).createSuperform(formImplementationId, vault);
-        vm.expectRevert();
-        superTransmuter.registerTransmuter(superformId, generateBroadcastParams(5, 1));
-    }
-
     function test_withdrawFromInvalidChainId() public {
         address superform = getContract(
             ETH, string.concat("USDT", "VaultMock", "Superform", Strings.toString(FORM_IMPLEMENTATION_IDS[0]))

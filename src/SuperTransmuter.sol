@@ -11,7 +11,6 @@ import { TransactionType, ReturnMultiData, ReturnSingleData, CallbackType, AMBMe
 import { IBaseForm } from "src/interfaces/IBaseForm.sol";
 import { Error } from "src/utils/Error.sol";
 import { IStateSyncer } from "src/interfaces/IStateSyncer.sol";
-import { ISuperRBAC } from "./interfaces/ISuperRBAC.sol";
 import { IBroadcastRegistry } from "./interfaces/IBroadcastRegistry.sol";
 import { BroadcastMessage } from "./types/DataTypes.sol";
 
