@@ -32,10 +32,18 @@ contract TimelockStateRegistryTest is ProtocolActions {
             deployer,
             uint256(ETH),
             420,
-            420,
+            //420,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
+        );
+
+        vm.prank(getContract(AVAX, "SuperformRouter"));
+        SuperPositions(getContract(AVAX, "SuperPositions")).updateTxHistory(
+            1, DataLib.packTxInfo(1, 2, 0, 3, deployer, ETH)
         );
 
         vm.prank(getContract(AVAX, "SuperformRouter"));
@@ -110,10 +118,13 @@ contract TimelockStateRegistryTest is ProtocolActions {
             uint256(ETH),
             /// @dev amount is 1 less than 420 * 0.9 i.e. exceeding maxSlippage of 10% by 1
             377,
-            377,
+            //377,
             false,
             /// @dev currently testing with 0 bridge slippage
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         bytes memory txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, true);

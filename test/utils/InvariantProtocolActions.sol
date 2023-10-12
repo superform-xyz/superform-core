@@ -131,7 +131,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         MULTI_TX_SLIPPAGE_SHARE = 0;
 
-        console.log("Done --");
+        console.log("Done -");
     }
 
     /// @dev STEP 1: Build Request Data for SuperformRouter
@@ -960,6 +960,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         bytes permit2Calldata;
         uint256 decimal1;
         uint256 decimal2;
+        uint256 decimal3;
+        uint256 amountTemp;
         uint256 amount;
         LiqRequest liqReq;
     }
@@ -976,11 +978,19 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         v.from = args.fromSrc;
         /// @dev build permit2 calldata
-        vm.selectFork(FORKS[args.srcChainId]);
-        v.decimal1 = args.externalToken != NATIVE_TOKEN ? MockERC20(args.externalToken).decimals() : 18;
         vm.selectFork(FORKS[args.toChainId]);
         v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
+
+        (, int256 USDPerUnderlyingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
+
         vm.selectFork(FORKS[args.srcChainId]);
+        v.decimal1 = args.externalToken != NATIVE_TOKEN ? MockERC20(args.externalToken).decimals() : 18;
+        v.decimal3 = args.underlyingToken != NATIVE_TOKEN ? MockERC20(args.underlyingToken).decimals() : 18;
+        (, int256 USDPerExternalToken,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.externalToken]).latestRoundData();
+        (, int256 USDPerUnderlyingToken,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.underlyingToken]).latestRoundData();
 
         /// @dev this is to attach v.amount pre dst slippage with the correct decimals to avoid intermediary truncation
         /// in LiFi mock
@@ -1008,9 +1018,12 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             args.toDst,
             args.liquidityBridgeToChainId,
             args.amount,
-            v.amount,
+            //v.amount,
             false,
-            args.slippage
+            args.slippage,
+            uint256(USDPerExternalToken),
+            uint256(USDPerUnderlyingTokenDst),
+            uint256(USDPerUnderlyingToken)
         );
 
         v.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.srcChainId == args.toChainId);
@@ -1052,6 +1065,50 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             }
         }
 
+        /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDC, daiAmount = 100
+        /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
+        console.log("test amount pre-swap", args.amount);
+        /// @dev src swaps simulation if any
+        if (args.externalToken != args.underlyingToken) {
+            vm.selectFork(FORKS[args.srcChainId]);
+            uint256 decimal1 = v.decimal1;
+            uint256 decimal2 = args.underlyingToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
+                ? 18
+                : MockERC20(args.underlyingToken).decimals();
+
+            /// @dev decimal1 = decimals of args.externalToken (src chain), decimal2 = decimals of args.underlyingToken
+            /// (src chain)
+            if (decimal1 > decimal2) {
+                args.amount = (args.amount * uint256(USDPerExternalToken))
+                    / (uint256(USDPerUnderlyingToken) * 10 ** (decimal1 - decimal2));
+            } else {
+                args.amount = ((args.amount * uint256(USDPerExternalToken)) * 10 ** (decimal2 - decimal1))
+                    / uint256(USDPerUnderlyingToken);
+            }
+            console.log("test amount post-swap", args.amount);
+        }
+
+        int256 slippage = args.slippage;
+        if (args.srcChainId == args.toChainId) slippage = 0;
+
+        /// @dev applying 100% x-chain slippage at once i.e. bridge + dstSwap slippage (as opposed to 2 steps in
+        /// LiFiMock) coz this code will only be executed once (as opposed to twice in LiFiMock, once for bridge and
+        /// other for dstSwap)
+        args.amount = (args.amount * uint256(10_000 - slippage)) / 10_000;
+        console.log("test amount pre-bridge, post-slippage", v.amount);
+
+        /// @dev if args.externalToken == args.underlyingToken, USDPerExternalToken == USDPerUnderlyingToken
+        /// @dev v.decimal3 = decimals of args.underlyingToken (args.externalToken too if above holds true) (src chain),
+        /// v.decimal2 = decimals of args.underlyingTokenDst (dst chain)
+        if (v.decimal3 > v.decimal2) {
+            v.amount = (args.amount * uint256(USDPerUnderlyingToken))
+                / (uint256(USDPerUnderlyingTokenDst) * 10 ** (v.decimal3 - v.decimal2));
+        } else {
+            v.amount = (args.amount * uint256(USDPerUnderlyingToken) * 10 ** (v.decimal2 - v.decimal3))
+                / uint256(USDPerUnderlyingTokenDst);
+        }
+        console.log("test amount post-bridge", v.amount);
+
         vm.selectFork(v.initialFork);
 
         /// @dev extraData is unused here so false is encoded (it is currently used to send in the partialWithdraw
@@ -1076,6 +1133,9 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         LiqRequest liqReq;
         address superform;
         uint256 actualWithdrawAmount;
+        uint256 decimal1;
+        uint256 decimal2;
+        uint256 decimal3;
     }
 
     function _buildSingleVaultWithdrawCallData(SingleVaultCallDataArgs memory args)
@@ -1085,6 +1145,20 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         SingleVaultWithdrawLocalVars memory vars;
 
         uint256 initialFork = vm.activeFork();
+
+        vm.selectFork(FORKS[args.toChainId]);
+        vars.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
+        (, int256 USDPerUnderlyingTokenDst,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.toChainId][args.underlyingTokenDst]).latestRoundData();
+
+        vm.selectFork(FORKS[args.srcChainId]);
+        vars.decimal1 = args.externalToken != NATIVE_TOKEN ? MockERC20(args.externalToken).decimals() : 18;
+        vars.decimal3 = args.underlyingToken != NATIVE_TOKEN ? MockERC20(args.underlyingToken).decimals() : 18;
+        (, int256 USDPerExternalToken,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.externalToken]).latestRoundData();
+        (, int256 USDPerUnderlyingToken,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.underlyingToken]).latestRoundData();
+
         vm.selectFork(FORKS[args.srcChainId]);
 
         vars.superformRouter = contracts[args.srcChainId][bytes32(bytes("SuperformRouter"))];
@@ -1121,10 +1195,14 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
             users[args.user],
             args.liquidityBridgeSrcChainId,
             vars.actualWithdrawAmount,
-            vars.actualWithdrawAmount,
+            //vars.actualWithdrawAmount,
             true,
             /// @dev putting a placeholder value for now (not really used)
-            args.slippage
+            args.slippage,
+            /// @dev switching USDPerExternalToken with USDPerUnderlyingTokenDst as above
+            uint256(USDPerUnderlyingTokenDst),
+            uint256(USDPerExternalToken),
+            uint256(USDPerUnderlyingToken)
         );
 
         vars.txData = _buildLiqBridgeTxData(liqBridgeTxDataArgs, args.toChainId == args.liqDstChainId);
@@ -1256,7 +1334,8 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
-                finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
+                /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
+                //finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
 
                 if (args.isdstSwap) {
                     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
