@@ -1113,9 +1113,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     getContract(ARBI, "CoreStateRegistry"),
                     uint256(ARBI),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 false
             ),
@@ -1139,9 +1142,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     getContract(ARBI, "CoreStateRegistry"),
                     uint256(ARBI),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 false
             ),
@@ -1247,9 +1253,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     superform1,
                     uint256(ETH),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 true
             ),
@@ -1273,9 +1282,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     superform2,
                     uint256(ETH),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 true
             ),
@@ -1333,9 +1345,12 @@ contract SuperformRouterSERC20Test is ProtocolActions {
                     getContract(ARBI, "CoreStateRegistry"),
                     uint256(ARBI),
                     1e18,
-                    1e18,
+                    //1e18,
                     false,
-                    0
+                    0,
+                    1,
+                    1,
+                    1
                 ),
                 false
             ),

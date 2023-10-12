@@ -854,10 +854,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
@@ -876,10 +879,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         liqReqs[1] = LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ARBI, 0);
@@ -1043,10 +1049,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
@@ -1065,10 +1074,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         liqReqs[1] = LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "WETH"), ARBI, 0);
@@ -1147,10 +1159,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -1170,10 +1185,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         v.liqReqs[1] =
@@ -1257,10 +1275,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -1280,10 +1301,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         v.liqReqs[1] =
@@ -1354,10 +1378,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         v.liqReqs = new LiqRequest[](2);
@@ -1377,10 +1404,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         v.liqReqs[1] =
@@ -1567,10 +1597,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         LiqRequest[] memory liqReqs = new LiqRequest[](2);
@@ -1589,10 +1622,13 @@ contract SuperformRouterTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             1e18,
-            1e18,
+            //1e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         liqReqs[1] = LiqRequest(1, _buildLiqBridgeTxData(liqBridgeTxDataArgs, false), getContract(ETH, "DAI"), ARBI, 0);

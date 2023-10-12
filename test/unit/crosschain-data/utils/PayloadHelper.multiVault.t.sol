@@ -104,7 +104,16 @@ contract PayloadHelperMultiTest is ProtocolActions {
 
         _checkSrcPayload();
 
-        _checkDstPayloadInit();
+        vm.selectFork(FORKS[POLY]);
+        (, int256 USDPerDAIonPOLY,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[POLY][getContract(POLY, "DAI")]).latestRoundData();
+
+        vm.selectFork(FORKS[OP]);
+        (, int256 USDPerETHonOP,,,) = AggregatorV3Interface(tokenPriceFeeds[OP][NATIVE_TOKEN]).latestRoundData();
+        (, int256 USDPerDAIonOP,,,) =
+            AggregatorV3Interface(tokenPriceFeeds[OP][getContract(OP, "DAI")]).latestRoundData();
+
+        _checkDstPayloadInit(uint256(USDPerDAIonPOLY), uint256(USDPerETHonOP), uint256(USDPerDAIonOP));
         _checkDstPayloadReturn();
     }
 
@@ -172,7 +181,7 @@ contract PayloadHelperMultiTest is ProtocolActions {
         uint8 superformRouterId;
     }
 
-    function _checkDstPayloadInit() internal {
+    function _checkDstPayloadInit(uint256 USDPerDAIonPOLY_, uint256 USDPerETHonOP_, uint256 USDPerDAIonOP_) internal {
         vm.selectFork(FORKS[DST_CHAINS[0]]);
         CheckDstPayloadInternalVars memory v;
 
@@ -204,7 +213,12 @@ contract PayloadHelperMultiTest is ProtocolActions {
         assertEq(v.superformRouterId, 1);
 
         for (uint256 i; i < v.amounts.length; i++) {
-            assertLe(v.amounts[i], AMOUNTS[POLY][0][i]);
+            /// @dev ETH<>DAI swap on OP
+            uint256 daiAfterFirstSwap = (AMOUNTS[POLY][0][i] * USDPerETHonOP_) / USDPerDAIonOP_;
+            /// @dev DAI on OP <> DAI on POLY
+            uint256 daiAfterSecondSwap = (daiAfterFirstSwap * USDPerDAIonOP_) / USDPerDAIonPOLY_;
+            /// @dev daiAfterSecondSwap doesn't include bridge slippage hence should be greater
+            assertLe(v.amounts[i], daiAfterSecondSwap);
         }
 
         for (uint256 i = 0; i < v.slippage.length; ++i) {
