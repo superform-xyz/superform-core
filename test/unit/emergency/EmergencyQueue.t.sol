@@ -542,10 +542,12 @@ contract EmergencyQueueTest is ProtocolActions {
             getContract(ARBI, "CoreStateRegistry"),
             uint256(ARBI),
             2e18,
-            2e18,
             false,
             /// @dev placeholder value, not used
-            0
+            0,
+            1,
+            1,
+            1
         );
 
         SingleVaultSFData memory data = SingleVaultSFData(
