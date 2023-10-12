@@ -14,20 +14,40 @@ import { BroadcastMessage } from "../types/DataTypes.sol";
 contract SuperRBAC is ISuperRBAC, AccessControlEnumerable {
     bytes32 public constant SYNC_REVOKE = keccak256("SYNC_REVOKE");
 
+    /// @dev used in many areas of the codebase to perform config operations
+    /// @dev could be worth to have this changeable in case it gets compromised (but without ability to revoke itself)
+    /// @dev changeable by which role?
     bytes32 public constant override PROTOCOL_ADMIN_ROLE = keccak256("PROTOCOL_ADMIN_ROLE");
+    /// @dev used in a few areas of the code
+    /// @dev could be worth to have this changeable in case it gets compromised (but without ability to revoke itself)
+    /// @dev changeable by which role?
     bytes32 public constant override EMERGENCY_ADMIN_ROLE = keccak256("EMERGENCY_ADMIN_ROLE");
+    /// @dev used to extract funds from PayMaster
+    /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_ADMIN_ROLE = keccak256("PAYMENT_ADMIN_ROLE");
+    /// @dev used so that certain contracts can broadcast state changes to all connected remote chains
+    /// @dev currently SUPERFORM_FACTORY, SUPERTRANSMUTER and SUPER_RBAC have this role. SUPER_RBAC doesn't need it
+    /// @dev should NOT be allowed to be changed
     bytes32 public constant override BROADCASTER_ROLE = keccak256("BROADCASTER_ROLE");
+    /// @dev keeper role, should be allowed to be changed?
     bytes32 public constant override CORE_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("CORE_STATE_REGISTRY_PROCESSOR_ROLE");
+    /// @dev keeper role, should be allowed to be changed?
     bytes32 public constant override TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE");
+    /// @dev keeper role, should be allowed to be changed?
     bytes32 public constant override BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE =
         keccak256("BROADCAST_STATE_REGISTRY_PROCESSOR_ROLE");
+    /// @dev keeper role, should be allowed to be changed?
     bytes32 public constant override CORE_STATE_REGISTRY_UPDATER_ROLE = keccak256("CORE_STATE_REGISTRY_UPDATER_ROLE");
+    /// @dev keeper role, should be allowed to be changed?
     bytes32 public constant override CORE_STATE_REGISTRY_RESCUER_ROLE = keccak256("CORE_STATE_REGISTRY_RESCUER_ROLE");
+    /// @dev keeper role, should be allowed to be changed?
     bytes32 public constant override CORE_STATE_REGISTRY_DISPUTER_ROLE = keccak256("CORE_STATE_REGISTRY_DISPUTER_ROLE");
+    /// @dev this is a role so that we could run multiple relayers
+    /// @dev should be allowed to be changed
     bytes32 public constant override WORMHOLE_VAA_RELAYER_ROLE = keccak256("WORMHOLE_VAA_RELAYER_ROLE");
+    /// @dev keeper role, should be allowed to be changed?
     bytes32 public constant override DST_SWAPPER_ROLE = keccak256("DST_SWAPPER_ROLE");
 
     ISuperRegistry public superRegistry;
