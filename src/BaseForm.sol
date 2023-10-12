@@ -9,6 +9,7 @@ import { IBaseForm } from "./interfaces/IBaseForm.sol";
 import { ISuperRegistry } from "./interfaces/ISuperRegistry.sol";
 import { Error } from "./utils/Error.sol";
 import { ISuperformFactory } from "./interfaces/ISuperformFactory.sol";
+import { IEmergencyQueue } from "./interfaces/IEmergencyQueue.sol";
 import { DataLib } from "./libraries/DataLib.sol";
 
 /// @title BaseForm
@@ -33,6 +34,9 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
 
     /// @dev The superRegistry address is used to access relevant protocol addresses
     ISuperRegistry public immutable superRegistry;
+
+    /// @dev The emergency queue is used to help users exit after forms are paused
+    IEmergencyQueue public emergencyQueue;
 
     /// @dev the vault this form pertains to
     address public vault;
@@ -68,6 +72,13 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         _;
     }
 
+    modifier onlyEmergencyQueue() {
+        if (msg.sender != address(emergencyQueue)) {
+            revert Error.NOT_EMERGENCY_QUEUE();
+        }
+        _;
+    }
+
     /*///////////////////////////////////////////////////////////////
                             INITIALIZATION
     //////////////////////////////////////////////////////////////*/
@@ -84,6 +95,11 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
     /// @dev sets caller as the admin of the contract.
     function initialize(address superRegistry_, address vault_, uint32 formImplementationId_) external initializer {
         if (ISuperRegistry(superRegistry_) != superRegistry) revert Error.NOT_SUPER_REGISTRY();
+
+        address emergencyQueue_ = superRegistry.getAddress(keccak256("EMERGENCY_QUEUE"));
+        if (emergencyQueue_ == address(0)) revert Error.ZERO_ADDRESS();
+
+        emergencyQueue = IEmergencyQueue(emergencyQueue_);
         formImplementationId = formImplementationId_;
         vault = vault_;
     }
@@ -120,10 +136,13 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         external
         override
         onlySuperRouter
-        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
-        dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
+        if (!_isPaused(singleVaultData_.superformId)) {
+            dstAmount = _directWithdrawFromVault(singleVaultData_, srcSender_);
+        } else {
+            emergencyQueue.queueWithdrawal(singleVaultData_, srcSender_);
+        }
     }
 
     /// @inheritdoc IBaseForm
@@ -150,10 +169,18 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         external
         override
         onlyCoreStateRegistry
-        notPaused(singleVaultData_)
         returns (uint256 dstAmount)
     {
-        dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
+        if (!_isPaused(singleVaultData_.superformId)) {
+            dstAmount = _xChainWithdrawFromVault(singleVaultData_, srcSender_, srcChainId_);
+        } else {
+            emergencyQueue.queueWithdrawal(singleVaultData_, srcSender_);
+        }
+    }
+
+    /// @inheritdoc IBaseForm
+    function emergencyWithdraw(address refundAddress_, uint256 amount_) external override onlyEmergencyQueue {
+        _emergencyWithdraw(refundAddress_, amount_);
     }
 
     /*///////////////////////////////////////////////////////////////
@@ -249,9 +276,22 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         virtual
         returns (uint256 dstAmount);
 
+    /// @dev withdraws vault shares from form during emergency
+    function _emergencyWithdraw(address refundAddress_, uint256 amount_) internal virtual;
+
     /*///////////////////////////////////////////////////////////////
                     INTERNAL VIEW VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+    /// @dev returns if a form id is paused
+    function _isPaused(uint256 superformId) internal view returns (bool) {
+        (, uint32 formImplementationId_,) = superformId.getSuperform();
+
+        if (formImplementationId != formImplementationId_) revert Error.INVALID_SUPERFORMS_DATA();
+
+        return ISuperformFactory(superRegistry.getAddress(keccak256("SUPERFORM_FACTORY"))).isFormImplementationPaused(
+            formImplementationId_
+        );
+    }
 
     /// @dev Converts a vault share amount into an equivalent underlying asset amount
     function _vaultSharesAmountToUnderlyingAmount(

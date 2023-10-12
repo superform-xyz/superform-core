@@ -16,6 +16,7 @@ import { DataLib } from "../libraries/DataLib.sol";
 /// @notice Has common internal functions that can be re-used by actual form implementations
 abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IERC4626;
     using DataLib for uint256;
 
     uint256 internal immutable STATE_REGISTRY_ID;
@@ -348,6 +349,17 @@ abstract contract ERC4626FormImplementation is BaseForm, LiquidityHandler {
         }
 
         emit Processed(srcChainId_, vars.dstChainId, singleVaultData_.payloadId, singleVaultData_.amount, vault);
+    }
+
+    function _processEmergencyWithdraw(address refundAddress_, uint256 amount_) internal {
+        IERC4626 vaultContract = IERC4626(vault);
+
+        if (vaultContract.balanceOf(address(this)) < amount_) {
+            revert Error.EMERGENCY_WITHDRAW_INSUFFICIENT_BALANCE();
+        }
+
+        vaultContract.safeTransfer(refundAddress_, amount_);
+        emit EmergencyWithdrawalProcessed(refundAddress_, amount_);
     }
 
     /*///////////////////////////////////////////////////////////////

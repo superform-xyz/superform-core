@@ -60,6 +60,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @dev default keepers - identifiers
     bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");
+    bytes32 public constant override EMERGENCY_QUEUE = keccak256("EMERGENCY_QUEUE");
     bytes32 public constant override CORE_REGISTRY_UPDATER = keccak256("CORE_REGISTRY_UPDATER");
     bytes32 public constant override CORE_REGISTRY_PROCESSOR = keccak256("CORE_REGISTRY_PROCESSOR");
     bytes32 public constant override BROADCAST_REGISTRY_PROCESSOR = keccak256("BROADCAST_REGISTRY_PROCESSOR");

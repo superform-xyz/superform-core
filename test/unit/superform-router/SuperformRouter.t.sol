@@ -645,7 +645,7 @@ contract SuperformRouterTest is ProtocolActions {
         SuperformRouter(payable(getContract(ETH, "SuperformRouter"))).singleDirectSingleVaultDeposit(req);
     }
 
-    function test_withdrawWithPausedImplementation() public {
+    function test_withdrawWithPausedImplementations() public {
         _pauseFormImplementation();
 
         /// scenario: withdraw from an paused form form id (which doesn't exist on the chain)
@@ -662,6 +662,9 @@ contract SuperformRouterTest is ProtocolActions {
         SuperPositions(getContract(ETH, "SuperPositions")).mintSingle(deployer, superformId, 1e18);
 
         vm.startPrank(deployer);
+        SuperPositions(getContract(ETH, "SuperPositions")).increaseAllowance(
+            getContract(ETH, "SuperformRouter"), superformId, 1e18
+        );
 
         uint256[] memory superformIds = new uint256[](1);
         superformIds[0] = superformId;
@@ -672,8 +675,9 @@ contract SuperformRouterTest is ProtocolActions {
         uint256[] memory maxSlippages = new uint256[](1);
         maxSlippages[0] = 100;
 
-        uint8[] memory ambIds = new uint8[](1);
+        uint8[] memory ambIds = new uint8[](2);
         ambIds[0] = 1;
+        ambIds[1] = 2;
 
         bool[] memory hasDstSwaps = new bool[](1);
 
@@ -687,8 +691,29 @@ contract SuperformRouterTest is ProtocolActions {
 
         address superformRouter = getContract(ETH, "SuperformRouter");
 
-        vm.expectRevert(Error.INVALID_SUPERFORMS_DATA.selector);
-        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw(req);
+        vm.recordLogs();
+        SuperformRouter(payable(superformRouter)).singleXChainMultiVaultWithdraw{ value: 2 ether }(req);
+        vm.stopPrank();
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        /// @dev mocks the cross-chain payload delivery
+        LayerZeroHelper(getContract(ETH, "LayerZeroHelper")).helpWithEstimates(
+            LZ_ENDPOINTS[ARBI],
+            5_000_000,
+            /// note: using some max limit
+            FORKS[ARBI],
+            logs
+        );
+
+        HyperlaneHelper(getContract(ETH, "HyperlaneHelper")).help(
+            address(HyperlaneMailbox), address(HyperlaneMailbox), FORKS[ARBI], logs
+        );
+
+        vm.selectFork(FORKS[ARBI]);
+        vm.prank(deployer);
+        CoreStateRegistry(payable(getContract(ARBI, "CoreStateRegistry"))).processPayload(1);
+        assertEq(EmergencyQueue(getContract(ARBI, "EmergencyQueue")).queueCounter(), 1);
     }
 
     function test_depositWithPausedImplementation() public {

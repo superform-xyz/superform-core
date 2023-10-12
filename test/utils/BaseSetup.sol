@@ -39,6 +39,7 @@ import { ISuperformFactory } from "src/interfaces/ISuperformFactory.sol";
 import { IERC4626 } from "openzeppelin-contracts/contracts/interfaces/IERC4626.sol";
 import { SuperformRouter } from "src/SuperformRouter.sol";
 import { PayMaster } from "src/payments/PayMaster.sol";
+import { EmergencyQueue } from "src/emergency/EmergencyQueue.sol";
 import { SuperRegistry } from "src/settings/SuperRegistry.sol";
 import { SuperRBAC } from "src/settings/SuperRBAC.sol";
 import { SuperPositions } from "src/SuperPositions.sol";
@@ -95,7 +96,7 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     bytes32 public salt;
     mapping(uint64 chainId => mapping(bytes32 implementation => address at)) public contracts;
 
-    string[28] public contractNames = [
+    string[29] public contractNames = [
         "CoreStateRegistry",
         "TimelockStateRegistry",
         "BroadcastRegistry",
@@ -123,7 +124,8 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         "WormholeBroadcastHelper",
         "LiFiMock",
         "KYCDAOMock",
-        "CanonicalPermit2"
+        "CanonicalPermit2",
+        "EmergencyQueue"
     ];
 
     /*//////////////////////////////////////////////////////////////
@@ -712,6 +714,11 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
             vars.superRegistryC.setAddress(vars.superRegistryC.CORE_REGISTRY_UPDATER(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.BROADCAST_REGISTRY_PROCESSOR(), deployer, vars.chainId);
             vars.superRegistryC.setAddress(vars.superRegistryC.TWO_STEPS_REGISTRY_PROCESSOR(), deployer, vars.chainId);
+
+            /// @dev 17 deploy emergency queue
+            vars.emergencyQueue = address(new EmergencyQueue(vars.superRegistry));
+            contracts[vars.chainId][bytes32(bytes("EmergencyQueue"))] = vars.emergencyQueue;
+            vars.superRegistryC.setAddress(vars.superRegistryC.EMERGENCY_QUEUE(), vars.emergencyQueue, vars.chainId);
 
             delete bridgeAddresses;
             delete bridgeValidators;

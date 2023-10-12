@@ -151,6 +151,7 @@ struct SetupVars {
     address dstwormholeBroadcastHelper;
     address payMaster;
     address superRegistry;
+    address emergencyQueue;
     address superRBAC;
     address canonicalPermit2;
     address lifiValidator;
