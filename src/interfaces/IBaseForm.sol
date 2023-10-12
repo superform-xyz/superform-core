@@ -54,14 +54,14 @@ interface IBaseForm is IERC165 {
     /// @param srcSender_ The address of the sender of the transaction
     /// @param srcChainId_ The chain id of the source chain
     /// @return dstAmount  The amount of tokens deposited in same chain action
-    /// @return sendAck Whether the processor should send acknowledgement back to source chain
+    /// @dev is dstAmoutn is `0` then no further action/acknowledgement needs to be sent
     function xChainDepositIntoVault(
         InitSingleVaultData memory singleVaultData_,
         address srcSender_,
         uint64 srcChainId_
     )
         external
-        returns (uint256 dstAmount, bool sendAck);
+        returns (uint256 dstAmount);
 
     /// @dev process withdrawal of collateral from a vault
     /// @param singleVaultData_  A bytes representation containing all the data required to make a form action

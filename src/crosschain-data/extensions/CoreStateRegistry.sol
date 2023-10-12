@@ -769,9 +769,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     }),
                     srcSender_,
                     srcChainId_
-                ) returns (uint256 dstAmount, bool sendAck) {
+                ) returns (uint256 dstAmount) {
                     if (!fulfilment) fulfilment = true;
-                    if (sendAck) {
+                    if (dstAmount > 0) {
                         /// @dev marks the indexes that require a callback mint of shares (successful)
                         dstAmounts[i] = dstAmount;
                     }
@@ -870,9 +870,9 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
 
             /// @dev deposit to superform
             try IBaseForm(superform_).xChainDepositIntoVault(singleVaultData, srcSender_, srcChainId_) returns (
-                uint256 dstAmount, bool sendAck
+                uint256 dstAmount
             ) {
-                if (sendAck) {
+                if (dstAmount > 0) {
                     return _constructSingleReturnData(
                         srcSender_,
                         singleVaultData.payloadId,

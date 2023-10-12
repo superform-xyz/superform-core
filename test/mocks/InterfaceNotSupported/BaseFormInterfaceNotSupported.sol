@@ -142,7 +142,7 @@ abstract contract BaseForm is Initializable, ERC165, IBaseForm {
         override
         onlyCoreStateRegistry
         notPaused(singleVaultData_)
-        returns (uint256 dstAmount, bool sendAck)
+        returns (uint256 dstAmount)
     {
         dstAmount = _xChainDepositIntoVault(singleVaultData_, srcSender_, srcChainId_);
     }
