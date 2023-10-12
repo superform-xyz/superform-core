@@ -770,8 +770,8 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
                     srcSender_,
                     srcChainId_
                 ) returns (uint256 dstAmount) {
-                    if (!fulfilment) fulfilment = true;
                     if (dstAmount > 0) {
+                        if (!fulfilment) fulfilment = true;
                         /// @dev marks the indexes that require a callback mint of shares (successful)
                         dstAmounts[i] = dstAmount;
                     }
