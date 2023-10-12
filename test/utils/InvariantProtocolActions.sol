@@ -992,11 +992,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         (, int256 USDPerUnderlyingToken,,,) =
             AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.underlyingToken]).latestRoundData();
 
-        /*
-        vm.selectFork(FORKS[args.toChainId]);
-        v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
-        vm.selectFork(FORKS[args.srcChainId]);
-        */
         /// @dev this is to attach v.amount pre dst slippage with the correct decimals to avoid intermediary truncation
         /// in LiFi mock
         if (v.decimal1 > v.decimal2) {
@@ -1095,8 +1090,6 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
 
         int256 slippage = args.slippage;
         if (args.srcChainId == args.toChainId) slippage = 0;
-        // else if (args.dstSwap) slippage = (slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        // else slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
         /// @dev applying 100% x-chain slippage at once i.e. bridge + dstSwap slippage (as opposed to 2 steps in
         /// LiFiMock) coz this code will only be executed once (as opposed to twice in LiFiMock, once for bridge and
@@ -1341,6 +1334,7 @@ abstract contract InvariantProtocolActions is CommonProtocolActions {
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
+                /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
                 //finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
 
                 if (args.isdstSwap) {

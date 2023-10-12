@@ -8,7 +8,7 @@ import { ILiFi } from "src/vendor/lifi/ILiFi.sol";
 import { LibSwap } from "src/vendor/lifi/LibSwap.sol";
 import "./MockERC20.sol";
 
-/// @title Socket Router Mock
+/// @title LiFi Router Mock
 /// @dev eventually replace this by using a fork of the real registry contract
 
 contract LiFiMock is Test {
@@ -85,26 +85,6 @@ contract LiFiMock is Test {
 
         if (inputToken_ != NATIVE) {
             if (!prevSwap_) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
-            /// @dev not all tokens allow burn / transfer to zero address
-            //try MockERC20(inputToken_).burn(address(this), amount_) { } catch { }
-
-            /*
-        /// @dev encapsulating from
-        (
-            v.from,
-            v.toForkId,
-            v.outputToken,
-            v.slippage,
-            v.isMultiTx,
-            v.multiTxSlippageShare,
-            v.isDirect,
-            v.finalAmountDst
-        ) = abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256));
-
-        // if underlyingTokenn
-        if (inputToken_ != NATIVE) {
-            if (!prevSwap) MockERC20(inputToken_).transferFrom(v.from, address(this), amount_);
-            */
         } else {
             require(msg.value == amount_);
         }
@@ -158,22 +138,13 @@ contract LiFiMock is Test {
                 ((amountOut_ * USDPerUnderlyingToken) * 10 ** (decimal2 - decimal1)) / USDPerUnderlyingTokenDst;
         }
 
-        /*
-        /// @dev amount provided by a previous swap is effectively ignored
-        v.amount = (v.finalAmountDst * uint256(10_000 - v.slippage)) / 10_000;
-        */
-
         console.log("amount post-bridge", finalAmount);
 
         if (outputToken != NATIVE) {
             deal(outputToken, receiver_, MockERC20(outputToken).balanceOf(receiver_) + finalAmount);
         } else {
             if (prevForkId_ != toForkId_) vm.deal(address(this), finalAmount);
-
             (bool success,) = payable(receiver_).call{ value: finalAmount }("");
-
-            //(bool success,) = payable(receiver_).call{ value: v.amount }("");
-
             require(success);
         }
     }
@@ -191,7 +162,7 @@ contract LiFiMock is Test {
         address from;
         uint256 USDPerExternalToken;
         uint256 USDPerUnderlyingToken;
-        /// @dev encapsulating from
+
         (from,,,,,,, USDPerExternalToken, USDPerUnderlyingToken,) =
             abi.decode(data_, (address, uint256, address, int256, bool, uint256, bool, uint256, uint256, uint256));
 
@@ -208,7 +179,6 @@ contract LiFiMock is Test {
         uint256 decimal2 = outputToken_ == NATIVE ? 18 : MockERC20(outputToken_).decimals();
 
         console.log("amount pre-swap", amount_);
-        /// input token decimals are greater than output
         /// @dev the results of this amount if there is a bridge are effectively ignored
         if (decimal1 > decimal2) {
             amount_ = (amount_ * USDPerExternalToken) / (USDPerUnderlyingToken * 10 ** (decimal1 - decimal2));
@@ -216,7 +186,9 @@ contract LiFiMock is Test {
             amount_ = (amount_ * USDPerExternalToken) * 10 ** (decimal2 - decimal1) / USDPerUnderlyingToken;
         }
         console.log("amount post-swap", amount_);
-        /// @dev assume no swap slippage
+        /// @dev swap slippage if any, is applied in ProtocolActions._stage1_buildReqData() for direct
+        /// actions and in ProtocolActions._buildLiqBridgeTxDataDstSwap() for dstSwaps.
+        /// @dev Could allocate swap slippage share separately like for ProtocolActions.MULTI_TX_SLIPPAGE_SHARE
         deal(outputToken_, receiver_, MockERC20(outputToken_).balanceOf(receiver_) + amount_);
         return amount_;
     }

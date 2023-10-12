@@ -1258,11 +1258,13 @@ abstract contract ProtocolActions is CommonProtocolActions {
     }
 
     function _updateSuperformDataAmountWithPrices(
-        uint256 args_amount,
-        TestAction memory action,
-        address args_underlyingTokenDst,
-        address args_externalToken,
-        address args_underlyingToken
+        uint256 amount_,
+        int256 slippage_,
+        address underlyingTokenDst_,
+        address externalToken_,
+        address underlyingToken_,
+        uint64 srcChainId_,
+        uint64 dstChainId_
     )
         internal
         returns (uint256)
@@ -1270,72 +1272,64 @@ abstract contract ProtocolActions is CommonProtocolActions {
         UpdateSuperformDataAmountWithPricesLocalVars memory v;
         uint256 initialFork = vm.activeFork();
 
-        vm.selectFork(FORKS[DST_CHAINS[0]]);
-        // address args_underlyingTokenDst = ERC4626Form(payable(rescueSuperform)).getVaultAsset();
-        v.vDecimal2 = args_underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args_underlyingTokenDst).decimals() : 18;
+        vm.selectFork(FORKS[dstChainId_]);
+        v.vDecimal2 = underlyingTokenDst_ != NATIVE_TOKEN ? MockERC20(underlyingTokenDst_).decimals() : 18;
         (, v.USDPerUnderlyingTokenDst,,,) =
-            AggregatorV3Interface(tokenPriceFeeds[DST_CHAINS[0]][args_underlyingTokenDst]).latestRoundData();
+            AggregatorV3Interface(tokenPriceFeeds[dstChainId_][underlyingTokenDst_]).latestRoundData();
 
-        vm.selectFork(FORKS[CHAIN_0]);
-        // address args_externalToken = getContract(CHAIN_0, UNDERLYING_TOKENS[2]);
-        // address args_underlyingToken = getContract(CHAIN_0, UNDERLYING_TOKENS[2]);
-        v.vDecimal1 = args_externalToken != NATIVE_TOKEN ? MockERC20(args_externalToken).decimals() : 18;
-        v.vDecimal3 = args_underlyingToken != NATIVE_TOKEN ? MockERC20(args_underlyingToken).decimals() : 18;
+        vm.selectFork(FORKS[srcChainId_]);
+        v.vDecimal1 = externalToken_ != NATIVE_TOKEN ? MockERC20(externalToken_).decimals() : 18;
+        v.vDecimal3 = underlyingToken_ != NATIVE_TOKEN ? MockERC20(underlyingToken_).decimals() : 18;
         (, v.USDPerExternalToken,,,) =
-            AggregatorV3Interface(tokenPriceFeeds[CHAIN_0][args_externalToken]).latestRoundData();
+            AggregatorV3Interface(tokenPriceFeeds[srcChainId_][externalToken_]).latestRoundData();
         (, v.USDPerUnderlyingToken,,,) =
-            AggregatorV3Interface(tokenPriceFeeds[CHAIN_0][args_underlyingToken]).latestRoundData();
+            AggregatorV3Interface(tokenPriceFeeds[srcChainId_][underlyingToken_]).latestRoundData();
 
         /// @dev for e.g. externalToken = DAI, underlyingTokenDst = USDC, daiAmount = 100
         /// => usdcAmount = ((USDPerDai / 10e18) / (USDPerUsdc / 10e6)) * daiAmount
-        console.log("test amount pre-swap", args_amount);
+        console.log("test amount pre-swap", amount_);
         /// @dev src swaps simulation if any
-        if (args_externalToken != args_underlyingToken) {
-            vm.selectFork(FORKS[CHAIN_0]);
+        if (externalToken_ != underlyingToken_) {
+            vm.selectFork(FORKS[srcChainId_]);
             v.decimal1 = v.vDecimal1;
-            v.decimal2 = args_underlyingToken == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
+            v.decimal2 = underlyingToken_ == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
                 ? 18
-                : MockERC20(args_underlyingToken).decimals();
+                : MockERC20(underlyingToken_).decimals();
 
-            /// @dev decimal1 = decimals of args_externalToken (src chain), decimal2 = decimals of
-            /// args_underlyingToken
-            /// (src chain)
+            /// @dev decimal1 = decimals of externalToken_ (src chain), decimal2 = decimals of
+            /// underlyingToken_ (src chain)
             if (v.decimal1 > v.decimal2) {
-                args_amount = (args_amount * uint256(v.USDPerExternalToken))
+                amount_ = (amount_ * uint256(v.USDPerExternalToken))
                     / (uint256(v.USDPerUnderlyingToken) * 10 ** (v.decimal1 - v.decimal2));
             } else {
-                args_amount = ((args_amount * uint256(v.USDPerExternalToken)) * 10 ** (v.decimal2 - v.decimal1))
+                amount_ = ((amount_ * uint256(v.USDPerExternalToken)) * 10 ** (v.decimal2 - v.decimal1))
                     / uint256(v.USDPerUnderlyingToken);
             }
-            console.log("test amount post-swap", args_amount);
+            console.log("test amount post-swap", amount_);
         }
 
-        v.slippage = action.slippage;
-        if (CHAIN_0 == DST_CHAINS[0]) v.slippage = 0;
-        // else if (args.dstSwap) slippage = (slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        // else slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
+        v.slippage = slippage_;
+        if (srcChainId_ == dstChainId_) v.slippage = 0;
 
         /// @dev applying 100% x-chain slippage at once i.e. bridge + dstSwap slippage (as opposed to 2 steps in
         /// LiFiMock) coz this code will only be executed once (as opposed to twice in LiFiMock, once for bridge
-        /// and
-        /// other for dstSwap)
-        args_amount = (args_amount * uint256(10_000 - v.slippage)) / 10_000;
-        console.log("test amount pre-bridge, post-slippage", args_amount);
+        /// and other for dstSwap)
+        amount_ = (amount_ * uint256(10_000 - v.slippage)) / 10_000;
+        console.log("test amount pre-bridge, post-slippage", amount_);
 
-        /// @dev if args.externalToken == args_underlyingToken, USDPerExternalToken == USDPerUnderlyingToken
-        /// @dev v.decimal3 = decimals of args_underlyingToken (args_externalToken too if above holds true) (src
-        /// chain),
-        /// v.decimal2 = decimals of args_underlyingTokenDst (dst chain)
+        /// @dev if args.externalToken == underlyingToken_, USDPerExternalToken == USDPerUnderlyingToken
+        /// @dev v.decimal3 = decimals of underlyingToken_ (externalToken_ too if above holds true) (src
+        /// chain), v.decimal2 = decimals of underlyingTokenDst_ (dst chain)
         if (v.vDecimal3 > v.vDecimal2) {
-            args_amount = (args_amount * uint256(v.USDPerUnderlyingToken))
+            amount_ = (amount_ * uint256(v.USDPerUnderlyingToken))
                 / (uint256(v.USDPerUnderlyingTokenDst) * 10 ** (v.vDecimal3 - v.vDecimal2));
         } else {
-            args_amount = (args_amount * uint256(v.USDPerUnderlyingToken) * 10 ** (v.vDecimal2 - v.vDecimal3))
+            amount_ = (amount_ * uint256(v.USDPerUnderlyingToken) * 10 ** (v.vDecimal2 - v.vDecimal3))
                 / uint256(v.USDPerUnderlyingTokenDst);
         }
-        console.log("test amount post-bridge", args_amount);
+        console.log("test amount post-bridge", amount_);
         vm.selectFork(initialFork);
-        return args_amount;
+        return amount_;
     }
 
     /// @dev 'n' deposits rescued per payloadId per destination chain
@@ -1362,12 +1356,14 @@ abstract contract ProtocolActions is CommonProtocolActions {
             for (uint256 i = 0; i < rescueSuperformIds.length; ++i) {
                 amounts[i] = _updateSuperformDataAmountWithPrices(
                     AMOUNTS[DST_CHAINS[0]][actionIndex][i],
-                    action,
+                    action.slippage,
                     /// @dev TODO: generalise these tokens beyond WETH (which is the only token used for the 2 rescue
                     /// cases, hence tests pass)
                     getContract(DST_CHAINS[0], UNDERLYING_TOKENS[2]),
                     getContract(CHAIN_0, UNDERLYING_TOKENS[2]),
-                    getContract(CHAIN_0, UNDERLYING_TOKENS[2])
+                    getContract(CHAIN_0, UNDERLYING_TOKENS[2]),
+                    CHAIN_0,
+                    DST_CHAINS[0]
                 );
                 stuckAmount += amounts[i];
             }
@@ -1546,12 +1542,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
         (, int256 USDPerUnderlyingToken,,,) =
             AggregatorV3Interface(tokenPriceFeeds[args.srcChainId][args.underlyingToken]).latestRoundData();
 
-        /*
-        vm.selectFork(FORKS[args.toChainId]);
-        v.decimal2 = args.underlyingTokenDst != NATIVE_TOKEN ? MockERC20(args.underlyingTokenDst).decimals() : 18;
-        vm.selectFork(FORKS[args.srcChainId]);
-        */
-
         /// @dev this is to attach v.amount pre dst slippage with the correct decimals to avoid intermediary truncation
         /// in LiFi mock
         if (v.decimal1 > v.decimal2) {
@@ -1649,8 +1639,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
 
         int256 slippage = args.slippage;
         if (args.srcChainId == args.toChainId) slippage = 0;
-        // else if (args.dstSwap) slippage = (slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-        // else slippage = (slippage * int256(100 - MULTI_TX_SLIPPAGE_SHARE)) / 100;
 
         /// @dev applying 100% x-chain slippage at once i.e. bridge + dstSwap slippage (as opposed to 2 steps in
         /// LiFiMock) coz this code will only be executed once (as opposed to twice in LiFiMock, once for bridge and
@@ -1755,7 +1743,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
             users[args.user],
             args.liquidityBridgeSrcChainId,
             vars.actualWithdrawAmount,
-            //vars.actualWithdrawAmount,
             true,
             /// @dev putting a placeholder value for now (not really used)
             args.slippage,
@@ -1989,6 +1976,7 @@ abstract contract ProtocolActions is CommonProtocolActions {
         for (uint256 i = 0; i < len; i++) {
             finalAmounts[i] = args.amounts[i];
             if (args.slippage > 0) {
+                /// @dev bridge slippage is already applied in _buildSingleVaultDepositCallData()
                 // finalAmounts[i] = (finalAmounts[i] * uint256(10_000 - args.slippage)) / 10_000;
 
                 if (args.isdstSwap) {
@@ -2628,16 +2616,6 @@ abstract contract ProtocolActions is CommonProtocolActions {
                     /// @dev note: bridge + dstSwap slippage is now applied to multiSuperformsData.amounts[] at the end
                     /// of _buildSingleVaultDepositCallData() as its updated value is required before this point
 
-                    // if (args.assertWithSlippage && args.slippage != 0 && !args.sameChain) {
-                    // /// @dev applying bridge slippage
-                    // v.finalAmount = (v.finalAmount * uint256(10_000 - args.slippage)) / 10_000;
-
-                    // /// @dev applying dstSwap slippage
-                    // if (args.isdstSwap) {
-                    //     dstSwapSlippage = (args.slippage * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
-                    //     v.finalAmount = (v.finalAmount * uint256(10_000 - dstSwapSlippage)) / 10_000;
-                    // }
-                    // }
                     /// @dev add number of repetitions to properly assert
                     v.finalAmount = v.finalAmount * args.repetitions;
 

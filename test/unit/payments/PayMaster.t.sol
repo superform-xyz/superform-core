@@ -201,7 +201,10 @@ contract PayMasterTest is ProtocolActions {
 
         vm.selectFork(FORKS[ARBI]);
         /// @dev amount received will be bridge-slippage-adjusted
-        assertEq(txProcessorARBI.balance, (1 ether * (10_000 - uint256(totalSlippage))) / 10_000);
+        assertEq(
+            txProcessorARBI.balance,
+            _updateSuperformDataAmountWithPrices(1 ether, totalSlippage, NATIVE, NATIVE, NATIVE, ETH, ARBI)
+        );
     }
 
     function test_rebalanceToCoreStateRegistryTxUpdater() public {
@@ -252,7 +255,10 @@ contract PayMasterTest is ProtocolActions {
 
         vm.selectFork(FORKS[ARBI]);
         /// @dev amount received will be bridge-slippage-adjusted
-        assertEq(txUpdaterARBI.balance, (1 ether * (10_000 - uint256(totalSlippage))) / 10_000);
+        assertEq(
+            txUpdaterARBI.balance,
+            _updateSuperformDataAmountWithPrices(1 ether, totalSlippage, NATIVE, NATIVE, NATIVE, ETH, ARBI)
+        );
     }
 
     function _successfulDeposit() internal {

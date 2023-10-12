@@ -946,7 +946,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         }
 
         _setTokenPriceFeeds();
-  
 
         vm.stopPrank();
     }
@@ -954,15 +953,13 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
     /*//////////////////////////////////////////////////////////////
                         MISC. HELPER FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    function _setTokenPriceFeeds() internal  {
-
-      /// @dev set chainlink price feeds
+    function _setTokenPriceFeeds() internal {
+        /// @dev set chainlink price feeds
         /// ETH
         tokenPriceFeeds[ETH][getContract(ETH, "DAI")] = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9;
         tokenPriceFeeds[ETH][getContract(ETH, "USDC")] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6;
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH), also coz chainlink doesn't provide
         tokenPriceFeeds[ETH][getContract(ETH, "WETH")] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        tokenPriceFeeds[ETH][getContract(ETH, "USDT")] = 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D;
         tokenPriceFeeds[ETH][NATIVE_TOKEN] = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
 
         /// BSC
@@ -970,7 +967,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         tokenPriceFeeds[BSC][getContract(BSC, "USDC")] = 0x51597f405303C4377E36123cBc172b13269EA163;
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[BSC][getContract(BSC, "WETH")] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
-        tokenPriceFeeds[BSC][getContract(BSC, "USDT")] = 0xB97Ad0E74fa7d920791E90258A6E2085088b4320;
         tokenPriceFeeds[BSC][NATIVE_TOKEN] = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;
 
         /// AVAX
@@ -978,7 +974,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         tokenPriceFeeds[AVAX][getContract(AVAX, "USDC")] = 0xF096872672F44d6EBA71458D74fe67F9a77a23B9;
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[AVAX][getContract(AVAX, "WETH")] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
-        tokenPriceFeeds[AVAX][getContract(AVAX, "USDT")] = 0xEBE676ee90Fe1112671f19b6B7459bC678B67e8a;
         tokenPriceFeeds[AVAX][NATIVE_TOKEN] = 0x976B3D034E162d8bD72D6b9C989d545b839003b0;
 
         /// POLYGON
@@ -986,7 +981,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         tokenPriceFeeds[POLY][getContract(POLY, "USDC")] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7;
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[POLY][getContract(POLY, "WETH")] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
-        tokenPriceFeeds[POLY][getContract(POLY, "USDT")] = 0x0A6513e40db6EB1b165753AD52E80663aeA50545;
         tokenPriceFeeds[POLY][NATIVE_TOKEN] = 0xF9680D99D6C9589e2a93a78A04A279e509205945;
 
         /// OPTIMISM
@@ -994,7 +988,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         tokenPriceFeeds[OP][getContract(OP, "USDC")] = 0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3;
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[OP][getContract(OP, "WETH")] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
-        tokenPriceFeeds[OP][getContract(OP, "USDT")] = 0xECef79E109e997bCA29c1c0897ec9d7b03647F5E;
         tokenPriceFeeds[OP][NATIVE_TOKEN] = 0x13e3Ee699D1909E989722E753853AE30b17e08c5;
 
         /// ARBITRUM
@@ -1002,7 +995,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         tokenPriceFeeds[ARBI][getContract(ARBI, "USDC")] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3;
         /// @dev note using ETH's price feed for WETH (as 1 WETH = 1 ETH)
         tokenPriceFeeds[ARBI][getContract(ARBI, "WETH")] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
-        tokenPriceFeeds[ARBI][getContract(ARBI, "USDT")] = 0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7;
         tokenPriceFeeds[ARBI][NATIVE_TOKEN] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
     }
 
@@ -1196,11 +1188,6 @@ abstract contract BaseSetup is DSTest, StdInvariant, Test {
         existingVaults[56][1]["DAI"][0] = 0x6A354D50fC2476061F378390078e30F9782C5266;
         existingVaults[56][1]["USDC"][0] = 0x32307B89a1c59Ea4EBaB1Fde6bD37b1139D06759;
         existingVaults[56][1]["WETH"][0] = address(0);
-
-
-
-
-
     }
 
     function _fundNativeTokens() internal {

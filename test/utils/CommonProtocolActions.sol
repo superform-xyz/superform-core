@@ -69,8 +69,6 @@ abstract contract CommonProtocolActions is BaseSetup {
                         args.USDPerUnderlyingToken,
                         args.USDPerUnderlyingTokenDst
                     ),
-                    // args.finalAmountDst
-
                     //decimalsDstUnderlyingToken
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
                     /// resemble
@@ -155,8 +153,6 @@ abstract contract CommonProtocolActions is BaseSetup {
                         args.USDPerUnderlyingToken,
                         args.USDPerUnderlyingTokenDst
                     ),
-                    //args.finalAmountDst
-
                     /// @dev this bytes param is used for testing purposes only and easiness of mocking, does not
                     /// resemble
                     /// mainnet
@@ -183,8 +179,6 @@ abstract contract CommonProtocolActions is BaseSetup {
         view
         returns (bytes memory txData)
     {
-        // amount_ = (amount_ * uint256(10_000 - slippage_)) / 10_000;
-
         /// @dev amount_ adjusted after swap slippage
         int256 swapSlippage = (slippage_ * int256(MULTI_TX_SLIPPAGE_SHARE)) / 100;
         amount_ = (amount_ * uint256(10_000 - swapSlippage)) / 10_000;
@@ -251,13 +245,24 @@ abstract contract CommonProtocolActions is BaseSetup {
         internal
         returns (bytes memory txData)
     {
-        vm.selectFork(FORKS[toChainId_]);
-        (, int256 USDPerUnderlyingTokenDst,,,) =
-            AggregatorV3Interface(tokenPriceFeeds[toChainId_][underlyingTokenDst_]).latestRoundData();
+        int256 USDPerUnderlyingTokenDst;
+        int256 USDPerUnderlyingToken;
 
-        vm.selectFork(FORKS[ETH]);
-        (, int256 USDPerUnderlyingToken,,,) =
-            AggregatorV3Interface(tokenPriceFeeds[ETH][underlyingToken_]).latestRoundData();
+        if (underlyingTokenDst_ != address(0)) {
+            vm.selectFork(FORKS[toChainId_]);
+            (, USDPerUnderlyingTokenDst,,,) =
+                AggregatorV3Interface(tokenPriceFeeds[toChainId_][underlyingTokenDst_]).latestRoundData();
+        } else {
+            USDPerUnderlyingTokenDst = 1;
+        }
+
+        if (underlyingToken_ != address(0)) {
+            vm.selectFork(FORKS[ETH]);
+            (, USDPerUnderlyingToken,,,) =
+                AggregatorV3Interface(tokenPriceFeeds[ETH][underlyingToken_]).latestRoundData();
+        } else {
+            USDPerUnderlyingToken = 1;
+        }
 
         if (liqBridgeKind_ == 1) {
             if (!sameChain_) {

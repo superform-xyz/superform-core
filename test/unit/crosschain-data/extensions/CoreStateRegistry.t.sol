@@ -220,7 +220,6 @@ contract CoreStateRegistryTest is ProtocolActions {
             uint256(ETH),
             /// @dev amount is 1 less than (actualWithdrawAmount * 0.9) => slippage > 10% => should revert
             ((actualWithdrawAmount * 9) / 10) - 1,
-            //((actualWithdrawAmount * 9) / 10) - 1,
             true,
             /// @dev currently testing with 0 bridge slippage
             0,
