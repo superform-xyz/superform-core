@@ -149,7 +149,7 @@ contract SuperRBACTest is BaseSetup {
     function test_revokeTwoStepsStateRegistrvyProcessorRole() public {
         _revokeAndCheck(
             superRBAC.TIMELOCK_STATE_REGISTRY_PROCESSOR_ROLE(),
-            superRegistry.TWO_STEPS_REGISTRY_PROCESSOR(),
+            superRegistry.TIMELOCK_REGISTRY_PROCESSOR(),
             deployer,
             "",
             generateBroadcastParams(5, 1),

@@ -5,10 +5,10 @@ import { ISuperRBAC } from "../interfaces/ISuperRBAC.sol";
 import { ISuperRegistry } from "../interfaces/ISuperRegistry.sol";
 import { QuorumManager } from "../crosschain-data/utils/QuorumManager.sol";
 import { Error } from "../utils/Error.sol";
-
 /// @title SuperRegistry
 /// @author Zeropoint Labs.
 /// @dev Keeps information on all addresses used in the Superforms ecosystem.
+
 contract SuperRegistry is ISuperRegistry, QuorumManager {
     /*///////////////////////////////////////////////////////////////
                           Constants
@@ -28,12 +28,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     uint64 public immutable CHAIN_ID;
 
-    struct Address {
-        address moduleAddress;
-        bool locked;
-    }
-
-    mapping(bytes32 id => mapping(uint64 chainid => Address addressInfo)) private registry;
+    mapping(bytes32 id => mapping(uint64 chainid => address moduleAddress)) private registry;
     /// @dev bridge id is mapped to a bridge address (to prevent interaction with unauthorized bridges)
     mapping(uint8 bridgeId => address bridgeAddress) public bridgeAddresses;
     mapping(uint8 bridgeId => address bridgeValidator) public bridgeValidator;
@@ -95,13 +90,16 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     /// @dev default keepers - identifiers
     /// @dev could be allowed to be changed
     bytes32 public constant override PAYMENT_ADMIN = keccak256("PAYMENT_ADMIN");
-    bytes32 public constant override CORE_REGISTRY_UPDATER = keccak256("CORE_REGISTRY_UPDATER");
     bytes32 public constant override CORE_REGISTRY_PROCESSOR = keccak256("CORE_REGISTRY_PROCESSOR");
     bytes32 public constant override BROADCAST_REGISTRY_PROCESSOR = keccak256("BROADCAST_REGISTRY_PROCESSOR");
-    bytes32 public constant override TWO_STEPS_REGISTRY_PROCESSOR = keccak256("TWO_STEPS_REGISTRY_PROCESSOR");
+    bytes32 public constant override TIMELOCK_REGISTRY_PROCESSOR = keccak256("TIMELOCK_REGISTRY_PROCESSOR");
+    /// @dev propose to delete this id here as revoke broadcast wouldn't operate with updater
+    bytes32 public constant override CORE_REGISTRY_UPDATER = keccak256("CORE_REGISTRY_UPDATER");
+    bytes32 public constant override CORE_REGISTRY_RESCUER = keccak256("CORE_REGISTRY_RESCUER");
+    bytes32 public constant override CORE_REGISTRY_DISPUTER = keccak256("CORE_REGISTRY_DISPUTER");
 
     modifier onlyProtocolAdmin() {
-        if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID].moduleAddress).hasProtocolAdminRole(msg.sender)) {
+        if (!ISuperRBAC(registry[SUPER_RBAC][CHAIN_ID]).hasProtocolAdminRole(msg.sender)) {
             revert Error.NOT_PROTOCOL_ADMIN();
         }
         _;
@@ -109,8 +107,7 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     constructor(address superRBAC_) {
         CHAIN_ID = uint64(block.chainid);
-        registry[SUPER_RBAC][CHAIN_ID].moduleAddress = superRBAC_;
-        registry[SUPER_RBAC][CHAIN_ID].locked = true;
+        registry[SUPER_RBAC][CHAIN_ID] = superRBAC_;
 
         emit AddressUpdated(SUPER_RBAC, CHAIN_ID, address(0), superRBAC_);
     }
@@ -143,28 +140,27 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
 
     /// @inheritdoc ISuperRegistry
     function setAddress(bytes32 id_, address newAddress_, uint64 chainId_) external override onlyProtocolAdmin {
-        address oldAddress = registry[id_][chainId_].moduleAddress;
-        if (registry[id_][chainId_].locked) revert Error.DISABLED();
-
-        registry[id_][chainId_].moduleAddress = newAddress_;
-
-        if (oldAddress == address(0)) {
+        address oldAddress = registry[id_][chainId_];
+        if (oldAddress != address(0)) {
             /// @notice SUPERFORM_FACTORY, CORE_STATE_REGISTRY, TIMELOCK_STATE_REGISTRY, BROADCAST_REGISTRY, SUPER_RBAC,
             /// DST_SWAPPER cannot be changed once set
             if (id_ == keccak256("SUPERFORM_FACTORY")) {
-                registry[id_][chainId_].locked = true;
+                revert Error.DISABLED();
             } else if (id_ == keccak256("CORE_STATE_REGISTRY")) {
-                registry[id_][chainId_].locked = true;
+                revert Error.DISABLED();
             } else if (id_ == keccak256("TIMELOCK_STATE_REGISTRY")) {
-                registry[id_][chainId_].locked = true;
+                revert Error.DISABLED();
             } else if (id_ == keccak256("BROADCAST_REGISTRY")) {
-                registry[id_][chainId_].locked = true;
+                revert Error.DISABLED();
             } else if (id_ == keccak256("SUPER_RBAC")) {
-                registry[id_][chainId_].locked = true;
+                revert Error.DISABLED();
             } else if (id_ == keccak256("DST_SWAPPER")) {
-                registry[id_][chainId_].locked = true;
+                revert Error.DISABLED();
             }
         }
+
+        registry[id_][chainId_] = newAddress_;
+
         emit AddressUpdated(id_, chainId_, oldAddress, newAddress_);
     }
 
@@ -308,11 +304,11 @@ contract SuperRegistry is ISuperRegistry, QuorumManager {
     //////////////////////////////////////////////////////////////*/
 
     function getAddress(bytes32 id_) external view override returns (address) {
-        return registry[id_][CHAIN_ID].moduleAddress;
+        return registry[id_][CHAIN_ID];
     }
 
     function getAddressByChainId(bytes32 id_, uint64 chainId_) external view override returns (address) {
-        return registry[id_][chainId_].moduleAddress;
+        return registry[id_][chainId_];
     }
 
     /// @inheritdoc ISuperRegistry

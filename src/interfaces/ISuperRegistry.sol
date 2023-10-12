@@ -138,11 +138,11 @@ interface ISuperRegistry {
     /// @dev returns the id of the payload helper module
     function PAYLOAD_HELPER() external view returns (bytes32);
 
+    /// @dev returns the id of the dst swapper keeper
+    function DST_SWAPPER() external view returns (bytes32);
+
     /// @dev returns the id of the payment admin keeper
     function PAYMENT_ADMIN() external view returns (bytes32);
-
-    /// @dev returns the id of the core state registry updater keeper
-    function CORE_REGISTRY_UPDATER() external view returns (bytes32);
 
     /// @dev returns the id of the core state registry processor keeper
     function CORE_REGISTRY_PROCESSOR() external view returns (bytes32);
@@ -151,10 +151,16 @@ interface ISuperRegistry {
     function BROADCAST_REGISTRY_PROCESSOR() external view returns (bytes32);
 
     /// @dev returns the id of the two steps form state registry processor keeper
-    function TWO_STEPS_REGISTRY_PROCESSOR() external view returns (bytes32);
+    function TIMELOCK_REGISTRY_PROCESSOR() external view returns (bytes32);
 
-    /// @dev returns the id of the dst swapper keeper
-    function DST_SWAPPER() external view returns (bytes32);
+    /// @dev returns the id of the core state registry updater keeper
+    function CORE_REGISTRY_UPDATER() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry updater keeper
+    function CORE_REGISTRY_RESCUER() external view returns (bytes32);
+
+    /// @dev returns the id of the core state registry updater keeper
+    function CORE_REGISTRY_DISPUTER() external view returns (bytes32);
 
     /// @dev gets the address of a contract on current chain
     /// @param id_ is the id of the contract
