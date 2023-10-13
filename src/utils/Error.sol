@@ -108,6 +108,15 @@ library Error {
     /// @dev thrown if rescue is already proposed
     error RESCUE_ALREADY_PROPOSED();
 
+    /// @dev thrown if DstSwapper fails to send native tokens to CoreStateRegistry
+    error FAILED_TO_SEND_NATIVE();
+
+    /// @dev thrown when actual amount recieved is less than the ideal amount adjusted with max slippage
+    error MAX_SLIPPAGE_INVARIANT_BROKEN();
+
+    /// @dev thrown when the failed dstSwap is already enqueued
+    error FAILED_DST_SWAP_ALREADY_PROCESSED();
+
     /*///////////////////////////////////////////////////////////////
                          LIQUIDITY BRIDGE ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -202,6 +211,9 @@ library Error {
 
     /// @dev thrown if payload update amount mismatch with dst swapper amount
     error INVALID_DST_SWAP_AMOUNT();
+
+    /// @dev thrown if payload update amount mismatch with failed dst swap amount
+    error INVALID_FAILED_DST_SWAP_AMOUNT();
 
     /// @dev thrown if payload is being updated with final amounts length different than amounts length
     error DIFFERENT_PAYLOAD_UPDATE_AMOUNTS_LENGTH();

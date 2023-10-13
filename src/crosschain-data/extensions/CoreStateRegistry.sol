@@ -528,6 +528,10 @@ contract CoreStateRegistry is BaseStateRegistry, ICoreStateRegistry {
             if (dstSwapper.swappedAmount(payloadId_, 0) != finalAmount_) {
                 revert Error.INVALID_DST_SWAP_AMOUNT();
             }
+
+            // if (dstSwap.failedSwapAmount(payloadId_, 0) != finalAmount_) {
+            //     revert Error.INVALID_FAILED_DST_SWAP_AMOUNT();
+            // }
         }
 
         /// @dev validate payload update
