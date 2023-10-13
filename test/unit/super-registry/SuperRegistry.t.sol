@@ -53,8 +53,12 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.SUPERFORM_ROUTER(), address(0x1));
     }
 
-    function test_setSuperformFactory_and_revert_invalidCaller() public {
+    function test_setSuperformFactory_and_revert_disabled() public {
         _setAndAssert(superRegistry.SUPERFORM_FACTORY(), address(0x1));
+    }
+
+    function test_setSuperTransmuter_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.SUPER_TRANSMUTER(), address(0x1));
     }
 
     function test_setPayMaster_and_revert_invalidCaller() public {
@@ -65,15 +69,15 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.PAYMENT_HELPER(), address(0x1));
     }
 
-    function test_setCoreStateRegistry_and_revert_invalidCaller() public {
+    function test_setCoreStateRegistry_and_revert_disabled() public {
         _setAndAssert(superRegistry.CORE_STATE_REGISTRY(), address(0x1));
     }
 
-    function test_setTimelockStateRegistry_and_revert_invalidCaller() public {
+    function test_setTimelockStateRegistry_and_revert_disabled() public {
         _setAndAssert(superRegistry.TIMELOCK_STATE_REGISTRY(), address(0x1));
     }
 
-    function test_setBroadcastRegistry_and_revert_invalidCaller() public {
+    function test_setBroadcastRegistry_and_revert_disabled() public {
         _setAndAssert(superRegistry.BROADCAST_REGISTRY(), address(0x1));
     }
 
@@ -85,12 +89,44 @@ contract SuperRegistryTest is BaseSetup {
         _setAndAssert(superRegistry.SUPER_RBAC(), address(0x1));
     }
 
+    function test_setPayloadHelper_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.PAYLOAD_HELPER(), address(0x1));
+    }
+
+    function test_setDstSwapper_and_revert_disabled() public {
+        _setAndAssert(superRegistry.DST_SWAPPER(), address(0x1));
+    }
+
+    function test_setEmergencyQueue_and_revert_disabled() public {
+        _setAndAssert(superRegistry.EMERGENCY_QUEUE(), address(0x1));
+    }
+
+    function test_setPAYMENT_ADMIN_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.PAYMENT_ADMIN(), address(0x1));
+    }
+
     function test_setTxProcessor_and_revert_invalidCaller() public {
         _setAndAssert(superRegistry.CORE_REGISTRY_PROCESSOR(), address(0x1));
     }
 
+    function test_setBroadcastTxProcessor_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.BROADCAST_REGISTRY_PROCESSOR(), address(0x1));
+    }
+
+    function test_setTimelockTxProcessor_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.TIMELOCK_REGISTRY_PROCESSOR(), address(0x1));
+    }
+
     function test_setTxUpdater_and_revert_invalidCaller() public {
         _setAndAssert(superRegistry.CORE_REGISTRY_UPDATER(), address(0x1));
+    }
+
+    function test_setTxRescuer_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.CORE_REGISTRY_RESCUER(), address(0x1));
+    }
+
+    function test_setTxDisputer_and_revert_invalidCaller() public {
+        _setAndAssert(superRegistry.CORE_REGISTRY_DISPUTER(), address(0x1));
     }
 
     function test_setBridgeAddresses_and_revert_invalidCaller() public {
@@ -339,6 +375,9 @@ contract SuperRegistryTest is BaseSetup {
             vm.expectRevert(Error.DISABLED.selector);
             isLocked = true;
         } else if (id_ == keccak256("DST_SWAPPER")) {
+            vm.expectRevert(Error.DISABLED.selector);
+            isLocked = true;
+        } else if (id_ == keccak256("EMERGENCY_QUEUE")) {
             vm.expectRevert(Error.DISABLED.selector);
             isLocked = true;
         }
